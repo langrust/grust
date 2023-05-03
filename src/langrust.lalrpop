@@ -8,16 +8,16 @@ grammar(file_id: FileId);
 
 /// Catches LanGRust modules
 pub module: File = {
-    <start:@L> "module" <end:@R> => File::Module(
-        Location{ file_id, range: start..end }
-    ),
+    <start:@L> "module" <end:@R> => File::Module{
+        location: Location{ file_id, range: start..end }
+    },
 }
 
 /// Catches LanGRust programs
 pub program: File = {
-    <start:@L> "program" <end:@R> => File::Program(
-        Location{ file_id, range: start..end }
-    ),
+    <start:@L> "program" <end:@R> => File::Program{
+        location: Location{ file_id, range: start..end }
+    },
 }
 
 pub file: File = {
