@@ -1,10 +1,20 @@
 use crate::ast::{
+    component::Component,
     file::File,
 };
 use crate::util::location::Location;
 use crate::util::files::FileId;
 
 grammar(file_id: FileId);
+
+/// Catches component
+pub component: Component = {
+    <start:@L> "component" <end:@R> => {
+        Component {
+            location: Location{ file_id, range: start..end },
+        }
+    },
+};
 
 /// Catches LanGRust modules
 pub module: File = {
