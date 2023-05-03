@@ -6,7 +6,7 @@ mod langrust_ast_constructs {
         user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
-    use grustine::util::{files, location::Location, type_system::Type};
+    use grustine::util::{constant::Constant, files, location::Location, type_system::Type};
 
     #[test]
     fn file_parser() {
@@ -136,5 +136,44 @@ mod langrust_ast_constructs {
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
         assert_eq!(basic_type, Type::NotDefinedYet(String::from("Color")));
+    }
+
+    #[test]
+    fn constant() {
+        let mut files = files::Files::new();
+        let file_id1 = files.add("unit_test.gr", "()").unwrap();
+        let file_id2 = files.add("bool_test.gr", "true").unwrap();
+        let file_id3 = files.add("int_test.gr", "3").unwrap();
+        let file_id4 = files.add("float_test.gr", "3.540").unwrap();
+        let file_id5 = files.add("string_test.gr", "\"Hello world\"").unwrap();
+        let file_id6 = files.add("enum_test.gr", "Color.Yellow").unwrap();
+
+        let constant = langrust::constantParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(Constant::Unit, constant);
+        let constant = langrust::constantParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(Constant::Boolean(true), constant);
+        let constant = langrust::constantParser::new()
+            .parse(file_id3, &files.source(file_id3).unwrap())
+            .unwrap();
+        assert_eq!(Constant::Integer(3), constant);
+        let constant = langrust::constantParser::new()
+            .parse(file_id4, &files.source(file_id4).unwrap())
+            .unwrap();
+        assert_eq!(Constant::Float(3.540), constant);
+        let constant = langrust::constantParser::new()
+            .parse(file_id5, &files.source(file_id5).unwrap())
+            .unwrap();
+        assert_eq!(Constant::String(String::from("Hello world")), constant);
+        let constant = langrust::constantParser::new()
+            .parse(file_id6, &files.source(file_id6).unwrap())
+            .unwrap();
+        assert_eq!(
+            Constant::Enumeration(String::from("Color"), String::from("Yellow")),
+            constant
+        );
     }
 }
