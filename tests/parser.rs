@@ -3,6 +3,7 @@ mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
     use grustine::langrust;
     use grustine::ast::{
+        function::Function,
         node::Node,
         component::Component,
         file::File
@@ -16,17 +17,25 @@ mod langrust_ast_constructs {
 
         let module_test_id = files.add(
             "module_test.gr",
-            "node node node"
+            "function node node function node"
         ).unwrap();
         let program_test_id = files.add(
             "program_test.gr",
-            "node component node"
+            "node component node function function"
         ).unwrap();
 
         let file = langrust::fileParser::new()
             .parse(module_test_id, &files.source(module_test_id).unwrap())
             .unwrap();
         assert_eq!(file, File::Module{
+            functions: vec![
+                Function{
+                    location: Location::default()
+                },
+                Function{
+                    location: Location::default()
+                }
+            ],
             nodes: vec![
                 Node{
                     location: Location::default()
@@ -45,6 +54,14 @@ mod langrust_ast_constructs {
             .parse(program_test_id, &files.source(program_test_id).unwrap())
             .unwrap();
         assert_eq!(file, File::Program{
+            functions: vec![
+                Function{
+                    location: Location::default()
+                },
+                Function{
+                    location: Location::default()
+                }
+            ],
             nodes: vec![
                 Node{
                     location: Location::default()

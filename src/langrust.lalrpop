@@ -38,9 +38,20 @@ pub component: Component = {
 
 /// Catches LanGRust modules
 pub module: File = {
+    <start:@L> <f: function> <end:@R> =>  File::Module{
+        functions: vec![f],
+        nodes: vec![],
+        location: Location{ file_id, range: start..end }
+    },
     <start:@L> <n: node> <end:@R> =>  File::Module{
+        functions: vec![],
         nodes: vec![n],
         location: Location{ file_id, range: start..end }
+    },
+    <start:@L> <mut m: module> <f: function> <end:@R> => {
+        m.push_function(f);
+        m.set_location(Location{ file_id, range: start..end });
+        m
     },
     <start:@L> <mut m: module> <n: node> <end:@R> => {
         m.push_node(n);
@@ -52,14 +63,24 @@ pub module: File = {
 /// Catches LanGRust programs
 pub program: File = {
     <start:@L> <c: component> <end:@R> => File::Program{
+        functions: vec![],
         nodes: vec![],
         component: c,
         location: Location{ file_id, range: start..end }
     },
-    <start:@L> <m: module> <c: component> <end:@R> =>  File::Program{
-        nodes: m.get_nodes(),
-        component: c,
-        location: Location{ file_id, range: start..end }
+    <start:@L> <m: module> <c: component> <end:@R> =>  {
+        let (functions, nodes) = m.get_functions_nodes();
+        File::Program{
+            functions,
+            nodes,
+            component: c,
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    <start:@L> <mut p: program> <f: function> <end:@R> => {
+        p.push_function(f);
+        p.set_location(Location{ file_id, range: start..end });
+        p
     },
     <start:@L> <mut p: program> <n: node> <end:@R> => {
         p.push_node(n);
