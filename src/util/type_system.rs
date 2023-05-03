@@ -12,7 +12,7 @@ use std::fmt::{self, Display};
 /// - [Type::Unit] is the unit type, if `u = ()` then `u: unit`
 /// - [Type::Array] is the array type, if `a = [1, 2, 3]` then `a: [int; 3]`
 /// - [Type::Option] is the option type, if `n = some(1)` then `n: int?`
-/// - [Type::Enumeration] is an user defined enumeration, if `c = Color::Yellow` then `c: Enumeration(Color)`
+/// - [Type::Enumeration] is an user defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
 /// - [Type::Structure] is an user defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
 /// - [Type::NotDefinedYet] is not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
 /// - [Type::Abstract] are functions types, if `f = |x| x+1` then `f: int -> int`
@@ -55,7 +55,7 @@ pub enum Type {
     Array(Box<Type>, usize),
     /// Option type, if `n = some(1)` then `n: int?`
     Option(Box<Type>),
-    /// User defined enumeration, if `c = Color::Yellow` then `c: Enumeration(Color)`
+    /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
     Enumeration(String),
     /// User defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
     Structure(String),
