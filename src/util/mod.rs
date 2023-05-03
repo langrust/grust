@@ -8,4 +8,4 @@ pub mod files;
 pub mod type_system;
 
 /// Constant module.
-pub mod constants;
+pub mod constant;
