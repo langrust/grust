@@ -1,4 +1,5 @@
 use crate::ast::{
+    function::Function,
     node::Node,
     component::Component,
     file::File,
@@ -7,6 +8,15 @@ use crate::util::location::Location;
 use crate::util::files::FileId;
 
 grammar(file_id: FileId);
+
+/// Catches function
+pub function: Function = {
+    <start:@L> "function" <end:@R> => {
+        Function {
+            location: Location{ file_id, range: start..end },
+        }
+    },
+};
 
 /// Catches node
 pub node: Node = {
