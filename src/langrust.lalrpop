@@ -10,9 +10,9 @@ use crate::util::files::FileId;
 
 grammar(file_id: FileId);
 
-/// Catches types definition
-pub userTypes: UserDefinedType = {
-    // catches enumerations definition
+/// Catches type definition
+pub userType: UserDefinedType = {
+    // catches enumeration definition
     <start:@L> "enum" <end:@R> => {
         UserDefinedType::Enumeration {
             location: Location{ file_id, range: start..end },
@@ -61,17 +61,32 @@ pub component: Component = {
 
 /// Catches LanGRust modules
 pub module: File = {
+    // a module composed of one type
+    <start:@L> <t: userType> <end:@R> =>  File::Module{
+        user_defined_types: vec![t],
+        functions: vec![],
+        nodes: vec![],
+        location: Location{ file_id, range: start..end }
+    },
     // a module composed of one function
     <start:@L> <f: function> <end:@R> =>  File::Module{
+        user_defined_types: vec![],
         functions: vec![f],
         nodes: vec![],
         location: Location{ file_id, range: start..end }
     },
     // a module composed of one node
     <start:@L> <n: node> <end:@R> =>  File::Module{
+        user_defined_types: vec![],
         functions: vec![],
         nodes: vec![n],
         location: Location{ file_id, range: start..end }
+    },
+    // adds a type definition to a module
+    <start:@L> <mut m: module> <t: userType> <end:@R> => {
+        m.push_type(t);
+        m.set_location(Location{ file_id, range: start..end });
+        m
     },
     // adds a function to a module
     <start:@L> <mut m: module> <f: function> <end:@R> => {
@@ -91,6 +106,7 @@ pub module: File = {
 pub program: File = {
     // a program composed of one component
     <start:@L> <c: component> <end:@R> => File::Program{
+        user_defined_types: vec![],
         functions: vec![],
         nodes: vec![],
         component: c,
@@ -98,13 +114,20 @@ pub program: File = {
     },
     // adds a component to a module, this returns a program
     <start:@L> <m: module> <c: component> <end:@R> =>  {
-        let (functions, nodes) = m.get_functions_nodes();
+        let (user_defined_types, functions, nodes) = m.get_types_functions_nodes();
         File::Program{
+            user_defined_types,
             functions,
             nodes,
             component: c,
             location: Location{ file_id, range: start..end }
         }
+    },
+    // adds a type definition to a program
+    <start:@L> <mut p: program> <t: userType> <end:@R> => {
+        p.push_type(t);
+        p.set_location(Location{ file_id, range: start..end });
+        p
     },
     // adds a function to a program
     <start:@L> <mut p: program> <f: function> <end:@R> => {

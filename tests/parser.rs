@@ -1,19 +1,25 @@
 #[cfg(test)]
 mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
-    use grustine::ast::{component::Component, file::File, function::Function, node::Node};
+    use grustine::ast::{
+        component::Component, file::File, function::Function, node::Node,
+        user_defined_type::UserDefinedType,
+    };
     use grustine::langrust;
     use grustine::util::{files, location::Location};
-    
+
     #[test]
     fn file_parser() {
         let mut files = files::Files::new();
 
         let module_test_id = files
-            .add("module_test.gr", "function node node function node")
+            .add("module_test.gr", "function node enum node function node")
             .unwrap();
         let program_test_id = files
-            .add("program_test.gr", "node component node function function")
+            .add(
+                "program_test.gr",
+                "node component array node function struct function",
+            )
             .unwrap();
 
         let file = langrust::fileParser::new()
@@ -22,6 +28,9 @@ mod langrust_ast_constructs {
         assert_eq!(
             file,
             File::Module {
+                user_defined_types: vec![UserDefinedType::Enumeration {
+                    location: Location::default()
+                }],
                 functions: vec![
                     Function {
                         location: Location::default()
@@ -51,6 +60,14 @@ mod langrust_ast_constructs {
         assert_eq!(
             file,
             File::Program {
+                user_defined_types: vec![
+                    UserDefinedType::Array {
+                        location: Location::default()
+                    },
+                    UserDefinedType::Structure {
+                        location: Location::default()
+                    }
+                ],
                 functions: vec![
                     Function {
                         location: Location::default()
