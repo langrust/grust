@@ -13,7 +13,7 @@ pub struct Location {
 impl Location {
     /// Construct and return the default location.
     pub fn default() -> Self {
-        return Location{
+        return Location {
             file_id: FileId::default(),
             range: 0..0,
         };
