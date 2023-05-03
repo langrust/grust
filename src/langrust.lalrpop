@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::ast::{
     user_defined_type::UserDefinedType,
     function::Function,
@@ -5,6 +7,7 @@ use crate::ast::{
     component::Component,
     file::File,
 };
+use crate::util::type_system::Type;
 use crate::util::location::Location;
 use crate::util::files::FileId;
 
@@ -13,6 +16,21 @@ grammar(file_id: FileId);
 /// Catches identifiers
 ID: String = {
     r"\w*[a-zA-Z_]\w*" => String::from(<>),
+};
+
+/// Catches basic types
+pub basicType: Type = {
+    "int" => Type::Integer,
+    "float" => Type::Float,
+    "bool" => Type::Boolean,
+    "string" => Type::String,
+    "unit" => Type::Unit,
+    "[" <t: basicType> ";" <n: r"\d+"> "]" => Type::Array(
+        Box::new(t),
+        usize::from_str(n).unwrap()
+    ),
+    <t: basicType> "?" => Type::Option(Box::new(t)),
+    <id:ID> => Type::NotDefinedYet(id),
 };
 
 /// Catches type definition
