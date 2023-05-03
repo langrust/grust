@@ -7,6 +7,7 @@ use crate::ast::{
     component::Component,
     file::File,
 };
+use crate::util::constant::Constant;
 use crate::util::type_system::Type;
 use crate::util::location::Location;
 use crate::util::files::FileId;
@@ -31,6 +32,24 @@ pub basicType: Type = {
     ),
     <t: basicType> "?" => Type::Option(Box::new(t)),
     <id:ID> => Type::NotDefinedYet(id),
+};
+
+/// Catches constants
+pub constant: Constant = {
+    "()" => Constant::Unit,
+    "true" => Constant::Boolean(true),
+    "false" => Constant::Boolean(false),
+    r#""[^"]*""# => {
+        let mut s = <>.to_string();
+        s.pop();            // remove last
+        if s.len() > 0 {
+            s.remove(0);    // remove first
+        }
+        Constant::String(s)
+    },
+    r"\d+\.\d+" => Constant::Float(f64::from_str(<>).unwrap()),
+    r"\d+" => Constant::Integer(i64::from_str(<>).unwrap()),
+    <enumeration:ID>"."<elem:ID> => Constant::Enumeration(enumeration, elem)
 };
 
 /// Catches type definition
