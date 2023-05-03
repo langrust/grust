@@ -1,10 +1,14 @@
-use std::str::FromStr;
+use crate::ast::{
+    file::File,
+};
 
 grammar;
 
-pub Term: i32 = {
-    <n:Num> => n,
-    "(" <t:Term> ")" => t,
-};
-
-Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
+pub file: File = {
+    "module" => {
+        File::Module()
+    },
+    "program" => {
+        File::Program()
+    }
+}
