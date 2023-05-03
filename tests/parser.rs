@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
+    use grustine::ast::component::Component;
     use grustine::langrust;
     use grustine::ast::{
         file::File
@@ -18,7 +19,7 @@ mod langrust_ast_constructs {
         ).unwrap();
         let program_test_id = files.add(
             "program_test.gr",
-            "program"
+            "component"
         ).unwrap();
 
         let file = langrust::fileParser::new()
@@ -29,6 +30,11 @@ mod langrust_ast_constructs {
         let file = langrust::fileParser::new()
             .parse(program_test_id, &files.source(program_test_id).unwrap())
             .unwrap();
-        assert_eq!(file, File::Program{ location: Location::default() },);
+        assert_eq!(file, File::Program{ 
+            component: Component{
+                location: Location::default()
+            },
+            location: Location::default()
+        },);
     }
 }
