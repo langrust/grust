@@ -9,3 +9,6 @@ pub mod node;
 
 /// LanGRust [Function](crate::ast::function::Function) AST module.
 pub mod function;
+
+/// LanGRust [UserDefinedType](crate::ast::user_defined_type::UserDefinedType) AST module.
+pub mod user_defined_type;

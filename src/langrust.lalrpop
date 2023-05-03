@@ -1,4 +1,5 @@
 use crate::ast::{
+    user_defined_type::UserDefinedType,
     function::Function,
     node::Node,
     component::Component,
@@ -8,6 +9,28 @@ use crate::util::location::Location;
 use crate::util::files::FileId;
 
 grammar(file_id: FileId);
+
+/// Catches types definition
+pub userTypes: UserDefinedType = {
+    // catches enumerations definition
+    <start:@L> "enum" <end:@R> => {
+        UserDefinedType::Enumeration {
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches structure definition
+    <start:@L> "struct" <end:@R> => {
+        UserDefinedType::Structure {
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches array definition
+    <start:@L> "array" <end:@R> => {
+        UserDefinedType::Array {
+            location: Location{ file_id, range: start..end },
+        }
+    },
+};
 
 /// Catches function
 pub function: Function = {
