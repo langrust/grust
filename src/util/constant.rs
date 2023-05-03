@@ -6,7 +6,7 @@ use super::type_system::Type;
 ///
 /// [Constant] enumeration is used to describe LanGRust expressions.
 ///
-/// It reprensents all possible constants:
+/// It reprensents all possible constant:
 /// - [Constant::Integer] are [i64] integers, `1` becomes `Constant::Integer(1)`
 /// - [Constant::Float] are [f64] floats, `1.0` becomes `Constant::Float(1.0)`
 /// - [Constant::Boolean] is the [bool] type for booleans, `true` becomes
@@ -14,6 +14,22 @@ use super::type_system::Type;
 /// - [Constant::String] are strings of type [String], `"hello world"` becomes
 /// `Constant::String(String::from("hello world"))`
 /// - [Constant::Unit] is the unit type, `()` becomes `Constant::Unit`
+///
+/// # Example
+/// ```rust
+/// use codespan_reporting::files::Files;
+/// use grustine::util::{files, constant::Constant};
+/// use grustine::langrust;
+/// let mut files = files::Files::new();
+/// let file_id = files.add(
+///     "constant_test.gr",
+///     "\"Hello world\""
+/// ).unwrap();
+/// let expr = langrust::constantParser::new()
+///     .parse(file_id, &files.source(file_id).unwrap())
+///     .unwrap();
+/// assert_eq!(Constant::String(String::from("Hello world")), expr);
+/// ```
 #[derive(Debug, PartialEq, Clone)]
 pub enum Constant {
     /// [i64] integers
@@ -34,7 +50,7 @@ impl Constant {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::util::{constants::Constant, type_system::Type};
+    /// use grustine::util::{constant::Constant, type_system::Type};
     /// let c: Constant = Constant::Integer(6);
     /// assert_eq!(c.get_type(), Type::Integer);
     /// ```
