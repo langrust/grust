@@ -24,11 +24,11 @@ mod langrust_ast_constructs {
         let file = langrust::fileParser::new()
             .parse(module_test_id, &files.source(module_test_id).unwrap())
             .unwrap();
-        assert_eq!(file, File::Module(Location::default()));
+        assert_eq!(file, File::Module{ location: Location::default() },);
         
         let file = langrust::fileParser::new()
             .parse(program_test_id, &files.source(program_test_id).unwrap())
             .unwrap();
-        assert_eq!(file, File::Program(Location::default()));
+        assert_eq!(file, File::Program{ location: Location::default() },);
     }
 }

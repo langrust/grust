@@ -5,13 +5,15 @@ use crate::util::location::Location;
 /// Enumerates the different kinds of files in LanGRust.
 pub enum File {
     /// A LanGRust [File::Module] is composed of todo!()
-    Module(
+    Module{
         // todo!()
-        Location
-    ),
+        /// Module location.
+        location: Location,
+    },
     /// A LanGRust [File::Program] is composed of todo!()
-    Program(
+    Program{
         // todo!()
-        Location
-    ),
+        /// Program location.
+        location: Location,
+    },
 }
