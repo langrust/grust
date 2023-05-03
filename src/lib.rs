@@ -86,9 +86,13 @@
 //! [critical systems]: https://en.wikipedia.org/wiki/Critical_system
 //! [Lustre]: https://en.wikipedia.org/wiki/Lustre_(programming_language)
 
+/// Utilitary module.
+pub mod util;
 /// LanGRust AST module.
 pub mod ast;
 
 #[macro_use]
 extern crate lalrpop_util;
 lalrpop_mod!(#[doc="Load parser in src/langrust.lalrpop."] #[allow(missing_docs)] pub langrust);
+
+extern crate codespan_reporting;
