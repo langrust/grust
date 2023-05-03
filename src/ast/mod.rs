@@ -3,3 +3,6 @@ pub mod file;
 
 /// LanGRust [Component](crate::ast::component::Component) AST module.
 pub mod component;
+
+/// LanGRust [Node](crate::ast::node::Node) AST module.
+pub mod node;

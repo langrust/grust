@@ -1,4 +1,5 @@
 use crate::ast::{
+    node::Node,
     component::Component,
     file::File,
 };
@@ -6,6 +7,15 @@ use crate::util::location::Location;
 use crate::util::files::FileId;
 
 grammar(file_id: FileId);
+
+/// Catches node
+pub node: Node = {
+    <start:@L> "node" <end:@R> => {
+        Node {
+            location: Location{ file_id, range: start..end },
+        }
+    },
+};
 
 /// Catches component
 pub component: Component = {
@@ -18,16 +28,33 @@ pub component: Component = {
 
 /// Catches LanGRust modules
 pub module: File = {
-    <start:@L> "module" <end:@R> => File::Module{
+    <start:@L> <n: node> <end:@R> =>  File::Module{
+        nodes: vec![n],
         location: Location{ file_id, range: start..end }
+    },
+    <start:@L> <mut m: module> <n: node> <end:@R> => {
+        m.push_node(n);
+        m.set_location(Location{ file_id, range: start..end });
+        m
     },
 }
 
 /// Catches LanGRust programs
 pub program: File = {
     <start:@L> <c: component> <end:@R> => File::Program{
+        nodes: vec![],
         component: c,
         location: Location{ file_id, range: start..end }
+    },
+    <start:@L> <m: module> <c: component> <end:@R> =>  File::Program{
+        nodes: m.get_nodes(),
+        component: c,
+        location: Location{ file_id, range: start..end }
+    },
+    <start:@L> <mut p: program> <n: node> <end:@R> => {
+        p.push_node(n);
+        p.set_location(Location{ file_id, range: start..end });
+        p
     },
 }
 
