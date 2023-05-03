@@ -88,4 +88,4 @@
 
 #[macro_use]
 extern crate lalrpop_util;
-lalrpop_mod!(pub langrust);
+lalrpop_mod!(#[doc="Load parser in src/langrust.lalrpop."] pub langrust);
