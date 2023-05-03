@@ -10,6 +10,11 @@ use crate::util::files::FileId;
 
 grammar(file_id: FileId);
 
+/// Catches identifiers
+ID: String = {
+    r"\w*[a-zA-Z_]\w*" => String::from(<>),
+};
+
 /// Catches type definition
 pub userType: UserDefinedType = {
     // catches enumeration definition
