@@ -3,7 +3,7 @@ use std::ops::Range;
 use super::files::FileId;
 
 /// Element location in source code for errors display.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Eq, Clone)]
 pub struct Location {
     /// the file identifiant as a [FileId] in case there are multiple files
     pub file_id: FileId,
@@ -17,5 +17,10 @@ impl Location {
             file_id: FileId::default(),
             range: 0..0,
         };
+    }
+}
+impl PartialEq for Location {
+    fn eq(&self, _other: &Self) -> bool {
+        true
     }
 }

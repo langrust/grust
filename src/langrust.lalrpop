@@ -1,14 +1,26 @@
 use crate::ast::{
     file::File,
 };
+use crate::util::location::Location;
+use crate::util::files::FileId;
 
-grammar;
+grammar(file_id: FileId);
+
+/// Catches LanGRust modules
+pub module: File = {
+    <start:@L> "module" <end:@R> => File::Module(
+        Location{ file_id, range: start..end }
+    ),
+}
+
+/// Catches LanGRust programs
+pub program: File = {
+    <start:@L> "program" <end:@R> => File::Program(
+        Location{ file_id, range: start..end }
+    ),
+}
 
 pub file: File = {
-    "module" => {
-        File::Module()
-    },
-    "program" => {
-        File::Program()
-    }
+    <m: module> => m,
+    <p: program> => p,
 }
