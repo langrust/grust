@@ -25,7 +25,8 @@ pub module: File = {
 
 /// Catches LanGRust programs
 pub program: File = {
-    <start:@L> "program" <end:@R> => File::Program{
+    <start:@L> <c: component> <end:@R> => File::Program{
+        component: c,
         location: Location{ file_id, range: start..end }
     },
 }
