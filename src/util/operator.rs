@@ -40,6 +40,24 @@ pub enum BinaryOperator {
     /// Test "lower", `x < y`.
     Low,
 }
+impl ToString for BinaryOperator {
+    fn to_string(&self) -> String {
+        match self {
+            BinaryOperator::Mul => String::from(" * "),
+            BinaryOperator::Div => String::from(" / "),
+            BinaryOperator::Add => String::from(" + "),
+            BinaryOperator::Sub => String::from(" - "),
+            BinaryOperator::And => String::from(" && "),
+            BinaryOperator::Or => String::from(" || "),
+            BinaryOperator::Eq => String::from(" == "),
+            BinaryOperator::Dif => String::from(" != "),
+            BinaryOperator::Geq => String::from(" >= "),
+            BinaryOperator::Leq => String::from(" <= "),
+            BinaryOperator::Grt => String::from(" > "),
+            BinaryOperator::Low => String::from(" < "),
+        }
+    }
+}
 
 /// LanGrust unary operators.
 /// 
@@ -56,6 +74,15 @@ pub enum UnaryOperator {
     /// Use of brackets, `(x)`.
     Brackets,
 }
+impl ToString for UnaryOperator {
+    fn to_string(&self) -> String {
+        match self {
+            UnaryOperator::Neg => String::from("-"),
+            UnaryOperator::Not => String::from("!"),
+            UnaryOperator::Brackets => String::from("(_)"),
+        }
+    }
+}
 
 /// Other builtin operators in LanGrust.
 /// 
@@ -68,4 +95,12 @@ pub enum OtherOperator {
     IfThenElse,
     /// The `print(my_message)` LanGRust expression.
     Print,
+}
+impl ToString for OtherOperator {
+    fn to_string(&self) -> String {
+        match self {
+            OtherOperator::IfThenElse => String::from("if_then_else"),
+            OtherOperator::Print => String::from("print"),
+        }
+    }
 }
