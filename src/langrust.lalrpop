@@ -149,6 +149,28 @@ term: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches structure definition as expressions
+    <start:@L> <name: ID> "{" <fields: hash<ID, expression>> "}" <end:@R> => {
+        Expression::Structure {
+            name,
+            fields,
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches array definition as expressions
+    <start:@L> "[" <v_expr: list<expression>> "]" <end:@R> => {
+        Expression::Array {
+            elements: v_expr,
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches unified array definition as expressions
+    <start:@L> "[" <e: expression> ";" <n: r"\d+"> "]" <end:@R> => {
+        Expression::Array {
+            elements: vec![e; usize::from_str(n).unwrap()],
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches unary operations as expression first or a term
@@ -262,6 +284,28 @@ streamTerm: StreamExpression = {
                 location: Location{ file_id, range: start..end }
             },
             inputs: vec![e],
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches structure definition as stream expressions
+    <start:@L> <name: ID> "{" <fields: hash<ID, streamExpression>> "}" <end:@R> => {
+        StreamExpression::Structure {
+            name,
+            fields,
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches array definition as stream expressions
+    <start:@L> "[" <v_expr: list<streamExpression>> "]" <end:@R> => {
+        StreamExpression::Array {
+            elements: v_expr,
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches unified array definition as stream expressions
+    <start:@L> "[" <e: streamExpression> ";" <n: r"\d+"> "]" <end:@R> => {
+        StreamExpression::Array {
+            elements: vec![e; usize::from_str(n).unwrap()],
             location: Location{ file_id, range: start..end }
         }
     },

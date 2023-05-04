@@ -162,6 +162,15 @@ mod langrust_ast_constructs {
         let file_id10 = files
             .add("ifthenelse_test.gr", "if b then x else y")
             .unwrap();
+        let file_id11 = files
+            .add("struct_test.gr", "Point { x: 3, y: 0, }")
+            .unwrap();
+        let file_id12 = files
+            .add("array_test.gr", "[1, 2, 3]")
+            .unwrap();
+        let file_id13 = files
+            .add("unified_array_test.gr", "[0.01; 3]")
+            .unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -327,6 +336,75 @@ mod langrust_ast_constructs {
             },
             stream_expression
         );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id11, &files.source(file_id11).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::Structure {
+                name: String::from("Point"),
+                fields: vec![
+                    (
+                        String::from("x"),
+                        StreamExpression::Constant {
+                            constant: Constant::Integer(3),
+                            location: Location::default()
+                        }
+                    ),
+                    (
+                        String::from("y"),
+                        StreamExpression::Constant {
+                            constant: Constant::Integer(0),
+                            location: Location::default()
+                        }
+                    )
+                ],
+                location: Location::default() },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id12, &files.source(file_id12).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::Array {
+                elements: vec![
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        location: Location::default()
+                    },
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(2),
+                        location: Location::default()
+                    },
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(3),
+                        location: Location::default()
+                    }
+                ],
+                location: Location::default() },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id13, &files.source(file_id13).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::Array {
+                elements: vec![
+                    StreamExpression::Constant {
+                        constant: Constant::Float(0.01),
+                        location: Location::default()
+                    },
+                    StreamExpression::Constant {
+                        constant: Constant::Float(0.01),
+                        location: Location::default()
+                    },
+                    StreamExpression::Constant {
+                        constant: Constant::Float(0.01),
+                        location: Location::default()
+                    }
+                ],
+                location: Location::default() },
+            stream_expression
+        );
     }
 
     #[test]
@@ -349,6 +427,15 @@ mod langrust_ast_constructs {
             .unwrap();
         let file_id10 = files
             .add("ifthenelse_test.gr", "if b then x else y")
+            .unwrap();
+        let file_id11 = files
+            .add("struct_test.gr", "Point { x: 3, y: 0, }")
+            .unwrap();
+        let file_id12 = files
+            .add("array_test.gr", "[1, 2, 3]")
+            .unwrap();
+        let file_id13 = files
+            .add("unified_array_test.gr", "[0.01; 3]")
             .unwrap();
 
         let expression = langrust::expressionParser::new()
@@ -583,6 +670,75 @@ mod langrust_ast_constructs {
                 ],
                 location: Location::default()
             },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id11, &files.source(file_id11).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Structure {
+                name: String::from("Point"),
+                fields: vec![
+                    (
+                        String::from("x"),
+                        Expression::Constant {
+                            constant: Constant::Integer(3),
+                            location: Location::default()
+                        }
+                    ),
+                    (
+                        String::from("y"),
+                        Expression::Constant {
+                            constant: Constant::Integer(0),
+                            location: Location::default()
+                        }
+                    )
+                ],
+                location: Location::default() },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id12, &files.source(file_id12).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Array {
+                elements: vec![
+                    Expression::Constant {
+                        constant: Constant::Integer(1),
+                        location: Location::default()
+                    },
+                    Expression::Constant {
+                        constant: Constant::Integer(2),
+                        location: Location::default()
+                    },
+                    Expression::Constant {
+                        constant: Constant::Integer(3),
+                        location: Location::default()
+                    }
+                ],
+                location: Location::default() },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id13, &files.source(file_id13).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Array {
+                elements: vec![
+                    Expression::Constant {
+                        constant: Constant::Float(0.01),
+                        location: Location::default()
+                    },
+                    Expression::Constant {
+                        constant: Constant::Float(0.01),
+                        location: Location::default()
+                    },
+                    Expression::Constant {
+                        constant: Constant::Float(0.01),
+                        location: Location::default()
+                    }
+                ],
+                location: Location::default() },
             expression
         );
     }

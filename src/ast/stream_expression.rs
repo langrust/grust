@@ -2,7 +2,7 @@ use crate::util::{constant::Constant, location::Location};
 
 use super::expression::Expression;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression AST.
 pub enum StreamExpression {
     /// Constant stream expression.
@@ -25,6 +25,22 @@ pub enum StreamExpression {
         expression: Expression,
         /// The inputs to the expression.
         inputs: Vec<StreamExpression>,
+        /// Stream expression location.
+        location: Location,
+    },
+    /// Structure stream expression.
+    Structure {
+        /// The structure name.
+        name: String,
+        /// The fields associated with their expressions.
+        fields: Vec<(String, StreamExpression)>,
+        /// Stream expression location.
+        location: Location,
+    },
+    /// Structure stream expression.
+    Array {
+        /// The elements inside the array.
+        elements: Vec<StreamExpression>,
         /// Stream expression location.
         location: Location,
     },
