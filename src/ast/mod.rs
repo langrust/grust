@@ -12,3 +12,7 @@ pub mod function;
 
 /// LanGRust [UserDefinedType](crate::ast::user_defined_type::UserDefinedType) AST module.
 pub mod user_defined_type;
+
+
+/// LanGRust [StreamExpression](crate::ast::stream_expression::StreamExpression) AST module.
+pub mod stream_expression;
