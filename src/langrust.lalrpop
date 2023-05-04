@@ -103,6 +103,21 @@ pub term: Expression = {
     },
 };
 
+/// Catches unary operations as expression first or a term
+unaryExpression: Expression = {
+    <start:@L> <start_op:@L> <op: unaryOperator> <end_op:@R> <e: term> <end:@R> => {
+        Expression::Application {
+            expression: Box::new(Expression::Call {
+                id: op.to_string(),
+                location: Location{ file_id, range: start_op..end_op }
+            }),
+            inputs: vec![e],
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    term,
+};
+
 /// Helper for binary operations. Tries to parse a binary operation
 /// of form `E Op E`, otherwise parses an expression of form `E`.
 auxBinaryExpression<Op,E>: Expression = {
