@@ -8,6 +8,7 @@ use crate::ast::{
     component::Component,
     file::File,
 };
+use crate::util::operator::{UnaryOperator, BinaryOperator};
 use crate::util::constant::Constant;
 use crate::util::type_system::Type;
 use crate::util::location::Location;
@@ -51,6 +52,36 @@ pub constant: Constant = {
     r"\d+\.\d+" => Constant::Float(f64::from_str(<>).unwrap()),
     r"\d+" => Constant::Integer(i64::from_str(<>).unwrap()),
     <enumeration:ID>"."<elem:ID> => Constant::Enumeration(enumeration, elem)
+};
+
+/// Catches unary operator
+unaryOperator: UnaryOperator = {
+    "-" => UnaryOperator::Neg,
+    "!" => UnaryOperator::Not,
+};
+/// Catches multiplication and division
+firstBinaryOperator: BinaryOperator = {
+    "*" => BinaryOperator::Mul,
+    "/" => BinaryOperator::Div,
+};
+/// Catches addition and subtraction
+secondBinaryOperator: BinaryOperator = {
+    "+" => BinaryOperator::Add,
+    "-" => BinaryOperator::Sub,
+};
+/// Catches comparators
+thirdBinaryOperator: BinaryOperator = {
+    "==" => BinaryOperator::Eq,
+    "!=" => BinaryOperator::Dif,
+    ">=" => BinaryOperator::Geq,
+    "<=" => BinaryOperator::Leq,
+    ">" => BinaryOperator::Grt,
+    "<" => BinaryOperator::Low,
+};
+/// Catches logical operator
+fourthBinaryOperator: BinaryOperator = {
+    "&&" => BinaryOperator::And,
+    "||" => BinaryOperator::Or,
 };
 
 /// Catches terms as stream expressions
