@@ -133,6 +133,12 @@ auxBinaryExpression<Op,E>: Expression = {
     },
     E,
 };
+/// Catches binary operations as stream expressions
+firstBinaryExpression: Expression = auxBinaryExpression<firstBinaryOperator, unaryExpression>;
+secondBinaryExpression: Expression = auxBinaryExpression<secondBinaryOperator, firstBinaryExpression>;
+thirdBinaryExpression: Expression = auxBinaryExpression<thirdBinaryOperator, secondBinaryExpression>;
+fourthBinaryExpression: Expression = auxBinaryExpression<fourthBinaryOperator, thirdBinaryExpression>;
+
 
 /// Catches terms as stream expressions
 pub streamTerm: StreamExpression = {
