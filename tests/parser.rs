@@ -144,7 +144,7 @@ mod langrust_ast_constructs {
         let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
         let file_id2 = files.add("signal_call_test.gr", "x").unwrap();
 
-        let stream_expression = langrust::streamTermParser::new()
+        let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
         assert_eq!(
@@ -154,7 +154,7 @@ mod langrust_ast_constructs {
             },
             stream_expression
         );
-        let stream_expression = langrust::streamTermParser::new()
+        let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
         assert_eq!(
@@ -172,7 +172,7 @@ mod langrust_ast_constructs {
         let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
         let file_id2 = files.add("element_call_test.gr", "x").unwrap();
 
-        let expression = langrust::termParser::new()
+        let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
         assert_eq!(
@@ -182,7 +182,7 @@ mod langrust_ast_constructs {
             },
             expression
         );
-        let expression = langrust::termParser::new()
+        let expression = langrust::expressionParser::new()
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
         assert_eq!(
