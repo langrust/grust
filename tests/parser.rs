@@ -165,12 +165,8 @@ mod langrust_ast_constructs {
         let file_id11 = files
             .add("struct_test.gr", "Point { x: 3, y: 0, }")
             .unwrap();
-        let file_id12 = files
-            .add("array_test.gr", "[1, 2, 3]")
-            .unwrap();
-        let file_id13 = files
-            .add("unified_array_test.gr", "[0.01; 3]")
-            .unwrap();
+        let file_id12 = files.add("array_test.gr", "[1, 2, 3]").unwrap();
+        let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]").unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -358,7 +354,8 @@ mod langrust_ast_constructs {
                         }
                     )
                 ],
-                location: Location::default() },
+                location: Location::default()
+            },
             stream_expression
         );
         let stream_expression = langrust::streamExpressionParser::new()
@@ -380,7 +377,8 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }
                 ],
-                location: Location::default() },
+                location: Location::default()
+            },
             stream_expression
         );
         let stream_expression = langrust::streamExpressionParser::new()
@@ -402,7 +400,8 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }
                 ],
-                location: Location::default() },
+                location: Location::default()
+            },
             stream_expression
         );
     }
@@ -431,12 +430,8 @@ mod langrust_ast_constructs {
         let file_id11 = files
             .add("struct_test.gr", "Point { x: 3, y: 0, }")
             .unwrap();
-        let file_id12 = files
-            .add("array_test.gr", "[1, 2, 3]")
-            .unwrap();
-        let file_id13 = files
-            .add("unified_array_test.gr", "[0.01; 3]")
-            .unwrap();
+        let file_id12 = files.add("array_test.gr", "[1, 2, 3]").unwrap();
+        let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]").unwrap();
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -694,7 +689,8 @@ mod langrust_ast_constructs {
                         }
                     )
                 ],
-                location: Location::default() },
+                location: Location::default()
+            },
             expression
         );
         let expression = langrust::expressionParser::new()
@@ -716,7 +712,8 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }
                 ],
-                location: Location::default() },
+                location: Location::default()
+            },
             expression
         );
         let expression = langrust::expressionParser::new()
@@ -738,7 +735,8 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }
                 ],
-                location: Location::default() },
+                location: Location::default()
+            },
             expression
         );
     }
