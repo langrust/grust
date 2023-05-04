@@ -141,12 +141,8 @@ mod langrust_ast_constructs {
     #[test]
     fn stream_expression() {
         let mut files = files::Files::new();
-        let file_id1 = files
-            .add("constant_test.gr", "Color.Yellow")
-            .unwrap();
-        let file_id2 = files
-            .add("signal_call_test.gr", "x")
-            .unwrap();
+        let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
+        let file_id2 = files.add("signal_call_test.gr", "x").unwrap();
 
         let constant = langrust::streamTermParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -173,12 +169,8 @@ mod langrust_ast_constructs {
     #[test]
     fn expression() {
         let mut files = files::Files::new();
-        let file_id1 = files
-            .add("constant_test.gr", "Color.Yellow")
-            .unwrap();
-        let file_id2 = files
-            .add("element_call_test.gr", "x")
-            .unwrap();
+        let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
+        let file_id2 = files.add("element_call_test.gr", "x").unwrap();
 
         let constant = langrust::termParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
