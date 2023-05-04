@@ -158,6 +158,12 @@ mod langrust_ast_constructs {
         let file_id7 = files
             .add("print_test.gr", "print(\"Hello world\")")
             .unwrap();
+        let file_id8 = files
+            .add(
+                "node_application_test.gr",
+                "my_node(my_input1, my_input2).my_signal",
+            )
+            .unwrap();
         let file_id10 = files
             .add("ifthenelse_test.gr", "if b then x else y")
             .unwrap();
@@ -300,6 +306,27 @@ mod langrust_ast_constructs {
                     constant: Constant::String(String::from("Hello world")),
                     location: Location::default()
                 }],
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id8, &files.source(file_id8).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::NodeApplication {
+                node: String::from("my_node"),
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: String::from("my_input1"),
+                        location: Location::default()
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("my_input2"),
+                        location: Location::default()
+                    }
+                ],
+                signal: String::from("my_signal"),
                 location: Location::default()
             },
             stream_expression

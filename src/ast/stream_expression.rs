@@ -28,6 +28,17 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
+    /// Node application stream expression.
+    NodeApplication {
+        /// The node applied.
+        node: String,
+        /// The inputs to the expression.
+        inputs: Vec<StreamExpression>,
+        /// The signal retrieved.
+        signal: String,
+        /// Stream expression location.
+        location: Location,
+    },
     /// Structure stream expression.
     Structure {
         /// The structure name.
