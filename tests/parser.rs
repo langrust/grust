@@ -152,6 +152,7 @@ mod langrust_ast_constructs {
         let file_id3 = files.add("brackets_test.gr", "(3)").unwrap();
         let file_id4 = files.add("unary_test.gr", "-3").unwrap();
         let file_id5 = files.add("binary_test.gr", "4*5-3").unwrap();
+        let file_id6 = files.add("map_application_test.gr", "(x*y).map(sqrt)").unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -236,6 +237,38 @@ mod langrust_ast_constructs {
                     },
                     StreamExpression::Constant {
                         constant: Constant::Integer(3),
+                        location: Location::default()
+                    },
+                ],
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id6, &files.source(file_id6).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::MapApplication {
+                expression: Expression::Call {
+                    id: String::from("sqrt"),
+                    location: Location::default()
+                },
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        expression: Expression::Call {
+                            id: BinaryOperator::Mul.to_string(),
+                            location: Location::default()
+                        },
+                        inputs: vec![
+                            StreamExpression::SignalCall {
+                                id: String::from("x"),
+                                location: Location::default()
+                            },
+                            StreamExpression::SignalCall {
+                                id: String::from("y"),
+                                location: Location::default()
+                            },
+                        ],
                         location: Location::default()
                     },
                 ],
