@@ -159,6 +159,9 @@ mod langrust_ast_constructs {
         let file_id7 = files
             .add("print_test.gr", "print(\"Hello world\")")
             .unwrap();
+        let file_id10 = files
+            .add("ifthenelse_test.gr", "if b then x else y")
+            .unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -297,6 +300,33 @@ mod langrust_ast_constructs {
             },
             stream_expression
         );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id10, &files.source(file_id10).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::MapApplication {
+                expression: Expression::Call {
+                    id: OtherOperator::IfThenElse.to_string(),
+                    location: Location::default()
+                },
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: String::from("b"),
+                        location: Location::default()
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        location: Location::default()
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("y"),
+                        location: Location::default()
+                    },
+                ],
+                location: Location::default()
+            },
+            stream_expression
+        );
     }
 
     #[test]
@@ -316,6 +346,9 @@ mod langrust_ast_constructs {
         let file_id8 = files.add("abstraction_test.gr", "|x, y| x + y").unwrap();
         let file_id9 = files
             .add("typed_abstraction_test.gr", "|x: int, y: int| x + y")
+            .unwrap();
+        let file_id10 = files
+            .add("ifthenelse_test.gr", "if b then x else y")
             .unwrap();
 
         let expression = langrust::expressionParser::new()
@@ -521,6 +554,33 @@ mod langrust_ast_constructs {
                     ],
                     location: Location::default()
                 }),
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id10, &files.source(file_id10).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Application {
+                expression: Box::new(Expression::Call {
+                    id: OtherOperator::IfThenElse.to_string(),
+                    location: Location::default()
+                }),
+                inputs: vec![
+                    Expression::Call {
+                        id: String::from("b"),
+                        location: Location::default()
+                    },
+                    Expression::Call {
+                        id: String::from("x"),
+                        location: Location::default()
+                    },
+                    Expression::Call {
+                        id: String::from("y"),
+                        location: Location::default()
+                    },
+                ],
                 location: Location::default()
             },
             expression
