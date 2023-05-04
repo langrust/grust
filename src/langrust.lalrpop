@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::ast::{
+    expression::Expression,
     stream_expression::StreamExpression,
     user_defined_type::UserDefinedType,
     function::Function,
@@ -88,6 +89,16 @@ fourthBinaryOperator: BinaryOperator = {
 pub streamTerm: StreamExpression = {
     <start:@L> <c: constant> <end:@R> => {
         StreamExpression::Constant {
+            constant: c,
+            location: Location{ file_id, range: start..end },
+        }
+    },
+};
+
+/// Catches terms as expressions
+pub term: Expression = {
+    <start:@L> <c: constant> <end:@R> => {
+        Expression::Constant {
             constant: c,
             location: Location{ file_id, range: start..end },
         }

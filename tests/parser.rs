@@ -2,7 +2,7 @@
 mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
     use grustine::ast::{
-        component::Component, file::File, function::Function, node::Node,
+        component::Component, expression::Expression, file::File, function::Function, node::Node,
         stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
@@ -150,6 +150,25 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             StreamExpression::Constant {
+                constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
+                location: Location::default()
+            },
+            constant
+        );
+    }
+
+    #[test]
+    fn expression() {
+        let mut files = files::Files::new();
+        let file_id1 = files
+            .add("constant_expression_test.gr", "Color.Yellow")
+            .unwrap();
+
+        let constant = langrust::termParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Constant {
                 constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
                 location: Location::default()
             },
