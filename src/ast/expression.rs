@@ -7,7 +7,7 @@ pub enum Expression {
     Constant{
         /// The constant.
         constant: Constant,
-        /// Stream expression location.
+        /// Expression location.
         location: Location,
     },
 }
