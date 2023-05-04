@@ -276,6 +276,15 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end },
         }
     },
+    // catches node applications as stream expressions
+    <start:@L> <node: ID> "(" <v_expr: list<streamExpression>> ")" "." <signal: ID> <end:@R> => {
+        StreamExpression::NodeApplication {
+            node,
+            inputs: v_expr,
+            signal,
+            location: Location{ file_id, range: start..end }
+        }
+    },
     // catches print applications as stream expressions
     <start:@L> "print" "(" <e: streamExpression> ")" <end:@R> => {
         StreamExpression::MapApplication {
