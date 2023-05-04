@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::ast::{
+    stream_expression::StreamExpression,
     user_defined_type::UserDefinedType,
     function::Function,
     node::Node,
@@ -50,6 +51,16 @@ pub constant: Constant = {
     r"\d+\.\d+" => Constant::Float(f64::from_str(<>).unwrap()),
     r"\d+" => Constant::Integer(i64::from_str(<>).unwrap()),
     <enumeration:ID>"."<elem:ID> => Constant::Enumeration(enumeration, elem)
+};
+
+/// Catches terms as stream expressions
+pub funTerm: StreamExpression = {
+    <start:@L> <c: constant> <end:@R> => {
+        StreamExpression::Constant {
+            constant: c,
+            location: Location{ file_id, range: start..end },
+        }
+    },
 };
 
 /// Catches type definition
