@@ -142,7 +142,7 @@ mod langrust_ast_constructs {
     fn stream_expression() {
         let mut files = files::Files::new();
         let file_id1 = files
-            .add("constant_stream_expression_test.gr", "Color.Yellow")
+            .add("constant_test.gr", "Color.Yellow")
             .unwrap();
         let file_id2 = files
             .add("signal_call_test.gr", "x")
@@ -174,7 +174,7 @@ mod langrust_ast_constructs {
     fn expression() {
         let mut files = files::Files::new();
         let file_id1 = files
-            .add("constant_expression_test.gr", "Color.Yellow")
+            .add("constant_test.gr", "Color.Yellow")
             .unwrap();
 
         let constant = langrust::termParser::new()
