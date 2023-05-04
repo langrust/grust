@@ -654,36 +654,32 @@ mod langrust_ast_constructs {
                             ],
                             location: Location::default()
                         },
-                        Some(
-                            StreamExpression::MapApplication {
-                                expression: Expression::Call {
-                                    id: BinaryOperator::Low.to_string(),
+                        Some(StreamExpression::MapApplication {
+                            expression: Expression::Call {
+                                id: BinaryOperator::Low.to_string(),
+                                location: Location::default()
+                            },
+                            inputs: vec![
+                                StreamExpression::SignalCall {
+                                    id: String::from("x"),
                                     location: Location::default()
                                 },
-                                inputs: vec![
-                                    StreamExpression::SignalCall {
-                                        id: String::from("x"),
-                                        location: Location::default()
-                                    },
-                                    StreamExpression::Constant {
-                                        constant: Constant::Integer(0),
-                                        location: Location::default()
-                                    }
-                                ],
-                                location: Location::default()
-                            }
-                        ),
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default()
+                                }
+                            ],
+                            location: Location::default()
+                        }),
                         StreamExpression::MapApplication {
                             expression: Expression::Call {
                                 id: UnaryOperator::Neg.to_string(),
                                 location: Location::default()
                             },
-                            inputs: vec![
-                                StreamExpression::Constant {
-                                    constant: Constant::Integer(1),
-                                    location: Location::default()
-                                }
-                            ],
+                            inputs: vec![StreamExpression::Constant {
+                                constant: Constant::Integer(1),
+                                location: Location::default()
+                            }],
                             location: Location::default()
                         }
                     ),
@@ -1142,36 +1138,32 @@ mod langrust_ast_constructs {
                             ],
                             location: Location::default()
                         },
-                        Some(
-                            Expression::Application {
-                                expression: Box::new(Expression::Call {
-                                    id: BinaryOperator::Low.to_string(),
-                                    location: Location::default()
-                                }),
-                                inputs: vec![
-                                    Expression::Call {
-                                        id: String::from("x"),
-                                        location: Location::default()
-                                    },
-                                    Expression::Constant {
-                                        constant: Constant::Integer(0),
-                                        location: Location::default()
-                                    }
-                                ],
+                        Some(Expression::Application {
+                            expression: Box::new(Expression::Call {
+                                id: BinaryOperator::Low.to_string(),
                                 location: Location::default()
-                            }
-                        ),
+                            }),
+                            inputs: vec![
+                                Expression::Call {
+                                    id: String::from("x"),
+                                    location: Location::default()
+                                },
+                                Expression::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default()
+                                }
+                            ],
+                            location: Location::default()
+                        }),
                         Expression::Application {
                             expression: Box::new(Expression::Call {
                                 id: UnaryOperator::Neg.to_string(),
                                 location: Location::default()
                             }),
-                            inputs: vec![
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    location: Location::default()
-                                }
-                            ],
+                            inputs: vec![Expression::Constant {
+                                constant: Constant::Integer(1),
+                                location: Location::default()
+                            }],
                             location: Location::default()
                         }
                     ),

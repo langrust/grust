@@ -5,7 +5,6 @@ use super::{
 };
 
 #[derive(Debug, PartialEq)]
-
 /// Enumerates the different kinds of files in LanGRust.
 pub enum File {
     /// A LanGRust [File::Module] is composed of todo!()
