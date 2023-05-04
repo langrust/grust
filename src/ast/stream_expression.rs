@@ -57,7 +57,7 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
-    /// Structure stream expression.
+    /// Array stream expression.
     Array {
         /// The elements inside the array.
         elements: Vec<StreamExpression>,
