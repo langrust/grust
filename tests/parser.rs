@@ -144,7 +144,7 @@ mod langrust_ast_constructs {
         let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
         let file_id2 = files.add("signal_call_test.gr", "x").unwrap();
 
-        let constant = langrust::streamTermParser::new()
+        let stream_expression = langrust::streamTermParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
         assert_eq!(
@@ -152,7 +152,7 @@ mod langrust_ast_constructs {
                 constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
                 location: Location::default()
             },
-            constant
+            stream_expression
         );
         let stream_expression = langrust::streamTermParser::new()
             .parse(file_id2, &files.source(file_id2).unwrap())
@@ -172,7 +172,7 @@ mod langrust_ast_constructs {
         let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
         let file_id2 = files.add("element_call_test.gr", "x").unwrap();
 
-        let constant = langrust::termParser::new()
+        let expression = langrust::termParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
         assert_eq!(
@@ -180,7 +180,7 @@ mod langrust_ast_constructs {
                 constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
                 location: Location::default()
             },
-            constant
+            expression
         );
         let expression = langrust::termParser::new()
             .parse(file_id2, &files.source(file_id2).unwrap())
