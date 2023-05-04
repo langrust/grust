@@ -1,6 +1,6 @@
 use crate::util::{constant::Constant, location::Location};
 
-use super::expression::Expression;
+use super::{expression::Expression, pattern::Pattern};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression AST.
@@ -61,6 +61,15 @@ pub enum StreamExpression {
     Array {
         /// The elements inside the array.
         elements: Vec<StreamExpression>,
+        /// Stream expression location.
+        location: Location,
+    },
+    /// Pattern matching stream expression.
+    Match {
+        /// The stream expression to match.
+        expression: Box<StreamExpression>,
+        /// The different matching cases.
+        arms: Vec<(Pattern, Option<StreamExpression>, StreamExpression)>,
         /// Stream expression location.
         location: Location,
     },

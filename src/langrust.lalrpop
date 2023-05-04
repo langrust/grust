@@ -144,7 +144,11 @@ pub pattern: Pattern = {
             location: Location{ file_id, range: start..end }
         }
     },
-}
+};
+/// Catches matching arms
+arm<E>: (Pattern, Option<E>, E) = {
+    <pattern> <("if" <E>)?> "=>" <E> => (<>)
+};
 
 /// Catches terms as expressions
 term: Expression = {
@@ -182,6 +186,14 @@ term: Expression = {
             }),
             inputs: v_expr,
             location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches pattern matching as expressions
+    <start:@L> "match" <expr: expression> "with" <v_arm: list<arm<expression>>> "end" <end:@R> => {
+        Expression::Match {
+            expression: Box::new(expr),
+            arms: v_arm,
+            location: Location{ file_id, range: start..end }
         }
     },
     // catches print applications as expressions
@@ -344,6 +356,14 @@ streamTerm: StreamExpression = {
             node,
             inputs: v_expr,
             signal,
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches pattern matching as stream expressions
+    <start:@L> "match" <expr: streamExpression> "with" <v_arm: list<arm<streamExpression>>> "end" <end:@R> => {
+        StreamExpression::Match {
+            expression: Box::new(expr),
+            arms: v_arm,
             location: Location{ file_id, range: start..end }
         }
     },

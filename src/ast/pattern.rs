@@ -1,6 +1,6 @@
 use crate::util::{constant::Constant, location::Location};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// LanGRust matching pattern AST.
 pub enum Pattern {
     /// Identifier pattern, gives a name to the matching expression.

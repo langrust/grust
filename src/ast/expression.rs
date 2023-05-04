@@ -1,5 +1,7 @@
 use crate::util::{constant::Constant, location::Location, type_system::Type};
 
+use crate::ast::pattern::Pattern;
+
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust expression AST.
 pub enum Expression {
@@ -57,6 +59,15 @@ pub enum Expression {
     Array {
         /// The elements inside the array.
         elements: Vec<Expression>,
+        /// Expression location.
+        location: Location,
+    },
+    /// Pattern matching expression.
+    Match {
+        /// The expression to match.
+        expression: Box<Expression>,
+        /// The different matching cases.
+        arms: Vec<(Pattern, Option<Expression>, Expression)>,
         /// Expression location.
         location: Location,
     },
