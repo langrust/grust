@@ -129,6 +129,17 @@ term: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches function applications as expressions
+    <start:@L> <fun_name: ID> <end_fun:@R> "(" <v_expr: list<expression>> ")" <end:@R> => {
+        Expression::Application {
+            expression: Box::new(Expression::Call {
+                id: fun_name,
+                location: Location{ file_id, range: start..end_fun }
+            }),
+            inputs: v_expr,
+            location: Location{ file_id, range: start..end },
+        }
+    },
 };
 
 /// Catches unary operations as expression first or a term
