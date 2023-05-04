@@ -210,6 +210,14 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches map applications as stream expressions
+    <start:@L> "(" <v_expr: list<streamExpression>> ").map" "(" <f: expression> ")" <end:@R> => {
+        StreamExpression::MapApplication {
+            expression: f,
+            inputs: v_expr,
+            location: Location{ file_id, range: start..end },
+        }
+    },
 };
 
 /// Catches unary operations as stream expression first or a term
