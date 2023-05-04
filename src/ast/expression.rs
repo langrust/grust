@@ -17,4 +17,13 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
+    /// Application expression.
+    Application {
+        /// The expression applied.
+        expression: Box<Expression>,
+        /// The inputs to the expression.
+        inputs: Vec<Expression>,
+        /// Expression location.
+        location: Location,
+    },
 }
