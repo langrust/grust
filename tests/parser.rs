@@ -149,6 +149,7 @@ mod langrust_ast_constructs {
         let mut files = files::Files::new();
         let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
         let file_id2 = files.add("signal_call_test.gr", "x").unwrap();
+        let file_id3 = files.add("brackets_test.gr", "(3)").unwrap();
         let file_id4 = files.add("unary_test.gr", "-3").unwrap();
         let file_id5 = files.add("binary_test.gr", "4*5-3").unwrap();
 
@@ -168,6 +169,23 @@ mod langrust_ast_constructs {
         assert_eq!(
             StreamExpression::SignalCall {
                 id: String::from("x"),
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id3, &files.source(file_id3).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::MapApplication {
+                expression: Expression::Call {
+                    id: UnaryOperator::Brackets.to_string(),
+                    location: Location::default()
+                },
+                inputs: vec![StreamExpression::Constant {
+                    constant: Constant::Integer(3),
+                    location: Location::default()
+                },],
                 location: Location::default()
             },
             stream_expression
