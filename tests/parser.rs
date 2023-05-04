@@ -164,6 +164,9 @@ mod langrust_ast_constructs {
                 "my_node(my_input1, my_input2).my_signal",
             )
             .unwrap();
+        let file_id9 = files
+            .add("fby_test.gr", "0 fby x + 1")
+            .unwrap();
         let file_id10 = files
             .add("ifthenelse_test.gr", "if b then x else y")
             .unwrap();
@@ -327,6 +330,33 @@ mod langrust_ast_constructs {
                     }
                 ],
                 signal: String::from("my_signal"),
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id9, &files.source(file_id9).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::MapApplication {
+                    expression: Expression::Call {
+                        id: BinaryOperator::Add.to_string(),
+                        location: Location::default()
+                    },
+                    inputs: vec![
+                        StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            location: Location::default()
+                        },
+                        StreamExpression::Constant {
+                            constant: Constant::Integer(1),
+                            location: Location::default()
+                        },
+                    ],
+                    location: Location::default()
+                }),
                 location: Location::default()
             },
             stream_expression
