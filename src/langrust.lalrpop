@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::ast::{
+    pattern::Pattern,
     expression::Expression,
     stream_expression::StreamExpression,
     user_defined_type::UserDefinedType,
@@ -99,6 +100,51 @@ fourthBinaryOperator: BinaryOperator = {
     "&&" => BinaryOperator::And,
     "||" => BinaryOperator::Or,
 };
+
+/// Catches patterns
+pub pattern: Pattern = {
+    // catches identifier pattern
+    <start:@L> <name: ID> <end:@R> => {
+        Pattern::Identifier {
+            name, 
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches constant pattern
+    <start:@L> <c: constant> <end:@R> => {
+        Pattern::Constant {
+            constant: c, 
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches strcuture patterns
+    <start:@L> <name: ID> "{" <fields: hash<ID, pattern>> "}" <end:@R> => {
+        Pattern::Structure {
+            name,
+            fields,
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches optional patterns with value
+    <start:@L> "some(" <p: pattern> ")" <end:@R> => {
+        Pattern::Some {
+            pattern: Box::new(p),
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches optional patterns without value
+    <start:@L> "none" <end:@R> => {
+        Pattern::None {
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches the default patterns
+    <start:@L> "_" <end:@R> => {
+        Pattern::Default {
+            location: Location{ file_id, range: start..end }
+        }
+    },
+}
 
 /// Catches terms as expressions
 term: Expression = {

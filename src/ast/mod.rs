@@ -18,3 +18,6 @@ pub mod stream_expression;
 
 /// LanGRust [Expression](crate::ast::expression::Expression) AST module.
 pub mod expression;
+
+/// LanGRust [Pattern](crate::ast::pattern::Pattern) AST module.
+pub mod pattern;
