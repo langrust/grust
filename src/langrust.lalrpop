@@ -170,18 +170,24 @@ unaryStreamExpression: StreamExpression = {
 /// Helper for binary operations. Tries to parse a binary operation
 /// of form `E Op E`, otherwise parses a stream expression of form `E`.
 auxBinaryStreamExpression<Op,E>: StreamExpression = {
-    <start:@L> <e1: auxBinaryExpression<Op,E>> <start_op:@L> <op: Op> <end_op:@R> <e2: E> <end:@R> => {
+    <start:@L> <e1: auxBinaryStreamExpression<Op,E>> <start_op:@L> <op: Op> <end_op:@R> <e2: E> <end:@R> => {
         StreamExpression::MapApplication{
-            expression: Box::new(Expression::Call{
+            expression: Expression::Call{
                 id: op.to_string(),
                 location: Location{ file_id, range: start_op..end_op }
-            }),
+            },
             inputs: vec![e1, e2],
             location: Location{ file_id, range: start..end },
         }
     },
     E,
 };
+/// Catches binary operations as stream expressions
+firstBinaryStreamExpression: StreamExpression = auxBinaryStreamExpression<firstBinaryOperator, unaryStreamExpression>;
+secondBinaryStreamExpression: StreamExpression = auxBinaryStreamExpression<secondBinaryOperator, firstBinaryStreamExpression>;
+thirdBinaryStreamExpression: StreamExpression = auxBinaryStreamExpression<thirdBinaryOperator, secondBinaryStreamExpression>;
+fourthBinaryStreamExpression: StreamExpression = auxBinaryStreamExpression<fourthBinaryOperator, thirdBinaryStreamExpression>;
+
 
 /// Catches type definition
 pub userType: UserDefinedType = {
