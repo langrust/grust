@@ -189,6 +189,22 @@ fourthBinaryExpression: Expression = auxBinaryExpression<fourthBinaryOperator, t
 
 /// Catches all LanGrust expressions
 pub expression: Expression = {
+    // catches abstractions as expressions
+    <start:@L> "|" <ids: list<ID>> "|" <e: expression> <end:@R> => {
+        Expression::Abstraction {
+            inputs: ids,
+            expression: Box::new(e),
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches typed abstractions as expressions
+    <start:@L> "|" <ids: hash<ID, basicType>> "|" <e: expression> <end:@R> => {
+        Expression::TypedAbstraction {
+            inputs: ids,
+            expression: Box::new(e),
+            location: Location{ file_id, range: start..end }
+        }
+    },
     fourthBinaryExpression,
 };
 
