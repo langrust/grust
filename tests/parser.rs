@@ -336,7 +336,7 @@ mod langrust_ast_constructs {
             },
             expression
         );
-        let stream_expression = langrust::expressionParser::new()
+        let expression = langrust::expressionParser::new()
             .parse(file_id3, &files.source(file_id3).unwrap())
             .unwrap();
         assert_eq!(
@@ -351,9 +351,9 @@ mod langrust_ast_constructs {
                 },],
                 location: Location::default()
             },
-            stream_expression
+            expression
         );
-        let stream_expression = langrust::expressionParser::new()
+        let expression = langrust::expressionParser::new()
             .parse(file_id4, &files.source(file_id4).unwrap())
             .unwrap();
         assert_eq!(
@@ -368,9 +368,9 @@ mod langrust_ast_constructs {
                 },],
                 location: Location::default()
             },
-            stream_expression
+            expression
         );
-        let stream_expression = langrust::expressionParser::new()
+        let expression = langrust::expressionParser::new()
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
         assert_eq!(
@@ -404,9 +404,9 @@ mod langrust_ast_constructs {
                 ],
                 location: Location::default()
             },
-            stream_expression
+            expression
         );
-        let stream_expression = langrust::expressionParser::new()
+        let expression = langrust::expressionParser::new()
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
         assert_eq!(
@@ -447,7 +447,7 @@ mod langrust_ast_constructs {
                 }],
                 location: Location::default()
             },
-            stream_expression
+            expression
         );
         let expression = langrust::expressionParser::new()
             .parse(file_id7, &files.source(file_id7).unwrap())
