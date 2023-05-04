@@ -6,6 +6,7 @@ mod langrust_ast_constructs {
         stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
+    use grustine::util::operator::OtherOperator;
     use grustine::util::{
         constant::Constant,
         files,
@@ -155,6 +156,9 @@ mod langrust_ast_constructs {
         let file_id6 = files
             .add("map_application_test.gr", "(x*y).map(sqrt)")
             .unwrap();
+        let file_id7 = files
+            .add("print_test.gr", "print(\"Hello world\")")
+            .unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -276,6 +280,25 @@ mod langrust_ast_constructs {
             },
             stream_expression
         );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id7, &files.source(file_id7).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::MapApplication {
+                expression: Expression::Call {
+                    id: OtherOperator::Print.to_string(),
+                    location: Location::default()
+                },
+                inputs: vec![
+                    StreamExpression::Constant {
+                        constant: Constant::String(String::from("Hello world")),
+                        location: Location::default()
+                    }
+                ],
+                location: Location::default()
+            },
+            stream_expression
+        );
     }
 
     #[test]
@@ -288,6 +311,9 @@ mod langrust_ast_constructs {
         let file_id5 = files.add("binary_test.gr", "4*5-3").unwrap();
         let file_id6 = files
             .add("function_application_test.gr", "sqrt(4*5-3)")
+            .unwrap();
+        let file_id7 = files
+            .add("print_test.gr", "print(\"Hello world\")")
             .unwrap();
 
         let expression = langrust::expressionParser::new()
@@ -422,6 +448,25 @@ mod langrust_ast_constructs {
                 location: Location::default()
             },
             stream_expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id7, &files.source(file_id7).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Application {
+                expression: Box::new(Expression::Call {
+                    id: OtherOperator::Print.to_string(),
+                    location: Location::default()
+                }),
+                inputs: vec![
+                    Expression::Constant {
+                        constant: Constant::String(String::from("Hello world")),
+                        location: Location::default()
+                    }
+                ],
+                location: Location::default()
+            },
+            expression
         );
     }
 

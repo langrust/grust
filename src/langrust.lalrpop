@@ -9,7 +9,7 @@ use crate::ast::{
     component::Component,
     file::File,
 };
-use crate::util::operator::{UnaryOperator, BinaryOperator};
+use crate::util::operator::{UnaryOperator, BinaryOperator, OtherOperator};
 use crate::util::constant::Constant;
 use crate::util::type_system::Type;
 use crate::util::location::Location;
@@ -140,6 +140,17 @@ term: Expression = {
             location: Location{ file_id, range: start..end },
         }
     },
+    // catches print applications as expressions
+    <start:@L> "print" "(" <e: expression> ")" <end:@R> => {
+        Expression::Application {
+            expression: Box::new(Expression::Call {
+                id: OtherOperator::Print.to_string(),
+                location: Location{ file_id, range: start..end }
+            }),
+            inputs: vec![e],
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches unary operations as expression first or a term
@@ -216,6 +227,17 @@ streamTerm: StreamExpression = {
             expression: f,
             inputs: v_expr,
             location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches print applications as stream expressions
+    <start:@L> "print" "(" <e: streamExpression> ")" <end:@R> => {
+        StreamExpression::MapApplication {
+            expression: Expression::Call {
+                id: OtherOperator::Print.to_string(),
+                location: Location{ file_id, range: start..end }
+            },
+            inputs: vec![e],
+            location: Location{ file_id, range: start..end }
         }
     },
 };
