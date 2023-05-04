@@ -250,6 +250,9 @@ mod langrust_ast_constructs {
         let mut files = files::Files::new();
         let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
         let file_id2 = files.add("element_call_test.gr", "x").unwrap();
+        let file_id3 = files.add("brackets_test.gr", "(3)").unwrap();
+        let file_id4 = files.add("unary_test.gr", "-3").unwrap();
+        let file_id5 = files.add("binary_test.gr", "4*5-3").unwrap();
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -270,6 +273,76 @@ mod langrust_ast_constructs {
                 location: Location::default()
             },
             expression
+        );
+        let stream_expression = langrust::expressionParser::new()
+            .parse(file_id3, &files.source(file_id3).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Application {
+                expression: Box::new(Expression::Call {
+                    id: UnaryOperator::Brackets.to_string(),
+                    location: Location::default()
+                }),
+                inputs: vec![Expression::Constant {
+                    constant: Constant::Integer(3),
+                    location: Location::default()
+                },],
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::expressionParser::new()
+            .parse(file_id4, &files.source(file_id4).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Application {
+                expression: Box::new(Expression::Call {
+                    id: UnaryOperator::Neg.to_string(),
+                    location: Location::default()
+                }),
+                inputs: vec![Expression::Constant {
+                    constant: Constant::Integer(3),
+                    location: Location::default()
+                },],
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::expressionParser::new()
+            .parse(file_id5, &files.source(file_id5).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Application {
+                expression: Box::new(Expression::Call {
+                    id: BinaryOperator::Sub.to_string(),
+                    location: Location::default()
+                }),
+                inputs: vec![
+                    Expression::Application {
+                        expression: Box::new(Expression::Call {
+                            id: BinaryOperator::Mul.to_string(),
+                            location: Location::default()
+                        }),
+                        inputs: vec![
+                            Expression::Constant {
+                                constant: Constant::Integer(4),
+                                location: Location::default()
+                            },
+                            Expression::Constant {
+                                constant: Constant::Integer(5),
+                                location: Location::default()
+                            },
+                        ],
+                        location: Location::default()
+                    },
+                    Expression::Constant {
+                        constant: Constant::Integer(3),
+                        location: Location::default()
+                    },
+                ],
+                location: Location::default()
+            },
+            stream_expression
         );
     }
 
