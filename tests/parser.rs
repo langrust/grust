@@ -268,6 +268,7 @@ mod langrust_ast_constructs {
             .add("when_id_test.gr", "when a = x then a else 0")
             .unwrap();
         let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
+        let file_id16 = files.add("match_test.gr", "match a with Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 end").unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -597,6 +598,110 @@ mod langrust_ast_constructs {
             },
             stream_expression
         );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id16, &files.source(file_id16).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::Match {
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: String::from("a"),
+                    location: Location::default()
+                }),
+                arms: vec![
+                    (
+                        Pattern::Structure {
+                            name: String::from("Point"),
+                            fields: vec![
+                                (
+                                    String::from("x"),
+                                    Pattern::Constant {
+                                        constant: Constant::Integer(0),
+                                        location: Location::default()
+                                    }
+                                ),
+                                (
+                                    String::from("y"),
+                                    Pattern::Default {
+                                        location: Location::default()
+                                    }
+                                )
+                            ],
+                            location: Location::default()
+                        },
+                        None,
+                        StreamExpression::Constant {
+                            constant: Constant::Integer(0),
+                            location: Location::default()
+                        }
+                    ),
+                    (
+                        Pattern::Structure {
+                            name: String::from("Point"),
+                            fields: vec![
+                                (
+                                    String::from("x"),
+                                    Pattern::Identifier {
+                                        name: String::from("x"),
+                                        location: Location::default()
+                                    }
+                                ),
+                                (
+                                    String::from("y"),
+                                    Pattern::Default {
+                                        location: Location::default()
+                                    }
+                                )
+                            ],
+                            location: Location::default()
+                        },
+                        Some(
+                            StreamExpression::MapApplication {
+                                expression: Expression::Call {
+                                    id: BinaryOperator::Low.to_string(),
+                                    location: Location::default()
+                                },
+                                inputs: vec![
+                                    StreamExpression::SignalCall {
+                                        id: String::from("x"),
+                                        location: Location::default()
+                                    },
+                                    StreamExpression::Constant {
+                                        constant: Constant::Integer(0),
+                                        location: Location::default()
+                                    }
+                                ],
+                                location: Location::default()
+                            }
+                        ),
+                        StreamExpression::MapApplication {
+                            expression: Expression::Call {
+                                id: UnaryOperator::Neg.to_string(),
+                                location: Location::default()
+                            },
+                            inputs: vec![
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(1),
+                                    location: Location::default()
+                                }
+                            ],
+                            location: Location::default()
+                        }
+                    ),
+                    (
+                        Pattern::Default {
+                            location: Location::default()
+                        },
+                        None,
+                        StreamExpression::Constant {
+                            constant: Constant::Integer(1),
+                            location: Location::default()
+                        }
+                    )
+                ],
+                location: Location::default()
+            },
+            stream_expression
+        );
     }
 
     #[test]
@@ -629,6 +734,7 @@ mod langrust_ast_constructs {
             .add("when_id_test.gr", "when a = x then a else 0")
             .unwrap();
         let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
+        let file_id16 = files.add("match_test.gr", "match a with Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 end").unwrap();
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -976,6 +1082,110 @@ mod langrust_ast_constructs {
                     constant: Constant::Integer(0),
                     location: Location::default()
                 }),
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id16, &files.source(file_id16).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Match {
+                expression: Box::new(Expression::Call {
+                    id: String::from("a"),
+                    location: Location::default()
+                }),
+                arms: vec![
+                    (
+                        Pattern::Structure {
+                            name: String::from("Point"),
+                            fields: vec![
+                                (
+                                    String::from("x"),
+                                    Pattern::Constant {
+                                        constant: Constant::Integer(0),
+                                        location: Location::default()
+                                    }
+                                ),
+                                (
+                                    String::from("y"),
+                                    Pattern::Default {
+                                        location: Location::default()
+                                    }
+                                )
+                            ],
+                            location: Location::default()
+                        },
+                        None,
+                        Expression::Constant {
+                            constant: Constant::Integer(0),
+                            location: Location::default()
+                        }
+                    ),
+                    (
+                        Pattern::Structure {
+                            name: String::from("Point"),
+                            fields: vec![
+                                (
+                                    String::from("x"),
+                                    Pattern::Identifier {
+                                        name: String::from("x"),
+                                        location: Location::default()
+                                    }
+                                ),
+                                (
+                                    String::from("y"),
+                                    Pattern::Default {
+                                        location: Location::default()
+                                    }
+                                )
+                            ],
+                            location: Location::default()
+                        },
+                        Some(
+                            Expression::Application {
+                                expression: Box::new(Expression::Call {
+                                    id: BinaryOperator::Low.to_string(),
+                                    location: Location::default()
+                                }),
+                                inputs: vec![
+                                    Expression::Call {
+                                        id: String::from("x"),
+                                        location: Location::default()
+                                    },
+                                    Expression::Constant {
+                                        constant: Constant::Integer(0),
+                                        location: Location::default()
+                                    }
+                                ],
+                                location: Location::default()
+                            }
+                        ),
+                        Expression::Application {
+                            expression: Box::new(Expression::Call {
+                                id: UnaryOperator::Neg.to_string(),
+                                location: Location::default()
+                            }),
+                            inputs: vec![
+                                Expression::Constant {
+                                    constant: Constant::Integer(1),
+                                    location: Location::default()
+                                }
+                            ],
+                            location: Location::default()
+                        }
+                    ),
+                    (
+                        Pattern::Default {
+                            location: Location::default()
+                        },
+                        None,
+                        Expression::Constant {
+                            constant: Constant::Integer(1),
+                            location: Location::default()
+                        }
+                    )
+                ],
                 location: Location::default()
             },
             expression
