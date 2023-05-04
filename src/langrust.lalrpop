@@ -27,7 +27,7 @@ hash<K, V>: Vec<(K, V)> = {
 };
 /// Creates lists of elements T from "t, ..., t" patterns
 list<T>: Vec<T> = {
-    T ","? => vec![<>],
+    <t:T> ","? => vec![t],
     <t:T> "," <mut v: list<T>> => {
         v.push(t);
         v
