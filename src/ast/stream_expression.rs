@@ -19,6 +19,15 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
+    /// Initialized buffer stream expression.
+    FollowedBy {
+        /// The initialization constant.
+        constant: Constant,
+        /// The buffered expression.
+        expression: Box<StreamExpression>,
+        /// Stream expression location.
+        location: Location,
+    },
     /// Map application stream expression.
     MapApplication {
         /// The expression applied.

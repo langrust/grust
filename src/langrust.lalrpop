@@ -358,6 +358,14 @@ fourthBinaryStreamExpression: StreamExpression = auxBinaryStreamExpression<fourt
 
 /// Catches all LanGrust stream expressions
 pub streamExpression: StreamExpression = {
+    // catches initialized buffers as stream expressions
+    <start:@L> <c: constant> "fby" <e: streamExpression> <end:@R> => {
+        StreamExpression::FollowedBy {
+            constant: c,
+            expression: Box::new(e),
+            location: Location{ file_id, range: start..end }
+        }
+    },
     // catches if_then_else as stream expressions
     <start:@L> "if" <e1: streamExpression> "then" <e2: streamExpression> "else" <e3: streamExpression> <end:@R> => {
         StreamExpression::MapApplication {
