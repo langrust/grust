@@ -19,16 +19,14 @@ grammar(file_id: FileId);
 
 /// Creates vectors of key/value pairs from "k : v, ..., k : v" patterns
 hash<K, V>: Vec<(K, V)> = {
-    <k: K> ":" <v: V> ","? => vec![(k, v)],
-    <k: K> ":" <v: V> "," <mut h: hash<K, V>> => {
+    <mut h: (<K> ":" <V> ",")*> <k: K> ":" <v: V> ","? => {
         h.push((k, v));
         h
     }
 };
 /// Creates lists of elements T from "t, ..., t" patterns
 list<T>: Vec<T> = {
-    <t:T> ","? => vec![t],
-    <t:T> "," <mut v: list<T>> => {
+    <mut v: (<T> ",")*> <t: T> ","? => {
         v.push(t);
         v
     }
