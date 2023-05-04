@@ -176,6 +176,9 @@ mod langrust_ast_constructs {
         let file_id1 = files
             .add("constant_test.gr", "Color.Yellow")
             .unwrap();
+        let file_id2 = files
+            .add("element_call_test.gr", "x")
+            .unwrap();
 
         let constant = langrust::termParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -186,6 +189,16 @@ mod langrust_ast_constructs {
                 location: Location::default()
             },
             constant
+        );
+        let expression = langrust::termParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Call {
+                id: String::from("x"),
+                location: Location::default()
+            },
+            expression
         );
     }
 
