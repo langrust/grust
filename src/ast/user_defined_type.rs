@@ -20,5 +20,5 @@ pub enum UserDefinedType {
         // todo!()
         /// Structure location.
         location: Location,
-    }
+    },
 }
