@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
+    use grustine::ast::pattern::Pattern;
     use grustine::ast::{
         component::Component, expression::Expression, file::File, function::Function, node::Node,
         stream_expression::StreamExpression, user_defined_type::UserDefinedType,
@@ -142,6 +143,96 @@ mod langrust_ast_constructs {
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
         assert_eq!(basic_type, Type::NotDefinedYet(String::from("Color")));
+    }
+
+    #[test]
+    fn pattern() {
+        let mut files = files::Files::new();
+        let file_id1 = files.add("identifier_test.gr", "x").unwrap();
+        let file_id2 = files.add("constant_test.gr", "Color.Yellow").unwrap();
+        let file_id3 = files
+            .add("structure_test.gr", "Point { x: 0, y: _}")
+            .unwrap();
+        let file_id4 = files.add("some_test.gr", "some(value)").unwrap();
+        let file_id5 = files.add("none_test.gr", "none").unwrap();
+        let file_id6 = files.add("default_test.gr", "_").unwrap();
+
+        let pattern = langrust::patternParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(
+            Pattern::Identifier {
+                name: String::from("x"),
+                location: Location::default()
+            },
+            pattern
+        );
+        let pattern = langrust::patternParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(
+            Pattern::Constant {
+                constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
+                location: Location::default()
+            },
+            pattern
+        );
+        let pattern = langrust::patternParser::new()
+            .parse(file_id3, &files.source(file_id3).unwrap())
+            .unwrap();
+        assert_eq!(
+            Pattern::Structure {
+                name: String::from("Point"),
+                fields: vec![
+                    (
+                        String::from("x"),
+                        Pattern::Constant {
+                            constant: Constant::Integer(0),
+                            location: Location::default()
+                        }
+                    ),
+                    (
+                        String::from("y"),
+                        Pattern::Default {
+                            location: Location::default()
+                        }
+                    )
+                ],
+                location: Location::default()
+            },
+            pattern
+        );
+        let pattern = langrust::patternParser::new()
+            .parse(file_id4, &files.source(file_id4).unwrap())
+            .unwrap();
+        assert_eq!(
+            Pattern::Some {
+                pattern: Box::new(Pattern::Identifier {
+                    name: String::from("value"),
+                    location: Location::default()
+                }),
+                location: Location::default()
+            },
+            pattern
+        );
+        let pattern = langrust::patternParser::new()
+            .parse(file_id5, &files.source(file_id5).unwrap())
+            .unwrap();
+        assert_eq!(
+            Pattern::None {
+                location: Location::default()
+            },
+            pattern
+        );
+        let pattern = langrust::patternParser::new()
+            .parse(file_id6, &files.source(file_id6).unwrap())
+            .unwrap();
+        assert_eq!(
+            Pattern::Default {
+                location: Location::default()
+            },
+            pattern
+        );
     }
 
     #[test]
