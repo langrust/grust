@@ -85,24 +85,6 @@ fourthBinaryOperator: BinaryOperator = {
     "||" => BinaryOperator::Or,
 };
 
-/// Catches terms as stream expressions
-pub streamTerm: StreamExpression = {
-    // catches constant as stream expressions
-    <start:@L> <c: constant> <end:@R> => {
-        StreamExpression::Constant {
-            constant: c,
-            location: Location{ file_id, range: start..end },
-        }
-    },
-    // catches signal call as stream expressions
-    <start:@L> <id: ID> <end:@R> => {
-        StreamExpression::SignalCall{
-            id,
-            location: Location{ file_id, range: start..end },
-        }
-    },
-};
-
 /// Catches terms as expressions
 pub term: Expression = {
     // catches constant as expressions
@@ -136,6 +118,25 @@ auxBinaryExpression<Op,E>: Expression = {
     },
     E,
 };
+
+/// Catches terms as stream expressions
+pub streamTerm: StreamExpression = {
+    // catches constant as stream expressions
+    <start:@L> <c: constant> <end:@R> => {
+        StreamExpression::Constant {
+            constant: c,
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches signal call as stream expressions
+    <start:@L> <id: ID> <end:@R> => {
+        StreamExpression::SignalCall{
+            id,
+            location: Location{ file_id, range: start..end },
+        }
+    },
+};
+
 /// Helper for binary operations. Tries to parse a binary operation
 /// of form `E Op E`, otherwise parses a stream expression of form `E`.
 auxBinaryStreamExpression<Op,E>: StreamExpression = {
