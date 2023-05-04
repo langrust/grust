@@ -10,4 +10,11 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
+    /// Signal call stream expression.
+    SignalCall{
+        /// Signal identifier.
+        id: String,
+        /// Stream expression location.
+        location: Location,
+    },
 }

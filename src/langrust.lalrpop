@@ -93,6 +93,13 @@ pub streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end },
         }
     },
+    // catches signal call as stream expressions
+    <start:@L> <id: ID> <end:@R> => {
+        StreamExpression::SignalCall{
+            id,
+            location: Location{ file_id, range: start..end },
+        }
+    },
 };
 
 /// Catches terms as expressions
