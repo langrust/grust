@@ -164,9 +164,7 @@ mod langrust_ast_constructs {
                 "my_node(my_input1, my_input2).my_signal",
             )
             .unwrap();
-        let file_id9 = files
-            .add("fby_test.gr", "0 fby x + 1")
-            .unwrap();
+        let file_id9 = files.add("fby_test.gr", "0 fby x + 1").unwrap();
         let file_id10 = files
             .add("ifthenelse_test.gr", "if b then x else y")
             .unwrap();
@@ -175,7 +173,9 @@ mod langrust_ast_constructs {
             .unwrap();
         let file_id12 = files.add("array_test.gr", "[1, 2, 3]").unwrap();
         let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]").unwrap();
-        let file_id14 = files.add("when_id_test.gr", "when a = x then a else 0").unwrap();
+        let file_id14 = files
+            .add("when_id_test.gr", "when a = x then a else 0")
+            .unwrap();
         let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
@@ -534,7 +534,9 @@ mod langrust_ast_constructs {
             .unwrap();
         let file_id12 = files.add("array_test.gr", "[1, 2, 3]").unwrap();
         let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]").unwrap();
-        let file_id14 = files.add("when_id_test.gr", "when a = x then a else 0").unwrap();
+        let file_id14 = files
+            .add("when_id_test.gr", "when a = x then a else 0")
+            .unwrap();
         let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
 
         let expression = langrust::expressionParser::new()
