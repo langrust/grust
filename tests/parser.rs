@@ -6,6 +6,7 @@ mod langrust_ast_constructs {
         stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
+    use grustine::util::operator::UnaryOperator;
     use grustine::util::{constant::Constant, files, location::Location, type_system::Type};
 
     #[test]
@@ -143,6 +144,7 @@ mod langrust_ast_constructs {
         let mut files = files::Files::new();
         let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
         let file_id2 = files.add("signal_call_test.gr", "x").unwrap();
+        let file_id4 = files.add("unary_test.gr", "-3").unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -160,6 +162,23 @@ mod langrust_ast_constructs {
         assert_eq!(
             StreamExpression::SignalCall {
                 id: String::from("x"),
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id4, &files.source(file_id4).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::MapApplication {
+                expression: Expression::Call {
+                    id: UnaryOperator::Neg.to_string(),
+                    location: Location::default()
+                },
+                inputs: vec![StreamExpression::Constant {
+                    constant: Constant::Integer(3),
+                    location: Location::default()
+                },],
                 location: Location::default()
             },
             stream_expression
