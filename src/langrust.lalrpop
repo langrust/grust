@@ -54,7 +54,7 @@ pub constant: Constant = {
 };
 
 /// Catches terms as stream expressions
-pub funTerm: StreamExpression = {
+pub streamTerm: StreamExpression = {
     <start:@L> <c: constant> <end:@R> => {
         StreamExpression::Constant {
             constant: c,
