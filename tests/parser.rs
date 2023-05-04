@@ -6,8 +6,13 @@ mod langrust_ast_constructs {
         stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
-    use grustine::util::operator::UnaryOperator;
-    use grustine::util::{constant::Constant, files, location::Location, type_system::Type};
+    use grustine::util::{
+        constant::Constant,
+        files,
+        location::Location,
+        operator::{BinaryOperator, UnaryOperator},
+        type_system::Type,
+    };
 
     #[test]
     fn file_parser() {
@@ -145,6 +150,7 @@ mod langrust_ast_constructs {
         let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
         let file_id2 = files.add("signal_call_test.gr", "x").unwrap();
         let file_id4 = files.add("unary_test.gr", "-3").unwrap();
+        let file_id5 = files.add("binary_test.gr", "4*5-3").unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -179,6 +185,42 @@ mod langrust_ast_constructs {
                     constant: Constant::Integer(3),
                     location: Location::default()
                 },],
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id5, &files.source(file_id5).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::MapApplication {
+                expression: Expression::Call {
+                    id: BinaryOperator::Sub.to_string(),
+                    location: Location::default()
+                },
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        expression: Expression::Call {
+                            id: BinaryOperator::Mul.to_string(),
+                            location: Location::default()
+                        },
+                        inputs: vec![
+                            StreamExpression::Constant {
+                                constant: Constant::Integer(4),
+                                location: Location::default()
+                            },
+                            StreamExpression::Constant {
+                                constant: Constant::Integer(5),
+                                location: Location::default()
+                            },
+                        ],
+                        location: Location::default()
+                    },
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(3),
+                        location: Location::default()
+                    },
+                ],
                 location: Location::default()
             },
             stream_expression
