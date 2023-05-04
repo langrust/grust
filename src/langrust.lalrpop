@@ -87,6 +87,7 @@ fourthBinaryOperator: BinaryOperator = {
 
 /// Catches terms as stream expressions
 pub streamTerm: StreamExpression = {
+    // catches constant as stream expressions
     <start:@L> <c: constant> <end:@R> => {
         StreamExpression::Constant {
             constant: c,
@@ -104,6 +105,7 @@ pub streamTerm: StreamExpression = {
 
 /// Catches terms as expressions
 pub term: Expression = {
+    // catches constant as expressions
     <start:@L> <c: constant> <end:@R> => {
         Expression::Constant {
             constant: c,
