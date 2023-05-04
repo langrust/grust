@@ -6,12 +6,11 @@ mod langrust_ast_constructs {
         stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
-    use grustine::util::operator::OtherOperator;
     use grustine::util::{
         constant::Constant,
         files,
         location::Location,
-        operator::{BinaryOperator, UnaryOperator},
+        operator::{BinaryOperator, OtherOperator, UnaryOperator},
         type_system::Type,
     };
 
