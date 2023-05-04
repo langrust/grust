@@ -222,6 +222,22 @@ pub expression: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches when_then_else as expressions
+    <start:@L> "when" <start_id:@L> <id: ID> <end_id:@R> <e1: ("=" <expression>)?> "then" <e2: expression> "else" <e3: expression> <end:@R> => {
+        Expression::When {
+            id: id.clone(),
+            option: match e1 {
+                Some(e1) => Box::new(e1),
+                None => Box::new(Expression::Call {
+                    id,
+                    location: Location{ file_id, range: start_id..end_id }
+                })
+            },
+            present: Box::new(e2),
+            default: Box::new(e3),
+            location: Location{ file_id, range: start..end }
+        }
+    },
     // catches abstractions as expressions
     <start:@L> "|" <ids: list<ID>> "|" <e: expression> <end:@R> => {
         Expression::Abstraction {
@@ -374,6 +390,22 @@ pub streamExpression: StreamExpression = {
                 location: Location{ file_id, range: start..end }
             },
             inputs: vec![e1, e2, e3],
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches when_then_else as stream expressions
+    <start:@L> "when" <start_id:@L> <id: ID> <end_id:@R> <e1: ("=" <streamExpression>)?> "then" <e2: streamExpression> "else" <e3: streamExpression> <end:@R> => {
+        StreamExpression::When {
+            id: id.clone(),
+            option: match e1 {
+                Some(e1) => Box::new(e1),
+                None => Box::new(StreamExpression::SignalCall {
+                    id,
+                    location: Location{ file_id, range: start_id..end_id }
+                })
+            },
+            present: Box::new(e2),
+            default: Box::new(e3),
             location: Location{ file_id, range: start..end }
         }
     },

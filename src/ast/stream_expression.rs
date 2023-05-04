@@ -64,4 +64,17 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
+    /// When present stream expression.
+    When {
+        /// The identifier of the value when present
+        id: String,
+        /// The optional stream expression.
+        option: Box<StreamExpression>,
+        /// The stream expression when present.
+        present: Box<StreamExpression>,
+        /// The default stream expression.
+        default: Box<StreamExpression>,
+        /// StreamExpression location.
+        location: Location,
+    },
 }
