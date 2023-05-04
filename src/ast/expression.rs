@@ -60,4 +60,17 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
+    /// When present expression.
+    When {
+        /// The identifier of the value when present
+        id: String,
+        /// The optional expression.
+        option: Box<Expression>,
+        /// The expression when present.
+        present: Box<Expression>,
+        /// The default expression.
+        default: Box<Expression>,
+        /// Expression location.
+        location: Location,
+    },
 }

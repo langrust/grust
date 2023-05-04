@@ -175,6 +175,8 @@ mod langrust_ast_constructs {
             .unwrap();
         let file_id12 = files.add("array_test.gr", "[1, 2, 3]").unwrap();
         let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]").unwrap();
+        let file_id14 = files.add("when_id_test.gr", "when a = x then a else 0").unwrap();
+        let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -460,6 +462,50 @@ mod langrust_ast_constructs {
             },
             stream_expression
         );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id14, &files.source(file_id14).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::When {
+                id: String::from("a"),
+                option: Box::new(StreamExpression::SignalCall {
+                    id: String::from("x"),
+                    location: Location::default()
+                }),
+                present: Box::new(StreamExpression::SignalCall {
+                    id: String::from("a"),
+                    location: Location::default()
+                }),
+                default: Box::new(StreamExpression::Constant {
+                    constant: Constant::Integer(0),
+                    location: Location::default()
+                }),
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id15, &files.source(file_id15).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::When {
+                id: String::from("a"),
+                option: Box::new(StreamExpression::SignalCall {
+                    id: String::from("a"),
+                    location: Location::default()
+                }),
+                present: Box::new(StreamExpression::SignalCall {
+                    id: String::from("a"),
+                    location: Location::default()
+                }),
+                default: Box::new(StreamExpression::Constant {
+                    constant: Constant::Integer(0),
+                    location: Location::default()
+                }),
+                location: Location::default()
+            },
+            stream_expression
+        );
     }
 
     #[test]
@@ -488,6 +534,8 @@ mod langrust_ast_constructs {
             .unwrap();
         let file_id12 = files.add("array_test.gr", "[1, 2, 3]").unwrap();
         let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]").unwrap();
+        let file_id14 = files.add("when_id_test.gr", "when a = x then a else 0").unwrap();
+        let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -791,6 +839,50 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }
                 ],
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id14, &files.source(file_id14).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::When {
+                id: String::from("a"),
+                option: Box::new(Expression::Call {
+                    id: String::from("x"),
+                    location: Location::default()
+                }),
+                present: Box::new(Expression::Call {
+                    id: String::from("a"),
+                    location: Location::default()
+                }),
+                default: Box::new(Expression::Constant {
+                    constant: Constant::Integer(0),
+                    location: Location::default()
+                }),
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id15, &files.source(file_id15).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::When {
+                id: String::from("a"),
+                option: Box::new(Expression::Call {
+                    id: String::from("a"),
+                    location: Location::default()
+                }),
+                present: Box::new(Expression::Call {
+                    id: String::from("a"),
+                    location: Location::default()
+                }),
+                default: Box::new(Expression::Constant {
+                    constant: Constant::Integer(0),
+                    location: Location::default()
+                }),
                 location: Location::default()
             },
             expression
