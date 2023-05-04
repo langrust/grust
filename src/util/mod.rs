@@ -9,3 +9,6 @@ pub mod type_system;
 
 /// Constant module.
 pub mod constant;
+
+/// Operator module.
+pub mod operator;
