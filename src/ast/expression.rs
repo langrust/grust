@@ -10,4 +10,11 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
+    /// Call expression.
+    Call{
+        /// Element identifier.
+        id: String,
+        /// Expression location.
+        location: Location,
+    },
 }

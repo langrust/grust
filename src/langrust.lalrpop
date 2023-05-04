@@ -112,6 +112,13 @@ pub term: Expression = {
             location: Location{ file_id, range: start..end },
         }
     },
+    // catches element call as expressions
+    <start:@L> <id: ID> <end:@R> => {
+        Expression::Call{
+            id,
+            location: Location{ file_id, range: start..end },
+        }
+    },
 };
 
 /// Catches type definition
