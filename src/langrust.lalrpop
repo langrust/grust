@@ -86,7 +86,7 @@ fourthBinaryOperator: BinaryOperator = {
 };
 
 /// Catches terms as expressions
-pub term: Expression = {
+term: Expression = {
     // catches constant as expressions
     <start:@L> <c: constant> <end:@R> => {
         Expression::Constant {
@@ -139,9 +139,13 @@ secondBinaryExpression: Expression = auxBinaryExpression<secondBinaryOperator, f
 thirdBinaryExpression: Expression = auxBinaryExpression<thirdBinaryOperator, secondBinaryExpression>;
 fourthBinaryExpression: Expression = auxBinaryExpression<fourthBinaryOperator, thirdBinaryExpression>;
 
+/// Catches all LanGrust expressions
+pub expression: Expression = {
+    fourthBinaryExpression,
+};
 
 /// Catches terms as stream expressions
-pub streamTerm: StreamExpression = {
+streamTerm: StreamExpression = {
     // catches constant as stream expressions
     <start:@L> <c: constant> <end:@R> => {
         StreamExpression::Constant {
@@ -194,6 +198,10 @@ secondBinaryStreamExpression: StreamExpression = auxBinaryStreamExpression<secon
 thirdBinaryStreamExpression: StreamExpression = auxBinaryStreamExpression<thirdBinaryOperator, secondBinaryStreamExpression>;
 fourthBinaryStreamExpression: StreamExpression = auxBinaryStreamExpression<fourthBinaryOperator, thirdBinaryStreamExpression>;
 
+/// Catches all LanGrust stream expressions
+pub streamExpression: StreamExpression = {
+    fourthBinaryStreamExpression,
+};
 
 /// Catches type definition
 pub userType: UserDefinedType = {
