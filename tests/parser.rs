@@ -289,12 +289,10 @@ mod langrust_ast_constructs {
                     id: OtherOperator::Print.to_string(),
                     location: Location::default()
                 },
-                inputs: vec![
-                    StreamExpression::Constant {
-                        constant: Constant::String(String::from("Hello world")),
-                        location: Location::default()
-                    }
-                ],
+                inputs: vec![StreamExpression::Constant {
+                    constant: Constant::String(String::from("Hello world")),
+                    location: Location::default()
+                }],
                 location: Location::default()
             },
             stream_expression
@@ -314,6 +312,10 @@ mod langrust_ast_constructs {
             .unwrap();
         let file_id7 = files
             .add("print_test.gr", "print(\"Hello world\")")
+            .unwrap();
+        let file_id8 = files.add("abstraction_test.gr", "|x, y| x + y").unwrap();
+        let file_id9 = files
+            .add("typed_abstraction_test.gr", "|x: int, y: int| x + y")
             .unwrap();
 
         let expression = langrust::expressionParser::new()
@@ -458,12 +460,67 @@ mod langrust_ast_constructs {
                     id: OtherOperator::Print.to_string(),
                     location: Location::default()
                 }),
-                inputs: vec![
-                    Expression::Constant {
-                        constant: Constant::String(String::from("Hello world")),
+                inputs: vec![Expression::Constant {
+                    constant: Constant::String(String::from("Hello world")),
+                    location: Location::default()
+                }],
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id8, &files.source(file_id8).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Abstraction {
+                inputs: vec![String::from("x"), String::from("y")],
+                expression: Box::new(Expression::Application {
+                    expression: Box::new(Expression::Call {
+                        id: BinaryOperator::Add.to_string(),
                         location: Location::default()
-                    }
+                    }),
+                    inputs: vec![
+                        Expression::Call {
+                            id: String::from("x"),
+                            location: Location::default()
+                        },
+                        Expression::Call {
+                            id: String::from("y"),
+                            location: Location::default()
+                        },
+                    ],
+                    location: Location::default()
+                }),
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id9, &files.source(file_id9).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::TypedAbstraction {
+                inputs: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer)
                 ],
+                expression: Box::new(Expression::Application {
+                    expression: Box::new(Expression::Call {
+                        id: BinaryOperator::Add.to_string(),
+                        location: Location::default()
+                    }),
+                    inputs: vec![
+                        Expression::Call {
+                            id: String::from("x"),
+                            location: Location::default()
+                        },
+                        Expression::Call {
+                            id: String::from("y"),
+                            location: Location::default()
+                        },
+                    ],
+                    location: Location::default()
+                }),
                 location: Location::default()
             },
             expression
