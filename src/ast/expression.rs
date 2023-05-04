@@ -53,7 +53,7 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
-    /// Structure expression.
+    /// Array expression.
     Array {
         /// The elements inside the array.
         elements: Vec<Expression>,
