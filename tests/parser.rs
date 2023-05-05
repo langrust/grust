@@ -21,12 +21,26 @@ mod langrust_ast_constructs {
         let mut files = files::Files::new();
 
         let module_test_id = files
-            .add("module_test.gr", "function node enum node function node")
+            .add(
+                "module_test.gr", 
+                "function test(i: int) -> int {let x: int = i; let o: int = x; return o;} 
+                node test(i: int){out o: int = x; x: int = i;}
+                enum Color { Red, Blue, Green, Yellow }
+                node test(i: int){out o: int = x; x: int = i;}
+                function test(i: int) -> int {let x: int = i; let o: int = x; return o;}
+                node test(i: int){out o: int = x; x: int = i;}"
+            )
             .unwrap();
         let program_test_id = files
             .add(
                 "program_test.gr",
-                "node component array node function struct function",
+                "node test(i: int){out o: int = x; x: int = i;} 
+                component test(i: int){out o: int = x; x: int = i;}
+                array Matrix [[int; 3]; 3]
+                node test(i: int){out o: int = x; x: int = i;}
+                function test(i: int) -> int {let x: int = i; let o: int = x; return o;}
+                struct Point {x: int, y: int, }
+                function test(i: int) -> int {let x: int = i; let o: int = x; return o;}",
             )
             .unwrap();
 
@@ -36,45 +50,195 @@ mod langrust_ast_constructs {
         assert_eq!(
             file,
             File::Module {
-                user_defined_types: vec![UserDefinedType::Enumeration {
-                    id: todo!(),
-                    elements: todo!(),
-                    location: Location::default()
-                }],
+                user_defined_types: vec![
+                    UserDefinedType::Enumeration {
+                        id: String::from("Color"),
+                        elements: vec![
+                            String::from("Red"),
+                            String::from("Blue"),
+                            String::from("Green"),
+                            String::from("Yellow"),
+                        ],
+                        location: Location::default(),
+                    }
+                ],
                 functions: vec![
                     Function {
-                        id: todo!(),
-                        inputs: todo!(),
-                        calculi: todo!(),
-                        returned: todo!(),
-                        location: Location::default()
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        calculi: vec![
+                            (
+                                String::from("x"),
+                                Calculus {
+                                    id: String::from("x"),
+                                    element_type: Type::Integer,
+                                    expression: Expression::Call {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("o"),
+                                Calculus {
+                                    id: String::from("o"),
+                                    element_type: Type::Integer,
+                                    expression: Expression::Call {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                        ],
+                        returned: (
+                            Type::Integer,
+                            Expression::Call {
+                                id: String::from("o"),
+                                location: Location::default(),
+                            },
+                        ),
+                        location: Location::default(),
                     },
                     Function {
-                        id: todo!(),
-                        inputs: todo!(),
-                        calculi: todo!(),
-                        returned: todo!(),
-                        location: Location::default()
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        calculi: vec![
+                            (
+                                String::from("x"),
+                                Calculus {
+                                    id: String::from("x"),
+                                    element_type: Type::Integer,
+                                    expression: Expression::Call {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("o"),
+                                Calculus {
+                                    id: String::from("o"),
+                                    element_type: Type::Integer,
+                                    expression: Expression::Call {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                        ],
+                        returned: (
+                            Type::Integer,
+                            Expression::Call {
+                                id: String::from("o"),
+                                location: Location::default(),
+                            },
+                        ),
+                        location: Location::default(),
                     }
                 ],
                 nodes: vec![
                     Node {
-                        id: todo!(),
-                        inputs: todo!(),
-                        equations: todo!(),
-                        location:Location::default(),
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        equations: vec![
+                            (
+                                String::from("o"),
+                                Equation {
+                                    scope: Scope::Output,
+                                    id: String::from("o"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("x"),
+                                Equation {
+                                    scope: Scope::Local,
+                                    id: String::from("x"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            )
+                        ],
+                        location: Location::default(),
                     },
                     Node {
-                        id: todo!(),
-                        inputs: todo!(),
-                        equations: todo!(),
-                        location: Location::default()
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        equations: vec![
+                            (
+                                String::from("o"),
+                                Equation {
+                                    scope: Scope::Output,
+                                    id: String::from("o"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("x"),
+                                Equation {
+                                    scope: Scope::Local,
+                                    id: String::from("x"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            )
+                        ],
+                        location: Location::default(),
                     },
                     Node {
-                        id: todo!(),
-                        inputs: todo!(),
-                        equations: todo!(),
-                        location: Location::default()
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        equations: vec![
+                            (
+                                String::from("o"),
+                                Equation {
+                                    scope: Scope::Output,
+                                    id: String::from("o"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("x"),
+                                Equation {
+                                    scope: Scope::Local,
+                                    id: String::from("x"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            )
+                        ],
+                        location: Location::default(),
                     }
                 ],
                 location: Location::default()
@@ -89,52 +253,198 @@ mod langrust_ast_constructs {
             File::Program {
                 user_defined_types: vec![
                     UserDefinedType::Array {
-                        id: todo!(),
-                        array_type: todo!(),
-                        size: todo!(),
-                        location: Location::default()
+                        id: String::from("Matrix"),
+                        array_type: Type::Array(Box::new(Type::Integer), 3),
+                        size: 3,
+                        location: Location::default(),
                     },
                     UserDefinedType::Structure {
-                        id: todo!(),
-                        fields: todo!(),
-                        location: Location::default()
+                        id: String::from("Point"),
+                        fields: vec![
+                            (String::from("x"), Type::Integer),
+                            (String::from("y"), Type::Integer),
+                        ],
+                        location: Location::default(),
                     }
                 ],
                 functions: vec![
                     Function {
-                        id: todo!(),
-                        inputs: todo!(),
-                        calculi: todo!(),
-                        returned: todo!(),
-                        location: Location::default()
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        calculi: vec![
+                            (
+                                String::from("x"),
+                                Calculus {
+                                    id: String::from("x"),
+                                    element_type: Type::Integer,
+                                    expression: Expression::Call {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("o"),
+                                Calculus {
+                                    id: String::from("o"),
+                                    element_type: Type::Integer,
+                                    expression: Expression::Call {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                        ],
+                        returned: (
+                            Type::Integer,
+                            Expression::Call {
+                                id: String::from("o"),
+                                location: Location::default(),
+                            },
+                        ),
+                        location: Location::default(),
                     },
                     Function {
-                        id: todo!(),
-                        inputs: todo!(),
-                        calculi: todo!(),
-                        returned: todo!(),
-                        location: Location::default()
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        calculi: vec![
+                            (
+                                String::from("x"),
+                                Calculus {
+                                    id: String::from("x"),
+                                    element_type: Type::Integer,
+                                    expression: Expression::Call {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("o"),
+                                Calculus {
+                                    id: String::from("o"),
+                                    element_type: Type::Integer,
+                                    expression: Expression::Call {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                        ],
+                        returned: (
+                            Type::Integer,
+                            Expression::Call {
+                                id: String::from("o"),
+                                location: Location::default(),
+                            },
+                        ),
+                        location: Location::default(),
                     }
                 ],
                 nodes: vec![
                     Node {
-                        id: todo!(),
-                        inputs: todo!(),
-                        equations: todo!(),
-                        location: Location::default()
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        equations: vec![
+                            (
+                                String::from("o"),
+                                Equation {
+                                    scope: Scope::Output,
+                                    id: String::from("o"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("x"),
+                                Equation {
+                                    scope: Scope::Local,
+                                    id: String::from("x"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            )
+                        ],
+                        location: Location::default(),
                     },
                     Node {
-                        id: todo!(),
-                        inputs: todo!(),
-                        equations: todo!(),
-                        location: Location::default()
+                        id: String::from("test"),
+                        inputs: vec![(String::from("i"), Type::Integer)],
+                        equations: vec![
+                            (
+                                String::from("o"),
+                                Equation {
+                                    scope: Scope::Output,
+                                    id: String::from("o"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("x"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            ),
+                            (
+                                String::from("x"),
+                                Equation {
+                                    scope: Scope::Local,
+                                    id: String::from("x"),
+                                    signal_type: Type::Integer,
+                                    expression: StreamExpression::SignalCall {
+                                        id: String::from("i"),
+                                        location: Location::default(),
+                                    },
+                                    location: Location::default(),
+                                }
+                            )
+                        ],
+                        location: Location::default(),
                     }
                 ],
                 component: Component {
-                    id: todo!(),
-                    inputs: todo!(),
-                    equations: todo!(),
-                    location: Location::default()
+                    id: String::from("test"),
+                    inputs: vec![(String::from("i"), Type::Integer)],
+                    equations: vec![
+                        (
+                            String::from("o"),
+                            Equation {
+                                scope: Scope::Output,
+                                id: String::from("o"),
+                                signal_type: Type::Integer,
+                                expression: StreamExpression::SignalCall {
+                                    id: String::from("x"),
+                                    location: Location::default(),
+                                },
+                                location: Location::default(),
+                            }
+                        ),
+                        (
+                            String::from("x"),
+                            Equation {
+                                scope: Scope::Local,
+                                id: String::from("x"),
+                                signal_type: Type::Integer,
+                                expression: StreamExpression::SignalCall {
+                                    id: String::from("i"),
+                                    location: Location::default(),
+                                },
+                                location: Location::default(),
+                            }
+                        )
+                    ],
+                    location: Location::default(),
                 },
                 location: Location::default()
             },

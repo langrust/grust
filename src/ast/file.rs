@@ -7,9 +7,9 @@ use super::{
 #[derive(Debug, PartialEq)]
 /// Enumerates the different kinds of files in LanGRust.
 pub enum File {
-    /// A LanGRust [File::Module] is composed of todo!()
+    /// A LanGRust [File::Module] is composed of functions
+    /// nodes and types defined by the user.
     Module {
-        // todo!()
         /// Module types.
         user_defined_types: Vec<UserDefinedType>,
         /// Module functions.
@@ -19,9 +19,9 @@ pub enum File {
         /// Module location.
         location: Location,
     },
-    /// A LanGRust [File::Program] is composed of todo!()
+    /// A LanGRust [File::Program] is composed of functions
+    /// nodes and types defined by the user and a component.
     Program {
-        // todo!()
         /// Program types.
         user_defined_types: Vec<UserDefinedType>,
         /// Program functions.
