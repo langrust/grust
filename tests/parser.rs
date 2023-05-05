@@ -1,12 +1,14 @@
 #[cfg(test)]
 mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
+    use grustine::ast::equation::Equation;
     use grustine::ast::{
         calculus::Calculus, component::Component, expression::Expression, file::File,
         function::Function, node::Node, pattern::Pattern, stream_expression::StreamExpression,
         user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
+    use grustine::util::scope::Scope;
     use grustine::util::{
         constant::Constant,
         files,
@@ -96,6 +98,143 @@ mod langrust_ast_constructs {
                 },
                 location: Location::default()
             },
+        );
+    }
+
+    #[test]
+    fn equation() {
+        let mut files = files::Files::new();
+        let file_id1 = files
+            .add("equation_test.gr", "c: Color = Color.Yellow;")
+            .unwrap();
+        let file_id2 = files
+            .add(
+                "equation_match_test.gr",
+                "out compare: int = match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 };"
+            )
+            .unwrap();
+
+        let equation = langrust::equationParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(
+            Equation {
+                scope: Scope::Local,
+                id: String::from("c"),
+                signal_type: Type::NotDefinedYet(String::from("Color")),
+                expression: StreamExpression::Constant {
+                    constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
+                    location: Location::default()
+                },
+                location: Location::default(),
+            },
+            equation
+        );
+        let equation = langrust::equationParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(
+            Equation {
+                scope: Scope::Output,
+                id: String::from("compare"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::Match {
+                    expression: Box::new(StreamExpression::SignalCall {
+                        id: String::from("a"),
+                        location: Location::default()
+                    }),
+                    arms: vec![
+                        (
+                            Pattern::Structure {
+                                name: String::from("Point"),
+                                fields: vec![
+                                    (
+                                        String::from("x"),
+                                        Pattern::Constant {
+                                            constant: Constant::Integer(0),
+                                            location: Location::default()
+                                        }
+                                    ),
+                                    (
+                                        String::from("y"),
+                                        Pattern::Default {
+                                            location: Location::default()
+                                        }
+                                    )
+                                ],
+                                location: Location::default()
+                            },
+                            None,
+                            StreamExpression::Constant {
+                                constant: Constant::Integer(0),
+                                location: Location::default()
+                            }
+                        ),
+                        (
+                            Pattern::Structure {
+                                name: String::from("Point"),
+                                fields: vec![
+                                    (
+                                        String::from("x"),
+                                        Pattern::Identifier {
+                                            name: String::from("x"),
+                                            location: Location::default()
+                                        }
+                                    ),
+                                    (
+                                        String::from("y"),
+                                        Pattern::Default {
+                                            location: Location::default()
+                                        }
+                                    )
+                                ],
+                                location: Location::default()
+                            },
+                            Some(StreamExpression::MapApplication {
+                                expression: Expression::Call {
+                                    id: BinaryOperator::Low.to_string(),
+                                    location: Location::default()
+                                },
+                                inputs: vec![
+                                    StreamExpression::SignalCall {
+                                        id: String::from("x"),
+                                        location: Location::default()
+                                    },
+                                    StreamExpression::Constant {
+                                        constant: Constant::Integer(0),
+                                        location: Location::default()
+                                    }
+                                ],
+                                location: Location::default()
+                            }),
+                            StreamExpression::MapApplication {
+                                expression: Expression::Call {
+                                    id: UnaryOperator::Neg.to_string(),
+                                    location: Location::default()
+                                },
+                                inputs: vec![StreamExpression::Constant {
+                                    constant: Constant::Integer(1),
+                                    location: Location::default()
+                                }],
+                                location: Location::default()
+                            }
+                        ),
+                        (
+                            Pattern::Default {
+                                location: Location::default()
+                            },
+                            None,
+                            StreamExpression::Constant {
+                                constant: Constant::Integer(1),
+                                location: Location::default()
+                            }
+                        )
+                    ],
+                    location: Location::default()
+                },
+                location: Location::default(),
+            },
+            equation
         );
     }
 

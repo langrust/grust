@@ -19,6 +19,9 @@ pub mod stream_expression;
 /// LanGRust [Expression](crate::ast::expression::Expression) AST module.
 pub mod expression;
 
+/// LanGRust [Equation](crate::ast::equation::Equation) AST module.
+pub mod equation;
+
 /// LanGRust [Calculus](crate::ast::calculus::Calculus) AST module.
 pub mod calculus;
 
