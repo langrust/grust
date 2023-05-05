@@ -553,11 +553,22 @@ pub function: Function = {
 
 /// Catches node
 pub node: Node = {
-    <start:@L> "node" <end:@R> => {
+    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" "{" <e: equation+> "}" <end:@R> => {
         Node {
+            id: n,
+            inputs: i,
+            equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             location: Location{ file_id, range: start..end },
         }
     },
+    <start:@L> "node" <n: ID> "()" "{" <e: equation+> "}" <end:@R> => {
+        Node {
+            id: n,
+            inputs: vec![],
+            equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
+            location: Location{ file_id, range: start..end },
+        }
+    }
 };
 
 /// Catches component
