@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
-    use grustine::ast::pattern::Pattern;
     use grustine::ast::{
         calculus::Calculus, component::Component, expression::Expression, file::File,
-        function::Function, node::Node, stream_expression::StreamExpression,
+        function::Function, node::Node, pattern::Pattern, stream_expression::StreamExpression,
         user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
