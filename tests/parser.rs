@@ -3,8 +3,9 @@ mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
     use grustine::ast::pattern::Pattern;
     use grustine::ast::{
-        component::Component, expression::Expression, file::File, function::Function, node::Node,
-        stream_expression::StreamExpression, user_defined_type::UserDefinedType,
+        calculus::Calculus, component::Component, expression::Expression, file::File,
+        function::Function, node::Node, stream_expression::StreamExpression,
+        user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
     use grustine::util::{
@@ -96,6 +97,141 @@ mod langrust_ast_constructs {
                 },
                 location: Location::default()
             },
+        );
+    }
+
+    #[test]
+    fn calculus() {
+        let mut files = files::Files::new();
+        let file_id1 = files
+            .add("calculus_test.gr", "let c: Color = Color.Yellow;")
+            .unwrap();
+        let file_id2 = files
+            .add(
+                "calculus_match_test.gr",
+                "let compare: int = match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 };"
+            )
+            .unwrap();
+
+        let calculus = langrust::calculusParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(
+            Calculus {
+                id: String::from("c"),
+                element_type: Type::NotDefinedYet(String::from("Color")),
+                expression: Expression::Constant {
+                    constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
+                    location: Location::default()
+                },
+                location: Location::default(),
+            },
+            calculus
+        );
+        let calculus = langrust::calculusParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(
+            Calculus {
+                id: String::from("compare"),
+                element_type: Type::Integer,
+                expression: Expression::Match {
+                    expression: Box::new(Expression::Call {
+                        id: String::from("a"),
+                        location: Location::default()
+                    }),
+                    arms: vec![
+                        (
+                            Pattern::Structure {
+                                name: String::from("Point"),
+                                fields: vec![
+                                    (
+                                        String::from("x"),
+                                        Pattern::Constant {
+                                            constant: Constant::Integer(0),
+                                            location: Location::default()
+                                        }
+                                    ),
+                                    (
+                                        String::from("y"),
+                                        Pattern::Default {
+                                            location: Location::default()
+                                        }
+                                    )
+                                ],
+                                location: Location::default()
+                            },
+                            None,
+                            Expression::Constant {
+                                constant: Constant::Integer(0),
+                                location: Location::default()
+                            }
+                        ),
+                        (
+                            Pattern::Structure {
+                                name: String::from("Point"),
+                                fields: vec![
+                                    (
+                                        String::from("x"),
+                                        Pattern::Identifier {
+                                            name: String::from("x"),
+                                            location: Location::default()
+                                        }
+                                    ),
+                                    (
+                                        String::from("y"),
+                                        Pattern::Default {
+                                            location: Location::default()
+                                        }
+                                    )
+                                ],
+                                location: Location::default()
+                            },
+                            Some(Expression::Application {
+                                expression: Box::new(Expression::Call {
+                                    id: BinaryOperator::Low.to_string(),
+                                    location: Location::default()
+                                }),
+                                inputs: vec![
+                                    Expression::Call {
+                                        id: String::from("x"),
+                                        location: Location::default()
+                                    },
+                                    Expression::Constant {
+                                        constant: Constant::Integer(0),
+                                        location: Location::default()
+                                    }
+                                ],
+                                location: Location::default()
+                            }),
+                            Expression::Application {
+                                expression: Box::new(Expression::Call {
+                                    id: UnaryOperator::Neg.to_string(),
+                                    location: Location::default()
+                                }),
+                                inputs: vec![Expression::Constant {
+                                    constant: Constant::Integer(1),
+                                    location: Location::default()
+                                }],
+                                location: Location::default()
+                            }
+                        ),
+                        (
+                            Pattern::Default {
+                                location: Location::default()
+                            },
+                            None,
+                            Expression::Constant {
+                                constant: Constant::Integer(1),
+                                location: Location::default()
+                            }
+                        )
+                    ],
+                    location: Location::default()
+                },
+                location: Location::default(),
+            },
+            calculus
         );
     }
 
@@ -270,8 +406,8 @@ mod langrust_ast_constructs {
         let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
         let file_id16 = files
             .add(
-                "match_test.gr", 
-                "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }"
+                "match_test.gr",
+                "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
             )
             .unwrap();
 
@@ -738,7 +874,7 @@ mod langrust_ast_constructs {
         let file_id16 = files
             .add(
                 "match_test.gr",
-                "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }"
+                "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
             )
             .unwrap();
 

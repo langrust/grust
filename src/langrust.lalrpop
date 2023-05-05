@@ -3,6 +3,7 @@ use std::str::FromStr;
 use crate::ast::{
     pattern::Pattern,
     expression::Expression,
+    calculus::Calculus,
     stream_expression::StreamExpression,
     user_defined_type::UserDefinedType,
     function::Function,
@@ -317,6 +318,18 @@ pub expression: Expression = {
     },
     fourthBinaryExpression,
 };
+
+/// Catches calculus line
+pub calculus: Calculus = {
+    <start:@L> "let" <id: ID> ":" <t: basicType> "=" <e: expression> ";" <end:@R> => {
+        Calculus {
+            id,
+            element_type: t,
+            expression: e,
+            location: Location{ file_id, range: start..end }
+        }
+    }
+}
 
 /// Catches terms as stream expressions
 streamTerm: StreamExpression = {
