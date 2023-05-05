@@ -1,11 +1,10 @@
 #[cfg(test)]
 mod langrust_ast_constructs {
     use codespan_reporting::files::Files;
-    use grustine::ast::equation::Equation;
     use grustine::ast::{
-        calculus::Calculus, component::Component, expression::Expression, file::File,
-        function::Function, node::Node, pattern::Pattern, stream_expression::StreamExpression,
-        user_defined_type::UserDefinedType,
+        calculus::Calculus, component::Component, equation::Equation, expression::Expression,
+        file::File, function::Function, node::Node, pattern::Pattern,
+        stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
     use grustine::langrust;
     use grustine::util::scope::Scope;
@@ -50,12 +49,21 @@ mod langrust_ast_constructs {
                 ],
                 nodes: vec![
                     Node {
+                        id: todo!(),
+                        inputs: todo!(),
+                        equations: todo!(),
+                        location:Location::default(),
+                    },
+                    Node {
+                        id: todo!(),
+                        inputs: todo!(),
+                        equations: todo!(),
                         location: Location::default()
                     },
                     Node {
-                        location: Location::default()
-                    },
-                    Node {
+                        id: todo!(),
+                        inputs: todo!(),
+                        equations: todo!(),
                         location: Location::default()
                     }
                 ],
@@ -87,9 +95,15 @@ mod langrust_ast_constructs {
                 ],
                 nodes: vec![
                     Node {
+                        id: todo!(),
+                        inputs: todo!(),
+                        equations: todo!(),
                         location: Location::default()
                     },
                     Node {
+                        id: todo!(),
+                        inputs: todo!(),
+                        equations: todo!(),
                         location: Location::default()
                     }
                 ],
@@ -97,6 +111,58 @@ mod langrust_ast_constructs {
                     location: Location::default()
                 },
                 location: Location::default()
+            },
+        );
+    }
+
+    #[test]
+    fn node_parser() {
+        let mut files = files::Files::new();
+
+        let node_test_id = files
+            .add(
+                "node_test.gr",
+                "node test(i: int){out o: int = x; x: int = i;}",
+            )
+            .unwrap();
+
+        let node = langrust::nodeParser::new()
+            .parse(node_test_id, &files.source(node_test_id).unwrap())
+            .unwrap();
+        assert_eq!(
+            node,
+            Node {
+                id: String::from("test"),
+                inputs: vec![(String::from("i"), Type::Integer)],
+                equations: vec![
+                    (
+                        String::from("o"),
+                        Equation {
+                            scope: Scope::Output,
+                            id: String::from("o"),
+                            signal_type: Type::Integer,
+                            expression: StreamExpression::SignalCall {
+                                id: String::from("x"),
+                                location: Location::default(),
+                            },
+                            location: Location::default(),
+                        }
+                    ),
+                    (
+                        String::from("x"),
+                        Equation {
+                            scope: Scope::Local,
+                            id: String::from("x"),
+                            signal_type: Type::Integer,
+                            expression: StreamExpression::SignalCall {
+                                id: String::from("i"),
+                                location: Location::default(),
+                            },
+                            location: Location::default(),
+                        }
+                    )
+                ],
+                location: Location::default(),
             },
         );
     }
