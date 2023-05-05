@@ -13,6 +13,7 @@ use crate::ast::{
 };
 use crate::util::operator::{UnaryOperator, BinaryOperator, OtherOperator};
 use crate::util::constant::Constant;
+use crate::util::scope::Scope;
 use crate::util::type_system::Type;
 use crate::util::location::Location;
 use crate::util::files::FileId;
@@ -52,6 +53,14 @@ pub basicType: Type = {
     ),
     <t: basicType> "?" => Type::Option(Box::new(t)),
     <id:ID> => Type::NotDefinedYet(id),
+};
+
+/// Catches signals' scopes
+scope: Scope = {
+    <"out"?> => match <> {
+        Some(_) => Scope::Output,
+        None => Scope::Local,
+    },
 };
 
 /// Catches constants
