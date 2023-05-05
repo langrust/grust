@@ -12,3 +12,6 @@ pub mod constant;
 
 /// Operator module.
 pub mod operator;
+
+/// Scope module.
+pub mod scope;
