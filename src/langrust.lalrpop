@@ -21,6 +21,15 @@ use crate::util::files::FileId;
 
 grammar(file_id: FileId);
 
+/// Skip whitespaces and comments.
+match {
+    r"\s*" => { },                              // skip whitespaces
+    r"//[^\n\r]*[\n\r]*" => { },                // skip line comments `// comments`
+    r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/" => { },   // skip block comments `/* comments */`
+} else {
+    _                                           // else return the string
+}
+
 /// Creates vectors of key/value pairs from "k : v, ..., k : v" patterns
 hash<K, V>: Vec<(K, V)> = {
     <mut h: (<K> ":" <V> ",")*> <k: K> ":" <v: V> ","? => {
