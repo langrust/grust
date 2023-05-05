@@ -268,7 +268,12 @@ mod langrust_ast_constructs {
             .add("when_id_test.gr", "when a = x then a else 0")
             .unwrap();
         let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
-        let file_id16 = files.add("match_test.gr", "match a with Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 end").unwrap();
+        let file_id16 = files
+            .add(
+                "match_test.gr", 
+                "match a with Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 end"
+            )
+            .unwrap();
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -730,7 +735,12 @@ mod langrust_ast_constructs {
             .add("when_id_test.gr", "when a = x then a else 0")
             .unwrap();
         let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
-        let file_id16 = files.add("match_test.gr", "match a with Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 end").unwrap();
+        let file_id16 = files
+            .add(
+                "match_test.gr",
+                "match a with Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 end"
+            )
+            .unwrap();
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
