@@ -189,7 +189,8 @@ term: Expression = {
         }
     },
     // catches pattern matching as expressions
-    <start:@L> "match" <expr: expression> "with" <v_arm: list<arm<expression>>> "end" <end:@R> => {
+    <start:@L> "match" <expr: expression> "with"
+    <v_arm: list<arm<expression>>> "end" <end:@R> => {
         Expression::Match {
             expression: Box::new(expr),
             arms: v_arm,
@@ -249,7 +250,7 @@ unaryExpression: Expression = {
 /// Helper for binary operations. Tries to parse a binary operation
 /// of form `E Op E`, otherwise parses an expression of form `E`.
 auxBinaryExpression<Op,E>: Expression = {
-    <start:@L> <e1: auxBinaryExpression<Op,E>> <start_op:@L> <op: Op> <end_op:@R> <e2: E> <end:@R> => {
+    <start:@L> <e1: auxBinaryExpression<Op,E>> <start_op:@L> <op: Op> <end_op:@R><e2: E> <end:@R> => {
         Expression::Application{
             expression: Box::new(Expression::Call{
                 id: op.to_string(),
@@ -270,7 +271,8 @@ fourthBinaryExpression: Expression = auxBinaryExpression<fourthBinaryOperator, t
 /// Catches all LanGrust expressions
 pub expression: Expression = {
     // catches if_then_else as expressions
-    <start:@L> "if" <e1: expression> "then" <e2: expression> "else" <e3: expression> <end:@R> => {
+    <start:@L> "if" <e1: expression> "then" <e2: expression>
+    "else" <e3: expression> <end:@R> => {
         Expression::Application {
             expression: Box::new(Expression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
@@ -281,7 +283,8 @@ pub expression: Expression = {
         }
     },
     // catches when_then_else as expressions
-    <start:@L> "when" <start_id:@L> <id: ID> <end_id:@R> <e1: ("=" <expression>)?> "then" <e2: expression> "else" <e3: expression> <end:@R> => {
+    <start:@L> "when" <start_id:@L> <id: ID> <end_id:@R> <e1: ("=" <expression>)?>
+    "then" <e2: expression> "else" <e3: expression> <end:@R> => {
         Expression::When {
             id: id.clone(),
             option: match e1 {
@@ -360,7 +363,8 @@ streamTerm: StreamExpression = {
         }
     },
     // catches pattern matching as stream expressions
-    <start:@L> "match" <expr: streamExpression> "with" <v_arm: list<arm<streamExpression>>> "end" <end:@R> => {
+    <start:@L> "match" <expr: streamExpression> "with"
+    <v_arm: list<arm<streamExpression>>> "end" <end:@R> => {
         StreamExpression::Match {
             expression: Box::new(expr),
             arms: v_arm,
@@ -449,7 +453,8 @@ pub streamExpression: StreamExpression = {
         }
     },
     // catches if_then_else as stream expressions
-    <start:@L> "if" <e1: streamExpression> "then" <e2: streamExpression> "else" <e3: streamExpression> <end:@R> => {
+    <start:@L> "if" <e1: streamExpression> "then" <e2: streamExpression>
+    "else" <e3: streamExpression> <end:@R> => {
         StreamExpression::MapApplication {
             expression: Expression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
@@ -460,7 +465,8 @@ pub streamExpression: StreamExpression = {
         }
     },
     // catches when_then_else as stream expressions
-    <start:@L> "when" <start_id:@L> <id: ID> <end_id:@R> <e1: ("=" <streamExpression>)?> "then" <e2: streamExpression> "else" <e3: streamExpression> <end:@R> => {
+    <start:@L> "when" <start_id:@L> <id: ID> <end_id:@R> <e1: ("=" <streamExpression>)?>
+    "then" <e2: streamExpression> "else" <e3: streamExpression> <end:@R> => {
         StreamExpression::When {
             id: id.clone(),
             option: match e1 {
