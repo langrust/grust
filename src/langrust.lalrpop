@@ -522,21 +522,28 @@ pub equation: Equation = {
 
 /// Catches type definition
 pub userType: UserDefinedType = {
-    // catches enumeration definition
-    <start:@L> "enum" <end:@R> => {
+    // catches enumerations definition
+    <start:@L> "enum" <id: ID> "{" <elements: list<ID>> "}" <end:@R> => {
         UserDefinedType::Enumeration {
+            id,
+            elements,
             location: Location{ file_id, range: start..end },
         }
     },
     // catches structure definition
-    <start:@L> "struct" <end:@R> => {
+    <start:@L> "struct" <id: ID> "{" <fields: hash<ID, basicType>> "}" <end:@R> => {
         UserDefinedType::Structure {
+            id,
+            fields,
             location: Location{ file_id, range: start..end },
         }
     },
     // catches array definition
-    <start:@L> "array" <end:@R> => {
+    <start:@L> "array" <id: ID> "[" <t: basicType> ";" <n: r"\d+"> "]" <end:@R> => {
         UserDefinedType::Array {
+            id,
+            array_type: t,
+            size: usize::from_str(n).unwrap(),
             location: Location{ file_id, range: start..end },
         }
     },
