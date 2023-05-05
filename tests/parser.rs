@@ -41,9 +41,17 @@ mod langrust_ast_constructs {
                 }],
                 functions: vec![
                     Function {
+                        id: todo!(),
+                        inputs: todo!(),
+                        calculi: todo!(),
+                        returned: todo!(),
                         location: Location::default()
                     },
                     Function {
+                        id: todo!(),
+                        inputs: todo!(),
+                        calculi: todo!(),
+                        returned: todo!(),
                         location: Location::default()
                     }
                 ],
@@ -87,9 +95,17 @@ mod langrust_ast_constructs {
                 ],
                 functions: vec![
                     Function {
+                        id: todo!(),
+                        inputs: todo!(),
+                        calculi: todo!(),
+                        returned: todo!(),
                         location: Location::default()
                     },
                     Function {
+                        id: todo!(),
+                        inputs: todo!(),
+                        calculi: todo!(),
+                        returned: todo!(),
                         location: Location::default()
                     }
                 ],
@@ -162,6 +178,63 @@ mod langrust_ast_constructs {
                         }
                     )
                 ],
+                location: Location::default(),
+            },
+        );
+    }
+
+    #[test]
+    fn function_parser() {
+        let mut files = files::Files::new();
+
+        let function_test_id = files
+            .add(
+                "function_test.gr",
+                "function test(i: int) -> int {let x: int = i; let o: int = x; return o;}",
+            )
+            .unwrap();
+
+        let function = langrust::functionParser::new()
+            .parse(function_test_id, &files.source(function_test_id).unwrap())
+            .unwrap();
+        assert_eq!(
+            function,
+            Function {
+                id: String::from("test"),
+                inputs: vec![(String::from("i"), Type::Integer)],
+                calculi: vec![
+                    (
+                        String::from("x"),
+                        Calculus {
+                            id: String::from("x"),
+                            element_type: Type::Integer,
+                            expression: Expression::Call {
+                                id: String::from("i"),
+                                location: Location::default(),
+                            },
+                            location: Location::default(),
+                        }
+                    ),
+                    (
+                        String::from("o"),
+                        Calculus {
+                            id: String::from("o"),
+                            element_type: Type::Integer,
+                            expression: Expression::Call {
+                                id: String::from("x"),
+                                location: Location::default(),
+                            },
+                            location: Location::default(),
+                        }
+                    ),
+                ],
+                returned: (
+                    Type::Integer,
+                    Expression::Call {
+                        id: String::from("o"),
+                        location: Location::default(),
+                    },
+                ),
                 location: Location::default(),
             },
         );

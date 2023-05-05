@@ -544,11 +544,24 @@ pub userType: UserDefinedType = {
 
 /// Catches function
 pub function: Function = {
-    <start:@L> "function" <end:@R> => {
+    <start:@L> "function" <n: ID> "(" <i: hash<ID, basicType>> ")" "->" <t: basicType> "{" <c: calculus*> "return" <e: expression> ";" "}" <end:@R> => {
         Function {
+            id: n,
+            inputs: i,
+            calculi: c.into_iter().map(|calculus| (calculus.id.clone(), calculus)).collect(),
+            returned: (t, e),
             location: Location{ file_id, range: start..end },
         }
     },
+    <start:@L> "function" <n: ID> "()" "->" <t: basicType> "{" <c: calculus*> "return" <e: expression> ";" "}" <end:@R> => {
+        Function {
+            id: n,
+            inputs: vec![],
+            calculi: c.into_iter().map(|calculus| (calculus.id.clone(), calculus)).collect(),
+            returned: (t, e),
+            location: Location{ file_id, range: start..end },
+        }
+    }
 };
 
 /// Catches node
