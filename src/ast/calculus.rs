@@ -7,7 +7,7 @@ use super::expression::Expression;
 pub struct Calculus {
     /// Identifier of the new element.
     pub id: String,
-    /// Element optional type.
+    /// Element type.
     pub element_type: Type,
     /// The expression defining the element.
     pub expression: Expression,
