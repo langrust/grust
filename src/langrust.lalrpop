@@ -593,11 +593,22 @@ pub node: Node = {
 
 /// Catches component
 pub component: Component = {
-    <start:@L> "component" <end:@R> => {
+    <start:@L> "component" <c: ID> "(" <i: hash<ID, basicType>> ")" "{" <e: equation+> "}" <end:@R> => {
         Component {
+            id: c,
+            inputs: i,
+            equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             location: Location{ file_id, range: start..end },
         }
     },
+    <start:@L> "component" <c: ID> "()" "{" <e: equation+> "}" <end:@R> => {
+        Component {
+            id: c,
+            inputs: vec![],
+            equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
+            location: Location{ file_id, range: start..end },
+        }
+    }
 };
 
 /// Catches LanGRust modules

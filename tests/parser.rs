@@ -131,6 +131,9 @@ mod langrust_ast_constructs {
                     }
                 ],
                 component: Component {
+                    id: todo!(),
+                    inputs: todo!(),
+                    equations: todo!(),
                     location: Location::default()
                 },
                 location: Location::default()
@@ -202,6 +205,58 @@ mod langrust_ast_constructs {
                 size: 3,
                 location: Location::default(),
             }
+        );
+    }
+
+    #[test]
+    fn component_parser() {
+        let mut files = files::Files::new();
+
+        let component_test_id = files
+            .add(
+                "component_test.gr",
+                "component test(i: int){out o: int = x; x: int = i;}",
+            )
+            .unwrap();
+
+        let component = langrust::componentParser::new()
+            .parse(component_test_id, &files.source(component_test_id).unwrap())
+            .unwrap();
+        assert_eq!(
+            component,
+            Component {
+                id: String::from("test"),
+                inputs: vec![(String::from("i"), Type::Integer)],
+                equations: vec![
+                    (
+                        String::from("o"),
+                        Equation {
+                            scope: Scope::Output,
+                            id: String::from("o"),
+                            signal_type: Type::Integer,
+                            expression: StreamExpression::SignalCall {
+                                id: String::from("x"),
+                                location: Location::default(),
+                            },
+                            location: Location::default(),
+                        }
+                    ),
+                    (
+                        String::from("x"),
+                        Equation {
+                            scope: Scope::Local,
+                            id: String::from("x"),
+                            signal_type: Type::Integer,
+                            expression: StreamExpression::SignalCall {
+                                id: String::from("i"),
+                                location: Location::default(),
+                            },
+                            location: Location::default(),
+                        }
+                    )
+                ],
+                location: Location::default(),
+            },
         );
     }
 
