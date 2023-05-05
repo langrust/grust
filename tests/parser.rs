@@ -271,7 +271,7 @@ mod langrust_ast_constructs {
         let file_id16 = files
             .add(
                 "match_test.gr", 
-                "match a with Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 end"
+                "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }"
             )
             .unwrap();
 
@@ -738,7 +738,7 @@ mod langrust_ast_constructs {
         let file_id16 = files
             .add(
                 "match_test.gr",
-                "match a with Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 end"
+                "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }"
             )
             .unwrap();
 
