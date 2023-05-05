@@ -5,6 +5,7 @@ use crate::ast::{
     expression::Expression,
     calculus::Calculus,
     stream_expression::StreamExpression,
+    equation::Equation,
     user_defined_type::UserDefinedType,
     function::Function,
     node::Node,
@@ -505,6 +506,19 @@ pub streamExpression: StreamExpression = {
     },
     fourthBinaryStreamExpression,
 };
+
+/// Catches equation
+pub equation: Equation = {
+    <start:@L> <s: scope> <id: ID> ":" <t: basicType> "=" <e: streamExpression> ";" <end:@R> => {
+        Equation {
+            scope: s,
+            id,
+            signal_type: t,
+            expression: e,
+            location: Location{ file_id, range: start..end }
+        }
+    }
+}
 
 /// Catches type definition
 pub userType: UserDefinedType = {
