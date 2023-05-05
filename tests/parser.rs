@@ -37,6 +37,8 @@ mod langrust_ast_constructs {
             file,
             File::Module {
                 user_defined_types: vec![UserDefinedType::Enumeration {
+                    id: todo!(),
+                    elements: todo!(),
                     location: Location::default()
                 }],
                 functions: vec![
@@ -87,9 +89,14 @@ mod langrust_ast_constructs {
             File::Program {
                 user_defined_types: vec![
                     UserDefinedType::Array {
+                        id: todo!(),
+                        array_type: todo!(),
+                        size: todo!(),
                         location: Location::default()
                     },
                     UserDefinedType::Structure {
+                        id: todo!(),
+                        fields: todo!(),
                         location: Location::default()
                     }
                 ],
@@ -128,6 +135,73 @@ mod langrust_ast_constructs {
                 },
                 location: Location::default()
             },
+        );
+    }
+
+    #[test]
+    fn user_types_parser() {
+        let mut files = files::Files::new();
+
+        let struct_test_id = files
+            .add(
+                "struct_test.gr",
+                "struct Point {x: int, y: int, }",
+            )
+            .unwrap();
+        let enum_test_id = files
+            .add(
+                "enum_test.gr",
+                "enum Color { Red, Blue, Green, Yellow }",
+            )
+            .unwrap();
+        let array_test_id = files
+            .add(
+                "array_test.gr",
+                "array Matrix [[int; 3]; 3]",
+            )
+            .unwrap();
+
+        let user_type = langrust::userTypeParser::new()
+            .parse(struct_test_id, &files.source(struct_test_id).unwrap())
+            .unwrap();
+        assert_eq!(
+            user_type,
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            }
+        );
+        let user_type = langrust::userTypeParser::new()
+            .parse(enum_test_id, &files.source(enum_test_id).unwrap())
+            .unwrap();
+        assert_eq!(
+            user_type,
+            UserDefinedType::Enumeration {
+                id: String::from("Color"),
+                elements: vec![
+                    String::from("Red"),
+                    String::from("Blue"),
+                    String::from("Green"),
+                    String::from("Yellow"),
+                ],
+                location: Location::default(),
+            }
+        );
+        let user_type = langrust::userTypeParser::new()
+            .parse(array_test_id, &files.source(array_test_id).unwrap())
+            .unwrap();
+        assert_eq!(
+            user_type,
+            UserDefinedType::Array {
+                id: String::from("Matrix"),
+                array_type: Type::Array(Box::new(Type::Integer), 3),
+                size: 3,
+                location: Location::default(),
+            }
         );
     }
 
