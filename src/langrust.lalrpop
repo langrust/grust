@@ -189,8 +189,8 @@ term: Expression = {
         }
     },
     // catches pattern matching as expressions
-    <start:@L> "match" <expr: expression> "with"
-    <v_arm: list<arm<expression>>> "end" <end:@R> => {
+    <start:@L> "match" "(" <expr: expression> ")" "{"
+    <v_arm: list<arm<expression>>> "}" <end:@R> => {
         Expression::Match {
             expression: Box::new(expr),
             arms: v_arm,
@@ -363,8 +363,8 @@ streamTerm: StreamExpression = {
         }
     },
     // catches pattern matching as stream expressions
-    <start:@L> "match" <expr: streamExpression> "with"
-    <v_arm: list<arm<streamExpression>>> "end" <end:@R> => {
+    <start:@L> "match" "(" <expr: streamExpression> ")" "{"
+    <v_arm: list<arm<streamExpression>>> "}" <end:@R> => {
         StreamExpression::Match {
             expression: Box::new(expr),
             arms: v_arm,
