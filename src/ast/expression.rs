@@ -85,3 +85,51 @@ pub enum Expression {
         location: Location,
     },
 }
+
+impl Expression {
+    /// Add a [Type] to the expression.
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{constant::Constant, expression::Expression, location::Location};
+    /// let mut expression = Expression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     ty: None,
+    ///     location: Location::default(),
+    /// };
+    /// expression.typing();
+    /// ```
+    pub fn typing(&mut self) {
+        match self {
+            Expression::Constant {
+                constant,
+                ty,
+                location: _,
+            } => *ty = Some(constant.get_type()),
+            _ => (),
+        }
+    }
+}
+
+#[cfg(test)]
+mod typing {
+    use crate::ast::{constant::Constant, expression::Expression, location::Location};
+
+    #[test]
+    fn should_type_constant_expression() {
+        let mut expression = Expression::Constant {
+            constant: Constant::Integer(0),
+            ty: None,
+            location: Location::default(),
+        };
+        let control = Expression::Constant {
+            constant: Constant::Integer(0),
+            ty: Some(Constant::Integer(0).get_type()),
+            location: Location::default(),
+        };
+
+        expression.typing();
+
+        assert_eq!(expression, control);
+    }
+}
