@@ -1,4 +1,4 @@
-use crate::util::{location::Location, type_system::Type, scope::Scope};
+use crate::ast::{location::Location, type_system::Type, scope::Scope};
 
 use super::stream_expression::StreamExpression;
 

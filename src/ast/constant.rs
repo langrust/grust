@@ -18,8 +18,8 @@ use super::type_system::Type;
 /// # Example
 /// ```rust
 /// use codespan_reporting::files::{Files, SimpleFiles};
-/// use grustine::util::constant::Constant;
-/// use grustine::langrust;
+/// use grustine::ast::constant::Constant;
+/// use grustine::parser::langrust;
 /// let mut files = SimpleFiles::new();
 /// let file_id = files.add(
 ///     "constant_test.gr",
@@ -50,7 +50,7 @@ impl Constant {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::util::{constant::Constant, type_system::Type};
+    /// use grustine::ast::{constant::Constant, type_system::Type};
     /// let c: Constant = Constant::Integer(6);
     /// assert_eq!(c.get_type(), Type::Integer);
     /// ```

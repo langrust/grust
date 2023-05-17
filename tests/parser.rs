@@ -6,9 +6,9 @@ mod langrust_ast_constructs {
         file::File, function::Function, node::Node, pattern::Pattern,
         stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
-    use grustine::langrust;
-    use grustine::util::scope::Scope;
-    use grustine::util::{
+    use grustine::parser::langrust;
+    use grustine::ast::scope::Scope;
+    use grustine::ast::{
         constant::Constant,
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},

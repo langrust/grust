@@ -12,11 +12,11 @@ use crate::ast::{
     component::Component,
     file::File,
 };
-use crate::util::operator::{UnaryOperator, BinaryOperator, OtherOperator};
-use crate::util::constant::Constant;
-use crate::util::scope::Scope;
-use crate::util::type_system::Type;
-use crate::util::location::Location;
+use crate::ast::operator::{UnaryOperator, BinaryOperator, OtherOperator};
+use crate::ast::constant::Constant;
+use crate::ast::scope::Scope;
+use crate::ast::type_system::Type;
+use crate::ast::location::Location;
 
 grammar(file_id: usize);
 

@@ -1,4 +1,4 @@
-use crate::util::{location::Location, type_system::Type};
+use crate::ast::{location::Location, type_system::Type};
 
 use crate::ast::equation::Equation;
 

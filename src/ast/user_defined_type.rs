@@ -1,4 +1,4 @@
-use crate::util::{location::Location, type_system::Type};
+use crate::ast::{location::Location, type_system::Type};
 
 #[derive(Debug, PartialEq)]
 /// LanGRust user defined type AST.
