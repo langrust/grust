@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-use super::type_system::Type;
+use crate::ast::type_system::Type;
 
 /// LanGrust constants.
 ///

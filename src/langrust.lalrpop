@@ -1,22 +1,22 @@
 use std::str::FromStr;
 
 use crate::ast::{
-    pattern::Pattern,
-    expression::Expression,
     calculus::Calculus,
-    stream_expression::StreamExpression,
-    equation::Equation,
-    user_defined_type::UserDefinedType,
-    function::Function,
-    node::Node,
     component::Component,
+    constant::Constant,
+    equation::Equation,
+    expression::Expression,
     file::File,
+    function::Function,
+    location::Location,
+    node::Node,
+    operator::{UnaryOperator, BinaryOperator, OtherOperator},
+    pattern::Pattern,
+    scope::Scope,
+    stream_expression::StreamExpression,
+    type_system::Type,
+    user_defined_type::UserDefinedType,
 };
-use crate::ast::operator::{UnaryOperator, BinaryOperator, OtherOperator};
-use crate::ast::constant::Constant;
-use crate::ast::scope::Scope;
-use crate::ast::type_system::Type;
-use crate::ast::location::Location;
 
 grammar(file_id: usize);
 

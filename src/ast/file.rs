@@ -1,7 +1,6 @@
-use crate::ast::location::Location;
-
-use super::{
-    component::Component, function::Function, node::Node, user_defined_type::UserDefinedType,
+use crate::ast::{
+    component::Component, function::Function, location::Location, node::Node,
+    user_defined_type::UserDefinedType,
 };
 
 #[derive(Debug, PartialEq)]

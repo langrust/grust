@@ -1,6 +1,6 @@
-use crate::ast::{location::Location, type_system::Type, scope::Scope};
-
-use super::stream_expression::StreamExpression;
+use crate::ast::{
+    location::Location, scope::Scope, stream_expression::StreamExpression, type_system::Type,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust equation AST.
