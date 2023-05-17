@@ -183,6 +183,7 @@ term: Expression = {
     <start:@L> <id: ID> <end:@R> => {
         Expression::Call{
             id,
+            ty: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -191,6 +192,7 @@ term: Expression = {
         Expression::Application {
             expression: Box::new(Expression::Call{
                 id: UnaryOperator::Brackets.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start..end }
             }),
             inputs: vec![e],
@@ -202,6 +204,7 @@ term: Expression = {
         Expression::Application {
             expression: Box::new(Expression::Call {
                 id: fun_name,
+                ty: None,
                 location: Location{ file_id, range: start..end_fun }
             }),
             inputs: v_expr,
@@ -222,6 +225,7 @@ term: Expression = {
         Expression::Application {
             expression: Box::new(Expression::Call {
                 id: OtherOperator::Print.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start..end }
             }),
             inputs: vec![e],
@@ -258,6 +262,7 @@ unaryExpression: Expression = {
         Expression::Application {
             expression: Box::new(Expression::Call {
                 id: op.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start_op..end_op }
             }),
             inputs: vec![e],
@@ -274,6 +279,7 @@ auxBinaryExpression<Op,E>: Expression = {
         Expression::Application{
             expression: Box::new(Expression::Call{
                 id: op.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start_op..end_op }
             }),
             inputs: vec![e1, e2],
@@ -296,6 +302,7 @@ pub expression: Expression = {
         Expression::Application {
             expression: Box::new(Expression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start..end }
             }),
             inputs: vec![e1, e2, e3],
@@ -311,6 +318,7 @@ pub expression: Expression = {
                 Some(e1) => Box::new(e1),
                 None => Box::new(Expression::Call {
                     id,
+                    ty: None,
                     location: Location{ file_id, range: start_id..end_id }
                 })
             },
@@ -371,6 +379,7 @@ streamTerm: StreamExpression = {
         StreamExpression::MapApplication {
             expression: Expression::Call{
                 id: UnaryOperator::Brackets.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start..end }
             },
             inputs: vec![e],
@@ -408,6 +417,7 @@ streamTerm: StreamExpression = {
         StreamExpression::MapApplication {
             expression: Expression::Call {
                 id: OtherOperator::Print.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start..end }
             },
             inputs: vec![e],
@@ -444,6 +454,7 @@ unaryStreamExpression: StreamExpression = {
         StreamExpression::MapApplication {
             expression: Expression::Call {
                 id: op.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start_op..end_op }
             },
             inputs: vec![e],
@@ -460,6 +471,7 @@ auxBinaryStreamExpression<Op,E>: StreamExpression = {
         StreamExpression::MapApplication{
             expression: Expression::Call{
                 id: op.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start_op..end_op }
             },
             inputs: vec![e1, e2],
@@ -490,6 +502,7 @@ pub streamExpression: StreamExpression = {
         StreamExpression::MapApplication {
             expression: Expression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
+                ty: None,
                 location: Location{ file_id, range: start..end }
             },
             inputs: vec![e1, e2, e3],
