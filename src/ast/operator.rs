@@ -1,5 +1,5 @@
 /// LanGrust binary operators.
-/// 
+///
 /// [BinaryOperator] enumeration represents all possible binary operations
 /// that can be used in a LanGRust program:
 /// - [BinaryOperator::Mul] is the multiplication `*`
@@ -60,7 +60,7 @@ impl ToString for BinaryOperator {
 }
 
 /// LanGrust unary operators.
-/// 
+///
 /// [UnaryOperator] enumeration represents all possible unary operations
 /// that can be used in a LanGRust program:
 /// - [UnaryOperator::Neg] is the numerical negation `-`
@@ -85,7 +85,7 @@ impl ToString for UnaryOperator {
 }
 
 /// Other builtin operators in LanGrust.
-/// 
+///
 /// [OtherOperator] enumeration represents all other operations
 /// that can be used in a LanGRust program:
 /// - [OtherOperator::IfThenElse] is `if _ then _ else _`
@@ -102,5 +102,84 @@ impl ToString for OtherOperator {
             OtherOperator::IfThenElse => String::from("if_then_else"),
             OtherOperator::Print => String::from("print"),
         }
+    }
+}
+
+#[cfg(test)]
+mod to_string {
+    use crate::ast::operator::{BinaryOperator, OtherOperator, UnaryOperator};
+
+    #[test]
+    fn should_convert_negation_operator_to_string() {
+        assert_eq!(String::from("-"), UnaryOperator::Neg.to_string());
+    }
+    #[test]
+    fn should_convert_not_operator_to_string() {
+        assert_eq!(String::from("!"), UnaryOperator::Not.to_string());
+    }
+    #[test]
+    fn should_convert_brackets_operator_to_string() {
+        assert_eq!(String::from("(_)"), UnaryOperator::Brackets.to_string());
+    }
+
+    #[test]
+    fn should_convert_multiplication_operator_to_string() {
+        assert_eq!(String::from(" * "), BinaryOperator::Mul.to_string());
+    }
+    #[test]
+    fn should_convert_division_operator_to_string() {
+        assert_eq!(String::from(" / "), BinaryOperator::Div.to_string());
+    }
+    #[test]
+    fn should_convert_addition_operator_to_string() {
+        assert_eq!(String::from(" + "), BinaryOperator::Add.to_string());
+    }
+    #[test]
+    fn should_convert_substraction_operator_to_string() {
+        assert_eq!(String::from(" - "), BinaryOperator::Sub.to_string());
+    }
+    #[test]
+    fn should_convert_and_operator_to_string() {
+        assert_eq!(String::from(" && "), BinaryOperator::And.to_string());
+    }
+    #[test]
+    fn should_convert_or_operator_to_string() {
+        assert_eq!(String::from(" || "), BinaryOperator::Or.to_string());
+    }
+    #[test]
+    fn should_convert_equality_operator_to_string() {
+        assert_eq!(String::from(" == "), BinaryOperator::Eq.to_string());
+    }
+    #[test]
+    fn should_convert_difference_operator_to_string() {
+        assert_eq!(String::from(" != "), BinaryOperator::Dif.to_string());
+    }
+    #[test]
+    fn should_convert_greater_equal_operator_to_string() {
+        assert_eq!(String::from(" >= "), BinaryOperator::Geq.to_string());
+    }
+    #[test]
+    fn should_convert_lower_equal_operator_to_string() {
+        assert_eq!(String::from(" <= "), BinaryOperator::Leq.to_string());
+    }
+    #[test]
+    fn should_convert_greater_operator_to_string() {
+        assert_eq!(String::from(" > "), BinaryOperator::Grt.to_string());
+    }
+    #[test]
+    fn should_convert_lower_operator_to_string() {
+        assert_eq!(String::from(" < "), BinaryOperator::Low.to_string());
+    }
+
+    #[test]
+    fn should_convert_ifthenelse_operator_to_string() {
+        assert_eq!(
+            String::from("if_then_else"),
+            OtherOperator::IfThenElse.to_string()
+        );
+    }
+    #[test]
+    fn should_convert_print_operator_to_string() {
+        assert_eq!(String::from("print"), OtherOperator::Print.to_string());
     }
 }
