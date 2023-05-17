@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ast::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -93,21 +95,28 @@ impl Expression {
     ///
     /// # Example
     /// ```rust
+    /// use std::collections::HashMap;
     /// use grustine::ast::{constant::Constant, expression::Expression, location::Location};
+    /// let mut elements_context = HashMap::new();
     /// let mut expression = Expression::Constant {
     ///     constant: Constant::Integer(0),
     ///     ty: None,
     ///     location: Location::default(),
     /// };
-    /// expression.typing();
+    /// expression.typing(&mut elements_context);
     /// ```
-    pub fn typing(&mut self) {
+    pub fn typing(&mut self, elements_context: &mut HashMap<String, Type>) {
         match self {
             Expression::Constant {
                 constant,
                 ty,
                 location: _,
             } => *ty = Some(constant.get_type()),
+            Expression::Call {
+                id,
+                ty,
+                location: _,
+            } => *ty = elements_context.get(id).cloned(),
             _ => (),
         }
     }
@@ -115,10 +124,13 @@ impl Expression {
 
 #[cfg(test)]
 mod typing {
-    use crate::ast::{constant::Constant, expression::Expression, location::Location};
+    use std::collections::HashMap;
+    use crate::ast::{constant::Constant, expression::Expression, location::Location, type_system::Type};
 
     #[test]
     fn should_type_constant_expression() {
+        let mut elements_context = HashMap::new();
+
         let mut expression = Expression::Constant {
             constant: Constant::Integer(0),
             ty: None,
@@ -130,7 +142,28 @@ mod typing {
             location: Location::default(),
         };
 
-        expression.typing();
+        expression.typing(&mut elements_context);
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_type_call_expression() {
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("x"), Type::Integer);
+
+        let mut expression = Expression::Call {
+            id: String::from("x"),
+            ty: None,
+            location: Location::default(),
+        };
+        let control = Expression::Call {
+            id: String::from("x"),
+            ty: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        expression.typing(&mut elements_context);
 
         assert_eq!(expression, control);
     }
