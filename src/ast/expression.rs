@@ -7,6 +7,8 @@ pub enum Expression {
     Constant {
         /// The constant.
         constant: Constant,
+        /// Expression type.
+        ty: Option<Type>,
         /// Expression location.
         location: Location,
     },
