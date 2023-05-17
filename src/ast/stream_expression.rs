@@ -1,6 +1,6 @@
-use crate::ast::{constant::Constant, location::Location};
-
-use super::{expression::Expression, pattern::Pattern};
+use crate::ast::{
+    constant::Constant, expression::Expression, location::Location, pattern::Pattern,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression AST.

@@ -1,6 +1,4 @@
-use crate::ast::{location::Location, type_system::Type};
-
-use crate::ast::equation::Equation;
+use crate::ast::{equation::Equation, location::Location, type_system::Type};
 
 #[derive(Debug, PartialEq)]
 /// LanGRust component AST.

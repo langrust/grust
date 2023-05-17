@@ -1,6 +1,4 @@
-use crate::ast::{location::Location, type_system::Type};
-
-use super::expression::Expression;
+use crate::ast::{expression::Expression, location::Location, type_system::Type};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust calculus AST.
