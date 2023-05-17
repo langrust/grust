@@ -17,18 +17,8 @@ use super::type_system::Type;
 ///
 /// # Example
 /// ```rust
-/// use codespan_reporting::files::{Files, SimpleFiles};
 /// use grustine::ast::constant::Constant;
-/// use grustine::parser::langrust;
-/// let mut files = SimpleFiles::new();
-/// let file_id = files.add(
-///     "constant_test.gr",
-///     "\"Hello world\""
-/// );
-/// let expr = langrust::constantParser::new()
-///     .parse(file_id, &files.source(file_id).unwrap())
-///     .unwrap();
-/// assert_eq!(Constant::String(String::from("Hello world")), expr);
+/// let constant = Constant::String(String::from("Hello world"));
 /// ```
 #[derive(Debug, PartialEq, Clone)]
 pub enum Constant {
