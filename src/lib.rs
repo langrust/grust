@@ -90,7 +90,9 @@
 extern crate lalrpop_util;
 extern crate codespan_reporting;
 
-/// LanGRust parser module.
-pub mod parser;
 /// LanGRust AST module.
 pub mod ast;
+/// LanGRust error handler module.
+pub mod error;
+/// LanGRust parser module.
+pub mod parser;
