@@ -67,3 +67,39 @@ impl Display for Constant {
         }
     }
 }
+
+#[cfg(test)]
+mod get_type {
+    use crate::ast::{constant::Constant, type_system::Type};
+
+    #[test]
+    fn should_return_integer_type_to_integer_constant() {
+        assert_eq!(Type::Integer, Constant::Integer(0).get_type());
+    }
+    #[test]
+    fn should_return_float_type_to_float_constant() {
+        assert_eq!(Type::Float, Constant::Float(0.0).get_type());
+    }
+    #[test]
+    fn should_return_boolean_type_to_boolean_constant() {
+        assert_eq!(Type::Boolean, Constant::Boolean(true).get_type());
+    }
+    #[test]
+    fn should_return_string_type_to_string_constant() {
+        assert_eq!(
+            Type::String,
+            Constant::String(String::from("Hello world!")).get_type()
+        );
+    }
+    #[test]
+    fn should_return_unit_type_to_unit_constant() {
+        assert_eq!(Type::Unit, Constant::Unit.get_type());
+    }
+    #[test]
+    fn should_return_enumeration_type_to_enumeration_constant() {
+        assert_eq!(
+            Type::Enumeration(String::from("Color")),
+            Constant::Enumeration(String::from("Color"), String::from("Yellow")).get_type()
+        );
+    }
+}
