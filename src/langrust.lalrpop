@@ -175,6 +175,7 @@ term: Expression = {
     <start:@L> <c: constant> <end:@R> => {
         Expression::Constant {
             constant: c,
+            ty: None,
             location: Location{ file_id, range: start..end },
         }
     },
