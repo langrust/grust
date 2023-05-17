@@ -20,7 +20,7 @@ use std::fmt::{self, Display};
 ///
 /// # Example
 /// ```rust
-/// use grustine::util::type_system::Type;
+/// use grustine::ast::type_system::Type;
 /// let number_types = vec![Type::Integer, Type::Float];
 /// let addition_type = {
 ///     let v_t = number_types.into_iter()

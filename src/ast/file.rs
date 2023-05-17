@@ -1,4 +1,4 @@
-use crate::util::location::Location;
+use crate::ast::location::Location;
 
 use super::{
     component::Component, function::Function, node::Node, user_defined_type::UserDefinedType,

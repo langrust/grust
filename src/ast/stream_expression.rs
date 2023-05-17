@@ -1,4 +1,4 @@
-use crate::util::{constant::Constant, location::Location};
+use crate::ast::{constant::Constant, location::Location};
 
 use super::{expression::Expression, pattern::Pattern};
 

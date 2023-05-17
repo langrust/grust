@@ -1,4 +1,4 @@
-use crate::util::{constant::Constant, location::Location, type_system::Type};
+use crate::ast::{constant::Constant, location::Location, type_system::Type};
 
 use crate::ast::pattern::Pattern;
 
