@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod langrust_ast_constructs {
-    use codespan_reporting::files::Files;
+    use codespan_reporting::files::{SimpleFiles, Files};
     use grustine::ast::{
         calculus::Calculus, component::Component, equation::Equation, expression::Expression,
         file::File, function::Function, node::Node, pattern::Pattern,
@@ -10,7 +10,6 @@ mod langrust_ast_constructs {
     use grustine::util::scope::Scope;
     use grustine::util::{
         constant::Constant,
-        files,
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         type_system::Type,
@@ -18,7 +17,7 @@ mod langrust_ast_constructs {
 
     #[test]
     fn file_parser() {
-        let mut files = files::Files::new();
+        let mut files = SimpleFiles::new();
 
         let module_test_id = files
             .add(
@@ -29,8 +28,7 @@ mod langrust_ast_constructs {
                 node test(i: int){out o: int = x; x: int = i;}
                 function test(i: int) -> int {let x: int = i; let o: int = x; return o;}
                 node test(i: int){out o: int = x; x: int = i;}"
-            )
-            .unwrap();
+            );
         let program_test_id = files
             .add(
                 "program_test.gr",
@@ -41,8 +39,7 @@ mod langrust_ast_constructs {
                 function test(i: int) -> int {let x: int = i; let o: int = x; return o;}
                 struct Point {x: int, y: int, }
                 function test(i: int) -> int {let x: int = i; let o: int = x; return o;}",
-            )
-            .unwrap();
+            );
 
         let file = langrust::fileParser::new()
             .parse(module_test_id, &files.source(module_test_id).unwrap())
@@ -453,26 +450,23 @@ mod langrust_ast_constructs {
 
     #[test]
     fn user_types_parser() {
-        let mut files = files::Files::new();
+        let mut files = SimpleFiles::new();
 
         let struct_test_id = files
             .add(
                 "struct_test.gr",
                 "struct Point {x: int, y: int, }",
-            )
-            .unwrap();
+            );
         let enum_test_id = files
             .add(
                 "enum_test.gr",
                 "enum Color { Red, Blue, Green, Yellow }",
-            )
-            .unwrap();
+            );
         let array_test_id = files
             .add(
                 "array_test.gr",
                 "array Matrix [[int; 3]; 3]",
-            )
-            .unwrap();
+            );
 
         let user_type = langrust::userTypeParser::new()
             .parse(struct_test_id, &files.source(struct_test_id).unwrap())
@@ -520,14 +514,13 @@ mod langrust_ast_constructs {
 
     #[test]
     fn component_parser() {
-        let mut files = files::Files::new();
+        let mut files = SimpleFiles::new();
 
         let component_test_id = files
             .add(
                 "component_test.gr",
                 "component test(i: int){out o: int = x; x: int = i;}",
-            )
-            .unwrap();
+            );
 
         let component = langrust::componentParser::new()
             .parse(component_test_id, &files.source(component_test_id).unwrap())
@@ -572,14 +565,13 @@ mod langrust_ast_constructs {
 
     #[test]
     fn node_parser() {
-        let mut files = files::Files::new();
+        let mut files = SimpleFiles::new();
 
         let node_test_id = files
             .add(
                 "node_test.gr",
                 "node test(i: int){out o: int = x; x: int = i;}",
-            )
-            .unwrap();
+            );
 
         let node = langrust::nodeParser::new()
             .parse(node_test_id, &files.source(node_test_id).unwrap())
@@ -624,14 +616,13 @@ mod langrust_ast_constructs {
 
     #[test]
     fn function_parser() {
-        let mut files = files::Files::new();
+        let mut files = SimpleFiles::new();
 
         let function_test_id = files
             .add(
                 "function_test.gr",
                 "function test(i: int) -> int {let x: int = i; let o: int = x; return o;}",
-            )
-            .unwrap();
+            );
 
         let function = langrust::functionParser::new()
             .parse(function_test_id, &files.source(function_test_id).unwrap())
@@ -681,16 +672,14 @@ mod langrust_ast_constructs {
 
     #[test]
     fn equation() {
-        let mut files = files::Files::new();
+        let mut files = SimpleFiles::new();
         let file_id1 = files
-            .add("equation_test.gr", "c: Color = Color.Yellow;")
-            .unwrap();
+            .add("equation_test.gr", "c: Color = Color.Yellow;");
         let file_id2 = files
             .add(
                 "equation_match_test.gr",
                 "out compare: int = match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 };"
-            )
-            .unwrap();
+            );
 
         let equation = langrust::equationParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -818,16 +807,14 @@ mod langrust_ast_constructs {
 
     #[test]
     fn calculus() {
-        let mut files = files::Files::new();
+        let mut files = SimpleFiles::new();
         let file_id1 = files
-            .add("calculus_test.gr", "let c: Color = Color.Yellow;")
-            .unwrap();
+            .add("calculus_test.gr", "let c: Color = Color.Yellow;");
         let file_id2 = files
             .add(
                 "calculus_match_test.gr",
                 "let compare: int = match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 };"
-            )
-            .unwrap();
+            );
 
         let calculus = langrust::calculusParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -953,15 +940,15 @@ mod langrust_ast_constructs {
 
     #[test]
     fn types() {
-        let mut files = files::Files::new();
-        let file_id1 = files.add("int_test.gr", "int").unwrap();
-        let file_id2 = files.add("float_test.gr", "float").unwrap();
-        let file_id3 = files.add("bool_test.gr", "bool").unwrap();
-        let file_id4 = files.add("string_test.gr", "string").unwrap();
-        let file_id5 = files.add("unit_test.gr", "unit").unwrap();
-        let file_id6 = files.add("array_test.gr", "[int; 3]").unwrap();
-        let file_id7 = files.add("option_test.gr", "int?").unwrap();
-        let file_id8 = files.add("undefined_type_test.gr", "Color").unwrap();
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("int_test.gr", "int");
+        let file_id2 = files.add("float_test.gr", "float");
+        let file_id3 = files.add("bool_test.gr", "bool");
+        let file_id4 = files.add("string_test.gr", "string");
+        let file_id5 = files.add("unit_test.gr", "unit");
+        let file_id6 = files.add("array_test.gr", "[int; 3]");
+        let file_id7 = files.add("option_test.gr", "int?");
+        let file_id8 = files.add("undefined_type_test.gr", "Color");
 
         let basic_type = langrust::basicTypeParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -999,15 +986,14 @@ mod langrust_ast_constructs {
 
     #[test]
     fn pattern() {
-        let mut files = files::Files::new();
-        let file_id1 = files.add("identifier_test.gr", "x").unwrap();
-        let file_id2 = files.add("constant_test.gr", "Color.Yellow").unwrap();
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("identifier_test.gr", "x");
+        let file_id2 = files.add("constant_test.gr", "Color.Yellow");
         let file_id3 = files
-            .add("structure_test.gr", "Point { x: 0, y: _}")
-            .unwrap();
-        let file_id4 = files.add("some_test.gr", "some(value)").unwrap();
-        let file_id5 = files.add("none_test.gr", "none").unwrap();
-        let file_id6 = files.add("default_test.gr", "_").unwrap();
+            .add("structure_test.gr", "Point { x: 0, y: _}");
+        let file_id4 = files.add("some_test.gr", "some(value)");
+        let file_id5 = files.add("none_test.gr", "none");
+        let file_id6 = files.add("default_test.gr", "_");
 
         let pattern = langrust::patternParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1089,43 +1075,36 @@ mod langrust_ast_constructs {
 
     #[test]
     fn stream_expression() {
-        let mut files = files::Files::new();
-        let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
-        let file_id2 = files.add("signal_call_test.gr", "x").unwrap();
-        let file_id3 = files.add("brackets_test.gr", "(3)").unwrap();
-        let file_id4 = files.add("unary_test.gr", "-3").unwrap();
-        let file_id5 = files.add("binary_test.gr", "4*5-3").unwrap();
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("constant_test.gr", "Color.Yellow");
+        let file_id2 = files.add("signal_call_test.gr", "x");
+        let file_id3 = files.add("brackets_test.gr", "(3)");
+        let file_id4 = files.add("unary_test.gr", "-3");
+        let file_id5 = files.add("binary_test.gr", "4*5-3");
         let file_id6 = files
-            .add("map_application_test.gr", "(x*y).map(sqrt)")
-            .unwrap();
+            .add("map_application_test.gr", "(x*y).map(sqrt)");
         let file_id7 = files
-            .add("print_test.gr", "print(\"Hello world\")")
-            .unwrap();
+            .add("print_test.gr", "print(\"Hello world\")");
         let file_id8 = files
             .add(
                 "node_application_test.gr",
                 "my_node(my_input1, my_input2).my_signal",
-            )
-            .unwrap();
-        let file_id9 = files.add("fby_test.gr", "0 fby x + 1").unwrap();
+            );
+        let file_id9 = files.add("fby_test.gr", "0 fby x + 1");
         let file_id10 = files
-            .add("ifthenelse_test.gr", "if b then x else y")
-            .unwrap();
+            .add("ifthenelse_test.gr", "if b then x else y");
         let file_id11 = files
-            .add("struct_test.gr", "Point { x: 3, y: 0, }")
-            .unwrap();
-        let file_id12 = files.add("array_test.gr", "[1, 2, 3]").unwrap();
-        let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]").unwrap();
+            .add("struct_test.gr", "Point { x: 3, y: 0, }");
+        let file_id12 = files.add("array_test.gr", "[1, 2, 3]");
+        let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]");
         let file_id14 = files
-            .add("when_id_test.gr", "when a = x then a else 0")
-            .unwrap();
-        let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
+            .add("when_id_test.gr", "when a = x then a else 0");
+        let file_id15 = files.add("when_test.gr", "when a then a else 0");
         let file_id16 = files
             .add(
                 "match_test.gr",
                 "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
-            )
-            .unwrap();
+            );
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1559,40 +1538,33 @@ mod langrust_ast_constructs {
 
     #[test]
     fn expression() {
-        let mut files = files::Files::new();
-        let file_id1 = files.add("constant_test.gr", "Color.Yellow").unwrap();
-        let file_id2 = files.add("element_call_test.gr", "x").unwrap();
-        let file_id3 = files.add("brackets_test.gr", "(3)").unwrap();
-        let file_id4 = files.add("unary_test.gr", "-3").unwrap();
-        let file_id5 = files.add("binary_test.gr", "4*5-3").unwrap();
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("constant_test.gr", "Color.Yellow");
+        let file_id2 = files.add("element_call_test.gr", "x");
+        let file_id3 = files.add("brackets_test.gr", "(3)");
+        let file_id4 = files.add("unary_test.gr", "-3");
+        let file_id5 = files.add("binary_test.gr", "4*5-3");
         let file_id6 = files
-            .add("function_application_test.gr", "sqrt(4*5-3)")
-            .unwrap();
+            .add("function_application_test.gr", "sqrt(4*5-3)");
         let file_id7 = files
-            .add("print_test.gr", "print(\"Hello world\")")
-            .unwrap();
-        let file_id8 = files.add("abstraction_test.gr", "|x, y| x + y").unwrap();
+            .add("print_test.gr", "print(\"Hello world\")");
+        let file_id8 = files.add("abstraction_test.gr", "|x, y| x + y");
         let file_id9 = files
-            .add("typed_abstraction_test.gr", "|x: int, y: int| x + y")
-            .unwrap();
+            .add("typed_abstraction_test.gr", "|x: int, y: int| x + y");
         let file_id10 = files
-            .add("ifthenelse_test.gr", "if b then x else y")
-            .unwrap();
+            .add("ifthenelse_test.gr", "if b then x else y");
         let file_id11 = files
-            .add("struct_test.gr", "Point { x: 3, y: 0, }")
-            .unwrap();
-        let file_id12 = files.add("array_test.gr", "[1, 2, 3]").unwrap();
-        let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]").unwrap();
+            .add("struct_test.gr", "Point { x: 3, y: 0, }");
+        let file_id12 = files.add("array_test.gr", "[1, 2, 3]");
+        let file_id13 = files.add("unified_array_test.gr", "[0.01; 3]");
         let file_id14 = files
-            .add("when_id_test.gr", "when a = x then a else 0")
-            .unwrap();
-        let file_id15 = files.add("when_test.gr", "when a then a else 0").unwrap();
+            .add("when_id_test.gr", "when a = x then a else 0");
+        let file_id15 = files.add("when_test.gr", "when a then a else 0");
         let file_id16 = files
             .add(
                 "match_test.gr",
                 "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
-            )
-            .unwrap();
+            );
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -2048,13 +2020,13 @@ mod langrust_ast_constructs {
 
     #[test]
     fn constant() {
-        let mut files = files::Files::new();
-        let file_id1 = files.add("unit_test.gr", "()").unwrap();
-        let file_id2 = files.add("bool_test.gr", "true").unwrap();
-        let file_id3 = files.add("int_test.gr", "3").unwrap();
-        let file_id4 = files.add("float_test.gr", "3.540").unwrap();
-        let file_id5 = files.add("string_test.gr", "\"Hello world\"").unwrap();
-        let file_id6 = files.add("enum_test.gr", "Color.Yellow").unwrap();
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("unit_test.gr", "()");
+        let file_id2 = files.add("bool_test.gr", "true");
+        let file_id3 = files.add("int_test.gr", "3");
+        let file_id4 = files.add("float_test.gr", "3.540");
+        let file_id5 = files.add("string_test.gr", "\"Hello world\"");
+        let file_id6 = files.add("enum_test.gr", "Color.Yellow");
 
         let constant = langrust::constantParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
