@@ -16,6 +16,8 @@ pub enum Expression {
     Call {
         /// Element identifier.
         id: String,
+        /// Expression type.
+        ty: Option<Type>,
         /// Expression location.
         location: Location,
     },
