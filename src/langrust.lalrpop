@@ -17,9 +17,8 @@ use crate::util::constant::Constant;
 use crate::util::scope::Scope;
 use crate::util::type_system::Type;
 use crate::util::location::Location;
-use crate::util::files::FileId;
 
-grammar(file_id: FileId);
+grammar(file_id: usize);
 
 /// Skip whitespaces and comments.
 match {

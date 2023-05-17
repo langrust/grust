@@ -17,14 +17,14 @@ use super::type_system::Type;
 ///
 /// # Example
 /// ```rust
-/// use codespan_reporting::files::Files;
-/// use grustine::util::{files, constant::Constant};
+/// use codespan_reporting::files::{Files, SimpleFiles};
+/// use grustine::util::constant::Constant;
 /// use grustine::langrust;
-/// let mut files = files::Files::new();
+/// let mut files = SimpleFiles::new();
 /// let file_id = files.add(
 ///     "constant_test.gr",
 ///     "\"Hello world\""
-/// ).unwrap();
+/// );
 /// let expr = langrust::constantParser::new()
 ///     .parse(file_id, &files.source(file_id).unwrap())
 ///     .unwrap();
