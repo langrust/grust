@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
+use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust expression AST.
@@ -97,38 +98,70 @@ impl Expression {
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::ast::{constant::Constant, expression::Expression, location::Location};
+    /// let mut errors = vec![];
     /// let mut elements_context = HashMap::new();
     /// let mut expression = Expression::Constant {
     ///     constant: Constant::Integer(0),
     ///     ty: None,
     ///     location: Location::default(),
     /// };
-    /// expression.typing(&mut elements_context);
+    /// expression.typing(&mut elements_context, &mut errors).unwrap();
     /// ```
-    pub fn typing(&mut self, elements_context: &mut HashMap<String, Type>) {
+    pub fn typing(
+        &mut self,
+        elements_context: &mut HashMap<String, Type>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
         match self {
             Expression::Constant {
                 constant,
                 ty,
                 location: _,
-            } => *ty = Some(constant.get_type()),
+            } => {
+                *ty = Some(constant.get_type());
+                Ok(())
+            },
             Expression::Call {
                 id,
                 ty,
-                location: _,
-            } => *ty = elements_context.get(id).cloned(),
-            _ => (),
+                location,
+            } => {
+                match elements_context.get(id) {
+                    Some(t) => {
+                        *ty = Some(t.clone());
+                        Ok(())
+                    },
+                    None => {
+                        let error = Error::UnknownElement {
+                            name: id.clone(),
+                            location: location.clone()
+                        };
+                        errors.push(error);
+                        Err(
+                            Error::UnknownElement {
+                                name: id.clone(),
+                                location: location.clone()
+                            }
+                        )
+                    },
+                }
+            },
+            _ => Ok(()),
         }
     }
 }
 
 #[cfg(test)]
 mod typing {
+    use crate::ast::{
+        constant::Constant, expression::Expression, location::Location, type_system::Type,
+    };
+    use crate::error::Error;
     use std::collections::HashMap;
-    use crate::ast::{constant::Constant, expression::Expression, location::Location, type_system::Type};
 
     #[test]
     fn should_type_constant_expression() {
+        let mut errors = vec![];
         let mut elements_context = HashMap::new();
 
         let mut expression = Expression::Constant {
@@ -142,13 +175,14 @@ mod typing {
             location: Location::default(),
         };
 
-        expression.typing(&mut elements_context);
+        expression.typing(&mut elements_context, &mut errors).unwrap();
 
         assert_eq!(expression, control);
     }
 
     #[test]
     fn should_type_call_expression() {
+        let mut errors = vec![];
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Integer);
 
@@ -163,8 +197,31 @@ mod typing {
             location: Location::default(),
         };
 
-        expression.typing(&mut elements_context);
+        expression.typing(&mut elements_context, &mut errors).unwrap();
 
         assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_unknown_element_call() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("x"), Type::Integer);
+
+        let mut expression = Expression::Call {
+            id: String::from("y"),
+            ty: None,
+            location: Location::default(),
+        };
+        let control = vec![
+            Error::UnknownElement {
+                name: String::from("y"),
+                location: Location::default(),
+            }
+        ];
+
+        expression.typing(&mut elements_context, &mut errors).unwrap_err();
+
+        assert_eq!(errors, control);
     }
 }
