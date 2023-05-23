@@ -121,9 +121,24 @@ impl Expression {
             Expression::Call {
                 id,
                 typing,
-                location: _,
-            } => *typing = elements_context.get(id).cloned(),
-            _ => (),
+                location,
+            } => {
+                match elements_context.get(id) {
+                    Some(t) => {
+                        *typing = Some(t.clone());
+                        Ok(())
+                    },
+                    None => {
+                        let error = Error::UnknownElement {
+                            name: id.clone(),
+                            location: location.clone()
+                        };
+                        errors.push(error.clone());
+                        Err(error)
+                    },
+                }
+            },
+            _ => Ok(()),
         }
     }
 }
