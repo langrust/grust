@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
+use crate::common::context::Context;
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -123,20 +124,10 @@ impl Expression {
                 typing,
                 location,
             } => {
-                match elements_context.get(id) {
-                    Some(t) => {
-                        *typing = Some(t.clone());
-                        Ok(())
-                    },
-                    None => {
-                        let error = Error::UnknownElement {
-                            name: id.clone(),
-                            location: location.clone()
-                        };
-                        errors.push(error.clone());
-                        Err(error)
-                    },
-                }
+                let element_type = 
+                    elements_context.get_element_or_error(id.clone(), location.clone(), errors)?;
+                *typing = Some(element_type.clone());
+                Ok(())
             },
             _ => Ok(()),
         }
