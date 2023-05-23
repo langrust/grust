@@ -20,7 +20,7 @@ pub enum Expression {
         /// Element identifier.
         id: String,
         /// Expression type.
-        ty: Option<Type>,
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
@@ -123,12 +123,12 @@ impl Expression {
             },
             Expression::Call {
                 id,
-                ty,
+                typing,
                 location,
             } => {
                 match elements_context.get(id) {
                     Some(t) => {
-                        *ty = Some(t.clone());
+                        *typing = Some(t.clone());
                         Ok(())
                     },
                     None => {
@@ -188,12 +188,12 @@ mod typing {
 
         let mut expression = Expression::Call {
             id: String::from("x"),
-            ty: None,
+            typing: None,
             location: Location::default(),
         };
         let control = Expression::Call {
             id: String::from("x"),
-            ty: Some(Type::Integer),
+            typing: Some(Type::Integer),
             location: Location::default(),
         };
 
@@ -210,7 +210,7 @@ mod typing {
 
         let mut expression = Expression::Call {
             id: String::from("y"),
-            ty: None,
+            typing: None,
             location: Location::default(),
         };
         let control = vec![

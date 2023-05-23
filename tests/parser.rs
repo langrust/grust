@@ -72,7 +72,7 @@ mod langrust_ast_constructs {
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
                                         id: String::from("i"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -85,7 +85,7 @@ mod langrust_ast_constructs {
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
                                         id: String::from("x"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -96,7 +96,7 @@ mod langrust_ast_constructs {
                             Type::Integer,
                             Expression::Call {
                                 id: String::from("o"),
-                                ty: None,
+                                typing: None,
                                 location: Location::default(),
                             },
                         ),
@@ -113,7 +113,7 @@ mod langrust_ast_constructs {
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
                                         id: String::from("i"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -126,7 +126,7 @@ mod langrust_ast_constructs {
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
                                         id: String::from("x"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -137,7 +137,7 @@ mod langrust_ast_constructs {
                             Type::Integer,
                             Expression::Call {
                                 id: String::from("o"),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default(),
                             },
                         ),
@@ -283,7 +283,7 @@ mod langrust_ast_constructs {
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
                                         id: String::from("i"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -296,7 +296,7 @@ mod langrust_ast_constructs {
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
                                         id: String::from("x"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -307,7 +307,7 @@ mod langrust_ast_constructs {
                             Type::Integer,
                             Expression::Call {
                                 id: String::from("o"),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default(),
                             },
                         ),
@@ -324,7 +324,7 @@ mod langrust_ast_constructs {
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
                                         id: String::from("i"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -337,7 +337,7 @@ mod langrust_ast_constructs {
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
                                         id: String::from("x"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -348,7 +348,7 @@ mod langrust_ast_constructs {
                             Type::Integer,
                             Expression::Call {
                                 id: String::from("o"),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default(),
                             },
                         ),
@@ -638,7 +638,7 @@ mod langrust_ast_constructs {
                             element_type: Type::Integer,
                             expression: Expression::Call {
                                 id: String::from("i"),
-                                ty: None,
+                                typing: None,
                                 location: Location::default(),
                             },
                             location: Location::default(),
@@ -651,7 +651,7 @@ mod langrust_ast_constructs {
                             element_type: Type::Integer,
                             expression: Expression::Call {
                                 id: String::from("x"),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default(),
                             },
                             location: Location::default(),
@@ -662,7 +662,7 @@ mod langrust_ast_constructs {
                     Type::Integer,
                     Expression::Call {
                         id: String::from("o"),
-                                        ty: None,
+                        typing: None,
                         location: Location::default(),
                     },
                 ),
@@ -760,7 +760,7 @@ mod langrust_ast_constructs {
                             Some(StreamExpression::MapApplication {
                                 expression: Expression::Call {
                                     id: BinaryOperator::Low.to_string(),
-                                        ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 },
                                 inputs: vec![
@@ -778,7 +778,7 @@ mod langrust_ast_constructs {
                             StreamExpression::MapApplication {
                                 expression: Expression::Call {
                                     id: UnaryOperator::Neg.to_string(),
-                                    ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 },
                                 inputs: vec![StreamExpression::Constant {
@@ -843,7 +843,7 @@ mod langrust_ast_constructs {
                 expression: Expression::Match {
                     expression: Box::new(Expression::Call {
                         id: String::from("a"),
-                        ty: None,
+                        typing: None,
                         location: Location::default()
                     }),
                     arms: vec![
@@ -897,13 +897,13 @@ mod langrust_ast_constructs {
                             Some(Expression::Application {
                                 expression: Box::new(Expression::Call {
                                     id: BinaryOperator::Low.to_string(),
-                                        ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 }),
                                 inputs: vec![
                                     Expression::Call {
                                         id: String::from("x"),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default()
                                     },
                                     Expression::Constant {
@@ -917,7 +917,7 @@ mod langrust_ast_constructs {
                             Expression::Application {
                                 expression: Box::new(Expression::Call {
                                     id: UnaryOperator::Neg.to_string(),
-                                        ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 }),
                                 inputs: vec![Expression::Constant {
@@ -1135,7 +1135,7 @@ mod langrust_ast_constructs {
             StreamExpression::MapApplication {
                 expression: Expression::Call {
                     id: UnaryOperator::Brackets.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 },
                 inputs: vec![StreamExpression::Constant {
@@ -1153,7 +1153,7 @@ mod langrust_ast_constructs {
             StreamExpression::MapApplication {
                 expression: Expression::Call {
                     id: UnaryOperator::Neg.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 },
                 inputs: vec![StreamExpression::Constant {
@@ -1171,14 +1171,14 @@ mod langrust_ast_constructs {
             StreamExpression::MapApplication {
                 expression: Expression::Call {
                     id: BinaryOperator::Sub.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 },
                 inputs: vec![
                     StreamExpression::MapApplication {
                         expression: Expression::Call {
                             id: BinaryOperator::Mul.to_string(),
-                                        ty: None,
+                            typing: None,
                             location: Location::default()
                         },
                         inputs: vec![
@@ -1209,13 +1209,13 @@ mod langrust_ast_constructs {
             StreamExpression::MapApplication {
                 expression: Expression::Call {
                     id: String::from("sqrt"),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 },
                 inputs: vec![StreamExpression::MapApplication {
                     expression: Expression::Call {
                         id: BinaryOperator::Mul.to_string(),
-                                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                     inputs: vec![
@@ -1241,7 +1241,7 @@ mod langrust_ast_constructs {
             StreamExpression::MapApplication {
                 expression: Expression::Call {
                     id: OtherOperator::Print.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 },
                 inputs: vec![StreamExpression::Constant {
@@ -1282,7 +1282,7 @@ mod langrust_ast_constructs {
                 expression: Box::new(StreamExpression::MapApplication {
                     expression: Expression::Call {
                         id: BinaryOperator::Add.to_string(),
-                                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                     inputs: vec![
@@ -1308,7 +1308,7 @@ mod langrust_ast_constructs {
             StreamExpression::MapApplication {
                 expression: Expression::Call {
                     id: OtherOperator::IfThenElse.to_string(),
-                    ty: None,
+                    typing: None,
                     location: Location::default()
                 },
                 inputs: vec![
@@ -1504,7 +1504,7 @@ mod langrust_ast_constructs {
                         Some(StreamExpression::MapApplication {
                             expression: Expression::Call {
                                 id: BinaryOperator::Low.to_string(),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default()
                             },
                             inputs: vec![
@@ -1522,7 +1522,7 @@ mod langrust_ast_constructs {
                         StreamExpression::MapApplication {
                             expression: Expression::Call {
                                 id: UnaryOperator::Neg.to_string(),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default()
                             },
                             inputs: vec![StreamExpression::Constant {
@@ -1589,7 +1589,7 @@ mod langrust_ast_constructs {
         assert_eq!(
             Expression::Call {
                 id: String::from("x"),
-                                        ty: None,
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -1601,7 +1601,7 @@ mod langrust_ast_constructs {
             Expression::Application {
                 expression: Box::new(Expression::Call {
                     id: UnaryOperator::Brackets.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![Expression::Constant {
@@ -1620,7 +1620,7 @@ mod langrust_ast_constructs {
             Expression::Application {
                 expression: Box::new(Expression::Call {
                     id: UnaryOperator::Neg.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![Expression::Constant {
@@ -1639,14 +1639,14 @@ mod langrust_ast_constructs {
             Expression::Application {
                 expression: Box::new(Expression::Call {
                     id: BinaryOperator::Sub.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![
                     Expression::Application {
                         expression: Box::new(Expression::Call {
                             id: BinaryOperator::Mul.to_string(),
-                                        ty: None,
+                            typing: None,
                             location: Location::default()
                         }),
                         inputs: vec![
@@ -1680,20 +1680,20 @@ mod langrust_ast_constructs {
             Expression::Application {
                 expression: Box::new(Expression::Call {
                     id: String::from("sqrt"),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![Expression::Application {
                     expression: Box::new(Expression::Call {
                         id: BinaryOperator::Sub.to_string(),
-                                        ty: None,
+                        typing: None,
                         location: Location::default()
                     }),
                     inputs: vec![
                         Expression::Application {
                             expression: Box::new(Expression::Call {
                                 id: BinaryOperator::Mul.to_string(),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default()
                             }),
                             inputs: vec![
@@ -1729,7 +1729,7 @@ mod langrust_ast_constructs {
             Expression::Application {
                 expression: Box::new(Expression::Call {
                     id: OtherOperator::Print.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![Expression::Constant {
@@ -1750,18 +1750,18 @@ mod langrust_ast_constructs {
                 expression: Box::new(Expression::Application {
                     expression: Box::new(Expression::Call {
                         id: BinaryOperator::Add.to_string(),
-                                        ty: None,
+                        typing: None,
                         location: Location::default()
                     }),
                     inputs: vec![
                         Expression::Call {
                             id: String::from("x"),
-                                        ty: None,
+                            typing: None,
                             location: Location::default()
                         },
                         Expression::Call {
                             id: String::from("y"),
-                                        ty: None,
+                            typing: None,
                             location: Location::default()
                         },
                     ],
@@ -1783,18 +1783,18 @@ mod langrust_ast_constructs {
                 expression: Box::new(Expression::Application {
                     expression: Box::new(Expression::Call {
                         id: BinaryOperator::Add.to_string(),
-                                        ty: None,
+                        typing: None,
                         location: Location::default()
                     }),
                     inputs: vec![
                         Expression::Call {
                             id: String::from("x"),
-                                        ty: None,
+                            typing: None,
                             location: Location::default()
                         },
                         Expression::Call {
                             id: String::from("y"),
-                                        ty: None,
+                            typing: None,
                             location: Location::default()
                         },
                     ],
@@ -1811,23 +1811,23 @@ mod langrust_ast_constructs {
             Expression::Application {
                 expression: Box::new(Expression::Call {
                     id: OtherOperator::IfThenElse.to_string(),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![
                     Expression::Call {
                         id: String::from("b"),
-                                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                     Expression::Call {
                         id: String::from("x"),
-                                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                     Expression::Call {
                         id: String::from("y"),
-                                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                 ],
@@ -1923,12 +1923,12 @@ mod langrust_ast_constructs {
                 id: String::from("a"),
                 option: Box::new(Expression::Call {
                     id: String::from("x"),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 present: Box::new(Expression::Call {
                     id: String::from("a"),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 default: Box::new(Expression::Constant {
@@ -1948,12 +1948,12 @@ mod langrust_ast_constructs {
                 id: String::from("a"),
                 option: Box::new(Expression::Call {
                     id: String::from("a"),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 present: Box::new(Expression::Call {
                     id: String::from("a"),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 default: Box::new(Expression::Constant {
@@ -1972,7 +1972,7 @@ mod langrust_ast_constructs {
             Expression::Match {
                 expression: Box::new(Expression::Call {
                     id: String::from("a"),
-                                        ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 arms: vec![
@@ -2026,13 +2026,13 @@ mod langrust_ast_constructs {
                         Some(Expression::Application {
                             expression: Box::new(Expression::Call {
                                 id: BinaryOperator::Low.to_string(),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default()
                             }),
                             inputs: vec![
                                 Expression::Call {
                                     id: String::from("x"),
-                                        ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 },
                                 Expression::Constant {
@@ -2046,7 +2046,7 @@ mod langrust_ast_constructs {
                         Expression::Application {
                             expression: Box::new(Expression::Call {
                                 id: UnaryOperator::Neg.to_string(),
-                                        ty: None,
+                                typing: None,
                                 location: Location::default()
                             }),
                             inputs: vec![Expression::Constant {
