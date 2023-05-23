@@ -92,6 +92,8 @@ extern crate codespan_reporting;
 
 /// LanGRust AST module.
 pub mod ast;
+/// LanGRust common domain or application module.
+pub mod common;
 /// LanGRust error handler module.
 pub mod error;
 /// LanGRust parser module.
