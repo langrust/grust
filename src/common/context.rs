@@ -59,8 +59,8 @@ impl<V> Context for HashMap<String, V> {
                     name: name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error);
-                Err(Error::UnknownElement { name, location })
+                errors.push(error.clone());
+                Err(error)
             }
         }
     }

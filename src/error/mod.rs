@@ -24,7 +24,7 @@ use crate::ast::{
 /// errors.push(error);
 /// ```
 /// 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     /// encountering an unknown element
     UnknownElement {
