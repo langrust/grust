@@ -117,7 +117,12 @@ impl Expression {
                 constant,
                 typing,
                 location: _,
-            } => *typing = Some(constant.get_type()),
+            } => *ty = Some(constant.get_type()),
+            Expression::Call {
+                id,
+                typing,
+                location: _,
+            } => *typing = elements_context.get(id).cloned(),
             _ => (),
         }
     }
