@@ -11,7 +11,7 @@ pub enum Expression {
         /// The constant.
         constant: Constant,
         /// Expression type.
-        ty: Option<Type>,
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
@@ -102,7 +102,7 @@ impl Expression {
     /// let mut elements_context = HashMap::new();
     /// let mut expression = Expression::Constant {
     ///     constant: Constant::Integer(0),
-    ///     ty: None,
+    ///     typing: None,
     ///     location: Location::default(),
     /// };
     /// expression.typing(&mut elements_context, &mut errors).unwrap();
@@ -115,10 +115,10 @@ impl Expression {
         match self {
             Expression::Constant {
                 constant,
-                ty,
+                typing,
                 location: _,
             } => {
-                *ty = Some(constant.get_type());
+                *typing = Some(constant.get_type());
                 Ok(())
             },
             Expression::Call {
@@ -166,12 +166,12 @@ mod typing {
 
         let mut expression = Expression::Constant {
             constant: Constant::Integer(0),
-            ty: None,
+            typing: None,
             location: Location::default(),
         };
         let control = Expression::Constant {
             constant: Constant::Integer(0),
-            ty: Some(Constant::Integer(0).get_type()),
+            typing: Some(Constant::Integer(0).get_type()),
             location: Location::default(),
         };
 

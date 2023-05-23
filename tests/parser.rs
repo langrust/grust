@@ -826,7 +826,7 @@ mod langrust_ast_constructs {
                 element_type: Type::NotDefinedYet(String::from("Color")),
                 expression: Expression::Constant {
                     constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
-                    ty: None,
+                    typing: None,
                     location: Location::default()
                 },
                 location: Location::default(),
@@ -870,7 +870,7 @@ mod langrust_ast_constructs {
                             None,
                             Expression::Constant {
                                 constant: Constant::Integer(0),
-                                ty: None,
+                                typing: None,
                                 location: Location::default()
                             }
                         ),
@@ -908,7 +908,7 @@ mod langrust_ast_constructs {
                                     },
                                     Expression::Constant {
                                         constant: Constant::Integer(0),
-                                        ty: None,
+                                        typing: None,
                                         location: Location::default()
                                     }
                                 ],
@@ -922,7 +922,7 @@ mod langrust_ast_constructs {
                                 }),
                                 inputs: vec![Expression::Constant {
                                     constant: Constant::Integer(1),
-                                    ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 }],
                                 location: Location::default()
@@ -935,7 +935,7 @@ mod langrust_ast_constructs {
                             None,
                             Expression::Constant {
                                 constant: Constant::Integer(1),
-                                ty: None,
+                                typing: None,
                                 location: Location::default()
                             }
                         )
@@ -1578,7 +1578,7 @@ mod langrust_ast_constructs {
         assert_eq!(
             Expression::Constant {
                 constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
-                ty: None,
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -1606,7 +1606,7 @@ mod langrust_ast_constructs {
                 }),
                 inputs: vec![Expression::Constant {
                     constant: Constant::Integer(3),
-                    ty: None,
+                    typing: None,
                     location: Location::default()
                 },],
                 location: Location::default()
@@ -1625,7 +1625,7 @@ mod langrust_ast_constructs {
                 }),
                 inputs: vec![Expression::Constant {
                     constant: Constant::Integer(3),
-                    ty: None,
+                    typing: None,
                     location: Location::default()
                 },],
                 location: Location::default()
@@ -1652,12 +1652,12 @@ mod langrust_ast_constructs {
                         inputs: vec![
                             Expression::Constant {
                                 constant: Constant::Integer(4),
-                                ty: None,
+                                typing: None,
                                 location: Location::default()
                             },
                             Expression::Constant {
                                 constant: Constant::Integer(5),
-                                ty: None,
+                                typing: None,
                                 location: Location::default()
                             },
                         ],
@@ -1665,7 +1665,7 @@ mod langrust_ast_constructs {
                     },
                     Expression::Constant {
                         constant: Constant::Integer(3),
-                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                 ],
@@ -1699,12 +1699,12 @@ mod langrust_ast_constructs {
                             inputs: vec![
                                 Expression::Constant {
                                     constant: Constant::Integer(4),
-                                    ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 },
                                 Expression::Constant {
                                     constant: Constant::Integer(5),
-                                    ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 },
                             ],
@@ -1712,7 +1712,7 @@ mod langrust_ast_constructs {
                         },
                         Expression::Constant {
                             constant: Constant::Integer(3),
-                            ty: None,
+                            typing: None,
                             location: Location::default()
                         },
                     ],
@@ -1734,7 +1734,7 @@ mod langrust_ast_constructs {
                 }),
                 inputs: vec![Expression::Constant {
                     constant: Constant::String(String::from("Hello world")),
-                    ty: None,
+                    typing: None,
                     location: Location::default()
                 }],
                 location: Location::default()
@@ -1846,7 +1846,7 @@ mod langrust_ast_constructs {
                         String::from("x"),
                         Expression::Constant {
                             constant: Constant::Integer(3),
-                            ty: None,
+                            typing: None,
                             location: Location::default()
                         }
                     ),
@@ -1854,7 +1854,7 @@ mod langrust_ast_constructs {
                         String::from("y"),
                         Expression::Constant {
                             constant: Constant::Integer(0),
-                            ty: None,
+                            typing: None,
                             location: Location::default()
                         }
                     )
@@ -1871,17 +1871,17 @@ mod langrust_ast_constructs {
                 elements: vec![
                     Expression::Constant {
                         constant: Constant::Integer(1),
-                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                     Expression::Constant {
                         constant: Constant::Integer(2),
-                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                     Expression::Constant {
                         constant: Constant::Integer(3),
-                        ty: None,
+                        typing: None,
                         location: Location::default()
                     }
                 ],
@@ -1897,17 +1897,17 @@ mod langrust_ast_constructs {
                 elements: vec![
                     Expression::Constant {
                         constant: Constant::Float(0.01),
-                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                     Expression::Constant {
                         constant: Constant::Float(0.01),
-                        ty: None,
+                        typing: None,
                         location: Location::default()
                     },
                     Expression::Constant {
                         constant: Constant::Float(0.01),
-                        ty: None,
+                        typing: None,
                         location: Location::default()
                     }
                 ],
@@ -1933,7 +1933,7 @@ mod langrust_ast_constructs {
                 }),
                 default: Box::new(Expression::Constant {
                     constant: Constant::Integer(0),
-                    ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 location: Location::default()
@@ -1958,7 +1958,7 @@ mod langrust_ast_constructs {
                 }),
                 default: Box::new(Expression::Constant {
                     constant: Constant::Integer(0),
-                    ty: None,
+                    typing: None,
                     location: Location::default()
                 }),
                 location: Location::default()
@@ -1999,7 +1999,7 @@ mod langrust_ast_constructs {
                         None,
                         Expression::Constant {
                             constant: Constant::Integer(0),
-                            ty: None,
+                            typing: None,
                             location: Location::default()
                         }
                     ),
@@ -2037,7 +2037,7 @@ mod langrust_ast_constructs {
                                 },
                                 Expression::Constant {
                                     constant: Constant::Integer(0),
-                                    ty: None,
+                                    typing: None,
                                     location: Location::default()
                                 }
                             ],
@@ -2051,7 +2051,7 @@ mod langrust_ast_constructs {
                             }),
                             inputs: vec![Expression::Constant {
                                 constant: Constant::Integer(1),
-                                ty: None,
+                                typing: None,
                                 location: Location::default()
                             }],
                             location: Location::default()
@@ -2064,7 +2064,7 @@ mod langrust_ast_constructs {
                         None,
                         Expression::Constant {
                             constant: Constant::Integer(1),
-                            ty: None,
+                            typing: None,
                             location: Location::default()
                         }
                     )
