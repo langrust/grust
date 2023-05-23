@@ -32,10 +32,10 @@ pub trait Context {
     /// let name = String::from("x");
     /// context.insert(name.clone(), 1);
     ///
-    /// context.get_or_error(name, location.clone(), &mut errors).unwrap();
-    /// context.get_or_error(String::from("y"), location, &mut errors).unwrap_err();
+    /// context.get_element_or_error(name, location.clone(), &mut errors).unwrap();
+    /// context.get_element_or_error(String::from("y"), location, &mut errors).unwrap_err();
     /// ```
-    fn get_or_error(
+    fn get_element_or_error(
         &self,
         name: String,
         location: Location,
@@ -46,7 +46,7 @@ pub trait Context {
 impl<V> Context for HashMap<String, V> {
     type Item = V;
 
-    fn get_or_error(
+    fn get_element_or_error(
         &self,
         name: String,
         location: Location,
@@ -67,7 +67,7 @@ impl<V> Context for HashMap<String, V> {
 }
 
 #[cfg(test)]
-mod get_or_error {
+mod get_element_or_error {
     use crate::ast::{location::Location, type_system::Type};
     use crate::common::context::Context;
     use std::collections::HashMap;
@@ -81,7 +81,7 @@ mod get_or_error {
         elements_context.insert(name.clone(), Type::Integer);
 
         let element_type = elements_context
-            .get_or_error(name, Location::default(), &mut errors)
+            .get_element_or_error(name, Location::default(), &mut errors)
             .unwrap();
 
         let control = Type::Integer;
@@ -98,7 +98,7 @@ mod get_or_error {
         elements_context.insert(name.clone(), Type::Integer);
 
         let _ = elements_context
-            .get_or_error(name, Location::default(), &mut errors)
+            .get_element_or_error(name, Location::default(), &mut errors)
             .unwrap();
 
         let control = vec![];
@@ -115,7 +115,7 @@ mod get_or_error {
         elements_context.insert(name, Type::Integer);
 
         let error = elements_context
-            .get_or_error(String::from("y"), Location::default(), &mut errors)
+            .get_element_or_error(String::from("y"), Location::default(), &mut errors)
             .unwrap_err();
 
         let control = vec![error];
