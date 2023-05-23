@@ -117,36 +117,8 @@ impl Expression {
                 constant,
                 typing,
                 location: _,
-            } => {
-                *typing = Some(constant.get_type());
-                Ok(())
-            },
-            Expression::Call {
-                id,
-                typing,
-                location,
-            } => {
-                match elements_context.get(id) {
-                    Some(t) => {
-                        *typing = Some(t.clone());
-                        Ok(())
-                    },
-                    None => {
-                        let error = Error::UnknownElement {
-                            name: id.clone(),
-                            location: location.clone()
-                        };
-                        errors.push(error);
-                        Err(
-                            Error::UnknownElement {
-                                name: id.clone(),
-                                location: location.clone()
-                            }
-                        )
-                    },
-                }
-            },
-            _ => Ok(()),
+            } => *typing = Some(constant.get_type()),
+            _ => (),
         }
     }
 }
