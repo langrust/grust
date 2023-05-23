@@ -117,7 +117,7 @@ impl Expression {
                 constant,
                 typing,
                 location: _,
-            } => *ty = Some(constant.get_type()),
+            } => *typing = Some(constant.get_type()),
             Expression::Call {
                 id,
                 typing,
