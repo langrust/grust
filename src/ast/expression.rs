@@ -114,11 +114,16 @@ impl Expression {
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
         match self {
+            // typing a constant expression consist of getting the type of the constant
             Expression::Constant {
                 constant,
                 typing,
                 location: _,
-            } => *typing = Some(constant.get_type()),
+            } => {
+                *typing = Some(constant.get_type());
+                Ok(())
+            },
+            // the type of a call expression in the type of the called element in the context
             Expression::Call {
                 id,
                 typing,
