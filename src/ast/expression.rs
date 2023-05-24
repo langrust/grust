@@ -31,6 +31,8 @@ pub enum Expression {
         expression: Box<Expression>,
         /// The inputs to the expression.
         inputs: Vec<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
