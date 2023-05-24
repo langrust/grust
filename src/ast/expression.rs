@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::ast::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
+use crate::ast::{
+    constant::Constant, location::Location, pattern::Pattern, type_system::Type,
+    user_defined_type::UserDefinedType,
+};
 use crate::common::context::Context;
 use crate::error::Error;
 
@@ -110,17 +113,19 @@ impl Expression {
     /// use std::collections::HashMap;
     /// use grustine::ast::{constant::Constant, expression::Expression, location::Location};
     /// let mut errors = vec![];
-    /// let mut elements_context = HashMap::new();
+    /// let elements_context = HashMap::new();
+    /// let user_types_context = HashMap::new();
     /// let mut expression = Expression::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: None,
     ///     location: Location::default(),
     /// };
-    /// expression.typing(&elements_context, &mut errors).unwrap();
+    /// expression.typing(&elements_context, &user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
         elements_context: &HashMap<String, Type>,
+        user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
         match self {
@@ -152,10 +157,11 @@ impl Expression {
                 typing,
                 location,
             } => {
-                let test_typing_expression = expression.typing(elements_context, errors);
+                let test_typing_expression =
+                    expression.typing(elements_context, user_types_context, errors);
                 let test_typing_inputs = inputs
                     .into_iter()
-                    .map(|input| input.typing(elements_context, errors))
+                    .map(|input| input.typing(elements_context, user_types_context, errors))
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>();
@@ -197,7 +203,7 @@ impl Expression {
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
-                expression.typing(&local_context, errors)?;
+                expression.typing(&local_context, user_types_context, errors)?;
 
                 let abstraction_type = inputs.iter().fold(
                     expression.get_type().unwrap().clone(),
@@ -231,7 +237,7 @@ impl Expression {
             } => {
                 elements
                     .into_iter()
-                    .map(|element| element.typing(elements_context, errors))
+                    .map(|element| element.typing(elements_context, user_types_context, errors))
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
@@ -272,7 +278,7 @@ impl Expression {
                 typing,
                 location,
             } => {
-                option.typing(elements_context, errors)?;
+                option.typing(elements_context, user_types_context, errors)?;
 
                 let option_type = option.get_type().unwrap();
                 match option_type {
@@ -280,8 +286,8 @@ impl Expression {
                         let mut local_context = elements_context.clone();
                         local_context.insert(id.clone(), *unwraped_type.clone());
 
-                        present.typing(&local_context, errors)?;
-                        default.typing(elements_context, errors)?;
+                        present.typing(&local_context, user_types_context, errors)?;
+                        default.typing(elements_context, user_types_context, errors)?;
 
                         let present_type = present.get_type().unwrap();
                         let default_type = default.get_type().unwrap();
@@ -464,6 +470,7 @@ mod typing {
     fn should_type_constant_expression() {
         let mut errors = vec![];
         let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::Constant {
             constant: Constant::Integer(0),
@@ -477,7 +484,7 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -488,6 +495,7 @@ mod typing {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Integer);
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::Call {
             id: String::from("x"),
@@ -501,7 +509,7 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -512,6 +520,7 @@ mod typing {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Integer);
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::Call {
             id: String::from("y"),
@@ -524,7 +533,7 @@ mod typing {
         }];
 
         expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, control);
@@ -539,6 +548,7 @@ mod typing {
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::Application {
             expression: Box::new(Expression::Call {
@@ -573,7 +583,7 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -588,6 +598,7 @@ mod typing {
             Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::Application {
             expression: Box::new(Expression::Call {
@@ -605,7 +616,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -615,6 +626,7 @@ mod typing {
     fn should_type_abstraction_expression() {
         let mut errors = vec![];
         let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::TypedAbstraction {
             inputs: vec![(String::from("x"), Type::Integer)],
@@ -641,7 +653,7 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -652,6 +664,7 @@ mod typing {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Float);
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::TypedAbstraction {
             inputs: vec![(String::from("x"), Type::Integer)],
@@ -665,7 +678,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -675,6 +688,7 @@ mod typing {
     fn should_raise_error_for_untyped_abstraction() {
         let mut errors = vec![];
         let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::Abstraction {
             inputs: vec![String::from("x")],
@@ -688,7 +702,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -703,6 +717,7 @@ mod typing {
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::Array {
             elements: vec![
@@ -769,7 +784,7 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -784,6 +799,7 @@ mod typing {
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::Array {
             elements: vec![
@@ -817,7 +833,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -828,6 +844,7 @@ mod typing {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::When {
             id: String::from("x"),
@@ -871,7 +888,7 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -882,6 +899,7 @@ mod typing {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
+        let user_types_context = HashMap::new();
 
         let mut expression = Expression::When {
             id: String::from("x"),
@@ -905,7 +923,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &mut errors)
+            .typing(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
