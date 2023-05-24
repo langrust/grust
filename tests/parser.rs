@@ -1813,6 +1813,7 @@ mod langrust_ast_constructs {
                     typing: None,
                     location: Location::default()
                 }),
+                typing: None,
                 location: Location::default()
             },
             expression
