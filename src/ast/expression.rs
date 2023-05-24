@@ -116,11 +116,11 @@ impl Expression {
     ///     typing: None,
     ///     location: Location::default(),
     /// };
-    /// expression.typing(&mut elements_context, &mut errors).unwrap();
+    /// expression.typing(&elements_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
-        elements_context: &mut HashMap<String, Type>,
+        elements_context: &HashMap<String, Type>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
         match self {
@@ -197,7 +197,7 @@ impl Expression {
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
-                expression.typing(&mut local_context, errors)?;
+                expression.typing(&local_context, errors)?;
 
                 let abstraction_type = inputs.iter().fold(
                     expression.get_type().unwrap().clone(),
@@ -280,7 +280,7 @@ impl Expression {
                         let mut local_context = elements_context.clone();
                         local_context.insert(id.clone(), *unwraped_type.clone());
 
-                        present.typing(&mut local_context, errors)?;
+                        present.typing(&local_context, errors)?;
                         default.typing(elements_context, errors)?;
 
                         let present_type = present.get_type().unwrap();
@@ -463,7 +463,7 @@ mod typing {
     #[test]
     fn should_type_constant_expression() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let elements_context = HashMap::new();
 
         let mut expression = Expression::Constant {
             constant: Constant::Integer(0),
@@ -477,7 +477,7 @@ mod typing {
         };
 
         expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -501,7 +501,7 @@ mod typing {
         };
 
         expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -524,7 +524,7 @@ mod typing {
         }];
 
         expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, control);
@@ -573,7 +573,7 @@ mod typing {
         };
 
         expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -605,7 +605,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -614,7 +614,7 @@ mod typing {
     #[test]
     fn should_type_abstraction_expression() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let elements_context = HashMap::new();
 
         let mut expression = Expression::TypedAbstraction {
             inputs: vec![(String::from("x"), Type::Integer)],
@@ -641,7 +641,7 @@ mod typing {
         };
 
         expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -665,7 +665,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -674,7 +674,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_untyped_abstraction() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let elements_context = HashMap::new();
 
         let mut expression = Expression::Abstraction {
             inputs: vec![String::from("x")],
@@ -688,7 +688,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -769,7 +769,7 @@ mod typing {
         };
 
         expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -817,7 +817,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -871,7 +871,7 @@ mod typing {
         };
 
         expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -905,7 +905,7 @@ mod typing {
         };
 
         let error = expression
-            .typing(&mut elements_context, &mut errors)
+            .typing(&elements_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
