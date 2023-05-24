@@ -93,7 +93,7 @@ impl Type {
     ///
     /// This function tries to apply the input type to the self type.
     /// If types are incompatible for application then an
-    /// [Error::IncompatibleInputType] is raised.
+    /// [Error::IncompatibleType] is raised.
     ///
     /// # Example
     /// ```rust
@@ -112,7 +112,7 @@ impl Type {
                 if *input == input_type {
                     Ok(*output)
                 } else {
-                    let error = Error::IncompatibleInputType {
+                    let error = Error::IncompatibleType {
                         given_type: input_type,
                         expected_type: *input,
                         location,
