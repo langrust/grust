@@ -202,6 +202,17 @@ impl Expression {
                 *typing = Some(abstraction_type);
                 Ok(())
             },
+            // the type of an abstraction can not be infered on its own
+            Expression::Abstraction {
+                inputs: _,
+                expression: _,
+                typing: _,
+                location
+            } => {
+                let error = Error::NoTypeInference { location: location.clone() };
+                errors.push(error.clone());
+                Err(error)
+            },
             _ => Ok(()),
         }
     }
@@ -443,6 +454,28 @@ mod typing {
         
         let mut expression = Expression::TypedAbstraction {
             inputs: vec![(String::from("x"), Type::Integer)],
+            expression: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_raise_error_for_untyped_abstraction() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+
+        
+        let mut expression = Expression::Abstraction {
+            inputs: vec![String::from("x")],
             expression: Box::new(Expression::Call {
                 id: String::from("x"),
                 typing: None,
