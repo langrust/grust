@@ -87,6 +87,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// expect structure type
+    ExpectStructure {
+        /// given type instead of the option
+        given_type: Type,
+        /// the error location
+        location: Location,
+    },
     /// can not infere type
     NoTypeInference {
         /// the error location
@@ -208,6 +215,16 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("expect option type of the form 't?' but '{given_type}' was given")
+                ]
+            ),
+            Error::ExpectStructure { given_type, location } => Diagnostic::error()
+                .with_message("expect structure type")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("not structure type")
+                ])
+                .with_notes(vec![
+                    format!("expect structure type but '{given_type}' was given")
                 ]
             ),
             Error::NoTypeInference { location } => Diagnostic::error()
