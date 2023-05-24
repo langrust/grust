@@ -222,7 +222,8 @@ impl Expression {
                 errors.push(error.clone());
                 Err(error)
             }
-            //
+            // an array is composed of `n` elements of the same type `t` and
+            // its type is `[t; n]`
             Expression::Array {
                 elements,
                 typing,
