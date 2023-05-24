@@ -261,6 +261,53 @@ impl Expression {
                 *typing = Some(array_type);
                 Ok(())
             },
+            // the type of a when expression is the type of both the default and
+            // the present expressions
+            Expression::When {
+                id,
+                option,
+                present,
+                default,
+                typing,
+                location,
+            } => {
+                option.typing(elements_context, errors)?;
+
+                let option_type = option.get_type().unwrap();
+                match option_type {
+                    Type::Option(unwraped_type) => {
+                        let mut local_context = elements_context.clone();
+                        local_context.insert(id.clone(), *unwraped_type.clone());
+
+                        present.typing(&mut local_context, errors)?;
+                        default.typing(elements_context, errors)?;
+
+                        let present_type = present.get_type().unwrap();
+                        let default_type = default.get_type().unwrap();
+
+                        if present_type.eq(default_type) {
+                            *typing = Some(present_type.clone());
+                            Ok(())
+                        } else {
+                            let error = Error::IncompatibleType {
+                                given_type: default_type.clone(),
+                                expected_type: present_type.clone(),
+                                location: location.clone()
+                            };
+                            errors.push(error.clone());
+                            Err(error)
+                        }
+                    },
+                    _ => {
+                        let error = Error::ExpectOption {
+                            given_type: option_type.clone(),
+                            location: location.clone()
+                        };
+                        errors.push(error.clone());
+                        Err(error)
+                    },
+                }
+            },
             _ => Ok(()),
         }
     }
@@ -647,6 +694,90 @@ mod typing {
                     location: Location::default(),
                 },
             ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_type_when_expression() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
+        
+        let mut expression = Expression::When {
+            id: String::from("x"),
+            option: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            present: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            default: Box::new(Expression::Constant {
+                constant: Constant::Integer(1),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::When {
+            id: String::from("x"),
+            option: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: Some(Type::Option(Box::new(Type::Integer))),
+                location: Location::default(),
+            }),
+            present: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }),
+            default: Box::new(Expression::Constant {
+                constant: Constant::Integer(1),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        expression.typing(&mut elements_context, &mut errors).unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_incompatible_when() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
+        
+        let mut expression = Expression::When {
+            id: String::from("x"),
+            option: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            present: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            default: Box::new(Expression::Constant {
+                constant: Constant::Float(1.0),
+                typing: None,
+                location: Location::default(),
+            }),
             typing: None,
             location: Location::default(),
         };
