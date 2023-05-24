@@ -58,6 +58,11 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// can not infere type
+    NoTypeInference {
+        /// the error location
+        location: Location,
+    },
 }
 impl Error {
     /// Transform the error into a diagnostic.
@@ -135,6 +140,15 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("expect abstraction of the form '{input_type} -> t' but '{given_type}' was given")
+                ]
+            ),
+            Error::NoTypeInference { location } => Diagnostic::error()
+                .with_message("can not infere type")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                ])
+                .with_notes(vec![
+                    format!("please explicit type")
                 ]
             ),
         }
