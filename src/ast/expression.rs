@@ -42,6 +42,8 @@ pub enum Expression {
         inputs: Vec<String>,
         /// The expression abstracted.
         expression: Box<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
@@ -191,7 +193,7 @@ impl Expression {
             Expression::Constant { constant: _, typing, location: _ } => typing.as_ref(),
             Expression::Call { id: _, typing, location: _ } => typing.as_ref(),
             Expression::Application { expression: _, inputs: _, typing, location: _ } => typing.as_ref(),
-            Expression::Abstraction { inputs: _, expression: _, location: _ } => None,
+            Expression::Abstraction { inputs: _, expression: _, typing, location: _ } => typing.as_ref(),
             Expression::TypedAbstraction { inputs: _, expression: _, location: _ } => None,
             Expression::Structure { name: _, fields: _, location: _ } => None,
             Expression::Array { elements: _, location: _ } => None,
@@ -218,7 +220,7 @@ impl Expression {
             Expression::Constant { constant: _, typing, location: _ } => typing,
             Expression::Call { id: _, typing, location: _ } => typing,
             Expression::Application { expression: _, inputs: _, typing, location: _ } => typing,
-            Expression::Abstraction { inputs: _, expression: _, location: _ } => None,
+            Expression::Abstraction { inputs: _, expression: _, typing, location: _ } => typing,
             Expression::TypedAbstraction { inputs: _, expression: _, location: _ } => None,
             Expression::Structure { name: _, fields: _, location: _ } => None,
             Expression::Array { elements: _, location: _ } => None,
