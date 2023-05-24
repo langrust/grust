@@ -1900,6 +1900,7 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }
                 ],
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -1926,6 +1927,7 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }
                 ],
+                typing: None,
                 location: Location::default()
             },
             expression

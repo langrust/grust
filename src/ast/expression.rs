@@ -71,6 +71,8 @@ pub enum Expression {
     Array {
         /// The elements inside the array.
         elements: Vec<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
@@ -238,7 +240,7 @@ impl Expression {
             Expression::Abstraction { inputs: _, expression: _, typing, location: _ } => typing.as_ref(),
             Expression::TypedAbstraction { inputs: _, expression: _, typing, location: _ } => typing.as_ref(),
             Expression::Structure { name: _, fields: _, location: _ } => None,
-            Expression::Array { elements: _, location: _ } => None,
+            Expression::Array { elements: _, typing, location: _ } => typing.as_ref(),
             Expression::Match { expression: _, arms: _, location: _ } => None,
             Expression::When { id: _, option: _, present: _, default: _, location: _ } => None,
         }
@@ -265,7 +267,7 @@ impl Expression {
             Expression::Abstraction { inputs: _, expression: _, typing, location: _ } => typing,
             Expression::TypedAbstraction { inputs: _, expression: _, typing, location: _ } => typing,
             Expression::Structure { name: _, fields: _, location: _ } => None,
-            Expression::Array { elements: _, location: _ } => None,
+            Expression::Array { elements: _, typing, location: _ } => typing,
             Expression::Match { expression: _, arms: _, location: _ } => None,
             Expression::When { id: _, option: _, present: _, default: _, location: _ } => None,
         }

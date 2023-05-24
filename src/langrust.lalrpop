@@ -247,6 +247,7 @@ term: Expression = {
     <start:@L> "[" <v_expr: list<expression>> "]" <end:@R> => {
         Expression::Array {
             elements: v_expr,
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -254,6 +255,7 @@ term: Expression = {
     <start:@L> "[" <e: expression> ";" <n: r"\d+"> "]" <end:@R> => {
         Expression::Array {
             elements: vec![e; usize::from_str(n).unwrap()],
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
