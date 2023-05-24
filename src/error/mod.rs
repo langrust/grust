@@ -33,6 +33,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// redefine an already defined element
+    AlreadyDefinedElement {
+        /// the known identifier
+        name: String,
+        /// the error location
+        location: Location,
+    },
     /// incompatible input for application
     IncompatibleInputType {
         /// given type as input
@@ -98,6 +105,16 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("element '{name}' is not defined")
+                ]
+            ),
+            Error::AlreadyDefinedElement { name, location } => Diagnostic::error()
+                .with_message("duplicated element")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("already defined")
+                ])
+                .with_notes(vec![
+                    format!("element '{name}' is already defined, please choose another name")
                 ]
             ),
             Error::IncompatibleInputType { given_type, expected_type, location } => Diagnostic::error()
