@@ -132,18 +132,18 @@ impl Expression {
             } => {
                 *typing = Some(constant.get_type());
                 Ok(())
-            },
+            }
             // the type of a call expression in the type of the called element in the context
             Expression::Call {
                 id,
                 typing,
                 location,
             } => {
-                let element_type = 
+                let element_type =
                     elements_context.get_element_or_error(id.clone(), location.clone(), errors)?;
                 *typing = Some(element_type.clone());
                 Ok(())
-            },
+            }
             // an application expression type is the result of the application
             // of the inputs types to the abstraction/function type
             Expression::Application {
@@ -163,61 +163,66 @@ impl Expression {
                 test_typing_expression?;
                 test_typing_inputs?;
 
-                let application_type = inputs
-                    .iter()
-                    .fold(
-                        Ok(expression.get_type().unwrap().clone()),
-                        |current_typing, input| {
-                            let abstraction_type = current_typing.unwrap().clone();
-                            let input_type = input.get_type().unwrap().clone();
-                            Ok(abstraction_type.apply(input_type, location.clone(), errors)?)
-                        }
-                    )?;
-                
+                let application_type = inputs.iter().fold(
+                    Ok(expression.get_type().unwrap().clone()),
+                    |current_typing, input| {
+                        let abstraction_type = current_typing.unwrap().clone();
+                        let input_type = input.get_type().unwrap().clone();
+                        Ok(abstraction_type.apply(input_type, location.clone(), errors)?)
+                    },
+                )?;
+
                 *typing = Some(application_type);
                 Ok(())
-            },
+            }
             // the type of a typed abstraction is computed by adding inputs to
             // the context and typing the function body expression
             Expression::TypedAbstraction {
                 inputs,
                 expression,
                 typing,
-                location
+                location,
             } => {
                 let mut local_context = elements_context.clone();
                 inputs
                     .iter()
-                    .map(|(name, typing)| local_context.insert_unique(name.clone(), typing.clone(), location.clone(), errors))
+                    .map(|(name, typing)| {
+                        local_context.insert_unique(
+                            name.clone(),
+                            typing.clone(),
+                            location.clone(),
+                            errors,
+                        )
+                    })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
                 expression.typing(&mut local_context, errors)?;
 
-                let abstraction_type = inputs
-                    .iter()
-                    .fold(
-                        expression.get_type().unwrap().clone(),
-                        |current_type, (_, input_type)| {
-                            Type::Abstract(Box::new(input_type.clone()), Box::new(current_type))
-                        }
-                    );
-                
+                let abstraction_type = inputs.iter().fold(
+                    expression.get_type().unwrap().clone(),
+                    |current_type, (_, input_type)| {
+                        Type::Abstract(Box::new(input_type.clone()), Box::new(current_type))
+                    },
+                );
+
                 *typing = Some(abstraction_type);
                 Ok(())
-            },
+            }
             // the type of an abstraction can not be infered on its own
             Expression::Abstraction {
                 inputs: _,
                 expression: _,
                 typing: _,
-                location
+                location,
             } => {
-                let error = Error::NoTypeInference { location: location.clone() };
+                let error = Error::NoTypeInference {
+                    location: location.clone(),
+                };
                 errors.push(error.clone());
                 Err(error)
-            },
-            // 
+            }
+            //
             Expression::Array {
                 elements,
                 typing,
@@ -229,38 +234,33 @@ impl Expression {
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
-                
+
                 let first_type = elements[0].get_type().unwrap();
                 elements
                     .iter()
-                    .map(
-                        |element| {
-                            let element_type = element.get_type().unwrap();
-                            if first_type.eq(element_type) {
-                                Ok(())
-                            } else {
-                                let error = Error::IncompatibleType {
-                                    given_type: element_type.clone(),
-                                    expected_type: first_type.clone(),
-                                    location: location.clone()
-                                };
-                                errors.push(error.clone());
-                                Err(error)
-                            }
+                    .map(|element| {
+                        let element_type = element.get_type().unwrap();
+                        if first_type.eq(element_type) {
+                            Ok(())
+                        } else {
+                            let error = Error::IncompatibleType {
+                                given_type: element_type.clone(),
+                                expected_type: first_type.clone(),
+                                location: location.clone(),
+                            };
+                            errors.push(error.clone());
+                            Err(error)
                         }
-                    )
+                    })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
-                
-                let array_type = Type::Array(
-                    Box::new(first_type.clone()),
-                    elements.len()
-                );
+
+                let array_type = Type::Array(Box::new(first_type.clone()), elements.len());
 
                 *typing = Some(array_type);
                 Ok(())
-            },
+            }
             // the type of a when expression is the type of both the default and
             // the present expressions
             Expression::When {
@@ -292,28 +292,28 @@ impl Expression {
                             let error = Error::IncompatibleType {
                                 given_type: default_type.clone(),
                                 expected_type: present_type.clone(),
-                                location: location.clone()
+                                location: location.clone(),
                             };
                             errors.push(error.clone());
                             Err(error)
                         }
-                    },
+                    }
                     _ => {
                         let error = Error::ExpectOption {
                             given_type: option_type.clone(),
-                            location: location.clone()
+                            location: location.clone(),
                         };
                         errors.push(error.clone());
                         Err(error)
-                    },
+                    }
                 }
-            },
+            }
             _ => Ok(()),
         }
     }
 
     /// Get the reference to the expression's typing.
-    /// 
+    ///
     ///
     /// # Example
     /// ```rust
@@ -327,20 +327,62 @@ impl Expression {
     /// ```
     pub fn get_type(&self) -> Option<&Type> {
         match self {
-            Expression::Constant { constant: _, typing, location: _ } => typing.as_ref(),
-            Expression::Call { id: _, typing, location: _ } => typing.as_ref(),
-            Expression::Application { expression: _, inputs: _, typing, location: _ } => typing.as_ref(),
-            Expression::Abstraction { inputs: _, expression: _, typing, location: _ } => typing.as_ref(),
-            Expression::TypedAbstraction { inputs: _, expression: _, typing, location: _ } => typing.as_ref(),
-            Expression::Structure { name: _, fields: _, location: _ } => None,
-            Expression::Array { elements: _, typing, location: _ } => typing.as_ref(),
-            Expression::Match { expression: _, arms: _, location: _ } => None,
-            Expression::When { id: _, option: _, present: _, default: _, typing, location: _ } => typing.as_ref(),
+            Expression::Constant {
+                constant: _,
+                typing,
+                location: _,
+            } => typing.as_ref(),
+            Expression::Call {
+                id: _,
+                typing,
+                location: _,
+            } => typing.as_ref(),
+            Expression::Application {
+                expression: _,
+                inputs: _,
+                typing,
+                location: _,
+            } => typing.as_ref(),
+            Expression::Abstraction {
+                inputs: _,
+                expression: _,
+                typing,
+                location: _,
+            } => typing.as_ref(),
+            Expression::TypedAbstraction {
+                inputs: _,
+                expression: _,
+                typing,
+                location: _,
+            } => typing.as_ref(),
+            Expression::Structure {
+                name: _,
+                fields: _,
+                location: _,
+            } => None,
+            Expression::Array {
+                elements: _,
+                typing,
+                location: _,
+            } => typing.as_ref(),
+            Expression::Match {
+                expression: _,
+                arms: _,
+                location: _,
+            } => None,
+            Expression::When {
+                id: _,
+                option: _,
+                present: _,
+                default: _,
+                typing,
+                location: _,
+            } => typing.as_ref(),
         }
     }
 
     /// Get the expression's typing.
-    /// 
+    ///
     ///
     /// # Example
     /// ```rust
@@ -354,15 +396,57 @@ impl Expression {
     /// ```
     pub fn get_type_owned(self) -> Option<Type> {
         match self {
-            Expression::Constant { constant: _, typing, location: _ } => typing,
-            Expression::Call { id: _, typing, location: _ } => typing,
-            Expression::Application { expression: _, inputs: _, typing, location: _ } => typing,
-            Expression::Abstraction { inputs: _, expression: _, typing, location: _ } => typing,
-            Expression::TypedAbstraction { inputs: _, expression: _, typing, location: _ } => typing,
-            Expression::Structure { name: _, fields: _, location: _ } => None,
-            Expression::Array { elements: _, typing, location: _ } => typing,
-            Expression::Match { expression: _, arms: _, location: _ } => None,
-            Expression::When { id: _, option: _, present: _, default: _, typing, location: _ } => typing,
+            Expression::Constant {
+                constant: _,
+                typing,
+                location: _,
+            } => typing,
+            Expression::Call {
+                id: _,
+                typing,
+                location: _,
+            } => typing,
+            Expression::Application {
+                expression: _,
+                inputs: _,
+                typing,
+                location: _,
+            } => typing,
+            Expression::Abstraction {
+                inputs: _,
+                expression: _,
+                typing,
+                location: _,
+            } => typing,
+            Expression::TypedAbstraction {
+                inputs: _,
+                expression: _,
+                typing,
+                location: _,
+            } => typing,
+            Expression::Structure {
+                name: _,
+                fields: _,
+                location: _,
+            } => None,
+            Expression::Array {
+                elements: _,
+                typing,
+                location: _,
+            } => typing,
+            Expression::Match {
+                expression: _,
+                arms: _,
+                location: _,
+            } => None,
+            Expression::When {
+                id: _,
+                option: _,
+                present: _,
+                default: _,
+                typing,
+                location: _,
+            } => typing,
         }
     }
 }
@@ -391,7 +475,9 @@ mod typing {
             location: Location::default(),
         };
 
-        expression.typing(&mut elements_context, &mut errors).unwrap();
+        expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap();
 
         assert_eq!(expression, control);
     }
@@ -413,7 +499,9 @@ mod typing {
             location: Location::default(),
         };
 
-        expression.typing(&mut elements_context, &mut errors).unwrap();
+        expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap();
 
         assert_eq!(expression, control);
     }
@@ -429,14 +517,14 @@ mod typing {
             typing: None,
             location: Location::default(),
         };
-        let control = vec![
-            Error::UnknownElement {
-                name: String::from("y"),
-                location: Location::default(),
-            }
-        ];
+        let control = vec![Error::UnknownElement {
+            name: String::from("y"),
+            location: Location::default(),
+        }];
 
-        expression.typing(&mut elements_context, &mut errors).unwrap_err();
+        expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap_err();
 
         assert_eq!(errors, control);
     }
@@ -445,7 +533,10 @@ mod typing {
     fn should_type_application_expression() {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
-        elements_context.insert(String::from("f"), Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)));
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+        );
         elements_context.insert(String::from("x"), Type::Integer);
 
         let mut expression = Expression::Application {
@@ -465,7 +556,10 @@ mod typing {
         let control = Expression::Application {
             expression: Box::new(Expression::Call {
                 id: String::from("f"),
-                typing: Some(Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer))),
+                typing: Some(Type::Abstract(
+                    Box::new(Type::Integer),
+                    Box::new(Type::Integer),
+                )),
                 location: Location::default(),
             }),
             inputs: vec![Expression::Call {
@@ -477,7 +571,9 @@ mod typing {
             location: Location::default(),
         };
 
-        expression.typing(&mut elements_context, &mut errors).unwrap();
+        expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap();
 
         assert_eq!(expression, control);
     }
@@ -486,7 +582,10 @@ mod typing {
     fn should_raise_error_for_incompatible_application() {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
-        elements_context.insert(String::from("f"), Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)));
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)),
+        );
         elements_context.insert(String::from("x"), Type::Integer);
 
         let mut expression = Expression::Application {
@@ -504,7 +603,9 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+        let error = expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap_err();
 
         assert_eq!(errors, vec![error]);
     }
@@ -531,11 +632,16 @@ mod typing {
                 typing: Some(Type::Integer),
                 location: Location::default(),
             }),
-            typing: Some(Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer))),
+            typing: Some(Type::Abstract(
+                Box::new(Type::Integer),
+                Box::new(Type::Integer),
+            )),
             location: Location::default(),
         };
 
-        expression.typing(&mut elements_context, &mut errors).unwrap();
+        expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap();
 
         assert_eq!(expression, control);
     }
@@ -546,7 +652,6 @@ mod typing {
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Float);
 
-        
         let mut expression = Expression::TypedAbstraction {
             inputs: vec![(String::from("x"), Type::Integer)],
             expression: Box::new(Expression::Call {
@@ -558,7 +663,9 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+        let error = expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap_err();
 
         assert_eq!(errors, vec![error]);
     }
@@ -568,7 +675,6 @@ mod typing {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
 
-        
         let mut expression = Expression::Abstraction {
             inputs: vec![String::from("x")],
             expression: Box::new(Expression::Call {
@@ -580,7 +686,9 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+        let error = expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap_err();
 
         assert_eq!(errors, vec![error]);
     }
@@ -589,10 +697,12 @@ mod typing {
     fn should_type_array() {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
-        elements_context.insert(String::from("f"), Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)));
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+        );
         elements_context.insert(String::from("x"), Type::Integer);
 
-        
         let mut expression = Expression::Array {
             elements: vec![
                 Expression::Call {
@@ -633,7 +743,10 @@ mod typing {
                 Expression::Application {
                     expression: Box::new(Expression::Call {
                         id: String::from("f"),
-                        typing: Some(Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer))),
+                        typing: Some(Type::Abstract(
+                            Box::new(Type::Integer),
+                            Box::new(Type::Integer),
+                        )),
                         location: Location::default(),
                     }),
                     inputs: vec![Expression::Call {
@@ -654,7 +767,9 @@ mod typing {
             location: Location::default(),
         };
 
-        expression.typing(&mut elements_context, &mut errors).unwrap();
+        expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap();
 
         assert_eq!(expression, control);
     }
@@ -663,10 +778,12 @@ mod typing {
     fn should_raise_error_for_multiple_types_array() {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
-        elements_context.insert(String::from("f"), Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)));
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+        );
         elements_context.insert(String::from("x"), Type::Integer);
 
-        
         let mut expression = Expression::Array {
             elements: vec![
                 Expression::Call {
@@ -698,7 +815,9 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+        let error = expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap_err();
 
         assert_eq!(errors, vec![error]);
     }
@@ -708,7 +827,7 @@ mod typing {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
-        
+
         let mut expression = Expression::When {
             id: String::from("x"),
             option: Box::new(Expression::Call {
@@ -750,7 +869,9 @@ mod typing {
             location: Location::default(),
         };
 
-        expression.typing(&mut elements_context, &mut errors).unwrap();
+        expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap();
 
         assert_eq!(expression, control);
     }
@@ -760,7 +881,7 @@ mod typing {
         let mut errors = vec![];
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
-        
+
         let mut expression = Expression::When {
             id: String::from("x"),
             option: Box::new(Expression::Call {
@@ -782,7 +903,9 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+        let error = expression
+            .typing(&mut elements_context, &mut errors)
+            .unwrap_err();
 
         assert_eq!(errors, vec![error]);
     }

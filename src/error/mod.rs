@@ -1,29 +1,26 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 
-use crate::ast::{
-    location::Location,
-    type_system::Type,
-};
+use crate::ast::{location::Location, type_system::Type};
 
 /// Compilation errors enumeration.
-/// 
+///
 /// [Error] enumeration is used during the compilation to alert
 /// the programmer of some errors in its LanGRust program.
-/// 
+///
 /// # Example
 /// ```rust
 /// use grustine::error::Error;
 /// use grustine::ast::location::Location;
-/// 
+///
 /// let mut errors = vec![];
-/// 
+///
 /// let name = String::from("unknown");
 /// let location = Location::default();
-/// 
+///
 /// let error = Error::UnknownElement { name, location };
 /// errors.push(error);
 /// ```
-/// 
+///
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     /// encountering an unknown element
@@ -73,10 +70,10 @@ pub enum Error {
 }
 impl Error {
     /// Transform the error into a diagnostic.
-    /// 
+    ///
     /// This makes it possible to use [codespan_reporting] to print
     /// pretty errors.
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// use grustine::error::Error;
@@ -86,20 +83,20 @@ impl Error {
     ///     term::termcolor::{StandardStream, ColorChoice},
     ///     term,
     /// };
-    /// 
+    ///
     /// let mut errors: Vec<Error> = vec![];
     /// let mut files = SimpleFiles::new();
-    /// 
+    ///
     /// let file_id = files.add("file_test.gr", "a code without x...");
     /// let name = String::from("x");
     /// let location = Location {
     ///     file_id,
     ///     range: 0..0,
     /// };
-    /// 
+    ///
     /// let error = Error::UnknownElement { name, location };
     /// errors.push(error);
-    /// 
+    ///
     /// let writer = StandardStream::stderr(ColorChoice::Always);
     /// let config = term::Config::default();
     /// for error in &errors {

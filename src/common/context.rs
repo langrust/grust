@@ -112,7 +112,7 @@ impl<V> Context for HashMap<String, V> {
                 };
                 errors.push(error.clone());
                 Err(error)
-            },
+            }
             None => {
                 self.insert(name, item);
                 Ok(())
@@ -194,7 +194,12 @@ mod insert_unique {
         elements_context.insert(name, Type::Integer);
 
         elements_context
-            .insert_unique(String::from("y"), Type::Float, Location::default(), &mut errors)
+            .insert_unique(
+                String::from("y"),
+                Type::Float,
+                Location::default(),
+                &mut errors,
+            )
             .unwrap();
     }
 
@@ -207,12 +212,17 @@ mod insert_unique {
         elements_context.insert(name, Type::Integer);
 
         elements_context
-            .insert_unique(String::from("y"), Type::Float, Location::default(), &mut errors)
+            .insert_unique(
+                String::from("y"),
+                Type::Float,
+                Location::default(),
+                &mut errors,
+            )
             .unwrap();
 
-            let control = vec![];
-    
-            assert_eq!(errors, control);
+        let control = vec![];
+
+        assert_eq!(errors, control);
     }
 
     #[test]
@@ -224,7 +234,12 @@ mod insert_unique {
         elements_context.insert(name, Type::Integer);
 
         let error = elements_context
-            .insert_unique(String::from("x"), Type::Float, Location::default(), &mut errors)
+            .insert_unique(
+                String::from("x"),
+                Type::Float,
+                Location::default(),
+                &mut errors,
+            )
             .unwrap_err();
 
         let control = vec![error];
