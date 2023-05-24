@@ -34,7 +34,7 @@ pub enum Error {
         location: Location,
     },
     /// incompatible application
-    IncompatibleTypeApplication {
+    IncompatibleInputType {
         /// given type as input
         given_type: Type,
         /// expected type as input
@@ -91,7 +91,7 @@ impl Error {
                     format!("element '{name}' is not defined")
                 ]
             ),
-            Error::IncompatibleTypeApplication { given_type, expected_type, location } => Diagnostic::error()
+            Error::IncompatibleInputType { given_type, expected_type, location } => Diagnostic::error()
                 .with_message("incompatible application")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
