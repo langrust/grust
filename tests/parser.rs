@@ -912,6 +912,7 @@ mod langrust_ast_constructs {
                                         location: Location::default()
                                     }
                                 ],
+                                typing: None,
                                 location: Location::default()
                             }),
                             Expression::Application {
@@ -925,6 +926,7 @@ mod langrust_ast_constructs {
                                     typing: None,
                                     location: Location::default()
                                 }],
+                                typing: None,
                                 location: Location::default()
                             }
                         ),
@@ -1609,6 +1611,7 @@ mod langrust_ast_constructs {
                     typing: None,
                     location: Location::default()
                 },],
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -1628,6 +1631,7 @@ mod langrust_ast_constructs {
                     typing: None,
                     location: Location::default()
                 },],
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -1661,6 +1665,7 @@ mod langrust_ast_constructs {
                                 location: Location::default()
                             },
                         ],
+                        typing: None,
                         location: Location::default()
                     },
                     Expression::Constant {
@@ -1669,6 +1674,7 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     },
                 ],
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -1708,6 +1714,7 @@ mod langrust_ast_constructs {
                                     location: Location::default()
                                 },
                             ],
+                            typing: None,
                             location: Location::default()
                         },
                         Expression::Constant {
@@ -1716,8 +1723,10 @@ mod langrust_ast_constructs {
                             location: Location::default()
                         },
                     ],
+                    typing: None,
                     location: Location::default()
                 }],
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -1737,6 +1746,7 @@ mod langrust_ast_constructs {
                     typing: None,
                     location: Location::default()
                 }],
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -1765,6 +1775,7 @@ mod langrust_ast_constructs {
                             location: Location::default()
                         },
                     ],
+                    typing: None,
                     location: Location::default()
                 }),
                 location: Location::default()
@@ -1798,6 +1809,7 @@ mod langrust_ast_constructs {
                             location: Location::default()
                         },
                     ],
+                    typing: None,
                     location: Location::default()
                 }),
                 location: Location::default()
@@ -1831,6 +1843,7 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     },
                 ],
+                typing: None,
                 location: Location::default()
             },
             expression
@@ -2041,6 +2054,7 @@ mod langrust_ast_constructs {
                                     location: Location::default()
                                 }
                             ],
+                            typing: None,
                             location: Location::default()
                         }),
                         Expression::Application {
@@ -2054,6 +2068,7 @@ mod langrust_ast_constructs {
                                 typing: None,
                                 location: Location::default()
                             }],
+                            typing: None,
                             location: Location::default()
                         }
                     ),

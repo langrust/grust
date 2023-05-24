@@ -196,6 +196,7 @@ term: Expression = {
                 location: Location{ file_id, range: start..end }
             }),
             inputs: vec![e],
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -208,6 +209,7 @@ term: Expression = {
                 location: Location{ file_id, range: start..end_fun }
             }),
             inputs: v_expr,
+            typing: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -229,6 +231,7 @@ term: Expression = {
                 location: Location{ file_id, range: start..end }
             }),
             inputs: vec![e],
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -266,6 +269,7 @@ unaryExpression: Expression = {
                 location: Location{ file_id, range: start_op..end_op }
             }),
             inputs: vec![e],
+            typing: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -283,6 +287,7 @@ auxBinaryExpression<Op,E>: Expression = {
                 location: Location{ file_id, range: start_op..end_op }
             }),
             inputs: vec![e1, e2],
+            typing: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -306,6 +311,7 @@ pub expression: Expression = {
                 location: Location{ file_id, range: start..end }
             }),
             inputs: vec![e1, e2, e3],
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
