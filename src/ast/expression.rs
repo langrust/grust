@@ -215,6 +215,50 @@ impl Expression {
                 errors.push(error.clone());
                 Err(error)
             },
+            // 
+            Expression::Array {
+                elements,
+                typing,
+                location,
+            } => {
+                elements
+                    .into_iter()
+                    .map(|element| element.typing(elements_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+                
+                let first_type = elements[0].get_type().unwrap();
+                elements
+                    .iter()
+                    .map(
+                        |element| {
+                            let element_type = element.get_type().unwrap();
+                            if first_type.eq(element_type) {
+                                Ok(())
+                            } else {
+                                let error = Error::IncompatibleType {
+                                    given_type: element_type.clone(),
+                                    expected_type: first_type.clone(),
+                                    location: location.clone()
+                                };
+                                errors.push(error.clone());
+                                Err(error)
+                            }
+                        }
+                    )
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+                
+                let array_type = Type::Array(
+                    Box::new(first_type.clone()),
+                    elements.len()
+                );
+
+                *typing = Some(array_type);
+                Ok(())
+            },
             _ => Ok(()),
         }
     }
@@ -483,6 +527,124 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_type_array() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("f"), Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)));
+        elements_context.insert(String::from("x"), Type::Integer);
+
+        
+        let mut expression = Expression::Array {
+            elements: vec![
+                Expression::Call {
+                    id: String::from("x"),
+                    typing: None,
+                    location: Location::default(),
+                },
+                Expression::Application {
+                    expression: Box::new(Expression::Call {
+                        id: String::from("f"),
+                        typing: None,
+                        location: Location::default(),
+                    }),
+                    inputs: vec![Expression::Call {
+                        id: String::from("x"),
+                        typing: None,
+                        location: Location::default(),
+                    }],
+                    typing: None,
+                    location: Location::default(),
+                },
+                Expression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::Array {
+            elements: vec![
+                Expression::Call {
+                    id: String::from("x"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+                Expression::Application {
+                    expression: Box::new(Expression::Call {
+                        id: String::from("f"),
+                        typing: Some(Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer))),
+                        location: Location::default(),
+                    }),
+                    inputs: vec![Expression::Call {
+                        id: String::from("x"),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    }],
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+                Expression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+            ],
+            typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+            location: Location::default(),
+        };
+
+        expression.typing(&mut elements_context, &mut errors).unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_multiple_types_array() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("f"), Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)));
+        elements_context.insert(String::from("x"), Type::Integer);
+
+        
+        let mut expression = Expression::Array {
+            elements: vec![
+                Expression::Call {
+                    id: String::from("x"),
+                    typing: None,
+                    location: Location::default(),
+                },
+                Expression::Application {
+                    expression: Box::new(Expression::Call {
+                        id: String::from("f"),
+                        typing: None,
+                        location: Location::default(),
+                    }),
+                    inputs: vec![Expression::Call {
+                        id: String::from("x"),
+                        typing: None,
+                        location: Location::default(),
+                    }],
+                    typing: None,
+                    location: Location::default(),
+                },
+                Expression::Constant {
+                    constant: Constant::Float(1.0),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ],
             typing: None,
             location: Location::default(),
         };
