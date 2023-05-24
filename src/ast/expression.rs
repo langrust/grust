@@ -95,6 +95,8 @@ pub enum Expression {
         present: Box<Expression>,
         /// The default expression.
         default: Box<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
@@ -286,7 +288,7 @@ impl Expression {
             Expression::Structure { name: _, fields: _, location: _ } => None,
             Expression::Array { elements: _, typing, location: _ } => typing.as_ref(),
             Expression::Match { expression: _, arms: _, location: _ } => None,
-            Expression::When { id: _, option: _, present: _, default: _, location: _ } => None,
+            Expression::When { id: _, option: _, present: _, default: _, typing, location: _ } => typing.as_ref(),
         }
     }
 
@@ -313,7 +315,7 @@ impl Expression {
             Expression::Structure { name: _, fields: _, location: _ } => None,
             Expression::Array { elements: _, typing, location: _ } => typing,
             Expression::Match { expression: _, arms: _, location: _ } => None,
-            Expression::When { id: _, option: _, present: _, default: _, location: _ } => None,
+            Expression::When { id: _, option: _, present: _, default: _, typing, location: _ } => typing,
         }
     }
 }
