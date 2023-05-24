@@ -46,6 +46,15 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// a field is missing
+    MissingField {
+        /// the structure of the missing field
+        structure_name: String,
+        /// the missing field
+        field_name: String,
+        /// the error location
+        location: Location,
+    },
     /// redefine an already defined element
     AlreadyDefinedElement {
         /// the known identifier
@@ -150,6 +159,15 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("field '{field_name}' is not defined in structure '{structure_name}'")
+                ]
+            ),
+            Error::MissingField { structure_name, field_name, location } => Diagnostic::error()
+                .with_message("missing field")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                ])
+                .with_notes(vec![
+                    format!("field '{field_name}' is missing in structure '{structure_name}' instantiation")
                 ]
             ),
             Error::AlreadyDefinedElement { name, location } => Diagnostic::error()
