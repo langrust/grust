@@ -53,6 +53,8 @@ pub enum Expression {
         inputs: Vec<(String, Type)>,
         /// The expression abstracted.
         expression: Box<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
@@ -171,6 +173,35 @@ impl Expression {
                 *typing = Some(application_type);
                 Ok(())
             },
+            // the type of a typed abstraction is computed by adding inputs to
+            // the context and typing the function body expression
+            Expression::TypedAbstraction {
+                inputs,
+                expression,
+                typing,
+                location
+            } => {
+                let mut local_context = elements_context.clone();
+                inputs
+                    .iter()
+                    .map(|(name, typing)| local_context.insert_unique(name.clone(), typing.clone(), location.clone(), errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+                expression.typing(&mut local_context, errors)?;
+
+                let abstraction_type = inputs
+                    .iter()
+                    .fold(
+                        expression.get_type().unwrap().clone(),
+                        |current_type, (_, input_type)| {
+                            Type::Abstract(Box::new(input_type.clone()), Box::new(current_type))
+                        }
+                    );
+                
+                *typing = Some(abstraction_type);
+                Ok(())
+            },
             _ => Ok(()),
         }
     }
@@ -194,7 +225,7 @@ impl Expression {
             Expression::Call { id: _, typing, location: _ } => typing.as_ref(),
             Expression::Application { expression: _, inputs: _, typing, location: _ } => typing.as_ref(),
             Expression::Abstraction { inputs: _, expression: _, typing, location: _ } => typing.as_ref(),
-            Expression::TypedAbstraction { inputs: _, expression: _, location: _ } => None,
+            Expression::TypedAbstraction { inputs: _, expression: _, typing, location: _ } => typing.as_ref(),
             Expression::Structure { name: _, fields: _, location: _ } => None,
             Expression::Array { elements: _, location: _ } => None,
             Expression::Match { expression: _, arms: _, location: _ } => None,
@@ -221,7 +252,7 @@ impl Expression {
             Expression::Call { id: _, typing, location: _ } => typing,
             Expression::Application { expression: _, inputs: _, typing, location: _ } => typing,
             Expression::Abstraction { inputs: _, expression: _, typing, location: _ } => typing,
-            Expression::TypedAbstraction { inputs: _, expression: _, location: _ } => None,
+            Expression::TypedAbstraction { inputs: _, expression: _, typing, location: _ } => typing,
             Expression::Structure { name: _, fields: _, location: _ } => None,
             Expression::Array { elements: _, location: _ } => None,
             Expression::Match { expression: _, arms: _, location: _ } => None,
@@ -363,6 +394,60 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = expression.typing(&mut elements_context, &mut errors).unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_type_abstraction_expression() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+
+        let mut expression = Expression::TypedAbstraction {
+            inputs: vec![(String::from("x"), Type::Integer)],
+            expression: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::TypedAbstraction {
+            inputs: vec![(String::from("x"), Type::Integer)],
+            expression: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer))),
+            location: Location::default(),
+        };
+
+        expression.typing(&mut elements_context, &mut errors).unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_already_defined_input_name() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("x"), Type::Float);
+
+        
+        let mut expression = Expression::TypedAbstraction {
+            inputs: vec![(String::from("x"), Type::Integer)],
+            expression: Box::new(Expression::Call {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
             typing: None,
             location: Location::default(),
         };

@@ -347,6 +347,7 @@ pub expression: Expression = {
         Expression::TypedAbstraction {
             inputs: ids,
             expression: Box::new(e),
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
