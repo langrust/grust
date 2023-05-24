@@ -240,6 +240,7 @@ term: Expression = {
         Expression::Structure {
             name,
             fields,
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
