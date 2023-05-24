@@ -1,3 +1,6 @@
+use crate::ast::location::Location;
+use crate::error::Error;
+
 use std::fmt::{self, Display};
 
 /// LanGrust type system.
@@ -82,5 +85,169 @@ impl Display for Type {
             Type::Abstract(t1, t2) => write!(f, "{} -> {}", *t1, *t2),
             Type::Choice(v_t) => write!(f, "{:#?}", v_t),
         }
+    }
+}
+
+impl Type {
+    /// Type application with errors handling.
+    ///
+    /// This function tries to apply the input type to the self type.
+    /// If types are incompatible for application then an
+    /// [Error::IncompatibleInputType] is raised.
+    ///
+    /// # Example
+    /// ```rust
+    ///
+    /// ```
+    pub fn apply(
+        self,
+        input_type: Type,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<Type, Error> {
+        match self {
+            // if self is an abstraction, check if the input types are equal
+            // and return the output type as the type of the application
+            Type::Abstract(input, output) => {
+                if *input == input_type {
+                    Ok(*output)
+                } else {
+                    let error = Error::IncompatibleInputType {
+                        given_type: input_type,
+                        expected_type: *input,
+                        location,
+                    };
+                    errors.push(error.clone());
+                    Err(error)
+                }
+            }
+            // if self is a choice type, it means that their are several options
+            // then perform application for each option and keep succeeding ones
+            Type::Choice(types) => {
+                let given_type = Type::Choice(types.clone());
+
+                let mut new_types = types
+                    .into_iter()
+                    .filter_map(|typing| {
+                        let mut temp_errors = vec![];
+                        typing
+                            .apply(input_type.clone(), location.clone(), &mut temp_errors)
+                            .ok()
+                    })
+                    .collect::<Vec<Type>>();
+
+                if new_types.is_empty() {
+                    let error = Error::ExpectAbstraction {
+                        input_type,
+                        given_type,
+                        location,
+                    };
+                    errors.push(error.clone());
+                    Err(error)
+                } else if new_types.len() == 1 {
+                    Ok(new_types.pop().unwrap())
+                } else {
+                    Ok(Type::Choice(new_types))
+                }
+            }
+            _ => {
+                let error = Error::ExpectAbstraction {
+                    input_type,
+                    given_type: self,
+                    location,
+                };
+                errors.push(error.clone());
+                Err(error)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod apply {
+    use crate::ast::{location::Location, type_system::Type};
+
+    #[test]
+    fn should_apply_input_to_abstraction_when_compatible() {
+        let mut errors = vec![];
+
+        let input_type = Type::Integer;
+        let output_type = Type::Boolean;
+        let abstraction_type =
+            Type::Abstract(Box::new(input_type.clone()), Box::new(output_type.clone()));
+
+        let application_result = abstraction_type
+            .apply(input_type, Location::default(), &mut errors)
+            .unwrap();
+
+        assert_eq!(application_result, output_type);
+    }
+
+    #[test]
+    fn should_raise_error_when_incompatible_abstraction() {
+        let mut errors = vec![];
+
+        let input_type = Type::Integer;
+        let output_type = Type::Boolean;
+        let abstraction_type = Type::Abstract(Box::new(input_type), Box::new(output_type));
+
+        let application_result = abstraction_type
+            .apply(Type::Float, Location::default(), &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![application_result]);
+    }
+
+    #[test]
+    fn should_apply_input_to_choice_type_when_compatible() {
+        let mut errors = vec![];
+
+        let choice_type = Type::Choice(vec![
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Float)),
+            Type::Abstract(Box::new(Type::Float), Box::new(Type::Float)),
+        ]);
+
+        let application_result = choice_type
+            .apply(Type::Integer, Location::default(), &mut errors)
+            .unwrap();
+
+        let control = Type::Choice(vec![Type::Integer, Type::Float]);
+
+        assert_eq!(application_result, control);
+    }
+
+    #[test]
+    fn should_return_nonchoice_when_only_one_choice_left() {
+        let mut errors = vec![];
+
+        let choice_type = Type::Choice(vec![
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(Box::new(Type::Float), Box::new(Type::Float)),
+        ]);
+
+        let application_result = choice_type
+            .apply(Type::Integer, Location::default(), &mut errors)
+            .unwrap();
+
+        let control = Type::Integer;
+
+        assert_eq!(application_result, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_incompatible_choice_type() {
+        let mut errors = vec![];
+
+        let choice_type = Type::Choice(vec![
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(Box::new(Type::Float), Box::new(Type::Float)),
+        ]);
+
+        let application_result = choice_type
+            .apply(Type::Boolean, Location::default(), &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![application_result]);
     }
 }
