@@ -1874,6 +1874,7 @@ mod langrust_ast_constructs {
                         }
                     )
                 ],
+                typing: None,
                 location: Location::default()
             },
             expression

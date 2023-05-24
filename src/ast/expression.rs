@@ -67,6 +67,8 @@ pub enum Expression {
         name: String,
         /// The fields associated with their expressions.
         fields: Vec<(String, Expression)>,
+        /// Expression type.
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
@@ -228,6 +230,73 @@ impl Expression {
                 errors.push(error.clone());
                 Err(error)
             }
+            //
+            Expression::Structure {
+                name,
+                fields,
+                typing,
+                location,
+            } => {
+                let user_type = user_types_context.get_user_type_or_error(
+                    name.clone(),
+                    location.clone(),
+                    errors,
+                )?;
+
+                match user_type {
+                    UserDefinedType::Structure {
+                        id: _,
+                        fields: structure_fields,
+                        location: _,
+                    } => {
+                        fields
+                            .into_iter()
+                            .map(|(_, expression)| {
+                                expression.typing(elements_context, user_types_context, errors)
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
+
+                        let structure_fields = structure_fields
+                            .iter()
+                            .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
+                            .collect::<HashMap<String, Type>>();
+
+                        fields
+                            .iter()
+                            .map(|(id, expression)| {
+                                let expression_type = expression.get_type().unwrap();
+                                let field_type = structure_fields.get_field_or_error(
+                                    name.clone(),
+                                    id.clone(),
+                                    location.clone(),
+                                    errors,
+                                )?;
+                                if field_type.eq(expression_type) {
+                                    Ok(())
+                                } else {
+                                    let error = Error::IncompatibleType {
+                                        given_type: (*expression_type).clone(),
+                                        expected_type: field_type.clone(),
+                                        location: location.clone(),
+                                    };
+                                    errors.push(error.clone());
+                                    Err(error)
+                                }
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
+                        
+                        todo!("check that there are no supplementary fields");
+
+                        *typing = Some(Type::Structure(name.clone()));
+                        Ok(())
+                    }
+                    _ => {todo!("raise error: not a structure")},
+                }
+            }
             // an array is composed of `n` elements of the same type `t` and
             // its type is `[t; n]`
             Expression::Array {
@@ -365,8 +434,9 @@ impl Expression {
             Expression::Structure {
                 name: _,
                 fields: _,
+                typing,
                 location: _,
-            } => None,
+            } => typing.as_ref(),
             Expression::Array {
                 elements: _,
                 typing,
@@ -434,8 +504,9 @@ impl Expression {
             Expression::Structure {
                 name: _,
                 fields: _,
+                typing,
                 location: _,
-            } => None,
+            } => typing,
             Expression::Array {
                 elements: _,
                 typing,
