@@ -41,6 +41,38 @@ pub trait Context {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
+
+    /// Insert the item corresponding to the name or raises an error.
+    ///
+    /// Raises an [Error::AlreadyDefinedElement] when the context already contains an item
+    /// corresponding to the name. Otherwise, insert the item corresponding to the name.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::location::Location;
+    /// use grustine::common::context::Context;
+    ///
+    /// let mut context = HashMap::new();
+    /// let mut errors = vec![];
+    /// let location = Location::default();
+    ///
+    /// let name = String::from("x");
+    /// context.insert(name.clone(), 1);
+    ///
+    /// context.insert_unique(String::from("y"), 2, location.clone(), &mut errors).unwrap();
+    /// context.insert_unique(name, 2, location, &mut errors).unwrap_err();
+    /// ```
+    fn insert_unique(
+        &mut self,
+        name: String,
+        item: Self::Item,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error>;
 }
 
 impl<V> Context for HashMap<String, V> {
@@ -61,6 +93,29 @@ impl<V> Context for HashMap<String, V> {
                 };
                 errors.push(error.clone());
                 Err(error)
+            }
+        }
+    }
+
+    fn insert_unique(
+        &mut self,
+        name: String,
+        item: Self::Item,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        match self.get(&name) {
+            Some(_) => {
+                let error = Error::AlreadyDefinedElement {
+                    name: name.clone(),
+                    location: location.clone(),
+                };
+                errors.push(error.clone());
+                Err(error)
+            },
+            None => {
+                self.insert(name, item);
+                Ok(())
             }
         }
     }
@@ -116,6 +171,60 @@ mod get_element_or_error {
 
         let error = elements_context
             .get_element_or_error(String::from("y"), Location::default(), &mut errors)
+            .unwrap_err();
+
+        let control = vec![error];
+
+        assert_eq!(errors, control);
+    }
+}
+
+#[cfg(test)]
+mod insert_unique {
+    use crate::ast::{location::Location, type_system::Type};
+    use crate::common::context::Context;
+    use std::collections::HashMap;
+
+    #[test]
+    fn should_insert_item_when_name_not_in_context() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+
+        let name = String::from("x");
+        elements_context.insert(name, Type::Integer);
+
+        elements_context
+            .insert_unique(String::from("y"), Type::Float, Location::default(), &mut errors)
+            .unwrap();
+    }
+
+    #[test]
+    fn should_not_add_error_when_name_not_in_context() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+
+        let name = String::from("x");
+        elements_context.insert(name, Type::Integer);
+
+        elements_context
+            .insert_unique(String::from("y"), Type::Float, Location::default(), &mut errors)
+            .unwrap();
+
+            let control = vec![];
+    
+            assert_eq!(errors, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_name_in_context() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+
+        let name = String::from("x");
+        elements_context.insert(name, Type::Integer);
+
+        let error = elements_context
+            .insert_unique(String::from("x"), Type::Float, Location::default(), &mut errors)
             .unwrap_err();
 
         let control = vec![error];
