@@ -33,21 +33,12 @@ pub enum Error {
         /// the error location
         location: Location,
     },
-    /// incompatible input for application
-    IncompatibleInputType {
+    /// incompatible application
+    IncompatibleTypeApplication {
         /// given type as input
         given_type: Type,
         /// expected type as input
         expected_type: Type,
-        /// the error location
-        location: Location,
-    },
-    /// expect abstraction with input type
-    ExpectAbstraction {
-        /// expected type as input for the abstraction
-        input_type: Type,
-        /// given type instead of the abstraction
-        given_type: Type,
         /// the error location
         location: Location,
     },
@@ -100,7 +91,7 @@ impl Error {
                     format!("element '{name}' is not defined")
                 ]
             ),
-            Error::IncompatibleInputType { given_type, expected_type, location } => Diagnostic::error()
+            Error::IncompatibleTypeApplication { given_type, expected_type, location } => Diagnostic::error()
                 .with_message("incompatible application")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
@@ -108,16 +99,6 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("expected '{expected_type}' but '{given_type}' was given")
-                ]
-            ),
-            Error::ExpectAbstraction { input_type, given_type, location } => Diagnostic::error()
-                .with_message("expect abstraction")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expect abstraction of the form '{input_type} -> t' but '{given_type}' was given")
                 ]
             ),
         }
