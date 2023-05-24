@@ -40,11 +40,11 @@ pub enum Error {
         /// the error location
         location: Location,
     },
-    /// incompatible input for application
-    IncompatibleInputType {
-        /// given type as input
+    /// incompatible type
+    IncompatibleType {
+        /// given type
         given_type: Type,
-        /// expected type as input
+        /// expected type
         expected_type: Type,
         /// the error location
         location: Location,
@@ -122,11 +122,11 @@ impl Error {
                     format!("element '{name}' is already defined, please choose another name")
                 ]
             ),
-            Error::IncompatibleInputType { given_type, expected_type, location } => Diagnostic::error()
-                .with_message("incompatible application")
+            Error::IncompatibleType { given_type, expected_type, location } => Diagnostic::error()
+                .with_message("incompatible type")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong input type")
+                        .with_message("wrong type")
                 ])
                 .with_notes(vec![
                     format!("expected '{expected_type}' but '{given_type}' was given")
