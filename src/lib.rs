@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
 //! # LanGRust synchronous language compiler
-//! 
+//!
 //! LanGRust is a [domain-specific language] (DSL) for the automotive industry
 //! compiling in Rust, based on [asynchronous event-reactive programming]
 //! principles, alongside [synchronous time-reactive] guarantees.
@@ -18,16 +18,16 @@
 //! embedded systems (determinism, bounded memory and time, ...).
 //!
 //! ## Introduction to LanGRust
-//! 
+//!
 //! A LanGRust program is composed of one component and multiple nodes or functions.
-//! 
-//! Nodes are similar to [Lustre] nodes, they represent a synchronous set of 
+//!
+//! Nodes are similar to [Lustre] nodes, they represent a synchronous set of
 //! equations/relations on streams. When executed, nodes perform signals
 //! computation at each time step indefinitely. It is possible to create an
 //! initialized memory of a stream expression `e` using the `c fby e`
 //! (read `c` followed by `e`), where `c` is a constant.
 //! This restriction ensures by design that memory is well initialized.
-//! 
+//!
 //! A component is the main element of the program, it represents the system.
 //! Its syntax is similar to nodes, in fact it is a node with additional properties.
 //! The idea is to synthesise the program in one unique component which is
@@ -35,14 +35,14 @@
 //! add performance constrains that could be checked at compile time. Components
 //! are not completely defined for now in LanGRust, as we do not verify properties
 //! thus they are equivalent to nodes.
-//! 
+//!
 //! The last elements of LanGRust are functions. A function is pure calculus on values,
 //! it has no side-effects and only returns its result. It is typically used to relieve
 //! nodes or components from long computations. By contrast with nodes or components,
 //! which endlessly compute signals every time step, functions are executed in one time
-//! step and return their result. 
-//! 
-//! 
+//! step and return their result.
+//!
+//!
 //! ## Example
 //! ```langrust
 //! function integrate(i: float, dx: float, dt: float) -> float {
@@ -60,7 +60,7 @@
 //!     p_next: float = hard_computation(a, v, p).p_next;
 //! }
 //! ```
-//! 
+//!
 //! In the example above are illustrated some LanGRust syntactic elements:
 //! - output signals are declared with the keyword `out`
 //! - `c fby e` creates a buffer of `e` initialized to `c` according to the
@@ -69,17 +69,17 @@
 //! for each values of streams `e_1`, ..., `e_k` as inputs. The data-flow
 //! appearing bellow illustrates its behavior
 //! - `n(e_1, ..., e_k).s^o` imports the relations on streams of node `n` that
-//! define the output signal `s^o` with `e_1`, ..., `e_k` as node inputs. 
-//! 
-//! 
+//! define the output signal `s^o` with `e_1`, ..., `e_k` as node inputs.
+//!
+//!
 //! |expression|t1|t2|t3|t4|
 //! |---|---|---|---|---|
 //! | `e_1` | `x_1` | `x_2` | `x_3` | `x_4` |
 //! | `c fby e_1` | `c`   | `x_1` | `x_2` | `x_3` |
 //! | `e_2` | `y_1` | `y_2` | `y_3` | `y_4` |
 //! | `(e_1, e_2).map(f)` | `f(x_1, y_1)` | `f(x_2, y_2)` | `f(x_3, y_3)` | `f(x_4, y_4)` |
-//! 
-//! 
+//!
+//!
 //! [domain-specific language]: https://en.wikipedia.org/wiki/Domain-specific_language
 //! [asynchronous event-reactive programming]: https://en.wikipedia.org/wiki/Reactive_programming
 //! [synchronous time-reactive]: https://en.wikipedia.org/wiki/Synchronous_programming_language

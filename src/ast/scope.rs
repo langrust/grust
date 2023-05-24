@@ -1,7 +1,7 @@
-use std::fmt::{Display, self};
+use std::fmt::{self, Display};
 
 /// Signals scopes in LanGRust nodes or components.
-/// 
+///
 /// A [Scope] is the visibility of the signal in a node/component.
 /// It can be:
 /// - a [Scope::Input], when it is an input of the node/component
@@ -11,9 +11,9 @@ use std::fmt::{Display, self};
 /// defining it
 /// - but it can also be a [Scope::Memory] signal, only used during
 /// compilation to tag a `fby` right expression memory.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```langrust
 /// node blinking(blink_tick_number: int) {
 ///     change_state: bool = blink_tick_number == prev_tick_state;
@@ -27,15 +27,15 @@ use std::fmt::{Display, self};
 /// }
 /// ```
 /// In the example above, `blink_tick_number` is a [Scope::Input],
-/// `on_off_status` is a [Scope::Output] and the other signals are 
+/// `on_off_status` is a [Scope::Output] and the other signals are
 /// [Scope::Local].
-/// 
+///
 /// During the compilation, the compiler will construct intermediate signals.
 /// Especially memory signals to replace `fby` expressions:
 /// ```langrust
 /// prev_tick_state: int = 0 fby tick_state;
 /// ```
-/// will become 
+/// will become
 /// ```langrust
 /// mem prev_tick_state: int = 0 fby tick_state;
 /// ```
@@ -43,7 +43,7 @@ use std::fmt::{Display, self};
 /// ```langrust
 /// some_signal: int = 0 fby x * y;
 /// ```
-/// will become 
+/// will become
 /// ```langrust
 /// x_0: int = x * y;
 /// mem some_signal: int = 0 fby x_0;
