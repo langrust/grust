@@ -33,7 +33,7 @@ pub enum Error {
         /// the error location
         location: Location,
     },
-    /// incompatible application
+    /// incompatible input for application
     IncompatibleInputType {
         /// given type as input
         given_type: Type,
