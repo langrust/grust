@@ -58,6 +58,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// expect option type
+    ExpectOption {
+        /// given type instead of the option
+        given_type: Type,
+        /// the error location
+        location: Location,
+    },
     /// can not infere type
     NoTypeInference {
         /// the error location
@@ -140,6 +147,16 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("expect abstraction of the form '{input_type} -> t' but '{given_type}' was given")
+                ]
+            ),
+            Error::ExpectOption { given_type, location } => Diagnostic::error()
+                .with_message("expect option type")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("not option type")
+                ])
+                .with_notes(vec![
+                    format!("expect option type of the form 't?' but '{given_type}' was given")
                 ]
             ),
             Error::NoTypeInference { location } => Diagnostic::error()
