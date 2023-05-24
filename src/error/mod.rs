@@ -2,6 +2,7 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 
 use crate::ast::{
     location::Location,
+    type_system::Type,
 };
 
 /// Compilation errors enumeration.
@@ -29,6 +30,15 @@ pub enum Error {
     UnknownElement {
         /// the unknow identifier
         name: String,
+        /// the error location
+        location: Location,
+    },
+    /// incompatible application
+    IncompatibleTypeApplication {
+        /// given type as input
+        given_type: Type,
+        /// expected type as input
+        expected_type: Type,
         /// the error location
         location: Location,
     },
@@ -79,6 +89,16 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("element '{name}' is not defined")
+                ]
+            ),
+            Error::IncompatibleTypeApplication { given_type, expected_type, location } => Diagnostic::error()
+                .with_message("incompatible application")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong input type")
+                ])
+                .with_notes(vec![
+                    format!("expected '{expected_type}' but '{given_type}' was given")
                 ]
             ),
         }
