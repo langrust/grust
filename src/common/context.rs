@@ -42,6 +42,37 @@ pub trait Context {
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
 
+    /// Returns a reference to the item corresponding to the name or raises an error.
+    ///
+    /// Raises an [Error::UnknownType] when the context does not contains an item
+    /// corresponding to the name. Otherwise, returns a reference to the item.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::{location::Location, type_system::Type};
+    /// use grustine::common::context::Context;
+    ///
+    /// let mut context = HashMap::new();
+    /// let mut errors = vec![];
+    /// let location = Location::default();
+    ///
+    /// let enumeration_name = String::from("Color");
+    /// context.insert(enumeration_name.clone(), Type::Enumeration(String::from("Color")));
+    ///
+    /// context.get_user_type_or_error(enumeration_name, location.clone(), &mut errors).unwrap();
+    /// context.get_user_type_or_error(String::from("Day"), location, &mut errors).unwrap_err();
+    /// ```
+    fn get_user_type_or_error(
+        &self,
+        name: String,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<&Self::Item, Error>;
+
     /// Insert the item corresponding to the name or raises an error.
     ///
     /// Raises an [Error::AlreadyDefinedElement] when the context already contains an item
@@ -88,6 +119,25 @@ impl<V> Context for HashMap<String, V> {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownElement {
+                    name: name.clone(),
+                    location: location.clone(),
+                };
+                errors.push(error.clone());
+                Err(error)
+            }
+        }
+    }
+
+    fn get_user_type_or_error(
+        &self,
+        name: String,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<&Self::Item, Error> {
+        match self.get(&name) {
+            Some(item) => Ok(item),
+            None => {
+                let error = Error::UnknownType {
                     name: name.clone(),
                     location: location.clone(),
                 };
