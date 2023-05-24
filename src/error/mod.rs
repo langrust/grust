@@ -37,6 +37,15 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// encountering an unknown field
+    UnknownField {
+        /// the structure of the supposed field
+        structure_name: String,
+        /// the unknow field
+        field_name: String,
+        /// the error location
+        location: Location,
+    },
     /// redefine an already defined element
     AlreadyDefinedElement {
         /// the known identifier
@@ -131,6 +140,16 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("type '{name}' is not defined")
+                ]
+            ),
+            Error::UnknownField { structure_name, field_name, location } => Diagnostic::error()
+                .with_message("unknown field")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("unknown")
+                ])
+                .with_notes(vec![
+                    format!("field '{field_name}' is not defined in structure '{structure_name}'")
                 ]
             ),
             Error::AlreadyDefinedElement { name, location } => Diagnostic::error()
