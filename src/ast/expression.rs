@@ -139,6 +139,60 @@ impl Expression {
             _ => Ok(()),
         }
     }
+
+    /// Get the reference to the expression's typing.
+    /// 
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{constant::Constant, expression::Expression, location::Location, type_system::Type};
+    /// let mut expression = Expression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: Some(Type::Integer),
+    ///     location: Location::default(),
+    /// };
+    /// let typing = expression.get_type().unwrap();
+    /// ```
+    pub fn get_type(&self) -> Option<&Type> {
+        match self {
+            Expression::Constant { constant: _, typing, location: _ } => typing.as_ref(),
+            Expression::Call { id: _, typing, location: _ } => typing.as_ref(),
+            Expression::Application { expression: _, inputs: _, typing, location: _ } => typing.as_ref(),
+            Expression::Abstraction { inputs: _, expression: _, location: _ } => None,
+            Expression::TypedAbstraction { inputs: _, expression: _, location: _ } => None,
+            Expression::Structure { name: _, fields: _, location: _ } => None,
+            Expression::Array { elements: _, location: _ } => None,
+            Expression::Match { expression: _, arms: _, location: _ } => None,
+            Expression::When { id: _, option: _, present: _, default: _, location: _ } => None,
+        }
+    }
+
+    /// Get the expression's typing.
+    /// 
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{constant::Constant, expression::Expression, location::Location, type_system::Type};
+    /// let mut expression = Expression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: Some(Type::Integer),
+    ///     location: Location::default(),
+    /// };
+    /// let typing = expression.get_type_owned().unwrap();
+    /// ```
+    pub fn get_type_owned(self) -> Option<Type> {
+        match self {
+            Expression::Constant { constant: _, typing, location: _ } => typing,
+            Expression::Call { id: _, typing, location: _ } => typing,
+            Expression::Application { expression: _, inputs: _, typing, location: _ } => typing,
+            Expression::Abstraction { inputs: _, expression: _, location: _ } => None,
+            Expression::TypedAbstraction { inputs: _, expression: _, location: _ } => None,
+            Expression::Structure { name: _, fields: _, location: _ } => None,
+            Expression::Array { elements: _, location: _ } => None,
+            Expression::Match { expression: _, arms: _, location: _ } => None,
+            Expression::When { id: _, option: _, present: _, default: _, location: _ } => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -213,5 +267,71 @@ mod typing {
         expression.typing(&mut elements_context, &mut errors).unwrap_err();
 
         assert_eq!(errors, control);
+    }
+}
+
+#[cfg(test)]
+mod get_type {
+    use crate::ast::{
+        constant::Constant, expression::Expression, location::Location, type_system::Type,
+    };
+
+    #[test]
+    fn should_return_none_when_no_typing() {
+        let expression = Expression::Constant {
+            constant: Constant::Integer(0),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let typing = expression.get_type();
+        assert!(typing.is_none());
+    }
+
+    #[test]
+    fn should_return_a_reference_to_the_type_of_typed_expression() {
+        let expression_type = Type::Integer;
+
+        let expression = Expression::Constant {
+            constant: Constant::Integer(0),
+            typing: Some(expression_type.clone()),
+            location: Location::default(),
+        };
+
+        let typing = expression.get_type().unwrap();
+        assert_eq!(*typing, expression_type);
+    }
+}
+
+#[cfg(test)]
+mod get_type_owned {
+    use crate::ast::{
+        constant::Constant, expression::Expression, location::Location, type_system::Type,
+    };
+
+    #[test]
+    fn should_return_none_when_no_typing() {
+        let expression = Expression::Constant {
+            constant: Constant::Integer(0),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let typing = expression.get_type_owned();
+        assert!(typing.is_none());
+    }
+
+    #[test]
+    fn should_return_the_type_of_typed_expression() {
+        let expression_type = Type::Integer;
+
+        let expression = Expression::Constant {
+            constant: Constant::Integer(0),
+            typing: Some(expression_type.clone()),
+            location: Location::default(),
+        };
+
+        let typing = expression.get_type_owned().unwrap();
+        assert_eq!(typing, expression_type);
     }
 }
