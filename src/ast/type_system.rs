@@ -161,6 +161,40 @@ impl Type {
             }
         }
     }
+
+    /// Check if `self` matches the expected [Type]
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{location::Location, type_system::Type};
+    /// use grustine::error::Error;
+    ///
+    /// let mut errors = vec![];
+    ///
+    /// let given_type = Type::Integer;
+    /// let expected_type = Type::Integer;
+    ///
+    /// given_type.eq_check(&expected_type, Location::default(), &mut errors).unwrap();
+    /// assert!(errors.is_empty());
+    /// ```
+    pub fn eq_check(
+        &self,
+        expected_type: &Type,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        if self.eq(expected_type) {
+            Ok(())
+        } else {
+            let error = Error::IncompatibleType {
+                given_type: self.clone(),
+                expected_type: expected_type.clone(),
+                location: location,
+            };
+            errors.push(error.clone());
+            Err(error)
+        }
+    }
 }
 
 #[cfg(test)]
