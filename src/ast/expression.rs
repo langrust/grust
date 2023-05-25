@@ -289,7 +289,28 @@ impl Expression {
                             .into_iter()
                             .collect::<Result<(), Error>>()?;
                         
-                        todo!("check that there are no supplementary fields");
+                        let defined_fields = fields
+                            .iter()
+                            .map(|(id, _)| id.clone())
+                            .collect::<Vec<String>>();
+                        structure_fields
+                            .iter()
+                            .map(|(id, _)| {
+                                if defined_fields.contains(id) {
+                                    Ok(())
+                                } else {
+                                    let error = Error::MissingField {
+                                        structure_name: name.clone(),
+                                        field_name: id.clone(),
+                                        location: location.clone(),
+                                    };
+                                    errors.push(error.clone());
+                                    Err(error)
+                                }
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
 
                         *typing = Some(Type::Structure(name.clone()));
                         Ok(())
