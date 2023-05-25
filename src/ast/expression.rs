@@ -288,7 +288,7 @@ impl Expression {
                             .collect::<Vec<Result<(), Error>>>()
                             .into_iter()
                             .collect::<Result<(), Error>>()?;
-                        
+
                         let defined_fields = fields
                             .iter()
                             .map(|(id, _)| id.clone())
@@ -315,7 +315,31 @@ impl Expression {
                         *typing = Some(Type::Structure(name.clone()));
                         Ok(())
                     }
-                    _ => {todo!("raise error: not a structure")},
+                    UserDefinedType::Enumeration {
+                        id,
+                        elements: _,
+                        location: _,
+                    } => {
+                        let error = Error::ExpectStructure {
+                            given_type: Type::Enumeration(id.clone()),
+                            location: location.clone(),
+                        };
+                        errors.push(error.clone());
+                        Err(error)
+                    }
+                    UserDefinedType::Array {
+                        id: _,
+                        array_type,
+                        size,
+                        location: _,
+                    } => {
+                        let error = Error::ExpectStructure {
+                            given_type: Type::Array(Box::new(array_type.clone()), size.clone()),
+                            location: location.clone(),
+                        };
+                        errors.push(error.clone());
+                        Err(error)
+                    }
                 }
             }
             // an array is composed of `n` elements of the same type `t` and
