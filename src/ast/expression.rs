@@ -315,26 +315,9 @@ impl Expression {
                         *typing = Some(Type::Structure(name.clone()));
                         Ok(())
                     }
-                    UserDefinedType::Enumeration {
-                        id,
-                        elements: _,
-                        location: _,
-                    } => {
+                    _ => {
                         let error = Error::ExpectStructure {
-                            given_type: Type::Enumeration(id.clone()),
-                            location: location.clone(),
-                        };
-                        errors.push(error.clone());
-                        Err(error)
-                    }
-                    UserDefinedType::Array {
-                        id: _,
-                        array_type,
-                        size,
-                        location: _,
-                    } => {
-                        let error = Error::ExpectStructure {
-                            given_type: Type::Array(Box::new(array_type.clone()), size.clone()),
+                            given_type: user_type.into_type(),
                             location: location.clone(),
                         };
                         errors.push(error.clone());
