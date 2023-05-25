@@ -273,17 +273,7 @@ impl Expression {
                                     location.clone(),
                                     errors,
                                 )?;
-                                if field_type.eq(expression_type) {
-                                    Ok(())
-                                } else {
-                                    let error = Error::IncompatibleType {
-                                        given_type: expression_type.clone(),
-                                        expected_type: field_type.clone(),
-                                        location: location.clone(),
-                                    };
-                                    errors.push(error.clone());
-                                    Err(error)
-                                }
+                                expression_type.eq_check(field_type, location.clone(), errors)
                             })
                             .collect::<Vec<Result<(), Error>>>()
                             .into_iter()
@@ -344,17 +334,7 @@ impl Expression {
                     .iter()
                     .map(|element| {
                         let element_type = element.get_type().unwrap();
-                        if first_type.eq(element_type) {
-                            Ok(())
-                        } else {
-                            let error = Error::IncompatibleType {
-                                given_type: element_type.clone(),
-                                expected_type: first_type.clone(),
-                                location: location.clone(),
-                            };
-                            errors.push(error.clone());
-                            Err(error)
-                        }
+                        element_type.eq_check(first_type, location.clone(), errors)
                     })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
@@ -389,18 +369,8 @@ impl Expression {
                         let present_type = present.get_type().unwrap();
                         let default_type = default.get_type().unwrap();
 
-                        if present_type.eq(default_type) {
-                            *typing = Some(present_type.clone());
-                            Ok(())
-                        } else {
-                            let error = Error::IncompatibleType {
-                                given_type: default_type.clone(),
-                                expected_type: present_type.clone(),
-                                location: location.clone(),
-                            };
-                            errors.push(error.clone());
-                            Err(error)
-                        }
+                        *typing = Some(present_type.clone());
+                        default_type.eq_check(present_type, location.clone(), errors)
                     }
                     _ => {
                         let error = Error::ExpectOption {

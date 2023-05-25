@@ -92,8 +92,7 @@ impl Type {
     /// Type application with errors handling.
     ///
     /// This function tries to apply the input type to the self type.
-    /// If types are incompatible for application then an
-    /// [Error::IncompatibleType] is raised.
+    /// If types are incompatible for application then an error is raised.
     ///
     /// # Example
     /// ```rust
@@ -109,17 +108,8 @@ impl Type {
             // if self is an abstraction, check if the input types are equal
             // and return the output type as the type of the application
             Type::Abstract(input, output) => {
-                if *input == input_type {
-                    Ok(*output)
-                } else {
-                    let error = Error::IncompatibleType {
-                        given_type: input_type,
-                        expected_type: *input,
-                        location,
-                    };
-                    errors.push(error.clone());
-                    Err(error)
-                }
+                input_type.eq_check(input.as_ref(), location, errors)?;
+                Ok(*output)
             }
             // if self is a choice type, it means that their are several options
             // then perform application for each option and keep succeeding ones
