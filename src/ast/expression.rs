@@ -277,7 +277,7 @@ impl Expression {
                                     Ok(())
                                 } else {
                                     let error = Error::IncompatibleType {
-                                        given_type: (*expression_type).clone(),
+                                        given_type: expression_type.clone(),
                                         expected_type: field_type.clone(),
                                         location: location.clone(),
                                     };
