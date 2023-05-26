@@ -190,7 +190,7 @@ term: Expression = {
     // catches brackets as expressions
     <start:@L> "(" <e: expression> ")" <end:@R> => {
         Expression::Application {
-            expression: Box::new(Expression::Call{
+            function_expression: Box::new(Expression::Call{
                 id: UnaryOperator::Brackets.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start..end }
@@ -203,7 +203,7 @@ term: Expression = {
     // catches function applications as expressions
     <start:@L> <fun_name: ID> <end_fun:@R> "(" <v_expr: list<expression>> ")" <end:@R> => {
         Expression::Application {
-            expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Call {
                 id: fun_name,
                 typing: None,
                 location: Location{ file_id, range: start..end_fun }
@@ -225,7 +225,7 @@ term: Expression = {
     // catches print applications as expressions
     <start:@L> "print" "(" <e: expression> ")" <end:@R> => {
         Expression::Application {
-            expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Call {
                 id: OtherOperator::Print.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start..end }
@@ -266,7 +266,7 @@ term: Expression = {
 unaryExpression: Expression = {
     <start:@L> <start_op:@L> <op: unaryOperator> <end_op:@R> <e: term> <end:@R> => {
         Expression::Application {
-            expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Call {
                 id: op.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start_op..end_op }
@@ -284,7 +284,7 @@ unaryExpression: Expression = {
 auxBinaryExpression<Op,E>: Expression = {
     <start:@L> <e1: auxBinaryExpression<Op,E>> <start_op:@L> <op: Op> <end_op:@R><e2: E> <end:@R> => {
         Expression::Application{
-            expression: Box::new(Expression::Call{
+            function_expression: Box::new(Expression::Call{
                 id: op.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start_op..end_op }
@@ -308,7 +308,7 @@ pub expression: Expression = {
     <start:@L> "if" <e1: expression> "then" <e2: expression>
     "else" <e3: expression> <end:@R> => {
         Expression::Application {
-            expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start..end }
@@ -389,7 +389,7 @@ streamTerm: StreamExpression = {
     // catches brackets as stream expressions
     <start:@L> "(" <e: streamExpression> ")" <end:@R> => {
         StreamExpression::MapApplication {
-            expression: Expression::Call{
+            function_expression: Expression::Call{
                 id: UnaryOperator::Brackets.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start..end }
@@ -401,7 +401,7 @@ streamTerm: StreamExpression = {
     // catches map applications as stream expressions
     <start:@L> "(" <v_expr: list<streamExpression>> ").map" "(" <f: expression> ")" <end:@R> => {
         StreamExpression::MapApplication {
-            expression: f,
+            function_expression: f,
             inputs: v_expr,
             location: Location{ file_id, range: start..end },
         }
@@ -427,7 +427,7 @@ streamTerm: StreamExpression = {
     // catches print applications as stream expressions
     <start:@L> "print" "(" <e: streamExpression> ")" <end:@R> => {
         StreamExpression::MapApplication {
-            expression: Expression::Call {
+            function_expression: Expression::Call {
                 id: OtherOperator::Print.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start..end }
@@ -464,7 +464,7 @@ streamTerm: StreamExpression = {
 unaryStreamExpression: StreamExpression = {
     <start:@L> <start_op:@L> <op: unaryOperator> <end_op:@R> <e: streamTerm> <end:@R> => {
         StreamExpression::MapApplication {
-            expression: Expression::Call {
+            function_expression: Expression::Call {
                 id: op.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start_op..end_op }
@@ -481,7 +481,7 @@ unaryStreamExpression: StreamExpression = {
 auxBinaryStreamExpression<Op,E>: StreamExpression = {
     <start:@L> <e1: auxBinaryStreamExpression<Op,E>> <start_op:@L> <op: Op> <end_op:@R> <e2: E> <end:@R> => {
         StreamExpression::MapApplication{
-            expression: Expression::Call{
+            function_expression: Expression::Call{
                 id: op.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start_op..end_op }
@@ -512,7 +512,7 @@ pub streamExpression: StreamExpression = {
     <start:@L> "if" <e1: streamExpression> "then" <e2: streamExpression>
     "else" <e3: streamExpression> <end:@R> => {
         StreamExpression::MapApplication {
-            expression: Expression::Call {
+            function_expression: Expression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
                 typing: None,
                 location: Location{ file_id, range: start..end }
