@@ -31,7 +31,7 @@ pub enum StreamExpression {
     /// Map application stream expression.
     MapApplication {
         /// The expression applied.
-        expression: Expression,
+        function_expression: Expression,
         /// The inputs to the expression.
         inputs: Vec<StreamExpression>,
         /// Stream expression location.

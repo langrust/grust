@@ -31,7 +31,7 @@ pub enum Expression {
     /// Application expression.
     Application {
         /// The expression applied.
-        expression: Box<Expression>,
+        function_expression: Box<Expression>,
         /// The inputs to the expression.
         inputs: Vec<Expression>,
         /// Expression type.
@@ -154,13 +154,12 @@ impl Expression {
             // an application expression type is the result of the application
             // of the inputs types to the abstraction/function type
             Expression::Application {
-                expression,
+                function_expression,
                 inputs,
                 typing,
                 location,
             } => {
-                let test_typing_expression =
-                    expression.typing(elements_context, user_types_context, errors);
+                let test_typing_function_expression = function_expression.typing(elements_context, user_types_context, errors);
                 let test_typing_inputs = inputs
                     .into_iter()
                     .map(|input| input.typing(elements_context, user_types_context, errors))
@@ -168,11 +167,11 @@ impl Expression {
                     .into_iter()
                     .collect::<Result<(), Error>>();
 
-                test_typing_expression?;
+                test_typing_function_expression?;
                 test_typing_inputs?;
 
                 let application_type = inputs.iter().fold(
-                    Ok(expression.get_type().unwrap().clone()),
+                    Ok(function_expression.get_type().unwrap().clone()),
                     |current_typing, input| {
                         let abstraction_type = current_typing.unwrap().clone();
                         let input_type = input.get_type().unwrap().clone();
@@ -412,7 +411,7 @@ impl Expression {
                 location: _,
             } => typing.as_ref(),
             Expression::Application {
-                expression: _,
+                function_expression: _,
                 inputs: _,
                 typing,
                 location: _,
@@ -482,7 +481,7 @@ impl Expression {
                 location: _,
             } => typing,
             Expression::Application {
-                expression: _,
+                function_expression: _,
                 inputs: _,
                 typing,
                 location: _,
@@ -620,7 +619,7 @@ mod typing {
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::Application {
-            expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Call {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -634,7 +633,7 @@ mod typing {
             location: Location::default(),
         };
         let control = Expression::Application {
-            expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Call {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(
                     Box::new(Type::Integer),
@@ -670,7 +669,7 @@ mod typing {
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::Application {
-            expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Call {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -796,7 +795,7 @@ mod typing {
                     location: Location::default(),
                 },
                 Expression::Application {
-                    expression: Box::new(Expression::Call {
+                    function_expression: Box::new(Expression::Call {
                         id: String::from("f"),
                         typing: None,
                         location: Location::default(),
@@ -826,7 +825,7 @@ mod typing {
                     location: Location::default(),
                 },
                 Expression::Application {
-                    expression: Box::new(Expression::Call {
+                    function_expression: Box::new(Expression::Call {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(
                             Box::new(Type::Integer),
@@ -878,7 +877,7 @@ mod typing {
                     location: Location::default(),
                 },
                 Expression::Application {
-                    expression: Box::new(Expression::Call {
+                    function_expression: Box::new(Expression::Call {
                         id: String::from("f"),
                         typing: None,
                         location: Location::default(),
