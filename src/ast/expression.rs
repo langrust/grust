@@ -159,7 +159,8 @@ impl Expression {
                 typing,
                 location,
             } => {
-                let test_typing_function_expression = function_expression.typing(elements_context, user_types_context, errors);
+                let test_typing_function_expression =
+                    function_expression.typing(elements_context, user_types_context, errors);
                 let test_typing_inputs = inputs
                     .into_iter()
                     .map(|input| input.typing(elements_context, user_types_context, errors))
