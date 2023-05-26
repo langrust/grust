@@ -96,7 +96,20 @@ impl Type {
     ///
     /// # Example
     /// ```rust
+    /// use grustine::ast::{location::Location, type_system::Type};
     ///
+    /// let mut errors = vec![];
+    ///
+    /// let input_type = Type::Integer;
+    /// let output_type = Type::Boolean;
+    /// let abstraction_type =
+    ///     Type::Abstract(Box::new(input_type.clone()), Box::new(output_type.clone()));
+    ///
+    /// let application_result = abstraction_type
+    ///     .apply(input_type, Location::default(), &mut errors)
+    ///     .unwrap();
+    ///
+    /// assert_eq!(application_result, output_type);
     /// ```
     pub fn apply(
         self,
