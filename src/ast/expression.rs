@@ -530,6 +530,7 @@ impl Expression {
 mod typing {
     use crate::ast::{
         constant::Constant, expression::Expression, location::Location, type_system::Type,
+        user_defined_type::UserDefinedType,
     };
     use crate::error::Error;
     use std::collections::HashMap;
@@ -986,6 +987,221 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = expression
+            .typing(&elements_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_type_structure_expression() {
+        let mut errors = vec![];
+        let elements_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut expression = Expression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Expression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    Expression::Constant {
+                        constant: Constant::Integer(2),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Expression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    Expression::Constant {
+                        constant: Constant::Integer(2),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: Some(Type::Structure(String::from("Point"))),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(&elements_context, &user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_additionnal_field_in_structure() {
+        let mut errors = vec![];
+        let elements_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut expression = Expression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Expression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    Expression::Constant {
+                        constant: Constant::Integer(2),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("z"),
+                    Expression::Constant {
+                        constant: Constant::Integer(0),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = expression
+            .typing(&elements_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_raise_error_for_missing_field_in_structure() {
+        let mut errors = vec![];
+        let elements_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut expression = Expression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Expression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = expression
+            .typing(&elements_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_raise_error_for_incompatible_structure() {
+        let mut errors = vec![];
+        let elements_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut expression = Expression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Expression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    Expression::Constant {
+                        constant: Constant::Float(2.0),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
             typing: None,
             location: Location::default(),
         };
