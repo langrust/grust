@@ -1212,6 +1212,64 @@ mod typing {
 
         assert_eq!(errors, vec![error]);
     }
+
+    #[test]
+    fn should_raise_error_when_expect_structure() {
+        let mut errors = vec![];
+        let elements_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Color"),
+            UserDefinedType::Enumeration {
+                id: String::from("Color"),
+                elements: vec![
+                    String::from("Yellow"),
+                    String::from("Blue"),
+                    String::from("Green"),
+                    String::from("Red"),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut expression = Expression::Structure {
+            name: String::from("Color"),
+            fields: vec![
+                (
+                    String::from("r"),
+                    Expression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("g"),
+                    Expression::Constant {
+                        constant: Constant::Float(2.0),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("b"),
+                    Expression::Constant {
+                        constant: Constant::Float(2.0),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = expression
+            .typing(&elements_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
 }
 
 #[cfg(test)]
