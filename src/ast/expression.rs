@@ -1145,16 +1145,14 @@ mod typing {
 
         let mut expression = Expression::Structure {
             name: String::from("Point"),
-            fields: vec![
-                (
-                    String::from("x"),
-                    Expression::Constant {
-                        constant: Constant::Integer(1),
-                        typing: None,
-                        location: Location::default(),
-                    },
-                ),
-            ],
+            fields: vec![(
+                String::from("x"),
+                Expression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: None,
+                    location: Location::default(),
+                },
+            )],
             typing: None,
             location: Location::default(),
         };
