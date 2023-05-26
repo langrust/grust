@@ -299,7 +299,12 @@ mod get_field_or_error {
         structure_fields.insert(String::from("y"), Type::Integer);
 
         let field_type = structure_fields
-            .get_field_or_error(structure_name, String::from("x"), Location::default(), &mut errors)
+            .get_field_or_error(
+                structure_name,
+                String::from("x"),
+                Location::default(),
+                &mut errors,
+            )
             .unwrap();
 
         let control = Type::Integer;
@@ -317,7 +322,12 @@ mod get_field_or_error {
         structure_fields.insert(String::from("y"), Type::Integer);
 
         let _ = structure_fields
-            .get_field_or_error(structure_name, String::from("x"), Location::default(), &mut errors)
+            .get_field_or_error(
+                structure_name,
+                String::from("x"),
+                Location::default(),
+                &mut errors,
+            )
             .unwrap();
 
         let control = vec![];
@@ -335,7 +345,12 @@ mod get_field_or_error {
         structure_fields.insert(String::from("y"), Type::Integer);
 
         let error = structure_fields
-            .get_field_or_error(structure_name, String::from("z"), Location::default(), &mut errors)
+            .get_field_or_error(
+                structure_name,
+                String::from("z"),
+                Location::default(),
+                &mut errors,
+            )
             .unwrap_err();
 
         let control = vec![error];
