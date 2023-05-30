@@ -21,7 +21,9 @@ impl Expression {
                 typing,
                 location,
             } => {
+                // create a local context
                 let mut local_context = elements_context.clone();
+                // add inputs in the context
                 inputs
                     .iter()
                     .map(|(name, typing)| {
@@ -35,8 +37,11 @@ impl Expression {
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
+
+                // type the abstracted expression with the local context
                 expression.typing(&local_context, user_types_context, errors)?;
 
+                // compute abstraction type
                 let abstraction_type = inputs.iter().fold(
                     expression.get_type().unwrap().clone(),
                     |current_type, (_, input_type)| {
