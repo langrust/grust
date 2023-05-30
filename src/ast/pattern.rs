@@ -3,6 +3,8 @@ use crate::error::Error;
 
 use std::fmt::{self, Display};
 
+use std::fmt::{self, Display};
+
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust matching pattern AST.
 pub enum Pattern {
