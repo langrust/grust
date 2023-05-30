@@ -87,6 +87,8 @@ pub enum Expression {
         expression: Box<Expression>,
         /// The different matching cases.
         arms: Vec<(Pattern, Option<Expression>, Expression)>,
+        /// Expression type.
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
     },
@@ -443,8 +445,9 @@ impl Expression {
             Expression::Match {
                 expression: _,
                 arms: _,
+                typing,
                 location: _,
-            } => None,
+            } => typing.as_ref(),
             Expression::When {
                 id: _,
                 option: _,
@@ -513,8 +516,9 @@ impl Expression {
             Expression::Match {
                 expression: _,
                 arms: _,
+                typing,
                 location: _,
-            } => None,
+            } => typing,
             Expression::When {
                 id: _,
                 option: _,

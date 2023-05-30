@@ -219,6 +219,7 @@ term: Expression = {
         Expression::Match {
             expression: Box::new(expr),
             arms: v_arm,
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
