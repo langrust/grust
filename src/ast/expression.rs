@@ -427,9 +427,10 @@ impl Expression {
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
-                
+
                 // todo: patterns should be exhaustive
-                todo!()
+                *typing = Some(first_type.clone());
+                Ok(())
             }
         }
     }
