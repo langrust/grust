@@ -7,11 +7,10 @@ impl Expression {
     /// Add a [Type] to the array expression.
     pub fn typing_array(
         &mut self,
-        global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // an array is composed of `n` elements of the same type `t` and
             // its type is `[t; n]`
@@ -22,12 +21,10 @@ impl Expression {
             } => {
                 elements
                     .into_iter()
-                    .map(|element| {
-                        element.typing(global_context, elements_context, user_types_context, errors)
-                    })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .map(|element| element.typing(elements_context, user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 let first_type = elements[0].get_type().unwrap();
                 elements
@@ -36,9 +33,9 @@ impl Expression {
                         let element_type = element.get_type().unwrap();
                         element_type.eq_check(first_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 let array_type = Type::Array(Box::new(first_type.clone()), elements.len());
 
@@ -60,7 +57,6 @@ mod typing_array {
     #[test]
     fn should_type_array() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -134,12 +130,7 @@ mod typing_array {
         };
 
         expression
-            .typing_array(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .typing_array(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -148,7 +139,6 @@ mod typing_array {
     #[test]
     fn should_raise_error_for_multiple_types_array() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -188,13 +178,10 @@ mod typing_array {
             location: Location::default(),
         };
 
-        expression
-            .typing_array(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+        let error = expression
+            .typing_array(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 }

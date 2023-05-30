@@ -10,7 +10,7 @@ impl Expression {
         &mut self,
         elements_context: &HashMap<String, Type>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // the type of a call expression in the type of the called element in the context
             Expression::Call {
@@ -19,7 +19,7 @@ impl Expression {
                 location,
             } => {
                 let element_type =
-                    elements_context.get_element_or_error(id, location.clone(), errors)?;
+                    elements_context.get_element_or_error(id.clone(), location.clone(), errors)?;
                 *typing = Some(element_type.clone());
                 Ok(())
             }

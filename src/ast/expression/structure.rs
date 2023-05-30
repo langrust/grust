@@ -8,11 +8,10 @@ impl Expression {
     /// Add a [Type] to the structure expression.
     pub fn typing_structure(
         &mut self,
-        global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // the type of the structure is the corresponding structure type
             // if fields match their expected types
@@ -22,36 +21,70 @@ impl Expression {
                 typing,
                 location,
             } => {
-                // get the supposed structure type as the user defined it
-                let user_type =
-                    user_types_context.get_user_type_or_error(name, location.clone(), errors)?;
+                let user_type = user_types_context.get_user_type_or_error(
+                    name.clone(),
+                    location.clone(),
+                    errors,
+                )?;
 
                 match user_type {
-                    UserDefinedType::Structure { .. } => {
-                        // type each field
+                    UserDefinedType::Structure {
+                        id: _,
+                        fields: structure_fields,
+                        location: _,
+                    } => {
                         fields
                             .into_iter()
                             .map(|(_, expression)| {
-                                expression.typing(
-                                    global_context,
-                                    elements_context,
-                                    user_types_context,
-                                    errors,
-                                )
+                                expression.typing(elements_context, user_types_context, errors)
                             })
-                            .collect::<Vec<Result<(), ()>>>()
+                            .collect::<Vec<Result<(), Error>>>()
                             .into_iter()
-                            .collect::<Result<(), ()>>()?;
+                            .collect::<Result<(), Error>>()?;
 
-                        // check that the structure is well defined
-                        let well_defined_field =
-                            |expression: &Expression,
-                             field_type: &Type,
-                             errors: &mut Vec<Error>| {
+                        let structure_fields = structure_fields
+                            .iter()
+                            .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
+                            .collect::<HashMap<String, Type>>();
+
+                        fields
+                            .iter()
+                            .map(|(id, expression)| {
                                 let expression_type = expression.get_type().unwrap();
+                                let field_type = structure_fields.get_field_or_error(
+                                    name.clone(),
+                                    id.clone(),
+                                    location.clone(),
+                                    errors,
+                                )?;
                                 expression_type.eq_check(field_type, location.clone(), errors)
-                            };
-                        user_type.well_defined_structure(fields, well_defined_field, errors)?;
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
+
+                        let defined_fields = fields
+                            .iter()
+                            .map(|(id, _)| id.clone())
+                            .collect::<Vec<String>>();
+                        structure_fields
+                            .iter()
+                            .map(|(id, _)| {
+                                if defined_fields.contains(id) {
+                                    Ok(())
+                                } else {
+                                    let error = Error::MissingField {
+                                        structure_name: name.clone(),
+                                        field_name: id.clone(),
+                                        location: location.clone(),
+                                    };
+                                    errors.push(error.clone());
+                                    Err(error)
+                                }
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
 
                         *typing = Some(Type::Structure(name.clone()));
                         Ok(())
@@ -61,8 +94,8 @@ impl Expression {
                             given_type: user_type.into_type(),
                             location: location.clone(),
                         };
-                        errors.push(error);
-                        Err(())
+                        errors.push(error.clone());
+                        Err(error)
                     }
                 }
             }
@@ -82,7 +115,6 @@ mod typing_structure {
     #[test]
     fn should_type_structure_expression() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -145,12 +177,7 @@ mod typing_structure {
         };
 
         expression
-            .typing_structure(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .typing_structure(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -159,7 +186,6 @@ mod typing_structure {
     #[test]
     fn should_raise_error_for_additionnal_field_in_structure() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -206,20 +232,16 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        expression
-            .typing_structure(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+        let error = expression
+            .typing_structure(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 
     #[test]
     fn should_raise_error_for_missing_field_in_structure() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -248,20 +270,16 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        expression
-            .typing_structure(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+        let error = expression
+            .typing_structure(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 
     #[test]
     fn should_raise_error_for_incompatible_structure() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -300,20 +318,16 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        expression
-            .typing_structure(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+        let error = expression
+            .typing_structure(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 
     #[test]
     fn should_raise_error_when_expect_structure() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -362,13 +376,10 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        expression
-            .typing_structure(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+        let error = expression
+            .typing_structure(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 }

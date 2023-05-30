@@ -8,10 +8,10 @@ impl Expression {
     /// Add a [Type] to the abstraction expression.
     pub fn typing_abstraction(
         &mut self,
-        global_context: &HashMap<String, Type>,
+        elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // the type of a typed abstraction is computed by adding inputs to
             // the context and typing the function body expression
@@ -21,9 +21,7 @@ impl Expression {
                 typing,
                 location,
             } => {
-                // create a local context
-                let mut local_context = global_context.clone();
-                // add inputs in the context
+                let mut local_context = elements_context.clone();
                 inputs
                     .iter()
                     .map(|(name, typing)| {
@@ -34,14 +32,11 @@ impl Expression {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
+                expression.typing(&local_context, user_types_context, errors)?;
 
-                // type the abstracted expression with the local context
-                expression.typing(global_context, &local_context, user_types_context, errors)?;
-
-                // compute abstraction type
                 let abstraction_type = inputs.iter().fold(
                     expression.get_type().unwrap().clone(),
                     |current_type, (_, input_type)| {
@@ -62,8 +57,8 @@ impl Expression {
                 let error = Error::NoTypeInference {
                     location: location.clone(),
                 };
-                errors.push(error);
-                Err(())
+                errors.push(error.clone());
+                Err(error)
             }
             _ => unreachable!(),
         }
@@ -78,7 +73,7 @@ mod typing_abstraction {
     #[test]
     fn should_type_abstraction_expression() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::TypedAbstraction {
@@ -106,7 +101,7 @@ mod typing_abstraction {
         };
 
         expression
-            .typing_abstraction(&global_context, &user_types_context, &mut errors)
+            .typing_abstraction(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -115,8 +110,8 @@ mod typing_abstraction {
     #[test]
     fn should_raise_error_for_already_defined_input_name() {
         let mut errors = vec![];
-        let mut global_context = HashMap::new();
-        global_context.insert(String::from("x"), Type::Float);
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("x"), Type::Float);
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::TypedAbstraction {
@@ -130,15 +125,17 @@ mod typing_abstraction {
             location: Location::default(),
         };
 
-        expression
-            .typing_abstraction(&global_context, &user_types_context, &mut errors)
+        let error = expression
+            .typing_abstraction(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 
     #[test]
     fn should_raise_error_for_untyped_abstraction() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::Abstraction {
@@ -152,8 +149,10 @@ mod typing_abstraction {
             location: Location::default(),
         };
 
-        expression
-            .typing_abstraction(&global_context, &user_types_context, &mut errors)
+        let error = expression
+            .typing_abstraction(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 }
