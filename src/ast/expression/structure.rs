@@ -21,7 +21,6 @@ impl Expression {
                 typing,
                 location,
             } => {
-                // get the supposed structure type as the user defined it
                 let user_type = user_types_context.get_user_type_or_error(
                     name.clone(),
                     location.clone(),
@@ -34,7 +33,6 @@ impl Expression {
                         fields: structure_fields,
                         location: _,
                     } => {
-                        // type each field
                         fields
                             .into_iter()
                             .map(|(_, expression)| {
@@ -44,13 +42,11 @@ impl Expression {
                             .into_iter()
                             .collect::<Result<(), Error>>()?;
 
-                        // convert the structure_fields into an HashMap
                         let structure_fields = structure_fields
                             .iter()
                             .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
                             .collect::<HashMap<String, Type>>();
 
-                        // check that every field in the expression is well-defined
                         fields
                             .iter()
                             .map(|(id, expression)| {
@@ -67,13 +63,10 @@ impl Expression {
                             .into_iter()
                             .collect::<Result<(), Error>>()?;
 
-                        // convert the fields into an HashMap defined_fields
                         let defined_fields = fields
                             .iter()
                             .map(|(id, _)| id.clone())
                             .collect::<Vec<String>>();
-
-                        // check that there are no missing fields
                         structure_fields
                             .iter()
                             .map(|(id, _)| {
