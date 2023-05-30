@@ -21,7 +21,6 @@ impl Expression {
                 typing,
                 location,
             } => {
-                // get the supposed structure type as the user defined it
                 let user_type = user_types_context.get_user_type_or_error(
                     name.clone(),
                     location.clone(),
@@ -29,8 +28,11 @@ impl Expression {
                 )?;
 
                 match user_type {
-                    UserDefinedType::Structure { .. } => {
-                        // type each field
+                    UserDefinedType::Structure {
+                        id: _,
+                        fields: structure_fields,
+                        location: _,
+                    } => {
                         fields
                             .into_iter()
                             .map(|(_, expression)| {
@@ -40,15 +42,49 @@ impl Expression {
                             .into_iter()
                             .collect::<Result<(), Error>>()?;
 
-                        // check that the structure is well defined
-                        let well_defined_field =
-                            |expression: &Expression,
-                             field_type: &Type,
-                             errors: &mut Vec<Error>| {
+                        let structure_fields = structure_fields
+                            .iter()
+                            .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
+                            .collect::<HashMap<String, Type>>();
+
+                        fields
+                            .iter()
+                            .map(|(id, expression)| {
                                 let expression_type = expression.get_type().unwrap();
+                                let field_type = structure_fields.get_field_or_error(
+                                    name.clone(),
+                                    id.clone(),
+                                    location.clone(),
+                                    errors,
+                                )?;
                                 expression_type.eq_check(field_type, location.clone(), errors)
-                            };
-                        user_type.well_defined_structure(fields, well_defined_field, errors)?;
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
+
+                        let defined_fields = fields
+                            .iter()
+                            .map(|(id, _)| id.clone())
+                            .collect::<Vec<String>>();
+                        structure_fields
+                            .iter()
+                            .map(|(id, _)| {
+                                if defined_fields.contains(id) {
+                                    Ok(())
+                                } else {
+                                    let error = Error::MissingField {
+                                        structure_name: name.clone(),
+                                        field_name: id.clone(),
+                                        location: location.clone(),
+                                    };
+                                    errors.push(error.clone());
+                                    Err(error)
+                                }
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
 
                         *typing = Some(Type::Structure(name.clone()));
                         Ok(())
