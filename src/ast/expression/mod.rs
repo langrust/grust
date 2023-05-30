@@ -158,8 +158,213 @@ impl Expression {
             Expression::When { .. } => {
                 self.typing_when(elements_context, user_types_context, errors)
             }
-            Expression::Match { .. } => {
-                self.typing_match(elements_context, user_types_context, errors)
+            //
+            Expression::Structure {
+                name,
+                fields,
+                typing,
+                location,
+            } => {
+                let user_type = user_types_context.get_user_type_or_error(
+                    name.clone(),
+                    location.clone(),
+                    errors,
+                )?;
+
+                match user_type {
+                    UserDefinedType::Structure {
+                        id: _,
+                        fields: structure_fields,
+                        location: _,
+                    } => {
+                        fields
+                            .into_iter()
+                            .map(|(_, expression)| {
+                                expression.typing(elements_context, user_types_context, errors)
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
+
+                        let structure_fields = structure_fields
+                            .iter()
+                            .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
+                            .collect::<HashMap<String, Type>>();
+
+                        fields
+                            .iter()
+                            .map(|(id, expression)| {
+                                let expression_type = expression.get_type().unwrap();
+                                let field_type = structure_fields.get_field_or_error(
+                                    name.clone(),
+                                    id.clone(),
+                                    location.clone(),
+                                    errors,
+                                )?;
+                                expression_type.eq_check(field_type, location.clone(), errors)
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
+
+                        let defined_fields = fields
+                            .iter()
+                            .map(|(id, _)| id.clone())
+                            .collect::<Vec<String>>();
+                        structure_fields
+                            .iter()
+                            .map(|(id, _)| {
+                                if defined_fields.contains(id) {
+                                    Ok(())
+                                } else {
+                                    let error = Error::MissingField {
+                                        structure_name: name.clone(),
+                                        field_name: id.clone(),
+                                        location: location.clone(),
+                                    };
+                                    errors.push(error.clone());
+                                    Err(error)
+                                }
+                            })
+                            .collect::<Vec<Result<(), Error>>>()
+                            .into_iter()
+                            .collect::<Result<(), Error>>()?;
+
+                        *typing = Some(Type::Structure(name.clone()));
+                        Ok(())
+                    }
+                    _ => {
+                        let error = Error::ExpectStructure {
+                            given_type: user_type.into_type(),
+                            location: location.clone(),
+                        };
+                        errors.push(error.clone());
+                        Err(error)
+                    }
+                }
+            }
+            // an array is composed of `n` elements of the same type `t` and
+            // its type is `[t; n]`
+            Expression::Array {
+                elements,
+                typing,
+                location,
+            } => {
+                elements
+                    .into_iter()
+                    .map(|element| element.typing(elements_context, user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                let first_type = elements[0].get_type().unwrap();
+                elements
+                    .iter()
+                    .map(|element| {
+                        let element_type = element.get_type().unwrap();
+                        element_type.eq_check(first_type, location.clone(), errors)
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                let array_type = Type::Array(Box::new(first_type.clone()), elements.len());
+
+                *typing = Some(array_type);
+                Ok(())
+            }
+            // the type of a when expression is the type of both the default and
+            // the present expressions
+            Expression::When {
+                id,
+                option,
+                present,
+                default,
+                typing,
+                location,
+            } => {
+                option.typing(elements_context, user_types_context, errors)?;
+
+                let option_type = option.get_type().unwrap();
+                match option_type {
+                    Type::Option(unwraped_type) => {
+                        let mut local_context = elements_context.clone();
+                        local_context.insert(id.clone(), *unwraped_type.clone());
+
+                        present.typing(&local_context, user_types_context, errors)?;
+                        default.typing(elements_context, user_types_context, errors)?;
+
+                        let present_type = present.get_type().unwrap();
+                        let default_type = default.get_type().unwrap();
+
+                        *typing = Some(present_type.clone());
+                        default_type.eq_check(present_type, location.clone(), errors)
+                    }
+                    _ => {
+                        let error = Error::ExpectOption {
+                            given_type: option_type.clone(),
+                            location: location.clone(),
+                        };
+                        errors.push(error.clone());
+                        Err(error)
+                    }
+                }
+            }
+            // the type of a match expression is the type of all branches expressions
+            Expression::Match {
+                expression,
+                arms,
+                typing,
+                location,
+            } => {
+                expression.typing(elements_context, user_types_context, errors)?;
+
+                let expression_type = expression.get_type().unwrap();
+                arms.into_iter()
+                    .map(|(pattern, optional_test_expression, arm_expression)| {
+                        let mut local_context = elements_context.clone();
+                        pattern.construct_context(
+                            expression_type,
+                            &mut local_context,
+                            user_types_context,
+                            errors,
+                        )?;
+
+                        let optional_test_expression_typing_test = optional_test_expression
+                            .as_mut()
+                            .map_or(Ok(()), |expression| {
+                                expression.typing(&local_context, user_types_context, errors)?;
+                                expression.get_type().unwrap().eq_check(
+                                    &Type::Boolean,
+                                    location.clone(),
+                                    errors,
+                                )
+                            });
+
+                        let arm_expression_typing_test =
+                            arm_expression.typing(&local_context, user_types_context, errors);
+
+                        optional_test_expression_typing_test?;
+                        arm_expression_typing_test?;
+                        pattern_type_check_test
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                let first_type = arms[0].2.get_type().unwrap();
+                arms.iter()
+                    .map(|(_, _, arm_expression)| {
+                        let arm_expression_type = arm_expression.get_type().unwrap();
+                        arm_expression_type.eq_check(first_type, location.clone(), errors)
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // todo: patterns should be exhaustive
+                *typing = Some(first_type.clone());
+                Ok(())
             }
         }
     }
