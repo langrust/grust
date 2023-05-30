@@ -396,12 +396,18 @@ impl Expression {
                 let expression_type = expression.get_type().unwrap();
                 arms.into_iter()
                     .map(|(pattern, optional_test_expression, arm_expression)| {
-                        let pattern_type_check_test = pattern.type_check(expression_type, errors);
+                        let mut local_context = elements_context.clone();
+                        pattern.construct_context(
+                            expression_type,
+                            &mut local_context,
+                            user_types_context,
+                            errors,
+                        )?;
 
                         let optional_test_expression_typing_test = optional_test_expression
                             .as_mut()
                             .map_or(Ok(()), |expression| {
-                                expression.typing(elements_context, user_types_context, errors)?;
+                                expression.typing(&local_context, user_types_context, errors)?;
                                 expression.get_type().unwrap().eq_check(
                                     &Type::Boolean,
                                     location.clone(),
@@ -410,11 +416,10 @@ impl Expression {
                             });
 
                         let arm_expression_typing_test =
-                            arm_expression.typing(elements_context, user_types_context, errors);
+                            arm_expression.typing(&local_context, user_types_context, errors);
 
                         optional_test_expression_typing_test?;
-                        arm_expression_typing_test?;
-                        pattern_type_check_test
+                        arm_expression_typing_test
                     })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
