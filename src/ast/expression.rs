@@ -393,9 +393,10 @@ impl Expression {
             } => {
                 expression.typing(elements_context, user_types_context, errors)?;
 
+                let expression_type = expression.get_type().unwrap();
                 arms.into_iter()
                     .map(|(pattern, optional_test_expression, arm_expression)| {
-                        // todo: check pattern match the type of expression
+                        let pattern_type_check_test = pattern.type_check(expression_type, errors);
 
                         let optional_test_expression_typing_test = optional_test_expression
                             .as_mut()
@@ -412,7 +413,8 @@ impl Expression {
                             arm_expression.typing(elements_context, user_types_context, errors);
 
                         optional_test_expression_typing_test?;
-                        arm_expression_typing_test
+                        arm_expression_typing_test?;
+                        pattern_type_check_test
                     })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
