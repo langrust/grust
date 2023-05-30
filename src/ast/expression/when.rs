@@ -7,11 +7,10 @@ impl Expression {
     /// Add a [Type] to the when expression.
     pub fn typing_when(
         &mut self,
-        global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // the type of a when expression is the type of both the default and
             // the present expressions
@@ -23,7 +22,7 @@ impl Expression {
                 typing,
                 location,
             } => {
-                option.typing(global_context, elements_context, user_types_context, errors)?;
+                option.typing(elements_context, user_types_context, errors)?;
 
                 let option_type = option.get_type().unwrap();
                 match option_type {
@@ -31,18 +30,8 @@ impl Expression {
                         let mut local_context = elements_context.clone();
                         local_context.insert(id.clone(), *unwraped_type.clone());
 
-                        present.typing(
-                            global_context,
-                            &local_context,
-                            user_types_context,
-                            errors,
-                        )?;
-                        default.typing(
-                            global_context,
-                            elements_context,
-                            user_types_context,
-                            errors,
-                        )?;
+                        present.typing(&local_context, user_types_context, errors)?;
+                        default.typing(elements_context, user_types_context, errors)?;
 
                         let present_type = present.get_type().unwrap();
                         let default_type = default.get_type().unwrap();
@@ -55,8 +44,8 @@ impl Expression {
                             given_type: option_type.clone(),
                             location: location.clone(),
                         };
-                        errors.push(error);
-                        Err(())
+                        errors.push(error.clone());
+                        Err(error)
                     }
                 }
             }
@@ -75,7 +64,6 @@ mod typing_when {
     #[test]
     fn should_type_when_expression() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
         let user_types_context = HashMap::new();
@@ -122,12 +110,7 @@ mod typing_when {
         };
 
         expression
-            .typing_when(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .typing_when(&elements_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -136,7 +119,6 @@ mod typing_when {
     #[test]
     fn should_raise_error_for_incompatible_when() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
         let user_types_context = HashMap::new();
@@ -162,13 +144,10 @@ mod typing_when {
             location: Location::default(),
         };
 
-        expression
-            .typing_when(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+        let error = expression
+            .typing_when(&elements_context, &user_types_context, &mut errors)
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 }
