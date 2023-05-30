@@ -384,7 +384,7 @@ impl Expression {
                     }
                 }
             }
-            // TODO
+            // the type of a match expression is the type of all branches expressions
             Expression::Match {
                 expression,
                 arms,
