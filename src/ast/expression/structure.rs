@@ -29,11 +29,7 @@ impl Expression {
                 )?;
 
                 match user_type {
-                    UserDefinedType::Structure {
-                        id: _,
-                        fields: structure_fields,
-                        location: _,
-                    } => {
+                    UserDefinedType::Structure { .. } => {
                         // type each field
                         fields
                             .into_iter()
@@ -43,55 +39,12 @@ impl Expression {
                             .collect::<Vec<Result<(), Error>>>()
                             .into_iter()
                             .collect::<Result<(), Error>>()?;
-
-                        // convert the structure_fields into an HashMap
-                        let structure_fields = structure_fields
-                            .iter()
-                            .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
-                            .collect::<HashMap<String, Type>>();
-
-                        // check that every field in the expression is well-defined
-                        fields
-                            .iter()
-                            .map(|(id, expression)| {
-                                let expression_type = expression.get_type().unwrap();
-                                let field_type = structure_fields.get_field_or_error(
-                                    name.clone(),
-                                    id.clone(),
-                                    location.clone(),
-                                    errors,
-                                )?;
-                                expression_type.eq_check(field_type, location.clone(), errors)
-                            })
-                            .collect::<Vec<Result<(), Error>>>()
-                            .into_iter()
-                            .collect::<Result<(), Error>>()?;
-
-                        // convert the fields into an HashMap defined_fields
-                        let defined_fields = fields
-                            .iter()
-                            .map(|(id, _)| id.clone())
-                            .collect::<Vec<String>>();
-
-                        // check that there are no missing fields
-                        structure_fields
-                            .iter()
-                            .map(|(id, _)| {
-                                if defined_fields.contains(id) {
-                                    Ok(())
-                                } else {
-                                    let error = Error::MissingField {
-                                        structure_name: name.clone(),
-                                        field_name: id.clone(),
-                                        location: location.clone(),
-                                    };
-                                    errors.push(error.clone());
-                                    Err(error)
-                                }
-                            })
-                            .collect::<Vec<Result<(), Error>>>()
-                            .into_iter()
-                            .collect::<Result<(), Error>>()?;
+                        
+                        let well_defined_field = |expression: &Expression, field_type: &Type, errors: &mut Vec<Error>| {
+                            let expression_type = expression.get_type().unwrap();
+                            expression_type.eq_check(field_type, location.clone(), errors)
+                        };
+                        user_type.well_defined_structure(fields, well_defined_field, errors)?;
 
                         *typing = Some(Type::Structure(name.clone()));
                         Ok(())
