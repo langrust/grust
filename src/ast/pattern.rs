@@ -1,4 +1,5 @@
-use crate::ast::{constant::Constant, location::Location};
+use crate::ast::{constant::Constant, location::Location, type_system::Type};
+use crate::error::Error;
 
 use std::fmt::{self, Display};
 
@@ -71,6 +72,42 @@ impl Display for Pattern {
             } => write!(f, "some({})", pattern),
             Pattern::None { location: _ } => write!(f, "none"),
             Pattern::Default { location: _ } => write!(f, "_"),
+        }
+    }
+}
+
+impl Pattern {
+    pub fn type_check(
+        &self,
+        expected_type: &Type,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        match self {
+            Pattern::Identifier { name: _, location: _ } => Ok(()),
+            Pattern::Constant { constant, location } => {
+                constant
+                    .get_type()
+                    .eq_check(expected_type, location.clone(), errors)
+            },
+            Pattern::Structure { name, fields: _, location } => {
+                let found_type = Type::Structure(name.clone());
+                found_type.eq_check(expected_type, location.clone(), errors)
+            },
+            Pattern::Some { pattern, location } => match expected_type {
+                Type::Option(_) => todo!(),
+                _ => {
+                    let error = Error::IncompatiblePattern {
+                        given_type: self.clone(),
+                        expected_type: expected_type.clone(),
+                        location: location,
+                    };
+                    errors.push(error.clone());
+                    Err(error)
+                }
+            },
+            Pattern::None { location } => todo!(),
+            Pattern::Default { location } => todo!(),
         }
     }
 }
