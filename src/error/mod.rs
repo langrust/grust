@@ -21,7 +21,7 @@ use crate::ast::{location::Location, pattern::Pattern, type_system::Type};
 /// errors.push(error);
 /// ```
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Error {
     /// encountering an unknown element
     UnknownElement {
@@ -91,15 +91,6 @@ pub enum Error {
         given_pattern: Pattern,
         /// expected type
         expected_type: Type,
-        /// the error location
-        location: Location,
-    },
-    /// given inputs are not of the right number
-    IncompatibleInputsNumber {
-        /// the given number of inputs
-        given_inputs_number: usize,
-        /// the expected number of inputs
-        expected_inputs_number: usize,
         /// the error location
         location: Location,
     },
@@ -257,21 +248,6 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("expected pattern of type '{expected_type}' but '{given_pattern}' was given")
-                ]
-            ),
-            Error::IncompatibleInputsNumber { given_inputs_number, expected_inputs_number, location } => Diagnostic::error()
-                .with_message("incompatible number of inputs")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong number of inputs")
-                ])
-                .with_notes(vec![
-                    format!(
-                        "expected {expected_inputs_number} input{} but {given_inputs_number} input{} {} given",
-                        if expected_inputs_number < &2 {""} else {"s"},
-                        if given_inputs_number < &2 {""} else {"s"},
-                        if given_inputs_number < &2 {"was"} else {"were"}
-                    )
                 ]
             ),
             Error::ExpectAbstraction { input_type, given_type, location } => Diagnostic::error()
