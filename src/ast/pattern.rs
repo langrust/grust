@@ -77,37 +77,285 @@ impl Display for Pattern {
 }
 
 impl Pattern {
-    pub fn type_check(
-        &self,
-        expected_type: &Type,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    /// Check if `self` pattern matches the expected [Type]
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
+    ///
+    /// let mut errors = vec![];
+    ///
+    /// let given_pattern = Pattern::Structure {
+    ///     name: String::from("Point"),
+    ///     fields: vec![
+    ///         (
+    ///             String::from("x"),
+    ///             Pattern::Constant {
+    ///                 constant: Constant::Integer(1),
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("y"),
+    ///             Pattern::Identifier {
+    ///                 name: String::from("y"),
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    /// let expected_type = Type::Structure(String::from("Point"));
+    ///
+    /// given_pattern.type_check(&expected_type, &mut errors).unwrap();
+    /// assert!(errors.is_empty());
+    /// ```
+    pub fn type_check(&self, expected_type: &Type, errors: &mut Vec<Error>) -> Result<(), Error> {
         match self {
-            Pattern::Identifier { name: _, location: _ } => Ok(()),
+            Pattern::Identifier {
+                name: _,
+                location: _,
+            } => Ok(()),
             Pattern::Constant { constant, location } => {
-                constant
-                    .get_type()
-                    .eq_check(expected_type, location.clone(), errors)
-            },
-            Pattern::Structure { name, fields: _, location } => {
-                let found_type = Type::Structure(name.clone());
-                found_type.eq_check(expected_type, location.clone(), errors)
-            },
-            Pattern::Some { pattern, location } => match expected_type {
-                Type::Option(_) => todo!(),
+                if constant.get_type().eq(expected_type) {
+                    Ok(())
+                } else {
+                    let error = Error::IncompatiblePattern {
+                        given_pattern: self.clone(),
+                        expected_type: expected_type.clone(),
+                        location: location.clone(),
+                    };
+                    errors.push(error.clone());
+                    Err(error)
+                }
+            }
+            Pattern::Structure {
+                name,
+                fields: _,
+                location,
+            } => match expected_type {
+                Type::Structure(structure_name) if name.eq(structure_name) => Ok(()),
                 _ => {
                     let error = Error::IncompatiblePattern {
-                        given_type: self.clone(),
+                        given_pattern: self.clone(),
                         expected_type: expected_type.clone(),
-                        location: location,
+                        location: location.clone(),
                     };
                     errors.push(error.clone());
                     Err(error)
                 }
             },
-            Pattern::None { location } => todo!(),
-            Pattern::Default { location } => todo!(),
+            Pattern::Some { pattern, location } => match expected_type {
+                Type::Option(optional_type) => pattern.type_check(optional_type, errors),
+                _ => {
+                    let error = Error::IncompatiblePattern {
+                        given_pattern: self.clone(),
+                        expected_type: expected_type.clone(),
+                        location: location.clone(),
+                    };
+                    errors.push(error.clone());
+                    Err(error)
+                }
+            },
+            Pattern::None { location } => match expected_type {
+                Type::Option(_) => Ok(()),
+                _ => {
+                    let error = Error::IncompatiblePattern {
+                        given_pattern: self.clone(),
+                        expected_type: expected_type.clone(),
+                        location: location.clone(),
+                    };
+                    errors.push(error.clone());
+                    Err(error)
+                }
+            },
+            Pattern::Default { location: _ } => Ok(()),
         }
+    }
+}
+
+#[cfg(test)]
+mod type_check {
+    use crate::ast::{
+        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
+    };
+    
+    #[test]
+    fn should_check_identifier_pattern_for_any_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::Identifier {
+            name: String::from("y"),
+            location: Location::default(),
+        };
+        let expected_type = Type::Integer;
+        
+        given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap()
+    }
+    
+    #[test]
+    fn should_check_constant_pattern_for_constant_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::Constant {
+            constant: Constant::Integer(1),
+            location: Location::default(),
+        };
+        let expected_type = Type::Integer;
+        
+        given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap()
+    }
+
+    #[test]
+    fn should_raise_error_for_constant_pattern_and_mismatching_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::Constant {
+            constant: Constant::Integer(1),
+            location: Location::default(),
+        };
+        let expected_type = Type::Float;
+        
+        let error = given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap_err();
+        assert_eq!(errors, vec![error])
+    }
+    
+    #[test]
+    fn should_check_structure_pattern_for_structure_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Pattern::Constant {
+                        constant: Constant::Integer(1),
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    Pattern::Identifier {
+                        name: String::from("y"),
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+        let expected_type = Type::Structure(String::from("Point"));
+        
+        given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap()
+    }
+    
+    #[test]
+    fn should_raise_error_for_structure_pattern_and_mismatching_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Pattern::Constant {
+                        constant: Constant::Integer(1),
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    Pattern::Identifier {
+                        name: String::from("y"),
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+        let expected_type = Type::Structure(String::from("Coordinates"));
+        
+        let error = given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap_err();
+        assert_eq!(errors, vec![error])
+    }
+    
+    #[test]
+    fn should_check_some_pattern_for_option_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::Some {
+            pattern: Box::new(Pattern::Identifier {
+                name: String::from("y"),
+                location: Location::default(),
+            }),
+            location: Location::default(),
+        };
+        let expected_type = Type::Option(Box::new(Type::Integer));
+        
+        given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap()
+    }
+
+    #[test]
+    fn should_raise_error_for_some_pattern_and_non_option_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::Some {
+            pattern: Box::new(Pattern::Identifier {
+                name: String::from("y"),
+                location: Location::default(),
+            }),
+            location: Location::default(),
+        };
+        let expected_type = Type::Integer;
+        
+        let error = given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap_err();
+        assert_eq!(errors, vec![error])
+    }
+    
+    #[test]
+    fn should_check_none_pattern_for_option_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::None {
+            location: Location::default(),
+        };
+        let expected_type = Type::Option(Box::new(Type::Integer));
+        
+        given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap()
+    }
+    
+    #[test]
+    fn should_raise_error_for_none_pattern_and_non_option_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::None {
+            location: Location::default(),
+        };
+        let expected_type = Type::Integer;
+        
+        let error = given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap_err();
+        assert_eq!(errors, vec![error])
+    }
+    
+    #[test]
+    fn should_check_default_pattern_for_any_type() {
+        let mut errors = vec![];
+        let given_pattern = Pattern::Default {
+            location: Location::default(),
+        };
+        let expected_type = Type::Integer;
+        
+        given_pattern
+            .type_check(&expected_type, &mut errors)
+            .unwrap()
     }
 }
