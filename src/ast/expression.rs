@@ -384,7 +384,53 @@ impl Expression {
                     }
                 }
             }
-            _ => Ok(()),
+            // TODO
+            Expression::Match {
+                expression,
+                arms,
+                typing,
+                location,
+            } => {
+                expression.typing(elements_context, user_types_context, errors)?;
+
+                arms.into_iter()
+                    .map(|(pattern, optional_test_expression, arm_expression)| {
+                        // todo: check pattern match the type of expression
+
+                        let optional_test_expression_typing_test = optional_test_expression
+                            .as_mut()
+                            .map_or(Ok(()), |expression| {
+                                expression.typing(elements_context, user_types_context, errors)?;
+                                expression.get_type().unwrap().eq_check(
+                                    &Type::Boolean,
+                                    location.clone(),
+                                    errors,
+                                )
+                            });
+
+                        let arm_expression_typing_test =
+                            arm_expression.typing(elements_context, user_types_context, errors);
+
+                        optional_test_expression_typing_test?;
+                        arm_expression_typing_test
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                let first_type = arms[0].2.get_type().unwrap();
+                arms.iter()
+                    .map(|(_, _, arm_expression)| {
+                        let arm_expression_type = arm_expression.get_type().unwrap();
+                        arm_expression_type.eq_check(first_type, location.clone(), errors)
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+                
+                // todo: patterns should be exhaustive
+                todo!()
+            }
         }
     }
 
