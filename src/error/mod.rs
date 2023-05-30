@@ -1,6 +1,6 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 
-use crate::ast::{location::Location, type_system::Type};
+use crate::ast::{location::Location, pattern::Pattern, type_system::Type};
 
 /// Compilation errors enumeration.
 ///
@@ -21,7 +21,7 @@ use crate::ast::{location::Location, type_system::Type};
 /// errors.push(error);
 /// ```
 ///
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Error {
     /// encountering an unknown element
     UnknownElement {
@@ -66,6 +66,15 @@ pub enum Error {
     IncompatibleType {
         /// given type
         given_type: Type,
+        /// expected type
+        expected_type: Type,
+        /// the error location
+        location: Location,
+    },
+    /// incompatible type
+    IncompatiblePattern {
+        /// given pattern
+        given_pattern: Pattern,
         /// expected type
         expected_type: Type,
         /// the error location
@@ -195,6 +204,16 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("expected '{expected_type}' but '{given_type}' was given")
+                ]
+            ),
+            Error::IncompatiblePattern { given_pattern, expected_type, location } => Diagnostic::error()
+                .with_message("incompatible pattern")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong pattern type")
+                ])
+                .with_notes(vec![
+                    format!("expected pattern of type '{expected_type}' but '{given_pattern}' was given")
                 ]
             ),
             Error::ExpectAbstraction { input_type, given_type, location } => Diagnostic::error()
