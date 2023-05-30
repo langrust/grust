@@ -345,8 +345,7 @@ impl Expression {
                             arm_expression.typing(&local_context, user_types_context, errors);
 
                         optional_test_expression_typing_test?;
-                        arm_expression_typing_test?;
-                        pattern_type_check_test
+                        arm_expression_typing_test
                     })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
