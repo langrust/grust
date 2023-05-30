@@ -20,10 +20,8 @@ impl Expression {
                 typing,
                 location,
             } => {
-                // type the function expression
                 let test_typing_function_expression =
                     function_expression.typing(elements_context, user_types_context, errors);
-                // type all inputs
                 let test_typing_inputs = inputs
                     .into_iter()
                     .map(|input| input.typing(elements_context, user_types_context, errors))
@@ -31,11 +29,9 @@ impl Expression {
                     .into_iter()
                     .collect::<Result<(), Error>>();
 
-                // test if there were some errors
                 test_typing_function_expression?;
                 test_typing_inputs?;
 
-                // compute the application type
                 let application_type = inputs.iter().fold(
                     Ok(function_expression.get_type().unwrap().clone()),
                     |current_typing, input| {
