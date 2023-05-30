@@ -176,10 +176,8 @@ impl Pattern {
 
 #[cfg(test)]
 mod type_check {
-    use crate::ast::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-    };
-    
+    use crate::ast::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
+
     #[test]
     fn should_check_identifier_pattern_for_any_type() {
         let mut errors = vec![];
@@ -188,12 +186,12 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Integer;
-        
+
         given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap()
     }
-    
+
     #[test]
     fn should_check_constant_pattern_for_constant_type() {
         let mut errors = vec![];
@@ -202,7 +200,7 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Integer;
-        
+
         given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap()
@@ -216,13 +214,13 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Float;
-        
+
         let error = given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap_err();
         assert_eq!(errors, vec![error])
     }
-    
+
     #[test]
     fn should_check_structure_pattern_for_structure_type() {
         let mut errors = vec![];
@@ -247,12 +245,12 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Structure(String::from("Point"));
-        
+
         given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap()
     }
-    
+
     #[test]
     fn should_raise_error_for_structure_pattern_and_mismatching_type() {
         let mut errors = vec![];
@@ -277,13 +275,13 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Structure(String::from("Coordinates"));
-        
+
         let error = given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap_err();
         assert_eq!(errors, vec![error])
     }
-    
+
     #[test]
     fn should_check_some_pattern_for_option_type() {
         let mut errors = vec![];
@@ -295,7 +293,7 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Option(Box::new(Type::Integer));
-        
+
         given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap()
@@ -312,13 +310,13 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Integer;
-        
+
         let error = given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap_err();
         assert_eq!(errors, vec![error])
     }
-    
+
     #[test]
     fn should_check_none_pattern_for_option_type() {
         let mut errors = vec![];
@@ -326,12 +324,12 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Option(Box::new(Type::Integer));
-        
+
         given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap()
     }
-    
+
     #[test]
     fn should_raise_error_for_none_pattern_and_non_option_type() {
         let mut errors = vec![];
@@ -339,13 +337,13 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Integer;
-        
+
         let error = given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap_err();
         assert_eq!(errors, vec![error])
     }
-    
+
     #[test]
     fn should_check_default_pattern_for_any_type() {
         let mut errors = vec![];
@@ -353,7 +351,7 @@ mod type_check {
             location: Location::default(),
         };
         let expected_type = Type::Integer;
-        
+
         given_pattern
             .type_check(&expected_type, &mut errors)
             .unwrap()
