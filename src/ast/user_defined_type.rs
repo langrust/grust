@@ -76,14 +76,14 @@ impl UserDefinedType {
         }
     }
 
-    /// Check that structure's fields are well-defined.
+    /// Check that a structure is well-defined.
     ///
     /// # Example
     /// ```rust
     /// use grustine::ast::{constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType};
-    ///
+    /// 
     /// let mut errors = vec![];
-    ///
+    /// 
     /// let user_defined_type = UserDefinedType::Structure {
     ///     id: String::from("Point"),
     ///     fields: vec![
@@ -106,7 +106,7 @@ impl UserDefinedType {
     pub fn well_defined_structure<T>(
         &self,
         fields: &Vec<(String, T)>,
-        mut well_defined_field: impl FnMut(&T, &Type, &mut Vec<Error>) -> Result<(), Error>,
+        well_defined_field: impl Fn(&T, &Type, &mut Vec<Error>) -> Result<(), Error>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
         match self {
@@ -121,8 +121,8 @@ impl UserDefinedType {
                     .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
                     .collect::<HashMap<String, Type>>();
 
-                // zip defined fields with the expected type
-                let zipped_fields = fields
+                // check that every field is well-defined
+                fields
                     .into_iter()
                     .map(|(id, expression)| {
                         Ok((
@@ -132,15 +132,12 @@ impl UserDefinedType {
                                 id.clone(),
                                 location.clone(),
                                 errors,
-                            )?,
+                            )?
                         ))
                     })
                     .collect::<Vec<Result<_, Error>>>()
                     .into_iter()
-                    .collect::<Result<Vec<_>, Error>>()?;
-
-                // check that every field is well-defined
-                zipped_fields
+                    .collect::<Result<Vec<_>, Error>>()?
                     .into_iter()
                     .map(|(element, field_type)| well_defined_field(element, field_type, errors))
                     .collect::<Vec<Result<(), Error>>>()
@@ -173,7 +170,7 @@ impl UserDefinedType {
                     .into_iter()
                     .collect::<Result<(), Error>>()
             }
-            _ => unreachable!(),
+            _ => unreachable!()
         }
     }
 }
