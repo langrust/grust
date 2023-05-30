@@ -1,5 +1,7 @@
 use crate::ast::{constant::Constant, location::Location};
 
+use std::fmt::{self, Display};
+
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust matching pattern AST.
 pub enum Pattern {
@@ -43,4 +45,32 @@ pub enum Pattern {
         /// Pattern location.
         location: Location,
     },
+}
+impl Display for Pattern {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Pattern::Identifier { name, location: _ } => write!(f, "{}", name),
+            Pattern::Constant {
+                constant,
+                location: _,
+            } => write!(f, "{}", constant),
+            Pattern::Structure {
+                name,
+                fields,
+                location: _,
+            } => {
+                write!(f, "{} {{ ", name)?;
+                for (field, pattern) in fields.iter() {
+                    write!(f, "{}: {},", field, pattern)?;
+                }
+                write!(f, " }}")
+            }
+            Pattern::Some {
+                pattern,
+                location: _,
+            } => write!(f, "some({})", pattern),
+            Pattern::None { location: _ } => write!(f, "none"),
+            Pattern::Default { location: _ } => write!(f, "_"),
+        }
+    }
 }
