@@ -942,6 +942,7 @@ mod langrust_ast_constructs {
                             }
                         )
                     ],
+                    typing: None,
                     location: Location::default()
                 },
                 location: Location::default(),
@@ -2091,6 +2092,7 @@ mod langrust_ast_constructs {
                         }
                     )
                 ],
+                typing: None,
                 location: Location::default()
             },
             expression
