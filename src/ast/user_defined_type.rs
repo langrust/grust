@@ -1,4 +1,8 @@
+use std::collections::HashMap;
+
 use crate::ast::{location::Location, type_system::Type};
+use crate::common::context::Context;
+use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
 /// LanGRust user defined type AST.
@@ -69,6 +73,104 @@ impl UserDefinedType {
                 size,
                 location: _,
             } => Type::Array(Box::new(array_type.clone()), size.clone()),
+        }
+    }
+
+    /// Check that a structure is well-defined.
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType};
+    /// 
+    /// let mut errors = vec![];
+    /// 
+    /// let user_defined_type = UserDefinedType::Structure {
+    ///     id: String::from("Point"),
+    ///     fields: vec![
+    ///         (String::from("x"), Type::Integer),
+    ///         (String::from("y"), Type::Integer),
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    /// user_defined_type.well_defined_structure::<Constant>(
+    ///     &vec![
+    ///         (String::from("x"), Constant::Integer(1)),
+    ///         (String::from("y"), Constant::Integer(2))
+    ///     ],
+    ///     |constant, field_type, errors| {
+    ///         constant.get_type().eq_check(field_type, Location::default(), errors)
+    ///     },
+    ///     &mut errors
+    /// ).unwrap()
+    /// ```
+    pub fn well_defined_structure<T>(
+        &self,
+        fields: &Vec<(String, T)>,
+        well_defined_field: impl Fn(&T, &Type, &mut Vec<Error>) -> Result<(), Error>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        match self {
+            UserDefinedType::Structure {
+                id: name,
+                fields: structure_fields,
+                location,
+            } => {
+                // convert the structure_fields into an HashMap
+                let structure_fields = structure_fields
+                    .iter()
+                    .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
+                    .collect::<HashMap<String, Type>>();
+
+                // check that every field is well-defined
+                fields
+                    .into_iter()
+                    .map(|(id, expression)| {
+                        Ok((
+                            expression,
+                            structure_fields.get_field_or_error(
+                                name.clone(),
+                                id.clone(),
+                                location.clone(),
+                                errors,
+                            )?
+                        ))
+                    })
+                    .collect::<Vec<Result<_, Error>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, Error>>()?
+                    .into_iter()
+                    .map(|(element, field_type)| well_defined_field(element, field_type, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // convert the fields into an HashMap defined_fields
+                let defined_fields = fields
+                    .iter()
+                    .map(|(id, _)| id.clone())
+                    .collect::<Vec<String>>();
+
+                // check that there are no missing fields
+                structure_fields
+                    .iter()
+                    .map(|(id, _)| {
+                        if defined_fields.contains(id) {
+                            Ok(())
+                        } else {
+                            let error = Error::MissingField {
+                                structure_name: name.clone(),
+                                field_name: id.clone(),
+                                location: location.clone(),
+                            };
+                            errors.push(error.clone());
+                            Err(error)
+                        }
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()
+            }
+            _ => unreachable!()
         }
     }
 }
