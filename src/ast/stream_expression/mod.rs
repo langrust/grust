@@ -6,6 +6,8 @@ use crate::ast::{
 };
 use crate::error::Error;
 
+mod constant;
+
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression AST.
 pub enum StreamExpression {
@@ -129,12 +131,12 @@ impl StreamExpression {
     /// ```
     pub fn typing(
         &mut self,
-        signals_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
-        errors: &mut Vec<Error>,
+        _signals_context: &HashMap<String, Type>,
+        _user_types_context: &HashMap<String, UserDefinedType>,
+        _errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
         match self {
-            StreamExpression::Constant { .. } => todo!(),
+            StreamExpression::Constant { .. } => self.typing_constant(),
             StreamExpression::SignalCall { .. } => todo!(),
             StreamExpression::MapApplication { .. } => todo!(),
             StreamExpression::Structure { .. } => todo!(),
