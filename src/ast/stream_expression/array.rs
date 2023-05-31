@@ -10,6 +10,7 @@ impl StreamExpression {
     pub fn typing_array(
         &mut self,
         signals_context: &HashMap<String, Type>,
+        elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -23,7 +24,14 @@ impl StreamExpression {
             } => {
                 elements
                     .into_iter()
-                    .map(|element| element.typing(signals_context, user_types_context, errors))
+                    .map(|element| {
+                        element.typing(
+                            signals_context,
+                            elements_context,
+                            user_types_context,
+                            errors,
+                        )
+                    })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
@@ -52,8 +60,8 @@ impl StreamExpression {
 #[cfg(test)]
 mod typing_array {
     use crate::ast::{
-        constant::Constant, location::Location, stream_expression::StreamExpression,
-        type_system::Type,
+        constant::Constant, expression::Expression, location::Location,
+        stream_expression::StreamExpression, type_system::Type,
     };
     use std::collections::HashMap;
 
@@ -62,12 +70,31 @@ mod typing_array {
         let mut errors = vec![];
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+        );
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::Array {
             elements: vec![
                 StreamExpression::SignalCall {
                     id: String::from("x"),
+                    typing: None,
+                    location: Location::default(),
+                },
+                StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("f"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: None,
+                        location: Location::default(),
+                    }],
                     typing: None,
                     location: Location::default(),
                 },
@@ -87,18 +114,40 @@ mod typing_array {
                     typing: Some(Type::Integer),
                     location: Location::default(),
                 },
+                StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("f"),
+                        typing: Some(Type::Abstract(
+                            Box::new(Type::Integer),
+                            Box::new(Type::Integer),
+                        )),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    }],
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
                 StreamExpression::Constant {
                     constant: Constant::Integer(1),
                     typing: Some(Type::Integer),
                     location: Location::default(),
                 },
             ],
-            typing: Some(Type::Array(Box::new(Type::Integer), 2)),
+            typing: Some(Type::Array(Box::new(Type::Integer), 3)),
             location: Location::default(),
         };
 
         stream_expression
-            .typing_array(&signals_context, &user_types_context, &mut errors)
+            .typing_array(
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(stream_expression, control);
@@ -109,6 +158,7 @@ mod typing_array {
         let mut errors = vec![];
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
+        let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::Array {
@@ -129,7 +179,12 @@ mod typing_array {
         };
 
         let error = stream_expression
-            .typing_array(&signals_context, &user_types_context, &mut errors)
+            .typing_array(
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
