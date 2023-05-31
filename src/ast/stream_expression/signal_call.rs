@@ -10,7 +10,7 @@ impl StreamExpression {
         &mut self,
         signals_context: &HashMap<String, Type>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // the type of a signal call stream expression in the type of the called element in the context
             StreamExpression::SignalCall {
@@ -19,7 +19,7 @@ impl StreamExpression {
                 location,
             } => {
                 let element_type =
-                    signals_context.get_signal_or_error(id, location.clone(), errors)?;
+                    signals_context.get_element_or_error(id.clone(), location.clone(), errors)?;
                 *typing = Some(element_type.clone());
                 Ok(())
             }
@@ -35,7 +35,7 @@ mod typing_call {
     use std::collections::HashMap;
 
     #[test]
-    fn should_type_call_stream_expression() {
+    fn should_type_call_expression() {
         let mut errors = vec![];
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
@@ -59,7 +59,7 @@ mod typing_call {
     }
 
     #[test]
-    fn should_raise_error_for_unknown_signal_call() {
+    fn should_raise_error_for_unknown_element_call() {
         let mut errors = vec![];
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
@@ -69,7 +69,7 @@ mod typing_call {
             typing: None,
             location: Location::default(),
         };
-        let control = vec![Error::UnknownSignal {
+        let control = vec![Error::UnknownElement {
             name: String::from("y"),
             location: Location::default(),
         }];
