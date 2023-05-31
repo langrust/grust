@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    calculus::Calculus, expression::Expression, location::Location, type_system::Type,
-    user_defined_type::UserDefinedType,
+    calculus::Calculus, expression::Expression, global_context, location::Location,
+    type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::common::context::Context;
 use crate::error::Error;
@@ -34,7 +34,6 @@ impl Function {
     /// };
     ///
     /// let mut errors = vec![];
-    /// let global_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     ///
     /// let mut function = Function {
@@ -66,14 +65,13 @@ impl Function {
     ///     location: Location::default(),
     /// };
     ///
-    /// function.typing(&global_context, &user_types_context, &mut errors).unwrap();
+    /// function.typing(&user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
-        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         let Function {
             inputs,
             calculi,
@@ -83,7 +81,7 @@ impl Function {
         } = self;
 
         // create elements context: global_context + inputs
-        let mut elements_context = global_context.clone();
+        let mut elements_context = global_context::generate();
         inputs
             .iter()
             .map(|(name, input_type)| {
@@ -94,20 +92,15 @@ impl Function {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), Error>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), Error>>()?;
 
         // type all calculi
         calculi
             .iter_mut()
             .map(|(_, calculus)| {
-                calculus.typing(
-                    global_context,
-                    &elements_context,
-                    user_types_context,
-                    errors,
-                )?;
+                calculus.typing(&elements_context, user_types_context, errors)?;
                 elements_context.insert_unique(
                     calculus.id.clone(),
                     calculus.element_type.clone(),
@@ -115,171 +108,18 @@ impl Function {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), Error>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), Error>>()?;
 
         // type returned expression
-        returned_expression.typing(
-            global_context,
-            &elements_context,
-            user_types_context,
-            errors,
-        )?;
+        returned_expression.typing(&elements_context, user_types_context, errors)?;
 
         // check returned type
         returned_expression
             .get_type()
             .unwrap()
             .eq_check(returned_type, location.clone(), errors)
-    }
-
-    /// Determine all undefined types in function
-    ///
-    /// # Example
-    /// ```rust
-    /// use std::collections::HashMap;
-    /// use grustine::ast::{
-    ///     constant::Constant, function::Function, calculus::Calculus, expression::Expression,
-    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
-    /// };
-    ///
-    /// let mut errors = vec![];
-    /// let mut user_types_context = HashMap::new();
-    /// user_types_context.insert(
-    ///     String::from("Point"),
-    ///     UserDefinedType::Structure {
-    ///         id: String::from("Point"),
-    ///         fields: vec![
-    ///             (String::from("x"), Type::Integer),
-    ///             (String::from("y"), Type::Integer),
-    ///         ],
-    ///         location: Location::default(),
-    ///     },
-    /// );
-    ///
-    /// let mut function = Function {
-    ///     id: String::from("test"),
-    ///     inputs: vec![],
-    ///     calculi: vec![(
-    ///         String::from("o"),
-    ///         Calculus {
-    ///             id: String::from("o"),
-    ///             element_type: Type::NotDefinedYet(String::from("Point")),
-    ///             expression: Expression::Structure {
-    ///                 name: String::from("Point"),
-    ///                 fields: vec![
-    ///                     (
-    ///                         String::from("x"),
-    ///                         Expression::Constant {
-    ///                             constant: Constant::Integer(1),
-    ///                             typing: None,
-    ///                             location: Location::default(),
-    ///                         },
-    ///                     ),
-    ///                     (
-    ///                         String::from("y"),
-    ///                         Expression::Constant {
-    ///                             constant: Constant::Integer(2),
-    ///                             typing: None,
-    ///                             location: Location::default(),
-    ///                         },
-    ///                     ),
-    ///                 ],
-    ///                 typing: None,
-    ///                 location: Location::default(),
-    ///             },
-    ///             location: Location::default(),
-    ///         },
-    ///     )],
-    ///     returned: (Type::NotDefinedYet(String::from("Point")), Expression::Call {
-    ///         id: String::from("o"),
-    ///         typing: None,
-    ///         location: Location::default(),
-    ///     }),
-    ///     location: Location::default(),
-    /// };
-    ///
-    /// let control = Function {
-    ///     id: String::from("test"),
-    ///     inputs: vec![],
-    ///     calculi: vec![(
-    ///         String::from("o"),
-    ///         Calculus {
-    ///             id: String::from("o"),
-    ///             element_type: Type::Structure(String::from("Point")),
-    ///             expression: Expression::Structure {
-    ///                 name: String::from("Point"),
-    ///                 fields: vec![
-    ///                     (
-    ///                         String::from("x"),
-    ///                         Expression::Constant {
-    ///                             constant: Constant::Integer(1),
-    ///                             typing: None,
-    ///                             location: Location::default(),
-    ///                         },
-    ///                     ),
-    ///                     (
-    ///                         String::from("y"),
-    ///                         Expression::Constant {
-    ///                             constant: Constant::Integer(2),
-    ///                             typing: None,
-    ///                             location: Location::default(),
-    ///                         },
-    ///                     ),
-    ///                 ],
-    ///                 typing: None,
-    ///                 location: Location::default(),
-    ///             },
-    ///             location: Location::default(),
-    ///         },
-    ///     )],
-    ///     returned: (Type::Structure(String::from("Point")), Expression::Call {
-    ///         id: String::from("o"),
-    ///         typing: None,
-    ///         location: Location::default(),
-    ///     }),
-    ///     location: Location::default(),
-    /// };
-    ///
-    /// function.determine_types(&user_types_context, &mut errors)
-    ///     .unwrap();
-    ///
-    /// assert_eq!(function, control);
-    /// ```
-    pub fn determine_types(
-        &mut self,
-        user_types_context: &HashMap<String, UserDefinedType>,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
-        let Function {
-            inputs,
-            calculi,
-            returned: (returned_type, _),
-            location,
-            ..
-        } = self;
-
-        // determine inputs types
-        inputs
-            .iter_mut()
-            .map(|(_, input_type)| {
-                input_type.determine(location.clone(), user_types_context, errors)
-            })
-            .collect::<Vec<Result<(), ()>>>()
-            .into_iter()
-            .collect::<Result<(), ()>>()?;
-
-        // determine calculi types
-        calculi
-            .iter_mut()
-            .map(|(_, calculus)| calculus.determine_types(user_types_context, errors))
-            .collect::<Vec<Result<(), ()>>>()
-            .into_iter()
-            .collect::<Result<(), ()>>()?;
-
-        // determine returned type
-        returned_type.determine(location.clone(), user_types_context, errors)
     }
 }
 
@@ -288,14 +128,13 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        calculus::Calculus, expression::Expression, function::Function, location::Location,
-        type_system::Type,
+        calculus::Calculus, expression::Expression, function::Function,
+        location::Location, type_system::Type,
     };
 
     #[test]
     fn should_type_well_defined_function() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut function = Function {
@@ -352,9 +191,7 @@ mod typing {
             location: Location::default(),
         };
 
-        function
-            .typing(&global_context, &user_types_context, &mut errors)
-            .unwrap();
+        function.typing(&user_types_context, &mut errors).unwrap();
 
         assert_eq!(function, control)
     }
@@ -362,7 +199,6 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_type_in_function() {
         let mut errors = vec![];
-        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut function = Function {
@@ -392,362 +228,10 @@ mod typing {
             location: Location::default(),
         };
 
-        function
-            .typing(&global_context, &user_types_context, &mut errors)
+        let error = function
+            .typing(&user_types_context, &mut errors)
             .unwrap_err();
-    }
-}
 
-#[cfg(test)]
-mod determine_types {
-    use crate::ast::{
-        calculus::Calculus, constant::Constant, expression::Expression, function::Function,
-        location::Location, type_system::Type, user_defined_type::UserDefinedType,
-    };
-    use std::collections::HashMap;
-
-    #[test]
-    fn should_determine_undefined_types_when_in_context() {
-        let mut errors = vec![];
-        let mut user_types_context = HashMap::new();
-        user_types_context.insert(
-            String::from("Point"),
-            UserDefinedType::Structure {
-                id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
-                location: Location::default(),
-            },
-        );
-
-        let mut function = Function {
-            id: String::from("test"),
-            inputs: vec![],
-            calculi: vec![(
-                String::from("o"),
-                Calculus {
-                    id: String::from("o"),
-                    element_type: Type::NotDefinedYet(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::NotDefinedYet(String::from("Point")),
-                Expression::Call {
-                    id: String::from("o"),
-                    typing: None,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        let control = Function {
-            id: String::from("test"),
-            inputs: vec![],
-            calculi: vec![(
-                String::from("o"),
-                Calculus {
-                    id: String::from("o"),
-                    element_type: Type::Structure(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::Structure(String::from("Point")),
-                Expression::Call {
-                    id: String::from("o"),
-                    typing: None,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        function
-            .determine_types(&user_types_context, &mut errors)
-            .unwrap();
-
-        assert_eq!(function, control);
-    }
-
-    #[test]
-    fn should_raise_error_when_undefined_types_not_in_context() {
-        let mut errors = vec![];
-        let user_types_context = HashMap::new();
-
-        let mut function = Function {
-            id: String::from("test"),
-            inputs: vec![],
-            calculi: vec![(
-                String::from("o"),
-                Calculus {
-                    id: String::from("o"),
-                    element_type: Type::NotDefinedYet(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::NotDefinedYet(String::from("Point")),
-                Expression::Call {
-                    id: String::from("o"),
-                    typing: None,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        function
-            .determine_types(&user_types_context, &mut errors)
-            .unwrap_err();
-    }
-}
-
-#[cfg(test)]
-mod determine_types {
-    use crate::ast::{
-        calculus::Calculus, constant::Constant, expression::Expression, function::Function,
-        location::Location, type_system::Type, user_defined_type::UserDefinedType,
-    };
-    use std::collections::HashMap;
-
-    #[test]
-    fn should_determine_undefined_types_when_in_context() {
-        let mut errors = vec![];
-        let mut user_types_context = HashMap::new();
-        user_types_context.insert(
-            String::from("Point"),
-            UserDefinedType::Structure {
-                id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
-                location: Location::default(),
-            },
-        );
-
-        let mut function = Function {
-            id: String::from("test"),
-            inputs: vec![],
-            calculi: vec![(
-                String::from("o"),
-                Calculus {
-                    id: String::from("o"),
-                    element_type: Type::NotDefinedYet(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::NotDefinedYet(String::from("Point")),
-                Expression::Call {
-                    id: String::from("o"),
-                    typing: None,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        let control = Function {
-            id: String::from("test"),
-            inputs: vec![],
-            calculi: vec![(
-                String::from("o"),
-                Calculus {
-                    id: String::from("o"),
-                    element_type: Type::Structure(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::Structure(String::from("Point")),
-                Expression::Call {
-                    id: String::from("o"),
-                    typing: None,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        function
-            .determine_types(&user_types_context, &mut errors)
-            .unwrap();
-
-        assert_eq!(function, control);
-    }
-
-    #[test]
-    fn should_raise_error_when_undefined_types_not_in_context() {
-        let mut errors = vec![];
-        let user_types_context = HashMap::new();
-
-        let mut function = Function {
-            id: String::from("test"),
-            inputs: vec![],
-            calculi: vec![(
-                String::from("o"),
-                Calculus {
-                    id: String::from("o"),
-                    element_type: Type::NotDefinedYet(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::NotDefinedYet(String::from("Point")),
-                Expression::Call {
-                    id: String::from("o"),
-                    typing: None,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        function
-            .determine_types(&user_types_context, &mut errors)
-            .unwrap_err();
+        assert_eq!(errors, vec![error])
     }
 }
