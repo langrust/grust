@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    constant::Constant, expression::Expression, location::Location, pattern::Pattern,
-    stream_expression::node_description::NodeDescription, type_system::Type,
+    constant::Constant, expression::Expression, location::Location,
+    node_description::NodeDescription, pattern::Pattern, type_system::Type,
     user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
@@ -13,7 +13,6 @@ mod followed_by;
 mod map_application;
 mod r#match;
 mod node_application;
-pub mod node_description;
 mod signal_call;
 mod structure;
 mod when;
@@ -271,13 +270,9 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        constant::Constant,
-        expression::Expression,
-        location::Location,
-        pattern::Pattern,
-        stream_expression::{node_description::NodeDescription, StreamExpression},
-        type_system::Type,
-        user_defined_type::UserDefinedType,
+        constant::Constant, expression::Expression, location::Location,
+        node_description::NodeDescription, pattern::Pattern, stream_expression::StreamExpression,
+        type_system::Type, user_defined_type::UserDefinedType,
     };
     use crate::error::Error;
 
