@@ -85,9 +85,9 @@ impl UserDefinedType {
     /// # Example
     /// ```rust
     /// use grustine::ast::{constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType};
-    /// 
+    ///
     /// let mut errors = vec![];
-    /// 
+    ///
     /// let user_defined_type = UserDefinedType::Structure {
     ///     id: String::from("Point"),
     ///     fields: vec![
@@ -136,7 +136,7 @@ impl UserDefinedType {
                                 id.clone(),
                                 location.clone(),
                                 errors,
-                            )?
+                            )?,
                         ))
                     })
                     .collect::<Vec<Result<_, Error>>>()
@@ -174,7 +174,7 @@ impl UserDefinedType {
                     .into_iter()
                     .collect::<Result<(), Error>>()
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
