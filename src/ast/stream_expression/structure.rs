@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+    stream_expression::{node_description::NodeDescription, StreamExpression}, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::common::context::Context;
 use crate::error::Error;
@@ -10,6 +10,7 @@ impl StreamExpression {
     /// Add a [Type] to the structure stream expression.
     pub fn typing_structure(
         &mut self,
+        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
@@ -38,6 +39,7 @@ impl StreamExpression {
                             .into_iter()
                             .map(|(_, stream_expression)| {
                                 stream_expression.typing(
+                                    nodes_context,
                                     signals_context,
                                     elements_context,
                                     user_types_context,
@@ -87,6 +89,7 @@ mod typing_structure {
     #[test]
     fn should_type_structure_stream_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
@@ -151,6 +154,7 @@ mod typing_structure {
 
         stream_expression
             .typing_structure(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -164,6 +168,7 @@ mod typing_structure {
     #[test]
     fn should_raise_error_for_additionnal_field_in_structure() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
@@ -213,6 +218,7 @@ mod typing_structure {
 
         let error = stream_expression
             .typing_structure(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -226,6 +232,7 @@ mod typing_structure {
     #[test]
     fn should_raise_error_for_missing_field_in_structure() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
@@ -257,6 +264,7 @@ mod typing_structure {
 
         let error = stream_expression
             .typing_structure(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -270,6 +278,7 @@ mod typing_structure {
     #[test]
     fn should_raise_error_for_incompatible_structure() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
@@ -311,6 +320,7 @@ mod typing_structure {
 
         let error = stream_expression
             .typing_structure(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -324,6 +334,7 @@ mod typing_structure {
     #[test]
     fn should_raise_error_when_expect_structure() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
@@ -375,6 +386,7 @@ mod typing_structure {
 
         let error = stream_expression
             .typing_structure(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
