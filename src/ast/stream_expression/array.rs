@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+    stream_expression::{node_description::NodeDescription, StreamExpression}, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -9,6 +9,7 @@ impl StreamExpression {
     /// Add a [Type] to the array stream expression.
     pub fn typing_array(
         &mut self,
+        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
@@ -26,6 +27,7 @@ impl StreamExpression {
                     .into_iter()
                     .map(|element| {
                         element.typing(
+                            nodes_context,
                             signals_context,
                             elements_context,
                             user_types_context,
@@ -68,6 +70,7 @@ mod typing_array {
     #[test]
     fn should_type_array_stream_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -143,6 +146,7 @@ mod typing_array {
 
         stream_expression
             .typing_array(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -156,6 +160,7 @@ mod typing_array {
     #[test]
     fn should_raise_error_for_multiple_types_array() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let elements_context = HashMap::new();
@@ -180,6 +185,7 @@ mod typing_array {
 
         let error = stream_expression
             .typing_array(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,

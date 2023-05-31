@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+    stream_expression::{node_description::NodeDescription, StreamExpression}, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -9,6 +9,7 @@ impl StreamExpression {
     /// Add a [Type] to the followed by stream expression.
     pub fn typing_followed_by(
         &mut self,
+        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
@@ -26,6 +27,7 @@ impl StreamExpression {
                 let constant_type = constant.get_type();
 
                 expression.typing(
+                    nodes_context,
                     signals_context,
                     elements_context,
                     user_types_context,
@@ -56,6 +58,7 @@ mod typing_constant {
     #[test]
     fn should_type_followed_by_stream_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -109,6 +112,7 @@ mod typing_constant {
 
         stream_expression
             .typing_followed_by(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -122,6 +126,7 @@ mod typing_constant {
     #[test]
     fn should_raise_error_for_incompatible_type_in_followed_by() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -153,6 +158,7 @@ mod typing_constant {
 
         stream_expression
             .typing_followed_by(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
