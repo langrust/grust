@@ -11,6 +11,7 @@ mod array;
 mod constant;
 mod followed_by;
 mod map_application;
+mod node_description;
 mod r#match;
 mod node_application;
 mod signal_call;
@@ -2654,6 +2655,7 @@ mod typing {
     #[test]
     fn should_type_map_application_stream_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -2697,6 +2699,7 @@ mod typing {
 
         stream_expression
             .typing(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -2710,6 +2713,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_map_application() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -2736,6 +2740,7 @@ mod typing {
 
         let error = stream_expression
             .typing(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -2749,6 +2754,7 @@ mod typing {
     #[test]
     fn should_type_when_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
         let elements_context = HashMap::new();
@@ -2797,6 +2803,7 @@ mod typing {
 
         stream_expression
             .typing(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -2810,6 +2817,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_when() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
         let elements_context = HashMap::new();
@@ -2838,6 +2846,7 @@ mod typing {
 
         let error = stream_expression
             .typing(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -2851,6 +2860,7 @@ mod typing {
     #[test]
     fn should_type_match_structure_stream_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("p"), Type::Structure(String::from("Point")));
         let mut elements_context = HashMap::new();
@@ -3027,6 +3037,7 @@ mod typing {
 
         stream_expression
             .typing(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -3040,6 +3051,7 @@ mod typing {
     #[test]
     fn should_type_followed_by_stream_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -3093,6 +3105,7 @@ mod typing {
 
         stream_expression
             .typing(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -3106,6 +3119,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_type_in_followed_by() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -3137,6 +3151,7 @@ mod typing {
 
         stream_expression
             .typing(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
