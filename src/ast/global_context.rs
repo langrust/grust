@@ -10,7 +10,7 @@ use crate::ast::{
 ///
 /// The global context is the [HashMap] storing all functions types, user
 /// defined  or builtin functions.
-pub fn generate_global_context() -> HashMap<String, Type> {
+pub fn generate() -> HashMap<String, Type> {
     let mut elements_context_global = HashMap::new();
     add_binary_operators_to_global_context(&mut elements_context_global);
     add_unary_operators_to_global_context(&mut elements_context_global);
