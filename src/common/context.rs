@@ -199,6 +199,41 @@ pub trait Context {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error>;
+
+    /// Combine contexts or raises an error.
+    ///
+    /// Raises an [Error::AlreadyDefinedElement] when the context already contains an item
+    /// in the other context. Otherwise, insert all items from the other context.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::location::Location;
+    /// use grustine::common::context::Context;
+    ///
+    /// let mut context = HashMap::new();
+    /// let mut other_context = HashMap::new();
+    /// let mut other_context_bis = HashMap::new();
+    /// let mut errors = vec![];
+    /// let location = Location::default();
+    ///
+    /// let name = String::from("x");
+    /// context.insert(name.clone(), 1);
+    /// other_context.insert(String::from("y"), 1);
+    /// other_context_bis.insert(name, 1);
+    ///
+    /// context.combine_unique(other_context, location.clone(), &mut errors).unwrap();
+    /// context.combine_unique(other_context_bis, location, &mut errors).unwrap_err();
+    /// ```
+    fn combine_unique(
+        &mut self,
+        other: Self,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error>;
 }
 
 impl<V> Context for HashMap<String, V> {
@@ -322,6 +357,20 @@ impl<V> Context for HashMap<String, V> {
                 Ok(())
             }
         }
+    }
+
+    fn combine_unique(
+        &mut self,
+        other: Self,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        other
+            .into_iter()
+            .map(|(name, item)| self.insert_unique(name, item, location.clone(), errors))
+            .collect::<Vec<Result<(), Error>>>()
+            .into_iter()
+            .collect::<Result<(), Error>>()
     }
 }
 
@@ -520,6 +569,56 @@ mod insert_unique {
                 Location::default(),
                 &mut errors,
             )
+            .unwrap_err();
+
+        let control = vec![error];
+
+        assert_eq!(errors, control);
+    }
+}
+
+#[cfg(test)]
+mod combine_unique {
+    use crate::ast::{location::Location, type_system::Type};
+    use crate::common::context::Context;
+    use std::collections::HashMap;
+
+    #[test]
+    fn should_combine_contexts_when_disjoint() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        let mut other_elements_context = HashMap::new();
+
+        let name = String::from("x");
+        elements_context.insert(name, Type::Integer);
+        other_elements_context.insert(String::from("y"), Type::Float);
+
+        elements_context
+            .combine_unique(other_elements_context, Location::default(), &mut errors)
+            .unwrap();
+
+        assert_eq!(
+            elements_context,
+            HashMap::from([
+                (String::from("x"), Type::Integer),
+                (String::from("y"), Type::Float)
+            ])
+        )
+    }
+
+    #[test]
+    fn should_raise_error_when_contexts_meet() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        let mut other_elements_context = HashMap::new();
+
+        let name = String::from("x");
+        elements_context.insert(name.clone(), Type::Integer);
+        other_elements_context.insert(String::from("y"), Type::Float);
+        other_elements_context.insert(name, Type::Integer);
+
+        let error = elements_context
+            .combine_unique(other_elements_context, Location::default(), &mut errors)
             .unwrap_err();
 
         let control = vec![error];
