@@ -230,6 +230,37 @@ pub trait Context {
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
+    /// Raises an [Error::UnknownSignal] when the context does not contains an item
+    /// corresponding to the name. Otherwise, returns a reference to the item.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::location::Location;
+    /// use grustine::common::context::Context;
+    ///
+    /// let mut context = HashMap::new();
+    /// let mut errors = vec![];
+    /// let location = Location::default();
+    ///
+    /// let name = String::from("x");
+    /// context.insert(name.clone(), 1);
+    ///
+    /// context.get_signal_or_error(name, location.clone(), &mut errors).unwrap();
+    /// context.get_signal_or_error(String::from("y"), location, &mut errors).unwrap_err();
+    /// ```
+    fn get_signal_or_error(
+        &self,
+        name: String,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<&Self::Item, Error>;
+
+    /// Returns a reference to the item corresponding to the name or raises an error.
+    ///
     /// Raises an [Error::UnknownType] when the context does not contains an item
     /// corresponding to the name. Otherwise, returns a reference to the item.
     ///
@@ -492,6 +523,25 @@ impl<V> Context for HashMap<String, V> {
                 };
                 errors.push(error);
                 Err(())
+            }
+        }
+    }
+
+    fn get_signal_or_error(
+        &self,
+        name: String,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<&Self::Item, Error> {
+        match self.get(&name) {
+            Some(item) => Ok(item),
+            None => {
+                let error = Error::UnknownSignal {
+                    name: name.clone(),
+                    location: location.clone(),
+                };
+                errors.push(error.clone());
+                Err(error)
             }
         }
     }
