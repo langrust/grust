@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    constant::Constant, expression::Expression, location::Location,
-    node_description::NodeDescription, pattern::Pattern, type_system::Type,
-    user_defined_type::UserDefinedType,
+    constant::Constant, expression::Expression, location::Location, pattern::Pattern,
+    type_system::Type, user_defined_type::UserDefinedType, stream_expression::node_description::NodeDescription
 };
 use crate::error::Error;
 
@@ -11,6 +10,7 @@ mod array;
 mod constant;
 mod followed_by;
 mod map_application;
+mod node_description;
 mod r#match;
 mod node_application;
 mod signal_call;
@@ -165,7 +165,8 @@ impl StreamExpression {
                 user_types_context,
                 errors,
             ),
-            StreamExpression::NodeApplication { .. } => self.typing_node_application(
+            StreamExpression::NodeApplication { .. } => todo!(),
+            StreamExpression::Structure { .. } => self.typing_structure(
                 nodes_context,
                 signals_context,
                 global_context,
