@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+
 use crate::ast::{
     constant::Constant, expression::Expression, location::Location, pattern::Pattern, type_system::Type,
+    user_defined_type::UserDefinedType,
 };
+use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression AST.
@@ -104,4 +108,95 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
+}
+
+impl StreamExpression {
+    /// Add a [Type] to the stream expression.
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::{constant::Constant, stream_expression::StreamExpression, location::Location};
+    /// let mut errors = vec![];
+    /// let signals_context = HashMap::new();
+    /// let user_types_context = HashMap::new();
+    /// let mut stream_expression = StreamExpression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: None,
+    ///     location: Location::default(),
+    /// };
+    /// stream_expression.typing(&signals_context, &user_types_context, &mut errors).unwrap();
+    /// ```
+    pub fn typing(
+        &mut self,
+        signals_context: &HashMap<String, Type>,
+        user_types_context: &HashMap<String, UserDefinedType>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        match self {
+            StreamExpression::Constant { .. } => todo!(),
+            StreamExpression::SignalCall { .. } => todo!(),
+            StreamExpression::MapApplication { .. } => todo!(),
+            StreamExpression::Structure { .. } => todo!(),
+            StreamExpression::Array { .. } => todo!(),
+            StreamExpression::When { .. } => todo!(),
+            StreamExpression::Match { .. } => todo!(),
+            StreamExpression::FollowedBy { .. } => todo!(),
+            StreamExpression::NodeApplication { .. } => todo!(),
+        }
+    }
+
+    /// Get the reference to the stream expression's typing.
+    ///
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{constant::Constant, stream_expression::StreamExpression, location::Location, type_system::Type};
+    /// let mut stream_expression = StreamExpression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: Some(Type::Integer),
+    ///     location: Location::default(),
+    /// };
+    /// let typing = stream_expression.get_type().unwrap();
+    /// ```
+    pub fn get_type(&self) -> Option<&Type> {
+        match self {
+            StreamExpression::Constant { typing, .. } => typing.as_ref(),
+            StreamExpression::SignalCall { typing, .. } => typing.as_ref(),
+            StreamExpression::Structure { typing, .. } => typing.as_ref(),
+            StreamExpression::Array { typing, .. } => typing.as_ref(),
+            StreamExpression::Match { typing, .. } => typing.as_ref(),
+            StreamExpression::When { typing, .. } => typing.as_ref(),
+            StreamExpression::FollowedBy { typing, .. } => typing.as_ref(),
+            StreamExpression::MapApplication { typing, .. } => typing.as_ref(),
+            StreamExpression::NodeApplication { typing, .. } => typing.as_ref(),
+        }
+    }
+
+    /// Get the stream expression's typing.
+    ///
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{constant::Constant, stream_expression::StreamExpression, location::Location, type_system::Type};
+    /// let mut stream_expression = StreamExpression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: Some(Type::Integer),
+    ///     location: Location::default(),
+    /// };
+    /// let typing = stream_expression.get_type_owned().unwrap();
+    /// ```
+    pub fn get_type_owned(self) -> Option<Type> {
+        match self {
+            StreamExpression::Constant { typing, .. } => typing,
+            StreamExpression::SignalCall { typing, .. } => typing,
+            StreamExpression::Structure { typing, .. } => typing,
+            StreamExpression::Array { typing, .. } => typing,
+            StreamExpression::Match { typing, .. } => typing,
+            StreamExpression::When { typing, .. } => typing,
+            StreamExpression::FollowedBy { typing, .. } => typing,
+            StreamExpression::MapApplication { typing, .. } => typing,
+            StreamExpression::NodeApplication { typing, .. } => typing,
+        }
+    }
 }
