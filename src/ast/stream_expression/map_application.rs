@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+    stream_expression::{node_description::NodeDescription, StreamExpression}, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -9,6 +9,7 @@ impl StreamExpression {
     /// Add a [Type] to the map application stream expression.
     pub fn typing_map_application(
         &mut self,
+        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
@@ -31,6 +32,7 @@ impl StreamExpression {
                     .into_iter()
                     .map(|input| {
                         input.typing(
+                            nodes_context,
                             signals_context,
                             elements_context,
                             user_types_context,
@@ -74,6 +76,7 @@ mod typing_application {
     #[test]
     fn should_type_map_application_stream_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -117,6 +120,7 @@ mod typing_application {
 
         stream_expression
             .typing_map_application(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -130,6 +134,7 @@ mod typing_application {
     #[test]
     fn should_raise_error_for_incompatible_map_application() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
         let mut elements_context = HashMap::new();
@@ -156,6 +161,7 @@ mod typing_application {
 
         let error = stream_expression
             .typing_map_application(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
