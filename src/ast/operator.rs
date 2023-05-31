@@ -65,7 +65,7 @@ impl ToString for BinaryOperator {
 }
 impl BinaryOperator {
     /// Get the [Type] of a binary operator.
-    ///
+    /// 
     /// # Example
     /// ```rust
     /// use grustine::ast::operator::BinaryOperator;
@@ -73,75 +73,62 @@ impl BinaryOperator {
     /// ```
     pub fn get_type(&self) -> Type {
         let number_types = vec![Type::Integer, Type::Float];
-        let all_basic_types = vec![
-            Type::Integer,
-            Type::Float,
-            Type::Boolean,
-            Type::String,
-            Type::Unit,
-        ];
+        let all_basic_types = vec![Type::Integer, Type::Float, Type::Boolean, Type::String, Type::Unit];
 
         match self {
             // If self is an operator over numbers then its type can either
             // be `int -> int -> int` or `float -> float -> float`
             // then it is a [Type::Choice]
-            BinaryOperator::Mul
-            | BinaryOperator::Div
-            | BinaryOperator::Add
-            | BinaryOperator::Sub => {
-                let v_t = number_types
-                    .into_iter()
-                    .map(|t| {
-                        Type::Abstract(
+              BinaryOperator::Mul | BinaryOperator::Div 
+            | BinaryOperator::Add | BinaryOperator::Sub => {
+                let v_t = number_types.into_iter()
+                    .map(
+                        |t| Type::Abstract(
                             Box::new(t.clone()),
-                            Box::new(Type::Abstract(Box::new(t.clone()), Box::new(t))),
-                        )
-                    })
-                    .collect();
+                            Box::new(Type::Abstract(
+                                Box::new(t.clone()),
+                                Box::new(t))))
+                    ).collect();
                 Type::Choice(v_t)
-            }
+            },
             // If self is a comparison over numbers then its type can either
             // be `int -> int -> bool` or `float -> float -> bool`
             // then it is a [Type::Choice]
-            BinaryOperator::Geq
-            | BinaryOperator::Leq
-            | BinaryOperator::Grt
-            | BinaryOperator::Low => {
-                let v_t = number_types
-                    .into_iter()
-                    .map(|t| {
-                        Type::Abstract(
+              BinaryOperator::Geq | BinaryOperator::Leq
+            | BinaryOperator::Grt | BinaryOperator::Low => {
+                let v_t = number_types.into_iter()
+                    .map(
+                        |t| Type::Abstract(
                             Box::new(t.clone()),
-                            Box::new(Type::Abstract(Box::new(t), Box::new(Type::Boolean))),
-                        )
-                    })
-                    .collect();
+                            Box::new(Type::Abstract(
+                                Box::new(t),
+                                Box::new(Type::Boolean))))
+                    ).collect();
                 Type::Choice(v_t)
-            }
+            },
             // If self is an equality or inequality test then its type can
             // be `t -> t -> bool` for any t
             // then it is a [Type::Choice]
             BinaryOperator::Eq | BinaryOperator::Dif => {
-                let v_t = all_basic_types
-                    .into_iter()
-                    .map(|t| {
-                        Type::Abstract(
+                let v_t = all_basic_types.into_iter()
+                    .map(
+                        |t| Type::Abstract(
                             Box::new(t.clone()),
-                            Box::new(Type::Abstract(Box::new(t), Box::new(Type::Boolean))),
-                        )
-                    })
-                    .collect();
+                            Box::new(Type::Abstract(
+                                Box::new(t),
+                                Box::new(Type::Boolean))))
+                    ).collect();
                 Type::Choice(v_t)
-            }
-            // If self is a logical operator then its type
+            },
+            // If self is a logical operator then its type 
             // is `bool -> bool -> bool`
-            BinaryOperator::And | BinaryOperator::Or => Type::Abstract(
-                Box::new(Type::Boolean),
-                Box::new(Type::Abstract(
+            BinaryOperator::And | BinaryOperator::Or => {
+                Type::Abstract(
                     Box::new(Type::Boolean),
-                    Box::new(Type::Boolean),
-                )),
-            ),
+                    Box::new(Type::Abstract(
+                        Box::new(Type::Boolean),
+                        Box::new(Type::Boolean))))
+            },
         }
     }
 }
@@ -173,7 +160,7 @@ impl ToString for UnaryOperator {
 }
 impl UnaryOperator {
     /// Get the [Type] of a unary operator.
-    ///
+    /// 
     /// # Example
     /// ```rust
     /// use grustine::ast::operator::UnaryOperator;
@@ -181,36 +168,32 @@ impl UnaryOperator {
     /// ```
     pub fn get_type(&self) -> Type {
         let number_types = vec![Type::Integer, Type::Float];
-        let all_basic_types = vec![
-            Type::Integer,
-            Type::Float,
-            Type::Boolean,
-            Type::String,
-            Type::Unit,
-        ];
+        let all_basic_types = vec![Type::Integer, Type::Float, Type::Boolean, Type::String, Type::Unit];
 
         match self {
             // If self is the numerical negation then its type can either
             // be `int -> int` or `float -> float`
             // then it is a [Type::Choice]
             UnaryOperator::Neg => {
-                let v_t = number_types
-                    .into_iter()
-                    .map(|t| Type::Abstract(Box::new(t.clone()), Box::new(t)))
-                    .collect();
+                let v_t = number_types.into_iter()
+                    .map(
+                        |t| Type::Abstract(Box::new(t.clone()), Box::new(t))
+                    ).collect();
                 Type::Choice(v_t)
-            }
+            },
             // If self is "brackets" then its type can be `t -> t` for any t
             // then it is a [Type::Choice]
             UnaryOperator::Brackets => {
-                let v_t = all_basic_types
-                    .into_iter()
-                    .map(|t| Type::Abstract(Box::new(t.clone()), Box::new(t)))
-                    .collect();
+                let v_t = all_basic_types.into_iter()
+                    .map(
+                        |t| Type::Abstract(Box::new(t.clone()), Box::new(t))
+                    ).collect();
                 Type::Choice(v_t)
-            }
+            },
             // If self is the logical negation then its type is `bool -> bool`
-            UnaryOperator::Not => Type::Abstract(Box::new(Type::Boolean), Box::new(Type::Boolean)),
+            UnaryOperator::Not => {
+                Type::Abstract(Box::new(Type::Boolean), Box::new(Type::Boolean))
+            },
         }
     }
 }
@@ -238,7 +221,7 @@ impl ToString for OtherOperator {
 }
 impl OtherOperator {
     /// Get the [Type] of the other operators.
-    ///
+    /// 
     /// # Example
     /// ```rust
     /// use grustine::ast::operator::OtherOperator;
@@ -251,21 +234,23 @@ impl OtherOperator {
             // `bool -> t -> t` for any type t
             // then it is a [Type::Choice]
             OtherOperator::IfThenElse => {
-                let v_t = all_basic_types
-                    .into_iter()
-                    .map(|t| {
-                        Type::Abstract(
+                let v_t = all_basic_types.into_iter()
+                    .map(
+                        |t| Type::Abstract(
                             Box::new(Type::Boolean),
                             Box::new(Type::Abstract(
                                 Box::new(t.clone()),
-                                Box::new(Type::Abstract(Box::new(t.clone()), Box::new(t))),
-                            )),
-                        )
-                    })
-                    .collect();
+                                Box::new(Type::Abstract(
+                                    Box::new(t.clone()),
+                                    Box::new(t))
+                                ))
+                            ))
+                    ).collect();
                 Type::Choice(v_t)
+            },
+            OtherOperator::Print => {
+                Type::Abstract(Box::new(Type::String), Box::new(Type::Unit))
             }
-            OtherOperator::Print => Type::Abstract(Box::new(Type::String), Box::new(Type::Unit)),
         }
     }
 }
