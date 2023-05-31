@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    stream_expression::{node_description::NodeDescription, StreamExpression},
-    type_system::Type,
+    node_description::NodeDescription, stream_expression::StreamExpression, type_system::Type,
     user_defined_type::UserDefinedType,
 };
 use crate::common::context::Context;
@@ -81,8 +80,7 @@ impl StreamExpression {
 mod typing_node_application {
     use crate::ast::{
         constant::Constant, expression::Expression, location::Location,
-        stream_expression::node_description::NodeDescription, stream_expression::StreamExpression,
-        type_system::Type,
+        node_description::NodeDescription, stream_expression::StreamExpression, type_system::Type,
     };
     use std::collections::HashMap;
 
