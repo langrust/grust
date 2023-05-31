@@ -11,7 +11,6 @@ impl StreamExpression {
     pub fn typing_structure(
         &mut self,
         signals_context: &HashMap<String, Type>,
-        elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -39,7 +38,6 @@ impl StreamExpression {
                             .map(|(_, stream_expression)| {
                                 stream_expression.typing(
                                     signals_context,
-                                    elements_context,
                                     user_types_context,
                                     errors,
                                 )
@@ -85,10 +83,9 @@ mod typing_structure {
     use std::collections::HashMap;
 
     #[test]
-    fn should_type_structure_stream_expression() {
+    fn should_type_structure_expression() {
         let mut errors = vec![];
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -150,12 +147,7 @@ mod typing_structure {
         };
 
         stream_expression
-            .typing_structure(
-                &signals_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .typing_structure(&signals_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(stream_expression, control);
@@ -165,7 +157,6 @@ mod typing_structure {
     fn should_raise_error_for_additionnal_field_in_structure() {
         let mut errors = vec![];
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -212,12 +203,7 @@ mod typing_structure {
         };
 
         let error = stream_expression
-            .typing_structure(
-                &signals_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .typing_structure(&signals_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -227,7 +213,6 @@ mod typing_structure {
     fn should_raise_error_for_missing_field_in_structure() {
         let mut errors = vec![];
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -256,12 +241,7 @@ mod typing_structure {
         };
 
         let error = stream_expression
-            .typing_structure(
-                &signals_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .typing_structure(&signals_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -271,7 +251,6 @@ mod typing_structure {
     fn should_raise_error_for_incompatible_structure() {
         let mut errors = vec![];
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -310,12 +289,7 @@ mod typing_structure {
         };
 
         let error = stream_expression
-            .typing_structure(
-                &signals_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .typing_structure(&signals_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -325,7 +299,6 @@ mod typing_structure {
     fn should_raise_error_when_expect_structure() {
         let mut errors = vec![];
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Color"),
@@ -374,12 +347,7 @@ mod typing_structure {
         };
 
         let error = stream_expression
-            .typing_structure(
-                &signals_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .typing_structure(&signals_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
