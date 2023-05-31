@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    constant::Constant, expression::Expression, location::Location, pattern::Pattern, type_system::Type,
-    user_defined_type::UserDefinedType,
+    constant::Constant, expression::Expression, location::Location, pattern::Pattern,
+    type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -205,9 +205,7 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod typing {
-    use crate::ast::{
-        constant::Constant, stream_expression::StreamExpression, location::Location
-    };
+    use crate::ast::{constant::Constant, location::Location, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]
@@ -238,7 +236,8 @@ mod typing {
 #[cfg(test)]
 mod get_type {
     use crate::ast::{
-        constant::Constant, stream_expression::StreamExpression, location::Location, type_system::Type,
+        constant::Constant, location::Location, stream_expression::StreamExpression,
+        type_system::Type,
     };
 
     #[test]
@@ -271,7 +270,8 @@ mod get_type {
 #[cfg(test)]
 mod get_type_owned {
     use crate::ast::{
-        constant::Constant, stream_expression::StreamExpression, location::Location, type_system::Type,
+        constant::Constant, location::Location, stream_expression::StreamExpression,
+        type_system::Type,
     };
 
     #[test]
