@@ -21,7 +21,7 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod typing_constant {
-    use crate::ast::{constant::Constant, location::Location, stream_expression::StreamExpression};
+    use crate::ast::{constant::Constant, stream_expression::StreamExpression, location::Location};
 
     #[test]
     fn should_type_constant_stream_expression() {
