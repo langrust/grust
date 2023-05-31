@@ -35,7 +35,7 @@ mod typing_call {
     use std::collections::HashMap;
 
     #[test]
-    fn should_type_call_expression() {
+    fn should_type_call_stream_expression() {
         let mut errors = vec![];
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
@@ -59,7 +59,7 @@ mod typing_call {
     }
 
     #[test]
-    fn should_raise_error_for_unknown_element_call() {
+    fn should_raise_error_for_unknown_signal_call() {
         let mut errors = vec![];
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
@@ -69,7 +69,7 @@ mod typing_call {
             typing: None,
             location: Location::default(),
         };
-        let control = vec![Error::UnknownElement {
+        let control = vec![Error::UnknownSignal {
             name: String::from("y"),
             location: Location::default(),
         }];
