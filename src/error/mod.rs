@@ -30,6 +30,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// encountering an unknown signal
+    UnknownSignal {
+        /// the unknow identifier
+        name: String,
+        /// the error location
+        location: Location,
+    },
     /// encountering an unknown type
     UnknownType {
         /// the unknow identifier
@@ -155,6 +162,16 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("element '{name}' is not defined")
+                ]
+            ),
+            Error::UnknownSignal { name, location } => Diagnostic::error()
+                .with_message("unknown signal")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("unknown")
+                ])
+                .with_notes(vec![
+                    format!("signal '{name}' is not defined")
                 ]
             ),
             Error::UnknownType { name, location } => Diagnostic::error()
