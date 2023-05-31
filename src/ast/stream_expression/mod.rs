@@ -1,5 +1,5 @@
 use crate::ast::{
-    constant::Constant, expression::Expression, location::Location, pattern::Pattern,
+    constant::Constant, expression::Expression, location::Location, pattern::Pattern, type_system::Type,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -9,6 +9,8 @@ pub enum StreamExpression {
     Constant {
         /// The constant.
         constant: Constant,
+        /// Stream Expression type.
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
     },
@@ -16,6 +18,8 @@ pub enum StreamExpression {
     SignalCall {
         /// Signal identifier.
         id: String,
+        /// Stream Expression type.
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
     },
@@ -25,6 +29,8 @@ pub enum StreamExpression {
         constant: Constant,
         /// The buffered expression.
         expression: Box<StreamExpression>,
+        /// Stream Expression type.
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
     },
@@ -34,6 +40,8 @@ pub enum StreamExpression {
         function_expression: Expression,
         /// The inputs to the expression.
         inputs: Vec<StreamExpression>,
+        /// Stream Expression type.
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
     },
@@ -45,6 +53,8 @@ pub enum StreamExpression {
         inputs: Vec<StreamExpression>,
         /// The signal retrieved.
         signal: String,
+        /// Stream Expression type.
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
     },
@@ -54,6 +64,8 @@ pub enum StreamExpression {
         name: String,
         /// The fields associated with their expressions.
         fields: Vec<(String, StreamExpression)>,
+        /// Stream Expression type.
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
     },
@@ -61,6 +73,8 @@ pub enum StreamExpression {
     Array {
         /// The elements inside the array.
         elements: Vec<StreamExpression>,
+        /// Stream Expression type.
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
     },
@@ -70,6 +84,8 @@ pub enum StreamExpression {
         expression: Box<StreamExpression>,
         /// The different matching cases.
         arms: Vec<(Pattern, Option<StreamExpression>, StreamExpression)>,
+        /// Stream Expression type.
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
     },
@@ -83,7 +99,9 @@ pub enum StreamExpression {
         present: Box<StreamExpression>,
         /// The default stream expression.
         default: Box<StreamExpression>,
-        /// StreamExpression location.
+        /// Stream Expression type.
+        typing: Option<Type>,
+        /// Stream expression location.
         location: Location,
     },
 }

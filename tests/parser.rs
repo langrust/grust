@@ -157,6 +157,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("x"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -170,6 +171,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("i"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -190,6 +192,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("x"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -203,6 +206,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("i"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -223,6 +227,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("x"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -236,6 +241,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("i"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -368,6 +374,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("x"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -381,6 +388,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("i"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -401,6 +409,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("x"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -414,6 +423,7 @@ mod langrust_ast_constructs {
                                     signal_type: Type::Integer,
                                     expression: StreamExpression::SignalCall {
                                         id: String::from("i"),
+                                        typing: None,
                                         location: Location::default(),
                                     },
                                     location: Location::default(),
@@ -435,6 +445,7 @@ mod langrust_ast_constructs {
                                 signal_type: Type::Integer,
                                 expression: StreamExpression::SignalCall {
                                     id: String::from("x"),
+                                    typing: None,
                                     location: Location::default(),
                                 },
                                 location: Location::default(),
@@ -448,6 +459,7 @@ mod langrust_ast_constructs {
                                 signal_type: Type::Integer,
                                 expression: StreamExpression::SignalCall {
                                     id: String::from("i"),
+                                    typing: None,
                                     location: Location::default(),
                                 },
                                 location: Location::default(),
@@ -539,6 +551,7 @@ mod langrust_ast_constructs {
                             signal_type: Type::Integer,
                             expression: StreamExpression::SignalCall {
                                 id: String::from("x"),
+                                typing: None,
                                 location: Location::default(),
                             },
                             location: Location::default(),
@@ -552,6 +565,7 @@ mod langrust_ast_constructs {
                             signal_type: Type::Integer,
                             expression: StreamExpression::SignalCall {
                                 id: String::from("i"),
+                                typing: None,
                                 location: Location::default(),
                             },
                             location: Location::default(),
@@ -589,6 +603,7 @@ mod langrust_ast_constructs {
                             signal_type: Type::Integer,
                             expression: StreamExpression::SignalCall {
                                 id: String::from("x"),
+                                typing: None,
                                 location: Location::default(),
                             },
                             location: Location::default(),
@@ -602,6 +617,7 @@ mod langrust_ast_constructs {
                             signal_type: Type::Integer,
                             expression: StreamExpression::SignalCall {
                                 id: String::from("i"),
+                                typing: None,
                                 location: Location::default(),
                             },
                             location: Location::default(),
@@ -691,6 +707,7 @@ mod langrust_ast_constructs {
                 signal_type: Type::NotDefinedYet(String::from("Color")),
                 expression: StreamExpression::Constant {
                     constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
+                    typing: None,
                     location: Location::default()
                 },
                 location: Location::default(),
@@ -708,6 +725,7 @@ mod langrust_ast_constructs {
                 expression: StreamExpression::Match {
                     expression: Box::new(StreamExpression::SignalCall {
                         id: String::from("a"),
+                        typing: None,
                         location: Location::default()
                     }),
                     arms: vec![
@@ -734,6 +752,7 @@ mod langrust_ast_constructs {
                             None,
                             StreamExpression::Constant {
                                 constant: Constant::Integer(0),
+                                typing: None,
                                 location: Location::default()
                             }
                         ),
@@ -766,13 +785,16 @@ mod langrust_ast_constructs {
                                 inputs: vec![
                                     StreamExpression::SignalCall {
                                         id: String::from("x"),
+                                        typing: None,
                                         location: Location::default()
                                     },
                                     StreamExpression::Constant {
                                         constant: Constant::Integer(0),
+                                        typing: None,
                                         location: Location::default()
                                     }
                                 ],
+                                typing: None,
                                 location: Location::default()
                             }),
                             StreamExpression::MapApplication {
@@ -783,8 +805,10 @@ mod langrust_ast_constructs {
                                 },
                                 inputs: vec![StreamExpression::Constant {
                                     constant: Constant::Integer(1),
+                                    typing: None,
                                     location: Location::default()
                                 }],
+                                typing: None,
                                 location: Location::default()
                             }
                         ),
@@ -795,10 +819,12 @@ mod langrust_ast_constructs {
                             None,
                             StreamExpression::Constant {
                                 constant: Constant::Integer(1),
+                                typing: None,
                                 location: Location::default()
                             }
                         )
                     ],
+                    typing: None,
                     location: Location::default()
                 },
                 location: Location::default(),
@@ -1117,6 +1143,7 @@ mod langrust_ast_constructs {
         assert_eq!(
             StreamExpression::Constant {
                 constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1127,6 +1154,7 @@ mod langrust_ast_constructs {
         assert_eq!(
             StreamExpression::SignalCall {
                 id: String::from("x"),
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1143,8 +1171,10 @@ mod langrust_ast_constructs {
                 },
                 inputs: vec![StreamExpression::Constant {
                     constant: Constant::Integer(3),
+                    typing: None,
                     location: Location::default()
                 },],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1161,8 +1191,10 @@ mod langrust_ast_constructs {
                 },
                 inputs: vec![StreamExpression::Constant {
                     constant: Constant::Integer(3),
+                    typing: None,
                     location: Location::default()
                 },],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1187,20 +1219,25 @@ mod langrust_ast_constructs {
                         inputs: vec![
                             StreamExpression::Constant {
                                 constant: Constant::Integer(4),
+                                typing: None,
                                 location: Location::default()
                             },
                             StreamExpression::Constant {
                                 constant: Constant::Integer(5),
+                                typing: None,
                                 location: Location::default()
                             },
                         ],
+                        typing: None,
                         location: Location::default()
                     },
                     StreamExpression::Constant {
                         constant: Constant::Integer(3),
+                        typing: None,
                         location: Location::default()
                     },
                 ],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1224,15 +1261,19 @@ mod langrust_ast_constructs {
                     inputs: vec![
                         StreamExpression::SignalCall {
                             id: String::from("x"),
+                            typing: None,
                             location: Location::default()
                         },
                         StreamExpression::SignalCall {
                             id: String::from("y"),
+                            typing: None,
                             location: Location::default()
                         },
                     ],
+                    typing: None,
                     location: Location::default()
                 },],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1249,8 +1290,10 @@ mod langrust_ast_constructs {
                 },
                 inputs: vec![StreamExpression::Constant {
                     constant: Constant::String(String::from("Hello world")),
+                    typing: None,
                     location: Location::default()
                 }],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1264,14 +1307,17 @@ mod langrust_ast_constructs {
                 inputs: vec![
                     StreamExpression::SignalCall {
                         id: String::from("my_input1"),
+                        typing: None,
                         location: Location::default()
                     },
                     StreamExpression::SignalCall {
                         id: String::from("my_input2"),
+                        typing: None,
                         location: Location::default()
                     }
                 ],
                 signal: String::from("my_signal"),
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1291,15 +1337,19 @@ mod langrust_ast_constructs {
                     inputs: vec![
                         StreamExpression::SignalCall {
                             id: String::from("x"),
+                            typing: None,
                             location: Location::default()
                         },
                         StreamExpression::Constant {
                             constant: Constant::Integer(1),
+                            typing: None,
                             location: Location::default()
                         },
                     ],
+                    typing: None,
                     location: Location::default()
                 }),
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1317,17 +1367,21 @@ mod langrust_ast_constructs {
                 inputs: vec![
                     StreamExpression::SignalCall {
                         id: String::from("b"),
+                        typing: None,
                         location: Location::default()
                     },
                     StreamExpression::SignalCall {
                         id: String::from("x"),
+                        typing: None,
                         location: Location::default()
                     },
                     StreamExpression::SignalCall {
                         id: String::from("y"),
+                        typing: None,
                         location: Location::default()
                     },
                 ],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1343,6 +1397,7 @@ mod langrust_ast_constructs {
                         String::from("x"),
                         StreamExpression::Constant {
                             constant: Constant::Integer(3),
+                            typing: None,
                             location: Location::default()
                         }
                     ),
@@ -1350,10 +1405,12 @@ mod langrust_ast_constructs {
                         String::from("y"),
                         StreamExpression::Constant {
                             constant: Constant::Integer(0),
+                            typing: None,
                             location: Location::default()
                         }
                     )
                 ],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1366,17 +1423,21 @@ mod langrust_ast_constructs {
                 elements: vec![
                     StreamExpression::Constant {
                         constant: Constant::Integer(1),
+                        typing: None,
                         location: Location::default()
                     },
                     StreamExpression::Constant {
                         constant: Constant::Integer(2),
+                        typing: None,
                         location: Location::default()
                     },
                     StreamExpression::Constant {
                         constant: Constant::Integer(3),
+                        typing: None,
                         location: Location::default()
                     }
                 ],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1389,17 +1450,21 @@ mod langrust_ast_constructs {
                 elements: vec![
                     StreamExpression::Constant {
                         constant: Constant::Float(0.01),
+                        typing: None,
                         location: Location::default()
                     },
                     StreamExpression::Constant {
                         constant: Constant::Float(0.01),
+                        typing: None,
                         location: Location::default()
                     },
                     StreamExpression::Constant {
                         constant: Constant::Float(0.01),
+                        typing: None,
                         location: Location::default()
                     }
                 ],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1412,16 +1477,20 @@ mod langrust_ast_constructs {
                 id: String::from("a"),
                 option: Box::new(StreamExpression::SignalCall {
                     id: String::from("x"),
+                    typing: None,
                     location: Location::default()
                 }),
                 present: Box::new(StreamExpression::SignalCall {
                     id: String::from("a"),
+                    typing: None,
                     location: Location::default()
                 }),
                 default: Box::new(StreamExpression::Constant {
                     constant: Constant::Integer(0),
+                    typing: None,
                     location: Location::default()
                 }),
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1434,16 +1503,20 @@ mod langrust_ast_constructs {
                 id: String::from("a"),
                 option: Box::new(StreamExpression::SignalCall {
                     id: String::from("a"),
+                    typing: None,
                     location: Location::default()
                 }),
                 present: Box::new(StreamExpression::SignalCall {
                     id: String::from("a"),
+                    typing: None,
                     location: Location::default()
                 }),
                 default: Box::new(StreamExpression::Constant {
                     constant: Constant::Integer(0),
+                    typing: None,
                     location: Location::default()
                 }),
+                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1455,6 +1528,7 @@ mod langrust_ast_constructs {
             StreamExpression::Match {
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("a"),
+                    typing: None,
                     location: Location::default()
                 }),
                 arms: vec![
@@ -1481,6 +1555,7 @@ mod langrust_ast_constructs {
                         None,
                         StreamExpression::Constant {
                             constant: Constant::Integer(0),
+                            typing: None,
                             location: Location::default()
                         }
                     ),
@@ -1513,13 +1588,16 @@ mod langrust_ast_constructs {
                             inputs: vec![
                                 StreamExpression::SignalCall {
                                     id: String::from("x"),
+                                    typing: None,
                                     location: Location::default()
                                 },
                                 StreamExpression::Constant {
                                     constant: Constant::Integer(0),
+                                    typing: None,
                                     location: Location::default()
                                 }
                             ],
+                            typing: None,
                             location: Location::default()
                         }),
                         StreamExpression::MapApplication {
@@ -1530,8 +1608,10 @@ mod langrust_ast_constructs {
                             },
                             inputs: vec![StreamExpression::Constant {
                                 constant: Constant::Integer(1),
+                                typing: None,
                                 location: Location::default()
                             }],
+                            typing: None,
                             location: Location::default()
                         }
                     ),
@@ -1542,10 +1622,12 @@ mod langrust_ast_constructs {
                         None,
                         StreamExpression::Constant {
                             constant: Constant::Integer(1),
+                            typing: None,
                             location: Location::default()
                         }
                     )
                 ],
+                typing: None,
                 location: Location::default()
             },
             stream_expression
