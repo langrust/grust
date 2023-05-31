@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    node_description::NodeDescription, stream_expression::StreamExpression, type_system::Type,
-    user_defined_type::UserDefinedType,
+    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -10,12 +9,11 @@ impl StreamExpression {
     /// Add a [Type] to the map application stream expression.
     pub fn typing_map_application(
         &mut self,
-        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        global_context: &HashMap<String, Type>,
+        elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // a map application expression type is the result of the application
             // of the inputs types to the abstraction/function type
@@ -26,28 +24,22 @@ impl StreamExpression {
                 location,
             } => {
                 // type the function expression
-                let elements_context = global_context.clone();
-                let test_typing_function_expression = function_expression.typing(
-                    global_context,
-                    &elements_context,
-                    user_types_context,
-                    errors,
-                );
+                let test_typing_function_expression =
+                    function_expression.typing(elements_context, user_types_context, errors);
                 // type all inputs
                 let test_typing_inputs = inputs
                     .into_iter()
                     .map(|input| {
                         input.typing(
-                            nodes_context,
                             signals_context,
-                            global_context,
+                            elements_context,
                             user_types_context,
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>();
+                    .collect::<Result<(), Error>>();
 
                 // test if there were some errors
                 test_typing_function_expression?;
@@ -82,11 +74,10 @@ mod typing_application {
     #[test]
     fn should_type_map_application_stream_expression() {
         let mut errors = vec![];
-        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut global_context = HashMap::new();
-        global_context.insert(
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -126,9 +117,8 @@ mod typing_application {
 
         stream_expression
             .typing_map_application(
-                &nodes_context,
                 &signals_context,
-                &global_context,
+                &elements_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -140,11 +130,10 @@ mod typing_application {
     #[test]
     fn should_raise_error_for_incompatible_map_application() {
         let mut errors = vec![];
-        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut global_context = HashMap::new();
-        global_context.insert(
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)),
         );
@@ -165,14 +154,15 @@ mod typing_application {
             location: Location::default(),
         };
 
-        stream_expression
+        let error = stream_expression
             .typing_map_application(
-                &nodes_context,
                 &signals_context,
-                &global_context,
+                &elements_context,
                 &user_types_context,
                 &mut errors,
             )
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 }
