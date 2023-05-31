@@ -8,6 +8,7 @@ use crate::error::Error;
 
 mod constant;
 mod signal_call;
+mod structure;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression AST.
@@ -133,7 +134,7 @@ impl StreamExpression {
     pub fn typing(
         &mut self,
         signals_context: &HashMap<String, Type>,
-        _user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
         match self {
@@ -142,7 +143,9 @@ impl StreamExpression {
             StreamExpression::FollowedBy { .. } => todo!(),
             StreamExpression::MapApplication { .. } => todo!(),
             StreamExpression::NodeApplication { .. } => todo!(),
-            StreamExpression::Structure { .. } => todo!(),
+            StreamExpression::Structure { .. } => {
+                self.typing_structure(signals_context, user_types_context, errors)
+            }
             StreamExpression::Array { .. } => todo!(),
             StreamExpression::When { .. } => todo!(),
             StreamExpression::Match { .. } => todo!(),
@@ -210,7 +213,7 @@ mod typing {
 
     use crate::ast::{
         constant::Constant, location::Location, stream_expression::StreamExpression,
-        type_system::Type,
+        type_system::Type, user_defined_type::UserDefinedType,
     };
     use crate::error::Error;
 
@@ -285,6 +288,277 @@ mod typing {
             .unwrap_err();
 
         assert_eq!(errors, control);
+    }
+
+    #[test]
+    fn should_type_structure_stream_expression() {
+        let mut errors = vec![];
+        let signals_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut stream_expression = StreamExpression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(2),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(2),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: Some(Type::Structure(String::from("Point"))),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(&signals_context, &user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_additionnal_field_in_structure() {
+        let mut errors = vec![];
+        let signals_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut stream_expression = StreamExpression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(2),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("z"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(0),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = stream_expression
+            .typing(&signals_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_raise_error_for_missing_field_in_structure() {
+        let mut errors = vec![];
+        let signals_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut stream_expression = StreamExpression::Structure {
+            name: String::from("Point"),
+            fields: vec![(
+                String::from("x"),
+                StreamExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: None,
+                    location: Location::default(),
+                },
+            )],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = stream_expression
+            .typing(&signals_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_raise_error_for_incompatible_structure() {
+        let mut errors = vec![];
+        let signals_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut stream_expression = StreamExpression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    StreamExpression::Constant {
+                        constant: Constant::Float(2.0),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = stream_expression
+            .typing(&signals_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_raise_error_when_expect_structure() {
+        let mut errors = vec![];
+        let signals_context = HashMap::new();
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Color"),
+            UserDefinedType::Enumeration {
+                id: String::from("Color"),
+                elements: vec![
+                    String::from("Yellow"),
+                    String::from("Blue"),
+                    String::from("Green"),
+                    String::from("Red"),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut stream_expression = StreamExpression::Structure {
+            name: String::from("Color"),
+            fields: vec![
+                (
+                    String::from("r"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("g"),
+                    StreamExpression::Constant {
+                        constant: Constant::Float(2.0),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("b"),
+                    StreamExpression::Constant {
+                        constant: Constant::Float(2.0),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = stream_expression
+            .typing(&signals_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 }
 
