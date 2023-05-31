@@ -89,6 +89,7 @@
 #[macro_use]
 extern crate lalrpop_util;
 extern crate codespan_reporting;
+extern crate strum;
 
 /// LanGRust AST module.
 pub mod ast;

@@ -13,6 +13,9 @@ pub mod node_description;
 /// LanGRust [Function](crate::ast::function::Function) AST module.
 pub mod function;
 
+/// LanGRust global context definition module.
+pub mod global_context;
+
 /// LanGRust [UserDefinedType](crate::ast::user_defined_type::UserDefinedType) AST module.
 pub mod user_defined_type;
 
