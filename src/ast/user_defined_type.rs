@@ -121,8 +121,8 @@ impl UserDefinedType {
                     .map(|(field_id, field_type)| (field_id.clone(), field_type.clone()))
                     .collect::<HashMap<String, Type>>();
 
-                // check that every field is well-defined
-                fields
+                // zip defined fields with the expected type
+                let zipped_fields = fields
                     .into_iter()
                     .map(|(id, expression)| {
                         Ok((
@@ -137,7 +137,10 @@ impl UserDefinedType {
                     })
                     .collect::<Vec<Result<_, Error>>>()
                     .into_iter()
-                    .collect::<Result<Vec<_>, Error>>()?
+                    .collect::<Result<Vec<_>, Error>>()?;
+
+                // check that every field is well-defined
+                zipped_fields
                     .into_iter()
                     .map(|(element, field_type)| well_defined_field(element, field_type, errors))
                     .collect::<Vec<Result<(), Error>>>()
