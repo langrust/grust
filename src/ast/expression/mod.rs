@@ -179,59 +179,15 @@ impl Expression {
     /// ```
     pub fn get_type(&self) -> Option<&Type> {
         match self {
-            Expression::Constant {
-                constant: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
-            Expression::Call {
-                id: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
-            Expression::Application {
-                function_expression: _,
-                inputs: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
-            Expression::Abstraction {
-                inputs: _,
-                expression: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
-            Expression::TypedAbstraction {
-                inputs: _,
-                expression: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
-            Expression::Structure {
-                name: _,
-                fields: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
-            Expression::Array {
-                elements: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
-            Expression::Match {
-                expression: _,
-                arms: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
-            Expression::When {
-                id: _,
-                option: _,
-                present: _,
-                default: _,
-                typing,
-                location: _,
-            } => typing.as_ref(),
+            Expression::Constant { typing, .. } => typing.as_ref(),
+            Expression::Call { typing, .. } => typing.as_ref(),
+            Expression::Application { typing, .. } => typing.as_ref(),
+            Expression::Abstraction { typing, .. } => typing.as_ref(),
+            Expression::TypedAbstraction { typing, .. } => typing.as_ref(),
+            Expression::Structure { typing, .. } => typing.as_ref(),
+            Expression::Array { typing, .. } => typing.as_ref(),
+            Expression::Match { typing, .. } => typing.as_ref(),
+            Expression::When { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -250,59 +206,15 @@ impl Expression {
     /// ```
     pub fn get_type_owned(self) -> Option<Type> {
         match self {
-            Expression::Constant {
-                constant: _,
-                typing,
-                location: _,
-            } => typing,
-            Expression::Call {
-                id: _,
-                typing,
-                location: _,
-            } => typing,
-            Expression::Application {
-                function_expression: _,
-                inputs: _,
-                typing,
-                location: _,
-            } => typing,
-            Expression::Abstraction {
-                inputs: _,
-                expression: _,
-                typing,
-                location: _,
-            } => typing,
-            Expression::TypedAbstraction {
-                inputs: _,
-                expression: _,
-                typing,
-                location: _,
-            } => typing,
-            Expression::Structure {
-                name: _,
-                fields: _,
-                typing,
-                location: _,
-            } => typing,
-            Expression::Array {
-                elements: _,
-                typing,
-                location: _,
-            } => typing,
-            Expression::Match {
-                expression: _,
-                arms: _,
-                typing,
-                location: _,
-            } => typing,
-            Expression::When {
-                id: _,
-                option: _,
-                present: _,
-                default: _,
-                typing,
-                location: _,
-            } => typing,
+            Expression::Constant { typing, .. } => typing,
+            Expression::Call { typing, .. } => typing,
+            Expression::Application { typing, .. } => typing,
+            Expression::Abstraction { typing, .. } => typing,
+            Expression::TypedAbstraction { typing, .. } => typing,
+            Expression::Structure { typing, .. } => typing,
+            Expression::Array { typing, .. } => typing,
+            Expression::Match { typing, .. } => typing,
+            Expression::When { typing, .. } => typing,
         }
     }
 }
