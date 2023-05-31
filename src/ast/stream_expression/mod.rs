@@ -2651,6 +2651,100 @@ mod typing {
             )
             .unwrap_err();
     }
+    #[test]
+    fn should_type_map_application_stream_expression() {
+        let mut errors = vec![];
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("x"), Type::Integer);
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: Some(Type::Abstract(
+                    Box::new(Type::Integer),
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_incompatible_map_application() {
+        let mut errors = vec![];
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("x"), Type::Integer);
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = stream_expression
+            .typing(
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
 }
 
 #[cfg(test)]
