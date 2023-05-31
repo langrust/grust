@@ -39,11 +39,14 @@ impl Expression {
                             .collect::<Vec<Result<(), Error>>>()
                             .into_iter()
                             .collect::<Result<(), Error>>()?;
-                        
-                        let well_defined_field = |expression: &Expression, field_type: &Type, errors: &mut Vec<Error>| {
-                            let expression_type = expression.get_type().unwrap();
-                            expression_type.eq_check(field_type, location.clone(), errors)
-                        };
+
+                        let well_defined_field =
+                            |expression: &Expression,
+                             field_type: &Type,
+                             errors: &mut Vec<Error>| {
+                                let expression_type = expression.get_type().unwrap();
+                                expression_type.eq_check(field_type, location.clone(), errors)
+                            };
                         user_type.well_defined_structure(fields, well_defined_field, errors)?;
 
                         *typing = Some(Type::Structure(name.clone()));
