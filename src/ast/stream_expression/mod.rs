@@ -11,7 +11,6 @@ mod array;
 mod constant;
 mod followed_by;
 mod map_application;
-mod node_description;
 mod r#match;
 mod node_application;
 mod signal_call;
