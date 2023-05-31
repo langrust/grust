@@ -21,7 +21,7 @@ pub struct Node {
 }
 
 impl Node {
-    /// Add a [Type] to the equation.
+    /// [Type] the node.
     ///
     /// # Example
     /// ```rust

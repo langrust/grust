@@ -22,7 +22,7 @@ pub struct Equation {
 }
 
 impl Equation {
-    /// Add a [Type] to the equation.
+    /// [Type] the equation.
     ///
     /// # Example
     /// ```rust

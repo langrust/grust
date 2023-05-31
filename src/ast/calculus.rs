@@ -20,7 +20,7 @@ pub struct Calculus {
 }
 
 impl Calculus {
-    /// Add a [Type] to the equation.
+    /// [Type] the calculus.
     ///
     /// # Example
     /// ```rust
