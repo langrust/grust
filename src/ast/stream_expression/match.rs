@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    node_description::NodeDescription, stream_expression::StreamExpression, type_system::Type,
-    user_defined_type::UserDefinedType,
+    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -10,12 +9,11 @@ impl StreamExpression {
     /// Add a [Type] to the match stream expression.
     pub fn typing_match(
         &mut self,
-        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        global_context: &HashMap<String, Type>,
+        elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // the type of a match stream expression is the type of all branches expressions
             StreamExpression::Match {
@@ -25,9 +23,8 @@ impl StreamExpression {
                 location,
             } => {
                 expression.typing(
-                    nodes_context,
                     signals_context,
-                    global_context,
+                    elements_context,
                     user_types_context,
                     errors,
                 )?;
@@ -47,9 +44,8 @@ impl StreamExpression {
                             .as_mut()
                             .map_or(Ok(()), |stream_expression| {
                                 stream_expression.typing(
-                                    nodes_context,
                                     &local_context,
-                                    global_context,
+                                    elements_context,
                                     user_types_context,
                                     errors,
                                 )?;
@@ -61,9 +57,8 @@ impl StreamExpression {
                             });
 
                         let arm_expression_typing_test = arm_expression.typing(
-                            nodes_context,
                             &local_context,
-                            global_context,
+                            elements_context,
                             user_types_context,
                             errors,
                         );
@@ -71,9 +66,9 @@ impl StreamExpression {
                         optional_test_expression_typing_test?;
                         arm_expression_typing_test
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 let first_type = arms[0].2.get_type().unwrap();
                 arms.iter()
@@ -81,9 +76,9 @@ impl StreamExpression {
                         let arm_expression_type = arm_expression.get_type().unwrap();
                         arm_expression_type.eq_check(first_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // todo: patterns should be exhaustive
                 *typing = Some(first_type.clone());
@@ -105,11 +100,10 @@ mod typing_match {
     #[test]
     fn should_type_match_structure_stream_expression() {
         let mut errors = vec![];
-        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("p"), Type::Structure(String::from("Point")));
-        let mut global_context = HashMap::new();
-        global_context.insert(
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
             String::from("add_one"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -282,9 +276,8 @@ mod typing_match {
 
         stream_expression
             .typing_match(
-                &nodes_context,
                 &signals_context,
-                &global_context,
+                &elements_context,
                 &user_types_context,
                 &mut errors,
             )
