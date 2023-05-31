@@ -202,3 +202,101 @@ impl StreamExpression {
         }
     }
 }
+
+#[cfg(test)]
+mod typing {
+    use crate::ast::{
+        constant::Constant, stream_expression::StreamExpression, location::Location
+    };
+    use std::collections::HashMap;
+
+    #[test]
+    fn should_type_constant_expression() {
+        let mut errors = vec![];
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Constant {
+            constant: Constant::Integer(0),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::Constant {
+            constant: Constant::Integer(0),
+            typing: Some(Constant::Integer(0).get_type()),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(&elements_context, &user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+}
+
+#[cfg(test)]
+mod get_type {
+    use crate::ast::{
+        constant::Constant, stream_expression::StreamExpression, location::Location, type_system::Type,
+    };
+
+    #[test]
+    fn should_return_none_when_no_typing() {
+        let stream_expression = StreamExpression::Constant {
+            constant: Constant::Integer(0),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let typing = stream_expression.get_type();
+        assert!(typing.is_none());
+    }
+
+    #[test]
+    fn should_return_a_reference_to_the_type_of_typed_expression() {
+        let expression_type = Type::Integer;
+
+        let stream_expression = StreamExpression::Constant {
+            constant: Constant::Integer(0),
+            typing: Some(expression_type.clone()),
+            location: Location::default(),
+        };
+
+        let typing = stream_expression.get_type().unwrap();
+        assert_eq!(*typing, expression_type);
+    }
+}
+
+#[cfg(test)]
+mod get_type_owned {
+    use crate::ast::{
+        constant::Constant, stream_expression::StreamExpression, location::Location, type_system::Type,
+    };
+
+    #[test]
+    fn should_return_none_when_no_typing() {
+        let stream_expression = StreamExpression::Constant {
+            constant: Constant::Integer(0),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let typing = stream_expression.get_type_owned();
+        assert!(typing.is_none());
+    }
+
+    #[test]
+    fn should_return_the_type_of_typed_expression() {
+        let expression_type = Type::Integer;
+
+        let stream_expression = StreamExpression::Constant {
+            constant: Constant::Integer(0),
+            typing: Some(expression_type.clone()),
+            location: Location::default(),
+        };
+
+        let typing = stream_expression.get_type_owned().unwrap();
+        assert_eq!(typing, expression_type);
+    }
+}
