@@ -94,6 +94,15 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// given inputs are not of the right number
+    IncompatibleInputsNumber {
+        /// the given number of inputs
+        given_inputs_number: usize,
+        /// the expected number of inputs
+        expected_inputs_number: usize,
+        /// the error location
+        location: Location,
+    },
     /// expect abstraction with input type
     ExpectAbstraction {
         /// expected type as input for the abstraction
@@ -248,6 +257,21 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("expected pattern of type '{expected_type}' but '{given_pattern}' was given")
+                ]
+            ),
+            Error::IncompatibleInputsNumber { given_inputs_number, expected_inputs_number, location } => Diagnostic::error()
+                .with_message("incompatible number of inputs")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong number of inputs")
+                ])
+                .with_notes(vec![
+                    format!(
+                        "expected {expected_inputs_number} input{} but {given_inputs_number} input{} {} given",
+                        if expected_inputs_number < &2 {""} else {"s"},
+                        if given_inputs_number < &2 {""} else {"s"},
+                        if given_inputs_number < &2 {"was"} else {"were"}
+                    )
                 ]
             ),
             Error::ExpectAbstraction { input_type, given_type, location } => Diagnostic::error()
