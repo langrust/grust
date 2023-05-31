@@ -7,6 +7,9 @@ pub mod component;
 /// LanGRust [Node](crate::ast::node::Node) AST module.
 pub mod node;
 
+/// Describe a node from its input, output and local signals module.
+pub mod node_description;
+
 /// LanGRust [Function](crate::ast::function::Function) AST module.
 pub mod function;
 
