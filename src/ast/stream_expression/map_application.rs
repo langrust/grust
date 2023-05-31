@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    stream_expression::{node_description::NodeDescription, StreamExpression}, type_system::Type, user_defined_type::UserDefinedType,
+    stream_expression::{node_description::NodeDescription, StreamExpression},
+    type_system::Type,
+    user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
