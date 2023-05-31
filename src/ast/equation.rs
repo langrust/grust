@@ -623,3 +623,58 @@ mod determine_types {
             .unwrap_err();
     }
 }
+
+#[cfg(test)]
+mod typing {
+    use std::collections::HashMap;
+
+    use crate::ast::{
+        constant::Constant, equation::Equation, location::Location, scope::Scope,
+        stream_expression::StreamExpression, type_system::Type,
+    };
+
+    #[test]
+    fn should_type_well_defined_equation() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let signals_context = HashMap::new();
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut equation = Equation {
+            scope: Scope::Local,
+            id: String::from("s"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+
+        let control = Equation {
+            scope: Scope::Local,
+            id: String::from("s"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+
+        equation
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(equation, control)
+    }
+}
