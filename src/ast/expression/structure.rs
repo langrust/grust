@@ -40,6 +40,7 @@ impl Expression {
                             .into_iter()
                             .collect::<Result<(), Error>>()?;
 
+                        // check that the structure is well defined
                         let well_defined_field =
                             |expression: &Expression,
                              field_type: &Type,
