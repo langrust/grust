@@ -896,4 +896,37 @@ mod typing {
 
         assert_eq!(equation, control)
     }
+
+    #[test]
+    fn should_raise_error_for_incompatible_type_in_equation() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let signals_context = HashMap::new();
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut equation = Equation {
+            scope: Scope::Local,
+            id: String::from("s"),
+            signal_type: Type::Float,
+            expression: StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+
+        let error = equation
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error])
+    }
 }
