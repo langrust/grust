@@ -2847,6 +2847,195 @@ mod typing {
 
         assert_eq!(errors, vec![error]);
     }
+
+    #[test]
+    fn should_type_match_structure_stream_expression() {
+        let mut errors = vec![];
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("p"), Type::Structure(String::from("Point")));
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
+            String::from("add_one"),
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+        );
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut stream_expression = StreamExpression::Match {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::SignalCall {
+                        id: String::from("y"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("add_one"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("y"),
+                            typing: None,
+                            location: Location::default(),
+                        }],
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::Match {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: Some(Type::Structure(String::from("Point"))),
+                location: Location::default(),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::SignalCall {
+                        id: String::from("y"),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("add_one"),
+                            typing: Some(Type::Abstract(
+                                Box::new(Type::Integer),
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("y"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        }],
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
 }
 
 #[cfg(test)]
