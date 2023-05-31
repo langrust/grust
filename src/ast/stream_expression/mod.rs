@@ -13,7 +13,7 @@ mod followed_by;
 mod map_application;
 mod r#match;
 mod node_application;
-mod node_description;
+pub mod node_description;
 mod signal_call;
 mod structure;
 mod when;
