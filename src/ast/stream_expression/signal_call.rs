@@ -19,7 +19,7 @@ impl StreamExpression {
                 location,
             } => {
                 let element_type =
-                    signals_context.get_element_or_error(id.clone(), location.clone(), errors)?;
+                    signals_context.get_signal_or_error(id.clone(), location.clone(), errors)?;
                 *typing = Some(element_type.clone());
                 Ok(())
             }
