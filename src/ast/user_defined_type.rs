@@ -76,7 +76,7 @@ impl UserDefinedType {
         }
     }
 
-    /// Check that a structure is well-defined.
+    /// Check that structure's fields are well-defined.
     ///
     /// # Example
     /// ```rust
