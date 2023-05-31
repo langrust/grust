@@ -134,7 +134,24 @@ impl Pattern {
                 fields: _,
                 location,
             } => match expected_type {
-                Type::Structure(structure_name) if name.eq(structure_name) => Ok(()),
+                Type::Structure(structure_name) if name.eq(structure_name) => {
+                    let user_type = user_types_context.get(structure_name).unwrap();
+                    match user_type {
+                        UserDefinedType::Structure { .. } => user_type.well_defined_structure(
+                            fields,
+                            |pattern, field_type, errors| {
+                                pattern.construct_context(
+                                    field_type,
+                                    elements_context,
+                                    user_types_context,
+                                    errors,
+                                )
+                            },
+                            errors,
+                        ),
+                        _ => unreachable!(),
+                    }
+                }
                 _ => {
                     let error = Error::IncompatiblePattern {
                         given_pattern: self.clone(),
