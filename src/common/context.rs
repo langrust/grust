@@ -856,3 +856,53 @@ mod combine_unique {
             .unwrap_err();
     }
 }
+
+#[cfg(test)]
+mod combine_unique {
+    use crate::ast::{location::Location, type_system::Type};
+    use crate::common::context::Context;
+    use std::collections::HashMap;
+
+    #[test]
+    fn should_combine_contexts_when_disjoint() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        let mut other_elements_context = HashMap::new();
+
+        let name = String::from("x");
+        elements_context.insert(name, Type::Integer);
+        other_elements_context.insert(String::from("y"), Type::Float);
+
+        elements_context
+            .combine_unique(other_elements_context, Location::default(), &mut errors)
+            .unwrap();
+
+        assert_eq!(
+            elements_context,
+            HashMap::from([
+                (String::from("x"), Type::Integer),
+                (String::from("y"), Type::Float)
+            ])
+        )
+    }
+
+    #[test]
+    fn should_raise_error_when_contexts_meet() {
+        let mut errors = vec![];
+        let mut elements_context = HashMap::new();
+        let mut other_elements_context = HashMap::new();
+
+        let name = String::from("x");
+        elements_context.insert(name.clone(), Type::Integer);
+        other_elements_context.insert(String::from("y"), Type::Float);
+        other_elements_context.insert(name, Type::Integer);
+
+        let error = elements_context
+            .combine_unique(other_elements_context, Location::default(), &mut errors)
+            .unwrap_err();
+
+        let control = vec![error];
+
+        assert_eq!(errors, control);
+    }
+}
