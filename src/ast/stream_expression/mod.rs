@@ -6,6 +6,7 @@ use crate::ast::{
 };
 use crate::error::Error;
 
+mod array;
 mod constant;
 mod signal_call;
 mod structure;
@@ -146,7 +147,9 @@ impl StreamExpression {
             StreamExpression::Structure { .. } => {
                 self.typing_structure(signals_context, user_types_context, errors)
             }
-            StreamExpression::Array { .. } => todo!(),
+            StreamExpression::Array { .. } => {
+                self.typing_array(signals_context, user_types_context, errors)
+            }
             StreamExpression::When { .. } => todo!(),
             StreamExpression::Match { .. } => todo!(),
         }
@@ -278,7 +281,7 @@ mod typing {
             typing: None,
             location: Location::default(),
         };
-        let control = vec![Error::UnknownElement {
+        let control = vec![Error::UnknownSignal {
             name: String::from("y"),
             location: Location::default(),
         }];

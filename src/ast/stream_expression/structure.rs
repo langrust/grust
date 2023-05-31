@@ -83,7 +83,7 @@ mod typing_structure {
     use std::collections::HashMap;
 
     #[test]
-    fn should_type_structure_expression() {
+    fn should_type_structure_stream_expression() {
         let mut errors = vec![];
         let signals_context = HashMap::new();
         let mut user_types_context = HashMap::new();
