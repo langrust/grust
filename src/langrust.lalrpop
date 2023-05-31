@@ -377,6 +377,7 @@ streamTerm: StreamExpression = {
     <start:@L> <c: constant> <end:@R> => {
         StreamExpression::Constant {
             constant: c,
+            typing: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -384,6 +385,7 @@ streamTerm: StreamExpression = {
     <start:@L> <id: ID> <end:@R> => {
         StreamExpression::SignalCall{
             id,
+            typing: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -396,6 +398,7 @@ streamTerm: StreamExpression = {
                 location: Location{ file_id, range: start..end }
             },
             inputs: vec![e],
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -404,6 +407,7 @@ streamTerm: StreamExpression = {
         StreamExpression::MapApplication {
             function_expression: f,
             inputs: v_expr,
+            typing: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -413,6 +417,7 @@ streamTerm: StreamExpression = {
             node,
             inputs: v_expr,
             signal,
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -422,6 +427,7 @@ streamTerm: StreamExpression = {
         StreamExpression::Match {
             expression: Box::new(expr),
             arms: v_arm,
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -434,6 +440,7 @@ streamTerm: StreamExpression = {
                 location: Location{ file_id, range: start..end }
             },
             inputs: vec![e],
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -442,6 +449,7 @@ streamTerm: StreamExpression = {
         StreamExpression::Structure {
             name,
             fields,
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -449,6 +457,7 @@ streamTerm: StreamExpression = {
     <start:@L> "[" <v_expr: list<streamExpression>> "]" <end:@R> => {
         StreamExpression::Array {
             elements: v_expr,
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -456,6 +465,7 @@ streamTerm: StreamExpression = {
     <start:@L> "[" <e: streamExpression> ";" <n: r"\d+"> "]" <end:@R> => {
         StreamExpression::Array {
             elements: vec![e; usize::from_str(n).unwrap()],
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -471,6 +481,7 @@ unaryStreamExpression: StreamExpression = {
                 location: Location{ file_id, range: start_op..end_op }
             },
             inputs: vec![e],
+            typing: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -488,6 +499,7 @@ auxBinaryStreamExpression<Op,E>: StreamExpression = {
                 location: Location{ file_id, range: start_op..end_op }
             },
             inputs: vec![e1, e2],
+            typing: None,
             location: Location{ file_id, range: start..end },
         }
     },
@@ -506,6 +518,7 @@ pub streamExpression: StreamExpression = {
         StreamExpression::FollowedBy {
             constant: c,
             expression: Box::new(e),
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -519,6 +532,7 @@ pub streamExpression: StreamExpression = {
                 location: Location{ file_id, range: start..end }
             },
             inputs: vec![e1, e2, e3],
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
@@ -531,11 +545,13 @@ pub streamExpression: StreamExpression = {
                 Some(e1) => Box::new(e1),
                 None => Box::new(StreamExpression::SignalCall {
                     id,
+                    typing: None,
                     location: Location{ file_id, range: start_id..end_id }
                 })
             },
             present: Box::new(e2),
             default: Box::new(e3),
+            typing: None,
             location: Location{ file_id, range: start..end }
         }
     },
