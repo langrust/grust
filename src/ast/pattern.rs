@@ -169,62 +169,20 @@ impl Pattern {
                 location,
             } => match expected_type {
                 Type::Structure(structure_name) if name.eq(structure_name) => {
-                    match user_types_context.get(structure_name).unwrap() {
-                        UserDefinedType::Structure {
-                            id: _,
-                            fields: structure_fields,
-                            location: _,
-                        } => {
-                            let structure_fields = structure_fields
-                                .iter()
-                                .map(|(field_id, field_type)| {
-                                    (field_id.clone(), field_type.clone())
-                                })
-                                .collect::<HashMap<String, Type>>();
-
-                            fields
-                                .iter()
-                                .map(|(id, pattern)| {
-                                    let field_type = structure_fields.get_field_or_error(
-                                        name.clone(),
-                                        id.clone(),
-                                        location.clone(),
-                                        errors,
-                                    )?;
-                                    pattern.construct_context(
-                                        field_type,
-                                        elements_context,
-                                        user_types_context,
-                                        errors,
-                                    )
-                                })
-                                .collect::<Vec<Result<(), Error>>>()
-                                .into_iter()
-                                .collect::<Result<(), Error>>()?;
-
-                            let defined_fields = fields
-                                .iter()
-                                .map(|(id, _)| id.clone())
-                                .collect::<Vec<String>>();
-                            structure_fields
-                                .iter()
-                                .map(|(id, _)| {
-                                    if defined_fields.contains(id) {
-                                        Ok(())
-                                    } else {
-                                        let error = Error::MissingField {
-                                            structure_name: name.clone(),
-                                            field_name: id.clone(),
-                                            location: location.clone(),
-                                        };
-                                        errors.push(error.clone());
-                                        Err(error)
-                                    }
-                                })
-                                .collect::<Vec<Result<(), Error>>>()
-                                .into_iter()
-                                .collect::<Result<(), Error>>()
-                        }
+                    let user_type = user_types_context.get(structure_name).unwrap();
+                    match user_type {
+                        UserDefinedType::Structure { .. } => user_type.well_defined_structure(
+                            fields,
+                            |pattern, field_type, errors| {
+                                pattern.construct_context(
+                                    field_type,
+                                    elements_context,
+                                    user_types_context,
+                                    errors,
+                                )
+                            },
+                            errors,
+                        ),
                         _ => unreachable!(),
                     }
                 }
