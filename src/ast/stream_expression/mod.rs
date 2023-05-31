@@ -139,13 +139,13 @@ impl StreamExpression {
         match self {
             StreamExpression::Constant { .. } => self.typing_constant(),
             StreamExpression::SignalCall { .. } => self.typing_signal_call(signals_context, errors),
+            StreamExpression::FollowedBy { .. } => todo!(),
             StreamExpression::MapApplication { .. } => todo!(),
+            StreamExpression::NodeApplication { .. } => todo!(),
             StreamExpression::Structure { .. } => todo!(),
             StreamExpression::Array { .. } => todo!(),
             StreamExpression::When { .. } => todo!(),
             StreamExpression::Match { .. } => todo!(),
-            StreamExpression::FollowedBy { .. } => todo!(),
-            StreamExpression::NodeApplication { .. } => todo!(),
         }
     }
 
@@ -166,13 +166,13 @@ impl StreamExpression {
         match self {
             StreamExpression::Constant { typing, .. } => typing.as_ref(),
             StreamExpression::SignalCall { typing, .. } => typing.as_ref(),
+            StreamExpression::FollowedBy { typing, .. } => typing.as_ref(),
+            StreamExpression::MapApplication { typing, .. } => typing.as_ref(),
+            StreamExpression::NodeApplication { typing, .. } => typing.as_ref(),
             StreamExpression::Structure { typing, .. } => typing.as_ref(),
             StreamExpression::Array { typing, .. } => typing.as_ref(),
             StreamExpression::Match { typing, .. } => typing.as_ref(),
             StreamExpression::When { typing, .. } => typing.as_ref(),
-            StreamExpression::FollowedBy { typing, .. } => typing.as_ref(),
-            StreamExpression::MapApplication { typing, .. } => typing.as_ref(),
-            StreamExpression::NodeApplication { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -193,13 +193,13 @@ impl StreamExpression {
         match self {
             StreamExpression::Constant { typing, .. } => typing,
             StreamExpression::SignalCall { typing, .. } => typing,
+            StreamExpression::FollowedBy { typing, .. } => typing,
+            StreamExpression::MapApplication { typing, .. } => typing,
+            StreamExpression::NodeApplication { typing, .. } => typing,
             StreamExpression::Structure { typing, .. } => typing,
             StreamExpression::Array { typing, .. } => typing,
             StreamExpression::Match { typing, .. } => typing,
             StreamExpression::When { typing, .. } => typing,
-            StreamExpression::FollowedBy { typing, .. } => typing,
-            StreamExpression::MapApplication { typing, .. } => typing,
-            StreamExpression::NodeApplication { typing, .. } => typing,
         }
     }
 }
