@@ -2084,6 +2084,108 @@ mod typing {
 
         assert_eq!(errors, vec![error]);
     }
+
+    #[test]
+    fn should_type_when_expression() {
+        let mut errors = vec![];
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::When {
+            id: String::from("x"),
+            option: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            present: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            default: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(1),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::When {
+            id: String::from("x"),
+            option: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: Some(Type::Option(Box::new(Type::Integer))),
+                location: Location::default(),
+            }),
+            present: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }),
+            default: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(1),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_incompatible_when() {
+        let mut errors = vec![];
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::When {
+            id: String::from("x"),
+            option: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            present: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            default: Box::new(StreamExpression::Constant {
+                constant: Constant::Float(1.0),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let error = stream_expression
+            .typing(
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
+    }
 }
 
 #[cfg(test)]
