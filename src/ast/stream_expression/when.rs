@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    node_description::NodeDescription, stream_expression::StreamExpression, type_system::Type,
-    user_defined_type::UserDefinedType,
+    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -10,12 +9,11 @@ impl StreamExpression {
     /// Add a [Type] to the when stream expression.
     pub fn typing_when(
         &mut self,
-        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        global_context: &HashMap<String, Type>,
+        elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // the type of a when stream expression is the type of both the default and
             // the present stream expressions
@@ -28,9 +26,8 @@ impl StreamExpression {
                 location,
             } => {
                 option.typing(
-                    nodes_context,
                     signals_context,
-                    global_context,
+                    elements_context,
                     user_types_context,
                     errors,
                 )?;
@@ -42,16 +39,14 @@ impl StreamExpression {
                         local_context.insert(id.clone(), *unwraped_type.clone());
 
                         present.typing(
-                            nodes_context,
                             &local_context,
-                            global_context,
+                            elements_context,
                             user_types_context,
                             errors,
                         )?;
                         default.typing(
-                            nodes_context,
                             signals_context,
-                            global_context,
+                            elements_context,
                             user_types_context,
                             errors,
                         )?;
@@ -67,8 +62,8 @@ impl StreamExpression {
                             given_type: option_type.clone(),
                             location: location.clone(),
                         };
-                        errors.push(error);
-                        Err(())
+                        errors.push(error.clone());
+                        Err(error)
                     }
                 }
             }
@@ -88,10 +83,9 @@ mod typing_when {
     #[test]
     fn should_type_when_expression() {
         let mut errors = vec![];
-        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
-        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::When {
@@ -137,9 +131,8 @@ mod typing_when {
 
         stream_expression
             .typing_when(
-                &nodes_context,
                 &signals_context,
-                &global_context,
+                &elements_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -151,10 +144,9 @@ mod typing_when {
     #[test]
     fn should_raise_error_for_incompatible_when() {
         let mut errors = vec![];
-        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
-        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::When {
@@ -178,14 +170,15 @@ mod typing_when {
             location: Location::default(),
         };
 
-        stream_expression
+        let error = stream_expression
             .typing_when(
-                &nodes_context,
                 &signals_context,
-                &global_context,
+                &elements_context,
                 &user_types_context,
                 &mut errors,
             )
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 }
