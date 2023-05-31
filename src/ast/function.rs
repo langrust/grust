@@ -128,8 +128,8 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        calculus::Calculus, expression::Expression, function::Function,
-        location::Location, type_system::Type,
+        calculus::Calculus, expression::Expression, function::Function, location::Location,
+        type_system::Type,
     };
 
     #[test]
