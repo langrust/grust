@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    node_description::NodeDescription, stream_expression::StreamExpression, type_system::Type,
+    stream_expression::{node_description::NodeDescription, StreamExpression},
+    type_system::Type,
     user_defined_type::UserDefinedType,
 };
 use crate::common::context::Context;
@@ -13,10 +14,10 @@ impl StreamExpression {
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        global_context: &HashMap<String, Type>,
+        elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             // a node application expression type is the called signal when
             // the inputs types matches the called node inputs types
@@ -32,7 +33,7 @@ impl StreamExpression {
                     inputs: node_inputs,
                     outputs: node_outputs,
                     locals: _,
-                } = nodes_context.get_node_or_error(node, location.clone(), errors)?;
+                } = nodes_context.get_node_or_error(node.clone(), location.clone(), errors)?;
 
                 // check inputs and node_inputs have the same length
                 if inputs.len() != node_inputs.len() {
@@ -41,8 +42,8 @@ impl StreamExpression {
                         expected_inputs_number: node_inputs.len(),
                         location: location.clone(),
                     };
-                    errors.push(error);
-                    return Err(());
+                    errors.push(error.clone());
+                    return Err(error);
                 }
 
                 // type all inputs and check their types
@@ -53,20 +54,20 @@ impl StreamExpression {
                         input.typing(
                             nodes_context,
                             signals_context,
-                            global_context,
+                            elements_context,
                             user_types_context,
                             errors,
                         )?;
                         let input_type = input.get_type().unwrap();
                         input_type.eq_check(expected_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // get the called signal type
                 let node_application_type =
-                    node_outputs.get_signal_or_error(signal, location.clone(), errors)?;
+                    node_outputs.get_signal_or_error(signal.clone(), location.clone(), errors)?;
 
                 *typing = Some(node_application_type.clone());
                 Ok(())
@@ -80,7 +81,8 @@ impl StreamExpression {
 mod typing_node_application {
     use crate::ast::{
         constant::Constant, expression::Expression, location::Location,
-        node_description::NodeDescription, stream_expression::StreamExpression, type_system::Type,
+        stream_expression::node_description::NodeDescription, stream_expression::StreamExpression,
+        type_system::Type,
     };
     use std::collections::HashMap;
 
@@ -101,8 +103,8 @@ mod typing_node_application {
         );
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut global_context = HashMap::new();
-        global_context.insert(
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -170,7 +172,7 @@ mod typing_node_application {
             .typing_node_application(
                 &nodes_context,
                 &signals_context,
-                &global_context,
+                &elements_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -196,8 +198,8 @@ mod typing_node_application {
         );
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut global_context = HashMap::new();
-        global_context.insert(
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Float)),
         );
@@ -231,14 +233,16 @@ mod typing_node_application {
             location: Location::default(),
         };
 
-        stream_expression
+        let error = stream_expression
             .typing_node_application(
                 &nodes_context,
                 &signals_context,
-                &global_context,
+                &elements_context,
                 &user_types_context,
                 &mut errors,
             )
             .unwrap_err();
+
+        assert_eq!(errors, vec![error]);
     }
 }
