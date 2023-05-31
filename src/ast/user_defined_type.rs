@@ -106,7 +106,7 @@ impl UserDefinedType {
     pub fn well_defined_structure<T>(
         &self,
         fields: &Vec<(String, T)>,
-        well_defined_field: impl Fn(&T, &Type, &mut Vec<Error>) -> Result<(), Error>,
+        mut well_defined_field: impl FnMut(&T, &Type, &mut Vec<Error>) -> Result<(), Error>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
         match self {
