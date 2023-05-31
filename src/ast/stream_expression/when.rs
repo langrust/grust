@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+    stream_expression::{node_description::NodeDescription, StreamExpression}, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -9,6 +9,7 @@ impl StreamExpression {
     /// Add a [Type] to the when stream expression.
     pub fn typing_when(
         &mut self,
+        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
@@ -26,6 +27,7 @@ impl StreamExpression {
                 location,
             } => {
                 option.typing(
+                    nodes_context,
                     signals_context,
                     elements_context,
                     user_types_context,
@@ -39,12 +41,14 @@ impl StreamExpression {
                         local_context.insert(id.clone(), *unwraped_type.clone());
 
                         present.typing(
+                            nodes_context,
                             &local_context,
                             elements_context,
                             user_types_context,
                             errors,
                         )?;
                         default.typing(
+                            nodes_context,
                             signals_context,
                             elements_context,
                             user_types_context,
@@ -83,6 +87,7 @@ mod typing_when {
     #[test]
     fn should_type_when_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
         let elements_context = HashMap::new();
@@ -131,6 +136,7 @@ mod typing_when {
 
         stream_expression
             .typing_when(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
@@ -144,6 +150,7 @@ mod typing_when {
     #[test]
     fn should_raise_error_for_incompatible_when() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
         let elements_context = HashMap::new();
@@ -172,6 +179,7 @@ mod typing_when {
 
         let error = stream_expression
             .typing_when(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,

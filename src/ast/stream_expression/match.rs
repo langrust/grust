@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+    stream_expression::{node_description::NodeDescription, StreamExpression}, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -9,6 +9,7 @@ impl StreamExpression {
     /// Add a [Type] to the match stream expression.
     pub fn typing_match(
         &mut self,
+        nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
@@ -23,6 +24,7 @@ impl StreamExpression {
                 location,
             } => {
                 expression.typing(
+                    nodes_context,
                     signals_context,
                     elements_context,
                     user_types_context,
@@ -44,6 +46,7 @@ impl StreamExpression {
                             .as_mut()
                             .map_or(Ok(()), |stream_expression| {
                                 stream_expression.typing(
+                                    nodes_context,
                                     &local_context,
                                     elements_context,
                                     user_types_context,
@@ -57,6 +60,7 @@ impl StreamExpression {
                             });
 
                         let arm_expression_typing_test = arm_expression.typing(
+                            nodes_context,
                             &local_context,
                             elements_context,
                             user_types_context,
@@ -100,6 +104,7 @@ mod typing_match {
     #[test]
     fn should_type_match_structure_stream_expression() {
         let mut errors = vec![];
+        let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("p"), Type::Structure(String::from("Point")));
         let mut elements_context = HashMap::new();
@@ -276,6 +281,7 @@ mod typing_match {
 
         stream_expression
             .typing_match(
+                &nodes_context,
                 &signals_context,
                 &elements_context,
                 &user_types_context,
