@@ -7,6 +7,7 @@ use crate::ast::{
 use crate::error::Error;
 
 mod constant;
+mod signal_call;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression AST.
@@ -131,13 +132,13 @@ impl StreamExpression {
     /// ```
     pub fn typing(
         &mut self,
-        _signals_context: &HashMap<String, Type>,
+        signals_context: &HashMap<String, Type>,
         _user_types_context: &HashMap<String, UserDefinedType>,
-        _errors: &mut Vec<Error>,
+        errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
         match self {
             StreamExpression::Constant { .. } => self.typing_constant(),
-            StreamExpression::SignalCall { .. } => todo!(),
+            StreamExpression::SignalCall { .. } => self.typing_signal_call(signals_context, errors),
             StreamExpression::MapApplication { .. } => todo!(),
             StreamExpression::Structure { .. } => todo!(),
             StreamExpression::Array { .. } => todo!(),
@@ -205,13 +206,18 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod typing {
-    use crate::ast::{constant::Constant, location::Location, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
+    use crate::ast::{
+        constant::Constant, location::Location, stream_expression::StreamExpression,
+        type_system::Type,
+    };
+    use crate::error::Error;
+
     #[test]
-    fn should_type_constant_expression() {
+    fn should_type_constant_stream_expression() {
         let mut errors = vec![];
-        let elements_context = HashMap::new();
+        let signals_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::Constant {
@@ -226,10 +232,59 @@ mod typing {
         };
 
         stream_expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(&signals_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_type_signal_call_stream_expression() {
+        let mut errors = vec![];
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("x"), Type::Integer);
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::SignalCall {
+            id: String::from("x"),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::SignalCall {
+            id: String::from("x"),
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(&signals_context, &user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_for_unknown_signal_call() {
+        let mut errors = vec![];
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("x"), Type::Integer);
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::SignalCall {
+            id: String::from("y"),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = vec![Error::UnknownElement {
+            name: String::from("y"),
+            location: Location::default(),
+        }];
+
+        stream_expression
+            .typing(&signals_context, &user_types_context, &mut errors)
+            .unwrap_err();
+
+        assert_eq!(errors, control);
     }
 }
 
@@ -253,7 +308,7 @@ mod get_type {
     }
 
     #[test]
-    fn should_return_a_reference_to_the_type_of_typed_expression() {
+    fn should_return_a_reference_to_the_type_of_typed_stream_expression() {
         let expression_type = Type::Integer;
 
         let stream_expression = StreamExpression::Constant {
@@ -287,7 +342,7 @@ mod get_type_owned {
     }
 
     #[test]
-    fn should_return_the_type_of_typed_expression() {
+    fn should_return_the_type_of_typed_stream_expression() {
         let expression_type = Type::Integer;
 
         let stream_expression = StreamExpression::Constant {
