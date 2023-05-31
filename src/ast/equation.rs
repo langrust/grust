@@ -27,18 +27,31 @@ impl Equation {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::ast::{constant::Constant, stream_expression::StreamExpression, location::Location};
+    /// use grustine::ast::{
+    ///     constant::Constant, equation::Equation, location::Location,
+    ///     scope::Scope, stream_expression::StreamExpression, type_system::Type,
+    /// };
+    ///
     /// let mut errors = vec![];
     /// let nodes_context = HashMap::new();
     /// let signals_context = HashMap::new();
     /// let elements_context = HashMap::new();
     /// let user_types_context = HashMap::new();
+    ///
     /// let mut stream_expression = StreamExpression::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: None,
     ///     location: Location::default(),
     /// };
-    /// stream_expression.typing(&nodes_context, &signals_context, &elements_context, &user_types_context, &mut errors).unwrap();
+    /// let mut equation = Equation {
+    ///     scope: Scope::Local,
+    ///     id: String::from("s"),
+    ///     signal_type: Type::Integer,
+    ///     expression: stream_expression,
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// equation.typing(&nodes_context, &signals_context, &elements_context, &user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
@@ -66,5 +79,60 @@ impl Equation {
         let expression_type = expression.get_type().unwrap();
 
         expression_type.eq_check(signal_type, location.clone(), errors)
+    }
+}
+
+#[cfg(test)]
+mod typing {
+    use std::collections::HashMap;
+
+    use crate::ast::{
+        constant::Constant, equation::Equation, location::Location, scope::Scope,
+        stream_expression::StreamExpression, type_system::Type,
+    };
+
+    #[test]
+    fn should_type_well_defined_equation() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let signals_context = HashMap::new();
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut equation = Equation {
+            scope: Scope::Local,
+            id: String::from("s"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+
+        let control = Equation {
+            scope: Scope::Local,
+            id: String::from("s"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+
+        equation
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(equation, control)
     }
 }
