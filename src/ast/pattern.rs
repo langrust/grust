@@ -481,4 +481,58 @@ mod type_check {
         assert_eq!(elements_context[&y], Type::Integer);
         assert!(errors.is_empty());
     }
+
+    #[test]
+    fn should_add_local_variables_to_context() {
+        let mut errors = vec![];
+        let mut user_types_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let given_pattern = Pattern::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Pattern::Constant {
+                        constant: Constant::Integer(1),
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    Pattern::Identifier {
+                        name: String::from("y"),
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+        let expected_type = Type::Structure(String::from("Point"));
+
+        given_pattern
+            .construct_context(
+                &expected_type,
+                &mut elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        let y = String::from("y");
+        assert_eq!(elements_context[&y], Type::Integer);
+        assert!(errors.is_empty());
+    }
 }
