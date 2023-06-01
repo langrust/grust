@@ -566,7 +566,7 @@ mod determine {
     use std::collections::HashMap;
 
     use crate::ast::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
-    
+
     #[test]
     fn should_determine_undefined_type_when_in_context() {
         let mut errors = vec![];
@@ -609,7 +609,7 @@ mod determine {
 
         assert_eq!(my_type, control);
     }
-    
+
     #[test]
     fn should_raise_error_for_undefined_type_when_not_in_context() {
         let mut errors = vec![];
