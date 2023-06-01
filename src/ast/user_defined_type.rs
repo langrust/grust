@@ -224,7 +224,7 @@ impl UserDefinedType {
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Error> {
         match self {
             UserDefinedType::Structure {
                 fields, location, ..
@@ -233,9 +233,9 @@ impl UserDefinedType {
                 .map(|(_, field_type)| {
                     field_type.determine(location.clone(), user_types_context, errors)
                 })
-                .collect::<Vec<Result<(), ()>>>()
+                .collect::<Vec<Result<(), Error>>>()
                 .into_iter()
-                .collect::<Result<(), ()>>(),
+                .collect::<Result<(), Error>>(),
             UserDefinedType::Enumeration { .. } => Ok(()),
             UserDefinedType::Array {
                 array_type,
