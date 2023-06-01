@@ -162,7 +162,7 @@ mod typing_when {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_when(
                 &global_context,
                 &elements_context,

@@ -34,7 +34,7 @@ impl Expression {
                     .map(|input| {
                         input.typing(global_context, elements_context, user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>();
 
@@ -148,7 +148,7 @@ mod typing_application {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_application(
                 &global_context,
                 &elements_context,

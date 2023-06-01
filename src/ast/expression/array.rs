@@ -25,7 +25,7 @@ impl Expression {
                     .map(|element| {
                         element.typing(global_context, elements_context, user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;
 
@@ -188,7 +188,7 @@ mod typing_array {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_array(
                 &global_context,
                 &elements_context,
