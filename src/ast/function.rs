@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    calculus::Calculus, expression::Expression, global_context, location::Location,
-    type_system::Type, user_defined_type::UserDefinedType,
+    calculus::Calculus, expression::Expression, location::Location, type_system::Type,
+    user_defined_type::UserDefinedType,
 };
 use crate::common::context::Context;
 use crate::error::Error;
@@ -34,6 +34,7 @@ impl Function {
     /// };
     ///
     /// let mut errors = vec![];
+    /// let global_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     ///
     /// let mut function = Function {
@@ -65,10 +66,11 @@ impl Function {
     ///     location: Location::default(),
     /// };
     ///
-    /// function.typing(&user_types_context, &mut errors).unwrap();
+    /// function.typing(&global_context, &user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
+        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -81,7 +83,7 @@ impl Function {
         } = self;
 
         // create elements context: global_context + inputs
-        let mut elements_context = global_context::generate();
+        let mut elements_context = global_context.clone();
         inputs
             .iter()
             .map(|(name, input_type)| {
@@ -100,7 +102,12 @@ impl Function {
         calculi
             .iter_mut()
             .map(|(_, calculus)| {
-                calculus.typing(&elements_context, user_types_context, errors)?;
+                calculus.typing(
+                    global_context,
+                    &elements_context,
+                    user_types_context,
+                    errors,
+                )?;
                 elements_context.insert_unique(
                     calculus.id.clone(),
                     calculus.element_type.clone(),
@@ -113,7 +120,12 @@ impl Function {
             .collect::<Result<(), Error>>()?;
 
         // type returned expression
-        returned_expression.typing(&elements_context, user_types_context, errors)?;
+        returned_expression.typing(
+            global_context,
+            &elements_context,
+            user_types_context,
+            errors,
+        )?;
 
         // check returned type
         returned_expression
@@ -135,6 +147,7 @@ mod typing {
     #[test]
     fn should_type_well_defined_function() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut function = Function {
@@ -191,7 +204,9 @@ mod typing {
             location: Location::default(),
         };
 
-        function.typing(&user_types_context, &mut errors).unwrap();
+        function
+            .typing(&global_context, &user_types_context, &mut errors)
+            .unwrap();
 
         assert_eq!(function, control)
     }
@@ -199,6 +214,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_type_in_function() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut function = Function {
@@ -229,7 +245,7 @@ mod typing {
         };
 
         let error = function
-            .typing(&user_types_context, &mut errors)
+            .typing(&global_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error])

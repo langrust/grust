@@ -206,7 +206,7 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_structure(
                 &global_context,
                 &elements_context,
@@ -248,7 +248,7 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_structure(
                 &global_context,
                 &elements_context,
@@ -300,7 +300,7 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_structure(
                 &global_context,
                 &elements_context,
@@ -362,7 +362,7 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_structure(
                 &global_context,
                 &elements_context,

@@ -130,7 +130,7 @@ mod typing_abstraction {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_abstraction(&global_context, &user_types_context, &mut errors)
             .unwrap_err();
     }
@@ -152,7 +152,7 @@ mod typing_abstraction {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing_abstraction(&global_context, &user_types_context, &mut errors)
             .unwrap_err();
     }
