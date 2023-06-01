@@ -32,7 +32,7 @@ impl StreamExpression {
                     inputs: node_inputs,
                     outputs: node_outputs,
                     locals: _,
-                } = nodes_context.get_node_or_error(node.clone(), location.clone(), errors)?;
+                } = nodes_context.get_node_or_error(node, location.clone(), errors)?;
 
                 // check inputs and node_inputs have the same length
                 if inputs.len() != node_inputs.len() {
@@ -66,7 +66,7 @@ impl StreamExpression {
 
                 // get the called signal type
                 let node_application_type =
-                    node_outputs.get_signal_or_error(signal.clone(), location.clone(), errors)?;
+                    node_outputs.get_signal_or_error(signal, location.clone(), errors)?;
 
                 *typing = Some(node_application_type.clone());
                 Ok(())
