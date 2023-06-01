@@ -409,6 +409,140 @@ impl Node {
             .into_iter()
             .collect::<Result<(), ()>>()
     }
+
+    /// Create a [NodeDescription] from a [Node]
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::{
+    ///     equation::Equation, location::Location, node::Node, node_description::NodeDescription,
+    ///     scope::Scope, stream_expression::StreamExpression, type_system::Type,
+    /// };
+    ///
+    /// let mut errors = vec![];
+    ///
+    /// let node = Node {
+    ///     id: String::from("test"),
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let control = NodeDescription {
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     outputs: HashMap::from([(String::from("o"), Type::Integer)]),
+    ///     locals: HashMap::from([(String::from("x"), Type::Integer)]),
+    /// };
+    ///
+    /// let node_description = node.into_node_description(&mut errors).unwrap();
+    ///
+    /// assert_eq!(node_description, control);
+    /// ```
+    pub fn into_node_description(&self, errors: &mut Vec<Error>) -> Result<NodeDescription, Error> {
+        let Node {
+            inputs,
+            equations,
+            location,
+            ..
+        } = self;
+
+        // differenciate output form local signals
+        let mut outputs = HashMap::new();
+        let mut locals = HashMap::new();
+        // create signals context: inputs + outputs + locals
+        // and check that no signal is duplicated
+        let mut signals_context = HashMap::new();
+        inputs
+            .iter()
+            .map(|(id, signal_type)| {
+                signals_context.insert_unique(
+                    id.clone(),
+                    signal_type.clone(),
+                    location.clone(),
+                    errors,
+                )
+            })
+            .collect::<Vec<Result<(), Error>>>()
+            .into_iter()
+            .collect::<Result<(), Error>>()?;
+        equations
+            .iter()
+            .map(
+                |(
+                    _,
+                    Equation {
+                        scope,
+                        id,
+                        signal_type,
+                        location,
+                        ..
+                    },
+                )| {
+                    // check that no signal is duplicated
+                    signals_context.insert_unique(
+                        id.clone(),
+                        signal_type.clone(),
+                        location.clone(),
+                        errors,
+                    )?;
+                    // differenciate output form local signals
+                    match scope {
+                        Scope::Output => outputs.insert_unique(
+                            id.clone(),
+                            signal_type.clone(),
+                            location.clone(),
+                            errors,
+                        ),
+                        Scope::Local => locals.insert_unique(
+                            id.clone(),
+                            signal_type.clone(),
+                            location.clone(),
+                            errors,
+                        ),
+                        _ => unreachable!(),
+                    }
+                },
+            )
+            .collect::<Vec<Result<(), Error>>>()
+            .into_iter()
+            .collect::<Result<(), Error>>()?;
+
+        Ok(NodeDescription {
+            inputs: inputs.clone(),
+            outputs,
+            locals,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -791,5 +925,65 @@ mod determine_types {
 
         node.determine_types(&user_types_context, &mut errors)
             .unwrap_err();
+    }
+}
+
+#[cfg(test)]
+mod into_node_description {
+    use std::collections::HashMap;
+
+    use crate::ast::{
+        equation::Equation, location::Location, node::Node, node_description::NodeDescription,
+        scope::Scope, stream_expression::StreamExpression, type_system::Type,
+    };
+    #[test]
+    fn should_return_a_node_description_from_a_node_with_no_duplicates() {
+        let mut errors = vec![];
+
+        let node = Node {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("x"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("x"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("i"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let control = NodeDescription {
+            inputs: vec![(String::from("i"), Type::Integer)],
+            outputs: HashMap::from([(String::from("o"), Type::Integer)]),
+            locals: HashMap::from([(String::from("x"), Type::Integer)]),
+        };
+
+        let node_description = node.into_node_description(&mut errors).unwrap();
+
+        assert_eq!(node_description, control);
     }
 }
