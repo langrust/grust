@@ -69,6 +69,108 @@ impl Calculus {
 
         expression_type.eq_check(element_type, location.clone(), errors)
     }
+
+    /// Determine the type of the calculus if undefined
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::{
+    ///     constant::Constant,
+    ///     calculus::Calculus, expression::Expression,
+    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    /// };
+    ///
+    /// let mut errors = vec![];
+    /// let mut user_types_context = HashMap::new();
+    /// user_types_context.insert(
+    ///     String::from("Point"),
+    ///     UserDefinedType::Structure {
+    ///         id: String::from("Point"),
+    ///         fields: vec![
+    ///             (String::from("x"), Type::Integer),
+    ///             (String::from("y"), Type::Integer),
+    ///         ],
+    ///         location: Location::default(),
+    ///     }
+    /// );
+    ///
+    /// let mut calculus = Calculus {
+    ///     id: String::from("o"),
+    ///     element_type: Type::NotDefinedYet(String::from("Point")),
+    ///     expression: Expression::Structure {
+    ///         name: String::from("Point"),
+    ///         fields: vec![
+    ///             (
+    ///                 String::from("x"),
+    ///                 Expression::Constant {
+    ///                     constant: Constant::Integer(1),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ),
+    ///             (
+    ///                 String::from("y"),
+    ///                 Expression::Constant {
+    ///                     constant: Constant::Integer(2),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ),
+    ///         ],
+    ///         typing: None,
+    ///         location: Location::default(),
+    ///     },
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let control = Calculus {
+    ///     id: String::from("o"),
+    ///     element_type: Type::Structure(String::from("Point")),
+    ///     expression: Expression::Structure {
+    ///         name: String::from("Point"),
+    ///         fields: vec![
+    ///             (
+    ///                 String::from("x"),
+    ///                 Expression::Constant {
+    ///                     constant: Constant::Integer(1),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ),
+    ///             (
+    ///                 String::from("y"),
+    ///                 Expression::Constant {
+    ///                     constant: Constant::Integer(2),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ),
+    ///         ],
+    ///         typing: None,
+    ///         location: Location::default(),
+    ///     },
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// calculus
+    ///     .determine_types(&user_types_context, &mut errors)
+    ///     .unwrap();
+    ///
+    /// assert_eq!(calculus, control);
+    /// ```
+    pub fn determine_types(
+        &mut self,
+        user_types_context: &HashMap<String, UserDefinedType>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        let Calculus {
+            element_type,
+            location,
+            ..
+        } = self;
+        element_type.determine(location.clone(), user_types_context, errors)
+    }
 }
 
 #[cfg(test)]
@@ -149,5 +251,135 @@ mod typing {
             .unwrap_err();
 
         assert_eq!(errors, vec![error])
+    }
+}
+
+#[cfg(test)]
+mod determine_types {
+    use std::collections::HashMap;
+
+    use crate::ast::{
+        calculus::Calculus, constant::Constant, expression::Expression, location::Location,
+        type_system::Type, user_defined_type::UserDefinedType,
+    };
+
+    #[test]
+    fn should_determine_the_type_of_equation_when_in_types_context() {
+        let mut errors = vec![];
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut calculus = Calculus {
+            id: String::from("o"),
+            element_type: Type::NotDefinedYet(String::from("Point")),
+            expression: Expression::Structure {
+                name: String::from("Point"),
+                fields: vec![
+                    (
+                        String::from("x"),
+                        Expression::Constant {
+                            constant: Constant::Integer(1),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                    ),
+                    (
+                        String::from("y"),
+                        Expression::Constant {
+                            constant: Constant::Integer(2),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                    ),
+                ],
+                typing: None,
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+
+        let control = Calculus {
+            id: String::from("o"),
+            element_type: Type::Structure(String::from("Point")),
+            expression: Expression::Structure {
+                name: String::from("Point"),
+                fields: vec![
+                    (
+                        String::from("x"),
+                        Expression::Constant {
+                            constant: Constant::Integer(1),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                    ),
+                    (
+                        String::from("y"),
+                        Expression::Constant {
+                            constant: Constant::Integer(2),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                    ),
+                ],
+                typing: None,
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+
+        calculus
+            .determine_types(&user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(calculus, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_undefined_type_not_in_types_context() {
+        let mut errors = vec![];
+        let user_types_context = HashMap::new();
+
+        let mut calculus = Calculus {
+            id: String::from("o"),
+            element_type: Type::NotDefinedYet(String::from("Point")),
+            expression: Expression::Structure {
+                name: String::from("Point"),
+                fields: vec![
+                    (
+                        String::from("x"),
+                        Expression::Constant {
+                            constant: Constant::Integer(1),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                    ),
+                    (
+                        String::from("y"),
+                        Expression::Constant {
+                            constant: Constant::Integer(2),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                    ),
+                ],
+                typing: None,
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+
+        calculus
+            .determine_types(&user_types_context, &mut errors)
+            .unwrap_err();
     }
 }
