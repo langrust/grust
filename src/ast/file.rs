@@ -203,6 +203,92 @@ impl File {
     }
 
     /// [Type] the entire file.
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::{
+    ///     constant::Constant, calculus::Calculus, function::Function, location::Location,
+    ///     expression::Expression, type_system::Type, equation::Equation, node::Node, file::File,
+    ///     node_description::NodeDescription, scope::Scope, stream_expression::StreamExpression,
+    /// };
+    ///
+    /// let mut errors = vec![];
+    ///
+    /// let node = Node {
+    ///     id: String::from("test"),
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let function = Function {
+    ///     id: String::from("test"),
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     calculi: vec![
+    ///         (
+    ///             String::from("x"),
+    ///             Calculus {
+    ///                 id: String::from("x"),
+    ///                 element_type: Type::Integer,
+    ///                 expression: Expression::Call {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     returned: (
+    ///         Type::Integer,
+    ///         Expression::Call {
+    ///             id: String::from("x"),
+    ///             typing: None,
+    ///             location: Location::default(),
+    ///         }
+    ///     ),
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let mut file = File::Module {
+    ///     user_defined_types: vec![],
+    ///     functions: vec![function],
+    ///     nodes: vec![node],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// file.typing(&mut errors).unwrap();
+    /// ```
     pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), Error> {
         match self {
             File::Module {
