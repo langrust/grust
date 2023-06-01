@@ -1,7 +1,12 @@
+use std::collections::HashMap;
+
 use crate::ast::{
-    component::Component, function::Function, location::Location, node::Node,
-    user_defined_type::UserDefinedType,
+    component::Component, function::Function, global_context, location::Location, node::Node,
+    type_system::Type, user_defined_type::UserDefinedType,
 };
+
+use crate::common::context::Context;
+use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
 /// Enumerates the different kinds of files in LanGRust.
@@ -194,6 +199,275 @@ impl File {
                 component: _,
                 ref mut location,
             } => *location = new_location,
+        }
+    }
+
+    /// [Type] the entire file.
+    pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), Error> {
+        match self {
+            File::Module {
+                user_defined_types,
+                functions,
+                nodes,
+                ..
+            } => {
+                // create user_types_context
+                let mut user_types_context = HashMap::new();
+                user_defined_types
+                    .iter()
+                    .map(|user_type| match user_type {
+                        UserDefinedType::Structure { id, location, .. }
+                        | UserDefinedType::Enumeration { id, location, .. }
+                        | UserDefinedType::Array { id, location, .. } => user_types_context
+                            .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // determine types in user_defined_types
+                user_defined_types
+                    .iter_mut()
+                    .map(|user_type| user_type.determine_types(&user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // recreate a user_types_context with determined types
+                let mut user_types_context = HashMap::new();
+                user_defined_types
+                    .iter()
+                    .map(|user_type| match user_type {
+                        UserDefinedType::Structure { id, location, .. }
+                        | UserDefinedType::Enumeration { id, location, .. }
+                        | UserDefinedType::Array { id, location, .. } => user_types_context
+                            .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // determine types in nodes
+                nodes
+                    .iter_mut()
+                    .map(|node| node.determine_types(&user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // determine types in functions
+                functions
+                    .iter_mut()
+                    .map(|function| function.determine_types(&user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // create nodes_context
+                let mut nodes_context = HashMap::new();
+                nodes
+                    .iter()
+                    .map(|node| {
+                        let node_description = node.into_node_description(errors)?;
+                        nodes_context.insert_unique(
+                            node.id.clone(),
+                            node_description,
+                            node.location.clone(),
+                            errors,
+                        )
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // generate global_context
+                let mut global_context = global_context::generate();
+
+                // add functions to global_context
+                functions
+                    .iter()
+                    .map(
+                        |Function {
+                             id,
+                             inputs,
+                             returned: (returned_type, _),
+                             location,
+                             ..
+                         }| {
+                            let function_type = inputs.iter().rev().fold(
+                                returned_type.clone(),
+                                |current_type, (_, input_type)| {
+                                    Type::Abstract(
+                                        Box::new(input_type.clone()),
+                                        Box::new(current_type),
+                                    )
+                                },
+                            );
+                            global_context.insert_unique(
+                                id.clone(),
+                                function_type,
+                                location.clone(),
+                                errors,
+                            )
+                        },
+                    )
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // typing nodes
+                nodes
+                    .iter_mut()
+                    .map(|node| {
+                        node.typing(&nodes_context, &global_context, &user_types_context, errors)
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // typing functions
+                functions
+                    .iter_mut()
+                    .map(|function| function.typing(&global_context, &user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()
+            }
+            File::Program {
+                user_defined_types,
+                functions,
+                nodes,
+                component,
+                ..
+            } => {
+                // create user_types_context
+                let mut user_types_context = HashMap::new();
+                user_defined_types
+                    .iter()
+                    .map(|user_type| match user_type {
+                        UserDefinedType::Structure { id, location, .. }
+                        | UserDefinedType::Enumeration { id, location, .. }
+                        | UserDefinedType::Array { id, location, .. } => user_types_context
+                            .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // determine types in user_defined_types
+                user_defined_types
+                    .iter_mut()
+                    .map(|user_type| user_type.determine_types(&user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // recreate a user_types_context with determined types
+                let mut user_types_context = HashMap::new();
+                user_defined_types
+                    .iter()
+                    .map(|user_type| match user_type {
+                        UserDefinedType::Structure { id, location, .. }
+                        | UserDefinedType::Enumeration { id, location, .. }
+                        | UserDefinedType::Array { id, location, .. } => user_types_context
+                            .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // determine types in nodes
+                nodes
+                    .iter_mut()
+                    .map(|node| node.determine_types(&user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // determine types in component
+                component.determine_types(&user_types_context, errors)?;
+
+                // determine types in functions
+                functions
+                    .iter_mut()
+                    .map(|function| function.determine_types(&user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // create nodes_context
+                let mut nodes_context = HashMap::new();
+                nodes
+                    .iter()
+                    .map(|node| {
+                        let node_description = node.into_node_description(errors)?;
+                        nodes_context.insert_unique(
+                            node.id.clone(),
+                            node_description,
+                            node.location.clone(),
+                            errors,
+                        )
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // generate global_context
+                let mut global_context = global_context::generate();
+
+                // add functions to global_context
+                functions
+                    .iter()
+                    .map(
+                        |Function {
+                             id,
+                             inputs,
+                             returned: (returned_type, _),
+                             location,
+                             ..
+                         }| {
+                            let function_type = inputs.iter().rev().fold(
+                                returned_type.clone(),
+                                |current_type, (_, input_type)| {
+                                    Type::Abstract(
+                                        Box::new(input_type.clone()),
+                                        Box::new(current_type),
+                                    )
+                                },
+                            );
+                            global_context.insert_unique(
+                                id.clone(),
+                                function_type,
+                                location.clone(),
+                                errors,
+                            )
+                        },
+                    )
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // typing nodes
+                nodes
+                    .iter_mut()
+                    .map(|node| {
+                        node.typing(&nodes_context, &global_context, &user_types_context, errors)
+                    })
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()?;
+
+                // typing component
+                component.typing(&nodes_context, &global_context, &user_types_context, errors)?;
+
+                // typing functions
+                functions
+                    .iter_mut()
+                    .map(|function| function.typing(&global_context, &user_types_context, errors))
+                    .collect::<Vec<Result<(), Error>>>()
+                    .into_iter()
+                    .collect::<Result<(), Error>>()
+            }
         }
     }
 }
