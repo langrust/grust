@@ -754,7 +754,7 @@ impl Node {
         // create signals context: inputs + outputs + locals
         // and check that no signal is duplicated
         let mut signals_context = HashMap::new();
-        
+
         // add inputs in signals context
         inputs
             .iter()
@@ -769,7 +769,7 @@ impl Node {
             .collect::<Vec<Result<(), Error>>>()
             .into_iter()
             .collect::<Result<(), Error>>()?;
-        
+
         // add signals defined by equations in contexts
         equations
             .iter()
@@ -786,14 +786,8 @@ impl Node {
                 )| {
                     // differenciate output form local signals
                     match scope {
-                        Scope::Output => outputs.insert(
-                            id.clone(),
-                            signal_type.clone(),
-                        ),
-                        Scope::Local => locals.insert(
-                            id.clone(),
-                            signal_type.clone(),
-                        ),
+                        Scope::Output => outputs.insert(id.clone(), signal_type.clone()),
+                        Scope::Local => locals.insert(id.clone(), signal_type.clone()),
                         _ => unreachable!(),
                     };
                     // check that no signal is duplicated
