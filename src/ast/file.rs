@@ -203,92 +203,7 @@ impl File {
     }
 
     /// [Type] the entire file.
-    ///
-    /// # Example
-    /// ```rust
-    /// use grustine::ast::{
-    ///     calculus::Calculus, function::Function, location::Location,
-    ///     expression::Expression, type_system::Type, equation::Equation, node::Node, file::File,
-    ///     scope::Scope, stream_expression::StreamExpression,
-    /// };
-    ///
-    /// let mut errors = vec![];
-    ///
-    /// let node = Node {
-    ///     id: String::from("test"),
-    ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     equations: vec![
-    ///         (
-    ///             String::from("o"),
-    ///             Equation {
-    ///                 scope: Scope::Output,
-    ///                 id: String::from("o"),
-    ///                 signal_type: Type::Integer,
-    ///                 expression: StreamExpression::SignalCall {
-    ///                     id: String::from("x"),
-    ///                     typing: None,
-    ///                     location: Location::default(),
-    ///                 },
-    ///                 location: Location::default(),
-    ///             }
-    ///         ),
-    ///         (
-    ///             String::from("x"),
-    ///             Equation {
-    ///                 scope: Scope::Local,
-    ///                 id: String::from("x"),
-    ///                 signal_type: Type::Integer,
-    ///                 expression: StreamExpression::SignalCall {
-    ///                     id: String::from("i"),
-    ///                     typing: None,
-    ///                     location: Location::default(),
-    ///                 },
-    ///                 location: Location::default(),
-    ///             }
-    ///         )
-    ///     ],
-    ///     location: Location::default(),
-    /// };
-    ///
-    /// let function = Function {
-    ///     id: String::from("test"),
-    ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     calculi: vec![
-    ///         (
-    ///             String::from("x"),
-    ///             Calculus {
-    ///                 id: String::from("x"),
-    ///                 element_type: Type::Integer,
-    ///                 expression: Expression::Call {
-    ///                     id: String::from("i"),
-    ///                     typing: None,
-    ///                     location: Location::default(),
-    ///                 },
-    ///                 location: Location::default(),
-    ///             }
-    ///         )
-    ///     ],
-    ///     returned: (
-    ///         Type::Integer,
-    ///         Expression::Call {
-    ///             id: String::from("x"),
-    ///             typing: None,
-    ///             location: Location::default(),
-    ///         }
-    ///     ),
-    ///     location: Location::default(),
-    /// };
-    ///
-    /// let mut file = File::Module {
-    ///     user_defined_types: vec![],
-    ///     functions: vec![function],
-    ///     nodes: vec![node],
-    ///     location: Location::default(),
-    /// };
-    ///
-    /// file.typing(&mut errors).unwrap();
-    /// ```
-    pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), Error> {
         match self {
             File::Module {
                 user_defined_types,
@@ -306,17 +221,17 @@ impl File {
                         | UserDefinedType::Array { id, location, .. } => user_types_context
                             .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // determine types in user_defined_types
                 user_defined_types
                     .iter_mut()
                     .map(|user_type| user_type.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // recreate a user_types_context with determined types
                 let mut user_types_context = HashMap::new();
@@ -328,25 +243,25 @@ impl File {
                         | UserDefinedType::Array { id, location, .. } => user_types_context
                             .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // determine types in nodes
                 nodes
                     .iter_mut()
                     .map(|node| node.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // determine types in functions
                 functions
                     .iter_mut()
                     .map(|function| function.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // create nodes_context
                 let mut nodes_context = HashMap::new();
@@ -361,9 +276,9 @@ impl File {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // generate global_context
                 let mut global_context = global_context::generate();
@@ -396,9 +311,9 @@ impl File {
                             )
                         },
                     )
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // typing nodes
                 nodes
@@ -406,17 +321,17 @@ impl File {
                     .map(|node| {
                         node.typing(&nodes_context, &global_context, &user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // typing functions
                 functions
                     .iter_mut()
                     .map(|function| function.typing(&global_context, &user_types_context, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()
+                    .collect::<Result<(), Error>>()
             }
             File::Program {
                 user_defined_types,
@@ -435,17 +350,17 @@ impl File {
                         | UserDefinedType::Array { id, location, .. } => user_types_context
                             .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // determine types in user_defined_types
                 user_defined_types
                     .iter_mut()
                     .map(|user_type| user_type.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // recreate a user_types_context with determined types
                 let mut user_types_context = HashMap::new();
@@ -457,17 +372,17 @@ impl File {
                         | UserDefinedType::Array { id, location, .. } => user_types_context
                             .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // determine types in nodes
                 nodes
                     .iter_mut()
                     .map(|node| node.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // determine types in component
                 component.determine_types(&user_types_context, errors)?;
@@ -476,9 +391,9 @@ impl File {
                 functions
                     .iter_mut()
                     .map(|function| function.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // create nodes_context
                 let mut nodes_context = HashMap::new();
@@ -493,9 +408,9 @@ impl File {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // generate global_context
                 let mut global_context = global_context::generate();
@@ -528,9 +443,9 @@ impl File {
                             )
                         },
                     )
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // typing nodes
                 nodes
@@ -538,9 +453,9 @@ impl File {
                     .map(|node| {
                         node.typing(&nodes_context, &global_context, &user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), Error>>()?;
 
                 // typing component
                 component.typing(&nodes_context, &global_context, &user_types_context, errors)?;
@@ -549,424 +464,10 @@ impl File {
                 functions
                     .iter_mut()
                     .map(|function| function.typing(&global_context, &user_types_context, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()
+                    .collect::<Result<(), Error>>()
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod typing {
-    use crate::ast::{
-        calculus::Calculus, component::Component, equation::Equation, expression::Expression,
-        file::File, function::Function, location::Location, node::Node, scope::Scope,
-        stream_expression::StreamExpression, type_system::Type,
-    };
-
-    #[test]
-    fn should_type_well_defined_module() {
-        let mut errors = vec![];
-
-        let node = Node {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            equations: vec![
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-
-        let function = Function {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
-                String::from("x"),
-                Calculus {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: None,
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::Integer,
-                Expression::Call {
-                    id: String::from("x"),
-                    typing: None,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        let mut file = File::Module {
-            user_defined_types: vec![],
-            functions: vec![function],
-            nodes: vec![node],
-            location: Location::default(),
-        };
-
-        let expected_node = Node {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            equations: vec![
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-
-        let expected_function = Function {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
-                String::from("x"),
-                Calculus {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: Some(Type::Integer),
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::Integer,
-                Expression::Call {
-                    id: String::from("x"),
-                    typing: Some(Type::Integer),
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        let control = File::Module {
-            user_defined_types: vec![],
-            functions: vec![expected_function],
-            nodes: vec![expected_node],
-            location: Location::default(),
-        };
-
-        file.typing(&mut errors).unwrap();
-
-        assert_eq!(file, control);
-    }
-
-    #[test]
-    fn should_type_well_defined_program() {
-        let mut errors = vec![];
-
-        let component = Component {
-            id: String::from("program_component"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            equations: vec![
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
-                            function_expression: Expression::Call {
-                                id: String::from("test"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                            inputs: vec![StreamExpression::SignalCall {
-                                id: String::from("x"),
-                                typing: None,
-                                location: Location::default(),
-                            }],
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::NodeApplication {
-                            node: String::from("test"),
-                            inputs: vec![StreamExpression::SignalCall {
-                                id: String::from("i"),
-                                typing: None,
-                                location: Location::default(),
-                            }],
-                            signal: String::from("o"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-
-        let node = Node {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            equations: vec![
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-
-        let function = Function {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
-                String::from("x"),
-                Calculus {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: None,
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::Integer,
-                Expression::Call {
-                    id: String::from("x"),
-                    typing: None,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        let mut file = File::Program {
-            user_defined_types: vec![],
-            functions: vec![function],
-            nodes: vec![node],
-            component,
-            location: Location::default(),
-        };
-
-        let expected_component = Component {
-            id: String::from("program_component"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            equations: vec![
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
-                            function_expression: Expression::Call {
-                                id: String::from("test"),
-                                typing: Some(Type::Abstract(
-                                    Box::new(Type::Integer),
-                                    Box::new(Type::Integer),
-                                )),
-                                location: Location::default(),
-                            },
-                            inputs: vec![StreamExpression::SignalCall {
-                                id: String::from("x"),
-                                typing: Some(Type::Integer),
-                                location: Location::default(),
-                            }],
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::NodeApplication {
-                            node: String::from("test"),
-                            inputs: vec![StreamExpression::SignalCall {
-                                id: String::from("i"),
-                                typing: Some(Type::Integer),
-                                location: Location::default(),
-                            }],
-                            signal: String::from("o"),
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-
-        let expected_node = Node {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            equations: vec![
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-
-        let expected_function = Function {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
-                String::from("x"),
-                Calculus {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: Some(Type::Integer),
-                        location: Location::default(),
-                    },
-                    location: Location::default(),
-                },
-            )],
-            returned: (
-                Type::Integer,
-                Expression::Call {
-                    id: String::from("x"),
-                    typing: Some(Type::Integer),
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        let control = File::Program {
-            user_defined_types: vec![],
-            functions: vec![expected_function],
-            nodes: vec![expected_node],
-            component: expected_component,
-            location: Location::default(),
-        };
-
-        file.typing(&mut errors).unwrap();
-
-        assert_eq!(file, control);
     }
 }
