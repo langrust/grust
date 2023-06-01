@@ -8,7 +8,7 @@ impl Expression {
     /// Add a [Type] to the abstraction expression.
     pub fn typing_abstraction(
         &mut self,
-        elements_context: &HashMap<String, Type>,
+        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -22,7 +22,7 @@ impl Expression {
                 location,
             } => {
                 // create a local context
-                let mut local_context = elements_context.clone();
+                let mut local_context = global_context.clone();
                 // add inputs in the context
                 inputs
                     .iter()
@@ -39,7 +39,7 @@ impl Expression {
                     .collect::<Result<(), Error>>()?;
 
                 // type the abstracted expression with the local context
-                expression.typing(&local_context, user_types_context, errors)?;
+                expression.typing(global_context, &local_context, user_types_context, errors)?;
 
                 // compute abstraction type
                 let abstraction_type = inputs.iter().fold(
@@ -78,7 +78,7 @@ mod typing_abstraction {
     #[test]
     fn should_type_abstraction_expression() {
         let mut errors = vec![];
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::TypedAbstraction {
@@ -106,7 +106,7 @@ mod typing_abstraction {
         };
 
         expression
-            .typing_abstraction(&elements_context, &user_types_context, &mut errors)
+            .typing_abstraction(&global_context, &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(expression, control);
@@ -115,8 +115,8 @@ mod typing_abstraction {
     #[test]
     fn should_raise_error_for_already_defined_input_name() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
-        elements_context.insert(String::from("x"), Type::Float);
+        let mut global_context = HashMap::new();
+        global_context.insert(String::from("x"), Type::Float);
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::TypedAbstraction {
@@ -131,7 +131,7 @@ mod typing_abstraction {
         };
 
         let error = expression
-            .typing_abstraction(&elements_context, &user_types_context, &mut errors)
+            .typing_abstraction(&global_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -140,7 +140,7 @@ mod typing_abstraction {
     #[test]
     fn should_raise_error_for_untyped_abstraction() {
         let mut errors = vec![];
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::Abstraction {
@@ -155,7 +155,7 @@ mod typing_abstraction {
         };
 
         let error = expression
-            .typing_abstraction(&elements_context, &user_types_context, &mut errors)
+            .typing_abstraction(&global_context, &user_types_context, &mut errors)
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);

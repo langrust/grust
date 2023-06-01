@@ -12,7 +12,7 @@ impl StreamExpression {
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        elements_context: &HashMap<String, Type>,
+        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -27,7 +27,7 @@ impl StreamExpression {
                 expression.typing(
                     nodes_context,
                     signals_context,
-                    elements_context,
+                    global_context,
                     user_types_context,
                     errors,
                 )?;
@@ -49,7 +49,7 @@ impl StreamExpression {
                                 stream_expression.typing(
                                     nodes_context,
                                     &local_context,
-                                    elements_context,
+                                    global_context,
                                     user_types_context,
                                     errors,
                                 )?;
@@ -63,7 +63,7 @@ impl StreamExpression {
                         let arm_expression_typing_test = arm_expression.typing(
                             nodes_context,
                             &local_context,
-                            elements_context,
+                            global_context,
                             user_types_context,
                             errors,
                         );
@@ -108,8 +108,8 @@ mod typing_match {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("p"), Type::Structure(String::from("Point")));
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("add_one"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -284,7 +284,7 @@ mod typing_match {
             .typing_match(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )

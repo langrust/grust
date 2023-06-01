@@ -12,7 +12,7 @@ impl StreamExpression {
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        elements_context: &HashMap<String, Type>,
+        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -30,7 +30,7 @@ impl StreamExpression {
                 option.typing(
                     nodes_context,
                     signals_context,
-                    elements_context,
+                    global_context,
                     user_types_context,
                     errors,
                 )?;
@@ -44,14 +44,14 @@ impl StreamExpression {
                         present.typing(
                             nodes_context,
                             &local_context,
-                            elements_context,
+                            global_context,
                             user_types_context,
                             errors,
                         )?;
                         default.typing(
                             nodes_context,
                             signals_context,
-                            elements_context,
+                            global_context,
                             user_types_context,
                             errors,
                         )?;
@@ -91,7 +91,7 @@ mod typing_when {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::When {
@@ -139,7 +139,7 @@ mod typing_when {
             .typing_when(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -154,7 +154,7 @@ mod typing_when {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::When {
@@ -182,7 +182,7 @@ mod typing_when {
             .typing_when(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
