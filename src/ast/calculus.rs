@@ -31,6 +31,7 @@ impl Calculus {
     /// };
     ///
     /// let mut errors = vec![];
+    /// let global_context = HashMap::new();
     /// let elements_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     ///
@@ -46,10 +47,11 @@ impl Calculus {
     ///     location: Location::default(),
     /// };
     ///
-    /// calculus.typing(&elements_context, &user_types_context, &mut errors).unwrap();
+    /// calculus.typing(&global_context, &elements_context, &user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
+        global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -61,7 +63,7 @@ impl Calculus {
             ..
         } = self;
 
-        expression.typing(elements_context, user_types_context, errors)?;
+        expression.typing(global_context, elements_context, user_types_context, errors)?;
 
         let expression_type = expression.get_type().unwrap();
 
@@ -81,6 +83,7 @@ mod typing {
     #[test]
     fn should_type_well_defined_equation() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
@@ -107,7 +110,12 @@ mod typing {
         };
 
         calculus
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(calculus, control)
@@ -116,6 +124,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_type_in_equation() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
@@ -131,7 +140,12 @@ mod typing {
         };
 
         let error = calculus
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error])

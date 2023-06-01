@@ -125,6 +125,7 @@ impl Expression {
     /// use std::collections::HashMap;
     /// use grustine::ast::{constant::Constant, expression::Expression, location::Location};
     /// let mut errors = vec![];
+    /// let global_context = HashMap::new();
     /// let elements_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     /// let mut expression = Expression::Constant {
@@ -132,10 +133,11 @@ impl Expression {
     ///     typing: None,
     ///     location: Location::default(),
     /// };
-    /// expression.typing(&elements_context, &user_types_context, &mut errors).unwrap();
+    /// expression.typing(&global_context, &elements_context, &user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
+        global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -143,23 +145,26 @@ impl Expression {
         match self {
             Expression::Constant { .. } => self.typing_constant(),
             Expression::Call { .. } => self.typing_call(elements_context, errors),
-            Expression::Application { .. } => {
-                self.typing_application(elements_context, user_types_context, errors)
-            }
+            Expression::Application { .. } => self.typing_application(
+                global_context,
+                elements_context,
+                user_types_context,
+                errors,
+            ),
             Expression::TypedAbstraction { .. } | Expression::Abstraction { .. } => {
-                self.typing_abstraction(elements_context, user_types_context, errors)
+                self.typing_abstraction(global_context, user_types_context, errors)
             }
             Expression::Structure { .. } => {
-                self.typing_structure(elements_context, user_types_context, errors)
+                self.typing_structure(global_context, elements_context, user_types_context, errors)
             }
             Expression::Array { .. } => {
-                self.typing_array(elements_context, user_types_context, errors)
+                self.typing_array(global_context, elements_context, user_types_context, errors)
             }
             Expression::When { .. } => {
-                self.typing_when(elements_context, user_types_context, errors)
+                self.typing_when(global_context, elements_context, user_types_context, errors)
             }
             Expression::Match { .. } => {
-                self.typing_match(elements_context, user_types_context, errors)
+                self.typing_match(global_context, elements_context, user_types_context, errors)
             }
         }
     }
@@ -231,6 +236,7 @@ mod typing {
     #[test]
     fn should_type_constant_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
@@ -246,7 +252,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -255,6 +266,7 @@ mod typing {
     #[test]
     fn should_type_call_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Integer);
         let user_types_context = HashMap::new();
@@ -271,7 +283,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -280,6 +297,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_unknown_element_call() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Integer);
         let user_types_context = HashMap::new();
@@ -295,7 +313,12 @@ mod typing {
         }];
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, control);
@@ -304,6 +327,7 @@ mod typing {
     #[test]
     fn should_type_application_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -345,7 +369,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -354,6 +383,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_application() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -378,7 +408,12 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -387,6 +422,7 @@ mod typing {
     #[test]
     fn should_type_abstraction_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
@@ -415,7 +451,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -424,8 +465,9 @@ mod typing {
     #[test]
     fn should_raise_error_for_already_defined_input_name() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
-        elements_context.insert(String::from("x"), Type::Float);
+        let mut global_context = HashMap::new();
+        global_context.insert(String::from("x"), Type::Float);
+        let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut expression = Expression::TypedAbstraction {
@@ -440,7 +482,12 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -449,6 +496,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_untyped_abstraction() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
@@ -464,7 +512,12 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -473,6 +526,7 @@ mod typing {
     #[test]
     fn should_type_array() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -546,7 +600,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -555,6 +614,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_multiple_types_array() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -595,7 +655,12 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -604,6 +669,7 @@ mod typing {
     #[test]
     fn should_type_when_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
         let user_types_context = HashMap::new();
@@ -650,7 +716,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -659,6 +730,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_when() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
         let user_types_context = HashMap::new();
@@ -685,7 +757,12 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -694,6 +771,7 @@ mod typing {
     #[test]
     fn should_type_structure_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -756,7 +834,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -765,6 +848,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_additionnal_field_in_structure() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -812,7 +896,12 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -821,6 +910,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_missing_field_in_structure() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -850,7 +940,12 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -859,6 +954,7 @@ mod typing {
     #[test]
     fn should_raise_error_for_incompatible_structure() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -898,7 +994,12 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
@@ -907,6 +1008,7 @@ mod typing {
     #[test]
     fn should_raise_error_when_expect_structure() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let elements_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -956,10 +1058,204 @@ mod typing {
         };
 
         let error = expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
+    }
+
+    #[test]
+    fn should_type_match_structure_expression() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("p"), Type::Structure(String::from("Point")));
+        elements_context.insert(
+            String::from("add_one"),
+            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+        );
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut expression = Expression::Match {
+            expression: Box::new(Expression::Call {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    Expression::Call {
+                        id: String::from("y"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    Expression::Application {
+                        function_expression: Box::new(Expression::Call {
+                            id: String::from("add_one"),
+                            typing: None,
+                            location: Location::default(),
+                        }),
+                        inputs: vec![Expression::Call {
+                            id: String::from("y"),
+                            typing: None,
+                            location: Location::default(),
+                        }],
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::Match {
+            expression: Box::new(Expression::Call {
+                id: String::from("p"),
+                typing: Some(Type::Structure(String::from("Point"))),
+                location: Location::default(),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    Expression::Call {
+                        id: String::from("y"),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    Expression::Application {
+                        function_expression: Box::new(Expression::Call {
+                            id: String::from("add_one"),
+                            typing: Some(Type::Abstract(
+                                Box::new(Type::Integer),
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        }),
+                        inputs: vec![Expression::Call {
+                            id: String::from("y"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        }],
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
     }
 }
 

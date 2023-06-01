@@ -7,6 +7,7 @@ impl Expression {
     /// Add a [Type] to the match expression.
     pub fn typing_match(
         &mut self,
+        global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -19,7 +20,7 @@ impl Expression {
                 typing,
                 location,
             } => {
-                expression.typing(elements_context, user_types_context, errors)?;
+                expression.typing(global_context, elements_context, user_types_context, errors)?;
 
                 let expression_type = expression.get_type().unwrap();
                 arms.into_iter()
@@ -35,7 +36,12 @@ impl Expression {
                         let optional_test_expression_typing_test = optional_test_expression
                             .as_mut()
                             .map_or(Ok(()), |expression| {
-                                expression.typing(&local_context, user_types_context, errors)?;
+                                expression.typing(
+                                    global_context,
+                                    &local_context,
+                                    user_types_context,
+                                    errors,
+                                )?;
                                 expression.get_type().unwrap().eq_check(
                                     &Type::Boolean,
                                     location.clone(),
@@ -43,8 +49,12 @@ impl Expression {
                                 )
                             });
 
-                        let arm_expression_typing_test =
-                            arm_expression.typing(&local_context, user_types_context, errors);
+                        let arm_expression_typing_test = arm_expression.typing(
+                            global_context,
+                            &local_context,
+                            user_types_context,
+                            errors,
+                        );
 
                         optional_test_expression_typing_test?;
                         arm_expression_typing_test
@@ -83,6 +93,7 @@ mod typing_match {
     #[test]
     fn should_type_match_structure_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("p"), Type::Structure(String::from("Point")));
         elements_context.insert(
@@ -257,7 +268,12 @@ mod typing_match {
         };
 
         expression
-            .typing_match(&elements_context, &user_types_context, &mut errors)
+            .typing_match(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);

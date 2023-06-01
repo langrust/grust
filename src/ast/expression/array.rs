@@ -7,6 +7,7 @@ impl Expression {
     /// Add a [Type] to the array expression.
     pub fn typing_array(
         &mut self,
+        global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -21,7 +22,9 @@ impl Expression {
             } => {
                 elements
                     .into_iter()
-                    .map(|element| element.typing(elements_context, user_types_context, errors))
+                    .map(|element| {
+                        element.typing(global_context, elements_context, user_types_context, errors)
+                    })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>()?;
@@ -57,6 +60,7 @@ mod typing_array {
     #[test]
     fn should_type_array() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -130,7 +134,12 @@ mod typing_array {
         };
 
         expression
-            .typing_array(&elements_context, &user_types_context, &mut errors)
+            .typing_array(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -139,6 +148,7 @@ mod typing_array {
     #[test]
     fn should_raise_error_for_multiple_types_array() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -179,7 +189,12 @@ mod typing_array {
         };
 
         let error = expression
-            .typing_array(&elements_context, &user_types_context, &mut errors)
+            .typing_array(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);
