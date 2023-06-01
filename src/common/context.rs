@@ -249,12 +249,12 @@ pub trait Context {
     /// let name = String::from("x");
     /// context.insert(name.clone(), 1);
     ///
-    /// context.get_signal_or_error(name, location.clone(), &mut errors).unwrap();
-    /// context.get_signal_or_error(String::from("y"), location, &mut errors).unwrap_err();
+    /// context.get_signal_or_error(&name, location.clone(), &mut errors).unwrap();
+    /// context.get_signal_or_error(&String::from("y"), location, &mut errors).unwrap_err();
     /// ```
     fn get_signal_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
@@ -280,12 +280,12 @@ pub trait Context {
     /// let name = String::from("my_node");
     /// context.insert(name.clone(), 1);
     ///
-    /// context.get_signal_or_error(name, location.clone(), &mut errors).unwrap();
-    /// context.get_signal_or_error(String::from("unknown_node"), location, &mut errors).unwrap_err();
+    /// context.get_signal_or_error(&name, location.clone(), &mut errors).unwrap();
+    /// context.get_signal_or_error(&String::from("unknown_node"), location, &mut errors).unwrap_err();
     /// ```
     fn get_node_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
@@ -560,11 +560,11 @@ impl<V> Context for HashMap<String, V> {
 
     fn get_signal_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error> {
-        match self.get(&name) {
+        match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownSignal {
@@ -579,11 +579,11 @@ impl<V> Context for HashMap<String, V> {
 
     fn get_node_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error> {
-        match self.get(&name) {
+        match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownNode {
