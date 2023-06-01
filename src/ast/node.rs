@@ -538,6 +538,148 @@ impl Node {
             locals,
         })
     }
+
+    /// Determine all undefined types in node
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::{
+    ///     constant::Constant, node::Node,
+    ///     equation::Equation, stream_expression::StreamExpression, scope::Scope,
+    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    /// };
+    ///
+    /// let mut errors = vec![];
+    /// let mut user_types_context = HashMap::new();
+    /// user_types_context.insert(
+    ///     String::from("Point"),
+    ///     UserDefinedType::Structure {
+    ///         id: String::from("Point"),
+    ///         fields: vec![
+    ///             (String::from("x"), Type::Integer),
+    ///             (String::from("y"), Type::Integer),
+    ///         ],
+    ///         location: Location::default(),
+    ///     }
+    /// );
+    ///
+    /// let mut node = Node {
+    ///     id: String::from("test"),
+    ///     inputs: vec![],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::NotDefinedYet(String::from("Point")),
+    ///                 expression: StreamExpression::Structure {
+    ///                     name: String::from("Point"),
+    ///                     fields: vec![
+    ///                         (
+    ///                             String::from("x"),
+    ///                             StreamExpression::Constant {
+    ///                                 constant: Constant::Integer(1),
+    ///                                 typing: None,
+    ///                                 location: Location::default(),
+    ///                             },
+    ///                         ),
+    ///                         (
+    ///                             String::from("y"),
+    ///                             StreamExpression::Constant {
+    ///                                 constant: Constant::Integer(2),
+    ///                                 typing: None,
+    ///                                 location: Location::default(),
+    ///                             },
+    ///                         ),
+    ///                     ],
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let control = Node {
+    ///     id: String::from("test"),
+    ///     inputs: vec![],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::Structure(String::from("Point")),
+    ///                 expression: StreamExpression::Structure {
+    ///                     name: String::from("Point"),
+    ///                     fields: vec![
+    ///                         (
+    ///                             String::from("x"),
+    ///                             StreamExpression::Constant {
+    ///                                 constant: Constant::Integer(1),
+    ///                                 typing: None,
+    ///                                 location: Location::default(),
+    ///                             },
+    ///                         ),
+    ///                         (
+    ///                             String::from("y"),
+    ///                             StreamExpression::Constant {
+    ///                                 constant: Constant::Integer(2),
+    ///                                 typing: None,
+    ///                                 location: Location::default(),
+    ///                             },
+    ///                         ),
+    ///                     ],
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// node
+    ///     .determine_types(&user_types_context, &mut errors)
+    ///     .unwrap();
+    ///
+    /// assert_eq!(node, control);
+    /// ```
+    pub fn determine_types(
+        &mut self,
+        user_types_context: &HashMap<String, UserDefinedType>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        let Node {
+            inputs,
+            equations,
+            location,
+            ..
+        } = self;
+
+        // determine inputs types
+        inputs
+            .iter_mut()
+            .map(|(_, input_type)| {
+                input_type.determine(location.clone(), user_types_context, errors)
+            })
+            .collect::<Vec<Result<(), Error>>>()
+            .into_iter()
+            .collect::<Result<(), Error>>()?;
+
+        // determine equations types
+        equations
+            .iter_mut()
+            .map(|(_, equation)| equation.determine_types(user_types_context, errors))
+            .collect::<Vec<Result<(), Error>>>()
+            .into_iter()
+            .collect::<Result<(), Error>>()
+    }
 }
 
 #[cfg(test)]
@@ -980,5 +1122,159 @@ mod into_node_description {
         let node_description = node.into_node_description(&mut errors).unwrap();
 
         assert_eq!(node_description, control);
+    }
+}
+
+#[cfg(test)]
+mod determine_types {
+    use crate::ast::{
+        constant::Constant, equation::Equation, location::Location, node::Node, scope::Scope,
+        stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+    };
+    use std::collections::HashMap;
+
+    #[test]
+    fn should_determine_undefined_types_when_in_context() {
+        let mut errors = vec![];
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut node = Node {
+            id: String::from("test"),
+            inputs: vec![],
+            equations: vec![(
+                String::from("o"),
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o"),
+                    signal_type: Type::NotDefinedYet(String::from("Point")),
+                    expression: StreamExpression::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(1),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(2),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        typing: None,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            )],
+            location: Location::default(),
+        };
+
+        let control = Node {
+            id: String::from("test"),
+            inputs: vec![],
+            equations: vec![(
+                String::from("o"),
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o"),
+                    signal_type: Type::Structure(String::from("Point")),
+                    expression: StreamExpression::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(1),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(2),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        typing: None,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            )],
+            location: Location::default(),
+        };
+
+        node.determine_types(&user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(node, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_undefined_types_not_in_context() {
+        let mut errors = vec![];
+        let user_types_context = HashMap::new();
+
+        let mut node = Node {
+            id: String::from("test"),
+            inputs: vec![],
+            equations: vec![(
+                String::from("o"),
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o"),
+                    signal_type: Type::NotDefinedYet(String::from("Point")),
+                    expression: StreamExpression::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(1),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(2),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        typing: None,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            )],
+            location: Location::default(),
+        };
+
+        node.determine_types(&user_types_context, &mut errors)
+            .unwrap_err();
     }
 }
