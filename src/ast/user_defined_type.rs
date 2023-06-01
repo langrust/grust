@@ -128,8 +128,8 @@ impl UserDefinedType {
                         Ok((
                             expression,
                             structure_fields.get_field_or_error(
-                                name.clone(),
-                                id.clone(),
+                                name,
+                                id,
                                 location.clone(),
                                 errors,
                             )?,

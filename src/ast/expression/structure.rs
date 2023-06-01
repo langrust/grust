@@ -23,11 +23,8 @@ impl Expression {
                 location,
             } => {
                 // get the supposed structure type as the user defined it
-                let user_type = user_types_context.get_user_type_or_error(
-                    name.clone(),
-                    location.clone(),
-                    errors,
-                )?;
+                let user_type =
+                    user_types_context.get_user_type_or_error(name, location.clone(), errors)?;
 
                 match user_type {
                     UserDefinedType::Structure { .. } => {
