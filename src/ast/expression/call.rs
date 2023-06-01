@@ -19,7 +19,7 @@ impl Expression {
                 location,
             } => {
                 let element_type =
-                    elements_context.get_element_or_error(id.clone(), location.clone(), errors)?;
+                    elements_context.get_element_or_error(id, location.clone(), errors)?;
                 *typing = Some(element_type.clone());
                 Ok(())
             }
