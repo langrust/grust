@@ -102,7 +102,7 @@ impl Node {
             inputs,
             outputs,
             locals,
-        } = nodes_context.get_node_or_error(id.clone(), location.clone(), errors)?;
+        } = nodes_context.get_node_or_error(id, location.clone(), errors)?;
 
         // create signals context: inputs + outputs + locals
         let mut signals_context = HashMap::new();
