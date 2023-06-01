@@ -145,23 +145,26 @@ impl Expression {
         match self {
             Expression::Constant { .. } => self.typing_constant(),
             Expression::Call { .. } => self.typing_call(elements_context, errors),
-            Expression::Application { .. } => {
-                self.typing_application(elements_context, user_types_context, errors)
-            }
+            Expression::Application { .. } => self.typing_application(
+                global_context,
+                elements_context,
+                user_types_context,
+                errors,
+            ),
             Expression::TypedAbstraction { .. } | Expression::Abstraction { .. } => {
-                self.typing_abstraction(elements_context, user_types_context, errors)
+                self.typing_abstraction(global_context, user_types_context, errors)
             }
             Expression::Structure { .. } => {
-                self.typing_structure(elements_context, user_types_context, errors)
+                self.typing_structure(global_context, elements_context, user_types_context, errors)
             }
             Expression::Array { .. } => {
-                self.typing_array(elements_context, user_types_context, errors)
+                self.typing_array(global_context, elements_context, user_types_context, errors)
             }
             Expression::When { .. } => {
-                self.typing_when(elements_context, user_types_context, errors)
+                self.typing_when(global_context, elements_context, user_types_context, errors)
             }
             Expression::Match { .. } => {
-                self.typing_match(elements_context, user_types_context, errors)
+                self.typing_match(global_context, elements_context, user_types_context, errors)
             }
         }
     }
@@ -404,7 +407,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -476,7 +479,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -504,7 +507,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -645,7 +648,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -745,7 +748,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -882,7 +885,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -924,7 +927,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -976,7 +979,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -1038,7 +1041,7 @@ mod typing {
             location: Location::default(),
         };
 
-        expression
+        let error = expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -1240,6 +1243,7 @@ mod typing {
     #[test]
     fn should_type_match_structure_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("p"), Type::Structure(String::from("Point")));
         elements_context.insert(
@@ -1414,7 +1418,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);

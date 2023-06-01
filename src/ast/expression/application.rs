@@ -7,6 +7,7 @@ impl Expression {
     /// Add a [Type] to the application expression.
     pub fn typing_application(
         &mut self,
+        global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -21,12 +22,18 @@ impl Expression {
                 location,
             } => {
                 // type the function expression
-                let test_typing_function_expression =
-                    function_expression.typing(elements_context, user_types_context, errors);
+                let test_typing_function_expression = function_expression.typing(
+                    global_context,
+                    elements_context,
+                    user_types_context,
+                    errors,
+                );
                 // type all inputs
                 let test_typing_inputs = inputs
                     .into_iter()
-                    .map(|input| input.typing(elements_context, user_types_context, errors))
+                    .map(|input| {
+                        input.typing(global_context, elements_context, user_types_context, errors)
+                    })
                     .collect::<Vec<Result<(), Error>>>()
                     .into_iter()
                     .collect::<Result<(), Error>>();
@@ -61,6 +68,7 @@ mod typing_application {
     #[test]
     fn should_type_application_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -102,7 +110,12 @@ mod typing_application {
         };
 
         expression
-            .typing_application(&elements_context, &user_types_context, &mut errors)
+            .typing_application(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
@@ -111,6 +124,7 @@ mod typing_application {
     #[test]
     fn should_raise_error_for_incompatible_application() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
@@ -135,7 +149,12 @@ mod typing_application {
         };
 
         let error = expression
-            .typing_application(&elements_context, &user_types_context, &mut errors)
+            .typing_application(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
 
         assert_eq!(errors, vec![error]);

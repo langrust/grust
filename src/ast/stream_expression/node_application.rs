@@ -13,7 +13,7 @@ impl StreamExpression {
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        elements_context: &HashMap<String, Type>,
+        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -53,7 +53,7 @@ impl StreamExpression {
                         input.typing(
                             nodes_context,
                             signals_context,
-                            elements_context,
+                            global_context,
                             user_types_context,
                             errors,
                         )?;
@@ -101,8 +101,8 @@ mod typing_node_application {
         );
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -170,7 +170,7 @@ mod typing_node_application {
             .typing_node_application(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -196,8 +196,8 @@ mod typing_node_application {
         );
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Float)),
         );
@@ -235,7 +235,7 @@ mod typing_node_application {
             .typing_node_application(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )

@@ -131,20 +131,20 @@ impl StreamExpression {
     /// let mut errors = vec![];
     /// let nodes_context = HashMap::new();
     /// let signals_context = HashMap::new();
-    /// let elements_context = HashMap::new();
+    /// let global_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     /// let mut stream_expression = StreamExpression::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: None,
     ///     location: Location::default(),
     /// };
-    /// stream_expression.typing(&nodes_context, &signals_context, &elements_context, &user_types_context, &mut errors).unwrap();
+    /// stream_expression.typing(&nodes_context, &signals_context, &global_context, &user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        elements_context: &HashMap<String, Type>,
+        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -154,49 +154,49 @@ impl StreamExpression {
             StreamExpression::FollowedBy { .. } => self.typing_followed_by(
                 nodes_context,
                 signals_context,
-                elements_context,
+                global_context,
                 user_types_context,
                 errors,
             ),
             StreamExpression::MapApplication { .. } => self.typing_map_application(
                 nodes_context,
                 signals_context,
-                elements_context,
+                global_context,
                 user_types_context,
                 errors,
             ),
             StreamExpression::NodeApplication { .. } => self.typing_node_application(
                 nodes_context,
                 signals_context,
-                elements_context,
+                global_context,
                 user_types_context,
                 errors,
             ),
             StreamExpression::Structure { .. } => self.typing_structure(
                 nodes_context,
                 signals_context,
-                elements_context,
+                global_context,
                 user_types_context,
                 errors,
             ),
             StreamExpression::Array { .. } => self.typing_array(
                 nodes_context,
                 signals_context,
-                elements_context,
+                global_context,
                 user_types_context,
                 errors,
             ),
             StreamExpression::When { .. } => self.typing_when(
                 nodes_context,
                 signals_context,
-                elements_context,
+                global_context,
                 user_types_context,
                 errors,
             ),
             StreamExpression::Match { .. } => self.typing_match(
                 nodes_context,
                 signals_context,
-                elements_context,
+                global_context,
                 user_types_context,
                 errors,
             ),
@@ -274,7 +274,7 @@ mod typing {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::Constant {
@@ -292,7 +292,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -307,7 +307,7 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::SignalCall {
@@ -325,7 +325,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -340,7 +340,7 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::SignalCall {
@@ -357,7 +357,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -371,7 +371,7 @@ mod typing {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -436,7 +436,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -450,7 +450,7 @@ mod typing {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -500,7 +500,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -514,7 +514,7 @@ mod typing {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -546,7 +546,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -560,7 +560,7 @@ mod typing {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -602,7 +602,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -616,7 +616,7 @@ mod typing {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Color"),
@@ -668,7 +668,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -682,8 +682,8 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -725,7 +725,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -740,8 +740,8 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)),
         );
@@ -766,7 +766,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -781,7 +781,7 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::When {
@@ -829,7 +829,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -844,7 +844,7 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Option(Box::new(Type::Integer)));
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::When {
@@ -872,7 +872,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -887,8 +887,8 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("p"), Type::Structure(String::from("Point")));
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("add_one"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -1063,7 +1063,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -1078,8 +1078,8 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("add_one"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -1131,7 +1131,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -1146,8 +1146,8 @@ mod typing {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("add_one"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -1177,7 +1177,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -1201,8 +1201,8 @@ mod typing {
         );
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -1270,7 +1270,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -1296,8 +1296,8 @@ mod typing {
         );
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Float)),
         );
@@ -1335,7 +1335,7 @@ mod typing {
             .typing(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )

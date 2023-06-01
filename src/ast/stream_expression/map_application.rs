@@ -12,7 +12,7 @@ impl StreamExpression {
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        elements_context: &HashMap<String, Type>,
+        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -26,8 +26,13 @@ impl StreamExpression {
                 location,
             } => {
                 // type the function expression
-                let test_typing_function_expression =
-                    function_expression.typing(elements_context, user_types_context, errors);
+                let elements_context = global_context.clone();
+                let test_typing_function_expression = function_expression.typing(
+                    global_context,
+                    &elements_context,
+                    user_types_context,
+                    errors,
+                );
                 // type all inputs
                 let test_typing_inputs = inputs
                     .into_iter()
@@ -35,7 +40,7 @@ impl StreamExpression {
                         input.typing(
                             nodes_context,
                             signals_context,
-                            elements_context,
+                            global_context,
                             user_types_context,
                             errors,
                         )
@@ -80,8 +85,8 @@ mod typing_application {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
         );
@@ -123,7 +128,7 @@ mod typing_application {
             .typing_map_application(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -138,8 +143,8 @@ mod typing_application {
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
         signals_context.insert(String::from("x"), Type::Integer);
-        let mut elements_context = HashMap::new();
-        elements_context.insert(
+        let mut global_context = HashMap::new();
+        global_context.insert(
             String::from("f"),
             Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)),
         );
@@ -164,7 +169,7 @@ mod typing_application {
             .typing_map_application(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )

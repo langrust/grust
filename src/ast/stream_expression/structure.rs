@@ -13,7 +13,7 @@ impl StreamExpression {
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
-        elements_context: &HashMap<String, Type>,
+        global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
@@ -42,7 +42,7 @@ impl StreamExpression {
                                 stream_expression.typing(
                                     nodes_context,
                                     signals_context,
-                                    elements_context,
+                                    global_context,
                                     user_types_context,
                                     errors,
                                 )
@@ -92,7 +92,7 @@ mod typing_structure {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -157,7 +157,7 @@ mod typing_structure {
             .typing_structure(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -171,7 +171,7 @@ mod typing_structure {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -221,7 +221,7 @@ mod typing_structure {
             .typing_structure(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -235,7 +235,7 @@ mod typing_structure {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -267,7 +267,7 @@ mod typing_structure {
             .typing_structure(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -281,7 +281,7 @@ mod typing_structure {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
@@ -323,7 +323,7 @@ mod typing_structure {
             .typing_structure(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
@@ -337,7 +337,7 @@ mod typing_structure {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let signals_context = HashMap::new();
-        let elements_context = HashMap::new();
+        let global_context = HashMap::new();
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Color"),
@@ -389,7 +389,7 @@ mod typing_structure {
             .typing_structure(
                 &nodes_context,
                 &signals_context,
-                &elements_context,
+                &global_context,
                 &user_types_context,
                 &mut errors,
             )
