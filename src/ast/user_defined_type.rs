@@ -180,6 +180,74 @@ impl UserDefinedType {
             _ => unreachable!(),
         }
     }
+
+    /// Determine the type of the equation if undefined
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::{
+    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    /// };
+    ///
+    /// let mut errors = vec![];
+    /// let mut user_types_context = HashMap::new();
+    /// user_types_context.insert(
+    ///     String::from("Point"),
+    ///     UserDefinedType::Structure {
+    ///         id: String::from("Point"),
+    ///         fields: vec![
+    ///             (String::from("x"), Type::Integer),
+    ///             (String::from("y"), Type::Integer),
+    ///         ],
+    ///         location: Location::default(),
+    ///     }
+    /// );
+    ///
+    /// let mut user_type = UserDefinedType::Array {
+    ///     id: String::from("Trajectory"),
+    ///     array_type: Type::NotDefinedYet(String::from("Point")),
+    ///     size: 3,
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let control = UserDefinedType::Array {
+    ///     id: String::from("Trajectory"),
+    ///     array_type: Type::Structure(String::from("Point")),
+    ///     size: 3,
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// user_type
+    ///     .determine_types(&user_types_context, &mut errors)
+    ///     .unwrap();
+    ///
+    /// assert_eq!(user_type, control);
+    /// ```
+    pub fn determine_types(
+        &mut self,
+        user_types_context: &HashMap<String, UserDefinedType>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        match self {
+            UserDefinedType::Structure {
+                fields, location, ..
+            } => fields
+                .iter_mut()
+                .map(|(_, field_type)| {
+                    field_type.determine(location.clone(), user_types_context, errors)
+                })
+                .collect::<Vec<Result<(), Error>>>()
+                .into_iter()
+                .collect::<Result<(), Error>>(),
+            UserDefinedType::Enumeration { .. } => Ok(()),
+            UserDefinedType::Array {
+                array_type,
+                location,
+                ..
+            } => array_type.determine(location.clone(), user_types_context, errors),
+        }
+    }
 }
 
 #[cfg(test)]
