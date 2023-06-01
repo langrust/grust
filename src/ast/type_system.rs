@@ -1,7 +1,9 @@
-use crate::ast::location::Location;
-use crate::error::Error;
-
+use std::collections::HashMap;
 use std::fmt::{self, Display};
+
+use crate::ast::{location::Location, user_defined_type::UserDefinedType};
+use crate::common::context::Context;
+use crate::error::Error;
 
 /// LanGrust type system.
 ///
@@ -198,6 +200,56 @@ impl Type {
             Err(error)
         }
     }
+
+    /// Determine the type if undefined
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::ast::{
+    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    /// };
+    ///
+    /// let mut errors = vec![];
+    /// let mut user_types_context = HashMap::new();
+    /// user_types_context.insert(
+    ///     String::from("Point"),
+    ///     UserDefinedType::Structure {
+    ///         id: String::from("Point"),
+    ///         fields: vec![
+    ///             (String::from("x"), Type::Integer),
+    ///             (String::from("y"), Type::Integer),
+    ///         ],
+    ///         location: Location::default(),
+    ///     }
+    /// );
+    ///
+    /// let mut my_type = Type::NotDefinedYet(String::from("Point"));
+    ///
+    /// let control = Type::Structure(String::from("Point"));
+    ///
+    /// my_type
+    ///     .determine(Location::default(), &user_types_context, &mut errors)
+    ///     .unwrap();
+    ///
+    /// assert_eq!(my_type, control);
+    /// ```
+    pub fn determine(
+        &mut self,
+        location: Location,
+        user_types_context: &HashMap<String, UserDefinedType>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
+        match self {
+            Type::NotDefinedYet(name) => {
+                let user_type =
+                    user_types_context.get_user_type_or_error(name.clone(), location, errors)?;
+                *self = user_type.into_type();
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -286,5 +338,67 @@ mod apply {
             .unwrap_err();
 
         assert_eq!(errors, vec![application_result]);
+    }
+}
+
+#[cfg(test)]
+mod determine {
+    use std::collections::HashMap;
+
+    use crate::ast::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
+    
+    #[test]
+    fn should_determine_undefined_type_when_in_context() {
+        let mut errors = vec![];
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            UserDefinedType::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut my_type = Type::NotDefinedYet(String::from("Point"));
+
+        let control = Type::Structure(String::from("Point"));
+
+        my_type
+            .determine(Location::default(), &user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(my_type, control);
+    }
+
+    #[test]
+    fn should_leave_already_determined_types_unchanged() {
+        let mut errors = vec![];
+        let user_types_context = HashMap::new();
+
+        let mut my_type = Type::Integer;
+
+        let control = Type::Integer;
+
+        my_type
+            .determine(Location::default(), &user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(my_type, control);
+    }
+    
+    #[test]
+    fn should_raise_error_for_undefined_type_when_not_in_context() {
+        let mut errors = vec![];
+        let user_types_context = HashMap::new();
+
+        let mut my_type = Type::NotDefinedYet(String::from("Point"));
+
+        my_type
+            .determine(Location::default(), &user_types_context, &mut errors)
+            .unwrap_err();
     }
 }
