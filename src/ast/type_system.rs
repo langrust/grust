@@ -293,7 +293,7 @@ impl Type {
         match self {
             Type::NotDefinedYet(name) => {
                 let user_type =
-                    user_types_context.get_user_type_or_error(name.clone(), location, errors)?;
+                    user_types_context.get_user_type_or_error(name, location, errors)?;
                 *self = user_type.into_type();
                 Ok(())
             }
