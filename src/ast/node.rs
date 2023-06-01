@@ -479,9 +479,12 @@ impl Node {
         // differenciate output form local signals
         let mut outputs = HashMap::new();
         let mut locals = HashMap::new();
+
         // create signals context: inputs + outputs + locals
         // and check that no signal is duplicated
         let mut signals_context = HashMap::new();
+        
+        // add inputs in signals context
         inputs
             .iter()
             .map(|(id, signal_type)| {
@@ -495,6 +498,8 @@ impl Node {
             .collect::<Vec<Result<(), Error>>>()
             .into_iter()
             .collect::<Result<(), Error>>()?;
+        
+        // add signals defined by equations in contexts
         equations
             .iter()
             .map(
@@ -508,29 +513,25 @@ impl Node {
                         ..
                     },
                 )| {
+                    // differenciate output form local signals
+                    match scope {
+                        Scope::Output => outputs.insert(
+                            id.clone(),
+                            signal_type.clone(),
+                        ),
+                        Scope::Local => locals.insert(
+                            id.clone(),
+                            signal_type.clone(),
+                        ),
+                        _ => unreachable!(),
+                    };
                     // check that no signal is duplicated
                     signals_context.insert_unique(
                         id.clone(),
                         signal_type.clone(),
                         location.clone(),
                         errors,
-                    )?;
-                    // differenciate output form local signals
-                    match scope {
-                        Scope::Output => outputs.insert_unique(
-                            id.clone(),
-                            signal_type.clone(),
-                            location.clone(),
-                            errors,
-                        ),
-                        Scope::Local => locals.insert_unique(
-                            id.clone(),
-                            signal_type.clone(),
-                            location.clone(),
-                            errors,
-                        ),
-                        _ => unreachable!(),
-                    }
+                    )
                 },
             )
             .collect::<Vec<Result<(), Error>>>()
