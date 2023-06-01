@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::type_system::Type;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 /// The description of a node's signals.
 pub struct NodeDescription {
     /// Node's input signals.
