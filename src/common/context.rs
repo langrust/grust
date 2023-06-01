@@ -32,12 +32,12 @@ pub trait Context {
     /// let name = String::from("x");
     /// context.insert(name.clone(), 1);
     ///
-    /// context.get_element_or_error(name, location.clone(), &mut errors).unwrap();
-    /// context.get_element_or_error(String::from("y"), location, &mut errors).unwrap_err();
+    /// context.get_element_or_error(&name, location.clone(), &mut errors).unwrap();
+    /// context.get_element_or_error(&String::from("y"), location, &mut errors).unwrap_err();
     /// ```
     fn get_element_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
@@ -63,12 +63,12 @@ pub trait Context {
     /// let name = String::from("x");
     /// context.insert(name.clone(), 1);
     ///
-    /// context.get_signal_or_error(name, location.clone(), &mut errors).unwrap();
-    /// context.get_signal_or_error(String::from("y"), location, &mut errors).unwrap_err();
+    /// context.get_signal_or_error(&name, location.clone(), &mut errors).unwrap();
+    /// context.get_signal_or_error(&String::from("y"), location, &mut errors).unwrap_err();
     /// ```
     fn get_signal_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
@@ -94,12 +94,12 @@ pub trait Context {
     /// let name = String::from("my_node");
     /// context.insert(name.clone(), 1);
     ///
-    /// context.get_signal_or_error(name, location.clone(), &mut errors).unwrap();
-    /// context.get_signal_or_error(String::from("unknown_node"), location, &mut errors).unwrap_err();
+    /// context.get_signal_or_error(&name, location.clone(), &mut errors).unwrap();
+    /// context.get_signal_or_error(&String::from("unknown_node"), location, &mut errors).unwrap_err();
     /// ```
     fn get_node_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
@@ -125,12 +125,12 @@ pub trait Context {
     /// let enumeration_name = String::from("Color");
     /// context.insert(enumeration_name.clone(), Type::Enumeration(String::from("Color")));
     ///
-    /// context.get_user_type_or_error(enumeration_name, location.clone(), &mut errors).unwrap();
-    /// context.get_user_type_or_error(String::from("Day"), location, &mut errors).unwrap_err();
+    /// context.get_user_type_or_error(&enumeration_name, location.clone(), &mut errors).unwrap();
+    /// context.get_user_type_or_error(&String::from("Day"), location, &mut errors).unwrap_err();
     /// ```
     fn get_user_type_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
@@ -157,13 +157,13 @@ pub trait Context {
     /// let field_name = String::from("minute");
     /// structure_fields.insert(field_name.clone(), Type::Integer);
     ///
-    /// structure_fields.get_field_or_error(structure_name.clone(), field_name, location.clone(), &mut errors).unwrap();
-    /// structure_fields.get_field_or_error(structure_name.clone(), String::from("hour"), location, &mut errors).unwrap_err();
+    /// structure_fields.get_field_or_error(&structure_name, &field_name, location.clone(), &mut errors).unwrap();
+    /// structure_fields.get_field_or_error(&structure_name, &String::from("hour"), location, &mut errors).unwrap_err();
     /// ```
     fn get_field_or_error(
         &self,
-        structure_name: String,
-        field_name: String,
+        structure_name: &String,
+        field_name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error>;
@@ -241,11 +241,11 @@ impl<V> Context for HashMap<String, V> {
 
     fn get_element_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error> {
-        match self.get(&name) {
+        match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownElement {
@@ -260,11 +260,11 @@ impl<V> Context for HashMap<String, V> {
 
     fn get_signal_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error> {
-        match self.get(&name) {
+        match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownSignal {
@@ -279,11 +279,11 @@ impl<V> Context for HashMap<String, V> {
 
     fn get_node_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error> {
-        match self.get(&name) {
+        match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownNode {
@@ -298,11 +298,11 @@ impl<V> Context for HashMap<String, V> {
 
     fn get_user_type_or_error(
         &self,
-        name: String,
+        name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error> {
-        match self.get(&name) {
+        match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownType {
@@ -317,17 +317,17 @@ impl<V> Context for HashMap<String, V> {
 
     fn get_field_or_error(
         &self,
-        structure_name: String,
-        field_name: String,
+        structure_name: &String,
+        field_name: &String,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<&Self::Item, Error> {
-        match self.get(&field_name) {
+        match self.get(field_name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownField {
-                    structure_name,
-                    field_name,
+                    structure_name: structure_name.clone(),
+                    field_name: field_name.clone(),
                     location: location.clone(),
                 };
                 errors.push(error.clone());
@@ -389,7 +389,7 @@ mod get_element_or_error {
         elements_context.insert(name.clone(), Type::Integer);
 
         let element_type = elements_context
-            .get_element_or_error(name, Location::default(), &mut errors)
+            .get_element_or_error(&name, Location::default(), &mut errors)
             .unwrap();
 
         let control = Type::Integer;
@@ -406,7 +406,7 @@ mod get_element_or_error {
         elements_context.insert(name.clone(), Type::Integer);
 
         let _ = elements_context
-            .get_element_or_error(name, Location::default(), &mut errors)
+            .get_element_or_error(&name, Location::default(), &mut errors)
             .unwrap();
 
         let control = vec![];
@@ -423,7 +423,7 @@ mod get_element_or_error {
         elements_context.insert(name, Type::Integer);
 
         let error = elements_context
-            .get_element_or_error(String::from("y"), Location::default(), &mut errors)
+            .get_element_or_error(&String::from("y"), Location::default(), &mut errors)
             .unwrap_err();
 
         let control = vec![error];
@@ -449,8 +449,8 @@ mod get_field_or_error {
 
         let field_type = structure_fields
             .get_field_or_error(
-                structure_name,
-                String::from("x"),
+                &structure_name,
+                &String::from("x"),
                 Location::default(),
                 &mut errors,
             )
@@ -472,8 +472,8 @@ mod get_field_or_error {
 
         let _ = structure_fields
             .get_field_or_error(
-                structure_name,
-                String::from("x"),
+                &structure_name,
+                &String::from("x"),
                 Location::default(),
                 &mut errors,
             )
@@ -495,8 +495,8 @@ mod get_field_or_error {
 
         let error = structure_fields
             .get_field_or_error(
-                structure_name,
-                String::from("z"),
+                &structure_name,
+                &String::from("z"),
                 Location::default(),
                 &mut errors,
             )
