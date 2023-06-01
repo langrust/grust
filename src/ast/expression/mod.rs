@@ -1243,6 +1243,7 @@ mod typing {
     #[test]
     fn should_type_match_structure_expression() {
         let mut errors = vec![];
+        let global_context = HashMap::new();
         let mut elements_context = HashMap::new();
         elements_context.insert(String::from("p"), Type::Structure(String::from("Point")));
         elements_context.insert(
@@ -1417,7 +1418,12 @@ mod typing {
         };
 
         expression
-            .typing(&elements_context, &user_types_context, &mut errors)
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap();
 
         assert_eq!(expression, control);
