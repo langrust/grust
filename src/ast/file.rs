@@ -206,11 +206,10 @@ impl File {
     ///
     /// # Example
     /// ```rust
-    /// use std::collections::HashMap;
     /// use grustine::ast::{
-    ///     constant::Constant, calculus::Calculus, function::Function, location::Location,
+    ///     calculus::Calculus, function::Function, location::Location,
     ///     expression::Expression, type_system::Type, equation::Equation, node::Node, file::File,
-    ///     node_description::NodeDescription, scope::Scope, stream_expression::StreamExpression,
+    ///     scope::Scope, stream_expression::StreamExpression,
     /// };
     ///
     /// let mut errors = vec![];
@@ -555,5 +554,419 @@ impl File {
                     .collect::<Result<(), Error>>()
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod typing {
+    use crate::ast::{
+        calculus::Calculus, component::Component, equation::Equation, expression::Expression,
+        file::File, function::Function, location::Location, node::Node, scope::Scope,
+        stream_expression::StreamExpression, type_system::Type,
+    };
+
+    #[test]
+    fn should_type_well_defined_module() {
+        let mut errors = vec![];
+
+        let node = Node {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("x"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("x"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("i"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let function = Function {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            calculi: vec![(
+                String::from("x"),
+                Calculus {
+                    id: String::from("x"),
+                    element_type: Type::Integer,
+                    expression: Expression::Call {
+                        id: String::from("i"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            )],
+            returned: (
+                Type::Integer,
+                Expression::Call {
+                    id: String::from("x"),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ),
+            location: Location::default(),
+        };
+
+        let mut file = File::Module {
+            user_defined_types: vec![],
+            functions: vec![function],
+            nodes: vec![node],
+            location: Location::default(),
+        };
+
+        let expected_node = Node {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("x"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("x"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("i"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let expected_function = Function {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            calculi: vec![(
+                String::from("x"),
+                Calculus {
+                    id: String::from("x"),
+                    element_type: Type::Integer,
+                    expression: Expression::Call {
+                        id: String::from("i"),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            )],
+            returned: (
+                Type::Integer,
+                Expression::Call {
+                    id: String::from("x"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+            ),
+            location: Location::default(),
+        };
+
+        let control = File::Module {
+            user_defined_types: vec![],
+            functions: vec![expected_function],
+            nodes: vec![expected_node],
+            location: Location::default(),
+        };
+
+        file.typing(&mut errors).unwrap();
+
+        assert_eq!(file, control);
+    }
+
+    #[test]
+    fn should_type_well_defined_program() {
+        let mut errors = vec![];
+
+        let component = Component {
+            id: String::from("program_component"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("test"),
+                                typing: None,
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("x"),
+                                typing: None,
+                                location: Location::default(),
+                            }],
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("x"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("x"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::NodeApplication {
+                            node: String::from("test"),
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("i"),
+                                typing: None,
+                                location: Location::default(),
+                            }],
+                            signal: String::from("o"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let node = Node {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("x"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("x"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("i"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let function = Function {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            calculi: vec![(
+                String::from("x"),
+                Calculus {
+                    id: String::from("x"),
+                    element_type: Type::Integer,
+                    expression: Expression::Call {
+                        id: String::from("i"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            )],
+            returned: (
+                Type::Integer,
+                Expression::Call {
+                    id: String::from("x"),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ),
+            location: Location::default(),
+        };
+
+        let mut file = File::Program {
+            user_defined_types: vec![],
+            functions: vec![function],
+            nodes: vec![node],
+            component,
+            location: Location::default(),
+        };
+
+        let expected_component = Component {
+            id: String::from("program_component"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("test"),
+                                typing: Some(Type::Abstract(
+                                    Box::new(Type::Integer),
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("x"),
+                                typing: Some(Type::Integer),
+                                location: Location::default(),
+                            }],
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("x"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("x"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::NodeApplication {
+                            node: String::from("test"),
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("i"),
+                                typing: Some(Type::Integer),
+                                location: Location::default(),
+                            }],
+                            signal: String::from("o"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let expected_node = Node {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("x"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("x"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("i"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let expected_function = Function {
+            id: String::from("test"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            calculi: vec![(
+                String::from("x"),
+                Calculus {
+                    id: String::from("x"),
+                    element_type: Type::Integer,
+                    expression: Expression::Call {
+                        id: String::from("i"),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            )],
+            returned: (
+                Type::Integer,
+                Expression::Call {
+                    id: String::from("x"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+            ),
+            location: Location::default(),
+        };
+
+        let control = File::Program {
+            user_defined_types: vec![],
+            functions: vec![expected_function],
+            nodes: vec![expected_node],
+            component: expected_component,
+            location: Location::default(),
+        };
+
+        file.typing(&mut errors).unwrap();
+
+        assert_eq!(file, control);
     }
 }
