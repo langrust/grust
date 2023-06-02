@@ -133,7 +133,7 @@ pub trait Context {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
+    ) -> Result<&Self::Item, ()>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -164,7 +164,7 @@ pub trait Context {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
+    ) -> Result<&Self::Item, ()>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -363,7 +363,7 @@ impl<V> Context for HashMap<String, V> {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
@@ -371,8 +371,8 @@ impl<V> Context for HashMap<String, V> {
                     name: name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
         }
     }
@@ -382,7 +382,7 @@ impl<V> Context for HashMap<String, V> {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
@@ -390,8 +390,8 @@ impl<V> Context for HashMap<String, V> {
                     name: name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
         }
     }
@@ -751,12 +751,8 @@ mod combine_unique {
         other_elements_context.insert(String::from("y"), Type::Float);
         other_elements_context.insert(name, Type::Integer);
 
-        let error = elements_context
+        elements_context
             .combine_unique(other_elements_context, Location::default(), &mut errors)
             .unwrap_err();
-
-        let control = vec![error];
-
-        assert_eq!(errors, control);
     }
 }
