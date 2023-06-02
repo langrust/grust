@@ -40,7 +40,7 @@ pub trait Context {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
+    ) -> Result<&Self::Item, ()>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -71,7 +71,7 @@ pub trait Context {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
+    ) -> Result<&Self::Item, ()>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -102,7 +102,7 @@ pub trait Context {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
+    ) -> Result<&Self::Item, ()>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -133,7 +133,7 @@ pub trait Context {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
+    ) -> Result<&Self::Item, ()>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -166,7 +166,7 @@ pub trait Context {
         field_name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
+    ) -> Result<&Self::Item, ()>;
 
     /// Insert the item corresponding to the name or raises an error.
     ///
@@ -198,7 +198,7 @@ pub trait Context {
         item: Self::Item,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ()>;
 
     /// Combine contexts or raises an error.
     ///
@@ -233,7 +233,7 @@ pub trait Context {
         other: Self,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ()>;
 }
 
 impl<V> Context for HashMap<String, V> {
@@ -244,7 +244,7 @@ impl<V> Context for HashMap<String, V> {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
@@ -252,8 +252,8 @@ impl<V> Context for HashMap<String, V> {
                     name: name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
         }
     }
@@ -263,7 +263,7 @@ impl<V> Context for HashMap<String, V> {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
@@ -271,8 +271,8 @@ impl<V> Context for HashMap<String, V> {
                     name: name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
         }
     }
@@ -282,7 +282,7 @@ impl<V> Context for HashMap<String, V> {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
@@ -290,8 +290,8 @@ impl<V> Context for HashMap<String, V> {
                     name: name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
         }
     }
@@ -301,7 +301,7 @@ impl<V> Context for HashMap<String, V> {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
@@ -309,8 +309,8 @@ impl<V> Context for HashMap<String, V> {
                     name: name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
         }
     }
@@ -321,7 +321,7 @@ impl<V> Context for HashMap<String, V> {
         field_name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(field_name) {
             Some(item) => Ok(item),
             None => {
@@ -330,8 +330,8 @@ impl<V> Context for HashMap<String, V> {
                     field_name: field_name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
         }
     }
@@ -342,15 +342,15 @@ impl<V> Context for HashMap<String, V> {
         item: Self::Item,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self.get(&name) {
             Some(_) => {
                 let error = Error::AlreadyDefinedElement {
                     name: name.clone(),
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
             None => {
                 self.insert(name, item);
@@ -364,13 +364,13 @@ impl<V> Context for HashMap<String, V> {
         other: Self,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         other
             .into_iter()
             .map(|(name, item)| self.insert_unique(name, item, location.clone(), errors))
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()
+            .collect::<Result<(), ()>>()
     }
 }
 
@@ -422,13 +422,9 @@ mod get_element_or_error {
         let name = String::from("x");
         elements_context.insert(name, Type::Integer);
 
-        let error = elements_context
+        elements_context
             .get_element_or_error(&String::from("y"), Location::default(), &mut errors)
             .unwrap_err();
-
-        let control = vec![error];
-
-        assert_eq!(errors, control);
     }
 }
 
@@ -493,7 +489,7 @@ mod get_field_or_error {
         structure_fields.insert(String::from("x"), Type::Integer);
         structure_fields.insert(String::from("y"), Type::Integer);
 
-        let error = structure_fields
+        structure_fields
             .get_field_or_error(
                 &structure_name,
                 &String::from("z"),
@@ -501,10 +497,6 @@ mod get_field_or_error {
                 &mut errors,
             )
             .unwrap_err();
-
-        let control = vec![error];
-
-        assert_eq!(errors, control);
     }
 }
 
@@ -562,7 +554,7 @@ mod insert_unique {
         let name = String::from("x");
         elements_context.insert(name, Type::Integer);
 
-        let error = elements_context
+        elements_context
             .insert_unique(
                 String::from("x"),
                 Type::Float,
@@ -570,10 +562,6 @@ mod insert_unique {
                 &mut errors,
             )
             .unwrap_err();
-
-        let control = vec![error];
-
-        assert_eq!(errors, control);
     }
 }
 
@@ -617,12 +605,8 @@ mod combine_unique {
         other_elements_context.insert(String::from("y"), Type::Float);
         other_elements_context.insert(name, Type::Integer);
 
-        let error = elements_context
+        elements_context
             .combine_unique(other_elements_context, Location::default(), &mut errors)
             .unwrap_err();
-
-        let control = vec![error];
-
-        assert_eq!(errors, control);
     }
 }

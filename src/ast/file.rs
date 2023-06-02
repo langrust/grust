@@ -288,7 +288,7 @@ impl File {
     ///
     /// file.typing(&mut errors).unwrap();
     /// ```
-    pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), Error> {
+    pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
         match self {
             File::Module {
                 user_defined_types,
@@ -306,17 +306,17 @@ impl File {
                         | UserDefinedType::Array { id, location, .. } => user_types_context
                             .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // determine types in user_defined_types
                 user_defined_types
                     .iter_mut()
                     .map(|user_type| user_type.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // recreate a user_types_context with determined types
                 let mut user_types_context = HashMap::new();
@@ -328,25 +328,25 @@ impl File {
                         | UserDefinedType::Array { id, location, .. } => user_types_context
                             .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // determine types in nodes
                 nodes
                     .iter_mut()
                     .map(|node| node.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // determine types in functions
                 functions
                     .iter_mut()
                     .map(|function| function.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // create nodes_context
                 let mut nodes_context = HashMap::new();
@@ -361,9 +361,9 @@ impl File {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // generate global_context
                 let mut global_context = global_context::generate();
@@ -396,9 +396,9 @@ impl File {
                             )
                         },
                     )
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // typing nodes
                 nodes
@@ -406,17 +406,17 @@ impl File {
                     .map(|node| {
                         node.typing(&nodes_context, &global_context, &user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // typing functions
                 functions
                     .iter_mut()
                     .map(|function| function.typing(&global_context, &user_types_context, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()
+                    .collect::<Result<(), ()>>()
             }
             File::Program {
                 user_defined_types,
@@ -435,17 +435,17 @@ impl File {
                         | UserDefinedType::Array { id, location, .. } => user_types_context
                             .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // determine types in user_defined_types
                 user_defined_types
                     .iter_mut()
                     .map(|user_type| user_type.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // recreate a user_types_context with determined types
                 let mut user_types_context = HashMap::new();
@@ -457,17 +457,17 @@ impl File {
                         | UserDefinedType::Array { id, location, .. } => user_types_context
                             .insert_unique(id.clone(), user_type.clone(), location.clone(), errors),
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // determine types in nodes
                 nodes
                     .iter_mut()
                     .map(|node| node.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // determine types in component
                 component.determine_types(&user_types_context, errors)?;
@@ -476,9 +476,9 @@ impl File {
                 functions
                     .iter_mut()
                     .map(|function| function.determine_types(&user_types_context, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // create nodes_context
                 let mut nodes_context = HashMap::new();
@@ -493,9 +493,9 @@ impl File {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // generate global_context
                 let mut global_context = global_context::generate();
@@ -528,9 +528,9 @@ impl File {
                             )
                         },
                     )
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // typing nodes
                 nodes
@@ -538,9 +538,9 @@ impl File {
                     .map(|node| {
                         node.typing(&nodes_context, &global_context, &user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // typing component
                 component.typing(&nodes_context, &global_context, &user_types_context, errors)?;
@@ -549,9 +549,9 @@ impl File {
                 functions
                     .iter_mut()
                     .map(|function| function.typing(&global_context, &user_types_context, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()
+                    .collect::<Result<(), ()>>()
             }
         }
     }

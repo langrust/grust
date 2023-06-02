@@ -11,7 +11,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // an application expression type is the result of the application
             // of the inputs types to the abstraction/function type
@@ -34,9 +34,9 @@ impl Expression {
                     .map(|input| {
                         input.typing(global_context, elements_context, user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>();
+                    .collect::<Result<(), ()>>();
 
                 // test if there were some errors
                 test_typing_function_expression?;
@@ -148,7 +148,7 @@ mod typing_application {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing_application(
                 &global_context,
                 &elements_context,
@@ -156,7 +156,5 @@ mod typing_application {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }

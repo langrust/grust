@@ -118,7 +118,7 @@ impl Type {
         input_type: Type,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, Error> {
+    ) -> Result<Type, ()> {
         match self {
             // if self is an abstraction, check if the input types are equal
             // and return the output type as the type of the application
@@ -147,8 +147,8 @@ impl Type {
                         given_type,
                         location,
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 } else if new_types.len() == 1 {
                     Ok(new_types.pop().unwrap())
                 } else {
@@ -161,8 +161,8 @@ impl Type {
                     given_type: self,
                     location,
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
         }
     }
@@ -187,7 +187,7 @@ impl Type {
         expected_type: &Type,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         if self.eq(expected_type) {
             Ok(())
         } else {
@@ -196,8 +196,8 @@ impl Type {
                 expected_type: expected_type.clone(),
                 location: location,
             };
-            errors.push(error.clone());
-            Err(error)
+            errors.push(error);
+            Err(())
         }
     }
 
@@ -239,7 +239,7 @@ impl Type {
         location: Location,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             Type::NotDefinedYet(name) => {
                 let user_type =
@@ -280,11 +280,9 @@ mod apply {
         let output_type = Type::Boolean;
         let abstraction_type = Type::Abstract(Box::new(input_type), Box::new(output_type));
 
-        let application_result = abstraction_type
+        abstraction_type
             .apply(Type::Float, Location::default(), &mut errors)
             .unwrap_err();
-
-        assert_eq!(errors, vec![application_result]);
     }
 
     #[test]
@@ -333,11 +331,9 @@ mod apply {
             Type::Abstract(Box::new(Type::Float), Box::new(Type::Float)),
         ]);
 
-        let application_result = choice_type
+        choice_type
             .apply(Type::Boolean, Location::default(), &mut errors)
             .unwrap_err();
-
-        assert_eq!(errors, vec![application_result]);
     }
 }
 

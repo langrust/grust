@@ -16,7 +16,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // the type of the structure is the corresponding structure type
             // if fields match their expected types
@@ -44,9 +44,9 @@ impl StreamExpression {
                                     errors,
                                 )
                             })
-                            .collect::<Vec<Result<(), Error>>>()
+                            .collect::<Vec<Result<(), ()>>>()
                             .into_iter()
-                            .collect::<Result<(), Error>>()?;
+                            .collect::<Result<(), ()>>()?;
 
                         // check that the structure is well defined
                         let well_defined_field =
@@ -66,8 +66,8 @@ impl StreamExpression {
                             given_type: user_type.into_type(),
                             location: location.clone(),
                         };
-                        errors.push(error.clone());
-                        Err(error)
+                        errors.push(error);
+                        Err(())
                     }
                 }
             }
@@ -214,7 +214,7 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing_structure(
                 &nodes_context,
                 &signals_context,
@@ -223,8 +223,6 @@ mod typing_structure {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -260,7 +258,7 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing_structure(
                 &nodes_context,
                 &signals_context,
@@ -269,8 +267,6 @@ mod typing_structure {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -316,7 +312,7 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing_structure(
                 &nodes_context,
                 &signals_context,
@@ -325,8 +321,6 @@ mod typing_structure {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -382,7 +376,7 @@ mod typing_structure {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing_structure(
                 &nodes_context,
                 &signals_context,
@@ -391,7 +385,5 @@ mod typing_structure {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }

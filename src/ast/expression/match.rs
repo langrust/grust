@@ -11,7 +11,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // the type of a match expression is the type of all branches expressions
             Expression::Match {
@@ -59,9 +59,9 @@ impl Expression {
                         optional_test_expression_typing_test?;
                         arm_expression_typing_test
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 let first_type = arms[0].2.get_type().unwrap();
                 arms.iter()
@@ -69,9 +69,9 @@ impl Expression {
                         let arm_expression_type = arm_expression.get_type().unwrap();
                         arm_expression_type.eq_check(first_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // todo: patterns should be exhaustive
                 *typing = Some(first_type.clone());

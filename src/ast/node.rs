@@ -89,7 +89,7 @@ impl Node {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         let Node {
             id,
             equations,
@@ -116,9 +116,9 @@ impl Node {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()?;
+            .collect::<Result<(), ()>>()?;
         signals_context.combine_unique(outputs.clone(), location.clone(), errors)?;
         signals_context.combine_unique(locals.clone(), location.clone(), errors)?;
 
@@ -134,9 +134,9 @@ impl Node {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()
+            .collect::<Result<(), ()>>()
     }
 
     /// Create a [NodeDescription] from a [Node]
@@ -197,7 +197,7 @@ impl Node {
     ///
     /// assert_eq!(node_description, control);
     /// ```
-    pub fn into_node_description(&self, errors: &mut Vec<Error>) -> Result<NodeDescription, Error> {
+    pub fn into_node_description(&self, errors: &mut Vec<Error>) -> Result<NodeDescription, ()> {
         let Node {
             inputs,
             equations,
@@ -224,9 +224,9 @@ impl Node {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()?;
+            .collect::<Result<(), ()>>()?;
 
         // add signals defined by equations in contexts
         equations
@@ -257,9 +257,9 @@ impl Node {
                     )
                 },
             )
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()?;
+            .collect::<Result<(), ()>>()?;
 
         Ok(NodeDescription {
             inputs: inputs.clone(),
@@ -383,7 +383,7 @@ impl Node {
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         let Node {
             inputs,
             equations,
@@ -397,17 +397,17 @@ impl Node {
             .map(|(_, input_type)| {
                 input_type.determine(location.clone(), user_types_context, errors)
             })
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()?;
+            .collect::<Result<(), ()>>()?;
 
         // determine equations types
         equations
             .iter_mut()
             .map(|(_, equation)| equation.determine_types(user_types_context, errors))
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()
+            .collect::<Result<(), ()>>()
     }
 }
 
@@ -570,16 +570,13 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = node
-            .typing(
-                &nodes_context,
-                &global_context,
-                &user_types_context,
-                &mut errors,
-            )
-            .unwrap_err();
-
-        assert_eq!(errors, vec![error])
+        node.typing(
+            &nodes_context,
+            &global_context,
+            &user_types_context,
+            &mut errors,
+        )
+        .unwrap_err();
     }
 }
 
