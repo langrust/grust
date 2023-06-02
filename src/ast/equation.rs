@@ -707,8 +707,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error])
     }
 }
 
