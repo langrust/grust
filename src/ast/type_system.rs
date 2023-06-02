@@ -289,7 +289,7 @@ impl Type {
         location: Location,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             Type::NotDefinedYet(name) => {
                 let user_type =
