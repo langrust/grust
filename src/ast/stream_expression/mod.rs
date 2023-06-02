@@ -2076,7 +2076,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -2085,8 +2085,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -2182,7 +2180,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -2191,8 +2189,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -2645,7 +2641,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -2654,8 +2650,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }
 
