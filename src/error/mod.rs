@@ -21,7 +21,7 @@ use crate::ast::{location::Location, pattern::Pattern, type_system::Type};
 /// errors.push(error);
 /// ```
 ///
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     /// encountering an unknown element
     UnknownElement {
