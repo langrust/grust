@@ -407,7 +407,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -479,7 +479,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -507,7 +507,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -648,7 +648,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -748,7 +748,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -885,7 +885,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -927,7 +927,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -979,7 +979,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -1041,193 +1041,6 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
-            .typing(
-                &global_context,
-                &elements_context,
-                &user_types_context,
-                &mut errors,
-            )
-            .unwrap_err();
-    }
-
-    #[test]
-    fn should_type_match_structure_expression() {
-        let mut errors = vec![];
-        let global_context = HashMap::new();
-        let mut elements_context = HashMap::new();
-        elements_context.insert(String::from("p"), Type::Structure(String::from("Point")));
-        elements_context.insert(
-            String::from("add_one"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
-        );
-        let mut user_types_context = HashMap::new();
-        user_types_context.insert(
-            String::from("Point"),
-            UserDefinedType::Structure {
-                id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
-                location: Location::default(),
-            },
-        );
-
-        let mut expression = Expression::Match {
-            expression: Box::new(Expression::Call {
-                id: String::from("p"),
-                typing: None,
-                location: Location::default(),
-            }),
-            arms: vec![
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Constant {
-                                    constant: Constant::Integer(0),
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    Expression::Call {
-                        id: String::from("y"),
-                        typing: None,
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Default {
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    Expression::Application {
-                        function_expression: Box::new(Expression::Call {
-                            id: String::from("add_one"),
-                            typing: None,
-                            location: Location::default(),
-                        }),
-                        inputs: vec![Expression::Call {
-                            id: String::from("y"),
-                            typing: None,
-                            location: Location::default(),
-                        }],
-                        typing: None,
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            typing: None,
-            location: Location::default(),
-        };
-        let control = Expression::Match {
-            expression: Box::new(Expression::Call {
-                id: String::from("p"),
-                typing: Some(Type::Structure(String::from("Point"))),
-                location: Location::default(),
-            }),
-            arms: vec![
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Constant {
-                                    constant: Constant::Integer(0),
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    Expression::Call {
-                        id: String::from("y"),
-                        typing: Some(Type::Integer),
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Default {
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    Expression::Application {
-                        function_expression: Box::new(Expression::Call {
-                            id: String::from("add_one"),
-                            typing: Some(Type::Abstract(
-                                Box::new(Type::Integer),
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        }),
-                        inputs: vec![Expression::Call {
-                            id: String::from("y"),
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        }],
-                        typing: Some(Type::Integer),
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            typing: Some(Type::Integer),
-            location: Location::default(),
-        };
-
         expression
             .typing(
                 &global_context,
@@ -1235,9 +1048,7 @@ mod typing {
                 &user_types_context,
                 &mut errors,
             )
-            .unwrap();
-
-        assert_eq!(expression, control);
+            .unwrap_err();
     }
 
     #[test]

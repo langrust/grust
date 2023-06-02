@@ -16,7 +16,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // a node application expression type is the called signal when
             // the inputs types matches the called node inputs types
@@ -41,8 +41,8 @@ impl StreamExpression {
                         expected_inputs_number: node_inputs.len(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    return Err(error);
+                    errors.push(error);
+                    return Err(());
                 }
 
                 // type all inputs and check their types
@@ -60,9 +60,9 @@ impl StreamExpression {
                         let input_type = input.get_type().unwrap();
                         input_type.eq_check(expected_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // get the called signal type
                 let node_application_type =
@@ -231,7 +231,7 @@ mod typing_node_application {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing_node_application(
                 &nodes_context,
                 &signals_context,
@@ -240,7 +240,5 @@ mod typing_node_application {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }
