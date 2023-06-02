@@ -1076,8 +1076,9 @@ mod into_node_description {
     use std::collections::HashMap;
 
     use crate::ast::{
-        equation::Equation, location::Location, component::Component, node_description::NodeDescription,
-        scope::Scope, stream_expression::StreamExpression, type_system::Type,
+        component::Component, equation::Equation, location::Location,
+        node_description::NodeDescription, scope::Scope, stream_expression::StreamExpression,
+        type_system::Type,
     };
     #[test]
     fn should_return_a_node_description_from_a_component_with_no_duplicates() {
