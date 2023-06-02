@@ -407,7 +407,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -479,7 +479,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -507,7 +507,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -648,7 +648,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -748,7 +748,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -885,7 +885,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -927,7 +927,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -979,7 +979,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -1041,7 +1041,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
