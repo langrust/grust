@@ -106,130 +106,6 @@ pub trait Context {
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
-    /// Raises an [Error::UnknownSignal] when the context does not contains an item
-    /// corresponding to the name. Otherwise, returns a reference to the item.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    ///
-    /// ```rust
-    /// use std::collections::HashMap;
-    /// use grustine::ast::location::Location;
-    /// use grustine::common::context::Context;
-    ///
-    /// let mut context = HashMap::new();
-    /// let mut errors = vec![];
-    /// let location = Location::default();
-    ///
-    /// let name = String::from("x");
-    /// context.insert(name.clone(), 1);
-    ///
-    /// context.get_signal_or_error(&name, location.clone(), &mut errors).unwrap();
-    /// context.get_signal_or_error(&String::from("y"), location, &mut errors).unwrap_err();
-    /// ```
-    fn get_signal_or_error(
-        &self,
-        name: &String,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()>;
-
-    /// Returns a reference to the item corresponding to the name or raises an error.
-    ///
-    /// Raises an [Error::UnknownNode] when the context does not contains an item
-    /// corresponding to the name. Otherwise, returns a reference to the item.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    ///
-    /// ```rust
-    /// use std::collections::HashMap;
-    /// use grustine::ast::location::Location;
-    /// use grustine::common::context::Context;
-    ///
-    /// let mut context = HashMap::new();
-    /// let mut errors = vec![];
-    /// let location = Location::default();
-    ///
-    /// let name = String::from("my_node");
-    /// context.insert(name.clone(), 1);
-    ///
-    /// context.get_signal_or_error(&name, location.clone(), &mut errors).unwrap();
-    /// context.get_signal_or_error(&String::from("unknown_node"), location, &mut errors).unwrap_err();
-    /// ```
-    fn get_node_or_error(
-        &self,
-        name: &String,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()>;
-
-    /// Returns a reference to the item corresponding to the name or raises an error.
-    ///
-    /// Raises an [Error::UnknownSignal] when the context does not contains an item
-    /// corresponding to the name. Otherwise, returns a reference to the item.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    ///
-    /// ```rust
-    /// use std::collections::HashMap;
-    /// use grustine::ast::location::Location;
-    /// use grustine::common::context::Context;
-    ///
-    /// let mut context = HashMap::new();
-    /// let mut errors = vec![];
-    /// let location = Location::default();
-    ///
-    /// let name = String::from("x");
-    /// context.insert(name.clone(), 1);
-    ///
-    /// context.get_signal_or_error(&name, location.clone(), &mut errors).unwrap();
-    /// context.get_signal_or_error(&String::from("y"), location, &mut errors).unwrap_err();
-    /// ```
-    fn get_signal_or_error(
-        &self,
-        name: &String,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
-
-    /// Returns a reference to the item corresponding to the name or raises an error.
-    ///
-    /// Raises an [Error::UnknownNode] when the context does not contains an item
-    /// corresponding to the name. Otherwise, returns a reference to the item.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    ///
-    /// ```rust
-    /// use std::collections::HashMap;
-    /// use grustine::ast::location::Location;
-    /// use grustine::common::context::Context;
-    ///
-    /// let mut context = HashMap::new();
-    /// let mut errors = vec![];
-    /// let location = Location::default();
-    ///
-    /// let name = String::from("my_node");
-    /// context.insert(name.clone(), 1);
-    ///
-    /// context.get_signal_or_error(&name, location.clone(), &mut errors).unwrap();
-    /// context.get_signal_or_error(&String::from("unknown_node"), location, &mut errors).unwrap_err();
-    /// ```
-    fn get_node_or_error(
-        &self,
-        name: &String,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error>;
-
-    /// Returns a reference to the item corresponding to the name or raises an error.
-    ///
     /// Raises an [Error::UnknownType] when the context does not contains an item
     /// corresponding to the name. Otherwise, returns a reference to the item.
     ///
@@ -322,7 +198,7 @@ pub trait Context {
         item: Self::Item,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ()>;
 
     /// Combine contexts or raises an error.
     ///
@@ -357,7 +233,7 @@ pub trait Context {
         other: Self,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ()>;
 }
 
 impl<V> Context for HashMap<String, V> {
@@ -368,7 +244,7 @@ impl<V> Context for HashMap<String, V> {
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
@@ -420,88 +296,12 @@ impl<V> Context for HashMap<String, V> {
         }
     }
 
-    fn get_signal_or_error(
-        &self,
-        name: &String,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()> {
-        match self.get(name) {
-            Some(item) => Ok(item),
-            None => {
-                let error = Error::UnknownSignal {
-                    name: name.clone(),
-                    location: location.clone(),
-                };
-                errors.push(error);
-                Err(())
-            }
-        }
-    }
-
-    fn get_node_or_error(
-        &self,
-        name: &String,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()> {
-        match self.get(name) {
-            Some(item) => Ok(item),
-            None => {
-                let error = Error::UnknownNode {
-                    name: name.clone(),
-                    location: location.clone(),
-                };
-                errors.push(error);
-                Err(())
-            }
-        }
-    }
-
-    fn get_signal_or_error(
-        &self,
-        name: &String,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
-        match self.get(name) {
-            Some(item) => Ok(item),
-            None => {
-                let error = Error::UnknownSignal {
-                    name: name.clone(),
-                    location: location.clone(),
-                };
-                errors.push(error.clone());
-                Err(error)
-            }
-        }
-    }
-
-    fn get_node_or_error(
-        &self,
-        name: &String,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
-        match self.get(name) {
-            Some(item) => Ok(item),
-            None => {
-                let error = Error::UnknownNode {
-                    name: name.clone(),
-                    location: location.clone(),
-                };
-                errors.push(error.clone());
-                Err(error)
-            }
-        }
-    }
-
     fn get_user_type_or_error(
         &self,
         name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
@@ -521,7 +321,7 @@ impl<V> Context for HashMap<String, V> {
         field_name: &String,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, Error> {
+    ) -> Result<&Self::Item, ()> {
         match self.get(field_name) {
             Some(item) => Ok(item),
             None => {
@@ -564,13 +364,13 @@ impl<V> Context for HashMap<String, V> {
         other: Self,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         other
             .into_iter()
             .map(|(name, item)| self.insert_unique(name, item, location.clone(), errors))
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()
+            .collect::<Result<(), ()>>()
     }
 }
 
@@ -622,7 +422,7 @@ mod get_element_or_error {
         let name = String::from("x");
         elements_context.insert(name, Type::Integer);
 
-        let error = elements_context
+        elements_context
             .get_element_or_error(&String::from("y"), Location::default(), &mut errors)
             .unwrap_err();
     }
@@ -808,101 +608,5 @@ mod combine_unique {
         elements_context
             .combine_unique(other_elements_context, Location::default(), &mut errors)
             .unwrap_err();
-    }
-}
-
-#[cfg(test)]
-mod combine_unique {
-    use crate::ast::{location::Location, type_system::Type};
-    use crate::common::context::Context;
-    use std::collections::HashMap;
-
-    #[test]
-    fn should_combine_contexts_when_disjoint() {
-        let mut errors = vec![];
-        let mut elements_context = HashMap::new();
-        let mut other_elements_context = HashMap::new();
-
-        let name = String::from("x");
-        elements_context.insert(name, Type::Integer);
-        other_elements_context.insert(String::from("y"), Type::Float);
-
-        elements_context
-            .combine_unique(other_elements_context, Location::default(), &mut errors)
-            .unwrap();
-
-        assert_eq!(
-            elements_context,
-            HashMap::from([
-                (String::from("x"), Type::Integer),
-                (String::from("y"), Type::Float)
-            ])
-        )
-    }
-
-    #[test]
-    fn should_raise_error_when_contexts_meet() {
-        let mut errors = vec![];
-        let mut elements_context = HashMap::new();
-        let mut other_elements_context = HashMap::new();
-
-        let name = String::from("x");
-        elements_context.insert(name.clone(), Type::Integer);
-        other_elements_context.insert(String::from("y"), Type::Float);
-        other_elements_context.insert(name, Type::Integer);
-
-        elements_context
-            .combine_unique(other_elements_context, Location::default(), &mut errors)
-            .unwrap_err();
-    }
-}
-
-#[cfg(test)]
-mod combine_unique {
-    use crate::ast::{location::Location, type_system::Type};
-    use crate::common::context::Context;
-    use std::collections::HashMap;
-
-    #[test]
-    fn should_combine_contexts_when_disjoint() {
-        let mut errors = vec![];
-        let mut elements_context = HashMap::new();
-        let mut other_elements_context = HashMap::new();
-
-        let name = String::from("x");
-        elements_context.insert(name, Type::Integer);
-        other_elements_context.insert(String::from("y"), Type::Float);
-
-        elements_context
-            .combine_unique(other_elements_context, Location::default(), &mut errors)
-            .unwrap();
-
-        assert_eq!(
-            elements_context,
-            HashMap::from([
-                (String::from("x"), Type::Integer),
-                (String::from("y"), Type::Float)
-            ])
-        )
-    }
-
-    #[test]
-    fn should_raise_error_when_contexts_meet() {
-        let mut errors = vec![];
-        let mut elements_context = HashMap::new();
-        let mut other_elements_context = HashMap::new();
-
-        let name = String::from("x");
-        elements_context.insert(name.clone(), Type::Integer);
-        other_elements_context.insert(String::from("y"), Type::Float);
-        other_elements_context.insert(name, Type::Integer);
-
-        let error = elements_context
-            .combine_unique(other_elements_context, Location::default(), &mut errors)
-            .unwrap_err();
-
-        let control = vec![error];
-
-        assert_eq!(errors, control);
     }
 }

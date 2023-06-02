@@ -106,9 +106,9 @@ impl UserDefinedType {
     pub fn well_defined_structure<T>(
         &self,
         fields: &Vec<(String, T)>,
-        mut well_defined_field: impl FnMut(&T, &Type, &mut Vec<Error>) -> Result<(), Error>,
+        mut well_defined_field: impl FnMut(&T, &Type, &mut Vec<Error>) -> Result<(), ()>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             UserDefinedType::Structure {
                 id: name,
@@ -135,17 +135,17 @@ impl UserDefinedType {
                             )?,
                         ))
                     })
-                    .collect::<Vec<Result<_, Error>>>()
+                    .collect::<Vec<Result<_, ()>>>()
                     .into_iter()
-                    .collect::<Result<Vec<_>, Error>>()?;
+                    .collect::<Result<Vec<_>, ()>>()?;
 
                 // check that every field is well-defined
                 zipped_fields
                     .into_iter()
                     .map(|(element, field_type)| well_defined_field(element, field_type, errors))
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // convert the fields into an HashMap defined_fields
                 let defined_fields = fields
@@ -165,13 +165,13 @@ impl UserDefinedType {
                                 field_name: id.clone(),
                                 location: location.clone(),
                             };
-                            errors.push(error.clone());
-                            Err(error)
+                            errors.push(error);
+                            Err(())
                         }
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()
+                    .collect::<Result<(), ()>>()
             }
             _ => unreachable!(),
         }
@@ -224,7 +224,7 @@ impl UserDefinedType {
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             UserDefinedType::Structure {
                 fields, location, ..
@@ -233,9 +233,9 @@ impl UserDefinedType {
                 .map(|(_, field_type)| {
                     field_type.determine(location.clone(), user_types_context, errors)
                 })
-                .collect::<Vec<Result<(), Error>>>()
+                .collect::<Vec<Result<(), ()>>>()
                 .into_iter()
-                .collect::<Result<(), Error>>(),
+                .collect::<Result<(), ()>>(),
             UserDefinedType::Enumeration { .. } => Ok(()),
             UserDefinedType::Array {
                 array_type,

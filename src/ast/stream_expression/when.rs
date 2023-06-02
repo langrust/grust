@@ -15,7 +15,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // the type of a when stream expression is the type of both the default and
             // the present stream expressions
@@ -67,8 +67,8 @@ impl StreamExpression {
                             given_type: option_type.clone(),
                             location: location.clone(),
                         };
-                        errors.push(error.clone());
-                        Err(error)
+                        errors.push(error);
+                        Err(())
                     }
                 }
             }
@@ -178,7 +178,7 @@ mod typing_when {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing_when(
                 &nodes_context,
                 &signals_context,
@@ -187,7 +187,5 @@ mod typing_when {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }

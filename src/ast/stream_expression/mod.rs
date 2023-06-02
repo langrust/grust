@@ -147,7 +147,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             StreamExpression::Constant { .. } => self.typing_constant(),
             StreamExpression::SignalCall { .. } => self.typing_signal_call(signals_context, errors),
@@ -496,7 +496,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -505,8 +505,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -542,7 +540,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -551,8 +549,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -598,7 +594,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -607,8 +603,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -664,7 +658,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -673,8 +667,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
     #[test]
     fn should_type_map_application_stream_expression() {
@@ -762,7 +754,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -771,8 +763,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -868,7 +858,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -877,8 +867,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -1331,7 +1319,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -1340,8 +1328,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }
 

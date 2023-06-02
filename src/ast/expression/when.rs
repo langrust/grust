@@ -11,7 +11,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // the type of a when expression is the type of both the default and
             // the present expressions
@@ -55,8 +55,8 @@ impl Expression {
                             given_type: option_type.clone(),
                             location: location.clone(),
                         };
-                        errors.push(error.clone());
-                        Err(error)
+                        errors.push(error);
+                        Err(())
                     }
                 }
             }
@@ -162,7 +162,7 @@ mod typing_when {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing_when(
                 &global_context,
                 &elements_context,
@@ -170,7 +170,5 @@ mod typing_when {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }

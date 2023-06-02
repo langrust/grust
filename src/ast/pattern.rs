@@ -142,7 +142,7 @@ impl Pattern {
         elements_context: &mut HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             Pattern::Identifier { name, location } => elements_context.insert_unique(
                 name.clone(),
@@ -159,8 +159,8 @@ impl Pattern {
                         expected_type: expected_type.clone(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 }
             }
             Pattern::Structure {
@@ -192,8 +192,8 @@ impl Pattern {
                         expected_type: expected_type.clone(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 }
             },
             Pattern::Some { pattern, location } => match expected_type {
@@ -209,8 +209,8 @@ impl Pattern {
                         expected_type: expected_type.clone(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 }
             },
             Pattern::None { location } => match expected_type {
@@ -221,8 +221,8 @@ impl Pattern {
                         expected_type: expected_type.clone(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 }
             },
             Pattern::Default { location: _ } => Ok(()),
@@ -293,7 +293,7 @@ mod construct_context {
         };
         let expected_type = Type::Float;
 
-        let error = given_pattern
+        given_pattern
             .construct_context(
                 &expected_type,
                 &mut elements_context,
@@ -301,7 +301,6 @@ mod construct_context {
                 &mut errors,
             )
             .unwrap_err();
-        assert_eq!(errors, vec![error])
     }
 
     #[test]
@@ -394,7 +393,7 @@ mod construct_context {
         };
         let expected_type = Type::Structure(String::from("Coordinates"));
 
-        let error = given_pattern
+        given_pattern
             .construct_context(
                 &expected_type,
                 &mut elements_context,
@@ -402,7 +401,6 @@ mod construct_context {
                 &mut errors,
             )
             .unwrap_err();
-        assert_eq!(errors, vec![error])
     }
 
     #[test]
@@ -443,7 +441,7 @@ mod construct_context {
         };
         let expected_type = Type::Integer;
 
-        let error = given_pattern
+        given_pattern
             .construct_context(
                 &expected_type,
                 &mut elements_context,
@@ -451,7 +449,6 @@ mod construct_context {
                 &mut errors,
             )
             .unwrap_err();
-        assert_eq!(errors, vec![error])
     }
 
     #[test]
@@ -484,7 +481,7 @@ mod construct_context {
         };
         let expected_type = Type::Integer;
 
-        let error = given_pattern
+        given_pattern
             .construct_context(
                 &expected_type,
                 &mut elements_context,
@@ -492,7 +489,6 @@ mod construct_context {
                 &mut errors,
             )
             .unwrap_err();
-        assert_eq!(errors, vec![error])
     }
 
     #[test]

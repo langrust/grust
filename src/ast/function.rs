@@ -73,7 +73,7 @@ impl Function {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         let Function {
             inputs,
             calculi,
@@ -94,9 +94,9 @@ impl Function {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()?;
+            .collect::<Result<(), ()>>()?;
 
         // type all calculi
         calculi
@@ -115,9 +115,9 @@ impl Function {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()?;
+            .collect::<Result<(), ()>>()?;
 
         // type returned expression
         returned_expression.typing(
@@ -251,7 +251,7 @@ impl Function {
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         let Function {
             inputs,
             calculi,
@@ -266,17 +266,17 @@ impl Function {
             .map(|(_, input_type)| {
                 input_type.determine(location.clone(), user_types_context, errors)
             })
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()?;
+            .collect::<Result<(), ()>>()?;
 
         // determine calculi types
         calculi
             .iter_mut()
             .map(|(_, calculus)| calculus.determine_types(user_types_context, errors))
-            .collect::<Vec<Result<(), Error>>>()
+            .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), Error>>()?;
+            .collect::<Result<(), ()>>()?;
 
         // determine returned type
         returned_type.determine(location.clone(), user_types_context, errors)
@@ -392,11 +392,9 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = function
+        function
             .typing(&global_context, &user_types_context, &mut errors)
             .unwrap_err();
-
-        assert_eq!(errors, vec![error])
     }
 }
 
