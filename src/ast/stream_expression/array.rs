@@ -15,7 +15,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // an array is composed of `n` elements of the same type `t` and
             // its type is `[t; n]`
@@ -35,9 +35,9 @@ impl StreamExpression {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 let first_type = elements[0].get_type().unwrap();
                 elements
@@ -46,9 +46,9 @@ impl StreamExpression {
                         let element_type = element.get_type().unwrap();
                         element_type.eq_check(first_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 let array_type = Type::Array(Box::new(first_type.clone()), elements.len());
 
@@ -184,7 +184,7 @@ mod typing_array {
             location: Location::default(),
         };
 
-        let error = stream_expression
+        stream_expression
             .typing_array(
                 &nodes_context,
                 &signals_context,
@@ -193,7 +193,5 @@ mod typing_array {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }

@@ -112,7 +112,13 @@ impl Pattern {
     /// given_pattern.type_check(&expected_type, &mut errors).unwrap();
     /// assert!(errors.is_empty());
     /// ```
-    pub fn type_check(&self, expected_type: &Type, errors: &mut Vec<Error>) -> Result<(), Error> {
+    pub fn construct_context(
+        &self,
+        expected_type: &Type,
+        elements_context: &mut HashMap<String, Type>,
+        user_types_context: &HashMap<String, UserDefinedType>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), ()> {
         match self {
             Pattern::Identifier {
                 name: _,
@@ -127,8 +133,8 @@ impl Pattern {
                         expected_type: expected_type.clone(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 }
             }
             Pattern::Structure {
@@ -160,8 +166,8 @@ impl Pattern {
                         expected_type: expected_type.clone(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 }
             },
             Pattern::Some { pattern, location } => match expected_type {
@@ -172,8 +178,8 @@ impl Pattern {
                         expected_type: expected_type.clone(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 }
             },
             Pattern::None { location } => match expected_type {
@@ -184,8 +190,8 @@ impl Pattern {
                         expected_type: expected_type.clone(),
                         location: location.clone(),
                     };
-                    errors.push(error.clone());
-                    Err(error)
+                    errors.push(error);
+                    Err(())
                 }
             },
             Pattern::Default { location: _ } => Ok(()),
@@ -234,10 +240,14 @@ mod type_check {
         };
         let expected_type = Type::Float;
 
-        let error = given_pattern
-            .type_check(&expected_type, &mut errors)
+        given_pattern
+            .construct_context(
+                &expected_type,
+                &mut elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
-        assert_eq!(errors, vec![error])
     }
 
     #[test]
@@ -295,10 +305,14 @@ mod type_check {
         };
         let expected_type = Type::Structure(String::from("Coordinates"));
 
-        let error = given_pattern
-            .type_check(&expected_type, &mut errors)
+        given_pattern
+            .construct_context(
+                &expected_type,
+                &mut elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
-        assert_eq!(errors, vec![error])
     }
 
     #[test]
@@ -330,10 +344,14 @@ mod type_check {
         };
         let expected_type = Type::Integer;
 
-        let error = given_pattern
-            .type_check(&expected_type, &mut errors)
+        given_pattern
+            .construct_context(
+                &expected_type,
+                &mut elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
-        assert_eq!(errors, vec![error])
     }
 
     #[test]
@@ -357,10 +375,14 @@ mod type_check {
         };
         let expected_type = Type::Integer;
 
-        let error = given_pattern
-            .type_check(&expected_type, &mut errors)
+        given_pattern
+            .construct_context(
+                &expected_type,
+                &mut elements_context,
+                &user_types_context,
+                &mut errors,
+            )
             .unwrap_err();
-        assert_eq!(errors, vec![error])
     }
 
     #[test]

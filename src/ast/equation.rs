@@ -60,7 +60,7 @@ impl Equation {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         let Equation {
             signal_type,
             expression,
@@ -176,7 +176,7 @@ impl Equation {
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         let Equation {
             signal_type,
             location,
@@ -260,7 +260,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = equation
+        equation
             .typing(
                 &nodes_context,
                 &signals_context,
@@ -269,8 +269,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error])
     }
 }
 

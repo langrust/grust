@@ -55,7 +55,7 @@ impl Calculus {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         let Calculus {
             element_type,
             expression,
@@ -163,7 +163,7 @@ impl Calculus {
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         let Calculus {
             element_type,
             location,
@@ -241,7 +241,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = calculus
+        calculus
             .typing(
                 &global_context,
                 &elements_context,
@@ -249,8 +249,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error])
     }
 }
 

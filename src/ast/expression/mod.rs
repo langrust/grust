@@ -141,7 +141,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             Expression::Constant { .. } => self.typing_constant(),
             Expression::Call { .. } => self.typing_call(elements_context, errors),
@@ -407,7 +407,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -415,8 +415,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -481,7 +479,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -489,8 +487,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -511,7 +507,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -519,8 +515,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -654,7 +648,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -662,8 +656,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -756,7 +748,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -764,8 +756,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -895,7 +885,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -903,8 +893,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -939,7 +927,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -947,8 +935,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -993,7 +979,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -1001,8 +987,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -1057,7 +1041,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing(
                 &global_context,
                 &elements_context,
@@ -1065,8 +1049,6 @@ mod typing {
                 &mut errors,
             )
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]

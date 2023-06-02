@@ -11,7 +11,7 @@ impl Expression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // the type of a typed abstraction is computed by adding inputs to
             // the context and typing the function body expression
@@ -34,9 +34,9 @@ impl Expression {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), Error>>>()
+                    .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), Error>>()?;
+                    .collect::<Result<(), ()>>()?;
 
                 // type the abstracted expression with the local context
                 expression.typing(global_context, &local_context, user_types_context, errors)?;
@@ -62,8 +62,8 @@ impl Expression {
                 let error = Error::NoTypeInference {
                     location: location.clone(),
                 };
-                errors.push(error.clone());
-                Err(error)
+                errors.push(error);
+                Err(())
             }
             _ => unreachable!(),
         }
@@ -130,11 +130,9 @@ mod typing_abstraction {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing_abstraction(&global_context, &user_types_context, &mut errors)
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 
     #[test]
@@ -154,10 +152,8 @@ mod typing_abstraction {
             location: Location::default(),
         };
 
-        let error = expression
+        expression
             .typing_abstraction(&global_context, &user_types_context, &mut errors)
             .unwrap_err();
-
-        assert_eq!(errors, vec![error]);
     }
 }

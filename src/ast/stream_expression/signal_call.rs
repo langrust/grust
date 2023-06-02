@@ -10,7 +10,7 @@ impl StreamExpression {
         &mut self,
         signals_context: &HashMap<String, Type>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ()> {
         match self {
             // the type of a signal call stream expression in the type of the called element in the context
             StreamExpression::SignalCall {
