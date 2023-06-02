@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    equation::Equation, location::Location, node_description::NodeDescription, type_system::Type,
-    user_defined_type::UserDefinedType, scope::Scope,
+    equation::Equation, location::Location, node_description::NodeDescription, scope::Scope,
+    type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::common::context::Context;
 use crate::error::Error;
@@ -90,19 +90,19 @@ impl Component {
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), Error> {
-        let Component {
-            id,
-            equations,
-            location,
-            ..
-        } = self;
-
         // get the description of the component
         let NodeDescription {
             inputs,
             outputs,
             locals,
-        } = nodes_context.get_node_or_error(id, location.clone(), errors)?;
+        } = self.into_node_description(errors)?;
+
+        // match the component
+        let Component {
+            equations,
+            location,
+            ..
+        } = self;
 
         // create signals context: inputs + outputs + locals
         let mut signals_context = HashMap::new();
@@ -589,8 +589,9 @@ mod into_node_description {
     use std::collections::HashMap;
 
     use crate::ast::{
-        equation::Equation, location::Location, component::Component, node_description::NodeDescription,
-        scope::Scope, stream_expression::StreamExpression, type_system::Type,
+        component::Component, equation::Equation, location::Location,
+        node_description::NodeDescription, scope::Scope, stream_expression::StreamExpression,
+        type_system::Type,
     };
     #[test]
     fn should_return_a_node_description_from_a_component_with_no_duplicates() {
