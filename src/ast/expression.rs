@@ -384,7 +384,7 @@ impl Expression {
                     }
                 }
             }
-            // the type of a match expression is the type of all branches expressions
+            // TODO
             Expression::Match {
                 expression,
                 arms,
@@ -393,21 +393,14 @@ impl Expression {
             } => {
                 expression.typing(elements_context, user_types_context, errors)?;
 
-                let expression_type = expression.get_type().unwrap();
                 arms.into_iter()
                     .map(|(pattern, optional_test_expression, arm_expression)| {
-                        let mut local_context = elements_context.clone();
-                        pattern.construct_context(
-                            expression_type,
-                            &mut local_context,
-                            user_types_context,
-                            errors,
-                        )?;
+                        // todo: check pattern match the type of expression
 
                         let optional_test_expression_typing_test = optional_test_expression
                             .as_mut()
                             .map_or(Ok(()), |expression| {
-                                expression.typing(&local_context, user_types_context, errors)?;
+                                expression.typing(elements_context, user_types_context, errors)?;
                                 expression.get_type().unwrap().eq_check(
                                     &Type::Boolean,
                                     location.clone(),
@@ -416,7 +409,7 @@ impl Expression {
                             });
 
                         let arm_expression_typing_test =
-                            arm_expression.typing(&local_context, user_types_context, errors);
+                            arm_expression.typing(elements_context, user_types_context, errors);
 
                         optional_test_expression_typing_test?;
                         arm_expression_typing_test
