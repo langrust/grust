@@ -1,9 +1,4 @@
-use std::collections::HashMap;
-
-use crate::ast::{
-    constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType,
-};
-use crate::common::context::Context;
+use crate::ast::{constant::Constant, location::Location, type_system::Type};
 use crate::error::Error;
 
 use std::fmt::{self, Display};
@@ -86,27 +81,9 @@ impl Pattern {
     ///
     /// # Example
     /// ```rust
-    /// use std::collections::HashMap;
-    /// use grustine::ast::{
-    ///     constant::Constant, location::Location, pattern::Pattern,
-    ///     type_system::Type, user_defined_type::UserDefinedType
-    /// };
+    /// use grustine::ast::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
     ///
     /// let mut errors = vec![];
-    /// let mut user_types_context = HashMap::new();
-    /// let mut elements_context = HashMap::new();
-    ///
-    /// user_types_context.insert(
-    ///    String::from("Point"),
-    ///     UserDefinedType::Structure {
-    ///         id: String::from("Point"),
-    ///         fields: vec![
-    ///             (String::from("x"), Type::Integer),
-    ///             (String::from("y"), Type::Integer),
-    ///         ],
-    ///         location: Location::default(),
-    ///     },
-    /// );
     ///
     /// let given_pattern = Pattern::Structure {
     ///     name: String::from("Point"),
@@ -130,26 +107,15 @@ impl Pattern {
     /// };
     /// let expected_type = Type::Structure(String::from("Point"));
     ///
-    /// given_pattern.construct_context(&expected_type, &mut elements_context, &user_types_context, &mut errors).unwrap();
-    ///
-    /// let y = String::from("y");
-    /// assert_eq!(elements_context[&y], Type::Integer);
+    /// given_pattern.type_check(&expected_type, &mut errors).unwrap();
     /// assert!(errors.is_empty());
     /// ```
-    pub fn construct_context(
-        &self,
-        expected_type: &Type,
-        elements_context: &mut HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), Error> {
+    pub fn type_check(&self, expected_type: &Type, errors: &mut Vec<Error>) -> Result<(), Error> {
         match self {
-            Pattern::Identifier { name, location } => elements_context.insert_unique(
-                name.clone(),
-                expected_type.clone(),
-                location.clone(),
-                errors,
-            ),
+            Pattern::Identifier {
+                name: _,
+                location: _,
+            } => Ok(()),
             Pattern::Constant { constant, location } => {
                 if constant.get_type().eq(expected_type) {
                     Ok(())
@@ -165,69 +131,10 @@ impl Pattern {
             }
             Pattern::Structure {
                 name,
-                fields,
+                fields: _,
                 location,
             } => match expected_type {
-                Type::Structure(structure_name) if name.eq(structure_name) => {
-                    match user_types_context.get(structure_name).unwrap() {
-                        UserDefinedType::Structure {
-                            id: _,
-                            fields: structure_fields,
-                            location: _,
-                        } => {
-                            let structure_fields = structure_fields
-                                .iter()
-                                .map(|(field_id, field_type)| {
-                                    (field_id.clone(), field_type.clone())
-                                })
-                                .collect::<HashMap<String, Type>>();
-
-                            fields
-                                .iter()
-                                .map(|(id, pattern)| {
-                                    let field_type = structure_fields.get_field_or_error(
-                                        name.clone(),
-                                        id.clone(),
-                                        location.clone(),
-                                        errors,
-                                    )?;
-                                    pattern.construct_context(
-                                        field_type,
-                                        elements_context,
-                                        user_types_context,
-                                        errors,
-                                    )
-                                })
-                                .collect::<Vec<Result<(), Error>>>()
-                                .into_iter()
-                                .collect::<Result<(), Error>>()?;
-
-                            let defined_fields = fields
-                                .iter()
-                                .map(|(id, _)| id.clone())
-                                .collect::<Vec<String>>();
-                            structure_fields
-                                .iter()
-                                .map(|(id, _)| {
-                                    if defined_fields.contains(id) {
-                                        Ok(())
-                                    } else {
-                                        let error = Error::MissingField {
-                                            structure_name: name.clone(),
-                                            field_name: id.clone(),
-                                            location: location.clone(),
-                                        };
-                                        errors.push(error.clone());
-                                        Err(error)
-                                    }
-                                })
-                                .collect::<Vec<Result<(), Error>>>()
-                                .into_iter()
-                                .collect::<Result<(), Error>>()
-                        }
-                        _ => unreachable!(),
-                    }
-                }
+                Type::Structure(structure_name) if name.eq(structure_name) => Ok(()),
                 _ => {
                     let error = Error::IncompatiblePattern {
                         given_pattern: self.clone(),
@@ -239,12 +146,7 @@ impl Pattern {
                 }
             },
             Pattern::Some { pattern, location } => match expected_type {
-                Type::Option(optional_type) => pattern.construct_context(
-                    optional_type,
-                    elements_context,
-                    user_types_context,
-                    errors,
-                ),
+                Type::Option(optional_type) => pattern.type_check(optional_type, errors),
                 _ => {
                     let error = Error::IncompatiblePattern {
                         given_pattern: self.clone(),
@@ -273,20 +175,12 @@ impl Pattern {
 }
 
 #[cfg(test)]
-mod construct_context {
-    use std::collections::HashMap;
-
-    use crate::ast::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-        user_defined_type::UserDefinedType,
-    };
+mod type_check {
+    use crate::ast::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
 
     #[test]
     fn should_check_identifier_pattern_for_any_type() {
         let mut errors = vec![];
-        let user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
-
         let given_pattern = Pattern::Identifier {
             name: String::from("y"),
             location: Location::default(),
@@ -294,20 +188,13 @@ mod construct_context {
         let expected_type = Type::Integer;
 
         given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap()
     }
 
     #[test]
     fn should_check_constant_pattern_for_constant_type() {
         let mut errors = vec![];
-        let user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
         let given_pattern = Pattern::Constant {
             constant: Constant::Integer(1),
             location: Location::default(),
@@ -315,20 +202,13 @@ mod construct_context {
         let expected_type = Type::Integer;
 
         given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap()
     }
 
     #[test]
     fn should_raise_error_for_constant_pattern_and_mismatching_type() {
         let mut errors = vec![];
-        let user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
         let given_pattern = Pattern::Constant {
             constant: Constant::Integer(1),
             location: Location::default(),
@@ -336,12 +216,7 @@ mod construct_context {
         let expected_type = Type::Float;
 
         let error = given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap_err();
         assert_eq!(errors, vec![error])
     }
@@ -349,21 +224,6 @@ mod construct_context {
     #[test]
     fn should_check_structure_pattern_for_structure_type() {
         let mut errors = vec![];
-        let mut user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
-
-        user_types_context.insert(
-            String::from("Point"),
-            UserDefinedType::Structure {
-                id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
-                location: Location::default(),
-            },
-        );
-
         let given_pattern = Pattern::Structure {
             name: String::from("Point"),
             fields: vec![
@@ -387,33 +247,13 @@ mod construct_context {
         let expected_type = Type::Structure(String::from("Point"));
 
         given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap()
     }
 
     #[test]
     fn should_raise_error_for_structure_pattern_and_mismatching_type() {
         let mut errors = vec![];
-        let mut user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
-
-        user_types_context.insert(
-            String::from("Point"),
-            UserDefinedType::Structure {
-                id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
-                location: Location::default(),
-            },
-        );
-
         let given_pattern = Pattern::Structure {
             name: String::from("Point"),
             fields: vec![
@@ -437,12 +277,7 @@ mod construct_context {
         let expected_type = Type::Structure(String::from("Coordinates"));
 
         let error = given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap_err();
         assert_eq!(errors, vec![error])
     }
@@ -450,8 +285,6 @@ mod construct_context {
     #[test]
     fn should_check_some_pattern_for_option_type() {
         let mut errors = vec![];
-        let user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
         let given_pattern = Pattern::Some {
             pattern: Box::new(Pattern::Identifier {
                 name: String::from("y"),
@@ -462,20 +295,13 @@ mod construct_context {
         let expected_type = Type::Option(Box::new(Type::Integer));
 
         given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap()
     }
 
     #[test]
     fn should_raise_error_for_some_pattern_and_non_option_type() {
         let mut errors = vec![];
-        let user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
         let given_pattern = Pattern::Some {
             pattern: Box::new(Pattern::Identifier {
                 name: String::from("y"),
@@ -486,12 +312,7 @@ mod construct_context {
         let expected_type = Type::Integer;
 
         let error = given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap_err();
         assert_eq!(errors, vec![error])
     }
@@ -499,40 +320,26 @@ mod construct_context {
     #[test]
     fn should_check_none_pattern_for_option_type() {
         let mut errors = vec![];
-        let user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
         let given_pattern = Pattern::None {
             location: Location::default(),
         };
         let expected_type = Type::Option(Box::new(Type::Integer));
 
         given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap()
     }
 
     #[test]
     fn should_raise_error_for_none_pattern_and_non_option_type() {
         let mut errors = vec![];
-        let user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
         let given_pattern = Pattern::None {
             location: Location::default(),
         };
         let expected_type = Type::Integer;
 
         let error = given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap_err();
         assert_eq!(errors, vec![error])
     }
@@ -540,20 +347,13 @@ mod construct_context {
     #[test]
     fn should_check_default_pattern_for_any_type() {
         let mut errors = vec![];
-        let user_types_context = HashMap::new();
-        let mut elements_context = HashMap::new();
         let given_pattern = Pattern::Default {
             location: Location::default(),
         };
         let expected_type = Type::Integer;
 
         given_pattern
-            .construct_context(
-                &expected_type,
-                &mut elements_context,
-                &user_types_context,
-                &mut errors,
-            )
+            .type_check(&expected_type, &mut errors)
             .unwrap()
     }
 }
