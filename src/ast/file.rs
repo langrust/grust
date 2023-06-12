@@ -207,7 +207,7 @@ impl File {
     /// # Example
     /// ```rust
     /// use grustine::ast::{
-    ///     calculus::Calculus, function::Function, location::Location,
+    ///     statement::Statement, function::Function, location::Location,
     ///     expression::Expression, type_system::Type, equation::Equation, node::Node, file::File,
     ///     scope::Scope, stream_expression::StreamExpression,
     /// };
@@ -253,10 +253,10 @@ impl File {
     /// let function = Function {
     ///     id: String::from("test"),
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     calculi: vec![
+    ///     statements: vec![
     ///         (
     ///             String::from("x"),
-    ///             Calculus {
+    ///             Statement {
     ///                 id: String::from("x"),
     ///                 element_type: Type::Integer,
     ///                 expression: Expression::Call {
@@ -560,7 +560,7 @@ impl File {
 #[cfg(test)]
 mod typing {
     use crate::ast::{
-        calculus::Calculus, component::Component, equation::Equation, expression::Expression,
+        statement::Statement, component::Component, equation::Equation, expression::Expression,
         file::File, function::Function, location::Location, node::Node, scope::Scope,
         stream_expression::StreamExpression, type_system::Type,
     };
@@ -608,9 +608,9 @@ mod typing {
         let function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
+            statements: vec![(
                 String::from("x"),
-                Calculus {
+                Statement {
                     id: String::from("x"),
                     element_type: Type::Integer,
                     expression: Expression::Call {
@@ -678,9 +678,9 @@ mod typing {
         let expected_function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
+            statements: vec![(
                 String::from("x"),
-                Calculus {
+                Statement {
                     id: String::from("x"),
                     element_type: Type::Integer,
                     expression: Expression::Call {
@@ -808,9 +808,9 @@ mod typing {
         let function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
+            statements: vec![(
                 String::from("x"),
-                Calculus {
+                Statement {
                     id: String::from("x"),
                     element_type: Type::Integer,
                     expression: Expression::Call {
@@ -933,9 +933,9 @@ mod typing {
         let expected_function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
+            statements: vec![(
                 String::from("x"),
-                Calculus {
+                Statement {
                     id: String::from("x"),
                     element_type: Type::Integer,
                     expression: Expression::Call {

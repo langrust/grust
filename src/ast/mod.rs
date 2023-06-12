@@ -28,8 +28,8 @@ pub mod expression;
 /// LanGRust [Equation](crate::ast::equation::Equation) AST module.
 pub mod equation;
 
-/// LanGRust [Calculus](crate::ast::calculus::Calculus) AST module.
-pub mod calculus;
+/// LanGRust [Statement](crate::ast::statement::Statement) AST module.
+pub mod statement;
 
 /// LanGRust [Pattern](crate::ast::pattern::Pattern) AST module.
 pub mod pattern;
