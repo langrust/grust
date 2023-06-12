@@ -2,7 +2,6 @@
 mod langrust_ast_constructs {
     use codespan_reporting::files::{Files, SimpleFiles};
     use grustine::ast::{
-        component::Component,
         constant::Constant,
         equation::Equation,
         expression::Expression,
@@ -438,8 +437,9 @@ mod langrust_ast_constructs {
                         location: Location::default(),
                     }
                 ],
-                component: Component {
+                component: Node {
                     id: String::from("test"),
+                    is_component: true,
                     inputs: vec![(String::from("i"), Type::Integer)],
                     equations: vec![
                         (
@@ -544,8 +544,9 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             component,
-            Component {
+            Node {
                 id: String::from("test"),
+                is_component: true,
                 inputs: vec![(String::from("i"), Type::Integer)],
                 equations: vec![
                     (

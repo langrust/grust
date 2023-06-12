@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use crate::ast::{
     statement::Statement,
-    component::Component,
     constant::Constant,
     equation::Equation,
     expression::Expression,
@@ -645,18 +644,20 @@ pub node: Node = {
 };
 
 /// Catches component
-pub component: Component = {
+pub component: Node = {
     <start:@L> "component" <c: ID> "(" <i: hash<ID, basicType>> ")" "{" <e: equation+> "}" <end:@R> => {
-        Component {
+        Node {
             id: c,
+            is_component: true,
             inputs: i,
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             location: Location{ file_id, range: start..end },
         }
     },
     <start:@L> "component" <c: ID> "()" "{" <e: equation+> "}" <end:@R> => {
-        Component {
+        Node {
             id: c,
+            is_component: true,
             inputs: vec![],
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             location: Location{ file_id, range: start..end },
