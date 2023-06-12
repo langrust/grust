@@ -147,6 +147,7 @@ mod langrust_ast_constructs {
                 nodes: vec![
                     Node {
                         id: String::from("test"),
+                        is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
                         equations: vec![
                             (
@@ -182,6 +183,7 @@ mod langrust_ast_constructs {
                     },
                     Node {
                         id: String::from("test"),
+                        is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
                         equations: vec![
                             (
@@ -217,6 +219,7 @@ mod langrust_ast_constructs {
                     },
                     Node {
                         id: String::from("test"),
+                        is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
                         equations: vec![
                             (
@@ -364,6 +367,7 @@ mod langrust_ast_constructs {
                 nodes: vec![
                     Node {
                         id: String::from("test"),
+                        is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
                         equations: vec![
                             (
@@ -399,6 +403,7 @@ mod langrust_ast_constructs {
                     },
                     Node {
                         id: String::from("test"),
+                        is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
                         equations: vec![
                             (
@@ -593,6 +598,7 @@ mod langrust_ast_constructs {
             node,
             Node {
                 id: String::from("test"),
+                is_component: false,
                 inputs: vec![(String::from("i"), Type::Integer)],
                 equations: vec![
                     (

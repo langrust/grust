@@ -216,6 +216,7 @@ impl File {
     ///
     /// let node = Node {
     ///     id: String::from("test"),
+    ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     equations: vec![
     ///         (
@@ -571,6 +572,7 @@ mod typing {
 
         let node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -641,6 +643,7 @@ mod typing {
 
         let expected_node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -771,6 +774,7 @@ mod typing {
 
         let node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -896,6 +900,7 @@ mod typing {
 
         let expected_node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
