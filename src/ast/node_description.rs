@@ -5,6 +5,8 @@ use crate::ast::type_system::Type;
 #[derive(Debug, PartialEq)]
 /// The description of a node's signals.
 pub struct NodeDescription {
+    /// Is true when the node is a component.
+    pub is_component: bool,
     /// Node's input signals.
     pub inputs: Vec<(String, Type)>,
     /// Node's output signals.
