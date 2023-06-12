@@ -314,7 +314,7 @@ impl File {
                 // determine types in user_defined_types
                 user_defined_types
                     .iter_mut()
-                    .map(|user_type| user_type.determine_types(&user_types_context, errors))
+                    .map(|user_type| user_type.resolve_undefined_types(&user_types_context, errors))
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;
@@ -336,7 +336,7 @@ impl File {
                 // determine types in nodes
                 nodes
                     .iter_mut()
-                    .map(|node| node.determine_types(&user_types_context, errors))
+                    .map(|node| node.resolve_undefined_types(&user_types_context, errors))
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;
@@ -344,7 +344,7 @@ impl File {
                 // determine types in functions
                 functions
                     .iter_mut()
-                    .map(|function| function.determine_types(&user_types_context, errors))
+                    .map(|function| function.resolve_undefined_types(&user_types_context, errors))
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;
@@ -443,7 +443,7 @@ impl File {
                 // determine types in user_defined_types
                 user_defined_types
                     .iter_mut()
-                    .map(|user_type| user_type.determine_types(&user_types_context, errors))
+                    .map(|user_type| user_type.resolve_undefined_types(&user_types_context, errors))
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;
@@ -465,18 +465,18 @@ impl File {
                 // determine types in nodes
                 nodes
                     .iter_mut()
-                    .map(|node| node.determine_types(&user_types_context, errors))
+                    .map(|node| node.resolve_undefined_types(&user_types_context, errors))
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;
 
                 // determine types in component
-                component.determine_types(&user_types_context, errors)?;
+                component.resolve_undefined_types(&user_types_context, errors)?;
 
                 // determine types in functions
                 functions
                     .iter_mut()
-                    .map(|function| function.determine_types(&user_types_context, errors))
+                    .map(|function| function.resolve_undefined_types(&user_types_context, errors))
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;

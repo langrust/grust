@@ -215,12 +215,12 @@ impl UserDefinedType {
     /// };
     ///
     /// user_type
-    ///     .determine_types(&user_types_context, &mut errors)
+    ///     .resolve_undefined_types(&user_types_context, &mut errors)
     ///     .unwrap();
     ///
     /// assert_eq!(user_type, control);
     /// ```
-    pub fn determine_types(
+    pub fn resolve_undefined_types(
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -231,7 +231,7 @@ impl UserDefinedType {
             } => fields
                 .iter_mut()
                 .map(|(_, field_type)| {
-                    field_type.determine(location.clone(), user_types_context, errors)
+                    field_type.resolve_undefined(location.clone(), user_types_context, errors)
                 })
                 .collect::<Vec<Result<(), ()>>>()
                 .into_iter()
@@ -241,7 +241,7 @@ impl UserDefinedType {
                 array_type,
                 location,
                 ..
-            } => array_type.determine(location.clone(), user_types_context, errors),
+            } => array_type.resolve_undefined(location.clone(), user_types_context, errors),
         }
     }
 }
@@ -339,7 +339,7 @@ mod determine_types {
         };
 
         user_type
-            .determine_types(&user_types_context, &mut errors)
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(user_type, control);
@@ -358,7 +358,7 @@ mod determine_types {
         };
 
         user_type
-            .determine_types(&user_types_context, &mut errors)
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap_err();
     }
 }
