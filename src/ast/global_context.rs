@@ -26,9 +26,9 @@ fn add_binary_operators_to_global_context(elements_context_global: &mut HashMap<
         // for each unary operator, try to insert its type in the context
         // and check with `is_none()` that this operator is uniquely
         // defined in the global context
-        |t| {
+        |operator| {
             assert!(elements_context_global
-                .insert(t.to_string(), t.get_type())
+                .insert(operator.to_string(), operator.get_type())
                 .is_none())
         },
     )
@@ -42,9 +42,9 @@ fn add_unary_operators_to_global_context(elements_context_global: &mut HashMap<S
         // for each unary operator, try to insert its type in the context
         // and check with `is_none()` that this operator is uniquely
         // defined in the global context
-        |t| {
+        |operator| {
             assert!(elements_context_global
-                .insert(t.to_string(), t.get_type())
+                .insert(operator.to_string(), operator.get_type())
                 .is_none())
         },
     )
@@ -54,13 +54,13 @@ fn add_unary_operators_to_global_context(elements_context_global: &mut HashMap<S
 ///
 /// Those operators are builtin functions and must be stored in the global context.
 fn add_other_operators_to_global_context(elements_context_global: &mut HashMap<String, Type>) {
-    OtherOperator::iter().for_each(|t| {
+    OtherOperator::iter().for_each(|operator| {
         assert!(
             // for each operator, try to insert its type in the context
             // and check with `is_none()` that this operator is uniquely
             // defined in the global context
             elements_context_global
-                .insert(t.to_string(), t.get_type())
+                .insert(operator.to_string(), operator.get_type())
                 .is_none()
         )
     })
