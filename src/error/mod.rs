@@ -69,6 +69,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// component is called
+    ComponentCall {
+        /// name of the calle Component
+        name: String,
+        /// the error location
+        location: Location,
+    },
     /// redefine an already defined element
     AlreadyDefinedElement {
         /// the known identifier
@@ -227,6 +234,15 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("field '{field_name}' is missing in structure '{structure_name}' instantiation")
+                ]
+            ),
+            Error::ComponentCall { name, location } => Diagnostic::error()
+                .with_message("component can not be called")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                ])
+                .with_notes(vec![
+                    format!("'{name}' is a component, it can not be called")
                 ]
             ),
             Error::AlreadyDefinedElement { name, location } => Diagnostic::error()
