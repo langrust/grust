@@ -39,6 +39,7 @@ impl Node {
     /// nodes_context.insert(
     ///     String::from("test"),
     ///     NodeDescription {
+    ///         is_component: false,
     ///         inputs: vec![(String::from("i"), Type::Integer)],
     ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
     ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
@@ -105,6 +106,7 @@ impl Node {
             inputs,
             outputs,
             locals,
+            ..
         } = nodes_context.get_node_or_error(id, location.clone(), errors)?;
 
         // create signals context: inputs + outputs + locals
@@ -192,6 +194,7 @@ impl Node {
     /// };
     ///
     /// let control = NodeDescription {
+    ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     outputs: HashMap::from([(String::from("o"), Type::Integer)]),
     ///     locals: HashMap::from([(String::from("x"), Type::Integer)]),
@@ -203,6 +206,7 @@ impl Node {
     /// ```
     pub fn into_node_description(&self, errors: &mut Vec<Error>) -> Result<NodeDescription, ()> {
         let Node {
+            is_component,
             inputs,
             equations,
             location,
@@ -266,6 +270,7 @@ impl Node {
             .collect::<Result<(), ()>>()?;
 
         Ok(NodeDescription {
+            is_component: is_component.clone(),
             inputs: inputs.clone(),
             outputs,
             locals,
@@ -434,6 +439,7 @@ mod typing {
         nodes_context.insert(
             String::from("test"),
             NodeDescription {
+                is_component: false,
                 inputs: vec![(String::from("i"), Type::Integer)],
                 outputs: HashMap::from([(String::from("o"), Type::Integer)]),
                 locals: HashMap::from([(String::from("x"), Type::Integer)]),
@@ -534,6 +540,7 @@ mod typing {
         nodes_context.insert(
             String::from("test"),
             NodeDescription {
+                is_component: false,
                 inputs: vec![(String::from("i"), Type::Integer)],
                 outputs: HashMap::from([(String::from("o"), Type::Integer)]),
                 locals: HashMap::from([(String::from("x"), Type::Integer)]),
@@ -597,6 +604,7 @@ mod into_node_description {
         equation::Equation, location::Location, node::Node, node_description::NodeDescription,
         scope::Scope, stream_expression::StreamExpression, type_system::Type,
     };
+    
     #[test]
     fn should_return_a_node_description_from_a_node_with_no_duplicates() {
         let mut errors = vec![];
@@ -639,6 +647,60 @@ mod into_node_description {
         };
 
         let control = NodeDescription {
+            is_component: false,
+            inputs: vec![(String::from("i"), Type::Integer)],
+            outputs: HashMap::from([(String::from("o"), Type::Integer)]),
+            locals: HashMap::from([(String::from("x"), Type::Integer)]),
+        };
+
+        let node_description = node.into_node_description(&mut errors).unwrap();
+
+        assert_eq!(node_description, control);
+    }
+    
+    #[test]
+    fn should_return_a_node_description_from_a_component_with_no_duplicates() {
+        let mut errors = vec![];
+
+        let node = Node {
+            id: String::from("test"),
+            is_component: true,
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("x"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("x"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::SignalCall {
+                            id: String::from("i"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let control = NodeDescription {
+            is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
             outputs: HashMap::from([(String::from("o"), Type::Integer)]),
             locals: HashMap::from([(String::from("x"), Type::Integer)]),
