@@ -37,9 +37,12 @@ impl StreamExpression {
 
                 // if component raise error: component can not be called
                 if *is_component {
-                    let error = Error::ComponentCall { name: node.clone(), location: location.clone() };
+                    let error = Error::ComponentCall {
+                        name: node.clone(),
+                        location: location.clone(),
+                    };
                     errors.push(error);
-                    return Err(())
+                    return Err(());
                 }
 
                 // check inputs and node_inputs have the same length
