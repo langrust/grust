@@ -604,7 +604,7 @@ mod into_node_description {
         equation::Equation, location::Location, node::Node, node_description::NodeDescription,
         scope::Scope, stream_expression::StreamExpression, type_system::Type,
     };
-    
+
     #[test]
     fn should_return_a_node_description_from_a_node_with_no_duplicates() {
         let mut errors = vec![];
@@ -657,7 +657,7 @@ mod into_node_description {
 
         assert_eq!(node_description, control);
     }
-    
+
     #[test]
     fn should_return_a_node_description_from_a_component_with_no_duplicates() {
         let mut errors = vec![];

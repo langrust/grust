@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    function::Function, global_context, location::Location, node::Node,
-    type_system::Type, user_defined_type::UserDefinedType,
+    function::Function, global_context, location::Location, node::Node, type_system::Type,
+    user_defined_type::UserDefinedType,
 };
 
 use crate::common::context::Context;
@@ -497,7 +497,7 @@ impl File {
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;
-                
+
                 // add component to context
                 let node_description = component.into_node_description(errors)?;
                 nodes_context.insert_unique(
@@ -570,8 +570,8 @@ impl File {
 #[cfg(test)]
 mod typing {
     use crate::ast::{
-        equation::Equation, expression::Expression, file::File,
-        function::Function, location::Location, node::Node, scope::Scope, statement::Statement,
+        equation::Equation, expression::Expression, file::File, function::Function,
+        location::Location, node::Node, scope::Scope, statement::Statement,
         stream_expression::StreamExpression, type_system::Type,
     };
 
