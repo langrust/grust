@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    component::Component, function::Function, global_context, location::Location, node::Node,
+    function::Function, global_context, location::Location, node::Node,
     type_system::Type, user_defined_type::UserDefinedType,
 };
 
@@ -33,7 +33,7 @@ pub enum File {
         /// Program nodes. They are functional requirements.
         nodes: Vec<Node>,
         /// Program component. It represents the system.
-        component: Component,
+        component: Node,
         /// Program location.
         location: Location,
     },
@@ -497,6 +497,15 @@ impl File {
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
                     .collect::<Result<(), ()>>()?;
+                
+                // add component to context
+                let node_description = component.into_node_description(errors)?;
+                nodes_context.insert_unique(
+                    component.id.clone(),
+                    node_description,
+                    component.location.clone(),
+                    errors,
+                )?;
 
                 // generate global_context
                 let mut global_context = global_context::generate();
@@ -561,7 +570,7 @@ impl File {
 #[cfg(test)]
 mod typing {
     use crate::ast::{
-        component::Component, equation::Equation, expression::Expression, file::File,
+        equation::Equation, expression::Expression, file::File,
         function::Function, location::Location, node::Node, scope::Scope, statement::Statement,
         stream_expression::StreamExpression, type_system::Type,
     };
@@ -721,8 +730,9 @@ mod typing {
     fn should_type_well_defined_program() {
         let mut errors = vec![];
 
-        let component = Component {
+        let component = Node {
             id: String::from("program_component"),
+            is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -844,8 +854,9 @@ mod typing {
             location: Location::default(),
         };
 
-        let expected_component = Component {
+        let expected_component = Node {
             id: String::from("program_component"),
+            is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
