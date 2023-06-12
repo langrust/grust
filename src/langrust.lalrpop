@@ -627,6 +627,7 @@ pub node: Node = {
     <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
+            is_component: false,
             inputs: i,
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             location: Location{ file_id, range: start..end },
@@ -635,6 +636,7 @@ pub node: Node = {
     <start:@L> "node" <n: ID> "()" "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
+            is_component: false,
             inputs: vec![],
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             location: Location{ file_id, range: start..end },

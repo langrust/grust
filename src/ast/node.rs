@@ -12,6 +12,8 @@ use crate::error::Error;
 pub struct Node {
     /// Node identifier.
     pub id: String,
+    /// Is true when the node is a component.
+    pub is_component: bool,
     /// Node's inputs identifiers and their types.
     pub inputs: Vec<(String, Type)>,
     /// Node's equations.
@@ -47,6 +49,7 @@ impl Node {
     ///
     /// let mut node = Node {
     ///     id: String::from("test"),
+    ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     equations: vec![
     ///         (
@@ -153,6 +156,7 @@ impl Node {
     ///
     /// let node = Node {
     ///     id: String::from("test"),
+    ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     equations: vec![
     ///         (
@@ -295,6 +299,7 @@ impl Node {
     ///
     /// let mut node = Node {
     ///     id: String::from("test"),
+    ///     is_component: false,
     ///     inputs: vec![],
     ///     equations: vec![
     ///         (
@@ -335,6 +340,7 @@ impl Node {
     ///
     /// let control = Node {
     ///     id: String::from("test"),
+    ///     is_component: false,
     ///     inputs: vec![],
     ///     equations: vec![
     ///         (
@@ -438,6 +444,7 @@ mod typing {
 
         let mut node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -474,6 +481,7 @@ mod typing {
 
         let control = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -536,6 +544,7 @@ mod typing {
 
         let mut node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -594,6 +603,7 @@ mod into_node_description {
 
         let node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -666,6 +676,7 @@ mod determine_types {
 
         let mut node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![],
             equations: vec![(
                 String::from("o"),
@@ -704,6 +715,7 @@ mod determine_types {
 
         let control = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![],
             equations: vec![(
                 String::from("o"),
@@ -753,6 +765,7 @@ mod determine_types {
 
         let mut node = Node {
             id: String::from("test"),
+            is_component: false,
             inputs: vec![],
             equations: vec![(
                 String::from("o"),
