@@ -560,8 +560,8 @@ impl File {
 #[cfg(test)]
 mod typing {
     use crate::ast::{
-        statement::Statement, component::Component, equation::Equation, expression::Expression,
-        file::File, function::Function, location::Location, node::Node, scope::Scope,
+        component::Component, equation::Equation, expression::Expression, file::File,
+        function::Function, location::Location, node::Node, scope::Scope, statement::Statement,
         stream_expression::StreamExpression, type_system::Type,
     };
 
