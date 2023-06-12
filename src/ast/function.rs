@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    calculus::Calculus, expression::Expression, location::Location, type_system::Type,
+    statement::Statement, expression::Expression, location::Location, type_system::Type,
     user_defined_type::UserDefinedType,
 };
 use crate::common::context::Context;
@@ -14,8 +14,8 @@ pub struct Function {
     pub id: String,
     /// Function's inputs identifiers and their types.
     pub inputs: Vec<(String, Type)>,
-    /// Function's calculi.
-    pub calculi: Vec<(String, Calculus)>,
+    /// Function's statements.
+    pub statements: Vec<(String, Statement)>,
     /// Function's returned expression and its type.
     pub returned: (Type, Expression),
     /// Function location.
@@ -29,7 +29,7 @@ impl Function {
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::ast::{
-    ///     constant::Constant, calculus::Calculus, function::Function, location::Location,
+    ///     constant::Constant, statement::Statement, function::Function, location::Location,
     ///     expression::Expression, type_system::Type,
     /// };
     ///
@@ -40,10 +40,10 @@ impl Function {
     /// let mut function = Function {
     ///     id: String::from("test"),
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     calculi: vec![
+    ///     statements: vec![
     ///         (
     ///             String::from("x"),
-    ///             Calculus {
+    ///             Statement {
     ///                 id: String::from("x"),
     ///                 element_type: Type::Integer,
     ///                 expression: Expression::Call {
@@ -76,7 +76,7 @@ impl Function {
     ) -> Result<(), ()> {
         let Function {
             inputs,
-            calculi,
+            statements,
             returned: (returned_type, returned_expression),
             location,
             ..
@@ -98,20 +98,20 @@ impl Function {
             .into_iter()
             .collect::<Result<(), ()>>()?;
 
-        // type all calculi
-        calculi
+        // type all statements
+        statements
             .iter_mut()
-            .map(|(_, calculus)| {
-                calculus.typing(
+            .map(|(_, statement)| {
+                statement.typing(
                     global_context,
                     &elements_context,
                     user_types_context,
                     errors,
                 )?;
                 elements_context.insert_unique(
-                    calculus.id.clone(),
-                    calculus.element_type.clone(),
-                    calculus.location.clone(),
+                    statement.id.clone(),
+                    statement.element_type.clone(),
+                    statement.location.clone(),
                     errors,
                 )
             })
@@ -140,7 +140,7 @@ impl Function {
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::ast::{
-    ///     constant::Constant, function::Function, calculus::Calculus, expression::Expression,
+    ///     constant::Constant, function::Function, statement::Statement, expression::Expression,
     ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
     /// };
     ///
@@ -161,9 +161,9 @@ impl Function {
     /// let mut function = Function {
     ///     id: String::from("test"),
     ///     inputs: vec![],
-    ///     calculi: vec![(
+    ///     statements: vec![(
     ///         String::from("o"),
-    ///         Calculus {
+    ///         Statement {
     ///             id: String::from("o"),
     ///             element_type: Type::NotDefinedYet(String::from("Point")),
     ///             expression: Expression::Structure {
@@ -203,9 +203,9 @@ impl Function {
     /// let control = Function {
     ///     id: String::from("test"),
     ///     inputs: vec![],
-    ///     calculi: vec![(
+    ///     statements: vec![(
     ///         String::from("o"),
-    ///         Calculus {
+    ///         Statement {
     ///             id: String::from("o"),
     ///             element_type: Type::Structure(String::from("Point")),
     ///             expression: Expression::Structure {
@@ -254,7 +254,7 @@ impl Function {
     ) -> Result<(), ()> {
         let Function {
             inputs,
-            calculi,
+            statements,
             returned: (returned_type, _),
             location,
             ..
@@ -270,10 +270,10 @@ impl Function {
             .into_iter()
             .collect::<Result<(), ()>>()?;
 
-        // determine calculi types
-        calculi
+        // determine statements types
+        statements
             .iter_mut()
-            .map(|(_, calculus)| calculus.determine_types(user_types_context, errors))
+            .map(|(_, statement)| statement.determine_types(user_types_context, errors))
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()?;
@@ -288,7 +288,7 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        calculus::Calculus, expression::Expression, function::Function, location::Location,
+        statement::Statement, expression::Expression, function::Function, location::Location,
         type_system::Type,
     };
 
@@ -301,9 +301,9 @@ mod typing {
         let mut function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
+            statements: vec![(
                 String::from("x"),
-                Calculus {
+                Statement {
                     id: String::from("x"),
                     element_type: Type::Integer,
                     expression: Expression::Call {
@@ -328,9 +328,9 @@ mod typing {
         let control = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            calculi: vec![(
+            statements: vec![(
                 String::from("x"),
-                Calculus {
+                Statement {
                     id: String::from("x"),
                     element_type: Type::Integer,
                     expression: Expression::Call {
@@ -368,9 +368,9 @@ mod typing {
         let mut function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Float)],
-            calculi: vec![(
+            statements: vec![(
                 String::from("x"),
-                Calculus {
+                Statement {
                     id: String::from("x"),
                     element_type: Type::Float,
                     expression: Expression::Call {
@@ -401,7 +401,7 @@ mod typing {
 #[cfg(test)]
 mod determine_types {
     use crate::ast::{
-        calculus::Calculus, constant::Constant, expression::Expression, function::Function,
+        statement::Statement, constant::Constant, expression::Expression, function::Function,
         location::Location, type_system::Type, user_defined_type::UserDefinedType,
     };
     use std::collections::HashMap;
@@ -425,9 +425,9 @@ mod determine_types {
         let mut function = Function {
             id: String::from("test"),
             inputs: vec![],
-            calculi: vec![(
+            statements: vec![(
                 String::from("o"),
-                Calculus {
+                Statement {
                     id: String::from("o"),
                     element_type: Type::NotDefinedYet(String::from("Point")),
                     expression: Expression::Structure {
@@ -470,9 +470,9 @@ mod determine_types {
         let control = Function {
             id: String::from("test"),
             inputs: vec![],
-            calculi: vec![(
+            statements: vec![(
                 String::from("o"),
-                Calculus {
+                Statement {
                     id: String::from("o"),
                     element_type: Type::Structure(String::from("Point")),
                     expression: Expression::Structure {
@@ -527,9 +527,9 @@ mod determine_types {
         let mut function = Function {
             id: String::from("test"),
             inputs: vec![],
-            calculi: vec![(
+            statements: vec![(
                 String::from("o"),
-                Calculus {
+                Statement {
                     id: String::from("o"),
                     element_type: Type::NotDefinedYet(String::from("Point")),
                     expression: Expression::Structure {

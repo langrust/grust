@@ -2,7 +2,7 @@
 mod langrust_ast_constructs {
     use codespan_reporting::files::{Files, SimpleFiles};
     use grustine::ast::{
-        calculus::Calculus,
+        statement::Statement,
         component::Component,
         constant::Constant,
         equation::Equation,
@@ -64,10 +64,10 @@ mod langrust_ast_constructs {
                     Function {
                         id: String::from("test"),
                         inputs: vec![(String::from("i"), Type::Integer)],
-                        calculi: vec![
+                        statements: vec![
                             (
                                 String::from("x"),
-                                Calculus {
+                                Statement {
                                     id: String::from("x"),
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
@@ -80,7 +80,7 @@ mod langrust_ast_constructs {
                             ),
                             (
                                 String::from("o"),
-                                Calculus {
+                                Statement {
                                     id: String::from("o"),
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
@@ -105,10 +105,10 @@ mod langrust_ast_constructs {
                     Function {
                         id: String::from("test"),
                         inputs: vec![(String::from("i"), Type::Integer)],
-                        calculi: vec![
+                        statements: vec![
                             (
                                 String::from("x"),
-                                Calculus {
+                                Statement {
                                     id: String::from("x"),
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
@@ -121,7 +121,7 @@ mod langrust_ast_constructs {
                             ),
                             (
                                 String::from("o"),
-                                Calculus {
+                                Statement {
                                     id: String::from("o"),
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
@@ -281,10 +281,10 @@ mod langrust_ast_constructs {
                     Function {
                         id: String::from("test"),
                         inputs: vec![(String::from("i"), Type::Integer)],
-                        calculi: vec![
+                        statements: vec![
                             (
                                 String::from("x"),
-                                Calculus {
+                                Statement {
                                     id: String::from("x"),
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
@@ -297,7 +297,7 @@ mod langrust_ast_constructs {
                             ),
                             (
                                 String::from("o"),
-                                Calculus {
+                                Statement {
                                     id: String::from("o"),
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
@@ -322,10 +322,10 @@ mod langrust_ast_constructs {
                     Function {
                         id: String::from("test"),
                         inputs: vec![(String::from("i"), Type::Integer)],
-                        calculi: vec![
+                        statements: vec![
                             (
                                 String::from("x"),
-                                Calculus {
+                                Statement {
                                     id: String::from("x"),
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
@@ -338,7 +338,7 @@ mod langrust_ast_constructs {
                             ),
                             (
                                 String::from("o"),
-                                Calculus {
+                                Statement {
                                     id: String::from("o"),
                                     element_type: Type::Integer,
                                     expression: Expression::Call {
@@ -646,10 +646,10 @@ mod langrust_ast_constructs {
             Function {
                 id: String::from("test"),
                 inputs: vec![(String::from("i"), Type::Integer)],
-                calculi: vec![
+                statements: vec![
                     (
                         String::from("x"),
-                        Calculus {
+                        Statement {
                             id: String::from("x"),
                             element_type: Type::Integer,
                             expression: Expression::Call {
@@ -662,7 +662,7 @@ mod langrust_ast_constructs {
                     ),
                     (
                         String::from("o"),
-                        Calculus {
+                        Statement {
                             id: String::from("o"),
                             element_type: Type::Integer,
                             expression: Expression::Call {
@@ -834,20 +834,20 @@ mod langrust_ast_constructs {
     }
 
     #[test]
-    fn calculus() {
+    fn statement() {
         let mut files = SimpleFiles::new();
-        let file_id1 = files.add("calculus_test.gr", "let c: Color = Color.Yellow;");
+        let file_id1 = files.add("statement_test.gr", "let c: Color = Color.Yellow;");
         let file_id2 = files
             .add(
-                "calculus_match_test.gr",
+                "statement_match_test.gr",
                 "let compare: int = match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 };"
             );
 
-        let calculus = langrust::calculusParser::new()
+        let statement = langrust::statementParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
         assert_eq!(
-            Calculus {
+            Statement {
                 id: String::from("c"),
                 element_type: Type::NotDefinedYet(String::from("Color")),
                 expression: Expression::Constant {
@@ -857,13 +857,13 @@ mod langrust_ast_constructs {
                 },
                 location: Location::default(),
             },
-            calculus
+            statement
         );
-        let calculus = langrust::calculusParser::new()
+        let statement = langrust::statementParser::new()
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
         assert_eq!(
-            Calculus {
+            Statement {
                 id: String::from("compare"),
                 element_type: Type::Integer,
                 expression: Expression::Match {
@@ -973,7 +973,7 @@ mod langrust_ast_constructs {
                 },
                 location: Location::default(),
             },
-            calculus
+            statement
         );
     }
 

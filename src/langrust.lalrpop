@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::ast::{
-    calculus::Calculus,
+    statement::Statement,
     component::Component,
     constant::Constant,
     equation::Equation,
@@ -359,10 +359,10 @@ pub expression: Expression = {
     fourthBinaryExpression,
 };
 
-/// Catches calculus line
-pub calculus: Calculus = {
+/// Catches `let` statement
+pub statement: Statement = {
     <start:@L> "let" <id: ID> ":" <t: basicType> "=" <e: expression> ";" <end:@R> => {
-        Calculus {
+        Statement {
             id,
             element_type: t,
             expression: e,
@@ -602,20 +602,20 @@ pub userType: UserDefinedType = {
 
 /// Catches function
 pub function: Function = {
-    <start:@L> "function" <n: ID> "(" <i: hash<ID, basicType>> ")" "->" <t: basicType> "{" <c: calculus*> "return" <e: expression> ";" "}" <end:@R> => {
+    <start:@L> "function" <n: ID> "(" <i: hash<ID, basicType>> ")" "->" <t: basicType> "{" <c: statement*> "return" <e: expression> ";" "}" <end:@R> => {
         Function {
             id: n,
             inputs: i,
-            calculi: c.into_iter().map(|calculus| (calculus.id.clone(), calculus)).collect(),
+            statements: c.into_iter().map(|statement| (statement.id.clone(), statement)).collect(),
             returned: (t, e),
             location: Location{ file_id, range: start..end },
         }
     },
-    <start:@L> "function" <n: ID> "()" "->" <t: basicType> "{" <c: calculus*> "return" <e: expression> ";" "}" <end:@R> => {
+    <start:@L> "function" <n: ID> "()" "->" <t: basicType> "{" <c: statement*> "return" <e: expression> ";" "}" <end:@R> => {
         Function {
             id: n,
             inputs: vec![],
-            calculi: c.into_iter().map(|calculus| (calculus.id.clone(), calculus)).collect(),
+            statements: c.into_iter().map(|statement| (statement.id.clone(), statement)).collect(),
             returned: (t, e),
             location: Location{ file_id, range: start..end },
         }

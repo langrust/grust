@@ -7,26 +7,26 @@ use crate::ast::{
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
-/// LanGRust calculus AST.
-pub struct Calculus {
+/// LanGRust statement AST.
+pub struct Statement {
     /// Identifier of the new element.
     pub id: String,
     /// Element type.
     pub element_type: Type,
     /// The expression defining the element.
     pub expression: Expression,
-    /// Calculus location.
+    /// Statement location.
     pub location: Location,
 }
 
-impl Calculus {
-    /// [Type] the calculus.
+impl Statement {
+    /// [Type] the statement.
     ///
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::ast::{
-    ///     constant::Constant, calculus::Calculus, location::Location,
+    ///     constant::Constant, statement::Statement, location::Location,
     ///     expression::Expression, type_system::Type,
     /// };
     ///
@@ -40,14 +40,14 @@ impl Calculus {
     ///     typing: None,
     ///     location: Location::default(),
     /// };
-    /// let mut calculus = Calculus {
+    /// let mut statement = Statement {
     ///     id: String::from("x"),
     ///     element_type: Type::Integer,
     ///     expression: expression,
     ///     location: Location::default(),
     /// };
     ///
-    /// calculus.typing(&global_context, &elements_context, &user_types_context, &mut errors).unwrap();
+    /// statement.typing(&global_context, &elements_context, &user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
@@ -56,7 +56,7 @@ impl Calculus {
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
-        let Calculus {
+        let Statement {
             element_type,
             expression,
             location,
@@ -70,14 +70,14 @@ impl Calculus {
         expression_type.eq_check(element_type, location.clone(), errors)
     }
 
-    /// Determine the type of the calculus if undefined
+    /// Determine the type of the statement if undefined
     ///
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::ast::{
     ///     constant::Constant,
-    ///     calculus::Calculus, expression::Expression,
+    ///     statement::Statement, expression::Expression,
     ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
     /// };
     ///
@@ -95,7 +95,7 @@ impl Calculus {
     ///     }
     /// );
     ///
-    /// let mut calculus = Calculus {
+    /// let mut statement = Statement {
     ///     id: String::from("o"),
     ///     element_type: Type::NotDefinedYet(String::from("Point")),
     ///     expression: Expression::Structure {
@@ -124,7 +124,7 @@ impl Calculus {
     ///     location: Location::default(),
     /// };
     ///
-    /// let control = Calculus {
+    /// let control = Statement {
     ///     id: String::from("o"),
     ///     element_type: Type::Structure(String::from("Point")),
     ///     expression: Expression::Structure {
@@ -153,18 +153,18 @@ impl Calculus {
     ///     location: Location::default(),
     /// };
     ///
-    /// calculus
+    /// statement
     ///     .determine_types(&user_types_context, &mut errors)
     ///     .unwrap();
     ///
-    /// assert_eq!(calculus, control);
+    /// assert_eq!(statement, control);
     /// ```
     pub fn determine_types(
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
-        let Calculus {
+        let Statement {
             element_type,
             location,
             ..
@@ -178,7 +178,7 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        calculus::Calculus, constant::Constant, expression::Expression, location::Location,
+        statement::Statement, constant::Constant, expression::Expression, location::Location,
         type_system::Type,
     };
 
@@ -189,7 +189,7 @@ mod typing {
         let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
-        let mut calculus = Calculus {
+        let mut statement = Statement {
             id: String::from("x"),
             element_type: Type::Integer,
             expression: Expression::Constant {
@@ -200,7 +200,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let control = Calculus {
+        let control = Statement {
             id: String::from("x"),
             element_type: Type::Integer,
             expression: Expression::Constant {
@@ -211,7 +211,7 @@ mod typing {
             location: Location::default(),
         };
 
-        calculus
+        statement
             .typing(
                 &global_context,
                 &elements_context,
@@ -220,7 +220,7 @@ mod typing {
             )
             .unwrap();
 
-        assert_eq!(calculus, control)
+        assert_eq!(statement, control)
     }
 
     #[test]
@@ -230,7 +230,7 @@ mod typing {
         let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
-        let mut calculus = Calculus {
+        let mut statement = Statement {
             id: String::from("x"),
             element_type: Type::Float,
             expression: Expression::Constant {
@@ -241,7 +241,7 @@ mod typing {
             location: Location::default(),
         };
 
-        calculus
+        statement
             .typing(
                 &global_context,
                 &elements_context,
@@ -257,7 +257,7 @@ mod determine_types {
     use std::collections::HashMap;
 
     use crate::ast::{
-        calculus::Calculus, constant::Constant, expression::Expression, location::Location,
+        statement::Statement, constant::Constant, expression::Expression, location::Location,
         type_system::Type, user_defined_type::UserDefinedType,
     };
 
@@ -277,7 +277,7 @@ mod determine_types {
             },
         );
 
-        let mut calculus = Calculus {
+        let mut statement = Statement {
             id: String::from("o"),
             element_type: Type::NotDefinedYet(String::from("Point")),
             expression: Expression::Structure {
@@ -306,7 +306,7 @@ mod determine_types {
             location: Location::default(),
         };
 
-        let control = Calculus {
+        let control = Statement {
             id: String::from("o"),
             element_type: Type::Structure(String::from("Point")),
             expression: Expression::Structure {
@@ -335,11 +335,11 @@ mod determine_types {
             location: Location::default(),
         };
 
-        calculus
+        statement
             .determine_types(&user_types_context, &mut errors)
             .unwrap();
 
-        assert_eq!(calculus, control);
+        assert_eq!(statement, control);
     }
 
     #[test]
@@ -347,7 +347,7 @@ mod determine_types {
         let mut errors = vec![];
         let user_types_context = HashMap::new();
 
-        let mut calculus = Calculus {
+        let mut statement = Statement {
             id: String::from("o"),
             element_type: Type::NotDefinedYet(String::from("Point")),
             expression: Expression::Structure {
@@ -376,7 +376,7 @@ mod determine_types {
             location: Location::default(),
         };
 
-        calculus
+        statement
             .determine_types(&user_types_context, &mut errors)
             .unwrap_err();
     }
