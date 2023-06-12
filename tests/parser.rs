@@ -48,7 +48,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             file,
-            File::Module {
+            File {
                 user_defined_types: vec![UserDefinedType::Enumeration {
                     id: String::from("Color"),
                     elements: vec![
@@ -253,6 +253,7 @@ mod langrust_ast_constructs {
                         location: Location::default(),
                     }
                 ],
+                component: None,
                 location: Location::default()
             },
         );
@@ -262,7 +263,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             file,
-            File::Program {
+            File {
                 user_defined_types: vec![
                     UserDefinedType::Array {
                         id: String::from("Matrix"),
@@ -437,7 +438,7 @@ mod langrust_ast_constructs {
                         location: Location::default(),
                     }
                 ],
-                component: Node {
+                component: Some(Node {
                     id: String::from("test"),
                     is_component: true,
                     inputs: vec![(String::from("i"), Type::Integer)],
@@ -472,7 +473,7 @@ mod langrust_ast_constructs {
                         )
                     ],
                     location: Location::default(),
-                },
+                }),
                 location: Location::default()
             },
         );
