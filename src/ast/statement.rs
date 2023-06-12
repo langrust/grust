@@ -178,7 +178,7 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        statement::Statement, constant::Constant, expression::Expression, location::Location,
+        constant::Constant, expression::Expression, location::Location, statement::Statement,
         type_system::Type,
     };
 
@@ -257,7 +257,7 @@ mod determine_types {
     use std::collections::HashMap;
 
     use crate::ast::{
-        statement::Statement, constant::Constant, expression::Expression, location::Location,
+        constant::Constant, expression::Expression, location::Location, statement::Statement,
         type_system::Type, user_defined_type::UserDefinedType,
     };
 

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    statement::Statement, expression::Expression, location::Location, type_system::Type,
+    expression::Expression, location::Location, statement::Statement, type_system::Type,
     user_defined_type::UserDefinedType,
 };
 use crate::common::context::Context;
@@ -288,7 +288,7 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        statement::Statement, expression::Expression, function::Function, location::Location,
+        expression::Expression, function::Function, location::Location, statement::Statement,
         type_system::Type,
     };
 
@@ -401,8 +401,8 @@ mod typing {
 #[cfg(test)]
 mod determine_types {
     use crate::ast::{
-        statement::Statement, constant::Constant, expression::Expression, function::Function,
-        location::Location, type_system::Type, user_defined_type::UserDefinedType,
+        constant::Constant, expression::Expression, function::Function, location::Location,
+        statement::Statement, type_system::Type, user_defined_type::UserDefinedType,
     };
     use std::collections::HashMap;
 

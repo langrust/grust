@@ -2,7 +2,6 @@
 mod langrust_ast_constructs {
     use codespan_reporting::files::{Files, SimpleFiles};
     use grustine::ast::{
-        statement::Statement,
         component::Component,
         constant::Constant,
         equation::Equation,
@@ -14,6 +13,7 @@ mod langrust_ast_constructs {
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         pattern::Pattern,
         scope::Scope,
+        statement::Statement,
         stream_expression::StreamExpression,
         type_system::Type,
         user_defined_type::UserDefinedType,
