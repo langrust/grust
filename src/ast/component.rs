@@ -8,28 +8,26 @@ use crate::common::context::Context;
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
-/// LanGRust node AST.
-pub struct Node {
-    /// Node identifier.
+/// LanGRust component AST.
+pub struct Component {
+    /// Component identifier.
     pub id: String,
-    /// Is true when the node is a component.
-    pub is_component: bool,
-    /// Node's inputs identifiers and their types.
+    /// Component's inputs identifiers and their types.
     pub inputs: Vec<(String, Type)>,
-    /// Node's equations.
+    /// Component's equations.
     pub equations: Vec<(String, Equation)>,
-    /// Node location.
+    /// Component location.
     pub location: Location,
 }
 
-impl Node {
-    /// [Type] the node.
+impl Component {
+    /// [Type] the component.
     ///
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::ast::{
-    ///     constant::Constant, equation::Equation, location::Location, node::Node,
+    ///     constant::Constant, equation::Equation, location::Location, component::Component,
     ///     node_description::NodeDescription, scope::Scope,
     ///     stream_expression::StreamExpression, type_system::Type,
     /// };
@@ -39,18 +37,16 @@ impl Node {
     /// nodes_context.insert(
     ///     String::from("test"),
     ///     NodeDescription {
-    ///         is_component: false,
     ///         inputs: vec![(String::from("i"), Type::Integer)],
     ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
     ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
     ///     }
     /// );
-    /// let global_context = HashMap::new();
+    /// let elements_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     ///
-    /// let mut node = Node {
+    /// let mut component = Component {
     ///     id: String::from("test"),
-    ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     equations: vec![
     ///         (
@@ -85,29 +81,28 @@ impl Node {
     ///     location: Location::default(),
     /// };
     ///
-    /// node.typing(&nodes_context, &global_context, &user_types_context, &mut errors).unwrap();
+    /// component.typing(&nodes_context, &elements_context, &user_types_context, &mut errors).unwrap();
     /// ```
     pub fn typing(
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
-        global_context: &HashMap<String, Type>,
+        elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
-        let Node {
-            id,
-            equations,
-            location,
-            ..
-        } = self;
-
-        // get the description of the node
+        // get the description of the component
         let NodeDescription {
             inputs,
             outputs,
             locals,
+        } = self.into_node_description(errors)?;
+
+        // match the component
+        let Component {
+            equations,
+            location,
             ..
-        } = nodes_context.get_node_or_error(id, location.clone(), errors)?;
+        } = self;
 
         // create signals context: inputs + outputs + locals
         let mut signals_context = HashMap::new();
@@ -134,7 +129,7 @@ impl Node {
                 equation.typing(
                     nodes_context,
                     &signals_context,
-                    global_context,
+                    elements_context,
                     user_types_context,
                     errors,
                 )
@@ -144,21 +139,20 @@ impl Node {
             .collect::<Result<(), ()>>()
     }
 
-    /// Create a [NodeDescription] from a [Node]
+    /// Create a [NodeDescription] from a [Component]
     ///
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::ast::{
-    ///     equation::Equation, location::Location, node::Node, node_description::NodeDescription,
+    ///     equation::Equation, location::Location, component::Component, node_description::NodeDescription,
     ///     scope::Scope, stream_expression::StreamExpression, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
     ///
-    /// let node = Node {
+    /// let component = Component {
     ///     id: String::from("test"),
-    ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     equations: vec![
     ///         (
@@ -194,19 +188,17 @@ impl Node {
     /// };
     ///
     /// let control = NodeDescription {
-    ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     outputs: HashMap::from([(String::from("o"), Type::Integer)]),
     ///     locals: HashMap::from([(String::from("x"), Type::Integer)]),
     /// };
     ///
-    /// let node_description = node.into_node_description(&mut errors).unwrap();
+    /// let node_description = component.into_node_description(&mut errors).unwrap();
     ///
     /// assert_eq!(node_description, control);
     /// ```
     pub fn into_node_description(&self, errors: &mut Vec<Error>) -> Result<NodeDescription, ()> {
-        let Node {
-            is_component,
+        let Component {
             inputs,
             equations,
             location,
@@ -270,20 +262,19 @@ impl Node {
             .collect::<Result<(), ()>>()?;
 
         Ok(NodeDescription {
-            is_component: is_component.clone(),
             inputs: inputs.clone(),
             outputs,
             locals,
         })
     }
 
-    /// Determine all undefined types in node
+    /// Determine all undefined types in component
     ///
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::ast::{
-    ///     constant::Constant, node::Node,
+    ///     constant::Constant, component::Component,
     ///     equation::Equation, stream_expression::StreamExpression, scope::Scope,
     ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
     /// };
@@ -302,9 +293,8 @@ impl Node {
     ///     }
     /// );
     ///
-    /// let mut node = Node {
+    /// let mut component = Component {
     ///     id: String::from("test"),
-    ///     is_component: false,
     ///     inputs: vec![],
     ///     equations: vec![
     ///         (
@@ -343,9 +333,8 @@ impl Node {
     ///     location: Location::default(),
     /// };
     ///
-    /// let control = Node {
+    /// let control = Component {
     ///     id: String::from("test"),
-    ///     is_component: false,
     ///     inputs: vec![],
     ///     equations: vec![
     ///         (
@@ -384,18 +373,18 @@ impl Node {
     ///     location: Location::default(),
     /// };
     ///
-    /// node
+    /// component
     ///     .resolve_undefined_types(&user_types_context, &mut errors)
     ///     .unwrap();
     ///
-    /// assert_eq!(node, control);
+    /// assert_eq!(component, control);
     /// ```
     pub fn resolve_undefined_types(
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
-        let Node {
+        let Component {
             inputs,
             equations,
             location,
@@ -427,30 +416,28 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        constant::Constant, equation::Equation, location::Location, node::Node,
+        component::Component, constant::Constant, equation::Equation, location::Location,
         node_description::NodeDescription, scope::Scope, stream_expression::StreamExpression,
         type_system::Type,
     };
 
     #[test]
-    fn should_type_well_defined_node() {
+    fn should_type_well_defined_component() {
         let mut errors = vec![];
         let mut nodes_context = HashMap::new();
         nodes_context.insert(
             String::from("test"),
             NodeDescription {
-                is_component: false,
                 inputs: vec![(String::from("i"), Type::Integer)],
                 outputs: HashMap::from([(String::from("o"), Type::Integer)]),
                 locals: HashMap::from([(String::from("x"), Type::Integer)]),
             },
         );
-        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
-        let mut node = Node {
+        let mut component = Component {
             id: String::from("test"),
-            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -485,9 +472,8 @@ mod typing {
             location: Location::default(),
         };
 
-        let control = Node {
+        let control = Component {
             id: String::from("test"),
-            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -522,36 +508,35 @@ mod typing {
             location: Location::default(),
         };
 
-        node.typing(
-            &nodes_context,
-            &global_context,
-            &user_types_context,
-            &mut errors,
-        )
-        .unwrap();
+        component
+            .typing(
+                &nodes_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
 
-        assert_eq!(node, control)
+        assert_eq!(component, control)
     }
 
     #[test]
-    fn should_raise_error_for_incompatible_type_in_node() {
+    fn should_raise_error_for_incompatible_type_in_component() {
         let mut errors = vec![];
         let mut nodes_context = HashMap::new();
         nodes_context.insert(
             String::from("test"),
             NodeDescription {
-                is_component: false,
                 inputs: vec![(String::from("i"), Type::Integer)],
                 outputs: HashMap::from([(String::from("o"), Type::Integer)]),
                 locals: HashMap::from([(String::from("x"), Type::Integer)]),
             },
         );
-        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
         let user_types_context = HashMap::new();
 
-        let mut node = Node {
+        let mut component = Component {
             id: String::from("test"),
-            is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -586,13 +571,14 @@ mod typing {
             location: Location::default(),
         };
 
-        node.typing(
-            &nodes_context,
-            &global_context,
-            &user_types_context,
-            &mut errors,
-        )
-        .unwrap_err();
+        component
+            .typing(
+                &nodes_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
     }
 }
 
@@ -601,70 +587,16 @@ mod into_node_description {
     use std::collections::HashMap;
 
     use crate::ast::{
-        equation::Equation, location::Location, node::Node, node_description::NodeDescription,
-        scope::Scope, stream_expression::StreamExpression, type_system::Type,
+        component::Component, equation::Equation, location::Location,
+        node_description::NodeDescription, scope::Scope, stream_expression::StreamExpression,
+        type_system::Type,
     };
-
-    #[test]
-    fn should_return_a_node_description_from_a_node_with_no_duplicates() {
-        let mut errors = vec![];
-
-        let node = Node {
-            id: String::from("test"),
-            is_component: false,
-            inputs: vec![(String::from("i"), Type::Integer)],
-            equations: vec![
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-
-        let control = NodeDescription {
-            is_component: false,
-            inputs: vec![(String::from("i"), Type::Integer)],
-            outputs: HashMap::from([(String::from("o"), Type::Integer)]),
-            locals: HashMap::from([(String::from("x"), Type::Integer)]),
-        };
-
-        let node_description = node.into_node_description(&mut errors).unwrap();
-
-        assert_eq!(node_description, control);
-    }
-
     #[test]
     fn should_return_a_node_description_from_a_component_with_no_duplicates() {
         let mut errors = vec![];
 
-        let node = Node {
+        let component = Component {
             id: String::from("test"),
-            is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 (
@@ -700,13 +632,12 @@ mod into_node_description {
         };
 
         let control = NodeDescription {
-            is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
             outputs: HashMap::from([(String::from("o"), Type::Integer)]),
             locals: HashMap::from([(String::from("x"), Type::Integer)]),
         };
 
-        let node_description = node.into_node_description(&mut errors).unwrap();
+        let node_description = component.into_node_description(&mut errors).unwrap();
 
         assert_eq!(node_description, control);
     }
@@ -715,8 +646,9 @@ mod into_node_description {
 #[cfg(test)]
 mod determine_types {
     use crate::ast::{
-        constant::Constant, equation::Equation, location::Location, node::Node, scope::Scope,
-        stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+        component::Component, constant::Constant, equation::Equation, location::Location,
+        scope::Scope, stream_expression::StreamExpression, type_system::Type,
+        user_defined_type::UserDefinedType,
     };
     use std::collections::HashMap;
 
@@ -736,9 +668,8 @@ mod determine_types {
             },
         );
 
-        let mut node = Node {
+        let mut component = Component {
             id: String::from("test"),
-            is_component: false,
             inputs: vec![],
             equations: vec![(
                 String::from("o"),
@@ -775,9 +706,8 @@ mod determine_types {
             location: Location::default(),
         };
 
-        let control = Node {
+        let control = Component {
             id: String::from("test"),
-            is_component: false,
             inputs: vec![],
             equations: vec![(
                 String::from("o"),
@@ -814,10 +744,11 @@ mod determine_types {
             location: Location::default(),
         };
 
-        node.resolve_undefined_types(&user_types_context, &mut errors)
+        component
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap();
 
-        assert_eq!(node, control);
+        assert_eq!(component, control);
     }
 
     #[test]
@@ -825,9 +756,8 @@ mod determine_types {
         let mut errors = vec![];
         let user_types_context = HashMap::new();
 
-        let mut node = Node {
+        let mut component = Component {
             id: String::from("test"),
-            is_component: false,
             inputs: vec![],
             equations: vec![(
                 String::from("o"),
@@ -864,7 +794,8 @@ mod determine_types {
             location: Location::default(),
         };
 
-        node.resolve_undefined_types(&user_types_context, &mut errors)
+        component
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap_err();
     }
 }

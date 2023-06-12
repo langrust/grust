@@ -167,12 +167,12 @@ impl Equation {
     /// };
     ///
     /// equation
-    ///     .determine_types(&user_types_context, &mut errors)
+    ///     .resolve_undefined_types(&user_types_context, &mut errors)
     ///     .unwrap();
     ///
     /// assert_eq!(equation, control);
     /// ```
-    pub fn determine_types(
+    pub fn resolve_undefined_types(
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -182,7 +182,7 @@ impl Equation {
             location,
             ..
         } = self;
-        signal_type.determine(location.clone(), user_types_context, errors)
+        signal_type.resolve_undefined(location.clone(), user_types_context, errors)
     }
 }
 
@@ -358,7 +358,7 @@ mod determine_types {
         };
 
         equation
-            .determine_types(&user_types_context, &mut errors)
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(equation, control);
@@ -400,7 +400,7 @@ mod determine_types {
         };
 
         equation
-            .determine_types(&user_types_context, &mut errors)
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap_err();
     }
 }

@@ -242,12 +242,12 @@ impl Function {
     ///     location: Location::default(),
     /// };
     ///
-    /// function.determine_types(&user_types_context, &mut errors)
+    /// function.resolve_undefined_types(&user_types_context, &mut errors)
     ///     .unwrap();
     ///
     /// assert_eq!(function, control);
     /// ```
-    pub fn determine_types(
+    pub fn resolve_undefined_types(
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -264,7 +264,7 @@ impl Function {
         inputs
             .iter_mut()
             .map(|(_, input_type)| {
-                input_type.determine(location.clone(), user_types_context, errors)
+                input_type.resolve_undefined(location.clone(), user_types_context, errors)
             })
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
@@ -273,13 +273,13 @@ impl Function {
         // determine statements types
         statements
             .iter_mut()
-            .map(|(_, statement)| statement.determine_types(user_types_context, errors))
+            .map(|(_, calculus)| calculus.resolve_undefined_types(user_types_context, errors))
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()?;
 
         // determine returned type
-        returned_type.determine(location.clone(), user_types_context, errors)
+        returned_type.resolve_undefined(location.clone(), user_types_context, errors)
     }
 }
 
@@ -513,7 +513,7 @@ mod determine_types {
         };
 
         function
-            .determine_types(&user_types_context, &mut errors)
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(function, control);
@@ -570,7 +570,7 @@ mod determine_types {
         };
 
         function
-            .determine_types(&user_types_context, &mut errors)
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap_err();
     }
 }

@@ -153,13 +153,13 @@ impl Statement {
     ///     location: Location::default(),
     /// };
     ///
-    /// statement
-    ///     .determine_types(&user_types_context, &mut errors)
+    /// calculus
+    ///     .resolve_undefined_types(&user_types_context, &mut errors)
     ///     .unwrap();
     ///
     /// assert_eq!(statement, control);
     /// ```
-    pub fn determine_types(
+    pub fn resolve_undefined_types(
         &mut self,
         user_types_context: &HashMap<String, UserDefinedType>,
         errors: &mut Vec<Error>,
@@ -169,7 +169,7 @@ impl Statement {
             location,
             ..
         } = self;
-        element_type.determine(location.clone(), user_types_context, errors)
+        element_type.resolve_undefined(location.clone(), user_types_context, errors)
     }
 }
 
@@ -335,8 +335,8 @@ mod determine_types {
             location: Location::default(),
         };
 
-        statement
-            .determine_types(&user_types_context, &mut errors)
+        calculus
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(statement, control);
@@ -376,8 +376,8 @@ mod determine_types {
             location: Location::default(),
         };
 
-        statement
-            .determine_types(&user_types_context, &mut errors)
+        calculus
+            .resolve_undefined_types(&user_types_context, &mut errors)
             .unwrap_err();
     }
 }

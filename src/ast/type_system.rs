@@ -229,12 +229,12 @@ impl Type {
     /// let control = Type::Structure(String::from("Point"));
     ///
     /// my_type
-    ///     .determine(Location::default(), &user_types_context, &mut errors)
+    ///     .resolve_undefined(Location::default(), &user_types_context, &mut errors)
     ///     .unwrap();
     ///
     /// assert_eq!(my_type, control);
     /// ```
-    pub fn determine(
+    pub fn resolve_undefined(
         &mut self,
         location: Location,
         user_types_context: &HashMap<String, UserDefinedType>,
@@ -338,7 +338,7 @@ mod apply {
 }
 
 #[cfg(test)]
-mod determine {
+mod resolve_undefined {
     use std::collections::HashMap;
 
     use crate::ast::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
@@ -364,7 +364,7 @@ mod determine {
         let control = Type::Structure(String::from("Point"));
 
         my_type
-            .determine(Location::default(), &user_types_context, &mut errors)
+            .resolve_undefined(Location::default(), &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(my_type, control);
@@ -380,7 +380,7 @@ mod determine {
         let control = Type::Integer;
 
         my_type
-            .determine(Location::default(), &user_types_context, &mut errors)
+            .resolve_undefined(Location::default(), &user_types_context, &mut errors)
             .unwrap();
 
         assert_eq!(my_type, control);
@@ -394,7 +394,7 @@ mod determine {
         let mut my_type = Type::NotDefinedYet(String::from("Point"));
 
         my_type
-            .determine(Location::default(), &user_types_context, &mut errors)
+            .resolve_undefined(Location::default(), &user_types_context, &mut errors)
             .unwrap_err();
     }
 }
