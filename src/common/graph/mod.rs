@@ -74,21 +74,47 @@ impl<T> Graph<T> {
     }
 
     /// Get edges as pairs of ids, no duplicates.
-    pub fn get_edges(&self) -> Vec<(String, String)> {
-        let mut ids = self
-            .vertices
+    pub fn get_edges(&self) -> Vec<(String, String, usize)> {
+        self.vertices
             .values()
             .flat_map(|vertex| {
                 vertex
-                    .get_neighbors()
+                    .neighbors
                     .iter()
-                    .map(|neighbor| (vertex.id.clone(), neighbor.clone()))
-                    .collect::<Vec<(String, String)>>()
+                    .map(|neighbor| (vertex.id.clone(), neighbor.id.clone(), neighbor.weight))
+                    .collect::<Vec<(String, String, usize)>>()
             })
-            .collect::<Vec<(String, String)>>();
-        ids.sort_unstable();
-        ids.dedup();
-        ids
+            .collect::<Vec<(String, String, usize)>>()
+    }
+
+    /// Create a copy of the graph without edges.
+    pub fn no_edges_graph(&self) -> Graph<T>
+    where
+        T: Clone,
+    {
+        let mut subgraph = Graph::new();
+
+        for vertex in self.vertices.values() {
+            subgraph.add_vertex(vertex.id.clone(), vertex.get_value().clone())
+        }
+
+        subgraph
+    }
+
+    /// Create a subgraph from a predicate on edges' weights.
+    pub fn subgraph_on_edges(&self, predicate: impl Fn(usize) -> bool) -> Graph<T>
+    where
+        T: Clone,
+    {
+        let mut subgraph = self.no_edges_graph();
+
+        for (from, to, weight) in self.get_edges() {
+            if predicate(weight) {
+                subgraph.add_edge(&from, to, weight)
+            }
+        }
+
+        subgraph
     }
 }
 
@@ -389,22 +415,29 @@ mod get_edges {
         graph.add_vertex(String::from("v2"), 2);
         graph.add_vertex(String::from("v3"), 2);
         graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
         graph.add_edge(&String::from("v1"), String::from("v3"), 3);
 
         let mut edges = graph.get_edges();
         edges.sort_unstable();
 
         let mut control = vec![
-            (String::from("v1"), String::from("v3")),
-            (String::from("v1"), String::from("v2")),
+            (String::from("v1"), String::from("v3"), 3),
+            (String::from("v1"), String::from("v3"), 0),
+            (String::from("v1"), String::from("v2"), 3),
         ];
         control.sort_unstable();
 
         assert_eq!(edges, control)
     }
+}
+
+#[cfg(test)]
+mod no_edges_graph {
+    use crate::common::graph::Graph;
 
     #[test]
-    fn should_not_duplicate_edges() {
+    fn should_return_graph_with_all_vertices() {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
@@ -413,16 +446,80 @@ mod get_edges {
         graph.add_edge(&String::from("v1"), String::from("v3"), 0);
         graph.add_edge(&String::from("v1"), String::from("v3"), 3);
 
-        let mut edges = graph.get_edges();
-        edges.sort_unstable();
+        let subgraph = graph.no_edges_graph();
+        
+        let mut vertices = graph.get_vertices();
+        vertices.sort_unstable();
+        let mut subgraph_vertices = subgraph.get_vertices();
+        subgraph_vertices.sort_unstable();
 
-        let mut control = vec![
-            (String::from("v1"), String::from("v3")),
-            (String::from("v1"), String::from("v2")),
-        ];
+        assert_eq!(subgraph_vertices, vertices);
+    }
+
+    #[test]
+    fn should_have_no_edges() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_vertex(String::from("v3"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+
+        let subgraph = graph.no_edges_graph();
+
+        assert!(subgraph.get_edges().is_empty());
+    }
+}
+
+#[cfg(test)]
+mod subgraph_on_edges {
+    use crate::common::graph::Graph;
+
+    #[test]
+    fn should_return_graph_with_all_vertices() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_vertex(String::from("v3"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+
+        let subgraph = graph.subgraph_on_edges(|weight| weight == 0);
+        
+        let mut vertices = graph.get_vertices();
+        vertices.sort_unstable();
+        let mut subgraph_vertices = subgraph.get_vertices();
+        subgraph_vertices.sort_unstable();
+
+        assert_eq!(subgraph_vertices, vertices);
+    }
+
+    #[test]
+    fn should_have_edges_respecting_predicate() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_vertex(String::from("v3"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+
+        let subgraph = graph.subgraph_on_edges(|weight| weight == 0);
+
+        let mut subgraph_edges = subgraph.get_edges();
+        subgraph_edges.sort_unstable();
+
+        let mut control = graph
+            .get_edges()
+            .into_iter()
+            .filter(|(_, _, weight)| *weight == 0)
+            .collect::<Vec<(String, String, usize)>>();
         control.sort_unstable();
 
-        assert_eq!(edges, control)
+
+        assert_eq!(subgraph_edges, control);
     }
 }
 
@@ -446,7 +543,7 @@ mod topological_sorting {
 
         let schedule = graph.topological_sorting(&mut errors).unwrap();
 
-        for (v1, v2) in graph.get_edges() {
+        for (v1, v2, _) in graph.get_edges() {
             assert!(
                 schedule.iter().position(|id| id.eq(&v1)).unwrap()
                     <= schedule.iter().position(|id| id.eq(&v2)).unwrap()
