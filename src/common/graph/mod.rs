@@ -6,7 +6,7 @@ pub mod neighbor;
 
 use std::collections::HashMap;
 
-use crate::common::graph::vertex::Vertex;
+use crate::{common::{color::Color, graph::vertex::Vertex}, error::Error};
 
 /// Graph structure.
 #[derive(Debug, PartialEq)]
@@ -62,7 +62,87 @@ impl<T> Graph<T> {
 
     /// Tells if edge already exist with this weight.
     pub fn has_edge(&self, from: &String, to: &String, weight: &usize) -> bool {
-        self.has_vertex(from) && self.get_vertex(from).has_neighbor(to, weight)
+        self.has_vertex(from) && self.get_vertex(from).has_neighbor_weight(to, weight)
+    }
+
+    /// Get vertices' ids.
+    pub fn get_vertices(&self) -> Vec<String> {
+        self.vertices.keys().map(|id| id.clone()).collect()
+    }
+
+    /// Get edges as pairs of ids, no duplicates.
+    pub fn get_edges(&self) -> Vec<(String, String)> {
+        let mut ids = self
+            .vertices
+            .values()
+            .flat_map(|vertex| {
+                vertex
+                    .get_neighbors()
+                    .iter()
+                    .map(|neighbor| (vertex.id.clone(), neighbor.clone()))
+                    .collect::<Vec<(String, String)>>()
+            })
+            .collect::<Vec<(String, String)>>();
+        ids.sort_unstable();
+        ids.dedup();
+        ids
+    }
+}
+
+impl Graph<Color> {
+    /// Topological sorting of an oriented graph.
+    ///
+    /// Scans an oriented graph and returns a schedule visiting all vertices in order.
+    pub fn topological_sorting(&mut self, errors: &mut Vec<Error>) -> Result<Vec<String>, ()> {
+        // initialize schedule
+        let mut schedule = vec![];
+
+        // initialize all vertices to "unprocessed" state
+        self.vertices
+            .values_mut()
+            .for_each(|vertex| vertex.set_value(Color::White));
+
+        // process of vertices
+        self.get_vertices()
+            .iter()
+            .map(|id| self.visit_vertex(&id, &mut schedule, errors))
+            .collect::<Result<(), ()>>()?;
+
+        Ok(schedule)
+    }
+
+    fn visit_vertex(
+        &mut self,
+        id: &String,
+        schedule: &mut Vec<String>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), ()> {
+        let vertex = self.get_vertex_mut(id);
+
+        match vertex.get_value() {
+            Color::White => {
+                // update vertex status: processing
+                vertex.set_value(Color::Grey);
+
+                // processus propagation
+                vertex
+                    .get_neighbors()
+                    .iter()
+                    .map(|id| self.visit_vertex(id, schedule, errors))
+                    .collect::<Result<(), ()>>()?;
+
+                // update vertex status: processed
+                let vertex = self.get_vertex_mut(id);
+                vertex.set_value(Color::Black);
+
+                // add vertex to schedule
+                schedule.insert(0, id.clone());
+
+                Ok(())
+            }
+            Color::Grey => todo!("error"),
+            Color::Black => Ok(()),
+        }
     }
 }
 
@@ -271,5 +351,128 @@ mod has_edge {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v2"), 2);
         assert!(!graph.has_edge(&String::from("v1"), &String::from("v2"), &2))
+    }
+}
+
+#[cfg(test)]
+mod get_vertices {
+    use crate::common::graph::Graph;
+
+    #[test]
+    fn should_get_vertices_ids() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+
+        let mut vertices = graph.get_vertices();
+        vertices.sort_unstable();
+
+        let mut control = vec![String::from("v1"), String::from("v2")];
+        control.sort_unstable();
+
+        assert_eq!(vertices, control)
+    }
+}
+
+#[cfg(test)]
+mod get_edges {
+    use crate::common::graph::Graph;
+
+    #[test]
+    fn should_get_all_edges() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_vertex(String::from("v3"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+
+        let mut edges = graph.get_edges();
+        edges.sort_unstable();
+
+        let mut control = vec![
+            (String::from("v1"), String::from("v3")),
+            (String::from("v1"), String::from("v2")),
+        ];
+        control.sort_unstable();
+
+        assert_eq!(edges, control)
+    }
+
+    #[test]
+    fn should_not_duplicate_edges() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_vertex(String::from("v3"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+
+        let mut edges = graph.get_edges();
+        edges.sort_unstable();
+
+        let mut control = vec![
+            (String::from("v1"), String::from("v3")),
+            (String::from("v1"), String::from("v2")),
+        ];
+        control.sort_unstable();
+
+        assert_eq!(edges, control)
+    }
+}
+
+#[cfg(test)]
+mod topological_sorting {
+    use crate::common::{color::Color, graph::Graph};
+
+    #[test]
+    fn should_return_a_schedule_of_the_graph_in_order() {
+        let mut errors = vec![];
+
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), Color::Black);
+        graph.add_vertex(String::from("v2"), Color::Black);
+        graph.add_vertex(String::from("v3"), Color::Black);
+        graph.add_vertex(String::from("v4"), Color::Black);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v3"), String::from("v2"), 0);
+
+        let schedule = graph.topological_sorting(&mut errors).unwrap();
+
+        for (v1, v2) in graph.get_edges() {
+            assert!(
+                schedule.iter().position(|id| id.eq(&v1)).unwrap()
+                    <= schedule.iter().position(|id| id.eq(&v2)).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn should_return_schedule_with_all_vertices() {
+        let mut errors = vec![];
+
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), Color::Black);
+        graph.add_vertex(String::from("v2"), Color::Black);
+        graph.add_vertex(String::from("v3"), Color::Black);
+        graph.add_vertex(String::from("v4"), Color::Black);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v3"), String::from("v2"), 0);
+
+        let schedule = graph.topological_sorting(&mut errors).unwrap();
+
+        let vertices = graph.get_vertices();
+
+        assert_eq!(schedule.len(), vertices.len());
+
+        for vertex in vertices {
+            assert!(schedule.iter().position(|id| id.eq(&vertex)).is_some())
+        }
     }
 }
