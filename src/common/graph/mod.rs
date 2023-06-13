@@ -11,8 +11,10 @@ use crate::{
     error::Error,
 };
 
+use self::neighbor::Neighbor;
+
 /// Graph structure.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Graph<T> {
     /// Graph's vertices.
     vertices: HashMap<String, Vertex<T>>,
@@ -73,7 +75,7 @@ impl<T> Graph<T> {
         self.vertices.keys().map(|id| id.clone()).collect()
     }
 
-    /// Get edges as pairs of ids, no duplicates.
+    /// Get edges as pairs of ids.
     pub fn get_edges(&self) -> Vec<(String, String, usize)> {
         self.vertices
             .values()
@@ -85,6 +87,11 @@ impl<T> Graph<T> {
                     .collect::<Vec<(String, String, usize)>>()
             })
             .collect::<Vec<(String, String, usize)>>()
+    }
+
+    /// Get weight of an edge if exists
+    pub fn get_weight(&self, from: &String, to: &String) -> Option<usize> {
+        self.get_vertex(from).get_weight(to)
     }
 
     /// Create a copy of the graph without edges.
@@ -122,7 +129,7 @@ impl Graph<Color> {
     /// Topological sorting of an oriented graph.
     ///
     /// Scans an oriented graph and returns a schedule visiting all vertices in order.
-    pub fn topological_sorting(&mut self, errors: &mut Vec<Error>) -> Result<Vec<String>, ()> {
+    pub fn topological_sorting(&mut self, errors: &mut Vec<Error>) -> Result<Vec<String>, String> {
         // initialize schedule
         let mut schedule = vec![];
 
@@ -135,7 +142,7 @@ impl Graph<Color> {
         self.get_vertices()
             .iter()
             .map(|id| self.visit_vertex(&id, &mut schedule, errors))
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), String>>()?;
 
         Ok(schedule)
     }
@@ -145,7 +152,7 @@ impl Graph<Color> {
         id: &String,
         schedule: &mut Vec<String>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), String> {
         let vertex = self.get_vertex_mut(id);
 
         match vertex.get_value() {
@@ -157,19 +164,19 @@ impl Graph<Color> {
                 vertex
                     .get_neighbors()
                     .iter()
-                    .map(|id| self.visit_vertex(id, schedule, errors))
-                    .collect::<Result<(), ()>>()?;
+                    .map(|Neighbor { id, .. }| self.visit_vertex(id, schedule, errors))
+                    .collect::<Result<(), String>>()?;
 
                 // update vertex status: processed
                 let vertex = self.get_vertex_mut(id);
                 vertex.set_value(Color::Black);
 
                 // add vertex to schedule
-                schedule.insert(0, id.clone());
+                schedule.push(id.clone());
 
                 Ok(())
             }
-            Color::Grey => todo!("error"),
+            Color::Grey => Err(id.clone()),
             Color::Black => Ok(()),
         }
     }
@@ -545,7 +552,7 @@ mod topological_sorting {
         for (v1, v2, _) in graph.get_edges() {
             assert!(
                 schedule.iter().position(|id| id.eq(&v1)).unwrap()
-                    <= schedule.iter().position(|id| id.eq(&v2)).unwrap()
+                    >= schedule.iter().position(|id| id.eq(&v2)).unwrap()
             );
         }
     }
