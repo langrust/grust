@@ -256,6 +256,70 @@ impl StreamExpression {
             StreamExpression::When { typing, .. } => typing,
         }
     }
+
+    pub fn get_dependencies(&self) -> Vec<(String, usize)> {
+        match self {
+            StreamExpression::Constant { .. } => vec![],
+            StreamExpression::SignalCall { id, .. } => vec![(id.clone(), 0)],
+            StreamExpression::FollowedBy { expression, .. } => expression
+                .get_dependencies()
+                .into_iter()
+                .map(|(id, depth)| (id, depth + 1))
+                .collect(),
+            StreamExpression::MapApplication { inputs, .. } => inputs
+                .iter()
+                .flat_map(|input_expression| input_expression.get_dependencies())
+                .collect(),
+            StreamExpression::Structure { fields, .. } => fields
+                .iter()
+                .flat_map(|(_, field_expression)| field_expression.get_dependencies())
+                .collect(),
+            StreamExpression::Array { elements, .. } => elements
+                .iter()
+                .flat_map(|element_expression| element_expression.get_dependencies())
+                .collect(),
+            StreamExpression::Match {
+                expression, arms, ..
+            } => {
+                let mut arms_dependencies = arms
+                    .iter()
+                    .flat_map(|(_, bound, arm_expresion)| {
+                        bound.as_ref().map_or_else(
+                            || arm_expresion.get_dependencies(),
+                            |bound_expression| {
+                                let mut arm_dependencies = arm_expresion.get_dependencies();
+                                let mut bound_dependencies = bound_expression.get_dependencies();
+                                arm_dependencies.append(&mut bound_dependencies);
+                                arm_dependencies
+                            },
+                        )
+                    })
+                    .collect::<Vec<(String, usize)>>();
+                let mut expression_dependencies = expression.get_dependencies();
+                arms_dependencies.append(&mut expression_dependencies);
+                arms_dependencies
+            }
+            StreamExpression::When {
+                option,
+                present,
+                default,
+                ..
+            } => {
+                let mut option_dependencies = option.get_dependencies();
+                let mut present_dependencies = present.get_dependencies();
+                let mut default_dependencies = default.get_dependencies();
+                option_dependencies.append(&mut present_dependencies);
+                option_dependencies.append(&mut default_dependencies);
+                option_dependencies
+            }
+            StreamExpression::NodeApplication {
+                node,
+                inputs,
+                signal,
+                ..
+            } => todo!(),
+        }
+    }
 }
 
 #[cfg(test)]
