@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    constant::Constant, expression::Expression, location::Location,
+    constant::Constant, expression::Expression, location::Location, node::Node,
     node_description::NodeDescription, pattern::Pattern, type_system::Type,
     user_defined_type::UserDefinedType,
 };
+use crate::common::{color::Color, context::Context, graph::Graph};
 use crate::error::Error;
 
 mod array;
@@ -257,47 +258,99 @@ impl StreamExpression {
         }
     }
 
-    pub fn get_dependencies(&self) -> Vec<(String, usize)> {
+    pub fn get_dependencies(
+        &self,
+        nodes_context: &HashMap<String, Node>,
+        nodes_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        errors: &mut Vec<Error>,
+    ) -> Result<Vec<(String, usize)>, ()> {
         match self {
-            StreamExpression::Constant { .. } => vec![],
-            StreamExpression::SignalCall { id, .. } => vec![(id.clone(), 0)],
-            StreamExpression::FollowedBy { expression, .. } => expression
-                .get_dependencies()
+            StreamExpression::Constant { .. } => Ok(vec![]),
+            StreamExpression::SignalCall { id, .. } => Ok(vec![(id.clone(), 0)]),
+            StreamExpression::FollowedBy { expression, .. } => Ok(expression
+                .get_dependencies(nodes_context, nodes_graphs, nodes_reduced_graphs, errors)?
                 .into_iter()
                 .map(|(id, depth)| (id, depth + 1))
-                .collect(),
-            StreamExpression::MapApplication { inputs, .. } => inputs
+                .collect()),
+            StreamExpression::MapApplication { inputs, .. } => Ok(inputs
                 .iter()
-                .flat_map(|input_expression| input_expression.get_dependencies())
-                .collect(),
-            StreamExpression::Structure { fields, .. } => fields
+                .map(|input_expression| {
+                    input_expression.get_dependencies(
+                        nodes_context,
+                        nodes_graphs,
+                        nodes_reduced_graphs,
+                        errors,
+                    )
+                })
+                .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                .into_iter()
+                .flatten()
+                .collect()),
+            StreamExpression::Structure { fields, .. } => Ok(fields
                 .iter()
-                .flat_map(|(_, field_expression)| field_expression.get_dependencies())
-                .collect(),
-            StreamExpression::Array { elements, .. } => elements
+                .map(|(_, field_expression)| {
+                    field_expression.get_dependencies(
+                        nodes_context,
+                        nodes_graphs,
+                        nodes_reduced_graphs,
+                        errors,
+                    )
+                })
+                .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                .into_iter()
+                .flatten()
+                .collect()),
+            StreamExpression::Array { elements, .. } => Ok(elements
                 .iter()
-                .flat_map(|element_expression| element_expression.get_dependencies())
-                .collect(),
+                .map(|element_expression| {
+                    element_expression.get_dependencies(
+                        nodes_context,
+                        nodes_graphs,
+                        nodes_reduced_graphs,
+                        errors,
+                    )
+                })
+                .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                .into_iter()
+                .flatten()
+                .collect()),
             StreamExpression::Match {
                 expression, arms, ..
             } => {
                 let mut arms_dependencies = arms
                     .iter()
-                    .flat_map(|(_, bound, arm_expresion)| {
-                        bound.as_ref().map_or_else(
-                            || arm_expresion.get_dependencies(),
-                            |bound_expression| {
-                                let mut arm_dependencies = arm_expresion.get_dependencies();
-                                let mut bound_dependencies = bound_expression.get_dependencies();
-                                arm_dependencies.append(&mut bound_dependencies);
-                                arm_dependencies
-                            },
-                        )
+                    .map(|(_, bound, arm_expresion)| {
+                        let mut arm_dependencies = arm_expresion.get_dependencies(
+                            nodes_context,
+                            nodes_graphs,
+                            nodes_reduced_graphs,
+                            errors,
+                        )?;
+                        let mut bound_dependencies =
+                            bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
+                                bound_expression.get_dependencies(
+                                    nodes_context,
+                                    nodes_graphs,
+                                    nodes_reduced_graphs,
+                                    errors,
+                                )
+                            })?;
+                        arm_dependencies.append(&mut bound_dependencies);
+                        Ok(arm_dependencies)
                     })
+                    .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                    .into_iter()
+                    .flatten()
                     .collect::<Vec<(String, usize)>>();
-                let mut expression_dependencies = expression.get_dependencies();
+                let mut expression_dependencies = expression.get_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 arms_dependencies.append(&mut expression_dependencies);
-                arms_dependencies
+                Ok(arms_dependencies)
             }
             StreamExpression::When {
                 option,
@@ -305,19 +358,70 @@ impl StreamExpression {
                 default,
                 ..
             } => {
-                let mut option_dependencies = option.get_dependencies();
-                let mut present_dependencies = present.get_dependencies();
-                let mut default_dependencies = default.get_dependencies();
+                let mut option_dependencies = option.get_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
+                let mut present_dependencies = present.get_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
+                let mut default_dependencies = default.get_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 option_dependencies.append(&mut present_dependencies);
                 option_dependencies.append(&mut default_dependencies);
-                option_dependencies
+                Ok(option_dependencies)
             }
             StreamExpression::NodeApplication {
-                node,
+                node: node_name,
                 inputs,
                 signal,
+                location,
                 ..
-            } => todo!(),
+            } => {
+                let node = nodes_context.get_node_or_error(node_name, location.clone(), errors)?;
+                let mut local_nodes_reduced_graphs = nodes_reduced_graphs.clone();
+                node.add_signal_inputs_dependencies(
+                    signal,
+                    nodes_context,
+                    nodes_graphs,
+                    &mut local_nodes_reduced_graphs,
+                    errors,
+                )?;
+                let reduced_graph = local_nodes_reduced_graphs.get(node_name).unwrap();
+
+                Ok(inputs
+                    .iter()
+                    .zip(&node.inputs)
+                    .map(|(input_expression, (input_id, _))| {
+                        if let Some(weight) = reduced_graph.get_weight(signal, input_id) {
+                            Ok(input_expression
+                                .get_dependencies(
+                                    nodes_context,
+                                    nodes_graphs,
+                                    nodes_reduced_graphs,
+                                    errors,
+                                )?
+                                .into_iter()
+                                .map(|(id, depth)| (id, depth + weight))
+                                .collect())
+                        } else {
+                            Ok(vec![])
+                        }
+                    })
+                    .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<(String, usize)>>())
+            }
         }
     }
 }
