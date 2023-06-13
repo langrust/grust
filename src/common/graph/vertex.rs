@@ -71,11 +71,12 @@ impl<T> Vertex<T> {
     }
 
     /// Get weight of neighbor if exists
-    pub fn get_weight(&self, vertex_id: &String) -> Option<usize> {
+    pub fn get_weights(&self, vertex_id: &String) -> Vec<usize> {
         self.neighbors
             .iter()
-            .find(|Neighbor { id, .. }| id == vertex_id)
+            .filter(|Neighbor { id, .. }| id == vertex_id)
             .map(|Neighbor { weight, .. }| *weight)
+            .collect()
     }
 }
 
@@ -216,5 +217,34 @@ mod get_neighbors {
         let control = vec![neighbor1, neighbor2];
 
         assert_eq!(vertex.get_neighbors(), control)
+    }
+}
+
+#[cfg(test)]
+mod get_weights {
+    use crate::common::graph::vertex::Vertex;
+
+    #[test]
+    fn should_get_vertex_neighbor_weights_when_exists() {
+        let mut vertex = Vertex::new(String::from("v1"), 1);
+        vertex.add_neighbor(String::from("v2"), 1);
+        vertex.add_neighbor(String::from("v2"), 3);
+
+        let mut weights = vertex.get_weights(&String::from("v2"));
+        weights.sort_unstable();
+        let mut control = vec![1, 3];
+        control.sort_unstable();
+
+        assert_eq!(weights, control)
+    }
+
+    #[test]
+    fn should_return_empty_vector_when_neighbor_does_not_exist() {
+        let mut vertex = Vertex::new(String::from("v1"), 1);
+        vertex.add_neighbor(String::from("v2"), 1);
+
+        let control = vec![];
+
+        assert_eq!(vertex.get_weights(&String::from("v3")), control)
     }
 }

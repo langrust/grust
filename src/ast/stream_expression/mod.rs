@@ -402,8 +402,9 @@ impl StreamExpression {
                     .iter()
                     .zip(&node.inputs)
                     .map(|(input_expression, (input_id, _))| {
-                        if let Some(weight) = reduced_graph.get_weight(signal, input_id) {
-                            Ok(input_expression
+                        Ok(reduced_graph.get_weights(signal, input_id)
+                            .iter()
+                            .map(|weight| Ok(input_expression
                                 .get_dependencies(
                                     nodes_context,
                                     nodes_graphs,
@@ -413,9 +414,11 @@ impl StreamExpression {
                                 .into_iter()
                                 .map(|(id, depth)| (id, depth + weight))
                                 .collect())
-                        } else {
-                            Ok(vec![])
-                        }
+                            )
+                            .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                            .into_iter()
+                            .flatten()
+                            .collect::<Vec<(String, usize)>>())
                     })
                     .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
                     .into_iter()

@@ -90,8 +90,8 @@ impl<T> Graph<T> {
     }
 
     /// Get weight of an edge if exists
-    pub fn get_weight(&self, from: &String, to: &String) -> Option<usize> {
-        self.get_vertex(from).get_weight(to)
+    pub fn get_weights(&self, from: &String, to: &String) -> Vec<usize> {
+        self.get_vertex(from).get_weights(to)
     }
 
     /// Create a copy of the graph without edges.
@@ -436,6 +436,40 @@ mod get_edges {
         control.sort_unstable();
 
         assert_eq!(edges, control)
+    }
+}
+
+#[cfg(test)]
+mod get_weights {
+    use crate::common::graph::Graph;
+
+    #[test]
+    fn should_get_vertex_neighbor_weight_in_optional_when_exists() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+
+        let mut weights = graph.get_weights(&String::from("v1"), &String::from("v2"));
+        weights.sort_unstable();
+        let mut control = vec![0, 3];
+        control.sort_unstable();
+
+        assert_eq!(weights, control)
+    }
+
+    #[test]
+    fn should_return_non_when_neighbor_does_not_exist() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+
+        let control = vec![];
+
+        assert_eq!(graph.get_weights(&String::from("v1"), &String::from("v3")), control)
     }
 }
 
