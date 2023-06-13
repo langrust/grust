@@ -6,7 +6,10 @@ pub mod neighbor;
 
 use std::collections::HashMap;
 
-use crate::{common::{color::Color, graph::vertex::Vertex}, error::Error};
+use crate::{
+    common::{color::Color, graph::vertex::Vertex},
+    error::Error,
+};
 
 /// Graph structure.
 #[derive(Debug, PartialEq)]
