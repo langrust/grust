@@ -447,7 +447,7 @@ mod no_edges_graph {
         graph.add_edge(&String::from("v1"), String::from("v3"), 3);
 
         let subgraph = graph.no_edges_graph();
-        
+
         let mut vertices = graph.get_vertices();
         vertices.sort_unstable();
         let mut subgraph_vertices = subgraph.get_vertices();
@@ -487,7 +487,7 @@ mod subgraph_on_edges {
         graph.add_edge(&String::from("v1"), String::from("v3"), 3);
 
         let subgraph = graph.subgraph_on_edges(|weight| weight == 0);
-        
+
         let mut vertices = graph.get_vertices();
         vertices.sort_unstable();
         let mut subgraph_vertices = subgraph.get_vertices();
@@ -517,7 +517,6 @@ mod subgraph_on_edges {
             .filter(|(_, _, weight)| *weight == 0)
             .collect::<Vec<(String, String, usize)>>();
         control.sort_unstable();
-
 
         assert_eq!(subgraph_edges, control);
     }
