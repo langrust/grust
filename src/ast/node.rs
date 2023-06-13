@@ -440,16 +440,6 @@ impl Node {
     /// use grustine::common::{color::Color, graph::Graph};
     ///
     /// let mut errors = vec![];
-    /// let mut nodes_context = HashMap::new();
-    /// nodes_context.insert(
-    ///     String::from("test"),
-    ///     NodeDescription {
-    ///         is_component: false,
-    ///         inputs: vec![(String::from("i"), Type::Integer)],
-    ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
-    ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
-    ///     }
-    /// );
     ///
     /// let node = Node {
     ///     id: String::from("test"),
@@ -488,7 +478,7 @@ impl Node {
     ///     location: Location::default(),
     /// };
     ///
-    /// let graph = node.create_initialized_graph(&nodes_context, &mut errors).unwrap();
+    /// let graph = node.create_initialized_graph(&mut errors).unwrap();
     ///
     /// let mut control = Graph::new();
     /// control.add_vertex(String::from("o"), Color::White);
@@ -499,11 +489,8 @@ impl Node {
     /// ```
     pub fn create_initialized_graph(
         &self,
-        nodes_context: &HashMap<String, NodeDescription>,
         errors: &mut Vec<Error>,
     ) -> Result<Graph<Color>, ()> {
-        let Node { id, location, .. } = self;
-
         // create an empty graph
         let mut graph = Graph::new();
 
@@ -513,7 +500,7 @@ impl Node {
             outputs,
             locals,
             ..
-        } = nodes_context.get_node_or_error(id, location.clone(), errors)?;
+        } = self.into_node_description(errors)?;
 
         // add input signals as vertices
         for (input, _) in inputs {
@@ -550,16 +537,6 @@ impl Node {
     /// use grustine::common::{color::Color, graph::Graph};
     ///
     /// let mut errors = vec![];
-    /// let mut nodes_context = HashMap::new();
-    /// nodes_context.insert(
-    ///     String::from("test"),
-    ///     NodeDescription {
-    ///         is_component: false,
-    ///         inputs: vec![(String::from("i"), Type::Integer)],
-    ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
-    ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
-    ///     }
-    /// );
     ///
     /// let node = Node {
     ///     id: String::from("test"),
@@ -597,13 +574,22 @@ impl Node {
     ///     ],
     ///     location: Location::default(),
     /// };
+    /// let mut nodes_context = HashMap::new();
+    /// nodes_context.insert(
+    ///     String::from("test"),
+    ///     node
+    /// );
+    /// let node = nodes_context.get(&String::from("test")).unwrap();
     ///
-    /// let graph = node.create_initialized_graph(&nodes_context, &mut errors).unwrap();
+    /// let graph = node.create_initialized_graph(&mut errors).unwrap();
     /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
     ///
-    /// node.add_signal_dependencies(&String::from("x"), &nodes_context, &mut nodes_graphs, &mut errors).unwrap();
-    /// node.add_signal_dependencies(&String::from("o"), &nodes_context, &mut nodes_graphs, &mut errors).unwrap();
-    /// node.add_signal_dependencies(&String::from("i"), &nodes_context, &mut nodes_graphs, &mut errors).unwrap();
+    /// let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
+    ///
+    /// node.add_signal_dependencies(&String::from("x"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
+    /// node.add_signal_dependencies(&String::from("o"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
+    /// node.add_signal_dependencies(&String::from("i"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
     ///
     /// let graph = nodes_graphs.get(&node.id).unwrap();
     ///
@@ -709,16 +695,6 @@ impl Node {
     /// use grustine::common::{color::Color, graph::Graph};
     ///
     /// let mut errors = vec![];
-    /// let mut nodes_context = HashMap::new();
-    /// nodes_context.insert(
-    ///     String::from("test"),
-    ///     NodeDescription {
-    ///         is_component: false,
-    ///         inputs: vec![(String::from("i"), Type::Integer)],
-    ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
-    ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
-    ///     }
-    /// );
     ///
     /// let node = Node {
     ///     id: String::from("test"),
@@ -756,11 +732,17 @@ impl Node {
     ///     ],
     ///     location: Location::default(),
     /// };
+    /// let mut nodes_context = HashMap::new();
+    /// nodes_context.insert(
+    ///     String::from("test"),
+    ///     node
+    /// );
+    /// let node = nodes_context.get(&String::from("test")).unwrap();
     ///
-    /// let graph = node.create_initialized_graph(&nodes_context, &mut errors).unwrap();
+    /// let graph = node.create_initialized_graph(&mut errors).unwrap();
     /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
     ///
-    /// let reduced_graph = node.create_initialized_graph(&nodes_context, &mut errors).unwrap();
+    /// let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
     /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
     ///
     /// node.add_signal_inputs_dependencies(&String::from("x"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
