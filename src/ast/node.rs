@@ -4,7 +4,9 @@ use crate::ast::{
     equation::Equation, location::Location, node_description::NodeDescription, scope::Scope,
     type_system::Type, user_defined_type::UserDefinedType,
 };
+use crate::common::color::Color;
 use crate::common::context::Context;
+use crate::common::graph::Graph;
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
@@ -419,6 +421,87 @@ impl Node {
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()
+    }
+
+    pub fn create_initialized_graph(
+        &self,
+        nodes_context: &HashMap<String, NodeDescription>,
+        errors: &mut Vec<Error>,
+    ) -> Result<Graph<Color>, ()> {
+        let Node { id, location, .. } = self;
+
+        let mut graph = Graph::new();
+
+        let NodeDescription {
+            inputs,
+            outputs,
+            locals,
+            ..
+        } = nodes_context.get_node_or_error(id, location.clone(), errors)?;
+
+        for (input, _) in inputs {
+            graph.add_vertex(input.clone(), Color::White);
+        }
+
+        for (output, _) in outputs {
+            graph.add_vertex(output.clone(), Color::White);
+        }
+
+        for (local, _) in locals {
+            graph.add_vertex(local.clone(), Color::White);
+        }
+
+        Ok(graph)
+    }
+
+    pub fn add_signal_dependencies(
+        &self,
+        signal: &String,
+        nodes_context: &HashMap<String, NodeDescription>,
+        nodes_graphs: &mut HashMap<String, Graph<Color>>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), ()> {
+        let Node {
+            id,
+            equations,
+            location,
+            ..
+        } = self;
+
+        let graph = nodes_graphs.get_mut(id).unwrap();
+        let vertex = graph.get_vertex_mut(signal);
+
+        match vertex.get_value() {
+            Color::White => {
+                vertex.set_value(Color::Grey);
+
+                let expression = &equations
+                    .iter()
+                    .fold(None, |found, (id, equation)| {
+                        if found.is_some() {
+                            found
+                        } else {
+                            if id.eq(signal) {
+                                Some(equation)
+                            } else {
+                                None
+                            }
+                        }
+                    })
+                    .unwrap()
+                    .expression;
+
+                let dependencies = expression.get_dependencies();
+                dependencies.iter()
+                    .for_each(|(id, depth)| graph.add_edge(id, signal.clone(), *depth));
+
+                let vertex = graph.get_vertex_mut(signal);
+                vertex.set_value(Color::Black);
+                Ok(())
+            }
+            Color::Grey => todo!("error"),
+            Color::Black => Ok(()),
+        }
     }
 }
 
