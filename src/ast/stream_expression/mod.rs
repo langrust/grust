@@ -402,19 +402,21 @@ impl StreamExpression {
                     .iter()
                     .zip(&node.inputs)
                     .map(|(input_expression, (input_id, _))| {
-                        Ok(reduced_graph.get_weights(signal, input_id)
+                        Ok(reduced_graph
+                            .get_weights(signal, input_id)
                             .iter()
-                            .map(|weight| Ok(input_expression
-                                .get_dependencies(
-                                    nodes_context,
-                                    nodes_graphs,
-                                    nodes_reduced_graphs,
-                                    errors,
-                                )?
-                                .into_iter()
-                                .map(|(id, depth)| (id, depth + weight))
-                                .collect())
-                            )
+                            .map(|weight| {
+                                Ok(input_expression
+                                    .get_dependencies(
+                                        nodes_context,
+                                        nodes_graphs,
+                                        nodes_reduced_graphs,
+                                        errors,
+                                    )?
+                                    .into_iter()
+                                    .map(|(id, depth)| (id, depth + weight))
+                                    .collect())
+                            })
                             .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
                             .into_iter()
                             .flatten()

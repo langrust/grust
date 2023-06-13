@@ -487,10 +487,7 @@ impl Node {
     ///
     /// assert_eq!(graph, control);
     /// ```
-    pub fn create_initialized_graph(
-        &self,
-        errors: &mut Vec<Error>,
-    ) -> Result<Graph<Color>, ()> {
+    pub fn create_initialized_graph(&self, errors: &mut Vec<Error>) -> Result<Graph<Color>, ()> {
         // create an empty graph
         let mut graph = Graph::new();
 

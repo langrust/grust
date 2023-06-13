@@ -469,7 +469,10 @@ mod get_weights {
 
         let control = vec![];
 
-        assert_eq!(graph.get_weights(&String::from("v1"), &String::from("v3")), control)
+        assert_eq!(
+            graph.get_weights(&String::from("v1"), &String::from("v3")),
+            control
+        )
     }
 }
 
