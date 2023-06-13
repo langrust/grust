@@ -1,5 +1,5 @@
 /// Structure of a vertex Neighbor.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Neighbor {
     /// The id of the neighbor.
     pub id: String,
