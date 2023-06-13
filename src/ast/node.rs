@@ -6,6 +6,7 @@ use crate::ast::{
 };
 use crate::common::color::Color;
 use crate::common::context::Context;
+use crate::common::graph::neighbor::Neighbor;
 use crate::common::graph::Graph;
 use crate::error::Error;
 
@@ -423,6 +424,79 @@ impl Node {
             .collect::<Result<(), ()>>()
     }
 
+    /// Create an initialized graph from a node.
+    ///
+    /// The created graph has every node's signals as vertices.
+    /// But no edges are added.
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    ///
+    /// use grustine::ast::{
+    ///     constant::Constant, node::Node, equation::Equation, location::Location,
+    ///     node_description::NodeDescription, scope::Scope,
+    ///     stream_expression::StreamExpression, type_system::Type,
+    /// };
+    /// use grustine::common::{color::Color, graph::Graph};
+    ///
+    /// let mut errors = vec![];
+    /// let mut nodes_context = HashMap::new();
+    /// nodes_context.insert(
+    ///     String::from("test"),
+    ///     NodeDescription {
+    ///         is_component: false,
+    ///         inputs: vec![(String::from("i"), Type::Integer)],
+    ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
+    ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
+    ///     }
+    /// );
+    ///
+    /// let node = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let graph = node.create_initialized_graph(&nodes_context, &mut errors).unwrap();
+    ///
+    /// let mut control = Graph::new();
+    /// control.add_vertex(String::from("o"), Color::White);
+    /// control.add_vertex(String::from("x"), Color::White);
+    /// control.add_vertex(String::from("i"), Color::White);
+    ///
+    /// assert_eq!(graph, control);
+    /// ```
     pub fn create_initialized_graph(
         &self,
         nodes_context: &HashMap<String, NodeDescription>,
@@ -430,8 +504,10 @@ impl Node {
     ) -> Result<Graph<Color>, ()> {
         let Node { id, location, .. } = self;
 
+        // create an empty graph
         let mut graph = Graph::new();
 
+        // get node's signals
         let NodeDescription {
             inputs,
             outputs,
@@ -439,68 +515,347 @@ impl Node {
             ..
         } = nodes_context.get_node_or_error(id, location.clone(), errors)?;
 
+        // add input signals as vertices
         for (input, _) in inputs {
             graph.add_vertex(input.clone(), Color::White);
         }
 
+        // add output signals as vertices
         for (output, _) in outputs {
             graph.add_vertex(output.clone(), Color::White);
         }
 
+        // add local signals as vertices
         for (local, _) in locals {
             graph.add_vertex(local.clone(), Color::White);
         }
 
+        // return graph
         Ok(graph)
     }
 
+    /// Create an initialized graph from a node.
+    ///
+    /// The created graph has every node's signals as vertices.
+    /// But no edges are added.
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    ///
+    /// use grustine::ast::{
+    ///     constant::Constant, node::Node, equation::Equation, location::Location,
+    ///     node_description::NodeDescription, scope::Scope,
+    ///     stream_expression::StreamExpression, type_system::Type,
+    /// };
+    /// use grustine::common::{color::Color, graph::Graph};
+    ///
+    /// let mut errors = vec![];
+    /// let mut nodes_context = HashMap::new();
+    /// nodes_context.insert(
+    ///     String::from("test"),
+    ///     NodeDescription {
+    ///         is_component: false,
+    ///         inputs: vec![(String::from("i"), Type::Integer)],
+    ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
+    ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
+    ///     }
+    /// );
+    ///
+    /// let node = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let graph = node.create_initialized_graph(&nodes_context, &mut errors).unwrap();
+    /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
+    ///
+    /// node.add_signal_dependencies(&String::from("x"), &nodes_context, &mut nodes_graphs, &mut errors).unwrap();
+    /// node.add_signal_dependencies(&String::from("o"), &nodes_context, &mut nodes_graphs, &mut errors).unwrap();
+    /// node.add_signal_dependencies(&String::from("i"), &nodes_context, &mut nodes_graphs, &mut errors).unwrap();
+    ///
+    /// let graph = nodes_graphs.get(&node.id).unwrap();
+    ///
+    /// let mut control = Graph::new();
+    /// control.add_vertex(String::from("o"), Color::Black);
+    /// control.add_vertex(String::from("x"), Color::Black);
+    /// control.add_vertex(String::from("i"), Color::Black);
+    /// control.add_edge(&String::from("x"), String::from("i"), 0);
+    /// control.add_edge(&String::from("o"), String::from("x"), 0);
+    ///
+    /// assert_eq!(*graph, control);
+    /// ```
     pub fn add_signal_dependencies(
         &self,
         signal: &String,
-        nodes_context: &HashMap<String, NodeDescription>,
+        nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         let Node {
-            id,
+            id: node,
             equations,
             location,
             ..
         } = self;
 
-        let graph = nodes_graphs.get_mut(id).unwrap();
+        // get node's graph
+        let graph = nodes_graphs.get_mut(node).unwrap();
+        // get signal's vertex
         let vertex = graph.get_vertex_mut(signal);
 
         match vertex.get_value() {
+            // if vertex unprocessed
             Color::White => {
+                // update status: processing
                 vertex.set_value(Color::Grey);
 
-                let expression = &equations
-                    .iter()
-                    .fold(None, |found, (id, equation)| {
-                        if found.is_some() {
-                            found
-                        } else {
-                            if id.eq(signal) {
-                                Some(equation)
-                            } else {
-                                None
-                            }
-                        }
-                    })
-                    .unwrap()
-                    .expression;
+                equations.iter().find(|(id, _)| id.eq(signal)).map_or(
+                    Ok(()),
+                    |(_, equation)| {
+                        // retrieve expression
+                        let expression = &equation.expression;
 
-                let dependencies = expression.get_dependencies();
-                dependencies.iter()
-                    .for_each(|(id, depth)| graph.add_edge(id, signal.clone(), *depth));
+                        // get dependencies
+                        let dependencies = expression.get_dependencies(
+                            nodes_context,
+                            nodes_graphs,
+                            nodes_reduced_graphs,
+                            errors,
+                        )?;
 
+                        // get node's graph (borrow checker)
+                        let graph = nodes_graphs.get_mut(node).unwrap();
+
+                        // add dependencies as graph's edges:
+                        // s = e depends on s' <=> s -> s'
+                        dependencies
+                            .iter()
+                            .for_each(|(id, depth)| graph.add_edge(signal, id.clone(), *depth));
+
+                        Ok(())
+                    },
+                )?;
+
+                // get node's graph (borrow checker)
+                let graph = nodes_graphs.get_mut(node).unwrap();
+                // get signal's vertes (borrow checker)
                 let vertex = graph.get_vertex_mut(signal);
+                // update status: processed
                 vertex.set_value(Color::Black);
+
                 Ok(())
             }
-            Color::Grey => todo!("error"),
+            // if processing: error
+            Color::Grey => {
+                let error = Error::NotCausal {
+                    node: node.clone(),
+                    signal: signal.clone(),
+                    location: location.clone(),
+                };
+                errors.push(error);
+                Err(())
+            }
+            // if processed: nothing to do
             Color::Black => Ok(()),
+        }
+    }
+
+    /// Create an initialized graph from a node.
+    ///
+    /// The created graph has every node's signals as vertices.
+    /// But no edges are added.
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    ///
+    /// use grustine::ast::{
+    ///     constant::Constant, node::Node, equation::Equation, location::Location,
+    ///     node_description::NodeDescription, scope::Scope,
+    ///     stream_expression::StreamExpression, type_system::Type,
+    /// };
+    /// use grustine::common::{color::Color, graph::Graph};
+    ///
+    /// let mut errors = vec![];
+    /// let mut nodes_context = HashMap::new();
+    /// nodes_context.insert(
+    ///     String::from("test"),
+    ///     NodeDescription {
+    ///         is_component: false,
+    ///         inputs: vec![(String::from("i"), Type::Integer)],
+    ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
+    ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
+    ///     }
+    /// );
+    ///
+    /// let node = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let graph = node.create_initialized_graph(&nodes_context, &mut errors).unwrap();
+    /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
+    ///
+    /// let reduced_graph = node.create_initialized_graph(&nodes_context, &mut errors).unwrap();
+    /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
+    ///
+    /// node.add_signal_inputs_dependencies(&String::from("x"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
+    /// node.add_signal_inputs_dependencies(&String::from("o"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
+    /// node.add_signal_inputs_dependencies(&String::from("i"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
+    ///
+    /// let reduced_graph = nodes_reduced_graphs.get(&node.id).unwrap();
+    ///
+    /// let mut control = Graph::new();
+    /// control.add_vertex(String::from("o"), Color::Black);
+    /// control.add_vertex(String::from("x"), Color::Black);
+    /// control.add_vertex(String::from("i"), Color::Black);
+    /// control.add_edge(&String::from("x"), String::from("i"), 0);
+    /// control.add_edge(&String::from("o"), String::from("i"), 0);
+    ///
+    /// assert_eq!(*reduced_graph, control);
+    /// ```
+    pub fn add_signal_inputs_dependencies(
+        &self,
+        signal: &String,
+        nodes_context: &HashMap<String, Node>,
+        nodes_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), ()> {
+        let Node {
+            id: node, inputs, ..
+        } = self;
+
+        // get node's reduced graph
+        let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
+        // get signal's vertex
+        let reduced_vertex = reduced_graph.get_vertex_mut(signal);
+
+        match reduced_vertex.get_value() {
+            // if vertex unprocessed
+            Color::White => {
+                // update status: processing
+                reduced_vertex.set_value(Color::Grey);
+
+                // compute signals dependencies
+                self.add_signal_dependencies(
+                    signal,
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
+
+                // get node's graph
+                let graph = nodes_graphs.get_mut(node).unwrap();
+                // get signal's vertex
+                let vertex = graph.get_vertex_mut(signal);
+
+                // for every neighbors, get inputs dependencies
+                for Neighbor { id, weight } in vertex.get_neighbors() {
+                    // tells if the neighbor is an input
+                    let is_input = inputs.iter().any(|(input, _)| *input == id);
+
+                    if is_input {
+                        // get node's reduced graph (borrow checker)
+                        let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
+                        // if input then add neighbor to reduced graph
+                        reduced_graph.add_edge(signal, id, weight);
+                    } else {
+                        // else compute neighbor's inputs dependencies
+                        self.add_signal_inputs_dependencies(
+                            &id,
+                            nodes_context,
+                            nodes_graphs,
+                            nodes_reduced_graphs,
+                            errors,
+                        )?;
+
+                        // get node's reduced graph (borrow checker)
+                        let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
+                        // get neighbor's vertex
+                        let reduced_vertex = reduced_graph.get_vertex(&id);
+
+                        // add dependencies as graph's edges:
+                        // s = e depends on i <=> s -> i
+                        reduced_vertex.get_neighbors().into_iter().for_each(
+                            |Neighbor { id, weight }| reduced_graph.add_edge(signal, id, weight),
+                        );
+                    }
+                }
+
+                // get node's reduced graph (borrow checker)
+                let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
+                // get signal's vertex (borrow checker)
+                let reduced_vertex = reduced_graph.get_vertex_mut(signal);
+                reduced_vertex.set_value(Color::Black);
+                Ok(())
+            }
+            _ => Ok(()),
         }
     }
 }
