@@ -1,7 +1,7 @@
 use crate::common::graph::neighbor::Neighbor;
 
 /// Vertex structure for graph.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Vertex<T> {
     /// Name fo the vertex.
     pub id: String,
@@ -62,16 +62,20 @@ impl<T> Vertex<T> {
         &self.value
     }
 
-    /// Get neighbors' ids, no duplicates.
-    pub fn get_neighbors(&self) -> Vec<String> {
-        let mut ids = self
-            .neighbors
+    /// Get neighbors.
+    pub fn get_neighbors(&self) -> Vec<Neighbor> {
+        self.neighbors
             .iter()
-            .map(|neighbor| neighbor.id.clone())
-            .collect::<Vec<String>>();
-        ids.sort_unstable();
-        ids.dedup();
-        ids
+            .map(|neighbor| neighbor.clone())
+            .collect()
+    }
+
+    /// Get weight of neighbor if exists
+    pub fn get_weight(&self, vertex_id: &String) -> Option<usize> {
+        self.neighbors
+            .iter()
+            .find(|Neighbor { id, .. }| id == vertex_id)
+            .map(|Neighbor { weight, .. }| *weight)
     }
 }
 
@@ -198,29 +202,18 @@ mod get_value {
 
 #[cfg(test)]
 mod get_neighbors {
-    use crate::common::graph::vertex::Vertex;
+    use crate::common::graph::{neighbor::Neighbor, vertex::Vertex};
 
     #[test]
-    fn should_get_vertex_neighbors_ids() {
+    fn should_get_vertex_neighbors() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
         vertex.add_neighbor(String::from("v2"), 1);
         vertex.add_neighbor(String::from("v3"), 1);
 
-        let mut control = vec![String::from("v3"), String::from("v2")];
-        control.sort_unstable();
+        let neighbor1 = Neighbor::new(String::from("v2"), 1);
+        let neighbor2 = Neighbor::new(String::from("v3"), 1);
 
-        assert_eq!(vertex.get_neighbors(), control)
-    }
-
-    #[test]
-    fn should_not_duplicate_neighbors_ids() {
-        let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 1);
-        vertex.add_neighbor(String::from("v2"), 2);
-        vertex.add_neighbor(String::from("v3"), 1);
-
-        let mut control = vec![String::from("v3"), String::from("v2")];
-        control.sort_unstable();
+        let control = vec![neighbor1, neighbor2];
 
         assert_eq!(vertex.get_neighbors(), control)
     }
