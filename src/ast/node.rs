@@ -612,7 +612,9 @@ impl Node {
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
-        let Node { equations, inputs, .. } = self;
+        let Node {
+            equations, inputs, ..
+        } = self;
 
         equations
             .iter()

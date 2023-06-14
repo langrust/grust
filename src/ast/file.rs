@@ -315,7 +315,7 @@ impl File {
     ///     scope::Scope, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{color::Color, graph::Graph};
-    /// 
+    ///
     /// let mut errors = vec![];
     ///
     /// let node = Node {
@@ -393,7 +393,7 @@ impl File {
     /// };
     ///
     /// let nodes_graphs = file.generate_dependencies_graphs(&mut errors).unwrap();
-    /// 
+    ///
     /// let graph = nodes_graphs.get(&String::from("test")).unwrap();
     ///
     /// let mut control = Graph::new();
