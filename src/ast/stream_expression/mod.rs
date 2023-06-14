@@ -300,9 +300,7 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::Match {
-                expression, arms, ..
-            } => self.get_dependencies_match(
+            StreamExpression::Match { .. } => self.get_dependencies_match(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
