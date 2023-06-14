@@ -795,7 +795,7 @@ impl Node {
                 let vertex = graph.get_vertex_mut(signal);
 
                 // for every neighbors, get inputs dependencies
-                for Neighbor { id, weight } in vertex.get_neighbors() {
+                for Neighbor { id, weight: w1 } in vertex.get_neighbors() {
                     // tells if the neighbor is an input
                     let is_input = inputs.iter().any(|(input, _)| *input == id);
 
@@ -803,7 +803,7 @@ impl Node {
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
                         // if input then add neighbor to reduced graph
-                        reduced_graph.add_edge(signal, id, weight);
+                        reduced_graph.add_edge(signal, id, w1);
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_inputs_dependencies(
@@ -822,7 +822,7 @@ impl Node {
                         // add dependencies as graph's edges:
                         // s = e depends on i <=> s -> i
                         reduced_vertex.get_neighbors().into_iter().for_each(
-                            |Neighbor { id, weight }| reduced_graph.add_edge(signal, id, weight),
+                            |Neighbor { id, weight: w2 }| reduced_graph.add_edge(signal, id, w1 + w2),
                         );
                     }
                 }
