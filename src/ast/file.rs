@@ -413,9 +413,11 @@ impl File {
             nodes, component, ..
         } = self;
 
+        // initialize dictionaries for graphs
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
 
+        // initialize every nodes' graphs
         nodes
             .into_iter()
             .map(|node| {
@@ -427,6 +429,8 @@ impl File {
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()?;
+
+        // optional component's graph initialization
         component.as_ref().map_or(Ok(()), |component| {
             let graph = component.create_initialized_graph(errors)?;
             nodes_graphs.insert(component.id.clone(), graph.clone());
@@ -434,11 +438,13 @@ impl File {
             Ok(())
         })?;
 
+        // creates nodes context: nodes dictionary
         let nodes_context = nodes
             .iter()
             .map(|node| (node.id.clone(), node.clone()))
             .collect::<HashMap<_, _>>();
 
+        // every nodes complete their dependencies graphs
         nodes
             .into_iter()
             .map(|node| {
@@ -452,6 +458,8 @@ impl File {
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()?;
+        
+        // optional component completes its dependencies graph
         component.as_ref().map_or(Ok(()), |component| {
             component.add_all_dependencies(
                 &nodes_context,
@@ -461,6 +469,7 @@ impl File {
             )
         })?;
 
+        // return direct dependencies graphs
         Ok(nodes_graphs)
     }
 }
