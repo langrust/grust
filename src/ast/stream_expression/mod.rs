@@ -5,7 +5,7 @@ use crate::ast::{
     node_description::NodeDescription, pattern::Pattern, type_system::Type,
     user_defined_type::UserDefinedType,
 };
-use crate::common::{color::Color, context::Context, graph::Graph};
+use crate::common::{color::Color, graph::Graph};
 use crate::error::Error;
 
 mod array;
@@ -334,53 +334,12 @@ impl StreamExpression {
                 option_dependencies.append(&mut default_dependencies);
                 Ok(option_dependencies)
             }
-            StreamExpression::NodeApplication {
-                node: node_name,
-                inputs,
-                signal,
-                location,
-                ..
-            } => {
-                let node = nodes_context.get_node_or_error(node_name, location.clone(), errors)?;
-                let mut local_nodes_reduced_graphs = nodes_reduced_graphs.clone();
-                node.add_signal_inputs_dependencies(
-                    signal,
-                    nodes_context,
-                    nodes_graphs,
-                    &mut local_nodes_reduced_graphs,
-                    errors,
-                )?;
-                let reduced_graph = local_nodes_reduced_graphs.get(node_name).unwrap();
-
-                Ok(inputs
-                    .iter()
-                    .zip(&node.inputs)
-                    .map(|(input_expression, (input_id, _))| {
-                        Ok(reduced_graph
-                            .get_weights(signal, input_id)
-                            .iter()
-                            .map(|weight| {
-                                Ok(input_expression
-                                    .get_dependencies(
-                                        nodes_context,
-                                        nodes_graphs,
-                                        nodes_reduced_graphs,
-                                        errors,
-                                    )?
-                                    .into_iter()
-                                    .map(|(id, depth)| (id, depth + weight))
-                                    .collect())
-                            })
-                            .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
-                            .into_iter()
-                            .flatten()
-                            .collect::<Vec<(String, usize)>>())
-                    })
-                    .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
-                    .into_iter()
-                    .flatten()
-                    .collect::<Vec<(String, usize)>>())
-            }
+            StreamExpression::NodeApplication { .. } => self.get_dependencies_node_application(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
         }
     }
 }
@@ -1595,8 +1554,9 @@ mod get_type_owned {
 #[cfg(test)]
 mod get_dependencies {
     use crate::ast::{
-        constant::Constant, expression::Expression, location::Location, pattern::Pattern,
-        stream_expression::StreamExpression,
+        constant::Constant, equation::Equation, expression::Expression, location::Location,
+        node::Node, pattern::Pattern, scope::Scope, stream_expression::StreamExpression,
+        type_system::Type,
     };
     use std::collections::HashMap;
 
@@ -1950,6 +1910,128 @@ mod get_dependencies {
             .unwrap();
 
         let control = vec![(String::from("p"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_get_dependencies_of_node_application_with_mapped_depth() {
+        let mut errors = vec![];
+
+        let node = Node {
+            id: String::from("my_node"),
+            is_component: false,
+            inputs: vec![
+                (String::from("x"), Type::Integer),
+                (String::from("y"), Type::Integer),
+            ],
+            equations: vec![
+                (
+                    String::from("o"),
+                    Equation {
+                        scope: Scope::Output,
+                        id: String::from("o"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::FollowedBy {
+                            constant: Constant::Integer(0),
+                            expression: Box::new(StreamExpression::SignalCall {
+                                id: String::from("z"),
+                                typing: None,
+                                location: Location::default(),
+                            }),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    String::from("z"),
+                    Equation {
+                        scope: Scope::Local,
+                        id: String::from("z"),
+                        signal_type: Type::Integer,
+                        expression: StreamExpression::FollowedBy {
+                            constant: Constant::Integer(1),
+                            expression: Box::new(StreamExpression::MapApplication {
+                                function_expression: Expression::Call {
+                                    id: String::from("+"),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                                inputs: vec![
+                                    StreamExpression::SignalCall {
+                                        id: String::from("x"),
+                                        typing: None,
+                                        location: Location::default(),
+                                    },
+                                    StreamExpression::SignalCall {
+                                        id: String::from("y"),
+                                        typing: None,
+                                        location: Location::default(),
+                                    },
+                                ],
+                                typing: None,
+                                location: Location::default(),
+                            }),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            location: Location::default(),
+        };
+
+        let mut nodes_context = HashMap::new();
+        nodes_context.insert(String::from("my_node"), node);
+        let node = nodes_context.get(&String::from("my_node")).unwrap();
+
+        let graph = node.create_initialized_graph(&mut errors).unwrap();
+        let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
+
+        let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
+        let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
+
+        let stream_expression = StreamExpression::NodeApplication {
+            node: String::from("my_node"),
+            inputs: vec![
+                StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("f"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: None,
+                        location: Location::default(),
+                    }],
+                    typing: None,
+                    location: Location::default(),
+                },
+                StreamExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ],
+            signal: String::from("o"),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression
+            .get_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+
+        let control = vec![(String::from("x"), 2)];
 
         assert_eq!(dependencies, control)
     }
