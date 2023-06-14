@@ -266,7 +266,7 @@ impl StreamExpression {
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(String, usize)>, ()> {
         match self {
-            StreamExpression::Constant { .. } => Ok(vec![]),
+            StreamExpression::Constant { .. } => self.get_dependencies_constant(),
             StreamExpression::SignalCall { id, .. } => Ok(vec![(id.clone(), 0)]),
             StreamExpression::FollowedBy { expression, .. } => Ok(expression
                 .get_dependencies(nodes_context, nodes_graphs, nodes_reduced_graphs, errors)?
@@ -1686,6 +1686,33 @@ mod get_dependencies {
             .unwrap();
 
         let control = vec![(String::from("x"), 0), (String::from("x"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_get_no_dependencies_from_constant_expression() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::Constant {
+            constant: Constant::Integer(1),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression
+            .get_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+
+        let control = vec![];
 
         assert_eq!(dependencies, control)
     }

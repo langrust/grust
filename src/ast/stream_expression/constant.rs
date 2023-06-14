@@ -16,6 +16,14 @@ impl StreamExpression {
             _ => unreachable!(),
         }
     }
+
+    /// Get dependencies of a constant stream expression.
+    pub fn get_dependencies_constant(&self) -> Result<Vec<(String, usize)>, ()> {
+        match self {
+            StreamExpression::Constant { .. } => Ok(vec![]),
+            _ => unreachable!(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -38,5 +46,25 @@ mod typing_constant {
         stream_expression.typing_constant().unwrap();
 
         assert_eq!(stream_expression, control);
+    }
+}
+
+#[cfg(test)]
+mod get_dependencies_constant {
+    use crate::ast::{constant::Constant, location::Location, stream_expression::StreamExpression};
+
+    #[test]
+    fn should_get_no_dependencies_from_constant_expression() {
+        let stream_expression = StreamExpression::Constant {
+            constant: Constant::Integer(1),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression.get_dependencies_constant().unwrap();
+
+        let control = vec![];
+
+        assert_eq!(dependencies, control)
     }
 }
