@@ -259,7 +259,7 @@ impl StreamExpression {
     }
 
     /// Get dependencies of a stream expression.
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// use grustine::ast::{
@@ -267,9 +267,9 @@ impl StreamExpression {
     ///     node::Node, scope::Scope, stream_expression::StreamExpression, type_system::Type,
     /// };
     /// use std::collections::HashMap;
-    /// 
+    ///
     /// let mut errors = vec![];
-    /// 
+    ///
     /// let node = Node {
     ///     id: String::from("my_node"),
     ///     is_component: false,
@@ -335,17 +335,17 @@ impl StreamExpression {
     ///     ],
     ///     location: Location::default(),
     /// };
-    /// 
+    ///
     /// let mut nodes_context = HashMap::new();
     /// nodes_context.insert(String::from("my_node"), node);
     /// let node = nodes_context.get(&String::from("my_node")).unwrap();
-    /// 
+    ///
     /// let graph = node.create_initialized_graph(&mut errors).unwrap();
     /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
-    /// 
+    ///
     /// let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
     /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
-    /// 
+    ///
     /// let stream_expression = StreamExpression::NodeApplication {
     ///     node: String::from("my_node"),
     ///     inputs: vec![
@@ -373,7 +373,7 @@ impl StreamExpression {
     ///     typing: None,
     ///     location: Location::default(),
     /// };
-    /// 
+    ///
     /// let dependencies = stream_expression
     ///     .get_dependencies(
     ///         &nodes_context,
@@ -382,9 +382,9 @@ impl StreamExpression {
     ///         &mut errors,
     ///     )
     ///     .unwrap();
-    /// 
+    ///
     /// let control = vec![(String::from("x"), 2)];
-    /// 
+    ///
     /// assert_eq!(dependencies, control)
     /// ```
     pub fn get_dependencies(
