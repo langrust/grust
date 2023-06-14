@@ -1,6 +1,6 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 
-use crate::ast::{location::Location, pattern::Pattern, type_system::Type};
+use crate::common::{location::Location, pattern::Pattern, type_system::Type};
 
 /// Compilation errors enumeration.
 ///
@@ -9,8 +9,8 @@ use crate::ast::{location::Location, pattern::Pattern, type_system::Type};
 ///
 /// # Example
 /// ```rust
+/// use grustine::common::location::Location;
 /// use grustine::error::Error;
-/// use grustine::ast::location::Location;
 ///
 /// let mut errors = vec![];
 ///
@@ -156,13 +156,14 @@ impl Error {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::error::Error;
-    /// use grustine::ast::location::Location;
     /// use codespan_reporting::{
     ///     files::SimpleFiles,
     ///     term::termcolor::{StandardStream, ColorChoice},
     ///     term,
     /// };
+    ///
+    /// use grustine::common::location::Location;
+    /// use grustine::error::Error;
     ///
     /// let mut errors: Vec<Error> = vec![];
     /// let mut files = SimpleFiles::new();

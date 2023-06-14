@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use strum::IntoEnumIterator;
 
-use crate::ast::{
+use crate::common::{
     operator::{BinaryOperator, OtherOperator, UnaryOperator},
     type_system::Type,
 };

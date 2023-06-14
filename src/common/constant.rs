@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-use crate::ast::type_system::Type;
+use crate::common::type_system::Type;
 
 /// LanGrust constants.
 ///
@@ -17,7 +17,8 @@ use crate::ast::type_system::Type;
 ///
 /// # Example
 /// ```rust
-/// use grustine::ast::constant::Constant;
+/// use grustine::common::constant::Constant;
+///
 /// let constant = Constant::String(String::from("Hello world"));
 /// ```
 #[derive(Debug, PartialEq, Clone)]
@@ -40,7 +41,8 @@ impl Constant {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::{constant::Constant, type_system::Type};
+    /// use grustine::common::{constant::Constant, type_system::Type};
+    ///
     /// let c: Constant = Constant::Integer(6);
     /// assert_eq!(c.get_type(), Type::Integer);
     /// ```
@@ -70,7 +72,7 @@ impl Display for Constant {
 
 #[cfg(test)]
 mod get_type {
-    use crate::ast::{constant::Constant, type_system::Type};
+    use crate::common::{constant::Constant, type_system::Type};
 
     #[test]
     fn should_return_integer_type_to_integer_constant() {

@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use crate::ast::{
-    expression::Expression, location::Location, statement::Statement, type_system::Type,
-    user_defined_type::UserDefinedType,
+use crate::ast::{expression::Expression, statement::Statement};
+use crate::common::{
+    context::Context, location::Location, type_system::Type, user_defined_type::UserDefinedType,
 };
-use crate::common::context::Context;
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
@@ -28,9 +27,12 @@ impl Function {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
+    ///
     /// use grustine::ast::{
-    ///     constant::Constant, statement::Statement, function::Function, location::Location,
-    ///     expression::Expression, type_system::Type,
+    ///     expression::Expression, function::Function, statement::Statement,
+    /// };
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -139,9 +141,12 @@ impl Function {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
+    ///
     /// use grustine::ast::{
-    ///     constant::Constant, function::Function, statement::Statement, expression::Expression,
-    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    ///     expression::Expression, function::Function, statement::Statement,
+    /// };
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType,
     /// };
     ///
     /// let mut errors = vec![];
@@ -287,10 +292,8 @@ impl Function {
 mod typing {
     use std::collections::HashMap;
 
-    use crate::ast::{
-        expression::Expression, function::Function, location::Location, statement::Statement,
-        type_system::Type,
-    };
+    use crate::ast::{expression::Expression, function::Function, statement::Statement};
+    use crate::common::{location::Location, type_system::Type};
 
     #[test]
     fn should_type_well_defined_function() {
@@ -399,10 +402,11 @@ mod typing {
 }
 
 #[cfg(test)]
-mod determine_types {
-    use crate::ast::{
-        constant::Constant, expression::Expression, function::Function, location::Location,
-        statement::Statement, type_system::Type, user_defined_type::UserDefinedType,
+mod resolve_undefined_types {
+    use crate::ast::{expression::Expression, function::Function, statement::Statement};
+    use crate::common::{
+        constant::Constant, location::Location, type_system::Type,
+        user_defined_type::UserDefinedType,
     };
     use std::collections::HashMap;
 

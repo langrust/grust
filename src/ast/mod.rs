@@ -13,9 +13,6 @@ pub mod function;
 /// LanGRust global context definition module.
 pub mod global_context;
 
-/// LanGRust [UserDefinedType](crate::ast::user_defined_type::UserDefinedType) AST module.
-pub mod user_defined_type;
-
 /// LanGRust [StreamExpression](crate::ast::stream_expression::StreamExpression) AST module.
 pub mod stream_expression;
 
@@ -27,21 +24,3 @@ pub mod equation;
 
 /// LanGRust [Statement](crate::ast::statement::Statement) AST module.
 pub mod statement;
-
-/// LanGRust [Pattern](crate::ast::pattern::Pattern) AST module.
-pub mod pattern;
-
-/// Location handler module.
-pub mod location;
-
-/// Type system module.
-pub mod type_system;
-
-/// Constant module.
-pub mod constant;
-
-/// Operator module.
-pub mod operator;
-
-/// Scope module.
-pub mod scope;

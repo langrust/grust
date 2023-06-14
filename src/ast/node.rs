@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
-use crate::ast::{
-    equation::Equation, location::Location, node_description::NodeDescription, scope::Scope,
-    type_system::Type, user_defined_type::UserDefinedType,
+use crate::ast::{equation::Equation, node_description::NodeDescription};
+use crate::common::{
+    color::Color,
+    context::Context,
+    graph::{neighbor::Neighbor, Graph},
+    location::Location,
+    scope::Scope,
+    type_system::Type,
+    user_defined_type::UserDefinedType,
 };
-use crate::common::color::Color;
-use crate::common::context::Context;
-use crate::common::graph::neighbor::Neighbor;
-use crate::common::graph::Graph;
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -31,10 +33,13 @@ impl Node {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
+    ///
     /// use grustine::ast::{
-    ///     constant::Constant, equation::Equation, location::Location, node::Node,
-    ///     node_description::NodeDescription, scope::Scope,
-    ///     stream_expression::StreamExpression, type_system::Type,
+    ///     equation::Equation, node::Node, node_description::NodeDescription,
+    ///     stream_expression::StreamExpression,
+    /// };
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -152,9 +157,13 @@ impl Node {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
+    ///
     /// use grustine::ast::{
-    ///     equation::Equation, location::Location, node::Node, node_description::NodeDescription,
-    ///     scope::Scope, stream_expression::StreamExpression, type_system::Type,
+    ///     equation::Equation, node::Node, node_description::NodeDescription,
+    ///     stream_expression::StreamExpression,
+    /// };
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -285,10 +294,14 @@ impl Node {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
+    ///
     /// use grustine::ast::{
-    ///     constant::Constant, node::Node,
-    ///     equation::Equation, stream_expression::StreamExpression, scope::Scope,
-    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    ///     equation::Equation, node::Node, node_description::NodeDescription,
+    ///     stream_expression::StreamExpression,
+    /// };
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
+    ///     user_defined_type::UserDefinedType,
     /// };
     ///
     /// let mut errors = vec![];
@@ -433,11 +446,13 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::{
-    ///     constant::Constant, node::Node, equation::Equation, location::Location,
-    ///     node_description::NodeDescription, scope::Scope,
-    ///     stream_expression::StreamExpression, type_system::Type,
+    ///     equation::Equation, node::Node, node_description::NodeDescription,
+    ///     stream_expression::StreamExpression,
     /// };
-    /// use grustine::common::{color::Color, graph::Graph};
+    /// use grustine::common::{
+    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     scope::Scope, type_system::Type,
+    /// };
     ///
     /// let mut errors = vec![];
     ///
@@ -535,11 +550,13 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::{
-    ///     constant::Constant, node::Node, equation::Equation, location::Location,
-    ///     node_description::NodeDescription, scope::Scope,
-    ///     stream_expression::StreamExpression, type_system::Type,
+    ///     equation::Equation, node::Node, node_description::NodeDescription,
+    ///     stream_expression::StreamExpression,
     /// };
-    /// use grustine::common::{color::Color, graph::Graph};
+    /// use grustine::common::{
+    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     scope::Scope, type_system::Type,
+    /// };
     ///
     /// let mut errors = vec![];
     ///
@@ -667,11 +684,13 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::{
-    ///     constant::Constant, node::Node, equation::Equation, location::Location,
-    ///     node_description::NodeDescription, scope::Scope,
-    ///     stream_expression::StreamExpression, type_system::Type,
+    ///     equation::Equation, node::Node, node_description::NodeDescription,
+    ///     stream_expression::StreamExpression,
     /// };
-    /// use grustine::common::{color::Color, graph::Graph};
+    /// use grustine::common::{
+    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     scope::Scope, type_system::Type,
+    /// };
     ///
     /// let mut errors = vec![];
     ///
@@ -833,11 +852,13 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::{
-    ///     constant::Constant, node::Node, equation::Equation, location::Location,
-    ///     node_description::NodeDescription, scope::Scope,
-    ///     stream_expression::StreamExpression, type_system::Type,
+    ///     equation::Equation, node::Node, node_description::NodeDescription,
+    ///     stream_expression::StreamExpression,
     /// };
-    /// use grustine::common::{color::Color, graph::Graph};
+    /// use grustine::common::{
+    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     scope::Scope, type_system::Type,
+    /// };
     ///
     /// let mut errors = vec![];
     ///
@@ -994,10 +1015,10 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        constant::Constant, equation::Equation, location::Location, node::Node,
-        node_description::NodeDescription, scope::Scope, stream_expression::StreamExpression,
-        type_system::Type,
+        equation::Equation, node::Node, node_description::NodeDescription,
+        stream_expression::StreamExpression,
     };
+    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
 
     #[test]
     fn should_type_well_defined_node() {
@@ -1168,9 +1189,10 @@ mod into_node_description {
     use std::collections::HashMap;
 
     use crate::ast::{
-        equation::Equation, location::Location, node::Node, node_description::NodeDescription,
-        scope::Scope, stream_expression::StreamExpression, type_system::Type,
+        equation::Equation, node::Node, node_description::NodeDescription,
+        stream_expression::StreamExpression,
     };
+    use crate::common::{location::Location, scope::Scope, type_system::Type};
 
     #[test]
     fn should_return_a_node_description_from_a_node_with_no_duplicates() {
@@ -1280,10 +1302,11 @@ mod into_node_description {
 }
 
 #[cfg(test)]
-mod determine_types {
-    use crate::ast::{
-        constant::Constant, equation::Equation, location::Location, node::Node, scope::Scope,
-        stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+mod resolve_undefined_types {
+    use crate::ast::{equation::Equation, node::Node, stream_expression::StreamExpression};
+    use crate::common::{
+        constant::Constant, location::Location, scope::Scope, type_system::Type,
+        user_defined_type::UserDefinedType,
     };
     use std::collections::HashMap;
 

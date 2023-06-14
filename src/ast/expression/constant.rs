@@ -20,7 +20,8 @@ impl Expression {
 
 #[cfg(test)]
 mod typing_constant {
-    use crate::ast::{constant::Constant, expression::Expression, location::Location};
+    use crate::ast::expression::Expression;
+    use crate::common::{constant::Constant, location::Location};
 
     #[test]
     fn should_type_constant_expression() {

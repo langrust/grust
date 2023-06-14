@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::{location::Location, type_system::Type};
 use crate::common::context::Context;
+use crate::common::{location::Location, type_system::Type};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -43,7 +43,7 @@ impl UserDefinedType {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
+    /// use grustine::common::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
     /// let user_defined_type = UserDefinedType::Structure {
     ///     id: String::from("Point"),
     ///     fields: vec![
@@ -80,7 +80,10 @@ impl UserDefinedType {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::{constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType};
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, type_system::Type,
+    ///     user_defined_type::UserDefinedType
+    /// };
     ///
     /// let mut errors = vec![];
     ///
@@ -182,7 +185,8 @@ impl UserDefinedType {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::ast::{
+    ///
+    /// use grustine::common::{
     ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
     /// };
     ///
@@ -248,7 +252,9 @@ impl UserDefinedType {
 
 #[cfg(test)]
 mod into_type {
-    use crate::ast::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
+    use crate::common::{
+        location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    };
 
     #[test]
     fn should_construct_structure_type_for_user_defined_structure() {
@@ -306,7 +312,9 @@ mod into_type {
 mod determine_types {
     use std::collections::HashMap;
 
-    use crate::ast::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
+    use crate::common::{
+        location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    };
 
     #[test]
     fn should_determine_the_type_of_user_type_when_in_types_context() {

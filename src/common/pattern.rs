@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::ast::{
+use crate::common::context::Context;
+use crate::common::{
     constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType,
 };
-use crate::common::context::Context;
 use crate::error::Error;
 
 use std::fmt::{self, Display};
@@ -87,7 +87,8 @@ impl Pattern {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::ast::{
+    ///
+    /// use grustine::common::{
     ///     constant::Constant, location::Location, pattern::Pattern,
     ///     type_system::Type, user_defined_type::UserDefinedType
     /// };
@@ -245,7 +246,7 @@ impl Pattern {
     /// This example correspond to the following test.
     ///
     /// ```rust
-    /// use grustine::ast::{
+    /// use grustine::common::{
     ///     constant::Constant, location::Location, pattern::Pattern
     /// };
     ///
@@ -292,7 +293,7 @@ impl Pattern {
 mod construct_context {
     use std::collections::HashMap;
 
-    use crate::ast::{
+    use crate::common::{
         constant::Constant, location::Location, pattern::Pattern, type_system::Type,
         user_defined_type::UserDefinedType,
     };

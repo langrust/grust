@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{
+use crate::common::{
     constant::Constant, location::Location, pattern::Pattern, type_system::Type,
     user_defined_type::UserDefinedType,
 };
@@ -123,7 +123,10 @@ impl Expression {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::ast::{constant::Constant, expression::Expression, location::Location};
+    ///
+    /// use grustine::ast::expression::Expression;
+    /// use grustine::common::{constant::Constant, location::Location};
+    ///
     /// let mut errors = vec![];
     /// let global_context = HashMap::new();
     /// let elements_context = HashMap::new();
@@ -174,7 +177,9 @@ impl Expression {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::{constant::Constant, expression::Expression, location::Location, type_system::Type};
+    /// use grustine::ast::expression::Expression;
+    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    ///
     /// let mut expression = Expression::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: Some(Type::Integer),
@@ -201,7 +206,9 @@ impl Expression {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::{constant::Constant, expression::Expression, location::Location, type_system::Type};
+    /// use grustine::ast::expression::Expression;
+    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    ///
     /// let mut expression = Expression::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: Some(Type::Integer),
@@ -226,9 +233,10 @@ impl Expression {
 
 #[cfg(test)]
 mod typing {
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location, pattern::Pattern,
-        type_system::Type, user_defined_type::UserDefinedType,
+    use crate::ast::expression::Expression;
+    use crate::common::{
+        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
+        user_defined_type::UserDefinedType,
     };
     use crate::error::Error;
     use std::collections::HashMap;
@@ -1243,9 +1251,8 @@ mod typing {
 
 #[cfg(test)]
 mod get_type {
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location, type_system::Type,
-    };
+    use crate::ast::expression::Expression;
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
 
     #[test]
     fn should_return_none_when_no_typing() {
@@ -1276,9 +1283,8 @@ mod get_type {
 
 #[cfg(test)]
 mod get_type_owned {
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location, type_system::Type,
-    };
+    use crate::ast::expression::Expression;
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
 
     #[test]
     fn should_return_none_when_no_typing() {

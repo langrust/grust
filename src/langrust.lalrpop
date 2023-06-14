@@ -1,18 +1,20 @@
 use std::str::FromStr;
 
 use crate::ast::{
-    statement::Statement,
-    constant::Constant,
     equation::Equation,
     expression::Expression,
     file::File,
     function::Function,
-    location::Location,
     node::Node,
+    statement::Statement,
+    stream_expression::StreamExpression,
+};
+use crate::common::{
+    constant::Constant,
+    location::Location,
     operator::{UnaryOperator, BinaryOperator, OtherOperator},
     pattern::Pattern,
     scope::Scope,
-    stream_expression::StreamExpression,
     type_system::Type,
     user_defined_type::UserDefinedType,
 };

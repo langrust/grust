@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, type_system::Type, user_defined_type::UserDefinedType};
+use crate::ast::expression::Expression;
+use crate::common::{type_system::Type, user_defined_type::UserDefinedType};
 use crate::error::Error;
 
 impl Expression {
@@ -67,9 +68,8 @@ impl Expression {
 
 #[cfg(test)]
 mod typing_when {
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location, type_system::Type,
-    };
+    use crate::ast::expression::Expression;
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
 
     #[test]

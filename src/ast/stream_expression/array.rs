@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use crate::ast::{
     node::Node, node_description::NodeDescription, stream_expression::StreamExpression,
-    type_system::Type, user_defined_type::UserDefinedType,
 };
-use crate::common::{color::Color, graph::Graph};
+use crate::common::{
+    color::Color, graph::Graph, type_system::Type, user_defined_type::UserDefinedType,
+};
 use crate::error::Error;
 
 impl StreamExpression {
@@ -91,10 +92,8 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod typing_array {
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location,
-        stream_expression::StreamExpression, type_system::Type,
-    };
+    use crate::ast::{expression::Expression, stream_expression::StreamExpression};
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
 
     #[test]
@@ -227,10 +226,8 @@ mod typing_array {
 
 #[cfg(test)]
 mod get_dependencies_array {
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location,
-        stream_expression::StreamExpression,
-    };
+    use crate::ast::{expression::Expression, stream_expression::StreamExpression};
+    use crate::common::{constant::Constant, location::Location};
     use std::collections::HashMap;
 
     #[test]

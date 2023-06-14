@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::type_system::Type;
+use crate::common::type_system::Type;
 
 #[derive(Debug, PartialEq)]
 /// The description of a node's signals.
