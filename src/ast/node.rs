@@ -822,7 +822,9 @@ impl Node {
                         // add dependencies as graph's edges:
                         // s = e depends on i <=> s -> i
                         reduced_vertex.get_neighbors().into_iter().for_each(
-                            |Neighbor { id, weight: w2 }| reduced_graph.add_edge(signal, id, w1 + w2),
+                            |Neighbor { id, weight: w2 }| {
+                                reduced_graph.add_edge(signal, id, w1 + w2)
+                            },
                         );
                     }
                 }
