@@ -108,48 +108,63 @@ impl StreamExpression {
             StreamExpression::Match {
                 expression, arms, ..
             } => {
+                // compute arms dependencies
                 let mut arms_dependencies = arms
                     .iter()
                     .map(|(pattern, bound, arm_expression)| {
+                        // get local signals defined in pattern
                         let local_signals = pattern.local_signals();
 
-                        let mut arm_dependencies = arm_expression.get_dependencies(
-                            nodes_context,
-                            nodes_graphs,
-                            nodes_reduced_graphs,
-                            errors,
-                        )?;
+                        // get arm expression dependencies
+                        let mut arm_dependencies = arm_expression
+                            .get_dependencies(
+                                nodes_context,
+                                nodes_graphs,
+                                nodes_reduced_graphs,
+                                errors,
+                            )?
+                            .into_iter()
+                            .filter(|(signal, _)| !local_signals.contains(signal))
+                            .collect::<Vec<(String, usize)>>();
 
-                        let mut bound_dependencies =
-                            bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
+                        // get bound dependencies
+                        let mut bound_dependencies = bound
+                            .as_ref()
+                            .map_or(Ok(vec![]), |bound_expression| {
                                 bound_expression.get_dependencies(
                                     nodes_context,
                                     nodes_graphs,
                                     nodes_reduced_graphs,
                                     errors,
                                 )
-                            })?;
-
-                        arm_dependencies.append(&mut bound_dependencies);
-
-                        let arm_dependencies = arm_dependencies
+                            })?
                             .into_iter()
                             .filter(|(signal, _)| !local_signals.contains(signal))
                             .collect();
 
+                        // push all dependencies in arm dependencies
+                        arm_dependencies.append(&mut bound_dependencies);
+
+                        // return arm dependencies
                         Ok(arm_dependencies)
                     })
                     .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
                     .into_iter()
                     .flatten()
                     .collect::<Vec<(String, usize)>>();
+
+                // get matched expression dependencies
                 let mut expression_dependencies = expression.get_dependencies(
                     nodes_context,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
                 )?;
+
+                // push all dependencies in arms dependencies
                 arms_dependencies.append(&mut expression_dependencies);
+
+                // return arms dependencies
                 Ok(arms_dependencies)
             }
             _ => unreachable!(),
