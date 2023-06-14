@@ -102,7 +102,7 @@ impl StreamExpression {
                     nodes_reduced_graphs,
                     errors,
                 )?;
-                
+
                 // get dependencies of present expression without local signal
                 let mut present_dependencies = present
                     .get_dependencies(nodes_context, nodes_graphs, nodes_reduced_graphs, errors)?

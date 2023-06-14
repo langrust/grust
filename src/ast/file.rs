@@ -458,7 +458,7 @@ impl File {
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()?;
-        
+
         // optional component completes its dependencies graph
         component.as_ref().map_or(Ok(()), |component| {
             component.add_all_dependencies(
