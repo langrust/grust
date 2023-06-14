@@ -518,10 +518,18 @@ impl Node {
         Ok(graph)
     }
 
-    /// Create an initialized graph from a node.
+    /// Add direct dependencies of a signal.
     ///
-    /// The created graph has every node's signals as vertices.
-    /// But no edges are added.
+    /// # Example
+    ///
+    /// ```GR
+    /// node test(i: int) {
+    ///     out o: int = x; // depends on x
+    ///     x: int = i;     // depends on i
+    /// }
+    /// ```
+    ///
+    /// This example correspond to the following test.
     ///
     /// ```rust
     /// use std::collections::HashMap;
@@ -676,10 +684,18 @@ impl Node {
         }
     }
 
-    /// Create an initialized graph from a node.
+    /// Add dependencies to node's inputs of a signal.
     ///
-    /// The created graph has every node's signals as vertices.
-    /// But no edges are added.
+    /// # Example
+    ///
+    /// ```GR
+    /// node test(i: int) {
+    ///     out o: int = x; // depends on x which depends on input i
+    ///     x: int = i;     // depends on input i
+    /// }
+    /// ```
+    ///
+    /// This example correspond to the following test.
     ///
     /// ```rust
     /// use std::collections::HashMap;
