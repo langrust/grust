@@ -26,6 +26,15 @@ impl StreamExpression {
             _ => unreachable!(),
         }
     }
+
+    /// Get dependencies of a signal call.
+    pub fn get_dependencies_signal_call(&self) -> Result<Vec<(String, usize)>, ()> {
+        match self {
+            // signal call depends on called signal with depth of 0
+            StreamExpression::SignalCall { id, .. } => Ok(vec![(id.clone(), 0)]),
+            _ => unreachable!(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -79,5 +88,25 @@ mod typing_call {
             .unwrap_err();
 
         assert_eq!(errors, control);
+    }
+}
+
+#[cfg(test)]
+mod get_dependencies_signal_call {
+    use crate::ast::{location::Location, stream_expression::StreamExpression};
+
+    #[test]
+    fn should_dependencies_of_signal_call_is_signal_with_zero_depth() {
+        let stream_expression = StreamExpression::SignalCall {
+            id: String::from("x"),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression.get_dependencies_signal_call().unwrap();
+
+        let control = vec![(String::from("x"), 0)];
+
+        assert_eq!(dependencies, control)
     }
 }
