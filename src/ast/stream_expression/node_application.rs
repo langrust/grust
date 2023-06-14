@@ -4,6 +4,7 @@ use crate::ast::{
     node::Node, node_description::NodeDescription, stream_expression::StreamExpression,
     type_system::Type, user_defined_type::UserDefinedType,
 };
+use crate::common::graph::neighbor::Neighbor;
 use crate::common::{color::Color, context::Context, graph::Graph};
 use crate::error::Error;
 
@@ -104,10 +105,13 @@ impl StreamExpression {
                 location,
                 ..
             } => {
+                // get called node structure
                 let node = nodes_context.get_node_or_error(node_name, location.clone(), errors)?;
 
+                // create local reduced graphs (because only complete for the called signal)
                 let mut local_nodes_reduced_graphs = nodes_reduced_graphs.clone();
 
+                // add dependencies to inputs in the local graphs
                 node.add_signal_inputs_dependencies(
                     signal,
                     nodes_context,
@@ -116,13 +120,24 @@ impl StreamExpression {
                     errors,
                 )?;
 
-                let reduced_graph = local_nodes_reduced_graphs.get(node_name).unwrap();
+                // get both "real reduced graph" and "local reduced graph" of called node
+                let local_reduced_graph = local_nodes_reduced_graphs.get(node_name).unwrap();
+                let reduced_graph = nodes_reduced_graphs.get_mut(node_name).unwrap();
 
+                // store computed dependencies (in "local reduced graph") into "real reduced graph"
+                local_reduced_graph
+                    .get_vertex(signal)
+                    .get_neighbors()
+                    .into_iter()
+                    .for_each(|Neighbor { id, weight }| reduced_graph.add_edge(signal, id, weight));
+
+                // map "dependencies to inputs" and "input expressions's dependencies"
+                // of node application
                 Ok(inputs
                     .iter()
                     .zip(&node.inputs)
                     .map(|(input_expression, (input_id, _))| {
-                        Ok(reduced_graph
+                        Ok(local_reduced_graph
                             .get_weights(signal, input_id)
                             .iter()
                             .map(|weight| {
