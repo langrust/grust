@@ -232,6 +232,18 @@ impl Pattern {
     /// Get locally defined signals in patterns.
     ///
     /// # Example
+    /// 
+    /// A pattern of the following form creates a local signal `y`.
+    /// 
+    /// ```GR
+    /// Point {
+    ///     x: 1,
+    ///     y: y,
+    /// }
+    /// ```
+    /// 
+    /// This example correspond to the following test.
+    /// 
     /// ```rust
     /// use grustine::ast::{
     ///     constant::Constant, location::Location, pattern::Pattern
