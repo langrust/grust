@@ -301,20 +301,12 @@ impl StreamExpression {
                 .into_iter()
                 .flatten()
                 .collect()),
-            StreamExpression::Array { elements, .. } => Ok(elements
-                .iter()
-                .map(|element_expression| {
-                    element_expression.get_dependencies(
-                        nodes_context,
-                        nodes_graphs,
-                        nodes_reduced_graphs,
-                        errors,
-                    )
-                })
-                .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
-                .into_iter()
-                .flatten()
-                .collect()),
+            StreamExpression::Array { .. } => self.get_dependencies_array(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
             StreamExpression::Match {
                 expression, arms, ..
             } => {
@@ -1635,5 +1627,66 @@ mod get_type_owned {
 
         let typing = stream_expression.get_type_owned().unwrap();
         assert_eq!(typing, expression_type);
+    }
+}
+
+#[cfg(test)]
+mod get_dependencies {
+    use crate::ast::{
+        constant::Constant, expression::Expression, location::Location,
+        stream_expression::StreamExpression,
+    };
+    use std::collections::HashMap;
+
+    #[test]
+    fn should_get_dependencies_of_array_elements_with_duplicates() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::Array {
+            elements: vec![
+                StreamExpression::SignalCall {
+                    id: String::from("x"),
+                    typing: None,
+                    location: Location::default(),
+                },
+                StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("f"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: None,
+                        location: Location::default(),
+                    }],
+                    typing: None,
+                    location: Location::default(),
+                },
+                StreamExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression
+            .get_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+
+        let control = vec![(String::from("x"), 0), (String::from("x"), 0)];
+
+        assert_eq!(dependencies, control)
     }
 }
