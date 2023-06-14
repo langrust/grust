@@ -1,19 +1,17 @@
 #[cfg(test)]
 mod langrust_ast_constructs {
     use codespan_reporting::files::{Files, SimpleFiles};
+
     use grustine::ast::{
+        equation::Equation, expression::Expression, file::File, function::Function, node::Node,
+        statement::Statement, stream_expression::StreamExpression,
+    };
+    use grustine::common::{
         constant::Constant,
-        equation::Equation,
-        expression::Expression,
-        file::File,
-        function::Function,
         location::Location,
-        node::Node,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         pattern::Pattern,
         scope::Scope,
-        statement::Statement,
-        stream_expression::StreamExpression,
         type_system::Type,
         user_defined_type::UserDefinedType,
     };

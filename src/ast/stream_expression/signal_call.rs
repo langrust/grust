@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::{stream_expression::StreamExpression, type_system::Type};
-use crate::common::context::Context;
+use crate::ast::stream_expression::StreamExpression;
+use crate::common::{context::Context, type_system::Type};
 use crate::error::Error;
 
 impl StreamExpression {
@@ -39,7 +39,8 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod typing_call {
-    use crate::ast::{location::Location, stream_expression::StreamExpression, type_system::Type};
+    use crate::ast::stream_expression::StreamExpression;
+    use crate::common::{location::Location, type_system::Type};
     use crate::error::Error;
     use std::collections::HashMap;
 
@@ -93,7 +94,8 @@ mod typing_call {
 
 #[cfg(test)]
 mod get_dependencies_signal_call {
-    use crate::ast::{location::Location, stream_expression::StreamExpression};
+    use crate::ast::stream_expression::StreamExpression;
+    use crate::common::location::Location;
 
     #[test]
     fn should_dependencies_of_signal_call_is_signal_with_zero_depth() {

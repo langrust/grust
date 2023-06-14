@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, type_system::Type, user_defined_type::UserDefinedType};
+use crate::ast::expression::Expression;
+use crate::common::{type_system::Type, user_defined_type::UserDefinedType};
 use crate::error::Error;
 
 impl Expression {
@@ -84,9 +85,10 @@ impl Expression {
 
 #[cfg(test)]
 mod typing_match {
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location, pattern::Pattern,
-        type_system::Type, user_defined_type::UserDefinedType,
+    use crate::ast::expression::Expression;
+    use crate::common::{
+        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
+        user_defined_type::UserDefinedType,
     };
     use std::collections::HashMap;
 

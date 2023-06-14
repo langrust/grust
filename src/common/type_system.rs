@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use crate::ast::{location::Location, user_defined_type::UserDefinedType};
 use crate::common::context::Context;
+use crate::common::{location::Location, user_defined_type::UserDefinedType};
 use crate::error::Error;
 
 /// LanGrust type system.
@@ -25,7 +25,8 @@ use crate::error::Error;
 ///
 /// # Example
 /// ```rust
-/// use grustine::ast::type_system::Type;
+/// use grustine::common::type_system::Type;
+///
 /// let number_types = vec![Type::Integer, Type::Float];
 /// let addition_type = {
 ///     let v_t = number_types.into_iter()
@@ -98,7 +99,7 @@ impl Type {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, type_system::Type};
     ///
     /// let mut errors = vec![];
     ///
@@ -171,7 +172,7 @@ impl Type {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, type_system::Type};
     /// use grustine::error::Error;
     ///
     /// let mut errors = vec![];
@@ -206,7 +207,8 @@ impl Type {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::ast::{
+    ///
+    /// use grustine::common::{
     ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
     /// };
     ///
@@ -254,7 +256,7 @@ impl Type {
 
 #[cfg(test)]
 mod apply {
-    use crate::ast::{location::Location, type_system::Type};
+    use crate::common::{location::Location, type_system::Type};
 
     #[test]
     fn should_apply_input_to_abstraction_when_compatible() {
@@ -341,7 +343,9 @@ mod apply {
 mod resolve_undefined {
     use std::collections::HashMap;
 
-    use crate::ast::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
+    use crate::common::{
+        location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    };
 
     #[test]
     fn should_determine_undefined_type_when_in_context() {

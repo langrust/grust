@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::ast::{
-    location::Location, node_description::NodeDescription, scope::Scope,
-    stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+use crate::ast::{node_description::NodeDescription, stream_expression::StreamExpression};
+use crate::common::{
+    location::Location, scope::Scope, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 
@@ -27,9 +27,10 @@ impl Equation {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::ast::{
-    ///     constant::Constant, equation::Equation, location::Location,
-    ///     scope::Scope, stream_expression::StreamExpression, type_system::Type,
+    ///
+    /// use grustine::ast::{equation::Equation, stream_expression::StreamExpression};
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -86,10 +87,11 @@ impl Equation {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::ast::{
-    ///     constant::Constant,
-    ///     equation::Equation, stream_expression::StreamExpression, scope::Scope,
-    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    ///
+    /// use grustine::ast::{equation::Equation, stream_expression::StreamExpression};
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, scope::Scope,
+    ///     type_system::Type, user_defined_type::UserDefinedType,
     /// };
     ///
     /// let mut errors = vec![];
@@ -190,10 +192,8 @@ impl Equation {
 mod typing {
     use std::collections::HashMap;
 
-    use crate::ast::{
-        constant::Constant, equation::Equation, location::Location, scope::Scope,
-        stream_expression::StreamExpression, type_system::Type,
-    };
+    use crate::ast::{equation::Equation, stream_expression::StreamExpression};
+    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
 
     #[test]
     fn should_type_well_defined_equation() {
@@ -276,9 +276,10 @@ mod typing {
 mod determine_types {
     use std::collections::HashMap;
 
-    use crate::ast::{
-        constant::Constant, equation::Equation, location::Location, scope::Scope,
-        stream_expression::StreamExpression, type_system::Type, user_defined_type::UserDefinedType,
+    use crate::ast::{equation::Equation, stream_expression::StreamExpression};
+    use crate::common::{
+        constant::Constant, location::Location, scope::Scope, type_system::Type,
+        user_defined_type::UserDefinedType,
     };
 
     #[test]

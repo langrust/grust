@@ -2,10 +2,14 @@ use std::collections::HashMap;
 
 use crate::ast::{
     node::Node, node_description::NodeDescription, stream_expression::StreamExpression,
-    type_system::Type, user_defined_type::UserDefinedType,
 };
-use crate::common::graph::neighbor::Neighbor;
-use crate::common::{color::Color, context::Context, graph::Graph};
+use crate::common::{
+    color::Color,
+    context::Context,
+    graph::{neighbor::Neighbor, Graph},
+    type_system::Type,
+    user_defined_type::UserDefinedType,
+};
 use crate::error::Error;
 
 impl StreamExpression {
@@ -170,9 +174,10 @@ impl StreamExpression {
 #[cfg(test)]
 mod typing_node_application {
     use crate::ast::{
-        constant::Constant, expression::Expression, location::Location,
-        node_description::NodeDescription, stream_expression::StreamExpression, type_system::Type,
+        expression::Expression, node_description::NodeDescription,
+        stream_expression::StreamExpression,
     };
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
 
     #[test]
@@ -403,9 +408,9 @@ mod typing_node_application {
 #[cfg(test)]
 mod get_dependencies_node_application {
     use crate::ast::{
-        constant::Constant, equation::Equation, expression::Expression, location::Location,
-        node::Node, scope::Scope, stream_expression::StreamExpression, type_system::Type,
+        equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
     };
+    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     use std::collections::HashMap;
 
     #[test]

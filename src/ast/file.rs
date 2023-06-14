@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use crate::ast::{
-    function::Function, global_context, location::Location, node::Node, type_system::Type,
+use crate::ast::{function::Function, global_context, node::Node};
+use crate::common::{
+    color::Color, context::Context, graph::Graph, location::Location, type_system::Type,
     user_defined_type::UserDefinedType,
 };
 
-use crate::common::{color::Color, context::Context, graph::Graph};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
@@ -66,10 +66,10 @@ impl File {
     /// # Example
     /// ```rust
     /// use grustine::ast::{
-    ///     statement::Statement, function::Function, location::Location,
-    ///     expression::Expression, type_system::Type, equation::Equation, node::Node, file::File,
-    ///     scope::Scope, stream_expression::StreamExpression,
+    ///     equation::Equation, expression::Expression, function::Function,
+    ///     file::File, node::Node, statement::Statement, stream_expression::StreamExpression,
     /// };
+    /// use grustine::common::{location::Location, scope::Scope, type_system::Type};
     ///
     /// let mut errors = vec![];
     ///
@@ -310,11 +310,12 @@ impl File {
     /// # Example
     /// ```rust
     /// use grustine::ast::{
-    ///     statement::Statement, function::Function, location::Location,
-    ///     expression::Expression, type_system::Type, equation::Equation, node::Node, file::File,
-    ///     scope::Scope, stream_expression::StreamExpression,
+    ///     equation::Equation, expression::Expression, function::Function,
+    ///     file::File, node::Node, statement::Statement, stream_expression::StreamExpression,
     /// };
-    /// use grustine::common::{color::Color, graph::Graph};
+    /// use grustine::common::{
+    ///     color::Color, graph::Graph, location::Location, scope::Scope, type_system::Type
+    /// };
     ///
     /// let mut errors = vec![];
     ///
@@ -477,10 +478,10 @@ impl File {
 #[cfg(test)]
 mod typing {
     use crate::ast::{
-        equation::Equation, expression::Expression, file::File, function::Function,
-        location::Location, node::Node, scope::Scope, statement::Statement,
-        stream_expression::StreamExpression, type_system::Type,
+        equation::Equation, expression::Expression, file::File, function::Function, node::Node,
+        statement::Statement, stream_expression::StreamExpression,
     };
+    use crate::common::{location::Location, scope::Scope, type_system::Type};
 
     #[test]
     fn should_type_well_defined_module() {

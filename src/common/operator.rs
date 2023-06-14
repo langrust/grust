@@ -1,6 +1,6 @@
 use strum::EnumIter;
 
-use crate::ast::type_system::Type;
+use crate::common::type_system::Type;
 
 /// LanGrust binary operators.
 ///
@@ -68,7 +68,8 @@ impl BinaryOperator {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::operator::BinaryOperator;
+    /// use grustine::common::operator::BinaryOperator;
+    ///
     /// let add_type = BinaryOperator::Add.get_type();
     /// ```
     pub fn get_type(&self) -> Type {
@@ -176,7 +177,8 @@ impl UnaryOperator {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::operator::UnaryOperator;
+    /// use grustine::common::operator::UnaryOperator;
+    ///
     /// let neg_type = UnaryOperator::Neg.get_type();
     /// ```
     pub fn get_type(&self) -> Type {
@@ -241,7 +243,8 @@ impl OtherOperator {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ast::operator::OtherOperator;
+    /// use grustine::common::operator::OtherOperator;
+    ///
     /// let ifthenelse_type = OtherOperator::IfThenElse.get_type();
     /// ```
     pub fn get_type(&self) -> Type {
@@ -272,7 +275,7 @@ impl OtherOperator {
 
 #[cfg(test)]
 mod to_string {
-    use crate::ast::operator::{BinaryOperator, OtherOperator, UnaryOperator};
+    use crate::common::operator::{BinaryOperator, OtherOperator, UnaryOperator};
 
     #[test]
     fn should_convert_negation_operator_to_string() {

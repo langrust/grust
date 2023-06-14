@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::{
-    expression::Expression, location::Location, type_system::Type,
-    user_defined_type::UserDefinedType,
-};
+use crate::ast::expression::Expression;
+use crate::common::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -25,9 +23,12 @@ impl Statement {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
+    ///
     /// use grustine::ast::{
-    ///     constant::Constant, statement::Statement, location::Location,
-    ///     expression::Expression, type_system::Type,
+    ///     expression::Expression, statement::Statement,
+    /// };
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -75,10 +76,13 @@ impl Statement {
     /// # Example
     /// ```rust
     /// use std::collections::HashMap;
+    ///
     /// use grustine::ast::{
-    ///     constant::Constant,
-    ///     statement::Statement, expression::Expression,
-    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    ///     expression::Expression, statement::Statement,
+    /// };
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, type_system::Type,
+    ///     user_defined_type::UserDefinedType,
     /// };
     ///
     /// let mut errors = vec![];
@@ -177,10 +181,8 @@ impl Statement {
 mod typing {
     use std::collections::HashMap;
 
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location, statement::Statement,
-        type_system::Type,
-    };
+    use crate::ast::{expression::Expression, statement::Statement};
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
 
     #[test]
     fn should_type_well_defined_equation() {
@@ -256,9 +258,10 @@ mod typing {
 mod determine_types {
     use std::collections::HashMap;
 
-    use crate::ast::{
-        constant::Constant, expression::Expression, location::Location, statement::Statement,
-        type_system::Type, user_defined_type::UserDefinedType,
+    use crate::ast::{expression::Expression, statement::Statement};
+    use crate::common::{
+        constant::Constant, location::Location, type_system::Type,
+        user_defined_type::UserDefinedType,
     };
 
     #[test]
