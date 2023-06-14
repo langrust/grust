@@ -113,7 +113,7 @@ impl StreamExpression {
                     .iter()
                     .map(|(pattern, bound, arm_expression)| {
                         // get local signals defined in pattern
-                        let local_signals = pattern.local_signals();
+                        let local_signals = pattern.local_identifiers();
 
                         // get arm expression dependencies
                         let mut arm_dependencies = arm_expression
