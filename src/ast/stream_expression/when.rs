@@ -95,24 +95,33 @@ impl StreamExpression {
                 default,
                 ..
             } => {
+                // get dependencies of optional expression
                 let mut option_dependencies = option.get_dependencies(
                     nodes_context,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
                 )?;
+                
+                // get dependencies of present expression without local signal
                 let mut present_dependencies = present
                     .get_dependencies(nodes_context, nodes_graphs, nodes_reduced_graphs, errors)?
                     .into_iter()
                     .filter(|(signal, _)| !signal.eq(local_signal))
                     .collect();
+
+                // get dependencies of default expression without local signal
                 let mut default_dependencies = default
                     .get_dependencies(nodes_context, nodes_graphs, nodes_reduced_graphs, errors)?
                     .into_iter()
                     .filter(|(signal, _)| !signal.eq(local_signal))
                     .collect();
+
+                // push all dependencies in optional dependencies
                 option_dependencies.append(&mut present_dependencies);
                 option_dependencies.append(&mut default_dependencies);
+
+                // return optional dependencies
                 Ok(option_dependencies)
             }
             _ => unreachable!(),
