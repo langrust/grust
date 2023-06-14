@@ -1,91 +1,82 @@
 use std::collections::HashMap;
 
-use crate::ast::{node_description::NodeDescription, stream_expression::StreamExpression};
-use crate::common::{type_system::Type, user_defined_type::UserDefinedType};
+use crate::common::{color::Color, graph::Graph};
 use crate::error::Error;
+use crate::ir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
-    /// Add a [Type] to the match stream expression.
-    pub fn typing_match(
-        &mut self,
-        nodes_context: &HashMap<String, NodeDescription>,
-        signals_context: &HashMap<String, Type>,
-        global_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+    /// Get dependencies of a match stream expression.
+    pub fn get_dependencies_match(
+        &self,
+        nodes_context: &HashMap<String, Node>,
+        nodes_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<Vec<(String, usize)>, ()> {
         match self {
-            // the type of a match stream expression is the type of all branches expressions
+            // dependencies of match are dependencies of matched expression and
+            // dependencies of arms (without new signals defined in patterns)
             StreamExpression::Match {
-                expression,
-                arms,
-                typing,
-                location,
+                expression, arms, ..
             } => {
-                expression.typing(
+                // compute arms dependencies
+                let mut arms_dependencies = arms
+                    .iter()
+                    .map(|(pattern, bound, arm_expression)| {
+                        // get local signals defined in pattern
+                        let local_signals = pattern.local_identifiers();
+
+                        // get arm expression dependencies
+                        let mut arm_dependencies = arm_expression
+                            .get_dependencies(
+                                nodes_context,
+                                nodes_graphs,
+                                nodes_reduced_graphs,
+                                errors,
+                            )?
+                            .into_iter()
+                            .filter(|(signal, _)| !local_signals.contains(signal))
+                            .collect::<Vec<(String, usize)>>();
+
+                        // get bound dependencies
+                        let mut bound_dependencies = bound
+                            .as_ref()
+                            .map_or(Ok(vec![]), |bound_expression| {
+                                bound_expression.get_dependencies(
+                                    nodes_context,
+                                    nodes_graphs,
+                                    nodes_reduced_graphs,
+                                    errors,
+                                )
+                            })?
+                            .into_iter()
+                            .filter(|(signal, _)| !local_signals.contains(signal))
+                            .collect();
+
+                        // push all dependencies in arm dependencies
+                        arm_dependencies.append(&mut bound_dependencies);
+
+                        // return arm dependencies
+                        Ok(arm_dependencies)
+                    })
+                    .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<(String, usize)>>();
+
+                // get matched expression dependencies
+                let mut expression_dependencies = expression.get_dependencies(
                     nodes_context,
-                    signals_context,
-                    global_context,
-                    user_types_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
                     errors,
                 )?;
 
-                let expression_type = expression.get_type().unwrap();
-                arms.into_iter()
-                    .map(|(pattern, optional_test_expression, arm_expression)| {
-                        let mut local_context = signals_context.clone();
-                        pattern.construct_context(
-                            expression_type,
-                            &mut local_context,
-                            user_types_context,
-                            errors,
-                        )?;
+                // push all dependencies in arms dependencies
+                arms_dependencies.append(&mut expression_dependencies);
 
-                        let optional_test_expression_typing_test = optional_test_expression
-                            .as_mut()
-                            .map_or(Ok(()), |stream_expression| {
-                                stream_expression.typing(
-                                    nodes_context,
-                                    &local_context,
-                                    global_context,
-                                    user_types_context,
-                                    errors,
-                                )?;
-                                stream_expression.get_type().unwrap().eq_check(
-                                    &Type::Boolean,
-                                    location.clone(),
-                                    errors,
-                                )
-                            });
-
-                        let arm_expression_typing_test = arm_expression.typing(
-                            nodes_context,
-                            &local_context,
-                            global_context,
-                            user_types_context,
-                            errors,
-                        );
-
-                        optional_test_expression_typing_test?;
-                        arm_expression_typing_test
-                    })
-                    .collect::<Vec<Result<(), ()>>>()
-                    .into_iter()
-                    .collect::<Result<(), ()>>()?;
-
-                let first_type = arms[0].2.get_type().unwrap();
-                arms.iter()
-                    .map(|(_, _, arm_expression)| {
-                        let arm_expression_type = arm_expression.get_type().unwrap();
-                        arm_expression_type.eq_check(first_type, location.clone(), errors)
-                    })
-                    .collect::<Vec<Result<(), ()>>>()
-                    .into_iter()
-                    .collect::<Result<(), ()>>()?;
-
-                // todo: patterns should be exhaustive
-                *typing = Some(first_type.clone());
-                Ok(())
+                // return arms dependencies
+                Ok(arms_dependencies)
             }
             _ => unreachable!(),
         }
@@ -93,42 +84,24 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod typing_match {
-    use crate::ast::{expression::Expression, stream_expression::StreamExpression};
+mod get_dependencies_match {
     use crate::common::{
         constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-        user_defined_type::UserDefinedType,
     };
+    use crate::ir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]
-    fn should_type_match_structure_stream_expression() {
-        let mut errors = vec![];
+    fn should_get_dependencies_of_match_elements_with_duplicates() {
         let nodes_context = HashMap::new();
-        let mut signals_context = HashMap::new();
-        signals_context.insert(String::from("p"), Type::Structure(String::from("Point")));
-        let mut global_context = HashMap::new();
-        global_context.insert(
-            String::from("add_one"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
-        );
-        let mut user_types_context = HashMap::new();
-        user_types_context.insert(
-            String::from("Point"),
-            UserDefinedType::Structure {
-                id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
-                location: Location::default(),
-            },
-        );
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
 
-        let mut stream_expression = StreamExpression::Match {
+        let stream_expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
                 id: String::from("p"),
-                typing: None,
+                typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
             }),
             arms: vec![
@@ -145,8 +118,7 @@ mod typing_match {
                             ),
                             (
                                 String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
+                                Pattern::Default {
                                     location: Location::default(),
                                 },
                             ),
@@ -155,8 +127,8 @@ mod typing_match {
                     },
                     None,
                     StreamExpression::SignalCall {
-                        id: String::from("y"),
-                        typing: None,
+                        id: String::from("z"),
+                        typing: Type::Integer,
                         location: Location::default(),
                     },
                 ),
@@ -172,86 +144,10 @@ mod typing_match {
                             ),
                             (
                                 String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    StreamExpression::MapApplication {
-                        function_expression: Expression::Call {
-                            id: String::from("add_one"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("y"),
-                            typing: None,
-                            location: Location::default(),
-                        }],
-                        typing: None,
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            typing: None,
-            location: Location::default(),
-        };
-        let control = StreamExpression::Match {
-            expression: Box::new(StreamExpression::SignalCall {
-                id: String::from("p"),
-                typing: Some(Type::Structure(String::from("Point"))),
-                location: Location::default(),
-            }),
-            arms: vec![
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Constant {
-                                    constant: Constant::Integer(0),
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    StreamExpression::SignalCall {
-                        id: String::from("y"),
-                        typing: Some(Type::Integer),
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
                                 Pattern::Default {
                                     location: Location::default(),
                                 },
                             ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
                         ],
                         location: Location::default(),
                     },
@@ -259,36 +155,143 @@ mod typing_match {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
-                            typing: Some(Type::Abstract(
+                            typing: Type::Abstract(
                                 Box::new(Type::Integer),
                                 Box::new(Type::Integer),
-                            )),
+                            ),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("y"),
-                            typing: Some(Type::Integer),
+                            id: String::from("z"),
+                            typing: Type::Integer,
                             location: Location::default(),
                         }],
-                        typing: Some(Type::Integer),
+                        typing: Type::Integer,
                         location: Location::default(),
                     },
                 ),
             ],
-            typing: Some(Type::Integer),
+            typing: Type::Integer,
             location: Location::default(),
         };
 
-        stream_expression
-            .typing_match(
+        let mut dependencies = stream_expression
+            .get_dependencies_match(
                 &nodes_context,
-                &signals_context,
-                &global_context,
-                &user_types_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+        dependencies.sort_unstable();
+
+        let mut control = vec![
+            (String::from("p"), 0),
+            (String::from("z"), 0),
+            (String::from("z"), 0),
+        ];
+        control.sort_unstable();
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_get_dependencies_of_match_elements_without_pattern_dependencies() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::Match {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: Type::Structure(String::from("Point")),
+                location: Location::default(),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::SignalCall {
+                        id: String::from("y"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("add_one"),
+                            typing: Type::Abstract(
+                                Box::new(Type::Integer),
+                                Box::new(Type::Integer),
+                            ),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("y"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression
+            .get_dependencies_match(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
 
-        assert_eq!(stream_expression, control);
+        let control = vec![(String::from("p"), 0)];
+
+        assert_eq!(dependencies, control)
     }
 }
