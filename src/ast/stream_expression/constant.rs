@@ -20,6 +20,7 @@ impl StreamExpression {
     /// Get dependencies of a constant stream expression.
     pub fn get_dependencies_constant(&self) -> Result<Vec<(String, usize)>, ()> {
         match self {
+            // no dependencies for constant stream expression
             StreamExpression::Constant { .. } => Ok(vec![]),
             _ => unreachable!(),
         }
