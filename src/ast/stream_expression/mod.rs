@@ -298,34 +298,12 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::When {
-                option,
-                present,
-                default,
-                ..
-            } => {
-                let mut option_dependencies = option.get_dependencies(
-                    nodes_context,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
-                let mut present_dependencies = present.get_dependencies(
-                    nodes_context,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
-                let mut default_dependencies = default.get_dependencies(
-                    nodes_context,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
-                option_dependencies.append(&mut present_dependencies);
-                option_dependencies.append(&mut default_dependencies);
-                Ok(option_dependencies)
-            }
+            StreamExpression::When { .. } => self.get_dependencies_when(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
             StreamExpression::NodeApplication { .. } => self.get_dependencies_node_application(
                 nodes_context,
                 nodes_graphs,
@@ -2096,6 +2074,90 @@ mod get_dependencies {
             .unwrap();
 
         let control = vec![(String::from("x"), 0), (String::from("x"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_get_dependencies_of_when_expressions_with_duplicates() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::When {
+            id: String::from("x"),
+            option: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            present: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            default: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(1),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression
+            .get_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+
+        let control = vec![(String::from("x"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_get_dependencies_of_when_expressions_without_local_signal() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::When {
+            id: String::from("x"),
+            option: Box::new(StreamExpression::SignalCall {
+                id: String::from("y"),
+                typing: None,
+                location: Location::default(),
+            }),
+            present: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }),
+            default: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(1),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression
+            .get_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+
+        let control = vec![(String::from("y"), 0)];
 
         assert_eq!(dependencies, control)
     }
