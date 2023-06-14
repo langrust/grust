@@ -228,6 +228,52 @@ impl Pattern {
             Pattern::Default { location: _ } => Ok(()),
         }
     }
+
+    /// Get locally defined signals in patterns.
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{
+    ///     constant::Constant, location::Location, pattern::Pattern
+    /// };
+    ///
+    /// let pattern = Pattern::Structure {
+    ///     name: String::from("Point"),
+    ///     fields: vec![
+    ///         (
+    ///             String::from("x"),
+    ///             Pattern::Constant {
+    ///                 constant: Constant::Integer(1),
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("y"),
+    ///             Pattern::Identifier {
+    ///                 name: String::from("y"),
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let local_signals = pattern.local_signals();
+    /// let control = vec![String::from("y")];
+    ///
+    /// assert_eq!(local_signals, control);
+    /// ```
+    pub fn local_signals(&self) -> Vec<String> {
+        match self {
+            Pattern::Identifier { name, .. } => vec![name.clone()],
+            Pattern::Structure { fields, .. } => fields
+                .iter()
+                .flat_map(|(_, pattern)| pattern.local_signals())
+                .collect(),
+            Pattern::Some { pattern, .. } => pattern.local_signals(),
+            _ => vec![],
+        }
+    }
 }
 
 #[cfg(test)]
