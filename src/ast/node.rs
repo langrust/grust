@@ -10,7 +10,7 @@ use crate::common::graph::neighbor::Neighbor;
 use crate::common::graph::Graph;
 use crate::error::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// LanGRust node AST.
 pub struct Node {
     /// Node identifier.

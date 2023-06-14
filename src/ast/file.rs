@@ -5,7 +5,7 @@ use crate::ast::{
     user_defined_type::UserDefinedType,
 };
 
-use crate::common::context::Context;
+use crate::common::{color::Color, context::Context, graph::Graph};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
@@ -303,6 +303,165 @@ impl File {
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()
+    }
+
+    /// Generate dependencies graph for every nodes/component.
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::{
+    ///     statement::Statement, function::Function, location::Location,
+    ///     expression::Expression, type_system::Type, equation::Equation, node::Node, file::File,
+    ///     scope::Scope, stream_expression::StreamExpression,
+    /// };
+    /// use grustine::common::{color::Color, graph::Graph};
+    /// 
+    /// let mut errors = vec![];
+    ///
+    /// let node = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let function = Function {
+    ///     id: String::from("test"),
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     statements: vec![
+    ///         (
+    ///             String::from("x"),
+    ///             Statement {
+    ///                 id: String::from("x"),
+    ///                 element_type: Type::Integer,
+    ///                 expression: Expression::Call {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     returned: (
+    ///         Type::Integer,
+    ///         Expression::Call {
+    ///             id: String::from("x"),
+    ///             typing: None,
+    ///             location: Location::default(),
+    ///         }
+    ///     ),
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let mut file = File {
+    ///     user_defined_types: vec![],
+    ///     functions: vec![function],
+    ///     nodes: vec![node],
+    ///     component: None,
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let nodes_graphs = file.generate_dependencies_graphs(&mut errors).unwrap();
+    /// 
+    /// let graph = nodes_graphs.get(&String::from("test")).unwrap();
+    ///
+    /// let mut control = Graph::new();
+    /// control.add_vertex(String::from("o"), Color::Black);
+    /// control.add_vertex(String::from("x"), Color::Black);
+    /// control.add_vertex(String::from("i"), Color::Black);
+    /// control.add_edge(&String::from("x"), String::from("i"), 0);
+    /// control.add_edge(&String::from("o"), String::from("x"), 0);
+    ///
+    /// assert_eq!(*graph, control);
+    /// ```
+    pub fn generate_dependencies_graphs(
+        &self,
+        errors: &mut Vec<Error>,
+    ) -> Result<HashMap<String, Graph<Color>>, ()> {
+        let File {
+            nodes, component, ..
+        } = self;
+
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+
+        nodes
+            .into_iter()
+            .map(|node| {
+                let graph = node.create_initialized_graph(errors)?;
+                nodes_graphs.insert(node.id.clone(), graph.clone());
+                nodes_reduced_graphs.insert(node.id.clone(), graph.clone());
+                Ok(())
+            })
+            .collect::<Vec<Result<(), ()>>>()
+            .into_iter()
+            .collect::<Result<(), ()>>()?;
+        component.as_ref().map_or(Ok(()), |component| {
+            let graph = component.create_initialized_graph(errors)?;
+            nodes_graphs.insert(component.id.clone(), graph.clone());
+            nodes_reduced_graphs.insert(component.id.clone(), graph.clone());
+            Ok(())
+        })?;
+
+        let nodes_context = nodes
+            .iter()
+            .map(|node| (node.id.clone(), node.clone()))
+            .collect::<HashMap<_, _>>();
+
+        nodes
+            .into_iter()
+            .map(|node| {
+                node.add_all_dependencies(
+                    &nodes_context,
+                    &mut nodes_graphs,
+                    &mut nodes_reduced_graphs,
+                    errors,
+                )
+            })
+            .collect::<Vec<Result<(), ()>>>()
+            .into_iter()
+            .collect::<Result<(), ()>>()?;
+        component.as_ref().map_or(Ok(()), |component| {
+            component.add_all_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                errors,
+            )
+        })?;
+
+        Ok(nodes_graphs)
     }
 }
 
