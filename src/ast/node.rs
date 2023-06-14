@@ -518,6 +518,133 @@ impl Node {
         Ok(graph)
     }
 
+    /// Complete dependencies graph of the node.
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// node test(i: int) { // depends on nothing
+    ///     out o: int = x; // depends on x
+    ///     x: int = i;     // depends on i
+    /// }
+    /// ```
+    ///
+    /// This example correspond to the following test.
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    ///
+    /// use grustine::ast::{
+    ///     constant::Constant, node::Node, equation::Equation, location::Location,
+    ///     node_description::NodeDescription, scope::Scope,
+    ///     stream_expression::StreamExpression, type_system::Type,
+    /// };
+    /// use grustine::common::{color::Color, graph::Graph};
+    ///
+    /// let mut errors = vec![];
+    ///
+    /// let node = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![(String::from("i"), Type::Integer)],
+    ///     equations: vec![
+    ///         (
+    ///             String::from("o"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i"),
+    ///                     typing: None,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             }
+    ///         )
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    /// let mut nodes_context = HashMap::new();
+    /// nodes_context.insert(
+    ///     String::from("test"),
+    ///     node
+    /// );
+    /// let node = nodes_context.get(&String::from("test")).unwrap();
+    ///
+    /// let graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
+    ///
+    /// let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
+    ///
+    /// node.add_all_dependencies(&nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
+    ///
+    /// let graph = nodes_graphs.get(&node.id).unwrap();
+    ///
+    /// let mut control = Graph::new();
+    /// control.add_vertex(String::from("o"), Color::Black);
+    /// control.add_vertex(String::from("x"), Color::Black);
+    /// control.add_vertex(String::from("i"), Color::Black);
+    /// control.add_edge(&String::from("x"), String::from("i"), 0);
+    /// control.add_edge(&String::from("o"), String::from("x"), 0);
+    ///
+    /// assert_eq!(*graph, control);
+    /// ```
+    pub fn add_all_dependencies(
+        &self,
+        nodes_context: &HashMap<String, Node>,
+        nodes_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), ()> {
+        let Node { equations, inputs, .. } = self;
+
+        equations
+            .iter()
+            .map(|(signal, _)| {
+                self.add_signal_dependencies(
+                    signal,
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )
+            })
+            .collect::<Vec<Result<(), ()>>>()
+            .into_iter()
+            .collect::<Result<(), ()>>()?;
+
+        inputs
+            .iter()
+            .map(|(signal, _)| {
+                self.add_signal_dependencies(
+                    signal,
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )
+            })
+            .collect::<Vec<Result<(), ()>>>()
+            .into_iter()
+            .collect::<Result<(), ()>>()
+    }
+
     /// Add direct dependencies of a signal.
     ///
     /// # Example
