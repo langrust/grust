@@ -302,41 +302,12 @@ impl StreamExpression {
             ),
             StreamExpression::Match {
                 expression, arms, ..
-            } => {
-                let mut arms_dependencies = arms
-                    .iter()
-                    .map(|(_, bound, arm_expresion)| {
-                        let mut arm_dependencies = arm_expresion.get_dependencies(
-                            nodes_context,
-                            nodes_graphs,
-                            nodes_reduced_graphs,
-                            errors,
-                        )?;
-                        let mut bound_dependencies =
-                            bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
-                                bound_expression.get_dependencies(
-                                    nodes_context,
-                                    nodes_graphs,
-                                    nodes_reduced_graphs,
-                                    errors,
-                                )
-                            })?;
-                        arm_dependencies.append(&mut bound_dependencies);
-                        Ok(arm_dependencies)
-                    })
-                    .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
-                    .into_iter()
-                    .flatten()
-                    .collect::<Vec<(String, usize)>>();
-                let mut expression_dependencies = expression.get_dependencies(
-                    nodes_context,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
-                arms_dependencies.append(&mut expression_dependencies);
-                Ok(arms_dependencies)
-            }
+            } => self.get_dependencies_match(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
             StreamExpression::When {
                 option,
                 present,
@@ -1626,7 +1597,7 @@ mod get_type_owned {
 #[cfg(test)]
 mod get_dependencies {
     use crate::ast::{
-        constant::Constant, expression::Expression, location::Location,
+        constant::Constant, expression::Expression, location::Location, pattern::Pattern,
         stream_expression::StreamExpression,
     };
     use std::collections::HashMap;
@@ -1783,6 +1754,204 @@ mod get_dependencies {
             .unwrap();
 
         let control = vec![(String::from("x"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_get_dependencies_of_match_elements_with_duplicates() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::Match {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::SignalCall {
+                        id: String::from("z"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("add_one"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("z"),
+                            typing: None,
+                            location: Location::default(),
+                        }],
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let mut dependencies = stream_expression
+            .get_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+        dependencies.sort_unstable();
+
+        let mut control = vec![
+            (String::from("p"), 0),
+            (String::from("z"), 0),
+            (String::from("z"), 0),
+        ];
+        control.sort_unstable();
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_get_dependencies_of_match_elements_without_pattern_dependencies() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::Match {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::SignalCall {
+                        id: String::from("y"),
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+                (
+                    Pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Default {
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                String::from("y"),
+                                Pattern::Identifier {
+                                    name: String::from("y"),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("add_one"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("y"),
+                            typing: None,
+                            location: Location::default(),
+                        }],
+                        typing: None,
+                        location: Location::default(),
+                    },
+                ),
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression
+            .get_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+
+        let control = vec![(String::from("p"), 0)];
 
         assert_eq!(dependencies, control)
     }
