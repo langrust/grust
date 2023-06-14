@@ -229,21 +229,21 @@ impl Pattern {
         }
     }
 
-    /// Get locally defined signals in patterns.
+    /// Get locally defined identifiers in patterns.
     ///
     /// # Example
-    /// 
-    /// A pattern of the following form creates a local signal `y`.
-    /// 
+    ///
+    /// A pattern of the following form creates a local identifier `y`.
+    ///
     /// ```GR
     /// Point {
     ///     x: 1,
     ///     y: y,
     /// }
     /// ```
-    /// 
+    ///
     /// This example correspond to the following test.
-    /// 
+    ///
     /// ```rust
     /// use grustine::ast::{
     ///     constant::Constant, location::Location, pattern::Pattern
@@ -270,19 +270,19 @@ impl Pattern {
     ///     location: Location::default(),
     /// };
     ///
-    /// let local_signals = pattern.local_signals();
+    /// let local_identifiers = pattern.local_identifiers();
     /// let control = vec![String::from("y")];
     ///
-    /// assert_eq!(local_signals, control);
+    /// assert_eq!(local_identifiers, control);
     /// ```
-    pub fn local_signals(&self) -> Vec<String> {
+    pub fn local_identifiers(&self) -> Vec<String> {
         match self {
             Pattern::Identifier { name, .. } => vec![name.clone()],
             Pattern::Structure { fields, .. } => fields
                 .iter()
-                .flat_map(|(_, pattern)| pattern.local_signals())
+                .flat_map(|(_, pattern)| pattern.local_identifiers())
                 .collect(),
-            Pattern::Some { pattern, .. } => pattern.local_signals(),
+            Pattern::Some { pattern, .. } => pattern.local_identifiers(),
             _ => vec![],
         }
     }
