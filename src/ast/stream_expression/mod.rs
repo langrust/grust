@@ -274,20 +274,12 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::MapApplication { inputs, .. } => Ok(inputs
-                .iter()
-                .map(|input_expression| {
-                    input_expression.get_dependencies(
-                        nodes_context,
-                        nodes_graphs,
-                        nodes_reduced_graphs,
-                        errors,
-                    )
-                })
-                .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
-                .into_iter()
-                .flatten()
-                .collect()),
+            StreamExpression::MapApplication { .. } => self.get_dependencies_map_application(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
             StreamExpression::Structure { fields, .. } => Ok(fields
                 .iter()
                 .map(|(_, field_expression)| {
@@ -1755,6 +1747,42 @@ mod get_dependencies {
             .unwrap();
 
         let control = vec![(String::from("x"), 1)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_get_dependencies_of_map_application_inputs_with_duplicates() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: None,
+                location: Location::default(),
+            }],
+            typing: None,
+            location: Location::default(),
+        };
+
+        let dependencies = stream_expression
+            .get_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+
+        let control = vec![(String::from("x"), 0)];
 
         assert_eq!(dependencies, control)
     }
