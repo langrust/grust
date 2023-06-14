@@ -97,5 +97,7 @@ pub mod ast;
 pub mod common;
 /// LanGRust error handler module.
 pub mod error;
+/// LanGRust IR module.
+pub mod ir;
 /// LanGRust parser module.
 pub mod parser;
