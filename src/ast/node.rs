@@ -616,6 +616,7 @@ impl Node {
             equations, inputs, ..
         } = self;
 
+        // add local and output signals dependencies
         equations
             .iter()
             .map(|(signal, _)| {
@@ -631,6 +632,8 @@ impl Node {
             .into_iter()
             .collect::<Result<(), ()>>()?;
 
+        // add input signals dependencies
+        // (makes vertices colors "Black" => equal assertions in tests)
         inputs
             .iter()
             .map(|(signal, _)| {
