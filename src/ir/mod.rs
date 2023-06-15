@@ -4,9 +4,6 @@ pub mod file;
 /// LanGRust [Node](crate::ir::node::Node) AST module.
 pub mod node;
 
-/// Describe a node from its input, output and local signals module.
-pub mod node_description;
-
 /// LanGRust [Function](crate::ir::function::Function) AST module.
 pub mod function;
 

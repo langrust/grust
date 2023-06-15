@@ -108,7 +108,7 @@ mod get_dependencies_node_application {
                 (String::from("x"), Type::Integer),
                 (String::from("y"), Type::Integer),
             ],
-            equations: vec![
+            unscheduled_equations: HashMap::from([
                 (
                     String::from("o"),
                     Equation {
@@ -169,7 +169,8 @@ mod get_dependencies_node_application {
                         location: Location::default(),
                     },
                 ),
-            ],
+            ]),
+            scheduled_equations: vec![],
             location: Location::default(),
         };
 
@@ -177,10 +178,10 @@ mod get_dependencies_node_application {
         nodes_context.insert(String::from("my_node"), node);
         let node = nodes_context.get(&String::from("my_node")).unwrap();
 
-        let graph = node.create_initialized_graph(&mut errors).unwrap();
+        let graph = node.create_initialized_graph();
         let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
 
-        let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
+        let reduced_graph = node.create_initialized_graph();
         let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
 
         let stream_expression = StreamExpression::NodeApplication {

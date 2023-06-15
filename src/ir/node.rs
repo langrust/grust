@@ -2,14 +2,12 @@ use std::collections::HashMap;
 
 use crate::common::{
     color::Color,
-    context::Context,
     graph::{neighbor::Neighbor, Graph},
     location::Location,
-    scope::Scope,
     type_system::Type,
 };
 use crate::error::Error;
-use crate::ir::{equation::Equation, node_description::NodeDescription};
+use crate::ir::equation::Equation;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust node AST.
@@ -20,150 +18,15 @@ pub struct Node {
     pub is_component: bool,
     /// Node's inputs identifiers and their types.
     pub inputs: Vec<(String, Type)>,
-    /// Node's equations.
-    pub equations: Vec<(String, Equation)>,
+    /// Node's unscheduled equations.
+    pub unscheduled_equations: HashMap<String, Equation>,
+    /// Node's scheduled equations.
+    pub scheduled_equations: Vec<(String, Equation)>,
     /// Node location.
     pub location: Location,
 }
 
 impl Node {
-    /// Create a [NodeDescription] from a [Node]
-    ///
-    /// # Example
-    /// ```rust
-    /// use std::collections::HashMap;
-    ///
-    /// use grustine::ir::{
-    ///     equation::Equation, node::Node, node_description::NodeDescription,
-    ///     stream_expression::StreamExpression,
-    /// };
-    /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
-    /// };
-    ///
-    /// let mut errors = vec![];
-    ///
-    /// let node = Node {
-    ///     id: String::from("test"),
-    ///     is_component: false,
-    ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     equations: vec![
-    ///         (
-    ///             String::from("o"),
-    ///             Equation {
-    ///                 scope: Scope::Output,
-    ///                 id: String::from("o"),
-    ///                 signal_type: Type::Integer,
-    ///                 expression: StreamExpression::SignalCall {
-    ///                     id: String::from("x"),
-    ///                     typing: Type::Integer,
-    ///                     location: Location::default(),
-    ///                 },
-    ///                 location: Location::default(),
-    ///             }
-    ///         ),
-    ///         (
-    ///             String::from("x"),
-    ///             Equation {
-    ///                 scope: Scope::Local,
-    ///                 id: String::from("x"),
-    ///                 signal_type: Type::Integer,
-    ///                 expression: StreamExpression::SignalCall {
-    ///                     id: String::from("i"),
-    ///                     typing: Type::Integer,
-    ///                     location: Location::default(),
-    ///                 },
-    ///                 location: Location::default(),
-    ///             }
-    ///         )
-    ///     ],
-    ///     location: Location::default(),
-    /// };
-    ///
-    /// let control = NodeDescription {
-    ///     is_component: false,
-    ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     outputs: HashMap::from([(String::from("o"), Type::Integer)]),
-    ///     locals: HashMap::from([(String::from("x"), Type::Integer)]),
-    /// };
-    ///
-    /// let node_description = node.into_node_description(&mut errors).unwrap();
-    ///
-    /// assert_eq!(node_description, control);
-    /// ```
-    pub fn into_node_description(&self, errors: &mut Vec<Error>) -> Result<NodeDescription, ()> {
-        let Node {
-            is_component,
-            inputs,
-            equations,
-            location,
-            ..
-        } = self;
-
-        // differenciate output form local signals
-        let mut outputs = HashMap::new();
-        let mut locals = HashMap::new();
-
-        // create signals context: inputs + outputs + locals
-        // and check that no signal is duplicated
-        let mut signals_context = HashMap::new();
-
-        // add inputs in signals context
-        inputs
-            .iter()
-            .map(|(id, signal_type)| {
-                signals_context.insert_unique(
-                    id.clone(),
-                    signal_type.clone(),
-                    location.clone(),
-                    errors,
-                )
-            })
-            .collect::<Vec<Result<(), ()>>>()
-            .into_iter()
-            .collect::<Result<(), ()>>()?;
-
-        // add signals defined by equations in contexts
-        equations
-            .iter()
-            .map(
-                |(
-                    _,
-                    Equation {
-                        scope,
-                        id,
-                        signal_type,
-                        location,
-                        ..
-                    },
-                )| {
-                    // differenciate output form local signals
-                    match scope {
-                        Scope::Output => outputs.insert(id.clone(), signal_type.clone()),
-                        Scope::Local => locals.insert(id.clone(), signal_type.clone()),
-                        _ => unreachable!(),
-                    };
-                    // check that no signal is duplicated
-                    signals_context.insert_unique(
-                        id.clone(),
-                        signal_type.clone(),
-                        location.clone(),
-                        errors,
-                    )
-                },
-            )
-            .collect::<Vec<Result<(), ()>>>()
-            .into_iter()
-            .collect::<Result<(), ()>>()?;
-
-        Ok(NodeDescription {
-            is_component: is_component.clone(),
-            inputs: inputs.clone(),
-            outputs,
-            locals,
-        })
-    }
-
     /// Create an initialized graph from a node.
     ///
     /// The created graph has every node's signals as vertices.
@@ -173,21 +36,18 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ir::{
-    ///     equation::Equation, node::Node, node_description::NodeDescription,
-    ///     stream_expression::StreamExpression,
+    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     color::Color, constant::Constant, graph::Graph, location::Location,
     ///     scope::Scope, type_system::Type,
     /// };
     ///
-    /// let mut errors = vec![];
-    ///
     /// let node = Node {
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     equations: vec![
+    ///     unscheduled_equations: HashMap::from([
     ///         (
     ///             String::from("o"),
     ///             Equation {
@@ -216,11 +76,12 @@ impl Node {
     ///                 location: Location::default(),
     ///             }
     ///         )
-    ///     ],
+    ///     ]),
+    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     ///
-    /// let graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let graph = node.create_initialized_graph();
     ///
     /// let mut control = Graph::new();
     /// control.add_vertex(String::from("o"), Color::White);
@@ -229,35 +90,29 @@ impl Node {
     ///
     /// assert_eq!(graph, control);
     /// ```
-    pub fn create_initialized_graph(&self, errors: &mut Vec<Error>) -> Result<Graph<Color>, ()> {
+    pub fn create_initialized_graph(&self) -> Graph<Color> {
         // create an empty graph
         let mut graph = Graph::new();
 
         // get node's signals
-        let NodeDescription {
+        let Node {
             inputs,
-            outputs,
-            locals,
+            unscheduled_equations,
             ..
-        } = self.into_node_description(errors)?;
+        } = self;
 
         // add input signals as vertices
         for (input, _) in inputs {
             graph.add_vertex(input.clone(), Color::White);
         }
 
-        // add output signals as vertices
-        for (output, _) in outputs {
-            graph.add_vertex(output.clone(), Color::White);
-        }
-
-        // add local signals as vertices
-        for (local, _) in locals {
-            graph.add_vertex(local.clone(), Color::White);
+        // add other signals as vertices
+        for (signal, _) in unscheduled_equations {
+            graph.add_vertex(signal.clone(), Color::White);
         }
 
         // return graph
-        Ok(graph)
+        graph
     }
 
     /// Complete dependencies graph of the node.
@@ -277,8 +132,7 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ir::{
-    ///     equation::Equation, node::Node, node_description::NodeDescription,
-    ///     stream_expression::StreamExpression,
+    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     color::Color, constant::Constant, graph::Graph, location::Location,
@@ -291,7 +145,7 @@ impl Node {
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     equations: vec![
+    ///     unscheduled_equations: HashMap::from([
     ///         (
     ///             String::from("o"),
     ///             Equation {
@@ -320,7 +174,8 @@ impl Node {
     ///                 location: Location::default(),
     ///             }
     ///         )
-    ///     ],
+    ///     ]),
+    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -330,10 +185,10 @@ impl Node {
     /// );
     /// let node = nodes_context.get(&String::from("test")).unwrap();
     ///
-    /// let graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let graph = node.create_initialized_graph();
     /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
     ///
-    /// let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let reduced_graph = node.create_initialized_graph();
     /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
     ///
     /// node.add_all_dependencies(&nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
@@ -357,13 +212,15 @@ impl Node {
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         let Node {
-            equations, inputs, ..
+            inputs,
+            unscheduled_equations,
+            ..
         } = self;
 
         // add local and output signals dependencies
-        equations
-            .iter()
-            .map(|(signal, _)| {
+        unscheduled_equations
+            .keys()
+            .map(|signal| {
                 self.add_signal_dependencies(
                     signal,
                     nodes_context,
@@ -411,8 +268,7 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ir::{
-    ///     equation::Equation, node::Node, node_description::NodeDescription,
-    ///     stream_expression::StreamExpression,
+    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     color::Color, constant::Constant, graph::Graph, location::Location,
@@ -425,7 +281,7 @@ impl Node {
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     equations: vec![
+    ///     unscheduled_equations: HashMap::from([
     ///         (
     ///             String::from("o"),
     ///             Equation {
@@ -454,7 +310,8 @@ impl Node {
     ///                 location: Location::default(),
     ///             }
     ///         )
-    ///     ],
+    ///     ]),
+    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -464,10 +321,10 @@ impl Node {
     /// );
     /// let node = nodes_context.get(&String::from("test")).unwrap();
     ///
-    /// let graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let graph = node.create_initialized_graph();
     /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
     ///
-    /// let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let reduced_graph = node.create_initialized_graph();
     /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
     ///
     /// node.add_signal_dependencies(&String::from("x"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
@@ -495,7 +352,7 @@ impl Node {
     ) -> Result<(), ()> {
         let Node {
             id: node,
-            equations,
+            unscheduled_equations,
             location,
             ..
         } = self;
@@ -511,9 +368,9 @@ impl Node {
                 // update status: processing
                 vertex.set_value(Color::Grey);
 
-                equations.iter().find(|(id, _)| id.eq(signal)).map_or(
-                    Ok(()),
-                    |(_, equation)| {
+                unscheduled_equations
+                    .get(signal)
+                    .map_or(Ok(()), |equation| {
                         // retrieve expression
                         let expression = &equation.expression;
 
@@ -535,8 +392,7 @@ impl Node {
                             .for_each(|(id, depth)| graph.add_edge(signal, id.clone(), *depth));
 
                         Ok(())
-                    },
-                )?;
+                    })?;
 
                 // get node's graph (borrow checker)
                 let graph = nodes_graphs.get_mut(node).unwrap();
@@ -579,8 +435,7 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ir::{
-    ///     equation::Equation, node::Node, node_description::NodeDescription,
-    ///     stream_expression::StreamExpression,
+    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     color::Color, constant::Constant, graph::Graph, location::Location,
@@ -593,7 +448,7 @@ impl Node {
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     equations: vec![
+    ///     unscheduled_equations: HashMap::from([
     ///         (
     ///             String::from("o"),
     ///             Equation {
@@ -622,7 +477,8 @@ impl Node {
     ///                 location: Location::default(),
     ///             }
     ///         )
-    ///     ],
+    ///     ]),
+    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -632,10 +488,10 @@ impl Node {
     /// );
     /// let node = nodes_context.get(&String::from("test")).unwrap();
     ///
-    /// let graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let graph = node.create_initialized_graph();
     /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
     ///
-    /// let reduced_graph = node.create_initialized_graph(&mut errors).unwrap();
+    /// let reduced_graph = node.create_initialized_graph();
     /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
     ///
     /// node.add_signal_inputs_dependencies(&String::from("x"), &nodes_context, &mut nodes_graphs, &mut nodes_reduced_graphs, &mut errors).unwrap();
