@@ -27,6 +27,8 @@ impl File {
     ///
     /// # Example
     /// ```rust
+    /// use std::collections::HashMap;
+    ///
     /// use grustine::ir::{
     ///     equation::Equation, expression::Expression, function::Function,
     ///     file::File, node::Node, statement::Statement, stream_expression::StreamExpression,
@@ -41,7 +43,7 @@ impl File {
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     equations: vec![
+    ///     unscheduled_equations: HashMap::from([
     ///         (
     ///             String::from("o"),
     ///             Equation {
@@ -70,7 +72,8 @@ impl File {
     ///                 location: Location::default(),
     ///             }
     ///         )
-    ///     ],
+    ///     ]),
+    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     ///
@@ -140,7 +143,7 @@ impl File {
         nodes
             .into_iter()
             .map(|node| {
-                let graph = node.create_initialized_graph(errors)?;
+                let graph = node.create_initialized_graph();
                 nodes_graphs.insert(node.id.clone(), graph.clone());
                 nodes_reduced_graphs.insert(node.id.clone(), graph.clone());
                 Ok(())
@@ -151,7 +154,7 @@ impl File {
 
         // optional component's graph initialization
         component.as_ref().map_or(Ok(()), |component| {
-            let graph = component.create_initialized_graph(errors)?;
+            let graph = component.create_initialized_graph();
             nodes_graphs.insert(component.id.clone(), graph.clone());
             nodes_reduced_graphs.insert(component.id.clone(), graph.clone());
             Ok(())
