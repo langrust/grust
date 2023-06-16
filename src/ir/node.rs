@@ -696,7 +696,7 @@ impl Node {
             location: location.clone(),
         };
 
-        // push it in node's storage
+        // insert it in node's storage
         unitary_nodes.insert(output.clone(), unitary_node);
 
         Ok(subgraph)
