@@ -605,6 +605,195 @@ impl Node {
     /// This detects causality errors.
     ///
     /// It also detects unused signal definitions or inputs.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::collections::HashMap;
+    /// use grustine::common::{
+    ///     color::Color, graph::Graph, location::Location, scope::Scope, type_system::Type,
+    /// };
+    /// use grustine::ir::{
+    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
+    ///     unitary_node::UnitaryNode,
+    /// };
+    ///
+    /// let mut errors = vec![];
+    ///
+    /// let mut node = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![
+    ///         (String::from("i1"), Type::Integer),
+    ///         (String::from("i2"), Type::Integer),
+    ///     ],
+    ///     unscheduled_equations: HashMap::from([
+    ///         (
+    ///             String::from("o1"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o1"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             },
+    ///         ),
+    ///         (
+    ///             String::from("o2"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o2"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i2"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             },
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i1"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             },
+    ///         ),
+    ///     ]),
+    ///     unitary_nodes: HashMap::new(),
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// let mut graph = Graph::new();
+    /// graph.add_vertex(String::from("i1"), Color::Black);
+    /// graph.add_vertex(String::from("i2"), Color::Black);
+    /// graph.add_vertex(String::from("x"), Color::Black);
+    /// graph.add_vertex(String::from("o1"), Color::Black);
+    /// graph.add_vertex(String::from("o2"), Color::Black);
+    /// graph.add_edge(&String::from("x"), String::from("i1"), 0);
+    /// graph.add_edge(&String::from("o1"), String::from("x"), 0);
+    /// graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+    ///
+    /// node.generate_unitary_nodes(&mut graph, &mut errors)
+    ///     .unwrap();
+    ///
+    /// let unitary_node_1 = UnitaryNode {
+    ///     node_id: String::from("test"),
+    ///     output_id: String::from("o1"),
+    ///     inputs: vec![(String::from("i1"), Type::Integer)],
+    ///     scheduled_equations: vec![
+    ///         Equation {
+    ///             scope: Scope::Local,
+    ///             id: String::from("x"),
+    ///             signal_type: Type::Integer,
+    ///             expression: StreamExpression::SignalCall {
+    ///                 id: String::from("i1"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///             location: Location::default(),
+    ///         },
+    ///         Equation {
+    ///             scope: Scope::Output,
+    ///             id: String::from("o1"),
+    ///             signal_type: Type::Integer,
+    ///             expression: StreamExpression::SignalCall {
+    ///                 id: String::from("x"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///             location: Location::default(),
+    ///         },
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    /// let unitary_node_2 = UnitaryNode {
+    ///     node_id: String::from("test"),
+    ///     output_id: String::from("o2"),
+    ///     inputs: vec![(String::from("i2"), Type::Integer)],
+    ///     scheduled_equations: vec![
+    ///         Equation {
+    ///             scope: Scope::Output,
+    ///             id: String::from("o2"),
+    ///             signal_type: Type::Integer,
+    ///             expression: StreamExpression::SignalCall {
+    ///                 id: String::from("i2"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///             location: Location::default(),
+    ///         },
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    /// let control = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![
+    ///         (String::from("i1"), Type::Integer),
+    ///         (String::from("i2"), Type::Integer),
+    ///     ],
+    ///     unscheduled_equations: HashMap::from([
+    ///         (
+    ///             String::from("o1"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o1"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             },
+    ///         ),
+    ///         (
+    ///             String::from("o2"),
+    ///             Equation {
+    ///                 scope: Scope::Output,
+    ///                 id: String::from("o2"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i2"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             },
+    ///         ),
+    ///         (
+    ///             String::from("x"),
+    ///             Equation {
+    ///                 scope: Scope::Local,
+    ///                 id: String::from("x"),
+    ///                 signal_type: Type::Integer,
+    ///                 expression: StreamExpression::SignalCall {
+    ///                     id: String::from("i1"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 location: Location::default(),
+    ///             },
+    ///         ),
+    ///     ]),
+    ///     unitary_nodes: HashMap::from([(String::from("o2"), unitary_node_2), (String::from("o1"), unitary_node_1)]),
+    ///     location: Location::default(),
+    /// };
+    ///
+    /// assert_eq!(node, control)
+    /// ```
     pub fn generate_unitary_nodes(
         &mut self,
         graph: &mut Graph<Color>,
