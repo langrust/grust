@@ -4,10 +4,13 @@ use crate::common::{
     color::Color,
     graph::{neighbor::Neighbor, Graph},
     location::Location,
+    scope::Scope,
     type_system::Type,
 };
 use crate::error::Error;
 use crate::ir::equation::Equation;
+
+use super::unitary_node::UnitaryNode;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust node AST.
@@ -20,6 +23,8 @@ pub struct Node {
     pub inputs: Vec<(String, Type)>,
     /// Node's unscheduled equations.
     pub unscheduled_equations: HashMap<String, Equation>,
+    /// Unitary output nodes generated from this node.
+    pub unitary_nodes: Vec<UnitaryNode>,
     /// Node location.
     pub location: Location,
 }
@@ -75,6 +80,7 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
+    ///     unitary_nodes: vec![],
     ///     location: Location::default(),
     /// };
     ///
@@ -172,6 +178,7 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
+    ///     unitary_nodes: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -307,6 +314,7 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
+    ///     unitary_nodes: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -443,7 +451,7 @@ impl Node {
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     unscheduled_equations: HashMap::from([
+    ///      HashMap::from([
     ///         (
     ///             String::from("o"),
     ///             Equation {
@@ -473,6 +481,7 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
+    ///     unitary_nodes: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -584,5 +593,112 @@ impl Node {
             }
             _ => Ok(()),
         }
+    }
+
+    /// Generate unitary nodes from mother node.
+    ///
+    /// Generate and add unitary nodes to mother node.
+    /// Unitary nodes are nodes with one output and contains
+    /// all signals from which the output computation depends.
+    ///
+    /// Unitary nodes computations induces schedulings of the node.
+    /// This detects causality errors.
+    ///
+    /// It also detects unused signal definitions or inputs.
+    pub fn generate_unitary_nodes(
+        &mut self,
+        graph: &mut Graph<Color>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), ()> {
+        // get outputs identifiers
+        let outputs = self
+            .unscheduled_equations
+            .values()
+            .filter(|equation| equation.scope.eq(&Scope::Output))
+            .map(|equation| equation.id.clone())
+            .collect::<Vec<_>>();
+
+        // construct unitary node for each output
+        let subgraphs = outputs
+            .into_iter()
+            .map(|output| self.add_unitary_node(output, graph, errors))
+            .collect::<Vec<_>>()
+            .into_iter()
+            .collect::<Result<Vec<_>, ()>>()?;
+
+        // check that every signals are used
+        let unused_signals = graph.forgotten_vertices(subgraphs);
+        unused_signals
+            .into_iter()
+            .map(|signal| {
+                let error = Error::UnusedSignal {
+                    node: self.id.clone(),
+                    signal,
+                    location: self.location.clone(),
+                };
+                errors.push(error);
+                Err(())
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .collect::<Result<_, _>>()
+    }
+
+    fn add_unitary_node(
+        &mut self,
+        output: String,
+        graph: &mut Graph<Color>,
+        errors: &mut Vec<Error>,
+    ) -> Result<Graph<Color>, ()> {
+        let Node {
+            id: node,
+            inputs,
+            unscheduled_equations,
+            unitary_nodes,
+            location,
+            ..
+        } = self;
+
+        // construct unitary node's subgraph from its output
+        let mut subgraph = graph.subgraph_from_vertex(&output);
+
+        // schedule the unitary node
+        let schedule = subgraph.topological_sorting(errors).map_err(|signal| {
+            let error = Error::NotCausal {
+                node: node.clone(),
+                signal: signal,
+                location: location.clone(),
+            };
+            errors.push(error)
+        })?;
+
+        // get usefull inputs (in application order)
+        let unitary_node_inputs = inputs
+            .into_iter()
+            .filter(|(id, _)| schedule.contains(id))
+            .map(|input| input.clone())
+            .collect::<Vec<_>>();
+
+        // retrieve scheduled equations from schedule
+        // and mother node's equations
+        let scheduled_equations = schedule
+            .into_iter()
+            .filter_map(|signal| unscheduled_equations.get(&signal))
+            .map(|equation| equation.clone())
+            .collect();
+
+        // construct unitary node
+        let unitary_node = UnitaryNode {
+            node_id: node.clone(),
+            output_id: output.clone(),
+            inputs: unitary_node_inputs,
+            scheduled_equations,
+            location: location.clone(),
+        };
+
+        // push it in node's storage
+        unitary_nodes.push(unitary_node);
+
+        Ok(subgraph)
     }
 }

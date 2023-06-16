@@ -1,7 +1,4 @@
-use crate::common::{
-    location::Location,
-    type_system::Type,
-};
+use crate::common::{location::Location, type_system::Type};
 use crate::ir::equation::Equation;
 
 #[derive(Debug, PartialEq, Clone)]

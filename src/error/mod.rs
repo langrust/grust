@@ -147,6 +147,15 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// unused signal error
+    UnusedSignal {
+        /// node's name
+        node: String,
+        /// signal's name
+        signal: String,
+        /// the error location
+        location: Location,
+    },
 }
 impl Error {
     /// Transform the error into a diagnostic.
@@ -346,6 +355,15 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!("signal '{signal}' depends on itself in node '{node}'")
+                ]
+            ),
+            Error::UnusedSignal { node, signal, location } => Diagnostic::error()
+                .with_message("unused signal")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                ])
+                .with_notes(vec![
+                    format!("signal '{signal}' in node '{node}' in not used")
                 ]
             ),
         }
