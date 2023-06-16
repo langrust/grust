@@ -200,7 +200,6 @@ impl StreamExpression {
     ///             },
     ///         ),
     ///     ]),
-    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     ///
@@ -751,7 +750,6 @@ mod get_dependencies {
                     },
                 ),
             ]),
-            scheduled_equations: vec![],
             location: Location::default(),
         };
 

@@ -170,7 +170,6 @@ mod get_dependencies_node_application {
                     },
                 ),
             ]),
-            scheduled_equations: vec![],
             location: Location::default(),
         };
 
