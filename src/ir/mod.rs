@@ -18,3 +18,6 @@ pub mod equation;
 
 /// LanGRust [Statement](crate::ir::statement::Statement) AST module.
 pub mod statement;
+
+/// LanGRust [UnitaryNode](crate::ir::unitary_node::UnitaryNode) IR module.
+pub mod unitary_node;
