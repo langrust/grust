@@ -20,8 +20,6 @@ pub struct Node {
     pub inputs: Vec<(String, Type)>,
     /// Node's unscheduled equations.
     pub unscheduled_equations: HashMap<String, Equation>,
-    /// Node's scheduled equations.
-    pub scheduled_equations: Vec<(String, Equation)>,
     /// Node location.
     pub location: Location,
 }
@@ -77,7 +75,6 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
-    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     ///
@@ -175,7 +172,6 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
-    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -311,7 +307,6 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
-    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -478,7 +473,6 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
-    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
