@@ -77,11 +77,13 @@ mod get_dependencies_when {
                 typing: Type::Integer,
                 location: Location::default(),
             }),
+            present_body: vec![],
             present: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(0),
                 typing: Type::Integer,
                 location: Location::default(),
             }),
+            default_body: vec![],
             default: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(1),
                 typing: Type::Integer,
@@ -119,11 +121,13 @@ mod get_dependencies_when {
                 typing: Type::Integer,
                 location: Location::default(),
             }),
+            present_body: vec![],
             present: Box::new(StreamExpression::SignalCall {
                 id: String::from("x"),
                 typing: Type::Integer,
                 location: Location::default(),
             }),
+            default_body: vec![],
             default: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(1),
                 typing: Type::Integer,
