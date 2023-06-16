@@ -170,7 +170,7 @@ mod get_dependencies_node_application {
                     },
                 ),
             ]),
-            unitary_nodes: vec![],
+            unitary_nodes: HashMap::new(),
             location: Location::default(),
         };
 
