@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::common::scope::Scope;
 use crate::common::{
     color::Color, constant::Constant, graph::Graph, location::Location, pattern::Pattern,
     type_system::Type,
@@ -376,6 +377,198 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
+        }
+    }
+
+    /// Normalize IR expressions.
+    ///
+    /// Normalize IR expressions as follows:
+    /// - node application can only append at root expression
+    /// - node application inputs are signal calls
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// x: int = 1 + my_node(s, v*2).o;
+    /// ```
+    ///
+    /// The above example becomes:
+    ///
+    /// ```GR
+    /// x1: int = v*2;
+    /// x2: int = my_node(s, x1).o;
+    /// x: int = 1 + x2;
+    /// ```
+    pub fn normalize(&mut self) -> Vec<Equation> {
+        self.normalize_root()
+    }
+
+    fn normalize_root(&mut self) -> Vec<Equation> {
+        match self {
+            StreamExpression::FollowedBy { expression, .. } => expression.normalize_cascade(),
+            StreamExpression::MapApplication { inputs, .. } => inputs
+                .iter_mut()
+                .flat_map(|expression| expression.normalize_cascade())
+                .collect(),
+            StreamExpression::NodeApplication { inputs, .. } => inputs
+                .iter_mut()
+                .flat_map(|expression| expression.normalize_cascade())
+                .collect(),
+            StreamExpression::Structure { fields, .. } => fields
+                .iter_mut()
+                .flat_map(|(_, expression)| expression.normalize_cascade())
+                .collect(),
+            StreamExpression::Array { elements, .. } => elements
+                .iter_mut()
+                .flat_map(|expression| expression.normalize_cascade())
+                .collect(),
+            StreamExpression::Match {
+                expression, arms, ..
+            } => {
+                let mut equations = expression.normalize_cascade();
+                arms.iter_mut().for_each(|(_, option, body, expression)| {
+                    let mut option_equations = option
+                        .as_mut()
+                        .map_or(vec![], |option| option.normalize_cascade());
+                    equations.append(&mut option_equations);
+
+                    let mut expression_equations = expression.normalize_cascade();
+                    body.append(&mut expression_equations)
+                });
+                equations
+            }
+            StreamExpression::When {
+                option,
+                present_body,
+                present,
+                default_body,
+                default,
+                ..
+            } => {
+                let mut present_equations = present.normalize_cascade();
+                present_body.append(&mut present_equations);
+
+                let mut default_equations = default.normalize_cascade();
+                default_body.append(&mut default_equations);
+
+                option.normalize_cascade()
+            }
+            _ => vec![],
+        }
+    }
+
+    fn normalize_cascade(&mut self) -> Vec<Equation> {
+        match self {
+            StreamExpression::FollowedBy { expression, .. } => expression.normalize_cascade(),
+            StreamExpression::MapApplication { inputs, .. } => inputs
+                .iter_mut()
+                .flat_map(|expression| expression.normalize_cascade())
+                .collect(),
+            StreamExpression::Structure { fields, .. } => fields
+                .iter_mut()
+                .flat_map(|(_, expression)| expression.normalize_cascade())
+                .collect(),
+            StreamExpression::Array { elements, .. } => elements
+                .iter_mut()
+                .flat_map(|expression| expression.normalize_cascade())
+                .collect(),
+            StreamExpression::Match {
+                expression, arms, ..
+            } => {
+                let mut equations = expression.normalize_cascade();
+                arms.iter_mut().for_each(|(_, option, body, expression)| {
+                    let mut option_equations = option
+                        .as_mut()
+                        .map_or(vec![], |option| option.normalize_cascade());
+                    equations.append(&mut option_equations);
+
+                    let mut expression_equations = expression.normalize_cascade();
+                    body.append(&mut expression_equations)
+                });
+                equations
+            }
+            StreamExpression::When {
+                option,
+                present_body,
+                present,
+                default_body,
+                default,
+                ..
+            } => {
+                let mut present_equations = present.normalize_cascade();
+                present_body.append(&mut present_equations);
+
+                let mut default_equations = default.normalize_cascade();
+                default_body.append(&mut default_equations);
+
+                option.normalize_cascade()
+            }
+            StreamExpression::NodeApplication {
+                node,
+                inputs,
+                signal,
+                typing,
+                location,
+            } => {
+                let mut equations = inputs
+                    .iter_mut()
+                    .flat_map(|expression| expression.normalize_to_signal_call())
+                    .collect::<Vec<_>>();
+
+                let node_application_equation = Equation {
+                    scope: Scope::Local,
+                    signal_type: typing.clone(),
+                    location: location.clone(),
+                    expression: StreamExpression::NodeApplication {
+                        node: node.clone(),
+                        inputs: inputs.clone(),
+                        signal: signal.clone(),
+                        typing: typing.clone(),
+                        location: location.clone(),
+                    },
+                    id: String::from("fresh_identifier"),
+                };
+
+                *self = StreamExpression::SignalCall {
+                    id: String::from("fresh_identifier"),
+                    typing: typing.clone(),
+                    location: location.clone(),
+                };
+
+                equations.push(node_application_equation);
+
+                equations
+            }
+            _ => vec![],
+        }
+    }
+
+    fn normalize_to_signal_call(&mut self) -> Vec<Equation> {
+        match self {
+            StreamExpression::SignalCall { .. } => vec![],
+            _ => {
+                let mut equations = self.normalize_cascade();
+
+                let typing = self.get_type().clone();
+                let location = self.get_location().clone();
+
+                let new_equation = Equation {
+                    scope: Scope::Local,
+                    signal_type: typing.clone(),
+                    location: location.clone(),
+                    expression: self.clone(),
+                    id: String::from("fresh_identifier"),
+                };
+
+                *self = StreamExpression::SignalCall {
+                    id: String::from("fresh_identifier"),
+                    typing: typing,
+                    location: location,
+                };
+
+                equations.push(new_equation);
+                equations
+            }
         }
     }
 }
@@ -1038,5 +1231,29 @@ mod get_dependencies {
         let control = vec![(String::from("y"), 0)];
 
         assert_eq!(dependencies, control)
+    }
+}
+
+#[cfg(test)]
+mod normalize_to_signal_call {
+    use crate::common::{type_system::Type, location::Location};
+    use crate::ir::stream_expression::StreamExpression;
+
+    #[test]
+    fn should_leave_signal_call_unchanged() {
+        let mut expression = StreamExpression::SignalCall {
+            id: String::from("x"),
+            typing: Type::Integer,
+            location: Location::default(),
+        };
+        let equations = expression.normalize_to_signal_call();
+
+        let control = StreamExpression::SignalCall {
+            id: String::from("x"),
+            typing: Type::Integer,
+            location: Location::default(),
+        };
+        assert!(equations.is_empty());
+        assert_eq!(expression, control)
     }
 }
