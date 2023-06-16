@@ -141,13 +141,13 @@ impl Graph<Color> {
         // process of vertices
         self.get_vertices()
             .iter()
-            .map(|id| self.visit_vertex(&id, &mut schedule, errors))
+            .map(|id| self.topological_sorting_visit(&id, &mut schedule, errors))
             .collect::<Result<(), String>>()?;
 
         Ok(schedule)
     }
 
-    fn visit_vertex(
+    fn topological_sorting_visit(
         &mut self,
         id: &String,
         schedule: &mut Vec<String>,
@@ -164,7 +164,7 @@ impl Graph<Color> {
                 vertex
                     .get_neighbors()
                     .iter()
-                    .map(|Neighbor { id, .. }| self.visit_vertex(id, schedule, errors))
+                    .map(|Neighbor { id, .. }| self.topological_sorting_visit(id, schedule, errors))
                     .collect::<Result<(), String>>()?;
 
                 // update vertex status: processed
@@ -178,6 +178,59 @@ impl Graph<Color> {
             }
             Color::Grey => Err(id.clone()),
             Color::Black => Ok(()),
+        }
+    }
+
+    /// Create a subgraph from the vertex.
+    /// 
+    /// This creates a subgraph with all successors of the given vertex
+    /// and their edges.
+    pub fn subgraph_from_vertex(&mut self, vertex: &String) -> Graph<Color> {
+        // initialize subgraph
+        let mut subgraph = Graph::new();
+
+        // initialize all global graph vertices to "unprocessed" state
+        self.vertices
+            .values_mut()
+            .for_each(|vertex| vertex.set_value(Color::White));
+
+        // process of vertices
+        self.subgraph_from_vertex_visit(vertex, &mut subgraph);
+
+        subgraph
+    }
+
+    fn subgraph_from_vertex_visit(
+        &mut self,
+        id: &String,
+        subgraph: &mut Graph<Color>,
+    ) {
+        // add vertex to subgraph
+        subgraph.add_vertex(id.clone(), Color::White);
+
+        // visit vertex successors
+        let vertex = self.get_vertex_mut(id);
+        match vertex.get_value() {
+            Color::White => {
+                // update vertex status: processing
+                vertex.set_value(Color::Grey);
+
+                // processus propagation
+                vertex
+                    .get_neighbors()
+                    .iter()
+                    .for_each(|Neighbor { id: neighbor, weight }| {
+                        // visit vertex successors
+                        self.subgraph_from_vertex_visit(neighbor, subgraph);
+                        // add edge
+                        subgraph.add_edge(id, neighbor.clone(), weight.clone())
+                    });
+
+                // update vertex status: processed
+                let vertex = self.get_vertex_mut(id);
+                vertex.set_value(Color::Black);
+            }
+            _ => (),
         }
     }
 }
@@ -617,5 +670,36 @@ mod topological_sorting {
         for vertex in vertices {
             assert!(schedule.iter().position(|id| id.eq(&vertex)).is_some())
         }
+    }
+}
+
+#[cfg(test)]
+mod subgraph_from_vertex {
+    use crate::common::{color::Color, graph::Graph};
+
+    #[test]
+    fn should_return_a_subgraph_of_the_graph_with_all_vertex_successors_and_edges() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), Color::Black);
+        graph.add_vertex(String::from("v2"), Color::Black);
+        graph.add_vertex(String::from("v3"), Color::Black);
+        graph.add_vertex(String::from("v4"), Color::Black);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 1);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v3"), String::from("v2"), 0);
+
+        let subgraph = graph.subgraph_from_vertex(&String::from("v1"));
+
+        let mut control = Graph::new();
+        control.add_vertex(String::from("v1"), Color::White);
+        control.add_vertex(String::from("v2"), Color::White);
+        control.add_vertex(String::from("v3"), Color::White);
+        control.add_edge(&String::from("v1"), String::from("v2"), 0);
+        control.add_edge(&String::from("v1"), String::from("v2"), 1);
+        control.add_edge(&String::from("v1"), String::from("v3"), 0);
+        control.add_edge(&String::from("v3"), String::from("v2"), 0);
+
+        assert_eq!(subgraph, control)
     }
 }
