@@ -73,7 +73,6 @@ impl File {
     ///             }
     ///         )
     ///     ]),
-    ///     scheduled_equations: vec![],
     ///     location: Location::default(),
     /// };
     ///
