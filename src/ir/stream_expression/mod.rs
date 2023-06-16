@@ -146,7 +146,7 @@ impl StreamExpression {
     ///     location: Location::default(),
     /// };
     /// let typing = stream_expression.get_type();
-    /// assert_eq!(typing, Type::Integer)
+    /// assert_eq!(typing, &Type::Integer)
     /// ```
     pub fn get_type(&self) -> &Type {
         match self {
@@ -176,7 +176,7 @@ impl StreamExpression {
     ///     location: Location::default(),
     /// };
     /// let location = stream_expression.get_location();
-    /// assert_eq!(location, Location::default())
+    /// assert_eq!(location, &Location::default())
     /// ```
     pub fn get_location(&self) -> &Location {
         match self {
@@ -1236,7 +1236,7 @@ mod get_dependencies {
 
 #[cfg(test)]
 mod normalize_to_signal_call {
-    use crate::common::{type_system::Type, location::Location};
+    use crate::common::{location::Location, type_system::Type};
     use crate::ir::stream_expression::StreamExpression;
 
     #[test]
