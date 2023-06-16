@@ -200,6 +200,7 @@ impl StreamExpression {
     ///             },
     ///         ),
     ///     ]),
+    ///     unitary_nodes: vec![],
     ///     location: Location::default(),
     /// };
     ///
@@ -750,6 +751,7 @@ mod get_dependencies {
                     },
                 ),
             ]),
+            unitary_nodes: vec![],
             location: Location::default(),
         };
 

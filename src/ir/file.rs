@@ -73,6 +73,7 @@ impl File {
     ///             }
     ///         )
     ///     ]),
+    ///     unitary_nodes: vec![],
     ///     location: Location::default(),
     /// };
     ///

@@ -170,6 +170,7 @@ mod get_dependencies_node_application {
                     },
                 ),
             ]),
+            unitary_nodes: vec![],
             location: Location::default(),
         };
 
