@@ -131,6 +131,66 @@ pub enum StreamExpression {
 }
 
 impl StreamExpression {
+    /// Get the reference to the stream expression's typing.
+    ///
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ir::stream_expression::StreamExpression;
+    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    ///
+    /// let mut stream_expression = StreamExpression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: Type::Integer,
+    ///     location: Location::default(),
+    /// };
+    /// let typing = stream_expression.get_type();
+    /// assert_eq!(typing, Type::Integer)
+    /// ```
+    pub fn get_type(&self) -> &Type {
+        match self {
+            StreamExpression::Constant { typing, .. }
+            | StreamExpression::SignalCall { typing, .. }
+            | StreamExpression::FollowedBy { typing, .. }
+            | StreamExpression::MapApplication { typing, .. }
+            | StreamExpression::NodeApplication { typing, .. }
+            | StreamExpression::Structure { typing, .. }
+            | StreamExpression::Array { typing, .. }
+            | StreamExpression::Match { typing, .. }
+            | StreamExpression::When { typing, .. } => typing,
+        }
+    }
+
+    /// Get the reference to the stream expression's location.
+    ///
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ir::stream_expression::StreamExpression;
+    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    ///
+    /// let mut stream_expression = StreamExpression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: Type::Integer,
+    ///     location: Location::default(),
+    /// };
+    /// let location = stream_expression.get_location();
+    /// assert_eq!(location, Location::default())
+    /// ```
+    pub fn get_location(&self) -> &Location {
+        match self {
+            StreamExpression::Constant { location, .. }
+            | StreamExpression::SignalCall { location, .. }
+            | StreamExpression::FollowedBy { location, .. }
+            | StreamExpression::MapApplication { location, .. }
+            | StreamExpression::NodeApplication { location, .. }
+            | StreamExpression::Structure { location, .. }
+            | StreamExpression::Array { location, .. }
+            | StreamExpression::Match { location, .. }
+            | StreamExpression::When { location, .. } => location,
+        }
+    }
+
     /// Get dependencies of a stream expression.
     ///
     /// # Example
