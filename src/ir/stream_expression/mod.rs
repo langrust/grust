@@ -400,7 +400,153 @@ impl StreamExpression {
     /// x_1: int = v*2;
     /// x_2: int = my_node(s, x_1).o;
     /// x: int = 1 + x_2;
-    /// ``
+    /// ```
+    ///
+    /// This example is tested in the following code.
+    ///
+    /// ```rust
+    /// use std::collections::HashSet;
+    ///
+    /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    /// use grustine::ir::{
+    ///     equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
+    ///     stream_expression::StreamExpression,
+    /// };
+    ///
+    /// let mut identifier_creator = IdentifierCreator {
+    ///     signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
+    /// };
+    /// let mut expression = StreamExpression::MapApplication {
+    ///     function_expression: Expression::Call {
+    ///         id: String::from("+"),
+    ///         typing: Type::Abstract(
+    ///             Box::new(Type::Integer),
+    ///             Box::new(Type::Abstract(
+    ///                 Box::new(Type::Integer),
+    ///                 Box::new(Type::Integer),
+    ///             )),
+    ///         ),
+    ///         location: Location::default(),
+    ///     },
+    ///     inputs: vec![
+    ///         StreamExpression::Constant {
+    ///             constant: Constant::Integer(1),
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         StreamExpression::NodeApplication {
+    ///             node: String::from("my_node"),
+    ///             inputs: vec![
+    ///                 StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 StreamExpression::MapApplication {
+    ///                     function_expression: Expression::Call {
+    ///                         id: String::from("*2"),
+    ///                         typing: Type::Abstract(
+    ///                             Box::new(Type::Integer),
+    ///                             Box::new(Type::Integer),
+    ///                         ),
+    ///                         location: Location::default(),
+    ///                     },
+    ///                     inputs: vec![StreamExpression::SignalCall {
+    ///                         id: String::from("v"),
+    ///                         typing: Type::Integer,
+    ///                         location: Location::default(),
+    ///                     }],
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ],
+    ///             signal: String::from("o"),
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///     ],
+    ///     typing: Type::Integer,
+    ///     location: Location::default(),
+    /// };
+    /// let equations = expression.normalize(&mut identifier_creator);
+    ///
+    /// let control = vec![
+    ///     Equation {
+    ///         scope: Scope::Local,
+    ///         id: String::from("x_1"),
+    ///         signal_type: Type::Integer,
+    ///         expression: StreamExpression::MapApplication {
+    ///             function_expression: Expression::Call {
+    ///                 id: String::from("*2"),
+    ///                 typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+    ///                 location: Location::default(),
+    ///             },
+    ///             inputs: vec![StreamExpression::SignalCall {
+    ///                 id: String::from("v"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             }],
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         location: Location::default(),
+    ///     },
+    ///     Equation {
+    ///         scope: Scope::Local,
+    ///         id: String::from("x_2"),
+    ///         signal_type: Type::Integer,
+    ///         expression: StreamExpression::NodeApplication {
+    ///             node: String::from("my_node"),
+    ///             inputs: vec![
+    ///                 StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 StreamExpression::SignalCall {
+    ///                     id: String::from("x_1"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ],
+    ///             signal: String::from("o"),
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         location: Location::default(),
+    ///     },
+    /// ];
+    /// assert_eq!(equations, control);
+    ///
+    /// let control = StreamExpression::MapApplication {
+    ///     function_expression: Expression::Call {
+    ///         id: String::from("+"),
+    ///         typing: Type::Abstract(
+    ///             Box::new(Type::Integer),
+    ///             Box::new(Type::Abstract(
+    ///                 Box::new(Type::Integer),
+    ///                 Box::new(Type::Integer),
+    ///             )),
+    ///         ),
+    ///         location: Location::default(),
+    ///     },
+    ///     inputs: vec![
+    ///         StreamExpression::Constant {
+    ///             constant: Constant::Integer(1),
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         StreamExpression::SignalCall {
+    ///             id: String::from("x_2"),
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///     ],
+    ///     typing: Type::Integer,
+    ///     location: Location::default(),
+    /// };
+    /// assert_eq!(expression, control)
+    /// ```
     pub fn normalize(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
         self.normalize_root(identifier_creator)
     }
@@ -1259,8 +1405,9 @@ mod get_dependencies {
 mod normalize_to_signal_call {
     use std::collections::HashSet;
 
-    use crate::common::{ location::Location,   type_system::Type};
-    use crate::ir::{ identifier_creator::IdentifierCreator,
+    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::ir::{
+        equation::Equation, identifier_creator::IdentifierCreator,
         stream_expression::StreamExpression,
     };
 
@@ -1282,6 +1429,201 @@ mod normalize_to_signal_call {
             location: Location::default(),
         };
         assert!(equations.is_empty());
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_create_signal_call_from_other_expression() {
+        let mut identifier_creator = IdentifierCreator {
+            signals: HashSet::from([String::from("x")]),
+        };
+        let mut expression = StreamExpression::FollowedBy {
+            constant: Constant::Integer(0),
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("x"),
+                typing: Type::Integer,
+                location: Location::default(),
+            }),
+            typing: Type::Integer,
+            location: Location::default(),
+        };
+        let equations = expression.normalize_to_signal_call(&mut identifier_creator);
+
+        let control = Equation {
+            scope: Scope::Local,
+            id: String::from("x_1"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: String::from("x"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                }),
+                typing: Type::Integer,
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+        assert_eq!(equations[0], control);
+
+        let control = StreamExpression::SignalCall {
+            id: String::from("x_1"),
+            typing: Type::Integer,
+            location: Location::default(),
+        };
+        assert_eq!(expression, control)
+    }
+}
+
+#[cfg(test)]
+mod normalize {
+    use std::collections::HashSet;
+
+    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::ir::{
+        equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
+        stream_expression::StreamExpression,
+    };
+
+    #[test]
+    fn should_normalize_expression_according_to_rules() {
+        // x: int = 1 + my_node(s, v*2).o;
+        let mut identifier_creator = IdentifierCreator {
+            signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
+        };
+        let mut expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("+"),
+                typing: Type::Abstract(
+                    Box::new(Type::Integer),
+                    Box::new(Type::Abstract(
+                        Box::new(Type::Integer),
+                        Box::new(Type::Integer),
+                    )),
+                ),
+                location: Location::default(),
+            },
+            inputs: vec![
+                StreamExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                },
+                StreamExpression::NodeApplication {
+                    node: String::from("my_node"),
+                    inputs: vec![
+                        StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                        },
+                        StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("*2"),
+                                typing: Type::Abstract(
+                                    Box::new(Type::Integer),
+                                    Box::new(Type::Integer),
+                                ),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("v"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                            }],
+                            typing: Type::Integer,
+                            location: Location::default(),
+                        },
+                    ],
+                    signal: String::from("o"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                },
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+        };
+        let equations = expression.normalize(&mut identifier_creator);
+
+        // x_1: int = v*2;
+        // x_2: int = my_node(s, x_1).o;
+        let control = vec![
+            Equation {
+                scope: Scope::Local,
+                id: String::from("x_1"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("*2"),
+                        typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("v"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                },
+                location: Location::default(),
+            },
+            Equation {
+                scope: Scope::Local,
+                id: String::from("x_2"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::NodeApplication {
+                    node: String::from("my_node"),
+                    inputs: vec![
+                        StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                        },
+                        StreamExpression::SignalCall {
+                            id: String::from("x_1"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                        },
+                    ],
+                    signal: String::from("o"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                },
+                location: Location::default(),
+            },
+        ];
+        assert_eq!(equations, control);
+
+        // x: int = 1 + x_2;
+        let control = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("+"),
+                typing: Type::Abstract(
+                    Box::new(Type::Integer),
+                    Box::new(Type::Abstract(
+                        Box::new(Type::Integer),
+                        Box::new(Type::Integer),
+                    )),
+                ),
+                location: Location::default(),
+            },
+            inputs: vec![
+                StreamExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                },
+                StreamExpression::SignalCall {
+                    id: String::from("x_2"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                },
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+        };
         assert_eq!(expression, control)
     }
 }
