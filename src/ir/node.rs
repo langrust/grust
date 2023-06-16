@@ -24,7 +24,7 @@ pub struct Node {
     /// Node's unscheduled equations.
     pub unscheduled_equations: HashMap<String, Equation>,
     /// Unitary output nodes generated from this node.
-    pub unitary_nodes: Vec<UnitaryNode>,
+    pub unitary_nodes: HashMap<String, UnitaryNode>,
     /// Node location.
     pub location: Location,
 }
@@ -80,7 +80,7 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
-    ///     unitary_nodes: vec![],
+    ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
     /// };
     ///
@@ -178,7 +178,7 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
-    ///     unitary_nodes: vec![],
+    ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -314,7 +314,7 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
-    ///     unitary_nodes: vec![],
+    ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -481,7 +481,7 @@ impl Node {
     ///             }
     ///         )
     ///     ]),
-    ///     unitary_nodes: vec![],
+    ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
     /// };
     /// let mut nodes_context = HashMap::new();
@@ -697,7 +697,7 @@ impl Node {
         };
 
         // push it in node's storage
-        unitary_nodes.push(unitary_node);
+        unitary_nodes.insert(output.clone(), unitary_node);
 
         Ok(subgraph)
     }
@@ -770,7 +770,7 @@ mod add_unitary_node {
                     },
                 ),
             ]),
-            unitary_nodes: vec![],
+            unitary_nodes: HashMap::new(),
             location: Location::default(),
         };
 
@@ -868,7 +868,7 @@ mod add_unitary_node {
                     },
                 ),
             ]),
-            unitary_nodes: vec![unitary_node],
+            unitary_nodes: HashMap::from([(String::from("o1"), unitary_node)]),
             location: Location::default(),
         };
 
@@ -930,7 +930,7 @@ mod add_unitary_node {
                     },
                 ),
             ]),
-            unitary_nodes: vec![],
+            unitary_nodes: HashMap::new(),
             location: Location::default(),
         };
 

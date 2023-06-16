@@ -73,7 +73,7 @@ impl File {
     ///             }
     ///         )
     ///     ]),
-    ///     unitary_nodes: vec![],
+    ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
     /// };
     ///
