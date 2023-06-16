@@ -8,6 +8,8 @@ use crate::common::{
 use crate::error::Error;
 use crate::ir::{equation::Equation, expression::Expression, node::Node};
 
+use super::identifier_creator::IdentifierCreator;
+
 mod array;
 mod constant;
 mod followed_by;
@@ -399,40 +401,42 @@ impl StreamExpression {
     /// x2: int = my_node(s, x1).o;
     /// x: int = 1 + x2;
     /// ```
-    pub fn normalize(&mut self) -> Vec<Equation> {
-        self.normalize_root()
+    pub fn normalize(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
+        self.normalize_root(identifier_creator)
     }
 
-    fn normalize_root(&mut self) -> Vec<Equation> {
+    fn normalize_root(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
         match self {
-            StreamExpression::FollowedBy { expression, .. } => expression.normalize_cascade(),
+            StreamExpression::FollowedBy { expression, .. } => {
+                expression.normalize_cascade(identifier_creator)
+            }
             StreamExpression::MapApplication { inputs, .. } => inputs
                 .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade())
+                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
                 .collect(),
             StreamExpression::NodeApplication { inputs, .. } => inputs
                 .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade())
+                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
                 .collect(),
             StreamExpression::Structure { fields, .. } => fields
                 .iter_mut()
-                .flat_map(|(_, expression)| expression.normalize_cascade())
+                .flat_map(|(_, expression)| expression.normalize_cascade(identifier_creator))
                 .collect(),
             StreamExpression::Array { elements, .. } => elements
                 .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade())
+                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
                 .collect(),
             StreamExpression::Match {
                 expression, arms, ..
             } => {
-                let mut equations = expression.normalize_cascade();
+                let mut equations = expression.normalize_cascade(identifier_creator);
                 arms.iter_mut().for_each(|(_, option, body, expression)| {
-                    let mut option_equations = option
-                        .as_mut()
-                        .map_or(vec![], |option| option.normalize_cascade());
+                    let mut option_equations = option.as_mut().map_or(vec![], |option| {
+                        option.normalize_cascade(identifier_creator)
+                    });
                     equations.append(&mut option_equations);
 
-                    let mut expression_equations = expression.normalize_cascade();
+                    let mut expression_equations = expression.normalize_cascade(identifier_creator);
                     body.append(&mut expression_equations)
                 });
                 equations
@@ -445,44 +449,46 @@ impl StreamExpression {
                 default,
                 ..
             } => {
-                let mut present_equations = present.normalize_cascade();
+                let mut present_equations = present.normalize_cascade(identifier_creator);
                 present_body.append(&mut present_equations);
 
-                let mut default_equations = default.normalize_cascade();
+                let mut default_equations = default.normalize_cascade(identifier_creator);
                 default_body.append(&mut default_equations);
 
-                option.normalize_cascade()
+                option.normalize_cascade(identifier_creator)
             }
             _ => vec![],
         }
     }
 
-    fn normalize_cascade(&mut self) -> Vec<Equation> {
+    fn normalize_cascade(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
         match self {
-            StreamExpression::FollowedBy { expression, .. } => expression.normalize_cascade(),
+            StreamExpression::FollowedBy { expression, .. } => {
+                expression.normalize_cascade(identifier_creator)
+            }
             StreamExpression::MapApplication { inputs, .. } => inputs
                 .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade())
+                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
                 .collect(),
             StreamExpression::Structure { fields, .. } => fields
                 .iter_mut()
-                .flat_map(|(_, expression)| expression.normalize_cascade())
+                .flat_map(|(_, expression)| expression.normalize_cascade(identifier_creator))
                 .collect(),
             StreamExpression::Array { elements, .. } => elements
                 .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade())
+                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
                 .collect(),
             StreamExpression::Match {
                 expression, arms, ..
             } => {
-                let mut equations = expression.normalize_cascade();
+                let mut equations = expression.normalize_cascade(identifier_creator);
                 arms.iter_mut().for_each(|(_, option, body, expression)| {
-                    let mut option_equations = option
-                        .as_mut()
-                        .map_or(vec![], |option| option.normalize_cascade());
+                    let mut option_equations = option.as_mut().map_or(vec![], |option| {
+                        option.normalize_cascade(identifier_creator)
+                    });
                     equations.append(&mut option_equations);
 
-                    let mut expression_equations = expression.normalize_cascade();
+                    let mut expression_equations = expression.normalize_cascade(identifier_creator);
                     body.append(&mut expression_equations)
                 });
                 equations
@@ -495,13 +501,13 @@ impl StreamExpression {
                 default,
                 ..
             } => {
-                let mut present_equations = present.normalize_cascade();
+                let mut present_equations = present.normalize_cascade(identifier_creator);
                 present_body.append(&mut present_equations);
 
-                let mut default_equations = default.normalize_cascade();
+                let mut default_equations = default.normalize_cascade(identifier_creator);
                 default_body.append(&mut default_equations);
 
-                option.normalize_cascade()
+                option.normalize_cascade(identifier_creator)
             }
             StreamExpression::NodeApplication {
                 node,
@@ -512,7 +518,7 @@ impl StreamExpression {
             } => {
                 let mut equations = inputs
                     .iter_mut()
-                    .flat_map(|expression| expression.normalize_to_signal_call())
+                    .flat_map(|expression| expression.normalize_to_signal_call(identifier_creator))
                     .collect::<Vec<_>>();
 
                 let node_application_equation = Equation {
@@ -543,11 +549,14 @@ impl StreamExpression {
         }
     }
 
-    fn normalize_to_signal_call(&mut self) -> Vec<Equation> {
+    fn normalize_to_signal_call(
+        &mut self,
+        identifier_creator: &mut IdentifierCreator,
+    ) -> Vec<Equation> {
         match self {
             StreamExpression::SignalCall { .. } => vec![],
             _ => {
-                let mut equations = self.normalize_cascade();
+                let mut equations = self.normalize_cascade(identifier_creator);
 
                 let typing = self.get_type().clone();
                 let location = self.get_location().clone();
@@ -1236,17 +1245,22 @@ mod get_dependencies {
 
 #[cfg(test)]
 mod normalize_to_signal_call {
+    use std::collections::HashSet;
+
     use crate::common::{location::Location, type_system::Type};
-    use crate::ir::stream_expression::StreamExpression;
+    use crate::ir::{identifier_creator::IdentifierCreator, stream_expression::StreamExpression};
 
     #[test]
     fn should_leave_signal_call_unchanged() {
+        let mut identifier_creator = IdentifierCreator {
+            signals: HashSet::new(),
+        };
         let mut expression = StreamExpression::SignalCall {
             id: String::from("x"),
             typing: Type::Integer,
             location: Location::default(),
         };
-        let equations = expression.normalize_to_signal_call();
+        let equations = expression.normalize_to_signal_call(&mut identifier_creator);
 
         let control = StreamExpression::SignalCall {
             id: String::from("x"),
