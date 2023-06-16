@@ -397,10 +397,10 @@ impl StreamExpression {
     /// The above example becomes:
     ///
     /// ```GR
-    /// x1: int = v*2;
-    /// x2: int = my_node(s, x1).o;
-    /// x: int = 1 + x2;
-    /// ```
+    /// x_1: int = v*2;
+    /// x_2: int = my_node(s, x_1).o;
+    /// x: int = 1 + x_2;
+    /// ``
     pub fn normalize(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
         self.normalize_root(identifier_creator)
     }
@@ -521,6 +521,12 @@ impl StreamExpression {
                     .flat_map(|expression| expression.normalize_to_signal_call(identifier_creator))
                     .collect::<Vec<_>>();
 
+                let fresh_id = identifier_creator.new_identifier(
+                    String::from("x"),
+                    String::from(""),
+                    String::from(""),
+                );
+
                 let node_application_equation = Equation {
                     scope: Scope::Local,
                     signal_type: typing.clone(),
@@ -532,11 +538,11 @@ impl StreamExpression {
                         typing: typing.clone(),
                         location: location.clone(),
                     },
-                    id: String::from("fresh_identifier"),
+                    id: fresh_id.clone(),
                 };
 
                 *self = StreamExpression::SignalCall {
-                    id: String::from("fresh_identifier"),
+                    id: fresh_id.clone(),
                     typing: typing.clone(),
                     location: location.clone(),
                 };
@@ -561,16 +567,22 @@ impl StreamExpression {
                 let typing = self.get_type().clone();
                 let location = self.get_location().clone();
 
+                let fresh_id = identifier_creator.new_identifier(
+                    String::from("x"),
+                    String::from(""),
+                    String::from(""),
+                );
+
                 let new_equation = Equation {
                     scope: Scope::Local,
                     signal_type: typing.clone(),
                     location: location.clone(),
                     expression: self.clone(),
-                    id: String::from("fresh_identifier"),
+                    id: fresh_id.clone(),
                 };
 
                 *self = StreamExpression::SignalCall {
-                    id: String::from("fresh_identifier"),
+                    id: fresh_id.clone(),
                     typing: typing,
                     location: location,
                 };
@@ -1247,8 +1259,10 @@ mod get_dependencies {
 mod normalize_to_signal_call {
     use std::collections::HashSet;
 
-    use crate::common::{location::Location, type_system::Type};
-    use crate::ir::{identifier_creator::IdentifierCreator, stream_expression::StreamExpression};
+    use crate::common::{ location::Location,   type_system::Type};
+    use crate::ir::{ identifier_creator::IdentifierCreator,
+        stream_expression::StreamExpression,
+    };
 
     #[test]
     fn should_leave_signal_call_unchanged() {
