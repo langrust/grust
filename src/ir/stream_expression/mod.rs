@@ -5,7 +5,7 @@ use crate::common::{
     type_system::Type,
 };
 use crate::error::Error;
-use crate::ir::{expression::Expression, node::Node};
+use crate::ir::{equation::Equation, expression::Expression, node::Node};
 
 mod array;
 mod constant;
@@ -98,7 +98,12 @@ pub enum StreamExpression {
         /// The stream expression to match.
         expression: Box<StreamExpression>,
         /// The different matching cases.
-        arms: Vec<(Pattern, Option<StreamExpression>, StreamExpression)>,
+        arms: Vec<(
+            Pattern,
+            Option<StreamExpression>,
+            Vec<Equation>,
+            StreamExpression,
+        )>,
         /// Stream Expression type.
         typing: Type,
         /// Stream expression location.
@@ -110,8 +115,12 @@ pub enum StreamExpression {
         id: String,
         /// The optional stream expression.
         option: Box<StreamExpression>,
+        /// The body of present case when normalized.
+        present_body: Vec<Equation>,
         /// The stream expression when present.
         present: Box<StreamExpression>,
+        /// The body of default case when normalized.
+        default_body: Vec<Equation>,
         /// The default stream expression.
         default: Box<StreamExpression>,
         /// Stream Expression type.
@@ -512,6 +521,7 @@ mod get_dependencies {
                         location: Location::default(),
                     },
                     None,
+                    vec![],
                     StreamExpression::SignalCall {
                         id: String::from("z"),
                         typing: Type::Integer,
@@ -538,6 +548,7 @@ mod get_dependencies {
                         location: Location::default(),
                     },
                     None,
+                    vec![],
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
@@ -617,6 +628,7 @@ mod get_dependencies {
                         location: Location::default(),
                     },
                     None,
+                    vec![],
                     StreamExpression::SignalCall {
                         id: String::from("y"),
                         typing: Type::Integer,
@@ -644,6 +656,7 @@ mod get_dependencies {
                         location: Location::default(),
                     },
                     None,
+                    vec![],
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
@@ -893,11 +906,13 @@ mod get_dependencies {
                 typing: Type::Integer,
                 location: Location::default(),
             }),
+            present_body: vec![],
             present: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(0),
                 typing: Type::Integer,
                 location: Location::default(),
             }),
+            default_body: vec![],
             default: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(1),
                 typing: Type::Integer,
@@ -935,11 +950,13 @@ mod get_dependencies {
                 typing: Type::Integer,
                 location: Location::default(),
             }),
+            present_body: vec![],
             present: Box::new(StreamExpression::SignalCall {
                 id: String::from("x"),
                 typing: Type::Integer,
                 location: Location::default(),
             }),
+            default_body: vec![],
             default: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(1),
                 typing: Type::Integer,

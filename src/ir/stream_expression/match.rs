@@ -22,7 +22,7 @@ impl StreamExpression {
                 // compute arms dependencies
                 let mut arms_dependencies = arms
                     .iter()
-                    .map(|(pattern, bound, arm_expression)| {
+                    .map(|(pattern, bound, _, arm_expression)| {
                         // get local signals defined in pattern
                         let local_signals = pattern.local_identifiers();
 
@@ -126,6 +126,7 @@ mod get_dependencies_match {
                         location: Location::default(),
                     },
                     None,
+                    vec![],
                     StreamExpression::SignalCall {
                         id: String::from("z"),
                         typing: Type::Integer,
@@ -152,6 +153,7 @@ mod get_dependencies_match {
                         location: Location::default(),
                     },
                     None,
+                    vec![],
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
@@ -231,6 +233,7 @@ mod get_dependencies_match {
                         location: Location::default(),
                     },
                     None,
+                    vec![],
                     StreamExpression::SignalCall {
                         id: String::from("y"),
                         typing: Type::Integer,
@@ -258,6 +261,7 @@ mod get_dependencies_match {
                         location: Location::default(),
                     },
                     None,
+                    vec![],
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
