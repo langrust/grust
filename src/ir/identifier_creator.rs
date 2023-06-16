@@ -1,0 +1,306 @@
+use std::collections::HashSet;
+
+use crate::ir::unitary_node::UnitaryNode;
+
+/// Identifier creator used to create fresh signals.
+#[derive(Debug, PartialEq)]
+pub struct IdentifierCreator {
+    /// Already known signals.
+    pub signals: HashSet<String>,
+}
+impl IdentifierCreator {
+    /// Create a new identifier creator from an unitary node.
+    ///
+    /// It will store all existing signals from the unitary node.
+    pub fn new(unitary_node: &UnitaryNode) -> Self {
+        let mut signals = HashSet::new();
+        unitary_node.inputs.iter().for_each(|(signal, _)| {
+            signals.insert(signal.clone());
+        });
+        unitary_node
+            .scheduled_equations
+            .iter()
+            .for_each(|equation| {
+                signals.insert(equation.id.clone());
+            });
+        IdentifierCreator { signals }
+    }
+    fn already_defined(&self, identifier: &String) -> bool {
+        self.signals.contains(identifier)
+    }
+    fn add_signal(&mut self, signal: &String) {
+        self.signals.insert(signal.clone());
+    }
+
+    /// Create new identifier from request.
+    ///
+    /// If the requested identifier is not used then return it.
+    /// Otherwise, it create a fresh identifier from this request.
+    ///
+    /// # Example
+    ///
+    /// If `mem_x` is requested as new identifier for the node defined bellow,
+    /// then it will return it as it is.
+    ///
+    /// But if it request `mem_x` a second time, then it will return `mem_x_1`.
+    ///  
+    /// ```GR
+    /// node test(i1: int) {
+    ///     x: int = i1;
+    ///     out o1: int = x;
+    /// }
+    /// ```
+    ///
+    /// This example is tested in the following code.
+    ///
+    /// ```rust
+    /// use grustine::common::{location::Location, scope::Scope, type_system::Type};
+    /// use grustine::ir::{
+    ///     equation::Equation, identifier_creator::IdentifierCreator,
+    ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    /// };
+    ///
+    /// let unitary_node = UnitaryNode {
+    ///     node_id: String::from("test"),
+    ///     output_id: String::from("o1"),
+    ///     inputs: vec![(String::from("i1"), Type::Integer)],
+    ///     scheduled_equations: vec![
+    ///         Equation {
+    ///             scope: Scope::Local,
+    ///             id: String::from("x"),
+    ///             signal_type: Type::Integer,
+    ///             expression: StreamExpression::SignalCall {
+    ///                 id: String::from("i1"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///             location: Location::default(),
+    ///         },
+    ///         Equation {
+    ///             scope: Scope::Output,
+    ///             id: String::from("o1"),
+    ///             signal_type: Type::Integer,
+    ///             expression: StreamExpression::SignalCall {
+    ///                 id: String::from("x"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///             location: Location::default(),
+    ///         },
+    ///     ],
+    ///     location: Location::default(),
+    /// };
+    /// let mut identifier_creator = IdentifierCreator::new(&unitary_node);
+    ///
+    /// let identifier = identifier_creator.new_identifier(String::from("mem_"), String::from("x"), String::from(""));
+    /// let control = String::from("mem_x");
+    /// assert_eq!(identifier, control);
+    ///
+    /// let identifier = identifier_creator.new_identifier(String::from("mem_"), String::from("x"), String::from(""));
+    /// let control = String::from("mem_x_1");
+    /// assert_eq!(identifier, control)
+    /// ```
+
+    pub fn new_identifier(&mut self, prefix: String, name: String, suffix: String) -> String {
+        let mut identifier = format!("{prefix}{name}{suffix}");
+
+        let mut counter = 1;
+        while self.already_defined(&identifier) {
+            identifier = format!("{prefix}{name}_{}{suffix}", counter);
+            counter += 1;
+        }
+
+        self.add_signal(&identifier);
+        identifier
+    }
+}
+
+#[cfg(test)]
+mod new {
+    use std::collections::HashSet;
+
+    use crate::common::{location::Location, scope::Scope, type_system::Type};
+    use crate::ir::{
+        equation::Equation, identifier_creator::IdentifierCreator,
+        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    };
+
+    #[test]
+    fn should_create_identifer_creator_with_all_signals_from_unitary_node() {
+        let unitary_node = UnitaryNode {
+            node_id: String::from("test"),
+            output_id: String::from("o1"),
+            inputs: vec![(String::from("i1"), Type::Integer)],
+            scheduled_equations: vec![
+                Equation {
+                    scope: Scope::Local,
+                    id: String::from("x"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("i1"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o1"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            ],
+            location: Location::default(),
+        };
+        let identifier_creator = IdentifierCreator::new(&unitary_node);
+        let control = IdentifierCreator {
+            signals: HashSet::from([String::from("i1"), String::from("o1"), String::from("x")]),
+        };
+
+        assert_eq!(identifier_creator, control)
+    }
+}
+
+#[cfg(test)]
+mod new_identifier {
+    use crate::common::{location::Location, scope::Scope, type_system::Type};
+    use crate::ir::{
+        equation::Equation, identifier_creator::IdentifierCreator,
+        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    };
+
+    #[test]
+    fn should_create_the_requested_identifier_when_not_used() {
+        let unitary_node = UnitaryNode {
+            node_id: String::from("test"),
+            output_id: String::from("o1"),
+            inputs: vec![(String::from("i1"), Type::Integer)],
+            scheduled_equations: vec![
+                Equation {
+                    scope: Scope::Local,
+                    id: String::from("x"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("i1"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o1"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            ],
+            location: Location::default(),
+        };
+        let mut identifier_creator = IdentifierCreator::new(&unitary_node);
+        let identifier = identifier_creator.new_identifier(
+            String::from("mem_"),
+            String::from("x"),
+            String::from(""),
+        );
+
+        let control = String::from("mem_x");
+        assert_eq!(identifier, control)
+    }
+
+    #[test]
+    fn should_create_new_identifier_when_used() {
+        let unitary_node = UnitaryNode {
+            node_id: String::from("test"),
+            output_id: String::from("o1"),
+            inputs: vec![(String::from("i1"), Type::Integer)],
+            scheduled_equations: vec![
+                Equation {
+                    scope: Scope::Local,
+                    id: String::from("x"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("i1"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o1"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            ],
+            location: Location::default(),
+        };
+        let mut identifier_creator = IdentifierCreator::new(&unitary_node);
+        let identifier = identifier_creator.new_identifier(
+            String::from(""),
+            String::from("x"),
+            String::from(""),
+        );
+
+        let control = String::from("x_1");
+        assert_eq!(identifier, control)
+    }
+
+    #[test]
+    fn should_create_another_new_identifier_when_used_and_already_created_new_identifier() {
+        let unitary_node = UnitaryNode {
+            node_id: String::from("test"),
+            output_id: String::from("o1"),
+            inputs: vec![(String::from("i1"), Type::Integer)],
+            scheduled_equations: vec![
+                Equation {
+                    scope: Scope::Local,
+                    id: String::from("x"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("i1"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o1"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    location: Location::default(),
+                },
+            ],
+            location: Location::default(),
+        };
+        let mut identifier_creator = IdentifierCreator::new(&unitary_node);
+        identifier_creator.new_identifier(String::from(""), String::from("x"), String::from(""));
+        let identifier = identifier_creator.new_identifier(
+            String::from(""),
+            String::from("x"),
+            String::from(""),
+        );
+
+        let control = String::from("x_2");
+        assert_eq!(identifier, control)
+    }
+}

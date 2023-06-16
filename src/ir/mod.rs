@@ -21,3 +21,6 @@ pub mod statement;
 
 /// LanGRust [UnitaryNode](crate::ir::unitary_node::UnitaryNode) IR module.
 pub mod unitary_node;
+
+/// LanGRust [IdentifierCreator](crate::ir::identifier_creator::IdentifierCreator) IR module.
+pub mod identifier_creator;
