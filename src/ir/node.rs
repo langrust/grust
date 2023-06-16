@@ -451,7 +451,7 @@ impl Node {
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///      HashMap::from([
+    ///     unscheduled_equations: HashMap::from([
     ///         (
     ///             String::from("o"),
     ///             Equation {
