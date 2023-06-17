@@ -77,7 +77,7 @@ impl Equation {
     ///                 node: String::from("my_node"),
     ///                 inputs: vec![
     ///                     StreamExpression::SignalCall {
-    ///                         id: String::from("x"),
+    ///                         id: String::from("s"),
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
     ///                     },
@@ -140,7 +140,7 @@ impl Equation {
     ///             node: String::from("my_node"),
     ///             inputs: vec![
     ///                 StreamExpression::SignalCall {
-    ///                     id: String::from("x"),
+    ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
     ///                 },

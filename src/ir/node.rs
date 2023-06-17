@@ -916,7 +916,7 @@ impl Node {
     ///     out y: int = other_node(g-1, v).o;
     /// }
     /// ```
-    /// 
+    ///
     /// Which are normalized into:
     ///
     /// ```GR
@@ -968,7 +968,7 @@ impl Node {
     ///                 node: String::from("my_node"),
     ///                 inputs: vec![
     ///                     StreamExpression::SignalCall {
-    ///                         id: String::from("x"),
+    ///                         id: String::from("s"),
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
     ///                     },
@@ -1102,7 +1102,7 @@ impl Node {
     ///             node: String::from("my_node"),
     ///             inputs: vec![
     ///                 StreamExpression::SignalCall {
-    ///                     id: String::from("x"),
+    ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
     ///                 },
