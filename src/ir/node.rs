@@ -890,6 +890,356 @@ impl Node {
 
         Ok(subgraph)
     }
+
+    /// Normalize IR node.
+    ///
+    /// Normalize all unitary nodes of a node as follows:
+    /// - node application can only append at root expression
+    /// - node application inputs are signal calls
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// node test(s: int, v: int, g: int) {
+    ///     out x: int = 1 + my_node(s, v*2).o;
+    ///     out y: int = other_node(g-1, v).o;
+    /// }
+    /// ```
+    ///
+    /// The above node contains the following unitary nodes:
+    ///
+    /// ```GR
+    /// node test_x(s: int, v: int) {
+    ///     out x: int = 1 + my_node(s, v*2).o;
+    /// }
+    /// node test_y(v: int, g: int) {
+    ///     out y: int = other_node(g-1, v).o;
+    /// }
+    /// ```
+    /// 
+    /// Which are normalized into:
+    ///
+    /// ```GR
+    /// node test_x(s: int, v: int) {
+    ///     x_1: int = v*2;
+    ///     x_2: int = my_node(s, x_1).o;
+    ///     out x: int = 1 + x_2;
+    /// }
+    /// node test_y(v: int, g: int) {
+    ///     x: int = g-1;
+    ///     out y: int = other_node(x_1, v).o;
+    /// }
+    /// ```
+    ///
+    /// This example is tested in the following code.
+    ///
+    /// ```rust
+    /// use std::collections::{HashSet, HashMap};
+    ///
+    /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    /// use grustine::ir::{
+    ///     equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
+    ///     unitary_node::UnitaryNode,
+    /// };
+    ///
+    /// let equation_1 = Equation {
+    ///     scope: Scope::Output,
+    ///     id: String::from("x"),
+    ///     signal_type: Type::Integer,
+    ///     expression: StreamExpression::MapApplication {
+    ///         function_expression: Expression::Call {
+    ///             id: String::from("+"),
+    ///             typing: Type::Abstract(
+    ///                 Box::new(Type::Integer),
+    ///                 Box::new(Type::Abstract(
+    ///                     Box::new(Type::Integer),
+    ///                     Box::new(Type::Integer),
+    ///                 )),
+    ///             ),
+    ///             location: Location::default(),
+    ///         },
+    ///         inputs: vec![
+    ///             StreamExpression::Constant {
+    ///                 constant: Constant::Integer(1),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///             StreamExpression::NodeApplication {
+    ///                 node: String::from("my_node"),
+    ///                 inputs: vec![
+    ///                     StreamExpression::SignalCall {
+    ///                         id: String::from("x"),
+    ///                         typing: Type::Integer,
+    ///                         location: Location::default(),
+    ///                     },
+    ///                     StreamExpression::MapApplication {
+    ///                         function_expression: Expression::Call {
+    ///                             id: String::from("*2"),
+    ///                             typing: Type::Abstract(
+    ///                                 Box::new(Type::Integer),
+    ///                                 Box::new(Type::Integer),
+    ///                             ),
+    ///                             location: Location::default(),
+    ///                         },
+    ///                         inputs: vec![StreamExpression::SignalCall {
+    ///                             id: String::from("v"),
+    ///                             typing: Type::Integer,
+    ///                             location: Location::default(),
+    ///                         }],
+    ///                         typing: Type::Integer,
+    ///                         location: Location::default(),
+    ///                     },
+    ///                 ],
+    ///                 signal: String::from("o"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///         ],
+    ///         typing: Type::Integer,
+    ///         location: Location::default(),
+    ///     },
+    ///     location: Location::default(),
+    /// };
+    /// let unitary_node_1 = UnitaryNode {
+    ///     node_id: String::from("test"),
+    ///     output_id: String::from("x"),
+    ///     inputs: vec![(String::from("s"), Type::Integer), (String::from("v"), Type::Integer)],
+    ///     scheduled_equations: vec![equation_1.clone()],
+    ///     location: Location::default(),
+    /// };
+    /// let equation_2 = Equation {
+    ///     scope: Scope::Output,
+    ///     id: String::from("y"),
+    ///     signal_type: Type::Integer,
+    ///     expression: StreamExpression::NodeApplication {
+    ///         node: String::from("other_node"),
+    ///         inputs: vec![
+    ///             StreamExpression::MapApplication {
+    ///                 function_expression: Expression::Call {
+    ///                     id: String::from("-1"),
+    ///                     typing: Type::Abstract(
+    ///                         Box::new(Type::Integer),
+    ///                         Box::new(Type::Integer),
+    ///                     ),
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 inputs: vec![StreamExpression::SignalCall {
+    ///                     id: String::from("g"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 }],
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///             StreamExpression::SignalCall {
+    ///                 id: String::from("v"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             },
+    ///         ],
+    ///         signal: String::from("o"),
+    ///         typing: Type::Integer,
+    ///         location: Location::default(),
+    ///             },
+    ///     location: Location::default(),
+    /// };
+    /// let unitary_node_2 = UnitaryNode {
+    ///     node_id: String::from("test"),
+    ///     output_id: String::from("y"),
+    ///     inputs: vec![(String::from("v"), Type::Integer), (String::from("g"), Type::Integer)],
+    ///     scheduled_equations: vec![equation_2.clone()],
+    ///     location: Location::default(),
+    /// };
+    /// let mut node = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![
+    ///         (String::from("s"), Type::Integer),
+    ///         (String::from("v"), Type::Integer),
+    ///         (String::from("g"), Type::Integer),
+    ///     ],
+    ///     unscheduled_equations: HashMap::from([
+    ///         (
+    ///             String::from("x"),
+    ///             equation_1.clone()
+    ///         ),
+    ///         (
+    ///             String::from("y"),
+    ///             equation_2.clone()
+    ///         ),
+    ///     ]),
+    ///     unitary_nodes: HashMap::from([(String::from("x"), unitary_node_1), (String::from("y"), unitary_node_2)]),
+    ///     location: Location::default(),
+    /// };
+    /// node.normalize();
+    ///
+    /// let equations_1 = vec![
+    ///     Equation {
+    ///         scope: Scope::Local,
+    ///         id: String::from("x_1"),
+    ///         signal_type: Type::Integer,
+    ///         expression: StreamExpression::MapApplication {
+    ///             function_expression: Expression::Call {
+    ///                 id: String::from("*2"),
+    ///                 typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+    ///                 location: Location::default(),
+    ///             },
+    ///             inputs: vec![StreamExpression::SignalCall {
+    ///                 id: String::from("v"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             }],
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         location: Location::default(),
+    ///     },
+    ///     Equation {
+    ///         scope: Scope::Local,
+    ///         id: String::from("x_2"),
+    ///         signal_type: Type::Integer,
+    ///         expression: StreamExpression::NodeApplication {
+    ///             node: String::from("my_node"),
+    ///             inputs: vec![
+    ///                 StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 StreamExpression::SignalCall {
+    ///                     id: String::from("x_1"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ],
+    ///             signal: String::from("o"),
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         location: Location::default(),
+    ///     },
+    ///     Equation {
+    ///         scope: Scope::Output,
+    ///         id: String::from("x"),
+    ///         signal_type: Type::Integer,
+    ///         expression: StreamExpression::MapApplication {
+    ///             function_expression: Expression::Call {
+    ///                 id: String::from("+"),
+    ///                 typing: Type::Abstract(
+    ///                     Box::new(Type::Integer),
+    ///                     Box::new(Type::Abstract(
+    ///                         Box::new(Type::Integer),
+    ///                         Box::new(Type::Integer),
+    ///                     )),
+    ///                 ),
+    ///                 location: Location::default(),
+    ///             },
+    ///             inputs: vec![
+    ///                 StreamExpression::Constant {
+    ///                     constant: Constant::Integer(1),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 StreamExpression::SignalCall {
+    ///                     id: String::from("x_2"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ],
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         location: Location::default(),
+    ///     }
+    /// ];
+    /// let unitary_node_1 = UnitaryNode {
+    ///     node_id: String::from("test"),
+    ///     output_id: String::from("x"),
+    ///     inputs: vec![(String::from("s"), Type::Integer), (String::from("v"), Type::Integer)],
+    ///     scheduled_equations: equations_1,
+    ///     location: Location::default(),
+    /// };
+    /// let equations_2 = vec![
+    ///     Equation {
+    ///         scope: Scope::Local,
+    ///         id: String::from("x"),
+    ///         signal_type: Type::Integer,
+    ///         expression: StreamExpression::MapApplication {
+    ///             function_expression: Expression::Call {
+    ///                 id: String::from("-1"),
+    ///                 typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+    ///                 location: Location::default(),
+    ///             },
+    ///             inputs: vec![StreamExpression::SignalCall {
+    ///                 id: String::from("g"),
+    ///                 typing: Type::Integer,
+    ///                 location: Location::default(),
+    ///             }],
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         location: Location::default(),
+    ///     },
+    ///     Equation {
+    ///         scope: Scope::Output,
+    ///         id: String::from("y"),
+    ///         signal_type: Type::Integer,
+    ///         expression: StreamExpression::NodeApplication {
+    ///             node: String::from("other_node"),
+    ///             inputs: vec![
+    ///                 StreamExpression::SignalCall {
+    ///                     id: String::from("x"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///                 StreamExpression::SignalCall {
+    ///                     id: String::from("v"),
+    ///                     typing: Type::Integer,
+    ///                     location: Location::default(),
+    ///                 },
+    ///             ],
+    ///             signal: String::from("o"),
+    ///             typing: Type::Integer,
+    ///             location: Location::default(),
+    ///         },
+    ///         location: Location::default(),
+    ///     },
+    /// ];
+    /// let unitary_node_2 = UnitaryNode {
+    ///     node_id: String::from("test"),
+    ///     output_id: String::from("y"),
+    ///     inputs: vec![(String::from("v"), Type::Integer), (String::from("g"), Type::Integer)],
+    ///     scheduled_equations: equations_2,
+    ///     location: Location::default(),
+    /// };
+    /// let control = Node {
+    ///     id: String::from("test"),
+    ///     is_component: false,
+    ///     inputs: vec![
+    ///         (String::from("s"), Type::Integer),
+    ///         (String::from("v"), Type::Integer),
+    ///         (String::from("g"), Type::Integer),
+    ///     ],
+    ///     unscheduled_equations: HashMap::from([
+    ///         (
+    ///             String::from("x"),
+    ///             equation_1
+    ///         ),
+    ///         (
+    ///             String::from("y"),
+    ///             equation_2
+    ///         ),
+    ///     ]),
+    ///     unitary_nodes: HashMap::from([(String::from("x"), unitary_node_1), (String::from("y"), unitary_node_2)]),
+    ///     location: Location::default(),
+    /// };
+    /// assert_eq!(node, control);
+    /// ```
+    pub fn normalize(&mut self) {
+        self.unitary_nodes
+            .values_mut()
+            .for_each(|unitary_node| unitary_node.normalize())
+    }
 }
 
 #[cfg(test)]
