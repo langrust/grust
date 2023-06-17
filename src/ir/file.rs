@@ -615,8 +615,6 @@ impl File {
     /// assert_eq!(file, control);
     /// ```
     pub fn normalize(&mut self) {
-        self.nodes
-            .iter_mut()
-            .for_each(|node| node.normalize())
+        self.nodes.iter_mut().for_each(|node| node.normalize())
     }
 }
