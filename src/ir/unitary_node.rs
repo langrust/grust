@@ -55,7 +55,7 @@ impl UnitaryNode {
     /// };
     ///
     /// let equation = Equation {
-    ///     scope: Scope::Local,
+    ///     scope: Scope::Output,
     ///     id: String::from("x"),
     ///     signal_type: Type::Integer,
     ///     expression: StreamExpression::MapApplication {
@@ -80,7 +80,7 @@ impl UnitaryNode {
     ///                 node: String::from("my_node"),
     ///                 inputs: vec![
     ///                     StreamExpression::SignalCall {
-    ///                         id: String::from("x"),
+    ///                         id: String::from("s"),
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
     ///                     },
@@ -150,7 +150,7 @@ impl UnitaryNode {
     ///             node: String::from("my_node"),
     ///             inputs: vec![
     ///                 StreamExpression::SignalCall {
-    ///                     id: String::from("x"),
+    ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
     ///                 },
@@ -167,7 +167,7 @@ impl UnitaryNode {
     ///         location: Location::default(),
     ///     },
     ///     Equation {
-    ///         scope: Scope::Local,
+    ///         scope: Scope::Output,
     ///         id: String::from("x"),
     ///         signal_type: Type::Integer,
     ///         expression: StreamExpression::MapApplication {

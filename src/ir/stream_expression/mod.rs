@@ -438,7 +438,7 @@ impl StreamExpression {
     ///             node: String::from("my_node"),
     ///             inputs: vec![
     ///                 StreamExpression::SignalCall {
-    ///                     id: String::from("x"),
+    ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
     ///                 },
@@ -499,7 +499,7 @@ impl StreamExpression {
     ///             node: String::from("my_node"),
     ///             inputs: vec![
     ///                 StreamExpression::SignalCall {
-    ///                     id: String::from("x"),
+    ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
     ///                 },
@@ -1514,7 +1514,7 @@ mod normalize {
                     node: String::from("my_node"),
                     inputs: vec![
                         StreamExpression::SignalCall {
-                            id: String::from("x"),
+                            id: String::from("s"),
                             typing: Type::Integer,
                             location: Location::default(),
                         },
@@ -1577,7 +1577,7 @@ mod normalize {
                     node: String::from("my_node"),
                     inputs: vec![
                         StreamExpression::SignalCall {
-                            id: String::from("x"),
+                            id: String::from("s"),
                             typing: Type::Integer,
                             location: Location::default(),
                         },
