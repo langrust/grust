@@ -562,7 +562,7 @@ impl StreamExpression {
                 .collect(),
             StreamExpression::NodeApplication { inputs, .. } => inputs
                 .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
+                .flat_map(|expression| expression.normalize_to_signal_call(identifier_creator))
                 .collect(),
             StreamExpression::Structure { fields, .. } => fields
                 .iter_mut()
