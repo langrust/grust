@@ -6,6 +6,7 @@ use crate::common::{
     user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
+use crate::ir::stream_expression::StreamExpression as IRStreamExpression;
 
 mod array;
 mod constant;
@@ -261,6 +262,129 @@ impl StreamExpression {
             StreamExpression::Array { typing, .. } => typing,
             StreamExpression::Match { typing, .. } => typing,
             StreamExpression::When { typing, .. } => typing,
+        }
+    }
+
+    /// Transform AST stream expressions into IR stream expressions.
+    pub fn into_ir(self) -> IRStreamExpression {
+        match self {
+            StreamExpression::Constant {
+                constant,
+                typing,
+                location,
+            } => IRStreamExpression::Constant {
+                constant,
+                typing: typing.unwrap(),
+                location,
+            },
+            StreamExpression::SignalCall {
+                id,
+                typing,
+                location,
+            } => IRStreamExpression::SignalCall {
+                id,
+                typing: typing.unwrap(),
+                location,
+            },
+            StreamExpression::MapApplication {
+                function_expression,
+                inputs,
+                typing,
+                location,
+            } => IRStreamExpression::MapApplication {
+                function_expression: function_expression.into_ir(),
+                inputs: inputs.into_iter().map(|input| input.into_ir()).collect(),
+                typing: typing.unwrap(),
+                location,
+            },
+            StreamExpression::Structure {
+                name,
+                fields,
+                typing,
+                location,
+            } => IRStreamExpression::Structure {
+                name,
+                fields: fields
+                    .into_iter()
+                    .map(|(field, expression)| (field, expression.into_ir()))
+                    .collect(),
+                typing: typing.unwrap(),
+                location,
+            },
+            StreamExpression::Array {
+                elements,
+                typing,
+                location,
+            } => IRStreamExpression::Array {
+                elements: elements
+                    .into_iter()
+                    .map(|expression| expression.into_ir())
+                    .collect(),
+                typing: typing.unwrap(),
+                location,
+            },
+            StreamExpression::Match {
+                expression,
+                arms,
+                typing,
+                location,
+            } => IRStreamExpression::Match {
+                expression: Box::new(expression.into_ir()),
+                arms: arms
+                    .into_iter()
+                    .map(|(pattern, optional_expression, expression)| {
+                        (
+                            pattern,
+                            optional_expression.map(|expression| expression.into_ir()),
+                            vec![],
+                            expression.into_ir(),
+                        )
+                    })
+                    .collect(),
+                typing: typing.unwrap(),
+                location,
+            },
+            StreamExpression::When {
+                id,
+                option,
+                present,
+                default,
+                typing,
+                location,
+            } => IRStreamExpression::When {
+                id,
+                option: Box::new(option.into_ir()),
+                present_body: vec![],
+                present: Box::new(present.into_ir()),
+                default_body: vec![],
+                default: Box::new(default.into_ir()),
+                typing: typing.unwrap(),
+                location,
+            },
+            StreamExpression::FollowedBy {
+                constant,
+                expression,
+                typing,
+                location,
+            } => IRStreamExpression::FollowedBy {
+                constant,
+                expression: Box::new(expression.into_ir()),
+                typing: typing.unwrap(),
+                location,
+            },
+            StreamExpression::NodeApplication {
+                node,
+                inputs,
+                signal,
+                typing,
+                location,
+            } => IRStreamExpression::NodeApplication {
+                node,
+                inputs: inputs.into_iter().map(|input| input.into_ir()).collect(),
+                signal,
+                typing: typing.unwrap(),
+                location,
+            },
         }
     }
 }
