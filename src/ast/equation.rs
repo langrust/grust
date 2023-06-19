@@ -197,7 +197,7 @@ impl Equation {
             expression,
             location,
         } = self;
-        
+
         IREquation {
             scope,
             id,
