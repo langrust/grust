@@ -76,6 +76,19 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
+    /// Unitary node application stream expression.
+    UnitaryNodeApplication {
+        /// The mother node.
+        node: String,
+        /// The output signal corresponding to the unitary node.
+        signal: String,
+        /// The inputs to the expression.
+        inputs: Vec<StreamExpression>,
+        /// Stream Expression type.
+        typing: Type,
+        /// Stream expression location.
+        location: Location,
+    },
     /// Structure stream expression.
     Structure {
         /// The structure name.
@@ -157,6 +170,7 @@ impl StreamExpression {
             | StreamExpression::FollowedBy { typing, .. }
             | StreamExpression::MapApplication { typing, .. }
             | StreamExpression::NodeApplication { typing, .. }
+            | StreamExpression::UnitaryNodeApplication { typing, .. }
             | StreamExpression::Structure { typing, .. }
             | StreamExpression::Array { typing, .. }
             | StreamExpression::Match { typing, .. }
@@ -187,6 +201,7 @@ impl StreamExpression {
             | StreamExpression::FollowedBy { location, .. }
             | StreamExpression::MapApplication { location, .. }
             | StreamExpression::NodeApplication { location, .. }
+            | StreamExpression::UnitaryNodeApplication { location, .. }
             | StreamExpression::Structure { location, .. }
             | StreamExpression::Array { location, .. }
             | StreamExpression::Match { location, .. }
@@ -379,6 +394,7 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
+            StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
         }
     }
 
@@ -497,7 +513,7 @@ impl StreamExpression {
     ///         scope: Scope::Local,
     ///         id: String::from("x_2"),
     ///         signal_type: Type::Integer,
-    ///         expression: StreamExpression::NodeApplication {
+    ///         expression: StreamExpression::UnitaryNodeApplication {
     ///             node: String::from("my_node"),
     ///             inputs: vec![
     ///                 StreamExpression::SignalCall {
@@ -569,31 +585,43 @@ impl StreamExpression {
                     expression.normalize_cascade(identifier_creator, unitary_nodes_used_inputs)
                 })
                 .collect(),
+            StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
             StreamExpression::NodeApplication {
                 node,
                 signal,
-                ref mut inputs,
-                ..
+                inputs,
+                typing,
+                location,
             } => {
                 let used_inputs = unitary_nodes_used_inputs
                     .get(node)
                     .unwrap()
                     .get(signal)
                     .unwrap();
-                *inputs = inputs
+                let mut inputs = inputs
                     .into_iter()
                     .zip(used_inputs)
                     .filter(|(_, used)| **used)
                     .map(|(expression, _)| expression.clone())
-                    .collect();
+                    .collect::<Vec<StreamExpression>>();
 
-                inputs
+                let equations = inputs
                     .iter_mut()
                     .flat_map(|expression| {
                         expression
                             .normalize_to_signal_call(identifier_creator, unitary_nodes_used_inputs)
                     })
-                    .collect()
+                    .collect();
+
+                *self = StreamExpression::UnitaryNodeApplication {
+                    node: node.clone(),
+                    signal: signal.clone(),
+                    inputs,
+                    typing: typing.clone(),
+                    location: location.clone(),
+                };
+
+                equations
             }
             StreamExpression::Structure { fields, .. } => fields
                 .iter_mut()
@@ -710,7 +738,7 @@ impl StreamExpression {
             }
             StreamExpression::NodeApplication {
                 node,
-                ref mut inputs,
+                inputs,
                 signal,
                 typing,
                 location,
@@ -720,12 +748,12 @@ impl StreamExpression {
                     .unwrap()
                     .get(signal)
                     .unwrap();
-                *inputs = inputs
+                let mut inputs = inputs
                     .into_iter()
                     .zip(used_inputs)
                     .filter(|(_, used)| **used)
                     .map(|(expression, _)| expression.clone())
-                    .collect();
+                    .collect::<Vec<StreamExpression>>();
 
                 let mut equations = inputs
                     .iter_mut()
@@ -741,13 +769,13 @@ impl StreamExpression {
                     String::from(""),
                 );
 
-                let node_application_equation = Equation {
+                let unitary_node_application_equation = Equation {
                     scope: Scope::Local,
                     signal_type: typing.clone(),
                     location: location.clone(),
-                    expression: StreamExpression::NodeApplication {
+                    expression: StreamExpression::UnitaryNodeApplication {
                         node: node.clone(),
-                        inputs: inputs.clone(),
+                        inputs: inputs,
                         signal: signal.clone(),
                         typing: typing.clone(),
                         location: location.clone(),
@@ -761,7 +789,7 @@ impl StreamExpression {
                     location: location.clone(),
                 };
 
-                equations.push(node_application_equation);
+                equations.push(unitary_node_application_equation);
 
                 equations
             }
@@ -1642,7 +1670,7 @@ mod normalize {
                 scope: Scope::Local,
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::NodeApplication {
+                expression: StreamExpression::UnitaryNodeApplication {
                     node: String::from("my_node"),
                     inputs: vec![
                         StreamExpression::SignalCall {

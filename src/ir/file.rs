@@ -717,7 +717,7 @@ mod normalize {
                 scope: Scope::Local,
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::NodeApplication {
+                expression: StreamExpression::UnitaryNodeApplication {
                     node: String::from("my_node"),
                     inputs: vec![
                         StreamExpression::SignalCall {
@@ -803,7 +803,7 @@ mod normalize {
                 scope: Scope::Output,
                 id: String::from("y"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::NodeApplication {
+                expression: StreamExpression::UnitaryNodeApplication {
                     node: String::from("other_node"),
                     inputs: vec![
                         StreamExpression::SignalCall {
