@@ -42,11 +42,10 @@ impl Expression {
                 expression.typing(global_context, &local_context, user_types_context, errors)?;
 
                 // compute abstraction type
-                let abstraction_type = inputs.iter().fold(
-                    expression.get_type().unwrap().clone(),
-                    |current_type, (_, input_type)| {
-                        Type::Abstract(Box::new(input_type.clone()), Box::new(current_type))
-                    },
+                let input_types = inputs.iter().map(|(_, input)| input.clone()).collect();
+                let abstraction_type = Type::Abstract(
+                    input_types,
+                    Box::new(expression.get_type().unwrap().clone()),
                 );
 
                 *typing = Some(abstraction_type);
@@ -99,10 +98,7 @@ mod typing_abstraction {
                 typing: Some(Type::Integer),
                 location: Location::default(),
             }),
-            typing: Some(Type::Abstract(
-                Box::new(Type::Integer),
-                Box::new(Type::Integer),
-            )),
+            typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
             location: Location::default(),
         };
 

@@ -64,7 +64,7 @@ mod typing_array {
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
         let user_types_context = HashMap::new();
@@ -109,10 +109,7 @@ mod typing_array {
                 Expression::Application {
                     function_expression: Box::new(Expression::Call {
                         id: String::from("f"),
-                        typing: Some(Type::Abstract(
-                            Box::new(Type::Integer),
-                            Box::new(Type::Integer),
-                        )),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     }),
                     inputs: vec![Expression::Call {
@@ -152,7 +149,7 @@ mod typing_array {
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
         let user_types_context = HashMap::new();

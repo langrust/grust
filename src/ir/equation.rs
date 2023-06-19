@@ -59,11 +59,8 @@ impl Equation {
     ///         function_expression: Expression::Call {
     ///             id: String::from("+"),
     ///             typing: Type::Abstract(
-    ///                 Box::new(Type::Integer),
-    ///                 Box::new(Type::Abstract(
-    ///                     Box::new(Type::Integer),
-    ///                     Box::new(Type::Integer),
-    ///                 )),
+    ///                 vec![Type::Integer, Type::Integer],
+    ///                 Box::new(Type::Integer)
     ///             ),
     ///             location: Location::default(),
     ///         },
@@ -85,7 +82,7 @@ impl Equation {
     ///                         function_expression: Expression::Call {
     ///                             id: String::from("*2"),
     ///                             typing: Type::Abstract(
-    ///                                 Box::new(Type::Integer),
+    ///                                 vec![Type::Integer],
     ///                                 Box::new(Type::Integer),
     ///                             ),
     ///                             location: Location::default(),
@@ -119,7 +116,7 @@ impl Equation {
     ///         expression: StreamExpression::MapApplication {
     ///             function_expression: Expression::Call {
     ///                 id: String::from("*2"),
-    ///                 typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+    ///                 typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
     ///                 location: Location::default(),
     ///             },
     ///             inputs: vec![StreamExpression::SignalCall {
@@ -164,11 +161,8 @@ impl Equation {
     ///             function_expression: Expression::Call {
     ///                 id: String::from("+"),
     ///                 typing: Type::Abstract(
-    ///                     Box::new(Type::Integer),
-    ///                     Box::new(Type::Abstract(
-    ///                         Box::new(Type::Integer),
-    ///                         Box::new(Type::Integer),
-    ///                     )),
+    ///                     vec![Type::Integer, Type::Integer],
+    ///                     Box::new(Type::Integer)
     ///                 ),
     ///                 location: Location::default(),
     ///             },

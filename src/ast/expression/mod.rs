@@ -339,7 +339,7 @@ mod typing {
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
         let user_types_context = HashMap::new();
@@ -361,10 +361,7 @@ mod typing {
         let control = Expression::Application {
             function_expression: Box::new(Expression::Call {
                 id: String::from("f"),
-                typing: Some(Type::Abstract(
-                    Box::new(Type::Integer),
-                    Box::new(Type::Integer),
-                )),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
             }),
             inputs: vec![Expression::Call {
@@ -395,7 +392,7 @@ mod typing {
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Float], Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
         let user_types_context = HashMap::new();
@@ -449,10 +446,7 @@ mod typing {
                 typing: Some(Type::Integer),
                 location: Location::default(),
             }),
-            typing: Some(Type::Abstract(
-                Box::new(Type::Integer),
-                Box::new(Type::Integer),
-            )),
+            typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
             location: Location::default(),
         };
 
@@ -532,7 +526,7 @@ mod typing {
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
         let user_types_context = HashMap::new();
@@ -577,10 +571,7 @@ mod typing {
                 Expression::Application {
                     function_expression: Box::new(Expression::Call {
                         id: String::from("f"),
-                        typing: Some(Type::Abstract(
-                            Box::new(Type::Integer),
-                            Box::new(Type::Integer),
-                        )),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     }),
                     inputs: vec![Expression::Call {
@@ -620,7 +611,7 @@ mod typing {
         let mut elements_context = HashMap::new();
         elements_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         elements_context.insert(String::from("x"), Type::Integer);
         let user_types_context = HashMap::new();
@@ -1067,7 +1058,7 @@ mod typing {
         elements_context.insert(String::from("p"), Type::Structure(String::from("Point")));
         elements_context.insert(
             String::from("add_one"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -1217,7 +1208,7 @@ mod typing {
                         function_expression: Box::new(Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
-                                Box::new(Type::Integer),
+                                vec![Type::Integer],
                                 Box::new(Type::Integer),
                             )),
                             location: Location::default(),

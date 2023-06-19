@@ -114,7 +114,7 @@ mod typing_node_application {
         let mut global_context = HashMap::new();
         global_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         let user_types_context = HashMap::new();
 
@@ -151,10 +151,7 @@ mod typing_node_application {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
-                        typing: Some(Type::Abstract(
-                            Box::new(Type::Integer),
-                            Box::new(Type::Integer),
-                        )),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
@@ -210,7 +207,7 @@ mod typing_node_application {
         let mut global_context = HashMap::new();
         global_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         let user_types_context = HashMap::new();
 
@@ -274,7 +271,7 @@ mod typing_node_application {
         let mut global_context = HashMap::new();
         global_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Float)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
         );
         let user_types_context = HashMap::new();
 

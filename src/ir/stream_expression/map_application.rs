@@ -50,7 +50,7 @@ mod get_dependencies_map_application {
         let stream_expression = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
-                typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+                typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {

@@ -61,7 +61,7 @@ mod typing_constant {
         let mut global_context = HashMap::new();
         global_context.insert(
             String::from("add_one"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         let user_types_context = HashMap::new();
 
@@ -89,10 +89,7 @@ mod typing_constant {
             expression: Box::new(StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("add_one"),
-                    typing: Some(Type::Abstract(
-                        Box::new(Type::Integer),
-                        Box::new(Type::Integer),
-                    )),
+                    typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::SignalCall {
@@ -129,7 +126,7 @@ mod typing_constant {
         let mut global_context = HashMap::new();
         global_context.insert(
             String::from("add_one"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         let user_types_context = HashMap::new();
 

@@ -30,17 +30,8 @@ use crate::error::Error;
 /// let number_types = vec![Type::Integer, Type::Float];
 /// let addition_type = {
 ///     let v_t = number_types.into_iter()
-///         .map(
-///             |t| {
-///                 Type::Abstract(
-///                     Box::new(t.clone()),
-///                     Box::new(Type::Abstract(
-///                         Box::new(t.clone()),
-///                         Box::new(t)
-///                     ))
-///                 )
-///             }
-///         ).collect();
+///         .map(|t| Type::Abstract(vec![t.clone(), t.clone()], Box::new(t)))
+///         .collect();
 ///     Type::Choice(v_t)
 /// };
 /// ```
@@ -68,7 +59,7 @@ pub enum Type {
     /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
     NotDefinedYet(String),
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
-    Abstract(Box<Type>, Box<Type>),
+    Abstract(Vec<Type>, Box<Type>),
     /// Inferable function type, if `add = |x, y| x+y` then `add: 't -> 't -> 't` with `t` in {`int`, `float`}
     Choice(Vec<Type>),
 }
@@ -85,7 +76,7 @@ impl Display for Type {
             Type::Enumeration(enumeration) => write!(f, "{enumeration}"),
             Type::Structure(structure) => write!(f, "{structure}"),
             Type::NotDefinedYet(s) => write!(f, "{s}"),
-            Type::Abstract(t1, t2) => write!(f, "{} -> {}", *t1, *t2),
+            Type::Abstract(t1, t2) => write!(f, "{:#?} -> {}", t1, *t2),
             Type::Choice(v_t) => write!(f, "{:#?}", v_t),
         }
     }
@@ -103,29 +94,47 @@ impl Type {
     ///
     /// let mut errors = vec![];
     ///
-    /// let input_type = Type::Integer;
+    /// let input_types = vec![Type::Integer];
     /// let output_type = Type::Boolean;
     /// let abstraction_type =
-    ///     Type::Abstract(Box::new(input_type.clone()), Box::new(output_type.clone()));
+    ///     Type::Abstract(input_types.clone(), Box::new(output_type.clone()));
     ///
     /// let application_result = abstraction_type
-    ///     .apply(input_type, Location::default(), &mut errors)
+    ///     .apply(input_types, Location::default(), &mut errors)
     ///     .unwrap();
     ///
     /// assert_eq!(application_result, output_type);
     /// ```
     pub fn apply(
         self,
-        input_type: Type,
+        input_types: Vec<Type>,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<Type, ()> {
         match self {
             // if self is an abstraction, check if the input types are equal
             // and return the output type as the type of the application
-            Type::Abstract(input, output) => {
-                input_type.eq_check(input.as_ref(), location, errors)?;
-                Ok(*output)
+            Type::Abstract(inputs, output) => {
+                if input_types.len() == inputs.len() {
+                    input_types
+                        .iter()
+                        .zip(inputs)
+                        .map(|(given_type, expected_type)| {
+                            given_type.eq_check(&expected_type, location.clone(), errors)
+                        })
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .collect::<Result<_, _>>()?;
+                    Ok(*output)
+                } else {
+                    let error = Error::IncompatibleInputsNumber {
+                        given_inputs_number: input_types.len(),
+                        expected_inputs_number: inputs.len(),
+                        location: location.clone(),
+                    };
+                    errors.push(error);
+                    return Err(());
+                }
             }
             // if self is a choice type, it means that their are several options
             // then perform application for each option and keep succeeding ones
@@ -137,14 +146,14 @@ impl Type {
                     .filter_map(|typing| {
                         let mut temp_errors = vec![];
                         typing
-                            .apply(input_type.clone(), location.clone(), &mut temp_errors)
+                            .apply(input_types.clone(), location.clone(), &mut temp_errors)
                             .ok()
                     })
                     .collect::<Vec<Type>>();
 
                 if new_types.is_empty() {
                     let error = Error::ExpectAbstraction {
-                        input_type,
+                        input_types,
                         given_type,
                         location,
                     };
@@ -158,7 +167,7 @@ impl Type {
             }
             _ => {
                 let error = Error::ExpectAbstraction {
-                    input_type,
+                    input_types,
                     given_type: self,
                     location,
                 };
@@ -262,13 +271,12 @@ mod apply {
     fn should_apply_input_to_abstraction_when_compatible() {
         let mut errors = vec![];
 
-        let input_type = Type::Integer;
+        let input_types = vec![Type::Integer];
         let output_type = Type::Boolean;
-        let abstraction_type =
-            Type::Abstract(Box::new(input_type.clone()), Box::new(output_type.clone()));
+        let abstraction_type = Type::Abstract(input_types.clone(), Box::new(output_type.clone()));
 
         let application_result = abstraction_type
-            .apply(input_type, Location::default(), &mut errors)
+            .apply(input_types, Location::default(), &mut errors)
             .unwrap();
 
         assert_eq!(application_result, output_type);
@@ -278,12 +286,12 @@ mod apply {
     fn should_raise_error_when_incompatible_abstraction() {
         let mut errors = vec![];
 
-        let input_type = Type::Integer;
+        let input_types = vec![Type::Integer];
         let output_type = Type::Boolean;
-        let abstraction_type = Type::Abstract(Box::new(input_type), Box::new(output_type));
+        let abstraction_type = Type::Abstract(input_types, Box::new(output_type));
 
         abstraction_type
-            .apply(Type::Float, Location::default(), &mut errors)
+            .apply(vec![Type::Float], Location::default(), &mut errors)
             .unwrap_err();
     }
 
@@ -292,13 +300,13 @@ mod apply {
         let mut errors = vec![];
 
         let choice_type = Type::Choice(vec![
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Float)),
-            Type::Abstract(Box::new(Type::Float), Box::new(Type::Float)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
         ]);
 
         let application_result = choice_type
-            .apply(Type::Integer, Location::default(), &mut errors)
+            .apply(vec![Type::Integer], Location::default(), &mut errors)
             .unwrap();
 
         let control = Type::Choice(vec![Type::Integer, Type::Float]);
@@ -311,12 +319,12 @@ mod apply {
         let mut errors = vec![];
 
         let choice_type = Type::Choice(vec![
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
-            Type::Abstract(Box::new(Type::Float), Box::new(Type::Float)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
         ]);
 
         let application_result = choice_type
-            .apply(Type::Integer, Location::default(), &mut errors)
+            .apply(vec![Type::Integer], Location::default(), &mut errors)
             .unwrap();
 
         let control = Type::Integer;
@@ -329,12 +337,12 @@ mod apply {
         let mut errors = vec![];
 
         let choice_type = Type::Choice(vec![
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
-            Type::Abstract(Box::new(Type::Float), Box::new(Type::Float)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
         ]);
 
         choice_type
-            .apply(Type::Boolean, Location::default(), &mut errors)
+            .apply(vec![Type::Boolean], Location::default(), &mut errors)
             .unwrap_err();
     }
 }

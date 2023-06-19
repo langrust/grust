@@ -265,12 +265,12 @@ impl File {
                      location,
                      ..
                  }| {
-                    let function_type = inputs.iter().rev().fold(
-                        returned_type.clone(),
-                        |current_type, (_, input_type)| {
-                            Type::Abstract(Box::new(input_type.clone()), Box::new(current_type))
-                        },
-                    );
+                    let input_types = inputs
+                        .iter()
+                        .map(|(_, input_type)| input_type.clone())
+                        .collect();
+                    let function_type =
+                        Type::Abstract(input_types, Box::new(returned_type.clone()));
                     global_context.insert_unique(
                         id.clone(),
                         function_type,
@@ -610,7 +610,7 @@ mod typing {
                             function_expression: Expression::Call {
                                 id: String::from("test"),
                                 typing: Some(Type::Abstract(
-                                    Box::new(Type::Integer),
+                                    vec![Type::Integer],
                                     Box::new(Type::Integer),
                                 )),
                                 location: Location::default(),
