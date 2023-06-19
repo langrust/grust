@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::common::{location::Location, scope::Scope, type_system::Type};
 use crate::ir::{identifier_creator::IdentifierCreator, stream_expression::StreamExpression};
 
@@ -40,7 +42,7 @@ impl Equation {
     /// This example is tested in the following code.
     ///
     /// ```rust
-    /// use std::collections::HashSet;
+    /// use std::collections::{HashSet, HashMap};
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     /// use grustine::ir::{
@@ -51,6 +53,11 @@ impl Equation {
     /// let mut identifier_creator = IdentifierCreator {
     ///     signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
     /// };
+    /// let unitary_nodes_used_inputs = HashMap::from([(
+    ///     String::from("my_node"),
+    ///     HashMap::from([(String::from("o"), vec![true, true])]),
+    /// )]);
+    ///
     /// let equation = Equation {
     ///     scope: Scope::Local,
     ///     id: String::from("x"),
@@ -106,7 +113,7 @@ impl Equation {
     ///     },
     ///     location: Location::default(),
     /// };
-    /// let equations = equation.normalize(&mut identifier_creator);
+    /// let equations = equation.normalize(&mut identifier_creator, &unitary_nodes_used_inputs);
     ///
     /// let control = vec![
     ///     Equation {
@@ -186,7 +193,11 @@ impl Equation {
     /// ];
     /// assert_eq!(equations, control);
     /// ```
-    pub fn normalize(self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
+    pub fn normalize(
+        self,
+        identifier_creator: &mut IdentifierCreator,
+        unitary_nodes_used_inputs: &HashMap<String, HashMap<String, Vec<bool>>>,
+    ) -> Vec<Equation> {
         let Equation {
             scope,
             id,
@@ -196,7 +207,7 @@ impl Equation {
         } = self;
 
         // normalize expression and get additional equations
-        let mut equations = expression.normalize(identifier_creator);
+        let mut equations = expression.normalize(identifier_creator, unitary_nodes_used_inputs);
 
         // recreate the new equation with modified expression
         let normalized_equation = Equation {

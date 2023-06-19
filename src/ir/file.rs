@@ -205,6 +205,12 @@ impl File {
     ///     let x: int = i;
     ///     return x;
     /// }
+    /// node my_node(x: int, y: int) {
+    ///     out o: int = x*y;
+    /// }
+    /// node other_node(x: int, y: int) {
+    ///     out o: int = x*y;
+    /// }
     /// node test(s: int, v: int, g: int) {
     ///     out x: int = 1 + my_node(s, v*2).o;
     ///     out y: int = other_node(g-1, v).o;
@@ -250,7 +256,32 @@ impl File {
             .into_iter()
             .collect::<Result<(), ()>>()?;
 
-        self.nodes.iter_mut().for_each(|node| node.normalize());
+        let unitary_nodes_used_inputs = self
+            .nodes
+            .iter()
+            .map(|node| {
+                (
+                    node.id.clone(),
+                    node.unitary_nodes
+                        .iter()
+                        .map(|(output, unitary_node)| {
+                            (
+                                output.clone(),
+                                unitary_node
+                                    .inputs
+                                    .iter()
+                                    .map(|input| node.inputs.contains(input))
+                                    .collect::<Vec<bool>>(),
+                            )
+                        })
+                        .collect::<HashMap<String, Vec<bool>>>(),
+                )
+            })
+            .collect::<HashMap<String, HashMap<String, Vec<bool>>>>();
+
+        self.nodes
+            .iter_mut()
+            .for_each(|node| node.normalize(&unitary_nodes_used_inputs));
         Ok(())
     }
 }

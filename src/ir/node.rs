@@ -942,6 +942,17 @@ impl Node {
     ///     unitary_node::UnitaryNode,
     /// };
     ///
+    /// let unitary_nodes_used_inputs = HashMap::from([
+    ///     (
+    ///         String::from("my_node"),
+    ///         HashMap::from([(String::from("o"), vec![true, true])]),
+    ///     ),
+    ///     (
+    ///         String::from("other_node"),
+    ///         HashMap::from([(String::from("o"), vec![true, true])]),
+    ///     )
+    /// ]);
+    ///
     /// let equation_1 = Equation {
     ///     scope: Scope::Output,
     ///     id: String::from("x"),
@@ -1068,7 +1079,7 @@ impl Node {
     ///     unitary_nodes: HashMap::from([(String::from("x"), unitary_node_1), (String::from("y"), unitary_node_2)]),
     ///     location: Location::default(),
     /// };
-    /// node.normalize();
+    /// node.normalize(&unitary_nodes_used_inputs);
     ///
     /// let equations_1 = vec![
     ///     Equation {
@@ -1229,10 +1240,13 @@ impl Node {
     /// };
     /// assert_eq!(node, control);
     /// ```
-    pub fn normalize(&mut self) {
+    pub fn normalize(
+        &mut self,
+        unitary_nodes_used_inputs: &HashMap<String, HashMap<String, Vec<bool>>>,
+    ) {
         self.unitary_nodes
             .values_mut()
-            .for_each(|unitary_node| unitary_node.normalize())
+            .for_each(|unitary_node| unitary_node.normalize(unitary_nodes_used_inputs))
     }
 }
 
