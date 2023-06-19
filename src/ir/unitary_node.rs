@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::common::{location::Location, type_system::Type};
 use crate::ir::equation::Equation;
 
@@ -46,13 +48,18 @@ impl UnitaryNode {
     /// This example is tested in the following code.
     ///
     /// ```rust
-    /// use std::collections::HashSet;
+    /// use std::collections::{HashSet, HashMap};
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     /// use grustine::ir::{
     ///     equation::Equation, expression::Expression, stream_expression::StreamExpression,
     ///     unitary_node::UnitaryNode,
     /// };
+    ///
+    /// let unitary_nodes_used_inputs = HashMap::from([(
+    ///     String::from("my_node"),
+    ///     HashMap::from([(String::from("o"), vec![true, true])]),
+    /// )]);
     ///
     /// let equation = Equation {
     ///     scope: Scope::Output,
@@ -116,7 +123,7 @@ impl UnitaryNode {
     ///     scheduled_equations: vec![equation],
     ///     location: Location::default(),
     /// };
-    /// unitary_node.normalize();
+    /// unitary_node.normalize(&unitary_nodes_used_inputs);
     ///
     /// let equations = vec![
     ///     Equation {
@@ -203,7 +210,10 @@ impl UnitaryNode {
     /// };
     /// assert_eq!(unitary_node, control);
     /// ```
-    pub fn normalize(&mut self) {
+    pub fn normalize(
+        &mut self,
+        unitary_nodes_used_inputs: &HashMap<String, HashMap<String, Vec<bool>>>,
+    ) {
         let mut identifier_creator = IdentifierCreator::new(self);
 
         let UnitaryNode {
@@ -214,7 +224,9 @@ impl UnitaryNode {
         *scheduled_equations = scheduled_equations
             .clone()
             .into_iter()
-            .flat_map(|equation| equation.normalize(&mut identifier_creator))
+            .flat_map(|equation| {
+                equation.normalize(&mut identifier_creator, unitary_nodes_used_inputs)
+            })
             .collect();
     }
 }
