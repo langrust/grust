@@ -5,6 +5,7 @@ use crate::common::{
     user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
+use crate::ir::expression::Expression as IRExpression;
 
 mod abstraction;
 mod application;
@@ -227,6 +228,127 @@ impl Expression {
             Expression::Array { typing, .. } => typing,
             Expression::Match { typing, .. } => typing,
             Expression::When { typing, .. } => typing,
+        }
+    }
+
+    /// Transform AST expressions into IR expressions.
+    pub fn into_ir(self) -> IRExpression {
+        match self {
+            Expression::Constant {
+                constant,
+                typing,
+                location,
+            } => IRExpression::Constant {
+                constant,
+                typing: typing.unwrap(),
+                location,
+            },
+            Expression::Call {
+                id,
+                typing,
+                location,
+            } => IRExpression::Call {
+                id,
+                typing: typing.unwrap(),
+                location,
+            },
+            Expression::Application {
+                function_expression,
+                inputs,
+                typing,
+                location,
+            } => IRExpression::Application {
+                function_expression: Box::new(function_expression.into_ir()),
+                inputs: inputs.into_iter().map(|input| input.into_ir()).collect(),
+                typing: typing.unwrap(),
+                location,
+            },
+            Expression::Abstraction {
+                inputs,
+                expression,
+                typing,
+                location,
+            } => IRExpression::TypedAbstraction {
+                inputs: inputs
+                    .into_iter()
+                    .zip(typing.clone().unwrap().get_inputs())
+                    .collect(),
+                expression: Box::new(expression.into_ir()),
+                typing: typing.unwrap(),
+                location,
+            },
+            Expression::TypedAbstraction {
+                inputs,
+                expression,
+                typing,
+                location,
+            } => IRExpression::TypedAbstraction {
+                inputs,
+                expression: Box::new(expression.into_ir()),
+                typing: typing.unwrap(),
+                location,
+            },
+            Expression::Structure {
+                name,
+                fields,
+                typing,
+                location,
+            } => IRExpression::Structure {
+                name,
+                fields: fields
+                    .into_iter()
+                    .map(|(field, expression)| (field, expression.into_ir()))
+                    .collect(),
+                typing: typing.unwrap(),
+                location,
+            },
+            Expression::Array {
+                elements,
+                typing,
+                location,
+            } => IRExpression::Array {
+                elements: elements
+                    .into_iter()
+                    .map(|expression| expression.into_ir())
+                    .collect(),
+                typing: typing.unwrap(),
+                location,
+            },
+            Expression::Match {
+                expression,
+                arms,
+                typing,
+                location,
+            } => IRExpression::Match {
+                expression: Box::new(expression.into_ir()),
+                arms: arms
+                    .into_iter()
+                    .map(|(pattern, optional_expression, expression)| {
+                        (
+                            pattern,
+                            optional_expression.map(|expression| expression.into_ir()),
+                            expression.into_ir(),
+                        )
+                    })
+                    .collect(),
+                typing: typing.unwrap(),
+                location,
+            },
+            Expression::When {
+                id,
+                option,
+                present,
+                default,
+                typing,
+                location,
+            } => IRExpression::When {
+                id,
+                option: Box::new(option.into_ir()),
+                present: Box::new(present.into_ir()),
+                default: Box::new(default.into_ir()),
+                typing: typing.unwrap(),
+                location,
+            },
         }
     }
 }
