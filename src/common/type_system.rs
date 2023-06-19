@@ -261,6 +261,30 @@ impl Type {
             _ => Ok(()),
         }
     }
+
+    /// Get inputs from abstraction type.
+    ///
+    /// Return a copy of abstraction type inputs.
+    /// Panic if not abstraction type.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use grustine::common::type_system::Type;
+    ///
+    /// let abstraction_type = Type::Abstract(
+    ///     vec![Type::Integer, Type::Integer],
+    ///     Box::new(Type::Integer)
+    /// );
+    ///
+    /// assert_eq!(abstraction_type.get_inputs(), vec![Type::Integer, Type::Integer]);
+    /// ```
+    pub fn get_inputs(&self) -> Vec<Type> {
+        match self {
+            Type::Abstract(inputs, _) => inputs.clone(),
+            _ => unreachable!(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -408,5 +432,28 @@ mod resolve_undefined {
         my_type
             .resolve_undefined(Location::default(), &user_types_context, &mut errors)
             .unwrap_err();
+    }
+}
+
+#[cfg(test)]
+mod get_inputs {
+    use crate::common::type_system::Type;
+
+    #[test]
+    fn should_return_inputs_from_abstraction_type() {
+        let abstraction_type =
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer));
+
+        assert_eq!(
+            abstraction_type.get_inputs(),
+            vec![Type::Integer, Type::Integer]
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_not_abstraction_type() {
+        let not_abstraction_type = Type::Integer;
+        not_abstraction_type.get_inputs();
     }
 }
