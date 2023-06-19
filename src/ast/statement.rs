@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::expression::Expression;
 use crate::common::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
+use crate::ir::statement::Statement as IRStatement;
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -174,6 +175,23 @@ impl Statement {
             ..
         } = self;
         element_type.resolve_undefined(location.clone(), user_types_context, errors)
+    }
+
+    /// Transform AST statements into IR statements.
+    pub fn into_ir(self) -> IRStatement {
+        let Statement {
+            id,
+            element_type,
+            expression,
+            location,
+        } = self;
+        
+        IRStatement {
+            id,
+            element_type,
+            expression: expression.into_ir(),
+            location,
+        }
     }
 }
 
