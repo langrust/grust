@@ -603,20 +603,20 @@ pub userType: UserDefinedType = {
 
 /// Catches function
 pub function: Function = {
-    <start:@L> "function" <n: ID> "(" <i: hash<ID, basicType>> ")" "->" <t: basicType> "{" <c: statement*> "return" <e: expression> ";" "}" <end:@R> => {
+    <start:@L> "function" <n: ID> "(" <i: hash<ID, basicType>> ")" "->" <t: basicType> "{" <s: statement*> "return" <e: expression> ";" "}" <end:@R> => {
         Function {
             id: n,
             inputs: i,
-            statements: c.into_iter().map(|statement| (statement.id.clone(), statement)).collect(),
+            statements: s,
             returned: (t, e),
             location: Location{ file_id, range: start..end },
         }
     },
-    <start:@L> "function" <n: ID> "()" "->" <t: basicType> "{" <c: statement*> "return" <e: expression> ";" "}" <end:@R> => {
+    <start:@L> "function" <n: ID> "()" "->" <t: basicType> "{" <s: statement*> "return" <e: expression> ";" "}" <end:@R> => {
         Function {
             id: n,
             inputs: vec![],
-            statements: c.into_iter().map(|statement| (statement.id.clone(), statement)).collect(),
+            statements: s,
             returned: (t, e),
             location: Location{ file_id, range: start..end },
         }

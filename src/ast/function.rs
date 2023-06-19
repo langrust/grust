@@ -14,7 +14,7 @@ pub struct Function {
     /// Function's inputs identifiers and their types.
     pub inputs: Vec<(String, Type)>,
     /// Function's statements.
-    pub statements: Vec<(String, Statement)>,
+    pub statements: Vec<Statement>,
     /// Function's returned expression and its type.
     pub returned: (Type, Expression),
     /// Function location.
@@ -43,19 +43,16 @@ impl Function {
     ///     id: String::from("test"),
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     statements: vec![
-    ///         (
-    ///             String::from("x"),
-    ///             Statement {
-    ///                 id: String::from("x"),
-    ///                 element_type: Type::Integer,
-    ///                 expression: Expression::Call {
-    ///                     id: String::from("i"),
-    ///                     typing: None,
-    ///                     location: Location::default(),
-    ///                 },
+    ///         Statement {
+    ///             id: String::from("x"),
+    ///             element_type: Type::Integer,
+    ///             expression: Expression::Call {
+    ///                 id: String::from("i"),
+    ///                 typing: None,
     ///                 location: Location::default(),
-    ///             }
-    ///         )
+    ///             },
+    ///             location: Location::default(),
+    ///         }
     ///     ],
     ///     returned: (
     ///         Type::Integer,
@@ -103,7 +100,7 @@ impl Function {
         // type all statements
         statements
             .iter_mut()
-            .map(|(_, statement)| {
+            .map(|statement| {
                 statement.typing(
                     global_context,
                     &elements_context,
@@ -166,8 +163,7 @@ impl Function {
     /// let mut function = Function {
     ///     id: String::from("test"),
     ///     inputs: vec![],
-    ///     statements: vec![(
-    ///         String::from("o"),
+    ///     statements: vec![
     ///         Statement {
     ///             id: String::from("o"),
     ///             element_type: Type::NotDefinedYet(String::from("Point")),
@@ -196,7 +192,7 @@ impl Function {
     ///             },
     ///             location: Location::default(),
     ///         },
-    ///     )],
+    ///     ],
     ///     returned: (Type::NotDefinedYet(String::from("Point")), Expression::Call {
     ///         id: String::from("o"),
     ///         typing: None,
@@ -208,8 +204,7 @@ impl Function {
     /// let control = Function {
     ///     id: String::from("test"),
     ///     inputs: vec![],
-    ///     statements: vec![(
-    ///         String::from("o"),
+    ///     statements: vec![
     ///         Statement {
     ///             id: String::from("o"),
     ///             element_type: Type::Structure(String::from("Point")),
@@ -238,7 +233,7 @@ impl Function {
     ///             },
     ///             location: Location::default(),
     ///         },
-    ///     )],
+    ///     ],
     ///     returned: (Type::Structure(String::from("Point")), Expression::Call {
     ///         id: String::from("o"),
     ///         typing: None,
@@ -278,7 +273,7 @@ impl Function {
         // determine statements types
         statements
             .iter_mut()
-            .map(|(_, calculus)| calculus.resolve_undefined_types(user_types_context, errors))
+            .map(|statement| statement.resolve_undefined_types(user_types_context, errors))
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()?;
@@ -304,19 +299,16 @@ mod typing {
         let mut function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            statements: vec![(
-                String::from("x"),
-                Statement {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: None,
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("x"),
+                element_type: Type::Integer,
+                expression: Expression::Call {
+                    id: String::from("i"),
+                    typing: None,
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::Integer,
                 Expression::Call {
@@ -331,19 +323,16 @@ mod typing {
         let control = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            statements: vec![(
-                String::from("x"),
-                Statement {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: Some(Type::Integer),
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("x"),
+                element_type: Type::Integer,
+                expression: Expression::Call {
+                    id: String::from("i"),
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::Integer,
                 Expression::Call {
@@ -371,19 +360,16 @@ mod typing {
         let mut function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Float)],
-            statements: vec![(
-                String::from("x"),
-                Statement {
-                    id: String::from("x"),
-                    element_type: Type::Float,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: None,
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("x"),
+                element_type: Type::Float,
+                expression: Expression::Call {
+                    id: String::from("i"),
+                    typing: None,
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::Integer,
                 Expression::Call {
@@ -429,37 +415,34 @@ mod resolve_undefined_types {
         let mut function = Function {
             id: String::from("test"),
             inputs: vec![],
-            statements: vec![(
-                String::from("o"),
-                Statement {
-                    id: String::from("o"),
-                    element_type: Type::NotDefinedYet(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("o"),
+                element_type: Type::NotDefinedYet(String::from("Point")),
+                expression: Expression::Structure {
+                    name: String::from("Point"),
+                    fields: vec![
+                        (
+                            String::from("x"),
+                            Expression::Constant {
+                                constant: Constant::Integer(1),
+                                typing: None,
+                                location: Location::default(),
+                            },
+                        ),
+                        (
+                            String::from("y"),
+                            Expression::Constant {
+                                constant: Constant::Integer(2),
+                                typing: None,
+                                location: Location::default(),
+                            },
+                        ),
+                    ],
+                    typing: None,
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::NotDefinedYet(String::from("Point")),
                 Expression::Call {
@@ -474,37 +457,34 @@ mod resolve_undefined_types {
         let control = Function {
             id: String::from("test"),
             inputs: vec![],
-            statements: vec![(
-                String::from("o"),
-                Statement {
-                    id: String::from("o"),
-                    element_type: Type::Structure(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("o"),
+                element_type: Type::Structure(String::from("Point")),
+                expression: Expression::Structure {
+                    name: String::from("Point"),
+                    fields: vec![
+                        (
+                            String::from("x"),
+                            Expression::Constant {
+                                constant: Constant::Integer(1),
+                                typing: None,
+                                location: Location::default(),
+                            },
+                        ),
+                        (
+                            String::from("y"),
+                            Expression::Constant {
+                                constant: Constant::Integer(2),
+                                typing: None,
+                                location: Location::default(),
+                            },
+                        ),
+                    ],
+                    typing: None,
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::Structure(String::from("Point")),
                 Expression::Call {
@@ -531,37 +511,34 @@ mod resolve_undefined_types {
         let mut function = Function {
             id: String::from("test"),
             inputs: vec![],
-            statements: vec![(
-                String::from("o"),
-                Statement {
-                    id: String::from("o"),
-                    element_type: Type::NotDefinedYet(String::from("Point")),
-                    expression: Expression::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Expression::Constant {
-                                    constant: Constant::Integer(2),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        typing: None,
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("o"),
+                element_type: Type::NotDefinedYet(String::from("Point")),
+                expression: Expression::Structure {
+                    name: String::from("Point"),
+                    fields: vec![
+                        (
+                            String::from("x"),
+                            Expression::Constant {
+                                constant: Constant::Integer(1),
+                                typing: None,
+                                location: Location::default(),
+                            },
+                        ),
+                        (
+                            String::from("y"),
+                            Expression::Constant {
+                                constant: Constant::Integer(2),
+                                typing: None,
+                                location: Location::default(),
+                            },
+                        ),
+                    ],
+                    typing: None,
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::NotDefinedYet(String::from("Point")),
                 Expression::Call {
