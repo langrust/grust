@@ -4,7 +4,6 @@ use crate::ast::{function::Function, global_context, node::Node};
 use crate::common::{
     context::Context, location::Location, type_system::Type, user_defined_type::UserDefinedType,
 };
-
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]

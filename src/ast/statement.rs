@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::ast::expression::Expression;
 use crate::common::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
-use crate::ir::statement::Statement as IRStatement;
 use crate::error::Error;
+use crate::ir::statement::Statement as IRStatement;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust statement AST.
@@ -185,7 +185,7 @@ impl Statement {
             expression,
             location,
         } = self;
-        
+
         IRStatement {
             id,
             element_type,
