@@ -6,6 +6,7 @@ use crate::common::{
     user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
+use crate::ir::node::Node as IRNode;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust node AST.
@@ -430,6 +431,29 @@ impl Node {
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()
+    }
+
+    /// Transform AST nodes into IR nodes.
+    pub fn into_ir(self) -> IRNode {
+        let Node {
+            id,
+            is_component,
+            inputs,
+            equations,
+            location,
+        } = self;
+
+        IRNode {
+            id,
+            is_component,
+            inputs,
+            unscheduled_equations: equations
+                .into_iter()
+                .map(|(signal, equation)| (signal, equation.into_ir()))
+                .collect(),
+            unitary_nodes: HashMap::new(),
+            location,
+        }
     }
 }
 
