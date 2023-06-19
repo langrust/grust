@@ -247,7 +247,7 @@ impl StreamExpression {
     ///                     expression: Box::new(StreamExpression::MapApplication {
     ///                         function_expression: Expression::Call {
     ///                             id: String::from("+"),
-    ///                             typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)))),
+    ///                             typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)))),
     ///                             location: Location::default(),
     ///                         },
     ///                         inputs: vec![
@@ -292,7 +292,7 @@ impl StreamExpression {
     ///         StreamExpression::MapApplication {
     ///             function_expression: Expression::Call {
     ///                 id: String::from("f"),
-    ///                 typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+    ///                 typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
     ///                 location: Location::default(),
     ///             },
     ///             inputs: vec![StreamExpression::SignalCall {
@@ -420,11 +420,8 @@ impl StreamExpression {
     ///     function_expression: Expression::Call {
     ///         id: String::from("+"),
     ///         typing: Type::Abstract(
-    ///             Box::new(Type::Integer),
-    ///             Box::new(Type::Abstract(
-    ///                 Box::new(Type::Integer),
-    ///                 Box::new(Type::Integer),
-    ///             )),
+    ///             vec![Type::Integer, Type::Integer],
+    ///             Box::new(Type::Integer)
     ///         ),
     ///         location: Location::default(),
     ///     },
@@ -446,7 +443,7 @@ impl StreamExpression {
     ///                     function_expression: Expression::Call {
     ///                         id: String::from("*2"),
     ///                         typing: Type::Abstract(
-    ///                             Box::new(Type::Integer),
+    ///                             vec![Type::Integer],
     ///                             Box::new(Type::Integer),
     ///                         ),
     ///                         location: Location::default(),
@@ -478,7 +475,7 @@ impl StreamExpression {
     ///         expression: StreamExpression::MapApplication {
     ///             function_expression: Expression::Call {
     ///                 id: String::from("*2"),
-    ///                 typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+    ///                 typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
     ///                 location: Location::default(),
     ///             },
     ///             inputs: vec![StreamExpression::SignalCall {
@@ -522,11 +519,8 @@ impl StreamExpression {
     ///     function_expression: Expression::Call {
     ///         id: String::from("+"),
     ///         typing: Type::Abstract(
-    ///             Box::new(Type::Integer),
-    ///             Box::new(Type::Abstract(
-    ///                 Box::new(Type::Integer),
-    ///                 Box::new(Type::Integer),
-    ///             )),
+    ///             vec![Type::Integer, Type::Integer],
+    ///             Box::new(Type::Integer)
     ///         ),
     ///         location: Location::default(),
     ///     },
@@ -767,7 +761,7 @@ mod get_dependencies {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
-                        typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
@@ -841,7 +835,7 @@ mod get_dependencies {
             expression: Box::new(StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("add_one"),
-                    typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+                    typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::SignalCall {
@@ -880,7 +874,7 @@ mod get_dependencies {
         let stream_expression = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
-                typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+                typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
@@ -972,10 +966,7 @@ mod get_dependencies {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
-                            typing: Type::Abstract(
-                                Box::new(Type::Integer),
-                                Box::new(Type::Integer),
-                            ),
+                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -1154,11 +1145,8 @@ mod get_dependencies {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
                                     typing: Type::Abstract(
+                                        vec![Type::Integer, Type::Integer],
                                         Box::new(Type::Integer),
-                                        Box::new(Type::Abstract(
-                                            Box::new(Type::Integer),
-                                            Box::new(Type::Integer),
-                                        )),
                                     ),
                                     location: Location::default(),
                                 },
@@ -1204,7 +1192,7 @@ mod get_dependencies {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
-                        typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
@@ -1495,13 +1483,7 @@ mod normalize {
         let mut expression = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
-                typing: Type::Abstract(
-                    Box::new(Type::Integer),
-                    Box::new(Type::Abstract(
-                        Box::new(Type::Integer),
-                        Box::new(Type::Integer),
-                    )),
-                ),
+                typing: Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
                 location: Location::default(),
             },
             inputs: vec![
@@ -1522,7 +1504,7 @@ mod normalize {
                             function_expression: Expression::Call {
                                 id: String::from("*2"),
                                 typing: Type::Abstract(
-                                    Box::new(Type::Integer),
+                                    vec![Type::Integer],
                                     Box::new(Type::Integer),
                                 ),
                                 location: Location::default(),
@@ -1556,7 +1538,7 @@ mod normalize {
                 expression: StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("*2"),
-                        typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
@@ -1600,13 +1582,7 @@ mod normalize {
         let control = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
-                typing: Type::Abstract(
-                    Box::new(Type::Integer),
-                    Box::new(Type::Abstract(
-                        Box::new(Type::Integer),
-                        Box::new(Type::Integer),
-                    )),
-                ),
+                typing: Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
                 location: Location::default(),
             },
             inputs: vec![

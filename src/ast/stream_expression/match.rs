@@ -110,7 +110,7 @@ mod typing_match {
         let mut global_context = HashMap::new();
         global_context.insert(
             String::from("add_one"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
@@ -260,7 +260,7 @@ mod typing_match {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
-                                Box::new(Type::Integer),
+                                vec![Type::Integer],
                                 Box::new(Type::Integer),
                             )),
                             location: Location::default(),

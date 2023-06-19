@@ -92,12 +92,7 @@ impl BinaryOperator {
             | BinaryOperator::Sub => {
                 let v_t = number_types
                     .into_iter()
-                    .map(|t| {
-                        Type::Abstract(
-                            Box::new(t.clone()),
-                            Box::new(Type::Abstract(Box::new(t.clone()), Box::new(t))),
-                        )
-                    })
+                    .map(|t| Type::Abstract(vec![t.clone(), t.clone()], Box::new(t)))
                     .collect();
                 Type::Choice(v_t)
             }
@@ -110,12 +105,7 @@ impl BinaryOperator {
             | BinaryOperator::Low => {
                 let v_t = number_types
                     .into_iter()
-                    .map(|t| {
-                        Type::Abstract(
-                            Box::new(t.clone()),
-                            Box::new(Type::Abstract(Box::new(t), Box::new(Type::Boolean))),
-                        )
-                    })
+                    .map(|t| Type::Abstract(vec![t.clone(), t], Box::new(Type::Boolean)))
                     .collect();
                 Type::Choice(v_t)
             }
@@ -125,24 +115,15 @@ impl BinaryOperator {
             BinaryOperator::Eq | BinaryOperator::Dif => {
                 let v_t = all_basic_types
                     .into_iter()
-                    .map(|t| {
-                        Type::Abstract(
-                            Box::new(t.clone()),
-                            Box::new(Type::Abstract(Box::new(t), Box::new(Type::Boolean))),
-                        )
-                    })
+                    .map(|t| Type::Abstract(vec![t.clone(), t], Box::new(Type::Boolean)))
                     .collect();
                 Type::Choice(v_t)
             }
             // If self is a logical operator then its type
             // is `bool -> bool -> bool`
-            BinaryOperator::And | BinaryOperator::Or => Type::Abstract(
-                Box::new(Type::Boolean),
-                Box::new(Type::Abstract(
-                    Box::new(Type::Boolean),
-                    Box::new(Type::Boolean),
-                )),
-            ),
+            BinaryOperator::And | BinaryOperator::Or => {
+                Type::Abstract(vec![Type::Boolean, Type::Boolean], Box::new(Type::Boolean))
+            }
         }
     }
 }
@@ -198,7 +179,7 @@ impl UnaryOperator {
             UnaryOperator::Neg => {
                 let v_t = number_types
                     .into_iter()
-                    .map(|t| Type::Abstract(Box::new(t.clone()), Box::new(t)))
+                    .map(|t| Type::Abstract(vec![t.clone()], Box::new(t)))
                     .collect();
                 Type::Choice(v_t)
             }
@@ -207,12 +188,12 @@ impl UnaryOperator {
             UnaryOperator::Brackets => {
                 let v_t = all_basic_types
                     .into_iter()
-                    .map(|t| Type::Abstract(Box::new(t.clone()), Box::new(t)))
+                    .map(|t| Type::Abstract(vec![t.clone()], Box::new(t)))
                     .collect();
                 Type::Choice(v_t)
             }
             // If self is the logical negation then its type is `bool -> bool`
-            UnaryOperator::Not => Type::Abstract(Box::new(Type::Boolean), Box::new(Type::Boolean)),
+            UnaryOperator::Not => Type::Abstract(vec![Type::Boolean], Box::new(Type::Boolean)),
         }
     }
 }
@@ -256,19 +237,11 @@ impl OtherOperator {
             OtherOperator::IfThenElse => {
                 let v_t = all_basic_types
                     .into_iter()
-                    .map(|t| {
-                        Type::Abstract(
-                            Box::new(Type::Boolean),
-                            Box::new(Type::Abstract(
-                                Box::new(t.clone()),
-                                Box::new(Type::Abstract(Box::new(t.clone()), Box::new(t))),
-                            )),
-                        )
-                    })
+                    .map(|t| Type::Abstract(vec![Type::Boolean, t.clone(), t.clone()], Box::new(t)))
                     .collect();
                 Type::Choice(v_t)
             }
-            OtherOperator::Print => Type::Abstract(Box::new(Type::String), Box::new(Type::Unit)),
+            OtherOperator::Print => Type::Abstract(vec![Type::String], Box::new(Type::Unit)),
         }
     }
 }

@@ -44,7 +44,7 @@ mod get_dependencies_followed_by {
             expression: Box::new(StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("add_one"),
-                    typing: Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+                    typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::SignalCall {

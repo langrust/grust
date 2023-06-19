@@ -52,13 +52,14 @@ impl StreamExpression {
                 test_typing_inputs?;
 
                 // compute the application type
-                let application_type = inputs.iter().fold(
-                    Ok(function_expression.get_type().unwrap().clone()),
-                    |current_typing, input| {
-                        let abstraction_type = current_typing.unwrap().clone();
-                        let input_type = input.get_type().unwrap().clone();
-                        Ok(abstraction_type.apply(input_type, location.clone(), errors)?)
-                    },
+                let input_types = inputs
+                    .iter()
+                    .map(|input| input.get_type().unwrap().clone())
+                    .collect();
+                let application_type = function_expression.get_type().unwrap().clone().apply(
+                    input_types,
+                    location.clone(),
+                    errors,
                 )?;
 
                 *typing = Some(application_type);
@@ -84,7 +85,7 @@ mod typing_map_application {
         let mut global_context = HashMap::new();
         global_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Integer), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
         );
         let user_types_context = HashMap::new();
 
@@ -105,10 +106,7 @@ mod typing_map_application {
         let control = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
-                typing: Some(Type::Abstract(
-                    Box::new(Type::Integer),
-                    Box::new(Type::Integer),
-                )),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
@@ -142,7 +140,7 @@ mod typing_map_application {
         let mut global_context = HashMap::new();
         global_context.insert(
             String::from("f"),
-            Type::Abstract(Box::new(Type::Float), Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Float], Box::new(Type::Integer)),
         );
         let user_types_context = HashMap::new();
 
