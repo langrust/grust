@@ -113,19 +113,16 @@ impl File {
     ///     id: String::from("test"),
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     statements: vec![
-    ///         (
-    ///             String::from("x"),
-    ///             Statement {
-    ///                 id: String::from("x"),
-    ///                 element_type: Type::Integer,
-    ///                 expression: Expression::Call {
-    ///                     id: String::from("i"),
-    ///                     typing: None,
-    ///                     location: Location::default(),
-    ///                 },
+    ///         Statement {
+    ///             id: String::from("x"),
+    ///             element_type: Type::Integer,
+    ///             expression: Expression::Call {
+    ///                 id: String::from("i"),
+    ///                 typing: None,
     ///                 location: Location::default(),
-    ///             }
-    ///         )
+    ///             },
+    ///             location: Location::default(),
+    ///         }
     ///     ],
     ///     returned: (
     ///         Type::Integer,
@@ -357,19 +354,16 @@ mod typing {
         let function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            statements: vec![(
-                String::from("x"),
-                Statement {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: None,
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("x"),
+                element_type: Type::Integer,
+                expression: Expression::Call {
+                    id: String::from("i"),
+                    typing: None,
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::Integer,
                 Expression::Call {
@@ -429,19 +423,16 @@ mod typing {
         let expected_function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            statements: vec![(
-                String::from("x"),
-                Statement {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: Some(Type::Integer),
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("x"),
+                element_type: Type::Integer,
+                expression: Expression::Call {
+                    id: String::from("i"),
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::Integer,
                 Expression::Call {
@@ -562,19 +553,16 @@ mod typing {
         let function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            statements: vec![(
-                String::from("x"),
-                Statement {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: None,
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("x"),
+                element_type: Type::Integer,
+                expression: Expression::Call {
+                    id: String::from("i"),
+                    typing: None,
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::Integer,
                 Expression::Call {
@@ -689,19 +677,16 @@ mod typing {
         let expected_function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            statements: vec![(
-                String::from("x"),
-                Statement {
-                    id: String::from("x"),
-                    element_type: Type::Integer,
-                    expression: Expression::Call {
-                        id: String::from("i"),
-                        typing: Some(Type::Integer),
-                        location: Location::default(),
-                    },
+            statements: vec![Statement {
+                id: String::from("x"),
+                element_type: Type::Integer,
+                expression: Expression::Call {
+                    id: String::from("i"),
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
-            )],
+                location: Location::default(),
+            }],
             returned: (
                 Type::Integer,
                 Expression::Call {

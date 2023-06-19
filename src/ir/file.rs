@@ -81,19 +81,16 @@ impl File {
     ///     id: String::from("test"),
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     statements: vec![
-    ///         (
-    ///             String::from("x"),
-    ///             Statement {
-    ///                 id: String::from("x"),
-    ///                 element_type: Type::Integer,
-    ///                 expression: Expression::Call {
-    ///                     id: String::from("i"),
-    ///                     typing: Type::Integer,
-    ///                     location: Location::default(),
-    ///                 },
+    ///         Statement {
+    ///             id: String::from("x"),
+    ///             element_type: Type::Integer,
+    ///             expression: Expression::Call {
+    ///                 id: String::from("i"),
+    ///                 typing: Type::Integer,
     ///                 location: Location::default(),
-    ///             }
-    ///         )
+    ///             },
+    ///             location: Location::default(),
+    ///         }
     ///     ],
     ///     returned: (
     ///         Type::Integer,
@@ -381,19 +378,16 @@ impl File {
     ///     id: String::from("test"),
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     statements: vec![
-    ///         (
-    ///             String::from("x"),
-    ///             Statement {
-    ///                 id: String::from("x"),
-    ///                 element_type: Type::Integer,
-    ///                 expression: Expression::Call {
-    ///                     id: String::from("i"),
-    ///                     typing: Type::Integer,
-    ///                     location: Location::default(),
-    ///                 },
+    ///         Statement {
+    ///             id: String::from("x"),
+    ///             element_type: Type::Integer,
+    ///             expression: Expression::Call {
+    ///                 id: String::from("i"),
+    ///                 typing: Type::Integer,
     ///                 location: Location::default(),
-    ///             }
-    ///         )
+    ///             },
+    ///             location: Location::default(),
+    ///         }
     ///     ],
     ///     returned: (
     ///         Type::Integer,
@@ -575,19 +569,16 @@ impl File {
     ///     id: String::from("test"),
     ///     inputs: vec![(String::from("i"), Type::Integer)],
     ///     statements: vec![
-    ///         (
-    ///             String::from("x"),
-    ///             Statement {
-    ///                 id: String::from("x"),
-    ///                 element_type: Type::Integer,
-    ///                 expression: Expression::Call {
-    ///                     id: String::from("i"),
-    ///                     typing: Type::Integer,
-    ///                     location: Location::default(),
-    ///                 },
+    ///         Statement {
+    ///             id: String::from("x"),
+    ///             element_type: Type::Integer,
+    ///             expression: Expression::Call {
+    ///                 id: String::from("i"),
+    ///                 typing: Type::Integer,
     ///                 location: Location::default(),
-    ///             }
-    ///         )
+    ///             },
+    ///             location: Location::default(),
+    ///         }
     ///     ],
     ///     returned: (
     ///         Type::Integer,

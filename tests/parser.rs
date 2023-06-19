@@ -62,32 +62,26 @@ mod langrust_ast_constructs {
                         id: String::from("test"),
                         inputs: vec![(String::from("i"), Type::Integer)],
                         statements: vec![
-                            (
-                                String::from("x"),
-                                Statement {
+                            Statement {
+                                id: String::from("x"),
+                                element_type: Type::Integer,
+                                expression: Expression::Call {
+                                    id: String::from("i"),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                                location: Location::default(),
+                            },
+                            Statement {
+                                id: String::from("o"),
+                                element_type: Type::Integer,
+                                expression: Expression::Call {
                                     id: String::from("x"),
-                                    element_type: Type::Integer,
-                                    expression: Expression::Call {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
+                                    typing: None,
                                     location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("o"),
-                                Statement {
-                                    id: String::from("o"),
-                                    element_type: Type::Integer,
-                                    expression: Expression::Call {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
+                                },
+                                location: Location::default(),
+                            },
                         ],
                         returned: (
                             Type::Integer,
@@ -103,32 +97,26 @@ mod langrust_ast_constructs {
                         id: String::from("test"),
                         inputs: vec![(String::from("i"), Type::Integer)],
                         statements: vec![
-                            (
-                                String::from("x"),
-                                Statement {
+                            Statement {
+                                id: String::from("x"),
+                                element_type: Type::Integer,
+                                expression: Expression::Call {
+                                    id: String::from("i"),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                                location: Location::default(),
+                            },
+                            Statement {
+                                id: String::from("o"),
+                                element_type: Type::Integer,
+                                expression: Expression::Call {
                                     id: String::from("x"),
-                                    element_type: Type::Integer,
-                                    expression: Expression::Call {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
+                                    typing: None,
                                     location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("o"),
-                                Statement {
-                                    id: String::from("o"),
-                                    element_type: Type::Integer,
-                                    expression: Expression::Call {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
+                                },
+                                location: Location::default(),
+                            },
                         ],
                         returned: (
                             Type::Integer,
@@ -283,32 +271,26 @@ mod langrust_ast_constructs {
                         id: String::from("test"),
                         inputs: vec![(String::from("i"), Type::Integer)],
                         statements: vec![
-                            (
-                                String::from("x"),
-                                Statement {
+                            Statement {
+                                id: String::from("x"),
+                                element_type: Type::Integer,
+                                expression: Expression::Call {
+                                    id: String::from("i"),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                                location: Location::default(),
+                            },
+                            Statement {
+                                id: String::from("o"),
+                                element_type: Type::Integer,
+                                expression: Expression::Call {
                                     id: String::from("x"),
-                                    element_type: Type::Integer,
-                                    expression: Expression::Call {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
+                                    typing: None,
                                     location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("o"),
-                                Statement {
-                                    id: String::from("o"),
-                                    element_type: Type::Integer,
-                                    expression: Expression::Call {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
+                                },
+                                location: Location::default(),
+                            },
                         ],
                         returned: (
                             Type::Integer,
@@ -324,32 +306,26 @@ mod langrust_ast_constructs {
                         id: String::from("test"),
                         inputs: vec![(String::from("i"), Type::Integer)],
                         statements: vec![
-                            (
-                                String::from("x"),
-                                Statement {
+                            Statement {
+                                id: String::from("x"),
+                                element_type: Type::Integer,
+                                expression: Expression::Call {
+                                    id: String::from("i"),
+                                    typing: None,
+                                    location: Location::default(),
+                                },
+                                location: Location::default(),
+                            },
+                            Statement {
+                                id: String::from("o"),
+                                element_type: Type::Integer,
+                                expression: Expression::Call {
                                     id: String::from("x"),
-                                    element_type: Type::Integer,
-                                    expression: Expression::Call {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
+                                    typing: None,
                                     location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("o"),
-                                Statement {
-                                    id: String::from("o"),
-                                    element_type: Type::Integer,
-                                    expression: Expression::Call {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
+                                },
+                                location: Location::default(),
+                            },
                         ],
                         returned: (
                             Type::Integer,
@@ -653,32 +629,26 @@ mod langrust_ast_constructs {
                 id: String::from("test"),
                 inputs: vec![(String::from("i"), Type::Integer)],
                 statements: vec![
-                    (
-                        String::from("x"),
-                        Statement {
+                    Statement {
+                        id: String::from("x"),
+                        element_type: Type::Integer,
+                        expression: Expression::Call {
+                            id: String::from("i"),
+                            typing: None,
+                            location: Location::default(),
+                        },
+                        location: Location::default(),
+                    },
+                    Statement {
+                        id: String::from("o"),
+                        element_type: Type::Integer,
+                        expression: Expression::Call {
                             id: String::from("x"),
-                            element_type: Type::Integer,
-                            expression: Expression::Call {
-                                id: String::from("i"),
-                                typing: None,
-                                location: Location::default(),
-                            },
+                            typing: None,
                             location: Location::default(),
-                        }
-                    ),
-                    (
-                        String::from("o"),
-                        Statement {
-                            id: String::from("o"),
-                            element_type: Type::Integer,
-                            expression: Expression::Call {
-                                id: String::from("x"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                            location: Location::default(),
-                        }
-                    ),
+                        },
+                        location: Location::default(),
+                    },
                 ],
                 returned: (
                     Type::Integer,
