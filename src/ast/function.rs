@@ -5,6 +5,7 @@ use crate::common::{
     context::Context, location::Location, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
+use crate::ir::function::Function as IRFunction;
 
 #[derive(Debug, PartialEq)]
 /// LanGRust function AST.
@@ -280,6 +281,28 @@ impl Function {
 
         // determine returned type
         returned_type.resolve_undefined(location.clone(), user_types_context, errors)
+    }
+
+    /// Transform AST functions into IR function.
+    pub fn into_ir(self) -> IRFunction {
+        let Function {
+            id,
+            inputs,
+            statements,
+            returned: (returned_type, returned_expression),
+            location,
+        } = self;
+
+        IRFunction {
+            id,
+            inputs,
+            statements: statements
+                .into_iter()
+                .map(|statement| statement.into_ir())
+                .collect(),
+            returned: (returned_type, returned_expression.into_ir()),
+            location,
+        }
     }
 }
 
