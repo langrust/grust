@@ -5,6 +5,7 @@ use crate::common::{
     location::Location, scope::Scope, type_system::Type, user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
+use crate::ir::equation::Equation as IREquation;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust equation AST.
@@ -185,6 +186,25 @@ impl Equation {
             ..
         } = self;
         signal_type.resolve_undefined(location.clone(), user_types_context, errors)
+    }
+
+    /// Transform AST equations into IR equations.
+    pub fn into_ir(self) -> IREquation {
+        let Equation {
+            scope,
+            id,
+            signal_type,
+            expression,
+            location,
+        } = self;
+        
+        IREquation {
+            scope,
+            id,
+            signal_type,
+            expression: expression.into_ir(),
+            location,
+        }
     }
 }
 
