@@ -32,17 +32,6 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
-    /// Abstraction expression.
-    Abstraction {
-        /// The inputs to the abstraction.
-        inputs: Vec<String>,
-        /// The expression abstracted.
-        expression: Box<Expression>,
-        /// Expression type.
-        typing: Type,
-        /// Expression location.
-        location: Location,
-    },
     /// Abstraction expression with inputs types.
     TypedAbstraction {
         /// The inputs to the abstraction.
