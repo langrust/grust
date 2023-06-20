@@ -8,9 +8,7 @@ use crate::common::{
     type_system::Type,
 };
 use crate::error::Error;
-use crate::ir::equation::Equation;
-
-use super::unitary_node::UnitaryNode;
+use crate::ir::{equation::Equation, memory::Memory, unitary_node::UnitaryNode};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust node AST.
@@ -614,7 +612,7 @@ impl Node {
     ///     color::Color, graph::Graph, location::Location, scope::Scope, type_system::Type,
     /// };
     /// use grustine::ir::{
-    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
+    ///     equation::Equation, node::Node, memory::Memory, stream_expression::StreamExpression,
     ///     unitary_node::UnitaryNode,
     /// };
     ///
@@ -716,6 +714,7 @@ impl Node {
     ///             location: Location::default(),
     ///         },
     ///     ],
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// let unitary_node_2 = UnitaryNode {
@@ -735,6 +734,7 @@ impl Node {
     ///             location: Location::default(),
     ///         },
     ///     ],
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// let control = Node {
@@ -882,6 +882,7 @@ impl Node {
             output_id: output.clone(),
             inputs: unitary_node_inputs,
             scheduled_equations,
+            memory: Memory::new(),
             location: location.clone(),
         };
 
@@ -938,8 +939,8 @@ impl Node {
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     /// use grustine::ir::{
-    ///     equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
-    ///     unitary_node::UnitaryNode,
+    ///     equation::Equation, expression::Expression, memory::Memory, node::Node,
+    ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
     ///
     /// let unitary_nodes_used_inputs = HashMap::from([
@@ -1013,6 +1014,7 @@ impl Node {
     ///     output_id: String::from("x"),
     ///     inputs: vec![(String::from("s"), Type::Integer), (String::from("v"), Type::Integer)],
     ///     scheduled_equations: vec![equation_1.clone()],
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// let equation_2 = Equation {
@@ -1056,6 +1058,7 @@ impl Node {
     ///     output_id: String::from("y"),
     ///     inputs: vec![(String::from("v"), Type::Integer), (String::from("g"), Type::Integer)],
     ///     scheduled_equations: vec![equation_2.clone()],
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// let mut node = Node {
@@ -1162,6 +1165,7 @@ impl Node {
     ///     output_id: String::from("x"),
     ///     inputs: vec![(String::from("s"), Type::Integer), (String::from("v"), Type::Integer)],
     ///     scheduled_equations: equations_1,
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// let equations_2 = vec![
@@ -1215,6 +1219,7 @@ impl Node {
     ///     output_id: String::from("y"),
     ///     inputs: vec![(String::from("v"), Type::Integer), (String::from("g"), Type::Integer)],
     ///     scheduled_equations: equations_2,
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// let control = Node {
@@ -1258,7 +1263,7 @@ mod add_unitary_node {
         color::Color, graph::Graph, location::Location, scope::Scope, type_system::Type,
     };
     use crate::ir::{
-        equation::Equation, node::Node, stream_expression::StreamExpression,
+        equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
     };
 
@@ -1362,6 +1367,7 @@ mod add_unitary_node {
                     location: Location::default(),
                 },
             ],
+            memory: Memory::new(),
             location: Location::default(),
         };
         let control = Node {
@@ -1596,7 +1602,7 @@ mod generate_unitary_nodes {
         color::Color, graph::Graph, location::Location, scope::Scope, type_system::Type,
     };
     use crate::ir::{
-        equation::Equation, node::Node, stream_expression::StreamExpression,
+        equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
@@ -1701,6 +1707,7 @@ mod generate_unitary_nodes {
                     location: Location::default(),
                 },
             ],
+            memory: Memory::new(),
             location: Location::default(),
         };
         let unitary_node_2 = UnitaryNode {
@@ -1718,6 +1725,7 @@ mod generate_unitary_nodes {
                 },
                 location: Location::default(),
             }],
+            memory: Memory::new(),
             location: Location::default(),
         };
         let control = Node {

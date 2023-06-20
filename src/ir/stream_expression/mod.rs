@@ -6,9 +6,9 @@ use crate::common::{
     type_system::Type,
 };
 use crate::error::Error;
-use crate::ir::{equation::Equation, expression::Expression, node::Node};
-
-use super::identifier_creator::IdentifierCreator;
+use crate::ir::{
+    equation::Equation, expression::Expression, identifier_creator::IdentifierCreator, node::Node,
+};
 
 mod array;
 mod constant;
