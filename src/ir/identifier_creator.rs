@@ -56,7 +56,7 @@ impl IdentifierCreator {
     /// ```rust
     /// use grustine::common::{location::Location, scope::Scope, type_system::Type};
     /// use grustine::ir::{
-    ///     equation::Equation, identifier_creator::IdentifierCreator,
+    ///     equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
     ///
@@ -88,6 +88,7 @@ impl IdentifierCreator {
     ///             location: Location::default(),
     ///         },
     ///     ],
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// let mut identifier_creator = IdentifierCreator::new(&unitary_node);
@@ -121,7 +122,7 @@ mod new {
 
     use crate::common::{location::Location, scope::Scope, type_system::Type};
     use crate::ir::{
-        equation::Equation, identifier_creator::IdentifierCreator,
+        equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
@@ -155,6 +156,7 @@ mod new {
                     location: Location::default(),
                 },
             ],
+            memory: Memory::new(),
             location: Location::default(),
         };
         let identifier_creator = IdentifierCreator::new(&unitary_node);
@@ -170,7 +172,7 @@ mod new {
 mod new_identifier {
     use crate::common::{location::Location, scope::Scope, type_system::Type};
     use crate::ir::{
-        equation::Equation, identifier_creator::IdentifierCreator,
+        equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
@@ -204,6 +206,7 @@ mod new_identifier {
                     location: Location::default(),
                 },
             ],
+            memory: Memory::new(),
             location: Location::default(),
         };
         let mut identifier_creator = IdentifierCreator::new(&unitary_node);
@@ -247,6 +250,7 @@ mod new_identifier {
                     location: Location::default(),
                 },
             ],
+            memory: Memory::new(),
             location: Location::default(),
         };
         let mut identifier_creator = IdentifierCreator::new(&unitary_node);
@@ -290,6 +294,7 @@ mod new_identifier {
                     location: Location::default(),
                 },
             ],
+            memory: Memory::new(),
             location: Location::default(),
         };
         let mut identifier_creator = IdentifierCreator::new(&unitary_node);

@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use crate::common::{location::Location, type_system::Type};
-use crate::ir::equation::Equation;
-
-use super::identifier_creator::IdentifierCreator;
+use crate::ir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust unitary node IR.
@@ -16,6 +14,8 @@ pub struct UnitaryNode {
     pub inputs: Vec<(String, Type)>,
     /// Unitary node's scheduled equations.
     pub scheduled_equations: Vec<Equation>,
+    /// Unitary node's memory.
+    pub memory: Memory,
     /// Mother node location.
     pub location: Location,
 }
@@ -52,8 +52,8 @@ impl UnitaryNode {
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     /// use grustine::ir::{
-    ///     equation::Equation, expression::Expression, stream_expression::StreamExpression,
-    ///     unitary_node::UnitaryNode,
+    ///     equation::Equation, expression::Expression, memory::Memory,
+    ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
     ///
     /// let unitary_nodes_used_inputs = HashMap::from([(
@@ -121,6 +121,7 @@ impl UnitaryNode {
     ///     output_id: String::from("x"),
     ///     inputs: vec![(String::from("s"), Type::Integer), (String::from("v"), Type::Integer)],
     ///     scheduled_equations: vec![equation],
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// unitary_node.normalize(&unitary_nodes_used_inputs);
@@ -206,6 +207,7 @@ impl UnitaryNode {
     ///     output_id: String::from("x"),
     ///     inputs: vec![(String::from("s"), Type::Integer), (String::from("v"), Type::Integer)],
     ///     scheduled_equations: equations,
+    ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
     /// assert_eq!(unitary_node, control);

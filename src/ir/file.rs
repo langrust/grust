@@ -290,8 +290,9 @@ impl File {
 mod normalize {
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     use crate::ir::{
-        equation::Equation, expression::Expression, file::File, function::Function, node::Node,
-        statement::Statement, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        equation::Equation, expression::Expression, file::File, function::Function, memory::Memory,
+        node::Node, statement::Statement, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
 
@@ -601,6 +602,7 @@ mod normalize {
                         },
                         location: Location::default(),
                     }],
+                    memory: Memory::new(),
                     location: Location::default(),
                 },
             )]),
@@ -686,6 +688,7 @@ mod normalize {
                         },
                         location: Location::default(),
                     }],
+                    memory: Memory::new(),
                     location: Location::default(),
                 },
             )]),
@@ -776,6 +779,7 @@ mod normalize {
                 (String::from("v"), Type::Integer),
             ],
             scheduled_equations: equations_1,
+            memory: Memory::new(),
             location: Location::default(),
         };
         let equations_2 = vec![
@@ -832,6 +836,7 @@ mod normalize {
                 (String::from("g"), Type::Integer),
             ],
             scheduled_equations: equations_2,
+            memory: Memory::new(),
             location: Location::default(),
         };
         let node = Node {
