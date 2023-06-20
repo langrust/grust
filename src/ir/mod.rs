@@ -24,3 +24,6 @@ pub mod unitary_node;
 
 /// LanGRust [IdentifierCreator](crate::ir::identifier_creator::IdentifierCreator) IR module.
 pub mod identifier_creator;
+
+/// LanGRust [Memory](crate::ir::memory::Memory) IR module.
+pub mod memory;
