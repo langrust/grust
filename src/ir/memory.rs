@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::common::{constant::Constant, type_system::Type};
 
 /// Memory of an unitary node.
@@ -6,18 +8,17 @@ use crate::common::{constant::Constant, type_system::Type};
 /// It stores initialzed buffers and called unitary nodes' names.
 pub struct Memory {
     /// Initialized buffers.
-    pub buffers: Vec<Buffer>,
+    pub buffers: HashMap<String, Buffer>,
     /// Called unitary nodes' names.
-    pub called_nodes: Vec<CalledNode>,
+    pub called_nodes: HashMap<String, CalledNode>,
 }
 
 /// Initialized buffer.
 ///
 /// Buffer initialized by a constant.
 pub struct Buffer {
-    memory_id: String,
     typing: Type,
-    initial_value: Constant,
+    initial: Constant,
 }
 
 /// Called unitary node' name.
@@ -25,27 +26,25 @@ pub struct Buffer {
 /// Unitary node's name is composed of the name of the mother
 /// node and the name of the called output signal.
 pub struct CalledNode {
-    memory_id: String,
     node_id: String,
     signal_id: String,
 }
 
 impl Memory {
     /// Add an initialized buffer to memory.
-    pub fn add_buffer(&mut self, memory_id: String, initial_value: Constant) {
-        self.buffers.push(Buffer {
-            memory_id,
-            typing: initial_value.get_type(),
-            initial_value,
-        })
+    pub fn add_buffer(&mut self, memory_id: String, initial: Constant) {
+        let typing = initial.get_type();
+        assert!(self
+            .buffers
+            .insert(memory_id, Buffer { typing, initial })
+            .is_none())
     }
 
     /// Add called node to memory.
     pub fn add_called_node(&mut self, memory_id: String, node_id: String, signal_id: String) {
-        self.called_nodes.push(CalledNode {
-            memory_id,
-            node_id,
-            signal_id,
-        })
+        assert!(self
+            .called_nodes
+            .insert(memory_id, CalledNode { node_id, signal_id })
+            .is_none())
     }
 }
