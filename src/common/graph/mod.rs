@@ -4,14 +4,13 @@ pub mod vertex;
 /// [Neighbor] structure and API.
 pub mod neighbor;
 
+/// [Color] enumeration used to identify the processing status of an element.
+pub mod color;
+
 use std::collections::HashMap;
 
-use crate::{
-    common::{color::Color, graph::vertex::Vertex},
-    error::Error,
-};
-
-use self::neighbor::Neighbor;
+use crate::common::graph::{color::Color, neighbor::Neighbor, vertex::Vertex};
+use crate::error::Error;
 
 /// Graph structure.
 #[derive(Debug, PartialEq, Clone)]
@@ -645,7 +644,7 @@ mod subgraph_on_edges {
 
 #[cfg(test)]
 mod topological_sorting {
-    use crate::common::{color::Color, graph::Graph};
+    use crate::common::graph::{color::Color, Graph};
 
     #[test]
     fn should_return_a_schedule_of_the_graph_in_order() {
@@ -699,7 +698,7 @@ mod topological_sorting {
 
 #[cfg(test)]
 mod subgraph_from_vertex {
-    use crate::common::{color::Color, graph::Graph};
+    use crate::common::graph::{color::Color, Graph};
 
     #[test]
     fn should_return_a_subgraph_of_the_graph_with_all_vertex_successors_and_edges() {
@@ -730,7 +729,7 @@ mod subgraph_from_vertex {
 
 #[cfg(test)]
 mod forgotten_vertices {
-    use crate::common::{color::Color, graph::Graph};
+    use crate::common::graph::{color::Color, Graph};
 
     #[test]
     fn should_return_all_forgotten_vertices_of_subgraphs_set() {

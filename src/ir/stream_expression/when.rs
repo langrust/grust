@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::common::{color::Color, graph::Graph};
+use crate::common::graph::{color::Color, Graph};
 use crate::error::Error;
 use crate::ir::{node::Node, stream_expression::StreamExpression};
 

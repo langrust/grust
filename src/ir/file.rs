@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use crate::common::{
-    color::Color, graph::Graph, location::Location, user_defined_type::UserDefinedType,
+    graph::{color::Color, Graph},
+    location::Location,
+    user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 use crate::ir::{function::Function, node::Node};
@@ -34,7 +36,7 @@ impl File {
     ///     file::File, node::Node, statement::Statement, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, graph::Graph, location::Location, scope::Scope, type_system::Type
+    ///     graph::{color::Color, Graph}, location::Location, scope::Scope, type_system::Type
     /// };
     ///
     /// let mut errors = vec![];
