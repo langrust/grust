@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use crate::ast::{equation::Equation, node_description::NodeDescription};
-use crate::common::{
-    context::Context, location::Location, scope::Scope, type_system::Type,
-    user_defined_type::UserDefinedType,
+use crate::ast::{
+    equation::Equation, node_description::NodeDescription, user_defined_type::UserDefinedType,
 };
+use crate::common::{context::Context, location::Location, scope::Scope, type_system::Type};
 use crate::error::Error;
 use crate::ir::node::Node as IRNode;
 
@@ -293,11 +292,10 @@ impl Node {
     ///
     /// use grustine::ast::{
     ///     equation::Equation, node::Node, node_description::NodeDescription,
-    ///     stream_expression::StreamExpression,
+    ///     stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
-    ///     user_defined_type::UserDefinedType,
     /// };
     ///
     /// let mut errors = vec![];
@@ -750,11 +748,11 @@ mod into_node_description {
 
 #[cfg(test)]
 mod resolve_undefined_types {
-    use crate::ast::{equation::Equation, node::Node, stream_expression::StreamExpression};
-    use crate::common::{
-        constant::Constant, location::Location, scope::Scope, type_system::Type,
+    use crate::ast::{
+        equation::Equation, node::Node, stream_expression::StreamExpression,
         user_defined_type::UserDefinedType,
     };
+    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     use std::collections::HashMap;
 
     #[test]

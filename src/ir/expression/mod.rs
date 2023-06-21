@@ -1,4 +1,5 @@
-use crate::common::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
+use crate::ast::pattern::Pattern;
+use crate::common::{constant::Constant, location::Location, type_system::Type};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust expression AST.

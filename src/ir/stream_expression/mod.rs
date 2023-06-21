@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use crate::common::scope::Scope;
+use crate::ast::pattern::Pattern;
 use crate::common::{
     constant::Constant,
     graph::{color::Color, Graph},
     location::Location,
-    pattern::Pattern,
+    scope::Scope,
     type_system::Type,
 };
 use crate::error::Error;
@@ -933,9 +933,8 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod get_dependencies {
-    use crate::common::{
-        constant::Constant, location::Location, pattern::Pattern, scope::Scope, type_system::Type,
-    };
+    use crate::ast::pattern::Pattern;
+    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     use crate::ir::{
         equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
     };

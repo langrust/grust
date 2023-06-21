@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use crate::ast::{node_description::NodeDescription, stream_expression::StreamExpression};
-use crate::common::{
-    location::Location, scope::Scope, type_system::Type, user_defined_type::UserDefinedType,
+use crate::ast::{
+    node_description::NodeDescription, stream_expression::StreamExpression,
+    user_defined_type::UserDefinedType,
 };
+use crate::common::{location::Location, scope::Scope, type_system::Type};
 use crate::error::Error;
 use crate::ir::equation::Equation as IREquation;
 
@@ -89,10 +90,12 @@ impl Equation {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ast::{equation::Equation, stream_expression::StreamExpression};
+    /// use grustine::ast::{
+    ///     equation::Equation, stream_expression::StreamExpression,
+    ///     user_defined_type::UserDefinedType,
+    /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope,
-    ///     type_system::Type, user_defined_type::UserDefinedType,
+    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -296,11 +299,10 @@ mod typing {
 mod determine_types {
     use std::collections::HashMap;
 
-    use crate::ast::{equation::Equation, stream_expression::StreamExpression};
-    use crate::common::{
-        constant::Constant, location::Location, scope::Scope, type_system::Type,
-        user_defined_type::UserDefinedType,
+    use crate::ast::{
+        equation::Equation, stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
+    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
 
     #[test]
     fn should_determine_the_type_of_equation_when_in_types_context() {

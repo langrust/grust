@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::ast::{function::Function, global_context, node::Node};
-use crate::common::{
-    context::Context, location::Location, type_system::Type, user_defined_type::UserDefinedType,
+use crate::ast::{
+    function::Function, global_context, node::Node, user_defined_type::UserDefinedType,
 };
+use crate::common::{context::Context, location::Location, type_system::Type};
 use crate::error::Error;
 use crate::ir::file::File as IRFile;
 

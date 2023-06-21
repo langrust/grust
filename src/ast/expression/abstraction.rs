@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::expression::Expression;
-use crate::common::{context::Context, type_system::Type, user_defined_type::UserDefinedType};
+use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+use crate::common::{context::Context, type_system::Type};
 use crate::error::Error;
 
 impl Expression {

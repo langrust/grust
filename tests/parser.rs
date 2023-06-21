@@ -4,16 +4,15 @@ mod langrust_ast_constructs {
 
     use grustine::ast::{
         equation::Equation, expression::Expression, file::File, function::Function, node::Node,
-        statement::Statement, stream_expression::StreamExpression,
+        pattern::Pattern, statement::Statement, stream_expression::StreamExpression,
+        user_defined_type::UserDefinedType,
     };
     use grustine::common::{
         constant::Constant,
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
-        pattern::Pattern,
         scope::Scope,
         type_system::Type,
-        user_defined_type::UserDefinedType,
     };
     use grustine::parser::langrust;
 

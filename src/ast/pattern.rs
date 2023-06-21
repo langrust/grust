@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
-use crate::common::context::Context;
-use crate::common::{
-    constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType,
-};
+use crate::ast::user_defined_type::UserDefinedType;
+use crate::common::{constant::Constant, context::Context, location::Location, type_system::Type};
 use crate::error::Error;
 
 use std::fmt::{self, Display};
@@ -88,9 +86,11 @@ impl Pattern {
     /// ```rust
     /// use std::collections::HashMap;
     ///
+    /// use grustine::ast::{
+    ///     pattern::Pattern, user_defined_type::UserDefinedType
+    /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, pattern::Pattern,
-    ///     type_system::Type, user_defined_type::UserDefinedType
+    ///     constant::Constant, location::Location, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -246,8 +246,9 @@ impl Pattern {
     /// This example correspond to the following test.
     ///
     /// ```rust
+    /// use grustine::ast::pattern::Pattern;
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, pattern::Pattern
+    ///     constant::Constant, location::Location
     /// };
     ///
     /// let pattern = Pattern::Structure {
@@ -293,10 +294,8 @@ impl Pattern {
 mod construct_context {
     use std::collections::HashMap;
 
-    use crate::common::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-        user_defined_type::UserDefinedType,
-    };
+    use crate::ast::{pattern::Pattern, user_defined_type::UserDefinedType};
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
 
     #[test]
     fn should_check_identifier_pattern_for_any_type() {

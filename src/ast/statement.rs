@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::expression::Expression;
-use crate::common::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
+use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+use crate::common::{location::Location, type_system::Type};
 use crate::error::Error;
 use crate::ir::statement::Statement as IRStatement;
 
@@ -79,11 +79,10 @@ impl Statement {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::{
-    ///     expression::Expression, statement::Statement,
+    ///     expression::Expression, statement::Statement, user_defined_type::UserDefinedType,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, location::Location, type_system::Type,
-    ///     user_defined_type::UserDefinedType,
     /// };
     ///
     /// let mut errors = vec![];
@@ -276,11 +275,10 @@ mod typing {
 mod determine_types {
     use std::collections::HashMap;
 
-    use crate::ast::{expression::Expression, statement::Statement};
-    use crate::common::{
-        constant::Constant, location::Location, type_system::Type,
-        user_defined_type::UserDefinedType,
+    use crate::ast::{
+        expression::Expression, statement::Statement, user_defined_type::UserDefinedType,
     };
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
 
     #[test]
     fn should_determine_the_type_of_equation_when_in_types_context() {
