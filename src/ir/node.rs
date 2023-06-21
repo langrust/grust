@@ -39,7 +39,7 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
     ///     scope::Scope, type_system::Type,
     /// };
     ///
@@ -135,7 +135,7 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
     ///     scope::Scope, type_system::Type,
     /// };
     ///
@@ -271,7 +271,7 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
     ///     scope::Scope, type_system::Type,
     /// };
     ///
@@ -438,7 +438,7 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
     ///     scope::Scope, type_system::Type,
     /// };
     ///
