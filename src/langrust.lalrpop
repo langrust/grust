@@ -5,18 +5,18 @@ use crate::ast::{
     expression::Expression,
     file::File,
     function::Function,
+    pattern::Pattern,
     node::Node,
     statement::Statement,
     stream_expression::StreamExpression,
+    user_defined_type::UserDefinedType,
 };
 use crate::common::{
     constant::Constant,
     location::Location,
     operator::{UnaryOperator, BinaryOperator, OtherOperator},
-    pattern::Pattern,
     scope::Scope,
     type_system::Type,
-    user_defined_type::UserDefinedType,
 };
 
 grammar(file_id: usize);

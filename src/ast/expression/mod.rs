@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
-use crate::common::{
-    constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-    user_defined_type::UserDefinedType,
-};
+use crate::ast::{pattern::Pattern, user_defined_type::UserDefinedType};
+use crate::common::{constant::Constant, location::Location, type_system::Type};
 use crate::error::Error;
 use crate::ir::expression::Expression as IRExpression;
 
@@ -355,11 +353,10 @@ impl Expression {
 
 #[cfg(test)]
 mod typing {
-    use crate::ast::expression::Expression;
-    use crate::common::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-        user_defined_type::UserDefinedType,
+    use crate::ast::{
+        expression::Expression, pattern::Pattern, user_defined_type::UserDefinedType,
     };
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use crate::error::Error;
     use std::collections::HashMap;
 

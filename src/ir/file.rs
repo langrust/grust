@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use crate::ast::user_defined_type::UserDefinedType;
 use crate::common::{
     graph::{color::Color, Graph},
     location::Location,
-    user_defined_type::UserDefinedType,
 };
 use crate::error::Error;
 use crate::ir::{function::Function, node::Node};

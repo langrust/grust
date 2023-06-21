@@ -24,3 +24,9 @@ pub mod equation;
 
 /// LanGRust [Statement](crate::ast::statement::Statement) AST module.
 pub mod statement;
+
+/// LanGRust [UserDefinedType](crate::ast::user_defined_type::UserDefinedType) AST module.
+pub mod user_defined_type;
+
+/// LanGRust [Pattern](crate::ast::pattern::Pattern) AST module.
+pub mod pattern;

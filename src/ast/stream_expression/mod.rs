@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, node_description::NodeDescription};
-use crate::common::{
-    constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-    user_defined_type::UserDefinedType,
-};
+use crate::ast::{pattern::Pattern, user_defined_type::UserDefinedType};
+use crate::common::{constant::Constant, location::Location, type_system::Type};
 use crate::error::Error;
 use crate::ir::stream_expression::StreamExpression as IRStreamExpression;
 
@@ -394,13 +392,10 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        expression::Expression, node_description::NodeDescription,
-        stream_expression::StreamExpression,
+        expression::Expression, node_description::NodeDescription, pattern::Pattern,
+        stream_expression::StreamExpression, user_defined_type::UserDefinedType,
     };
-    use crate::common::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-        user_defined_type::UserDefinedType,
-    };
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use crate::error::Error;
 
     #[test]

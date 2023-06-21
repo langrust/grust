@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::expression::Expression;
-use crate::common::context::Context;
-use crate::common::{type_system::Type, user_defined_type::UserDefinedType};
+use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+use crate::common::{context::Context, type_system::Type};
 use crate::error::Error;
 
 impl Expression {
@@ -74,11 +73,8 @@ impl Expression {
 
 #[cfg(test)]
 mod typing_structure {
-    use crate::ast::expression::Expression;
-    use crate::common::{
-        constant::Constant, location::Location, type_system::Type,
-        user_defined_type::UserDefinedType,
-    };
+    use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
 
     #[test]

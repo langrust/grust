@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
-use crate::ast::{node_description::NodeDescription, stream_expression::StreamExpression};
-use crate::common::{type_system::Type, user_defined_type::UserDefinedType};
+use crate::ast::{
+    node_description::NodeDescription, stream_expression::StreamExpression,
+    user_defined_type::UserDefinedType,
+};
+use crate::common::type_system::Type;
 use crate::error::Error;
 
 impl StreamExpression {
@@ -94,11 +97,11 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod typing_match {
-    use crate::ast::{expression::Expression, stream_expression::StreamExpression};
-    use crate::common::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
+    use crate::ast::{
+        expression::Expression, pattern::Pattern, stream_expression::StreamExpression,
         user_defined_type::UserDefinedType,
     };
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
 
     #[test]

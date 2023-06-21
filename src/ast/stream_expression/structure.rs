@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
-use crate::ast::{node_description::NodeDescription, stream_expression::StreamExpression};
-use crate::common::{context::Context, type_system::Type, user_defined_type::UserDefinedType};
+use crate::ast::{
+    node_description::NodeDescription, stream_expression::StreamExpression,
+    user_defined_type::UserDefinedType,
+};
+use crate::common::{context::Context, type_system::Type};
 use crate::error::Error;
 
 impl StreamExpression {
@@ -75,11 +78,8 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod typing_structure {
-    use crate::ast::stream_expression::StreamExpression;
-    use crate::common::{
-        constant::Constant, location::Location, type_system::Type,
-        user_defined_type::UserDefinedType,
-    };
+    use crate::ast::{stream_expression::StreamExpression, user_defined_type::UserDefinedType};
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
 
     #[test]

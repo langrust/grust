@@ -43,7 +43,9 @@ impl UserDefinedType {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::common::{location::Location, type_system::Type, user_defined_type::UserDefinedType};
+    /// use grustine::ast::user_defined_type::UserDefinedType;
+    /// use grustine::common::{location::Location, type_system::Type};
+    ///
     /// let user_defined_type = UserDefinedType::Structure {
     ///     id: String::from("Point"),
     ///     fields: vec![
@@ -80,9 +82,9 @@ impl UserDefinedType {
     ///
     /// # Example
     /// ```rust
+    /// use grustine::ast::user_defined_type::UserDefinedType;
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, type_system::Type,
-    ///     user_defined_type::UserDefinedType
+    ///     constant::Constant, location::Location, type_system::Type,     
     /// };
     ///
     /// let mut errors = vec![];
@@ -186,9 +188,8 @@ impl UserDefinedType {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::common::{
-    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
-    /// };
+    /// use grustine::ast::user_defined_type::UserDefinedType;
+    /// use grustine::common::{location::Location, type_system::Type};
     ///
     /// let mut errors = vec![];
     /// let mut user_types_context = HashMap::new();
@@ -252,9 +253,8 @@ impl UserDefinedType {
 
 #[cfg(test)]
 mod into_type {
-    use crate::common::{
-        location::Location, type_system::Type, user_defined_type::UserDefinedType,
-    };
+    use crate::ast::user_defined_type::UserDefinedType;
+    use crate::common::{location::Location, type_system::Type};
 
     #[test]
     fn should_construct_structure_type_for_user_defined_structure() {
@@ -312,9 +312,8 @@ mod into_type {
 mod determine_types {
     use std::collections::HashMap;
 
-    use crate::common::{
-        location::Location, type_system::Type, user_defined_type::UserDefinedType,
-    };
+    use crate::ast::user_defined_type::UserDefinedType;
+    use crate::common::{location::Location, type_system::Type};
 
     #[test]
     fn should_determine_the_type_of_user_type_when_in_types_context() {

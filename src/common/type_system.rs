@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use crate::common::context::Context;
-use crate::common::{location::Location, user_defined_type::UserDefinedType};
+use crate::ast::user_defined_type::UserDefinedType;
+use crate::common::{context::Context, location::Location};
 use crate::error::Error;
 
 /// LanGrust type system.
@@ -217,9 +217,8 @@ impl Type {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::common::{
-    ///     location::Location, type_system::Type, user_defined_type::UserDefinedType,
-    /// };
+    /// use grustine::ast::user_defined_type::UserDefinedType;
+    /// use grustine::common::{location::Location, type_system::Type};
     ///
     /// let mut errors = vec![];
     /// let mut user_types_context = HashMap::new();
@@ -375,9 +374,8 @@ mod apply {
 mod resolve_undefined {
     use std::collections::HashMap;
 
-    use crate::common::{
-        location::Location, type_system::Type, user_defined_type::UserDefinedType,
-    };
+    use crate::ast::user_defined_type::UserDefinedType;
+    use crate::common::{location::Location, type_system::Type};
 
     #[test]
     fn should_determine_undefined_type_when_in_context() {

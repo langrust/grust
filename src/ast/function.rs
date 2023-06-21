@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, statement::Statement};
-use crate::common::{
-    context::Context, location::Location, type_system::Type, user_defined_type::UserDefinedType,
+use crate::ast::{
+    expression::Expression, statement::Statement, user_defined_type::UserDefinedType,
 };
+use crate::common::{context::Context, location::Location, type_system::Type};
 use crate::error::Error;
 use crate::ir::function::Function as IRFunction;
 
@@ -142,9 +142,10 @@ impl Function {
     ///
     /// use grustine::ast::{
     ///     expression::Expression, function::Function, statement::Statement,
+    ///     user_defined_type::UserDefinedType,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, type_system::Type, user_defined_type::UserDefinedType,
+    ///     constant::Constant, location::Location, type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -412,11 +413,11 @@ mod typing {
 
 #[cfg(test)]
 mod resolve_undefined_types {
-    use crate::ast::{expression::Expression, function::Function, statement::Statement};
-    use crate::common::{
-        constant::Constant, location::Location, type_system::Type,
+    use crate::ast::{
+        expression::Expression, function::Function, statement::Statement,
         user_defined_type::UserDefinedType,
     };
+    use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
 
     #[test]

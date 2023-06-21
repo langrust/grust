@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
-use crate::ast::{node_description::NodeDescription, stream_expression::StreamExpression};
-use crate::common::{type_system::Type, user_defined_type::UserDefinedType};
+use crate::ast::{
+    node_description::NodeDescription, stream_expression::StreamExpression,
+    user_defined_type::UserDefinedType,
+};
+use crate::common::type_system::Type;
 use crate::error::Error;
 
 impl StreamExpression {
