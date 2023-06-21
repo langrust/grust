@@ -4,9 +4,6 @@ pub mod context;
 /// [Graph] API.
 pub mod graph;
 
-/// [Color] enumeration used to identify the processing status of an element.
-pub mod color;
-
 /// LanGRust [UserDefinedType](crate::ast::user_defined_type::UserDefinedType) AST module.
 pub mod user_defined_type;
 

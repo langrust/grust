@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use crate::common::{
-    color::Color,
     context::Context,
-    graph::{neighbor::Neighbor, Graph},
+    graph::{color::Color, neighbor::Neighbor, Graph},
 };
 use crate::error::Error;
 use crate::ir::{node::Node, stream_expression::StreamExpression};

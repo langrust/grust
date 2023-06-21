@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use crate::common::scope::Scope;
 use crate::common::{
-    color::Color, constant::Constant, graph::Graph, location::Location, pattern::Pattern,
+    constant::Constant,
+    graph::{color::Color, Graph},
+    location::Location,
+    pattern::Pattern,
     type_system::Type,
 };
 use crate::error::Error;
