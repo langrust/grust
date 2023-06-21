@@ -113,7 +113,7 @@ impl File {
     ///     location: Location::default(),
     /// };
     ///
-    /// let nodes_graphs = file.generate_dependencies_graphs(&mut errors).unwrap();
+    /// let nodes_graphs = file.generate_dependency_graphs(&mut errors).unwrap();
     ///
     /// let graph = nodes_graphs.get(&String::from("test")).unwrap();
     ///
@@ -126,7 +126,7 @@ impl File {
     ///
     /// assert_eq!(*graph, control);
     /// ```
-    pub fn generate_dependencies_graphs(
+    pub fn generate_dependency_graphs(
         &self,
         errors: &mut Vec<Error>,
     ) -> Result<HashMap<String, Graph<Color>>, ()> {
@@ -246,7 +246,7 @@ impl File {
     ///
     /// This example is tested in source.
     pub fn normalize(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
-        let mut graphs = self.generate_dependencies_graphs(errors)?;
+        let mut graphs = self.generate_dependency_graphs(errors)?;
 
         self.nodes
             .iter_mut()
