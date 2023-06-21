@@ -9,7 +9,7 @@ use crate::ir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Get dependencies of a node application.
-    pub fn get_dependencies_node_application(
+    pub fn get_node_application_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -89,7 +89,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_dependencies_node_application {
+mod get_node_application_dependencies {
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
     use crate::ir::{
         equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
@@ -209,7 +209,7 @@ mod get_dependencies_node_application {
         };
 
         let dependencies = stream_expression
-            .get_dependencies_node_application(
+            .get_node_application_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
