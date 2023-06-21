@@ -6,7 +6,7 @@ use crate::ir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Get dependencies of a when stream expression.
-    pub fn get_dependencies_when(
+    pub fn get_when_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -58,7 +58,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_dependencies_when {
+mod get_when_dependencies {
     use crate::common::{constant::Constant, location::Location, type_system::Type};
     use crate::ir::stream_expression::StreamExpression;
     use std::collections::HashMap;
@@ -94,7 +94,7 @@ mod get_dependencies_when {
         };
 
         let dependencies = stream_expression
-            .get_dependencies_when(
+            .get_when_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
@@ -138,7 +138,7 @@ mod get_dependencies_when {
         };
 
         let dependencies = stream_expression
-            .get_dependencies_when(
+            .get_when_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,

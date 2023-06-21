@@ -2,7 +2,7 @@ use crate::ir::stream_expression::StreamExpression;
 
 impl StreamExpression {
     /// Get dependencies of a signal call.
-    pub fn get_dependencies_signal_call(&self) -> Result<Vec<(String, usize)>, ()> {
+    pub fn get_signal_call_dependencies(&self) -> Result<Vec<(String, usize)>, ()> {
         match self {
             // signal call depends on called signal with depth of 0
             StreamExpression::SignalCall { id, .. } => Ok(vec![(id.clone(), 0)]),
@@ -12,7 +12,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_dependencies_signal_call {
+mod get_signal_call_dependencies {
     use crate::common::{location::Location, type_system::Type};
     use crate::ir::stream_expression::StreamExpression;
 
@@ -24,7 +24,7 @@ mod get_dependencies_signal_call {
             location: Location::default(),
         };
 
-        let dependencies = stream_expression.get_dependencies_signal_call().unwrap();
+        let dependencies = stream_expression.get_signal_call_dependencies().unwrap();
 
         let control = vec![(String::from("x"), 0)];
 

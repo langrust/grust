@@ -6,7 +6,7 @@ use crate::ir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Get dependencies of an array stream expression.
-    pub fn get_dependencies_array(
+    pub fn get_array_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -35,7 +35,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_dependencies_array {
+mod get_array_dependencies {
     use crate::common::{constant::Constant, location::Location, type_system::Type};
     use crate::ir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
@@ -79,7 +79,7 @@ mod get_dependencies_array {
         };
 
         let dependencies = stream_expression
-            .get_dependencies_array(
+            .get_array_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
