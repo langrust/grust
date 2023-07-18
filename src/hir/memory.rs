@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::common::{constant::Constant, type_system::Type};
 
-use crate::ir::stream_expression::StreamExpression;
+use crate::hir::stream_expression::StreamExpression;
 
 /// Memory of an unitary node.
 ///
@@ -42,7 +42,7 @@ impl Memory {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ir::memory::Memory;
+    /// use grustine::hir::memory::Memory;
     ///
     /// let memory = Memory::new();
     /// assert!(memory.buffers.is_empty());
@@ -61,7 +61,7 @@ impl Memory {
     /// use std::collections::HashMap;
     ///
     /// use grustine::common::{constant::Constant, type_system::Type, location::Location};
-    /// use grustine::ir::{stream_expression::StreamExpression, memory::Memory};
+    /// use grustine::hir::{stream_expression::StreamExpression, memory::Memory};
     ///
     /// let mut memory = Memory::new();
     ///
@@ -104,7 +104,7 @@ impl Memory {
     /// use std::collections::HashMap;
     ///
     /// use grustine::common::{constant::Constant, type_system::Type, location::Location};
-    /// use grustine::ir::{stream_expression::StreamExpression, memory::Memory};
+    /// use grustine::hir::{stream_expression::StreamExpression, memory::Memory};
     ///
     /// let mut memory = Memory::new();
     ///

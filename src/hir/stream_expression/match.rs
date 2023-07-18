@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::common::graph::{color::Color, Graph};
 use crate::error::Error;
-use crate::ir::{node::Node, stream_expression::StreamExpression};
+use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Get dependencies of a match stream expression.
@@ -84,10 +84,11 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_match_dependencies {
-    use crate::ast::pattern::Pattern;
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
-    use crate::ir::{expression::Expression, stream_expression::StreamExpression};
+mod get_dependencies_match {
+    use crate::common::{
+        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
+    };
+    use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]

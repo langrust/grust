@@ -1,4 +1,4 @@
-use crate::ir::stream_expression::StreamExpression;
+use crate::hir::stream_expression::StreamExpression;
 
 impl StreamExpression {
     /// Get dependencies of a signal call.
@@ -14,7 +14,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_signal_call_dependencies {
     use crate::common::{location::Location, type_system::Type};
-    use crate::ir::stream_expression::StreamExpression;
+    use crate::hir::stream_expression::StreamExpression;
 
     #[test]
     fn should_dependencies_of_signal_call_is_signal_with_zero_depth() {

@@ -1,9 +1,9 @@
 use crate::ast::statement::Statement;
 use crate::frontend::hir_from_ast::expression::hir_from_ast as expression_hir_from_ast;
-use crate::ir::statement::Statement as IRStatement;
+use crate::hir::statement::Statement as HIRStatement;
 
-/// Transform AST statements into IR statements.
-pub fn hir_from_ast(statement: Statement) -> IRStatement {
+/// Transform AST statements into HIR statements.
+pub fn hir_from_ast(statement: Statement) -> HIRStatement {
     let Statement {
         id,
         element_type,
@@ -11,7 +11,7 @@ pub fn hir_from_ast(statement: Statement) -> IRStatement {
         location,
     } = statement;
 
-    IRStatement {
+    HIRStatement {
         id,
         element_type,
         expression: expression_hir_from_ast(expression),
@@ -24,7 +24,9 @@ mod hir_from_ast {
     use crate::ast::{expression::Expression, statement::Statement};
     use crate::common::{location::Location, type_system::Type};
     use crate::frontend::hir_from_ast::statement::hir_from_ast;
-    use crate::ir::{expression::Expression as IRExpression, statement::Statement as IRStatement};
+    use crate::hir::{
+        expression::Expression as HIRExpression, statement::Statement as HIRStatement,
+    };
 
     #[test]
     fn should_construct_hir_structure_from_typed_ast() {
@@ -50,16 +52,16 @@ mod hir_from_ast {
         };
         let hir_statement = hir_from_ast(ast_statement);
 
-        let control = IRStatement {
+        let control = HIRStatement {
             id: String::from("y"),
             element_type: Type::Integer,
-            expression: IRExpression::Application {
-                function_expression: Box::new(IRExpression::Call {
+            expression: HIRExpression::Application {
+                function_expression: Box::new(HIRExpression::Call {
                     id: String::from("f"),
                     typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                     location: Location::default(),
                 }),
-                inputs: vec![IRExpression::Call {
+                inputs: vec![HIRExpression::Call {
                     id: String::from("x"),
                     typing: Type::Integer,
                     location: Location::default(),

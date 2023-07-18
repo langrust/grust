@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::common::graph::{color::Color, Graph};
 use crate::error::Error;
-use crate::ir::{node::Node, stream_expression::StreamExpression};
+use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Get dependencies of a map application stream expression.
@@ -37,7 +37,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_map_application_dependencies {
     use crate::common::{location::Location, type_system::Type};
-    use crate::ir::{expression::Expression, stream_expression::StreamExpression};
+    use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::ir::unitary_node::UnitaryNode;
+use crate::hir::unitary_node::UnitaryNode;
 
 /// Identifier creator used to create fresh signals.
 #[derive(Debug, PartialEq)]
@@ -55,7 +55,7 @@ impl IdentifierCreator {
     ///
     /// ```rust
     /// use grustine::common::{location::Location, scope::Scope, type_system::Type};
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
@@ -121,7 +121,7 @@ mod new {
     use std::collections::HashSet;
 
     use crate::common::{location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
@@ -171,7 +171,7 @@ mod new {
 #[cfg(test)]
 mod new_identifier {
     use crate::common::{location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };

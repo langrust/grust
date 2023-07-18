@@ -5,7 +5,7 @@ use crate::common::{
     graph::{color::Color, neighbor::Neighbor, Graph},
 };
 use crate::error::Error;
-use crate::ir::{node::Node, stream_expression::StreamExpression};
+use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Get dependencies of a node application.
@@ -91,7 +91,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_node_application_dependencies {
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
     };
     use std::collections::HashMap;
