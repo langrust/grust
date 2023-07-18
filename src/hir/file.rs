@@ -340,17 +340,12 @@ impl File {
     ///
     /// This example is tested in source.
     pub fn normalize(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
-        let mut graphs = self.generate_dependency_graphs(errors)?;
+        self.generate_unitary_nodes(errors)?;
 
-        self.nodes
-            .iter_mut()
-            .map(|node| {
-                let graph = graphs.get_mut(&node.id).unwrap();
-                node.generate_unitary_nodes(graph, errors)
-            })
-            .collect::<Vec<Result<(), ()>>>()
-            .into_iter()
-            .collect::<Result<(), ()>>()?;
+        self.nodes.iter_mut().for_each(|node| node.normalize());
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod generate_unitary_nodes {
@@ -408,7 +403,7 @@ mod generate_unitary_nodes {
                         location: Location::default(),
                     },
                 ),
-                            (
+                (
                     String::from("o2"),
                     Equation {
                         scope: Scope::Output,

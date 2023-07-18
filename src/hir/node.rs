@@ -942,17 +942,6 @@ impl Node {
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
     ///
-    /// let unitary_nodes_used_inputs = HashMap::from([
-    ///     (
-    ///         String::from("my_node"),
-    ///         HashMap::from([(String::from("o"), vec![true, true])]),
-    ///     ),
-    ///     (
-    ///         String::from("other_node"),
-    ///         HashMap::from([(String::from("o"), vec![true, true])]),
-    ///     )
-    /// ]);
-    ///
     /// let equation_1 = Equation {
     ///     scope: Scope::Output,
     ///     id: String::from("x"),
@@ -972,7 +961,7 @@ impl Node {
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
     ///             },
-    ///             StreamExpression::NodeApplication {
+    ///             StreamExpression::UnitaryNodeApplication {
     ///                 node: String::from("my_node"),
     ///                 inputs: vec![
     ///                     StreamExpression::SignalCall {
@@ -1020,7 +1009,7 @@ impl Node {
     ///     scope: Scope::Output,
     ///     id: String::from("y"),
     ///     signal_type: Type::Integer,
-    ///     expression: StreamExpression::NodeApplication {
+    ///     expression: StreamExpression::UnitaryNodeApplication {
     ///         node: String::from("other_node"),
     ///         inputs: vec![
     ///             StreamExpression::MapApplication {
@@ -1081,7 +1070,7 @@ impl Node {
     ///     unitary_nodes: HashMap::from([(String::from("x"), unitary_node_1), (String::from("y"), unitary_node_2)]),
     ///     location: Location::default(),
     /// };
-    /// node.normalize(&unitary_nodes_used_inputs);
+    /// node.normalize();
     ///
     /// let equations_1 = vec![
     ///     Equation {
@@ -1244,13 +1233,10 @@ impl Node {
     /// };
     /// assert_eq!(node, control);
     /// ```
-    pub fn normalize(
-        &mut self,
-        unitary_nodes_used_inputs: &HashMap<String, HashMap<String, Vec<bool>>>,
-    ) {
+    pub fn normalize(&mut self) {
         self.unitary_nodes
             .values_mut()
-            .for_each(|unitary_node| unitary_node.normalize(unitary_nodes_used_inputs))
+            .for_each(|unitary_node| unitary_node.normalize())
     }
 }
 

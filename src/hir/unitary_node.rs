@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::common::{location::Location, r#type::Type};
 use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory};
 
@@ -67,11 +65,6 @@ impl UnitaryNode {
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
     ///
-    /// let unitary_nodes_used_inputs = HashMap::from([(
-    ///     String::from("my_node"),
-    ///     HashMap::from([(String::from("o"), vec![true, true])]),
-    /// )]);
-    ///
     /// let equation = Equation {
     ///     scope: Scope::Output,
     ///     id: String::from("x"),
@@ -91,7 +84,7 @@ impl UnitaryNode {
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
     ///             },
-    ///             StreamExpression::NodeApplication {
+    ///             StreamExpression::UnitaryNodeApplication {
     ///                 node: String::from("my_node"),
     ///                 inputs: vec![
     ///                     StreamExpression::SignalCall {
@@ -135,7 +128,7 @@ impl UnitaryNode {
     ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
-    /// unitary_node.normalize(&unitary_nodes_used_inputs);
+    /// unitary_node.normalize();
     ///
     /// let equations = vec![
     ///     Equation {
@@ -223,10 +216,7 @@ impl UnitaryNode {
     /// };
     /// assert_eq!(unitary_node, control);
     /// ```
-    pub fn normalize(
-        &mut self,
-        unitary_nodes_used_inputs: &HashMap<String, HashMap<String, Vec<bool>>>,
-    ) {
+    pub fn normalize(&mut self) {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals());
 
         let UnitaryNode {
@@ -237,9 +227,7 @@ impl UnitaryNode {
         *scheduled_equations = scheduled_equations
             .clone()
             .into_iter()
-            .flat_map(|equation| {
-                equation.normalize(&mut identifier_creator, unitary_nodes_used_inputs)
-            })
+            .flat_map(|equation| equation.normalize(&mut identifier_creator))
             .collect();
     }
 
