@@ -1,3 +1,6 @@
+/// [Color] enumeration used to identify the processing status of an element.
+pub mod color;
+
 /// [Vertex] structure and API.
 pub mod vertex;
 
@@ -9,8 +12,12 @@ pub mod color;
 
 use std::collections::HashMap;
 
-use crate::common::graph::{color::Color, neighbor::Neighbor, vertex::Vertex};
-use crate::error::Error;
+use crate::{
+    common::graph::{color::Color, vertex::Vertex},
+    error::Error,
+};
+
+use self::neighbor::Neighbor;
 
 /// Graph structure.
 #[derive(Debug, PartialEq, Clone)]

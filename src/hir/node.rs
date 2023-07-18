@@ -39,7 +39,7 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
     ///     scope::Scope, r#type::Type,
     /// };
     ///
@@ -135,7 +135,7 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
     ///     scope::Scope, r#type::Type,
     /// };
     ///
@@ -271,7 +271,7 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
     ///     scope::Scope, r#type::Type,
     /// };
     ///
@@ -438,7 +438,7 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
     ///     scope::Scope, r#type::Type,
     /// };
     ///
@@ -608,7 +608,7 @@ impl Node {
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::common::{
-    ///     color::Color, graph::Graph, location::Location, scope::Scope, r#type::Type,
+    ///     graph::{color::Color, Graph}, location::Location, scope::Scope, r#type::Type,
     /// };
     /// use grustine::hir::{
     ///     equation::Equation, node::Node, memory::Memory, stream_expression::StreamExpression,
@@ -1259,7 +1259,10 @@ mod add_unitary_node {
     use std::collections::HashMap;
 
     use crate::common::{
-        color::Color, graph::Graph, location::Location, r#type::Type, scope::Scope,
+        graph::{color::Color, Graph},
+        location::Location,
+        r#type::Type,
+        scope::Scope,
     };
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
@@ -1598,7 +1601,10 @@ mod add_unitary_node {
 #[cfg(test)]
 mod generate_unitary_nodes {
     use crate::common::{
-        color::Color, graph::Graph, location::Location, r#type::Type, scope::Scope,
+        graph::{color::Color, Graph},
+        location::Location,
+        r#type::Type,
+        scope::Scope,
     };
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
