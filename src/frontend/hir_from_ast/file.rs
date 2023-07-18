@@ -6,7 +6,7 @@ use crate::hir::file::File as HIRFile;
 /// Transform AST files into HIR files.
 pub fn hir_from_ast(file: File) -> HIRFile {
     let File {
-        user_defined_types,
+        typedefs,
         functions,
         nodes,
         component,
@@ -14,7 +14,7 @@ pub fn hir_from_ast(file: File) -> HIRFile {
     } = file;
 
     HIRFile {
-        user_defined_types,
+        typedefs,
         functions: functions
             .into_iter()
             .map(|function| function_hir_from_ast(function))
@@ -108,7 +108,7 @@ mod hir_from_ast {
             location: Location::default(),
         };
         let ast_file = File {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![ast_function],
             nodes: vec![ast_node],
             component: None,
@@ -179,7 +179,7 @@ mod hir_from_ast {
             location: Location::default(),
         };
         let control = HIRFile {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![control_function],
             nodes: vec![control_node],
             component: None,
@@ -252,7 +252,7 @@ mod hir_from_ast {
             location: Location::default(),
         };
         let ast_file = File {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![ast_function],
             nodes: vec![ast_node],
             component: None,

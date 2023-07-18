@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{
-    expression::Expression, statement::Statement, user_defined_type::UserDefinedType,
-};
+use crate::ast::{expression::Expression, statement::Statement, typedef::Typedef};
 use crate::common::{context::Context, location::Location, type_system::Type};
 use crate::error::Error;
 
@@ -70,7 +68,7 @@ impl Function {
     pub fn typing(
         &mut self,
         global_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         let Function {
@@ -141,17 +139,15 @@ impl Function {
     ///
     /// use grustine::ast::{
     ///     expression::Expression, function::Function, statement::Statement,
-    ///     user_defined_type::UserDefinedType,
+    ///     typedef::Typedef,
     /// };
-    /// use grustine::common::{
-    ///     constant::Constant, location::Location, type_system::Type,
-    /// };
+    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
     ///
     /// let mut errors = vec![];
     /// let mut user_types_context = HashMap::new();
     /// user_types_context.insert(
     ///     String::from("Point"),
-    ///     UserDefinedType::Structure {
+    ///     Typedef::Structure {
     ///         id: String::from("Point"),
     ///         fields: vec![
     ///             (String::from("x"), Type::Integer),
@@ -250,7 +246,7 @@ impl Function {
     /// ```
     pub fn resolve_undefined_types(
         &mut self,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         let Function {
@@ -391,8 +387,7 @@ mod typing {
 #[cfg(test)]
 mod resolve_undefined_types {
     use crate::ast::{
-        expression::Expression, function::Function, statement::Statement,
-        user_defined_type::UserDefinedType,
+        expression::Expression, function::Function, statement::Statement, typedef::Typedef,
     };
     use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
@@ -403,7 +398,7 @@ mod resolve_undefined_types {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),

@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::user_defined_type::UserDefinedType;
-use crate::common::{
-    graph::{color::Color, Graph},
-    location::Location,
-};
+use crate::ast::typedef::Typedef;
+use crate::common::{color::Color, graph::Graph, location::Location};
 use crate::error::Error;
 use crate::hir::{function::Function, node::Node};
 
@@ -13,7 +10,7 @@ use crate::hir::{function::Function, node::Node};
 /// types defined by the user and an optional component.
 pub struct File {
     /// Program types.
-    pub user_defined_types: Vec<UserDefinedType>,
+    pub typedefs: Vec<Typedef>,
     /// Program functions.
     pub functions: Vec<Function>,
     /// Program nodes. They are functional requirements.
@@ -106,7 +103,7 @@ impl File {
     /// };
     ///
     /// let mut file = File {
-    ///     user_defined_types: vec![],
+    ///     typedefs: vec![],
     ///     functions: vec![function],
     ///     nodes: vec![node],
     ///     component: None,
@@ -517,7 +514,7 @@ mod normalize {
             location: Location::default(),
         };
         let mut file = File {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![function],
             nodes: vec![my_node, other_node, node],
             component: None,
@@ -883,7 +880,7 @@ mod normalize {
             location: Location::default(),
         };
         let control = File {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![function],
             nodes: vec![my_node, other_node, node],
             component: None,

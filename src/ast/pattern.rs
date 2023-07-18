@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::user_defined_type::UserDefinedType;
+use crate::ast::typedef::Typedef;
 use crate::common::{constant::Constant, context::Context, location::Location, type_system::Type};
 use crate::error::Error;
 
@@ -86,11 +86,10 @@ impl Pattern {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ast::{
-    ///     pattern::Pattern, user_defined_type::UserDefinedType
-    /// };
+    /// use grustine::ast::typedef::Typedef;
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, type_system::Type,
+    ///     constant::Constant, location::Location, pattern::Pattern,
+    ///     type_system::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -99,7 +98,7 @@ impl Pattern {
     ///
     /// user_types_context.insert(
     ///    String::from("Point"),
-    ///     UserDefinedType::Structure {
+    ///     Typedef::Structure {
     ///         id: String::from("Point"),
     ///         fields: vec![
     ///             (String::from("x"), Type::Integer),
@@ -141,7 +140,7 @@ impl Pattern {
         &self,
         expected_type: &Type,
         elements_context: &mut HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         match self {
@@ -172,7 +171,7 @@ impl Pattern {
                 Type::Structure(structure_name) if name.eq(structure_name) => {
                     let user_type = user_types_context.get(structure_name).unwrap();
                     match user_type {
-                        UserDefinedType::Structure { .. } => user_type.well_defined_structure(
+                        Typedef::Structure { .. } => user_type.well_defined_structure(
                             fields,
                             |pattern, field_type, errors| {
                                 pattern.construct_context(
@@ -294,8 +293,10 @@ impl Pattern {
 mod construct_context {
     use std::collections::HashMap;
 
-    use crate::ast::{pattern::Pattern, user_defined_type::UserDefinedType};
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::ast::typedef::Typedef;
+    use crate::common::{
+        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
+    };
 
     #[test]
     fn should_check_identifier_pattern_for_any_type() {
@@ -369,7 +370,7 @@ mod construct_context {
 
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -419,7 +420,7 @@ mod construct_context {
 
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -577,7 +578,7 @@ mod construct_context {
 
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),

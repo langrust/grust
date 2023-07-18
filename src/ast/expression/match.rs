@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::type_system::Type;
 use crate::error::Error;
 
@@ -10,7 +10,7 @@ impl Expression {
         &mut self,
         global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         match self {
@@ -85,8 +85,9 @@ impl Expression {
 
 #[cfg(test)]
 mod typing_match {
-    use crate::ast::{
-        expression::Expression, pattern::Pattern, user_defined_type::UserDefinedType,
+    use crate::ast::{expression::Expression, typedef::Typedef};
+    use crate::common::{
+        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
     };
     use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
@@ -104,7 +105,7 @@ mod typing_match {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),

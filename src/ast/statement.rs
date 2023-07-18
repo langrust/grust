@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::{location::Location, type_system::Type};
 use crate::error::Error;
 
@@ -54,7 +54,7 @@ impl Statement {
         &mut self,
         global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         let Statement {
@@ -78,7 +78,7 @@ impl Statement {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::{
-    ///     expression::Expression, statement::Statement, user_defined_type::UserDefinedType,
+    ///     expression::Expression, statement::Statement, typedef::Typedef,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, location::Location, type_system::Type,
@@ -88,7 +88,7 @@ impl Statement {
     /// let mut user_types_context = HashMap::new();
     /// user_types_context.insert(
     ///     String::from("Point"),
-    ///     UserDefinedType::Structure {
+    ///     Typedef::Structure {
     ///         id: String::from("Point"),
     ///         fields: vec![
     ///             (String::from("x"), Type::Integer),
@@ -164,7 +164,7 @@ impl Statement {
     /// ```
     pub fn resolve_undefined_types(
         &mut self,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         let Statement {
@@ -257,9 +257,7 @@ mod typing {
 mod determine_types {
     use std::collections::HashMap;
 
-    use crate::ast::{
-        expression::Expression, statement::Statement, user_defined_type::UserDefinedType,
-    };
+    use crate::ast::{expression::Expression, statement::Statement, typedef::Typedef};
     use crate::common::{constant::Constant, location::Location, type_system::Type};
 
     #[test]
@@ -268,7 +266,7 @@ mod determine_types {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),

@@ -9,7 +9,7 @@ use crate::ast::{
     node::Node,
     statement::Statement,
     stream_expression::StreamExpression,
-    user_defined_type::UserDefinedType,
+    typedef::Typedef,
 };
 use crate::common::{
     constant::Constant,
@@ -573,10 +573,10 @@ pub equation: Equation = {
 }
 
 /// Catches type definition
-pub userType: UserDefinedType = {
+pub userType: Typedef = {
     // catches enumerations definition
     <start:@L> "enum" <id: ID> "{" <elements: list<ID>> "}" <end:@R> => {
-        UserDefinedType::Enumeration {
+        Typedef::Enumeration {
             id,
             elements,
             location: Location{ file_id, range: start..end },
@@ -584,7 +584,7 @@ pub userType: UserDefinedType = {
     },
     // catches structure definition
     <start:@L> "struct" <id: ID> "{" <fields: hash<ID, basicType>> "}" <end:@R> => {
-        UserDefinedType::Structure {
+        Typedef::Structure {
             id,
             fields,
             location: Location{ file_id, range: start..end },
@@ -592,7 +592,7 @@ pub userType: UserDefinedType = {
     },
     // catches array definition
     <start:@L> "array" <id: ID> "[" <t: basicType> ";" <n: r"\d+"> "]" <end:@R> => {
-        UserDefinedType::Array {
+        Typedef::Array {
             id,
             array_type: t,
             size: usize::from_str(n).unwrap(),
@@ -671,7 +671,7 @@ pub component: Node = {
 pub module: File = {
     // a module composed of one type
     <start:@L> <t: userType> <end:@R> =>  File {
-        user_defined_types: vec![t],
+        typedefs: vec![t],
         functions: vec![],
         nodes: vec![],
         component: None,
@@ -679,7 +679,7 @@ pub module: File = {
     },
     // a module composed of one function
     <start:@L> <f: function> <end:@R> =>  File {
-        user_defined_types: vec![],
+        typedefs: vec![],
         functions: vec![f],
         nodes: vec![],
         component: None,
@@ -687,7 +687,7 @@ pub module: File = {
     },
     // a module composed of one node
     <start:@L> <n: node> <end:@R> =>  File {
-        user_defined_types: vec![],
+        typedefs: vec![],
         functions: vec![],
         nodes: vec![n],
         component: None,
@@ -717,7 +717,7 @@ pub module: File = {
 pub program: File = {
     // a program composed of one component
     <start:@L> <c: component> <end:@R> => File {
-        user_defined_types: vec![],
+        typedefs: vec![],
         functions: vec![],
         nodes: vec![],
         component: Some(c),
@@ -725,9 +725,9 @@ pub program: File = {
     },
     // adds a component to a module, this returns a program
     <start:@L> <m: module> <c: component> <end:@R> =>  {
-        let (user_defined_types, functions, nodes) = m.get_types_functions_nodes();
+        let (typedefs, functions, nodes) = m.get_types_functions_nodes();
         File {
-            user_defined_types,
+            typedefs,
             functions,
             nodes,
             component: Some(c),

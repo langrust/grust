@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    node_description::NodeDescription, stream_expression::StreamExpression,
-    user_defined_type::UserDefinedType,
+    node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
 use crate::common::type_system::Type;
 use crate::error::Error;
@@ -14,7 +13,7 @@ impl StreamExpression {
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         global_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         match self {
