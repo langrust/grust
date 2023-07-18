@@ -1,9 +1,9 @@
 use crate::ast::equation::Equation;
 use crate::frontend::hir_from_ast::stream_expression::hir_from_ast as stream_expression_hir_from_ast;
-use crate::ir::equation::Equation as IREquation;
+use crate::hir::equation::Equation as HIREquation;
 
-/// Transform AST equations into IR equations.
-pub fn hir_from_ast(equation: Equation) -> IREquation {
+/// Transform AST equations into HIR equations.
+pub fn hir_from_ast(equation: Equation) -> HIREquation {
     let Equation {
         scope,
         id,
@@ -12,7 +12,7 @@ pub fn hir_from_ast(equation: Equation) -> IREquation {
         location,
     } = equation;
 
-    IREquation {
+    HIREquation {
         scope,
         id,
         signal_type,
@@ -28,9 +28,9 @@ mod hir_from_ast {
     };
     use crate::common::{location::Location, scope::Scope, type_system::Type};
     use crate::frontend::hir_from_ast::equation::hir_from_ast;
-    use crate::ir::{
-        equation::Equation as IREquation, expression::Expression as IRExpression,
-        stream_expression::StreamExpression as IRStreamExpression,
+    use crate::hir::{
+        equation::Equation as HIREquation, expression::Expression as HIRExpression,
+        stream_expression::StreamExpression as HIRStreamExpression,
     };
 
     #[test]
@@ -58,17 +58,17 @@ mod hir_from_ast {
         };
         let hir_equation = hir_from_ast(ast_equation);
 
-        let control = IREquation {
+        let control = HIREquation {
             id: String::from("o"),
             scope: Scope::Output,
             signal_type: Type::Integer,
-            expression: IRStreamExpression::MapApplication {
-                function_expression: IRExpression::Call {
+            expression: HIRStreamExpression::MapApplication {
+                function_expression: HIRExpression::Call {
                     id: String::from("f"),
                     typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                     location: Location::default(),
                 },
-                inputs: vec![IRStreamExpression::SignalCall {
+                inputs: vec![HIRStreamExpression::SignalCall {
                     id: String::from("i"),
                     typing: Type::Integer,
                     location: Location::default(),

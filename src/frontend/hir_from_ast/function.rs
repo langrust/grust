@@ -1,10 +1,10 @@
 use crate::ast::function::Function;
 use crate::frontend::hir_from_ast::expression::hir_from_ast as expression_hir_from_ast;
 use crate::frontend::hir_from_ast::statement::hir_from_ast as statement_hir_from_ast;
-use crate::ir::function::Function as IRFunction;
+use crate::hir::function::Function as HIRFunction;
 
-/// Transform AST functions into IR function.
-pub fn hir_from_ast(function: Function) -> IRFunction {
+/// Transform AST functions into HIR function.
+pub fn hir_from_ast(function: Function) -> HIRFunction {
     let Function {
         id,
         inputs,
@@ -13,7 +13,7 @@ pub fn hir_from_ast(function: Function) -> IRFunction {
         location,
     } = function;
 
-    IRFunction {
+    HIRFunction {
         id,
         inputs,
         statements: statements
@@ -30,9 +30,9 @@ mod hir_from_ast {
     use crate::ast::{expression::Expression, function::Function, statement::Statement};
     use crate::common::{location::Location, type_system::Type};
     use crate::frontend::hir_from_ast::function::hir_from_ast;
-    use crate::ir::{
-        expression::Expression as IRExpression, function::Function as IRFunction,
-        statement::Statement as IRStatement,
+    use crate::hir::{
+        expression::Expression as HIRExpression, function::Function as HIRFunction,
+        statement::Statement as HIRStatement,
     };
 
     #[test]
@@ -71,19 +71,19 @@ mod hir_from_ast {
         };
         let hir_function = hir_from_ast(ast_function);
 
-        let control = IRFunction {
+        let control = HIRFunction {
             id: String::from("my_function"),
             inputs: vec![(String::from("x"), Type::Integer)],
-            statements: vec![IRStatement {
+            statements: vec![HIRStatement {
                 id: String::from("y"),
                 element_type: Type::Integer,
-                expression: IRExpression::Application {
-                    function_expression: Box::new(IRExpression::Call {
+                expression: HIRExpression::Application {
+                    function_expression: Box::new(HIRExpression::Call {
                         id: String::from("f"),
                         typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                         location: Location::default(),
                     }),
-                    inputs: vec![IRExpression::Call {
+                    inputs: vec![HIRExpression::Call {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
@@ -95,7 +95,7 @@ mod hir_from_ast {
             }],
             returned: (
                 Type::Integer,
-                IRExpression::Call {
+                HIRExpression::Call {
                     id: String::from("y"),
                     typing: Type::Integer,
                     location: Location::default(),

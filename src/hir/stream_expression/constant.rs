@@ -1,4 +1,4 @@
-use crate::ir::stream_expression::StreamExpression;
+use crate::hir::stream_expression::StreamExpression;
 
 impl StreamExpression {
     /// Get dependencies of a constant stream expression.
@@ -14,7 +14,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_constant_dependencies {
     use crate::common::{constant::Constant, location::Location, type_system::Type};
-    use crate::ir::stream_expression::StreamExpression;
+    use crate::hir::stream_expression::StreamExpression;
 
     #[test]
     fn should_get_no_dependencies_from_constant_expression() {

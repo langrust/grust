@@ -99,7 +99,7 @@ pub mod common;
 pub mod error;
 /// LanGRust frontend transformations.
 pub mod frontend;
-/// LanGRust IR module.
-pub mod ir;
+/// LanGRust HIR module.
+pub mod hir;
 /// LanGRust parser module.
 pub mod parser;

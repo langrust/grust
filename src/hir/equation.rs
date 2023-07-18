@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::common::{location::Location, scope::Scope, type_system::Type};
-use crate::ir::{
+use crate::hir::{
     identifier_creator::IdentifierCreator, memory::Memory, stream_expression::StreamExpression,
 };
 
@@ -21,9 +21,9 @@ pub struct Equation {
 }
 
 impl Equation {
-    /// Normalize IR equations.
+    /// Normalize HIR equations.
     ///
-    /// Normalize IR equations as follows:
+    /// Normalize HIR equations as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -47,7 +47,7 @@ impl Equation {
     /// use std::collections::{HashSet, HashMap};
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
     ///     stream_expression::StreamExpression,
     /// };
@@ -251,7 +251,7 @@ mod memorize {
     use std::collections::HashSet;
 
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
         memory::Memory, stream_expression::StreamExpression,
     };

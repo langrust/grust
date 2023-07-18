@@ -9,7 +9,7 @@ use crate::common::{
     type_system::Type,
 };
 use crate::error::Error;
-use crate::ir::{
+use crate::hir::{
     equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
     memory::Memory, node::Node,
 };
@@ -156,7 +156,7 @@ impl StreamExpression {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ir::stream_expression::StreamExpression;
+    /// use grustine::hir::stream_expression::StreamExpression;
     /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
     ///
     /// let mut stream_expression = StreamExpression::Constant {
@@ -187,7 +187,7 @@ impl StreamExpression {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::ir::stream_expression::StreamExpression;
+    /// use grustine::hir::stream_expression::StreamExpression;
     /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
     ///
     /// let mut stream_expression = StreamExpression::Constant {
@@ -219,7 +219,7 @@ impl StreamExpression {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
@@ -402,9 +402,9 @@ impl StreamExpression {
         }
     }
 
-    /// Normalize IR expressions.
+    /// Normalize HIR expressions.
     ///
-    /// Normalize IR expressions as follows:
+    /// Normalize HIR expressions as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -428,7 +428,7 @@ impl StreamExpression {
     /// use std::collections::{HashSet, HashMap};
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
     ///     stream_expression::StreamExpression,
     /// };
@@ -933,9 +933,10 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod get_dependencies {
-    use crate::ast::pattern::Pattern;
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::common::{
+        constant::Constant, location::Location, pattern::Pattern, scope::Scope, type_system::Type,
+    };
+    use crate::hir::{
         equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
     };
     use std::collections::HashMap;
@@ -1590,7 +1591,7 @@ mod normalize_to_signal_call {
     use std::collections::{HashMap, HashSet};
 
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, identifier_creator::IdentifierCreator,
         stream_expression::StreamExpression,
     };
@@ -1671,7 +1672,7 @@ mod normalize {
     use std::collections::{HashMap, HashSet};
 
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
         stream_expression::StreamExpression,
     };
@@ -1816,7 +1817,7 @@ mod memorize {
     use std::collections::HashSet;
 
     use crate::common::{constant::Constant, location::Location, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         expression::Expression, identifier_creator::IdentifierCreator, memory::Memory,
         stream_expression::StreamExpression,
     };

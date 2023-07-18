@@ -1,10 +1,10 @@
 use crate::ast::file::File;
 use crate::frontend::hir_from_ast::function::hir_from_ast as function_hir_from_ast;
 use crate::frontend::hir_from_ast::node::hir_from_ast as node_hir_from_ast;
-use crate::ir::file::File as IRFile;
+use crate::hir::file::File as HIRFile;
 
-/// Transform AST files into IR files.
-pub fn hir_from_ast(file: File) -> IRFile {
+/// Transform AST files into HIR files.
+pub fn hir_from_ast(file: File) -> HIRFile {
     let File {
         user_defined_types,
         functions,
@@ -13,7 +13,7 @@ pub fn hir_from_ast(file: File) -> IRFile {
         location,
     } = file;
 
-    IRFile {
+    HIRFile {
         user_defined_types,
         functions: functions
             .into_iter()
@@ -38,11 +38,11 @@ mod hir_from_ast {
     };
     use crate::common::{location::Location, scope::Scope, type_system::Type};
     use crate::frontend::hir_from_ast::file::hir_from_ast;
-    use crate::ir::{
-        equation::Equation as IREquation, expression::Expression as IRExpression,
-        file::File as IRFile, function::Function as IRFunction, node::Node as IRNode,
-        statement::Statement as IRStatement,
-        stream_expression::StreamExpression as IRStreamExpression,
+    use crate::hir::{
+        equation::Equation as HIREquation, expression::Expression as HIRExpression,
+        file::File as HIRFile, function::Function as HIRFunction, node::Node as HIRNode,
+        statement::Statement as HIRStatement,
+        stream_expression::StreamExpression as HIRStreamExpression,
     };
 
     #[test]
@@ -116,19 +116,19 @@ mod hir_from_ast {
         };
         let hir_file = hir_from_ast(ast_file);
 
-        let control_function = IRFunction {
+        let control_function = HIRFunction {
             id: String::from("my_function"),
             inputs: vec![(String::from("x"), Type::Integer)],
-            statements: vec![IRStatement {
+            statements: vec![HIRStatement {
                 id: String::from("y"),
                 element_type: Type::Integer,
-                expression: IRExpression::Application {
-                    function_expression: Box::new(IRExpression::Call {
+                expression: HIRExpression::Application {
+                    function_expression: Box::new(HIRExpression::Call {
                         id: String::from("f"),
                         typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                         location: Location::default(),
                     }),
-                    inputs: vec![IRExpression::Call {
+                    inputs: vec![HIRExpression::Call {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
@@ -140,7 +140,7 @@ mod hir_from_ast {
             }],
             returned: (
                 Type::Integer,
-                IRExpression::Call {
+                HIRExpression::Call {
                     id: String::from("y"),
                     typing: Type::Integer,
                     location: Location::default(),
@@ -148,23 +148,23 @@ mod hir_from_ast {
             ),
             location: Location::default(),
         };
-        let control_node = IRNode {
+        let control_node = HIRNode {
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
             unscheduled_equations: HashMap::from([(
                 String::from("o"),
-                IREquation {
+                HIREquation {
                     id: String::from("o"),
                     scope: Scope::Output,
                     signal_type: Type::Integer,
-                    expression: IRStreamExpression::MapApplication {
-                        function_expression: IRExpression::Call {
+                    expression: HIRStreamExpression::MapApplication {
+                        function_expression: HIRExpression::Call {
                             id: String::from("my_function"),
                             typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
                             location: Location::default(),
                         },
-                        inputs: vec![IRStreamExpression::SignalCall {
+                        inputs: vec![HIRStreamExpression::SignalCall {
                             id: String::from("i"),
                             typing: Type::Integer,
                             location: Location::default(),
@@ -178,7 +178,7 @@ mod hir_from_ast {
             unitary_nodes: HashMap::new(),
             location: Location::default(),
         };
-        let control = IRFile {
+        let control = HIRFile {
             user_defined_types: vec![],
             functions: vec![control_function],
             nodes: vec![control_node],

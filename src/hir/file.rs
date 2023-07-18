@@ -6,7 +6,7 @@ use crate::common::{
     location::Location,
 };
 use crate::error::Error;
-use crate::ir::{function::Function, node::Node};
+use crate::hir::{function::Function, node::Node};
 
 #[derive(Debug, PartialEq)]
 /// A LanGRust [File] is composed of functions nodes,
@@ -31,7 +31,7 @@ impl File {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, function::Function,
     ///     file::File, node::Node, statement::Statement, stream_expression::StreamExpression,
     /// };
@@ -194,7 +194,7 @@ impl File {
         Ok(nodes_graphs)
     }
 
-    /// Normalize IR file.
+    /// Normalize HIR file.
     ///
     /// Normalize all nodes of a file as follows:
     /// - node application can only append at root expression
@@ -291,7 +291,7 @@ impl File {
 #[cfg(test)]
 mod normalize {
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, expression::Expression, file::File, function::Function, memory::Memory,
         node::Node, statement::Statement, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,

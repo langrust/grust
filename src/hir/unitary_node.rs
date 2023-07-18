@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use crate::common::{location::Location, type_system::Type};
-use crate::ir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory};
+use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory};
 
 #[derive(Debug, PartialEq, Clone)]
-/// LanGRust unitary node IR.
+/// LanGRust unitary node HIR.
 pub struct UnitaryNode {
     /// Mother node identifier.
     pub node_id: String,
@@ -21,9 +21,9 @@ pub struct UnitaryNode {
 }
 
 impl UnitaryNode {
-    /// Normalize IR unitary nodes.
+    /// Normalize HIR unitary nodes.
     ///
-    /// Normalize IR unitary node's equations as follows:
+    /// Normalize HIR unitary node's equations as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -51,7 +51,7 @@ impl UnitaryNode {
     /// use std::collections::HashMap;
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, memory::Memory,
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
@@ -232,7 +232,7 @@ impl UnitaryNode {
             .collect();
     }
 
-    /// Create memory for IR unitary nodes.
+    /// Create memory for HIR unitary nodes.
     ///
     /// Store buffer for followed by expressions and unitary node applications.
     /// Transform followed by expressions in signal call.
@@ -281,7 +281,7 @@ impl UnitaryNode {
 #[cfg(test)]
 mod memorize {
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, expression::Expression, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };

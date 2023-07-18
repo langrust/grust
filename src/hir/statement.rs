@@ -1,5 +1,5 @@
 use crate::common::{location::Location, type_system::Type};
-use crate::ir::expression::Expression;
+use crate::hir::expression::Expression;
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust statement AST.

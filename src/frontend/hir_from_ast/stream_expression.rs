@@ -1,16 +1,16 @@
 use crate::ast::stream_expression::StreamExpression;
-use crate::ir::stream_expression::StreamExpression as IRStreamExpression;
+use crate::hir::stream_expression::StreamExpression as HIRStreamExpression;
 
 use crate::frontend::hir_from_ast::expression::hir_from_ast as expression_hir_from_ast;
 
-/// Transform AST stream expressions into IR stream expressions.
-pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
+/// Transform AST stream expressions into HIR stream expressions.
+pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression {
     match stream_expression {
         StreamExpression::Constant {
             constant,
             typing,
             location,
-        } => IRStreamExpression::Constant {
+        } => HIRStreamExpression::Constant {
             constant,
             typing: typing.unwrap(),
             location,
@@ -19,7 +19,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
             id,
             typing,
             location,
-        } => IRStreamExpression::SignalCall {
+        } => HIRStreamExpression::SignalCall {
             id,
             typing: typing.unwrap(),
             location,
@@ -29,7 +29,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
             inputs,
             typing,
             location,
-        } => IRStreamExpression::MapApplication {
+        } => HIRStreamExpression::MapApplication {
             function_expression: expression_hir_from_ast(function_expression),
             inputs: inputs
                 .into_iter()
@@ -43,7 +43,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
             fields,
             typing,
             location,
-        } => IRStreamExpression::Structure {
+        } => HIRStreamExpression::Structure {
             name,
             fields: fields
                 .into_iter()
@@ -56,7 +56,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
             elements,
             typing,
             location,
-        } => IRStreamExpression::Array {
+        } => HIRStreamExpression::Array {
             elements: elements
                 .into_iter()
                 .map(|expression| hir_from_ast(expression))
@@ -69,7 +69,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
             arms,
             typing,
             location,
-        } => IRStreamExpression::Match {
+        } => HIRStreamExpression::Match {
             expression: Box::new(hir_from_ast(*expression)),
             arms: arms
                 .into_iter()
@@ -92,7 +92,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
             default,
             typing,
             location,
-        } => IRStreamExpression::When {
+        } => HIRStreamExpression::When {
             id,
             option: Box::new(hir_from_ast(*option)),
             present_body: vec![],
@@ -107,7 +107,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
             expression,
             typing,
             location,
-        } => IRStreamExpression::FollowedBy {
+        } => HIRStreamExpression::FollowedBy {
             constant,
             expression: Box::new(hir_from_ast(*expression)),
             typing: typing.unwrap(),
@@ -119,7 +119,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> IRStreamExpression {
             signal,
             typing,
             location,
-        } => IRStreamExpression::NodeApplication {
+        } => HIRStreamExpression::NodeApplication {
             node,
             inputs: inputs
                 .into_iter()
@@ -137,7 +137,7 @@ mod hir_from_ast {
     use crate::ast::stream_expression::StreamExpression;
     use crate::common::{location::Location, type_system::Type};
     use crate::frontend::hir_from_ast::stream_expression::hir_from_ast;
-    use crate::ir::stream_expression::StreamExpression as IRStreamExpression;
+    use crate::hir::stream_expression::StreamExpression as HIRStreamExpression;
 
     #[test]
     fn should_construct_hir_structure_from_typed_ast() {
@@ -148,7 +148,7 @@ mod hir_from_ast {
         };
         let hir_stream_expression = hir_from_ast(ast_stream_expression);
 
-        let control = IRStreamExpression::SignalCall {
+        let control = HIRStreamExpression::SignalCall {
             id: String::from("s"),
             typing: Type::Integer,
             location: Location::default(),

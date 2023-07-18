@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use crate::common::graph::{color::Color, Graph};
 use crate::error::Error;
-use crate::ir::{node::Node, stream_expression::StreamExpression};
+use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
-    /// Get dependencies of an array stream expression.
-    pub fn get_array_dependencies(
+    /// Get dependencies of a structure stream expression.
+    pub fn get_structure_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -14,11 +14,11 @@ impl StreamExpression {
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(String, usize)>, ()> {
         match self {
-            // dependencies of array are dependencies of its elements
-            StreamExpression::Array { elements, .. } => Ok(elements
+            // dependencies of structure are dependencies of its fields
+            StreamExpression::Structure { fields, .. } => Ok(fields
                 .iter()
-                .map(|element_expression| {
-                    element_expression.get_dependencies(
+                .map(|(_, field_expression)| {
+                    field_expression.get_dependencies(
                         nodes_context,
                         nodes_graphs,
                         nodes_reduced_graphs,
@@ -35,51 +35,44 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_array_dependencies {
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
-    use crate::ir::{expression::Expression, stream_expression::StreamExpression};
+mod get_structure_dependencies {
+    use crate::common::{location::Location, type_system::Type};
+    use crate::hir::stream_expression::StreamExpression;
     use std::collections::HashMap;
 
     #[test]
-    fn should_get_dependencies_of_array_elements_with_duplicates() {
+    fn should_get_dependencies_of_structure_elements_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
 
-        let stream_expression = StreamExpression::Array {
-            elements: vec![
-                StreamExpression::SignalCall {
-                    id: String::from("x"),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                },
-                StreamExpression::MapApplication {
-                    function_expression: Expression::Call {
-                        id: String::from("f"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
+        let stream_expression = StreamExpression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    StreamExpression::SignalCall {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                },
-                StreamExpression::Constant {
-                    constant: Constant::Integer(1),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                },
+                    },
+                ),
+                (
+                    String::from("y"),
+                    StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                ),
             ],
-            typing: Type::Array(Box::new(Type::Integer), 3),
+            typing: Type::Integer,
             location: Location::default(),
         };
 
         let dependencies = stream_expression
-            .get_array_dependencies(
+            .get_structure_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,

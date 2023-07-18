@@ -7,7 +7,7 @@ use crate::common::{
     type_system::Type,
 };
 use crate::error::Error;
-use crate::ir::{equation::Equation, memory::Memory, unitary_node::UnitaryNode};
+use crate::hir::{equation::Equation, memory::Memory, unitary_node::UnitaryNode};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust node AST.
@@ -35,7 +35,7 @@ impl Node {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
@@ -131,7 +131,7 @@ impl Node {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
@@ -267,7 +267,7 @@ impl Node {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
@@ -434,7 +434,7 @@ impl Node {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
@@ -610,7 +610,7 @@ impl Node {
     /// use grustine::common::{
     ///     graph::{color::Color, Graph}, location::Location, scope::Scope, type_system::Type,
     /// };
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, node::Node, memory::Memory, stream_expression::StreamExpression,
     ///     unitary_node::UnitaryNode,
     /// };
@@ -891,7 +891,7 @@ impl Node {
         Ok(subgraph)
     }
 
-    /// Normalize IR node.
+    /// Normalize HIR node.
     ///
     /// Normalize all unitary nodes of a node as follows:
     /// - node application can only append at root expression
@@ -937,7 +937,7 @@ impl Node {
     /// use std::collections::{HashSet, HashMap};
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
-    /// use grustine::ir::{
+    /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, memory::Memory, node::Node,
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
@@ -1264,7 +1264,7 @@ mod add_unitary_node {
         scope::Scope,
         type_system::Type,
     };
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
     };
@@ -1606,7 +1606,7 @@ mod generate_unitary_nodes {
         scope::Scope,
         type_system::Type,
     };
-    use crate::ir::{
+    use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
     };

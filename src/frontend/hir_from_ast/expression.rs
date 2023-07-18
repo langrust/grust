@@ -1,14 +1,14 @@
 use crate::ast::expression::Expression;
-use crate::ir::expression::Expression as IRExpression;
+use crate::hir::expression::Expression as HIRExpression;
 
-/// Transform AST expressions into IR expressions.
-pub fn hir_from_ast(expression: Expression) -> IRExpression {
+/// Transform AST expressions into HIR expressions.
+pub fn hir_from_ast(expression: Expression) -> HIRExpression {
     match expression {
         Expression::Constant {
             constant,
             typing,
             location,
-        } => IRExpression::Constant {
+        } => HIRExpression::Constant {
             constant,
             typing: typing.unwrap(),
             location,
@@ -17,7 +17,7 @@ pub fn hir_from_ast(expression: Expression) -> IRExpression {
             id,
             typing,
             location,
-        } => IRExpression::Call {
+        } => HIRExpression::Call {
             id,
             typing: typing.unwrap(),
             location,
@@ -27,7 +27,7 @@ pub fn hir_from_ast(expression: Expression) -> IRExpression {
             inputs,
             typing,
             location,
-        } => IRExpression::Application {
+        } => HIRExpression::Application {
             function_expression: Box::new(hir_from_ast(*function_expression)),
             inputs: inputs
                 .into_iter()
@@ -41,7 +41,7 @@ pub fn hir_from_ast(expression: Expression) -> IRExpression {
             expression,
             typing,
             location,
-        } => IRExpression::TypedAbstraction {
+        } => HIRExpression::TypedAbstraction {
             inputs: inputs
                 .into_iter()
                 .zip(typing.clone().unwrap().get_inputs())
@@ -55,7 +55,7 @@ pub fn hir_from_ast(expression: Expression) -> IRExpression {
             expression,
             typing,
             location,
-        } => IRExpression::TypedAbstraction {
+        } => HIRExpression::TypedAbstraction {
             inputs,
             expression: Box::new(hir_from_ast(*expression)),
             typing: typing.unwrap(),
@@ -66,7 +66,7 @@ pub fn hir_from_ast(expression: Expression) -> IRExpression {
             fields,
             typing,
             location,
-        } => IRExpression::Structure {
+        } => HIRExpression::Structure {
             name,
             fields: fields
                 .into_iter()
@@ -79,7 +79,7 @@ pub fn hir_from_ast(expression: Expression) -> IRExpression {
             elements,
             typing,
             location,
-        } => IRExpression::Array {
+        } => HIRExpression::Array {
             elements: elements
                 .into_iter()
                 .map(|expression| hir_from_ast(expression))
@@ -92,7 +92,7 @@ pub fn hir_from_ast(expression: Expression) -> IRExpression {
             arms,
             typing,
             location,
-        } => IRExpression::Match {
+        } => HIRExpression::Match {
             expression: Box::new(hir_from_ast(*expression)),
             arms: arms
                 .into_iter()
@@ -114,7 +114,7 @@ pub fn hir_from_ast(expression: Expression) -> IRExpression {
             default,
             typing,
             location,
-        } => IRExpression::When {
+        } => HIRExpression::When {
             id,
             option: Box::new(hir_from_ast(*option)),
             present: Box::new(hir_from_ast(*present)),
@@ -130,7 +130,7 @@ mod hir_from_ast {
     use crate::ast::expression::Expression;
     use crate::common::{location::Location, type_system::Type};
     use crate::frontend::hir_from_ast::expression::hir_from_ast;
-    use crate::ir::expression::Expression as IRExpression;
+    use crate::hir::expression::Expression as HIRExpression;
 
     #[test]
     fn should_construct_hir_structure_from_typed_ast() {
@@ -141,7 +141,7 @@ mod hir_from_ast {
         };
         let hir_expression = hir_from_ast(ast_expression);
 
-        let control = IRExpression::Call {
+        let control = HIRExpression::Call {
             id: String::from("f"),
             typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
             location: Location::default(),
