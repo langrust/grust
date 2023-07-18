@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use crate::hir::unitary_node::UnitaryNode;
-
 /// Identifier creator used to create fresh signals.
 #[derive(Debug, PartialEq)]
 pub struct IdentifierCreator {
@@ -9,20 +7,14 @@ pub struct IdentifierCreator {
     pub signals: HashSet<String>,
 }
 impl IdentifierCreator {
-    /// Create a new identifier creator from an unitary node.
+    /// Create a new identifier creator from a list of identifiers.
     ///
-    /// It will store all existing signals from the unitary node.
-    pub fn new(unitary_node: &UnitaryNode) -> Self {
+    /// It will store all existing id from the list.
+    pub fn from(identifiers: Vec<String>) -> Self {
         let mut signals = HashSet::new();
-        unitary_node.inputs.iter().for_each(|(signal, _)| {
-            signals.insert(signal.clone());
+        identifiers.iter().for_each(|id| {
+            signals.insert(id.clone());
         });
-        unitary_node
-            .scheduled_equations
-            .iter()
-            .for_each(|equation| {
-                signals.insert(equation.id.clone());
-            });
         IdentifierCreator { signals }
     }
     fn already_defined(&self, identifier: &String) -> bool {
@@ -31,7 +23,6 @@ impl IdentifierCreator {
     fn add_signal(&mut self, signal: &String) {
         self.signals.insert(signal.clone());
     }
-
     /// Create new identifier from request.
     ///
     /// If the requested identifier is not used then return it.
@@ -91,7 +82,7 @@ impl IdentifierCreator {
     ///     memory: Memory::new(),
     ///     location: Location::default(),
     /// };
-    /// let mut identifier_creator = IdentifierCreator::new(&unitary_node);
+    /// let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
     ///
     /// let identifier = identifier_creator.new_identifier(String::from("mem_"), String::from("x"), String::from(""));
     /// let control = String::from("mem_x");
@@ -101,7 +92,6 @@ impl IdentifierCreator {
     /// let control = String::from("mem_x_1");
     /// assert_eq!(identifier, control)
     /// ```
-
     pub fn new_identifier(&mut self, prefix: String, name: String, suffix: String) -> String {
         let mut identifier = format!("{prefix}{name}{suffix}");
 
@@ -159,7 +149,7 @@ mod new {
             memory: Memory::new(),
             location: Location::default(),
         };
-        let identifier_creator = IdentifierCreator::new(&unitary_node);
+        let identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
         let control = IdentifierCreator {
             signals: HashSet::from([String::from("i1"), String::from("o1"), String::from("x")]),
         };
@@ -209,7 +199,7 @@ mod new_identifier {
             memory: Memory::new(),
             location: Location::default(),
         };
-        let mut identifier_creator = IdentifierCreator::new(&unitary_node);
+        let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
         let identifier = identifier_creator.new_identifier(
             String::from("mem_"),
             String::from("x"),
@@ -253,7 +243,7 @@ mod new_identifier {
             memory: Memory::new(),
             location: Location::default(),
         };
-        let mut identifier_creator = IdentifierCreator::new(&unitary_node);
+        let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
         let identifier = identifier_creator.new_identifier(
             String::from(""),
             String::from("x"),
@@ -297,7 +287,7 @@ mod new_identifier {
             memory: Memory::new(),
             location: Location::default(),
         };
-        let mut identifier_creator = IdentifierCreator::new(&unitary_node);
+        let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
         identifier_creator.new_identifier(String::from(""), String::from("x"), String::from(""));
         let identifier = identifier_creator.new_identifier(
             String::from(""),
