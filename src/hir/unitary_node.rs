@@ -21,6 +21,17 @@ pub struct UnitaryNode {
 }
 
 impl UnitaryNode {
+    /// Return vector of unitary node's signals.
+    pub fn get_signals(&self) -> Vec<String> {
+        let mut signals = vec![];
+        self.inputs.iter().for_each(|(signal, _)| {
+            signals.push(signal.clone());
+        });
+        self.scheduled_equations.iter().for_each(|equation| {
+            signals.push(equation.id.clone());
+        });
+        signals
+    }
     /// Normalize HIR unitary nodes.
     ///
     /// Normalize HIR unitary node's equations as follows:
@@ -216,7 +227,7 @@ impl UnitaryNode {
         &mut self,
         unitary_nodes_used_inputs: &HashMap<String, HashMap<String, Vec<bool>>>,
     ) {
-        let mut identifier_creator = IdentifierCreator::new(self);
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals());
 
         let UnitaryNode {
             scheduled_equations,
@@ -267,7 +278,7 @@ impl UnitaryNode {
     ///
     /// This example is tested in source.
     pub fn memorize(&mut self) {
-        let mut identifier_creator = IdentifierCreator::new(self);
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals());
         let mut memory = Memory::new();
 
         self.scheduled_equations
@@ -275,6 +286,73 @@ impl UnitaryNode {
             .for_each(|equation| equation.memorize(&mut identifier_creator, &mut memory));
 
         self.memory = memory;
+    }
+}
+
+#[cfg(test)]
+mod get_signals {
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
+    use crate::hir::{
+        equation::Equation, expression::Expression, memory::Memory,
+        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    };
+
+    #[test]
+    fn should_return_all_signals_from_unitary_node() {
+        let equation = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+"),
+                    typing: Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    ),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: String::from("s"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                    StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::SignalCall {
+                            id: String::from("v"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                        }),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+            },
+            location: Location::default(),
+        };
+        let unitary_node = UnitaryNode {
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![
+                (String::from("s"), Type::Integer),
+                (String::from("v"), Type::Integer),
+            ],
+            scheduled_equations: vec![equation],
+            memory: Memory::new(),
+            location: Location::default(),
+        };
+        let mut signals = unitary_node.get_signals();
+
+        let mut control = vec![String::from("x"), String::from("s"), String::from("v")];
+        assert_eq!(signals.len(), control.len());
+        while let Some(id) = signals.pop() {
+            let index = control.iter().position(|r| r.eq(&id)).unwrap();
+            let _ = control.remove(index);
+        }
     }
 }
 
