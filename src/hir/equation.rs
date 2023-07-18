@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::common::{location::Location, scope::Scope, type_system::Type};
+use crate::common::{location::Location, r#type::Type, scope::Scope};
 use crate::hir::{
     identifier_creator::IdentifierCreator, memory::Memory, stream_expression::StreamExpression,
 };
@@ -46,7 +46,7 @@ impl Equation {
     /// ```rust
     /// use std::collections::{HashSet, HashMap};
     ///
-    /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    /// use grustine::common::{constant::Constant, location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
     ///     stream_expression::StreamExpression,
@@ -250,7 +250,7 @@ impl Equation {
 mod memorize {
     use std::collections::HashSet;
 
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
         memory::Memory, stream_expression::StreamExpression,

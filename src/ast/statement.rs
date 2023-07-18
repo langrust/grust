@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
-use crate::common::{location::Location, type_system::Type};
+use crate::common::{location::Location, r#type::Type};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -28,7 +28,7 @@ impl Statement {
     ///     expression::Expression, statement::Statement,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, type_system::Type,
+    ///     constant::Constant, location::Location, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -81,7 +81,7 @@ impl Statement {
     ///     expression::Expression, statement::Statement, typedef::Typedef,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, type_system::Type,
+    ///     constant::Constant, location::Location, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -181,7 +181,7 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{expression::Expression, statement::Statement};
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
 
     #[test]
     fn should_type_well_defined_equation() {
@@ -258,7 +258,7 @@ mod determine_types {
     use std::collections::HashMap;
 
     use crate::ast::{expression::Expression, statement::Statement, typedef::Typedef};
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
 
     #[test]
     fn should_determine_the_type_of_equation_when_in_types_context() {

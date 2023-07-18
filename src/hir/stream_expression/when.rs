@@ -58,8 +58,8 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_when_dependencies {
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+mod get_dependencies_when {
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::stream_expression::StreamExpression;
     use std::collections::HashMap;
 

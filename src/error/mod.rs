@@ -1,7 +1,6 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 
-use crate::ast::pattern::Pattern;
-use crate::common::{location::Location, type_system::Type};
+use crate::common::{location::Location, pattern::Pattern, r#type::Type};
 
 /// Compilation errors enumeration.
 ///

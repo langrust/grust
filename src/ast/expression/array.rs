@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
-use crate::common::type_system::Type;
+use crate::common::r#type::Type;
 use crate::error::Error;
 
 impl Expression {
@@ -54,7 +54,7 @@ impl Expression {
 #[cfg(test)]
 mod typing_array {
     use crate::ast::expression::Expression;
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
     use std::collections::HashMap;
 
     #[test]

@@ -3,7 +3,7 @@ use strum::IntoEnumIterator;
 
 use crate::common::{
     operator::{BinaryOperator, OtherOperator, UnaryOperator},
-    type_system::Type,
+    r#type::Type,
 };
 
 /// Generate the global context.

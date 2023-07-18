@@ -1,4 +1,4 @@
-use crate::common::{location::Location, type_system::Type};
+use crate::common::{location::Location, r#type::Type};
 use crate::hir::expression::Expression;
 
 #[derive(Debug, PartialEq, Clone)]

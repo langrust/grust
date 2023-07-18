@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::typedef::Typedef;
-use crate::common::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
+use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
 use crate::error::Error;
 
 mod abstraction;
@@ -176,7 +176,7 @@ impl Expression {
     /// # Example
     /// ```rust
     /// use grustine::ast::expression::Expression;
-    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
     ///
     /// let mut expression = Expression::Constant {
     ///     constant: Constant::Integer(0),
@@ -205,7 +205,7 @@ impl Expression {
     /// # Example
     /// ```rust
     /// use grustine::ast::expression::Expression;
-    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
     ///
     /// let mut expression = Expression::Constant {
     ///     constant: Constant::Integer(0),
@@ -232,10 +232,7 @@ impl Expression {
 #[cfg(test)]
 mod typing {
     use crate::ast::{expression::Expression, typedef::Typedef};
-    use crate::common::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-    };
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
     use crate::error::Error;
     use std::collections::HashMap;
 
@@ -1241,7 +1238,7 @@ mod typing {
 #[cfg(test)]
 mod get_type {
     use crate::ast::expression::Expression;
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
 
     #[test]
     fn should_return_none_when_no_typing() {
@@ -1273,7 +1270,7 @@ mod get_type {
 #[cfg(test)]
 mod get_type_owned {
     use crate::ast::expression::Expression;
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
 
     #[test]
     fn should_return_none_when_no_typing() {

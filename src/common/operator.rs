@@ -1,6 +1,6 @@
 use strum::EnumIter;
 
-use crate::common::type_system::Type;
+use crate::common::r#type::Type;
 
 /// LanGrust binary operators.
 ///

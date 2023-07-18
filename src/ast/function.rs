@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, statement::Statement, typedef::Typedef};
-use crate::common::{context::Context, location::Location, type_system::Type};
+use crate::common::{context::Context, location::Location, r#type::Type};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
@@ -30,7 +30,7 @@ impl Function {
     ///     expression::Expression, function::Function, statement::Statement,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, type_system::Type,
+    ///     constant::Constant, location::Location, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -141,7 +141,7 @@ impl Function {
     ///     expression::Expression, function::Function, statement::Statement,
     ///     typedef::Typedef,
     /// };
-    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
     ///
     /// let mut errors = vec![];
     /// let mut user_types_context = HashMap::new();
@@ -285,7 +285,7 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{expression::Expression, function::Function, statement::Statement};
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
 
     #[test]
     fn should_type_well_defined_function() {
@@ -389,7 +389,7 @@ mod resolve_undefined_types {
     use crate::ast::{
         expression::Expression, function::Function, statement::Statement, typedef::Typedef,
     };
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
     use std::collections::HashMap;
 
     #[test]

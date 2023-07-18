@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::common::{
     graph::{color::Color, neighbor::Neighbor, Graph},
     location::Location,
+    r#type::Type,
     scope::Scope,
-    type_system::Type,
 };
 use crate::error::Error;
 use crate::hir::{equation::Equation, memory::Memory, unitary_node::UnitaryNode};
@@ -39,8 +39,8 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
-    ///     scope::Scope, type_system::Type,
+    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     scope::Scope, r#type::Type,
     /// };
     ///
     /// let node = Node {
@@ -135,8 +135,8 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
-    ///     scope::Scope, type_system::Type,
+    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     scope::Scope, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -271,8 +271,8 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
-    ///     scope::Scope, type_system::Type,
+    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     scope::Scope, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -438,8 +438,8 @@ impl Node {
     ///     equation::Equation, node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
-    ///     scope::Scope, type_system::Type,
+    ///     color::Color, constant::Constant, graph::Graph, location::Location,
+    ///     scope::Scope, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -608,7 +608,7 @@ impl Node {
     /// ```rust
     /// use std::collections::HashMap;
     /// use grustine::common::{
-    ///     graph::{color::Color, Graph}, location::Location, scope::Scope, type_system::Type,
+    ///     color::Color, graph::Graph, location::Location, scope::Scope, r#type::Type,
     /// };
     /// use grustine::hir::{
     ///     equation::Equation, node::Node, memory::Memory, stream_expression::StreamExpression,
@@ -936,7 +936,7 @@ impl Node {
     /// ```rust
     /// use std::collections::{HashSet, HashMap};
     ///
-    /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    /// use grustine::common::{constant::Constant, location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, memory::Memory, node::Node,
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
@@ -1259,10 +1259,7 @@ mod add_unitary_node {
     use std::collections::HashMap;
 
     use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        scope::Scope,
-        type_system::Type,
+        color::Color, graph::Graph, location::Location, r#type::Type, scope::Scope,
     };
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
@@ -1601,10 +1598,7 @@ mod add_unitary_node {
 #[cfg(test)]
 mod generate_unitary_nodes {
     use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        scope::Scope,
-        type_system::Type,
+        color::Color, graph::Graph, location::Location, r#type::Type, scope::Scope,
     };
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,

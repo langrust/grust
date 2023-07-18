@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
-use crate::common::{context::Context, type_system::Type};
+use crate::common::{context::Context, r#type::Type};
 use crate::error::Error;
 
 impl Expression {
@@ -72,7 +72,7 @@ impl Expression {
 #[cfg(test)]
 mod typing_abstraction {
     use crate::ast::expression::Expression;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use std::collections::HashMap;
 
     #[test]

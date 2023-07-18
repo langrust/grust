@@ -115,7 +115,7 @@ pub trait Context {
     ///
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::common::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, r#type::Type};
     /// use grustine::common::context::Context;
     ///
     /// let mut context = HashMap::new();
@@ -146,7 +146,7 @@ pub trait Context {
     ///
     /// ```rust
     /// use std::collections::HashMap;
-    /// use grustine::common::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, r#type::Type};
     /// use grustine::common::context::Context;
     ///
     /// let mut structure_fields = HashMap::new();
@@ -377,7 +377,7 @@ impl<V> Context for HashMap<String, V> {
 #[cfg(test)]
 mod get_element_or_error {
     use crate::common::context::Context;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use std::collections::HashMap;
 
     #[test]
@@ -431,7 +431,7 @@ mod get_element_or_error {
 #[cfg(test)]
 mod get_field_or_error {
     use crate::common::context::Context;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use std::collections::HashMap;
 
     #[test]
@@ -503,7 +503,7 @@ mod get_field_or_error {
 #[cfg(test)]
 mod insert_unique {
     use crate::common::context::Context;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use std::collections::HashMap;
 
     #[test]
@@ -568,7 +568,7 @@ mod insert_unique {
 #[cfg(test)]
 mod combine_unique {
     use crate::common::context::Context;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use std::collections::HashMap;
 
     #[test]

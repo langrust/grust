@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::common::{constant::Constant, type_system::Type};
+use crate::common::{constant::Constant, r#type::Type};
 
 use crate::hir::stream_expression::StreamExpression;
 
@@ -60,7 +60,7 @@ impl Memory {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::common::{constant::Constant, type_system::Type, location::Location};
+    /// use grustine::common::{constant::Constant, r#type::Type, location::Location};
     /// use grustine::hir::{stream_expression::StreamExpression, memory::Memory};
     ///
     /// let mut memory = Memory::new();
@@ -103,7 +103,7 @@ impl Memory {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::common::{constant::Constant, type_system::Type, location::Location};
+    /// use grustine::common::{constant::Constant, r#type::Type, location::Location};
     /// use grustine::hir::{stream_expression::StreamExpression, memory::Memory};
     ///
     /// let mut memory = Memory::new();

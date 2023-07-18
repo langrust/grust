@@ -16,7 +16,7 @@ use crate::common::{
     location::Location,
     operator::{UnaryOperator, BinaryOperator, OtherOperator},
     scope::Scope,
-    type_system::Type,
+    r#type::Type,
 };
 
 grammar(file_id: usize);

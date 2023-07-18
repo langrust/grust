@@ -54,7 +54,7 @@ impl IdentifierCreator {
     /// This example is tested in the following code.
     ///
     /// ```rust
-    /// use grustine::common::{location::Location, scope::Scope, type_system::Type};
+    /// use grustine::common::{location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
     ///     equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
@@ -120,7 +120,7 @@ impl IdentifierCreator {
 mod new {
     use std::collections::HashSet;
 
-    use crate::common::{location::Location, scope::Scope, type_system::Type};
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
@@ -170,7 +170,7 @@ mod new {
 
 #[cfg(test)]
 mod new_identifier {
-    use crate::common::{location::Location, scope::Scope, type_system::Type};
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,

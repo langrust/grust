@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::ast::{
     node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
-use crate::common::{location::Location, scope::Scope, type_system::Type};
+use crate::common::{location::Location, r#type::Type, scope::Scope};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -30,7 +30,7 @@ impl Equation {
     ///
     /// use grustine::ast::{equation::Equation, stream_expression::StreamExpression};
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
+    ///     constant::Constant, location::Location, scope::Scope, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -92,7 +92,7 @@ impl Equation {
     ///     equation::Equation, stream_expression::StreamExpression, typedef::Typedef,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
+    ///     constant::Constant, location::Location, scope::Scope, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -194,7 +194,7 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{equation::Equation, stream_expression::StreamExpression};
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
 
     #[test]
     fn should_type_well_defined_equation() {
@@ -278,7 +278,7 @@ mod determine_types {
     use std::collections::HashMap;
 
     use crate::ast::{equation::Equation, stream_expression::StreamExpression, typedef::Typedef};
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
 
     #[test]
     fn should_determine_the_type_of_equation_when_in_types_context() {

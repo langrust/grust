@@ -85,9 +85,7 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod get_dependencies_match {
-    use crate::common::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-    };
+    use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
     use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 

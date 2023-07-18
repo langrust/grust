@@ -128,7 +128,7 @@ pub fn hir_from_ast(expression: Expression) -> HIRExpression {
 #[cfg(test)]
 mod hir_from_ast {
     use crate::ast::expression::Expression;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use crate::frontend::hir_from_ast::expression::hir_from_ast;
     use crate::hir::expression::Expression as HIRExpression;
 
