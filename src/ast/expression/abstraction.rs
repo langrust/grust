@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::{context::Context, type_system::Type};
 use crate::error::Error;
 
@@ -9,7 +9,7 @@ impl Expression {
     pub fn typing_abstraction(
         &mut self,
         global_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         match self {

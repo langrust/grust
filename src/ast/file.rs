@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{
-    function::Function, global_context, node::Node, user_defined_type::UserDefinedType,
-};
+use crate::ast::{function::Function, global_context, node::Node, typedef::Typedef};
 use crate::common::{context::Context, location::Location, type_system::Type};
 use crate::error::Error;
 
@@ -11,7 +9,7 @@ use crate::error::Error;
 /// types defined by the user and an optional component.
 pub struct File {
     /// Program types.
-    pub user_defined_types: Vec<UserDefinedType>,
+    pub typedefs: Vec<Typedef>,
     /// Program functions.
     pub functions: Vec<Function>,
     /// Program nodes. They are functional requirements.
@@ -24,8 +22,8 @@ pub struct File {
 
 impl File {
     /// Get types definitions from a LanGRust file.
-    pub fn get_types(self) -> Vec<UserDefinedType> {
-        self.user_defined_types
+    pub fn get_types(self) -> Vec<Typedef> {
+        self.typedefs
     }
     /// Get functions from a LanGRust file.
     pub fn get_functions(self) -> Vec<Function> {
@@ -36,16 +34,16 @@ impl File {
         self.nodes
     }
     /// Get types, functions and nodes from a LanGRust file.
-    pub fn get_types_functions_nodes(self) -> (Vec<UserDefinedType>, Vec<Function>, Vec<Node>) {
-        (self.user_defined_types, self.functions, self.nodes)
+    pub fn get_types_functions_nodes(self) -> (Vec<Typedef>, Vec<Function>, Vec<Node>) {
+        (self.typedefs, self.functions, self.nodes)
     }
     /// Get the location of a LanGRust file.
     pub fn get_location(self) -> Location {
         self.location
     }
     /// Add a type definition to a LanGRust file functions.
-    pub fn push_type(&mut self, user_defined_type: UserDefinedType) {
-        self.user_defined_types.push(user_defined_type)
+    pub fn push_type(&mut self, typedef: Typedef) {
+        self.typedefs.push(typedef)
     }
     /// Add a function to a LanGRust file functions.
     pub fn push_function(&mut self, function: Function) {
@@ -136,7 +134,7 @@ impl File {
     /// };
     ///
     /// let mut file = File {
-    ///     user_defined_types: vec![],
+    ///     typedefs: vec![],
     ///     functions: vec![function],
     ///     nodes: vec![node],
     ///     component: None,
@@ -147,7 +145,7 @@ impl File {
     /// ```
     pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
         let File {
-            user_defined_types,
+            typedefs,
             functions,
             nodes,
             component,
@@ -156,12 +154,12 @@ impl File {
 
         // create user_types_context
         let mut user_types_context = HashMap::new();
-        user_defined_types
+        typedefs
             .iter()
             .map(|user_type| match user_type {
-                UserDefinedType::Structure { id, location, .. }
-                | UserDefinedType::Enumeration { id, location, .. }
-                | UserDefinedType::Array { id, location, .. } => user_types_context.insert_unique(
+                Typedef::Structure { id, location, .. }
+                | Typedef::Enumeration { id, location, .. }
+                | Typedef::Array { id, location, .. } => user_types_context.insert_unique(
                     id.clone(),
                     user_type.clone(),
                     location.clone(),
@@ -172,8 +170,8 @@ impl File {
             .into_iter()
             .collect::<Result<(), ()>>()?;
 
-        // resolve undefined types in user_defined_types
-        user_defined_types
+        // resolve undefined types in typedefs
+        typedefs
             .iter_mut()
             .map(|user_type| user_type.resolve_undefined_types(&user_types_context, errors))
             .collect::<Vec<Result<(), ()>>>()
@@ -182,12 +180,12 @@ impl File {
 
         // recreate a user_types_context with resolved types
         let mut user_types_context = HashMap::new();
-        user_defined_types
+        typedefs
             .iter()
             .map(|user_type| match user_type {
-                UserDefinedType::Structure { id, location, .. }
-                | UserDefinedType::Enumeration { id, location, .. }
-                | UserDefinedType::Array { id, location, .. } => user_types_context.insert_unique(
+                Typedef::Structure { id, location, .. }
+                | Typedef::Enumeration { id, location, .. }
+                | Typedef::Array { id, location, .. } => user_types_context.insert_unique(
                     id.clone(),
                     user_type.clone(),
                     location.clone(),
@@ -376,7 +374,7 @@ mod typing {
         };
 
         let mut file = File {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![function],
             nodes: vec![node],
             component: None,
@@ -445,7 +443,7 @@ mod typing {
         };
 
         let control = File {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![expected_function],
             nodes: vec![expected_node],
             component: None,
@@ -575,7 +573,7 @@ mod typing {
         };
 
         let mut file = File {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![function],
             nodes: vec![node],
             component: Some(component),
@@ -699,7 +697,7 @@ mod typing {
         };
 
         let control = File {
-            user_defined_types: vec![],
+            typedefs: vec![],
             functions: vec![expected_function],
             nodes: vec![expected_node],
             component: Some(expected_component),

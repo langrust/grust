@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::{context::Context, type_system::Type};
 use crate::error::Error;
 
@@ -10,7 +10,7 @@ impl Expression {
         &mut self,
         global_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         match self {
@@ -27,7 +27,7 @@ impl Expression {
                     user_types_context.get_user_type_or_error(name, location.clone(), errors)?;
 
                 match user_type {
-                    UserDefinedType::Structure { .. } => {
+                    Typedef::Structure { .. } => {
                         // type each field
                         fields
                             .into_iter()
@@ -73,7 +73,7 @@ impl Expression {
 
 #[cfg(test)]
 mod typing_structure {
-    use crate::ast::{expression::Expression, user_defined_type::UserDefinedType};
+    use crate::ast::{expression::Expression, typedef::Typedef};
     use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
 
@@ -85,7 +85,7 @@ mod typing_structure {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -162,7 +162,7 @@ mod typing_structure {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -222,7 +222,7 @@ mod typing_structure {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -264,7 +264,7 @@ mod typing_structure {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -316,7 +316,7 @@ mod typing_structure {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Color"),
-            UserDefinedType::Enumeration {
+            Typedef::Enumeration {
                 id: String::from("Color"),
                 elements: vec![
                     String::from("Yellow"),

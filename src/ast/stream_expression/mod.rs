@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, node_description::NodeDescription};
-use crate::ast::{pattern::Pattern, user_defined_type::UserDefinedType};
-use crate::common::{constant::Constant, location::Location, type_system::Type};
+use crate::ast::{expression::Expression, node_description::NodeDescription, typedef::Typedef};
+use crate::common::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
 use crate::error::Error;
 
 mod array;
@@ -146,7 +145,7 @@ impl StreamExpression {
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         global_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         match self {
@@ -268,8 +267,11 @@ mod typing {
     use std::collections::HashMap;
 
     use crate::ast::{
-        expression::Expression, node_description::NodeDescription, pattern::Pattern,
-        stream_expression::StreamExpression, user_defined_type::UserDefinedType,
+        expression::Expression, node_description::NodeDescription,
+        stream_expression::StreamExpression, typedef::Typedef,
+    };
+    use crate::common::{
+        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
     };
     use crate::common::{constant::Constant, location::Location, type_system::Type};
     use crate::error::Error;
@@ -380,7 +382,7 @@ mod typing {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -459,7 +461,7 @@ mod typing {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -521,7 +523,7 @@ mod typing {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -565,7 +567,7 @@ mod typing {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -619,7 +621,7 @@ mod typing {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Color"),
-            UserDefinedType::Enumeration {
+            Typedef::Enumeration {
                 id: String::from("Color"),
                 elements: vec![
                     String::from("Yellow"),
@@ -885,7 +887,7 @@ mod typing {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),

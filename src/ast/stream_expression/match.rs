@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    node_description::NodeDescription, stream_expression::StreamExpression,
-    user_defined_type::UserDefinedType,
+    node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
 use crate::common::type_system::Type;
 use crate::error::Error;
@@ -14,7 +13,7 @@ impl StreamExpression {
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         global_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         match self {
@@ -98,8 +97,10 @@ impl StreamExpression {
 #[cfg(test)]
 mod typing_match {
     use crate::ast::{
-        expression::Expression, pattern::Pattern, stream_expression::StreamExpression,
-        user_defined_type::UserDefinedType,
+        expression::Expression, stream_expression::StreamExpression, typedef::Typedef,
+    };
+    use crate::common::{
+        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
     };
     use crate::common::{constant::Constant, location::Location, type_system::Type};
     use std::collections::HashMap;
@@ -118,7 +119,7 @@ mod typing_match {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),

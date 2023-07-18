@@ -4,8 +4,7 @@ mod langrust_ast_constructs {
 
     use grustine::ast::{
         equation::Equation, expression::Expression, file::File, function::Function, node::Node,
-        pattern::Pattern, statement::Statement, stream_expression::StreamExpression,
-        user_defined_type::UserDefinedType,
+        statement::Statement, stream_expression::StreamExpression, typedef::Typedef,
     };
     use grustine::common::{
         constant::Constant,
@@ -46,7 +45,7 @@ mod langrust_ast_constructs {
         assert_eq!(
             file,
             File {
-                user_defined_types: vec![UserDefinedType::Enumeration {
+                typedefs: vec![Typedef::Enumeration {
                     id: String::from("Color"),
                     elements: vec![
                         String::from("Red"),
@@ -249,14 +248,14 @@ mod langrust_ast_constructs {
         assert_eq!(
             file,
             File {
-                user_defined_types: vec![
-                    UserDefinedType::Array {
+                typedefs: vec![
+                    Typedef::Array {
                         id: String::from("Matrix"),
                         array_type: Type::Array(Box::new(Type::Integer), 3),
                         size: 3,
                         location: Location::default(),
                     },
-                    UserDefinedType::Structure {
+                    Typedef::Structure {
                         id: String::from("Point"),
                         fields: vec![
                             (String::from("x"), Type::Integer),
@@ -465,7 +464,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             user_type,
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
@@ -479,7 +478,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             user_type,
-            UserDefinedType::Enumeration {
+            Typedef::Enumeration {
                 id: String::from("Color"),
                 elements: vec![
                     String::from("Red"),
@@ -495,7 +494,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             user_type,
-            UserDefinedType::Array {
+            Typedef::Array {
                 id: String::from("Matrix"),
                 array_type: Type::Array(Box::new(Type::Integer), 3),
                 size: 3,

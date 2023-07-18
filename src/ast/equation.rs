@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    node_description::NodeDescription, stream_expression::StreamExpression,
-    user_defined_type::UserDefinedType,
+    node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
 use crate::common::{location::Location, scope::Scope, type_system::Type};
 use crate::error::Error;
@@ -60,7 +59,7 @@ impl Equation {
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
         elements_context: &HashMap<String, Type>,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         let Equation {
@@ -90,8 +89,7 @@ impl Equation {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::{
-    ///     equation::Equation, stream_expression::StreamExpression,
-    ///     user_defined_type::UserDefinedType,
+    ///     equation::Equation, stream_expression::StreamExpression, typedef::Typedef,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
@@ -101,7 +99,7 @@ impl Equation {
     /// let mut user_types_context = HashMap::new();
     /// user_types_context.insert(
     ///     String::from("Point"),
-    ///     UserDefinedType::Structure {
+    ///     Typedef::Structure {
     ///         id: String::from("Point"),
     ///         fields: vec![
     ///             (String::from("x"), Type::Integer),
@@ -179,7 +177,7 @@ impl Equation {
     /// ```
     pub fn resolve_undefined_types(
         &mut self,
-        user_types_context: &HashMap<String, UserDefinedType>,
+        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         let Equation {
@@ -279,9 +277,7 @@ mod typing {
 mod determine_types {
     use std::collections::HashMap;
 
-    use crate::ast::{
-        equation::Equation, stream_expression::StreamExpression, user_defined_type::UserDefinedType,
-    };
+    use crate::ast::{equation::Equation, stream_expression::StreamExpression, typedef::Typedef};
     use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
 
     #[test]
@@ -290,7 +286,7 @@ mod determine_types {
         let mut user_types_context = HashMap::new();
         user_types_context.insert(
             String::from("Point"),
-            UserDefinedType::Structure {
+            Typedef::Structure {
                 id: String::from("Point"),
                 fields: vec![
                     (String::from("x"), Type::Integer),
