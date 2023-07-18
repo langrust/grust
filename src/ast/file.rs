@@ -5,7 +5,6 @@ use crate::ast::{
 };
 use crate::common::{context::Context, location::Location, type_system::Type};
 use crate::error::Error;
-use crate::ir::file::File as IRFile;
 
 #[derive(Debug, PartialEq)]
 /// A LanGRust [File] is composed of functions nodes,
@@ -300,28 +299,6 @@ impl File {
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()
-    }
-
-    /// Transform AST files into IR files.
-    pub fn into_ir(self) -> IRFile {
-        let File {
-            user_defined_types,
-            functions,
-            nodes,
-            component,
-            location,
-        } = self;
-
-        IRFile {
-            user_defined_types,
-            functions: functions
-                .into_iter()
-                .map(|function| function.into_ir())
-                .collect(),
-            nodes: nodes.into_iter().map(|node| node.into_ir()).collect(),
-            component: component.map(|component| component.into_ir()),
-            location,
-        }
     }
 }
 
