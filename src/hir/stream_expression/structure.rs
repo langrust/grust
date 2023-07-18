@@ -35,8 +35,8 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_structure_dependencies {
-    use crate::common::{location::Location, type_system::Type};
+mod get_dependencies_structure {
+    use crate::common::{location::Location, r#type::Type};
     use crate::hir::stream_expression::StreamExpression;
     use std::collections::HashMap;
 

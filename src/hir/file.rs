@@ -33,7 +33,7 @@ impl File {
     ///     file::File, node::Node, statement::Statement, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     graph::{color::Color, Graph}, location::Location, scope::Scope, type_system::Type
+    ///     color::Color, graph::Graph, location::Location, scope::Scope, r#type::Type
     /// };
     ///
     /// let mut errors = vec![];
@@ -287,7 +287,7 @@ impl File {
 
 #[cfg(test)]
 mod normalize {
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         equation::Equation, expression::Expression, file::File, function::Function, memory::Memory,
         node::Node, statement::Statement, stream_expression::StreamExpression,

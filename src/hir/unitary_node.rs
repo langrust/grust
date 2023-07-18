@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::common::{location::Location, type_system::Type};
+use crate::common::{location::Location, r#type::Type};
 use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -50,7 +50,7 @@ impl UnitaryNode {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    /// use grustine::common::{constant::Constant, location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
     ///     equation::Equation, expression::Expression, memory::Memory,
     ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
@@ -280,7 +280,7 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod memorize {
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         equation::Equation, expression::Expression, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,

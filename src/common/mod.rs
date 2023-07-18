@@ -14,7 +14,7 @@ pub mod pattern;
 pub mod location;
 
 /// Type system module.
-pub mod type_system;
+pub mod r#type;
 
 /// Constant module.
 pub mod constant;

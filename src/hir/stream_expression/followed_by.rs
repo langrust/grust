@@ -27,8 +27,8 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_followed_by_dependencies {
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+mod get_dependencies_followed_by {
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 

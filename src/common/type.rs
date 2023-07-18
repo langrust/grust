@@ -25,7 +25,7 @@ use crate::error::Error;
 ///
 /// # Example
 /// ```rust
-/// use grustine::common::type_system::Type;
+/// use grustine::common::r#type::Type;
 ///
 /// let number_types = vec![Type::Integer, Type::Float];
 /// let addition_type = {
@@ -90,7 +90,7 @@ impl Type {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::common::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, r#type::Type};
     ///
     /// let mut errors = vec![];
     ///
@@ -181,7 +181,7 @@ impl Type {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::common::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, r#type::Type};
     /// use grustine::error::Error;
     ///
     /// let mut errors = vec![];
@@ -218,7 +218,7 @@ impl Type {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::typedef::Typedef;
-    /// use grustine::common::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, r#type::Type};
     ///
     /// let mut errors = vec![];
     /// let mut user_types_context = HashMap::new();
@@ -269,7 +269,7 @@ impl Type {
     /// # Example
     ///
     /// ```rust
-    /// use grustine::common::type_system::Type;
+    /// use grustine::common::r#type::Type;
     ///
     /// let abstraction_type = Type::Abstract(
     ///     vec![Type::Integer, Type::Integer],
@@ -288,7 +288,7 @@ impl Type {
 
 #[cfg(test)]
 mod apply {
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
 
     #[test]
     fn should_apply_input_to_abstraction_when_compatible() {
@@ -375,7 +375,7 @@ mod resolve_undefined {
     use std::collections::HashMap;
 
     use crate::ast::typedef::Typedef;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
 
     #[test]
     fn should_determine_undefined_type_when_in_context() {
@@ -435,7 +435,7 @@ mod resolve_undefined {
 
 #[cfg(test)]
 mod get_inputs {
-    use crate::common::type_system::Type;
+    use crate::common::r#type::Type;
 
     #[test]
     fn should_return_inputs_from_abstraction_type() {

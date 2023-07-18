@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{function::Function, global_context, node::Node, typedef::Typedef};
-use crate::common::{context::Context, location::Location, type_system::Type};
+use crate::common::{context::Context, location::Location, r#type::Type};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
@@ -66,7 +66,7 @@ impl File {
     ///     equation::Equation, expression::Expression, function::Function,
     ///     file::File, node::Node, statement::Statement, stream_expression::StreamExpression,
     /// };
-    /// use grustine::common::{location::Location, scope::Scope, type_system::Type};
+    /// use grustine::common::{location::Location, scope::Scope, r#type::Type};
     ///
     /// let mut errors = vec![];
     ///
@@ -306,7 +306,7 @@ mod typing {
         equation::Equation, expression::Expression, file::File, function::Function, node::Node,
         statement::Statement, stream_expression::StreamExpression,
     };
-    use crate::common::{location::Location, scope::Scope, type_system::Type};
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
 
     #[test]
     fn should_type_well_defined_module() {

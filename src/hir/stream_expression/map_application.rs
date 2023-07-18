@@ -35,8 +35,8 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_map_application_dependencies {
-    use crate::common::{location::Location, type_system::Type};
+mod get_dependencies_map_application {
+    use crate::common::{location::Location, r#type::Type};
     use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 

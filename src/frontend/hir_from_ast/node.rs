@@ -34,7 +34,7 @@ mod hir_from_ast {
     use crate::ast::{
         equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
     };
-    use crate::common::{location::Location, scope::Scope, type_system::Type};
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::frontend::hir_from_ast::node::hir_from_ast;
     use crate::hir::{
         equation::Equation as HIREquation, expression::Expression as HIRExpression,

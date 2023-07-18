@@ -28,7 +28,7 @@ pub fn hir_from_ast(function: Function) -> HIRFunction {
 #[cfg(test)]
 mod hir_from_ast {
     use crate::ast::{expression::Expression, function::Function, statement::Statement};
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use crate::frontend::hir_from_ast::function::hir_from_ast;
     use crate::hir::{
         expression::Expression as HIRExpression, function::Function as HIRFunction,

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::common::context::Context;
-use crate::common::{location::Location, type_system::Type};
+use crate::common::{location::Location, r#type::Type};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -44,7 +44,7 @@ impl Typedef {
     /// # Example
     /// ```rust
     /// use grustine::ast::typedef::Typedef;
-    /// use grustine::common::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, r#type::Type};
     /// let typedef = Typedef::Structure {
     ///     id: String::from("Point"),
     ///     fields: vec![
@@ -83,7 +83,7 @@ impl Typedef {
     /// ```rust
     /// use grustine::ast::typedef::Typedef;
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, type_system::Type,
+    ///     constant::Constant, location::Location, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -188,7 +188,7 @@ impl Typedef {
     /// use std::collections::HashMap;
     ///
     /// use grustine::ast::typedef::Typedef;
-    /// use grustine::common::{location::Location, type_system::Type};
+    /// use grustine::common::{location::Location, r#type::Type};
     ///
     /// let mut errors = vec![];
     /// let mut user_types_context = HashMap::new();
@@ -253,7 +253,7 @@ impl Typedef {
 #[cfg(test)]
 mod into_type {
     use crate::ast::typedef::Typedef;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
 
     #[test]
     fn should_construct_structure_type_for_user_defined_structure() {
@@ -312,7 +312,7 @@ mod determine_types {
     use std::collections::HashMap;
 
     use crate::ast::typedef::Typedef;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
 
     #[test]
     fn should_determine_the_type_of_user_type_when_in_types_context() {

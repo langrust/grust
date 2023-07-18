@@ -12,8 +12,8 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_signal_call_dependencies {
-    use crate::common::{location::Location, type_system::Type};
+mod get_dependencies_signal_call {
+    use crate::common::{location::Location, r#type::Type};
     use crate::hir::stream_expression::StreamExpression;
 
     #[test]

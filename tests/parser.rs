@@ -10,8 +10,9 @@ mod langrust_ast_constructs {
         constant::Constant,
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
+        pattern::Pattern,
+        r#type::Type,
         scope::Scope,
-        type_system::Type,
     };
     use grustine::parser::langrust;
 

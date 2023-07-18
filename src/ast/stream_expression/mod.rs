@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, node_description::NodeDescription, typedef::Typedef};
-use crate::common::{constant::Constant, location::Location, pattern::Pattern, type_system::Type};
+use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
 use crate::error::Error;
 
 mod array;
@@ -209,7 +209,7 @@ impl StreamExpression {
     /// # Example
     /// ```rust
     /// use grustine::ast::stream_expression::StreamExpression;
-    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
     ///
     /// let mut stream_expression = StreamExpression::Constant {
     ///     constant: Constant::Integer(0),
@@ -238,7 +238,7 @@ impl StreamExpression {
     /// # Example
     /// ```rust
     /// use grustine::ast::stream_expression::StreamExpression;
-    /// use grustine::common::{constant::Constant, location::Location, type_system::Type};
+    /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
     ///
     /// let mut stream_expression = StreamExpression::Constant {
     ///     constant: Constant::Integer(0),
@@ -270,10 +270,7 @@ mod typing {
         expression::Expression, node_description::NodeDescription,
         stream_expression::StreamExpression, typedef::Typedef,
     };
-    use crate::common::{
-        constant::Constant, location::Location, pattern::Pattern, type_system::Type,
-    };
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
     use crate::error::Error;
 
     #[test]
@@ -1398,7 +1395,7 @@ mod typing {
 #[cfg(test)]
 mod get_type {
     use crate::ast::stream_expression::StreamExpression;
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
 
     #[test]
     fn should_return_none_when_no_typing() {
@@ -1430,7 +1427,7 @@ mod get_type {
 #[cfg(test)]
 mod get_type_owned {
     use crate::ast::stream_expression::StreamExpression;
-    use crate::common::{constant::Constant, location::Location, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
 
     #[test]
     fn should_return_none_when_no_typing() {

@@ -135,7 +135,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
 #[cfg(test)]
 mod hir_from_ast {
     use crate::ast::stream_expression::StreamExpression;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use crate::frontend::hir_from_ast::stream_expression::hir_from_ast;
     use crate::hir::stream_expression::StreamExpression as HIRStreamExpression;
 

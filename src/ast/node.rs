@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::{equation::Equation, node_description::NodeDescription, typedef::Typedef};
-use crate::common::{context::Context, location::Location, scope::Scope, type_system::Type};
+use crate::common::{context::Context, location::Location, r#type::Type, scope::Scope};
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -31,7 +31,7 @@ impl Node {
     ///     stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
+    ///     constant::Constant, location::Location, scope::Scope, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -155,7 +155,7 @@ impl Node {
     ///     stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
+    ///     constant::Constant, location::Location, scope::Scope, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -292,7 +292,7 @@ impl Node {
     ///     stream_expression::StreamExpression, typedef::Typedef,
     /// };
     /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope, type_system::Type,
+    ///     constant::Constant, location::Location, scope::Scope, r#type::Type,
     /// };
     ///
     /// let mut errors = vec![];
@@ -437,7 +437,7 @@ mod typing {
         equation::Equation, node::Node, node_description::NodeDescription,
         stream_expression::StreamExpression,
     };
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
 
     #[test]
     fn should_type_well_defined_node() {
@@ -611,7 +611,7 @@ mod into_node_description {
         equation::Equation, node::Node, node_description::NodeDescription,
         stream_expression::StreamExpression,
     };
-    use crate::common::{location::Location, scope::Scope, type_system::Type};
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
 
     #[test]
     fn should_return_a_node_description_from_a_node_with_no_duplicates() {
@@ -725,7 +725,7 @@ mod resolve_undefined_types {
     use crate::ast::{
         equation::Equation, node::Node, stream_expression::StreamExpression, typedef::Typedef,
     };
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use std::collections::HashMap;
 
     #[test]

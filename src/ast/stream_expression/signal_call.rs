@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::stream_expression::StreamExpression;
-use crate::common::{context::Context, type_system::Type};
+use crate::common::{context::Context, r#type::Type};
 use crate::error::Error;
 
 impl StreamExpression {
@@ -31,7 +31,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod typing_call {
     use crate::ast::stream_expression::StreamExpression;
-    use crate::common::{location::Location, type_system::Type};
+    use crate::common::{location::Location, r#type::Type};
     use crate::error::Error;
     use std::collections::HashMap;
 

@@ -89,8 +89,8 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_node_application_dependencies {
-    use crate::common::{constant::Constant, location::Location, scope::Scope, type_system::Type};
+mod get_dependencies_node_application {
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
     };
