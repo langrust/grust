@@ -1,7 +1,7 @@
 use once_cell::sync::OnceCell;
 
 /// Dependencies structure.
-/// 
+///
 /// Dependencies are stored in a OnceCell.
 /// This allows to set dependencies after creating the the structure.
 /// After setting the value, the dependencies are immutable.
@@ -36,7 +36,7 @@ impl Dependencies {
     }
 
     /// Set dependencies according to input.
-    /// 
+    ///
     /// Terminate nicely only if it is the first time
     /// setting the dependencies.
     ///
@@ -49,11 +49,13 @@ impl Dependencies {
     /// assert_eq!(*dependencies.get().unwrap(), v);
     /// ```
     pub fn set(&self, v: Vec<(String, usize)>) {
-        self.0.set(v).expect("should be the first time setting dependencies")
+        self.0
+            .set(v)
+            .expect("should be the first time setting dependencies")
     }
 
     /// Get optional dependencies.
-    /// 
+    ///
     /// Get some dependencies if it as been previously setted.
     /// Return `None` otherwise.
     ///
@@ -64,7 +66,7 @@ impl Dependencies {
     /// let dependencies = Dependencies::new();
     /// dependencies.set(v.clone());
     /// assert_eq!(*dependencies.get().unwrap(), v);
-    /// 
+    ///
     /// let dependencies = Dependencies::new();
     /// assert!(dependencies.get().is_none());
     /// ```
