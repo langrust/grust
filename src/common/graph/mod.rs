@@ -191,17 +191,20 @@ impl Graph<Color> {
     ///
     /// This creates a subgraph with all successors of the given vertex
     /// and their edges.
-    pub fn subgraph_from_vertex(&mut self, vertex: &String) -> Graph<Color> {
+    pub fn subgraph_from_vertex(&self, vertex: &String) -> Graph<Color> {
+        let mut graph = self.clone();
+
         // initialize subgraph
         let mut subgraph = Graph::new();
 
         // initialize all global graph vertices to "unprocessed" state
-        self.vertices
+        graph
+            .vertices
             .values_mut()
             .for_each(|vertex| vertex.set_value(Color::White));
 
         // process of vertices
-        self.subgraph_from_vertex_visit(vertex, &mut subgraph);
+        graph.subgraph_from_vertex_visit(vertex, &mut subgraph);
 
         subgraph
     }
@@ -241,9 +244,12 @@ impl Graph<Color> {
     /// Returns mother graph forgotten vertices from subgraphs.
     ///
     /// Returns identifiers of vertices that do not appear in subgraphs set.
-    pub fn forgotten_vertices(&mut self, subgraphs: Vec<Graph<Color>>) -> Vec<String> {
+    pub fn forgotten_vertices(&self, subgraphs: Vec<Graph<Color>>) -> Vec<String> {
+        let mut graph = self.clone();
+
         // initialize all global graph vertices to "unused" state
-        self.vertices
+        graph
+            .vertices
             .values_mut()
             .for_each(|vertex| vertex.set_value(Color::White));
 
@@ -253,11 +259,12 @@ impl Graph<Color> {
             subgraph
                 .get_vertices()
                 .iter()
-                .for_each(|vertex| self.get_vertex_mut(vertex).set_value(Color::Black))
+                .for_each(|vertex| graph.get_vertex_mut(vertex).set_value(Color::Black))
         }
 
         // returns vertices from mother graph in "unused" state
-        self.vertices
+        graph
+            .vertices
             .values()
             .filter(|vertex| vertex.get_value().eq(&Color::White))
             .map(|vertex| vertex.id.clone())

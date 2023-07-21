@@ -720,10 +720,9 @@ impl Node {
     /// graph.add_edge(&String::from("x"), String::from("i1"), 0);
     /// graph.add_edge(&String::from("o1"), String::from("x"), 0);
     /// graph.add_edge(&String::from("o2"), String::from("i2"), 0);
-    /// node.graph.set(graph.clone());
+    /// node.graph.set(graph);
     ///
-    /// node.generate_unitary_nodes(&mut graph, &mut errors)
-    ///     .unwrap();
+    /// node.generate_unitary_nodes(&mut errors).unwrap();
     ///
     /// let unitary_node_1 = UnitaryNode {
     ///     node_id: String::from("test"),
@@ -850,11 +849,7 @@ impl Node {
     ///
     /// assert_eq!(node, control)
     /// ```
-    pub fn generate_unitary_nodes(
-        &mut self,
-        graph: &mut Graph<Color>,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    pub fn generate_unitary_nodes(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
         // get outputs identifiers
         let outputs = self
             .unscheduled_equations
@@ -866,13 +861,13 @@ impl Node {
         // construct unitary node for each output
         let subgraphs = outputs
             .into_iter()
-            .map(|output| self.add_unitary_node(output, graph, errors))
+            .map(|output| self.add_unitary_node(output, errors))
             .collect::<Vec<_>>()
             .into_iter()
             .collect::<Result<Vec<_>, ()>>()?;
 
         // check that every signals are used
-        let unused_signals = graph.forgotten_vertices(subgraphs);
+        let unused_signals = self.graph.get().unwrap().forgotten_vertices(subgraphs);
         unused_signals
             .into_iter()
             .map(|signal| {
@@ -892,7 +887,6 @@ impl Node {
     fn add_unitary_node(
         &mut self,
         output: String,
-        graph: &mut Graph<Color>,
         errors: &mut Vec<Error>,
     ) -> Result<Graph<Color>, ()> {
         let Node {
@@ -905,7 +899,7 @@ impl Node {
         } = self;
 
         // construct unitary node's subgraph from its output
-        let mut subgraph = graph.subgraph_from_vertex(&output);
+        let mut subgraph = self.graph.get().unwrap().subgraph_from_vertex(&output);
 
         // schedule the unitary node
         let schedule = subgraph.topological_sorting(errors).map_err(|signal| {
@@ -1416,9 +1410,9 @@ mod add_unitary_node {
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
 
-        node.graph.set(graph.clone()).unwrap();
+        node.graph.set(graph).unwrap();
 
-        node.add_unitary_node(String::from("o1"), &mut graph, &mut errors)
+        node.add_unitary_node(String::from("o1"), &mut errors)
             .unwrap();
 
         let unitary_node = UnitaryNode {
@@ -1602,7 +1596,7 @@ mod add_unitary_node {
 
         node.graph.set(graph.clone()).unwrap();
 
-        node.add_unitary_node(String::from("o1"), &mut graph, &mut errors)
+        node.add_unitary_node(String::from("o1"), &mut errors)
             .unwrap();
 
         let unitary_node = node.unitary_nodes.get(&String::from("o1")).unwrap();
@@ -1700,9 +1694,9 @@ mod add_unitary_node {
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
 
-        node.graph.set(graph.clone()).unwrap();
+        node.graph.set(graph).unwrap();
 
-        node.add_unitary_node(String::from("o1"), &mut graph, &mut errors)
+        node.add_unitary_node(String::from("o1"), &mut errors)
             .unwrap_err()
     }
 }
@@ -1799,10 +1793,9 @@ mod generate_unitary_nodes {
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
 
-        node.graph.set(graph.clone()).unwrap();
+        node.graph.set(graph).unwrap();
 
-        node.generate_unitary_nodes(&mut graph, &mut errors)
-            .unwrap();
+        node.generate_unitary_nodes(&mut errors).unwrap();
 
         let unitary_node_1 = UnitaryNode {
             node_id: String::from("test"),
@@ -2006,10 +1999,9 @@ mod generate_unitary_nodes {
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
 
-        node.graph.set(graph.clone()).unwrap();
+        node.graph.set(graph).unwrap();
 
-        node.generate_unitary_nodes(&mut graph, &mut errors)
-            .unwrap();
+        node.generate_unitary_nodes(&mut errors).unwrap();
 
         let mut output_equations = node
             .unscheduled_equations
@@ -2092,10 +2084,9 @@ mod generate_unitary_nodes {
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
 
-        node.graph.set(graph.clone()).unwrap();
+        node.graph.set(graph).unwrap();
 
-        node.generate_unitary_nodes(&mut graph, &mut errors)
-            .unwrap_err()
+        node.generate_unitary_nodes(&mut errors).unwrap_err()
     }
 
     #[test]
@@ -2154,9 +2145,8 @@ mod generate_unitary_nodes {
         graph.add_edge(&String::from("x"), String::from("i1"), 0);
         graph.add_edge(&String::from("o1"), String::from("i1"), 0);
 
-        node.graph.set(graph.clone()).unwrap();
+        node.graph.set(graph).unwrap();
 
-        node.generate_unitary_nodes(&mut graph, &mut errors)
-            .unwrap_err()
+        node.generate_unitary_nodes(&mut errors).unwrap_err()
     }
 }
