@@ -5,44 +5,61 @@ use crate::error::Error;
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
-    /// Get dependencies of a map application stream expression.
-    pub fn get_map_application_dependencies(
+    /// Compute dependencies of a map application stream expression.
+    pub fn compute_dependencies_map_application(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(String, usize)>, ()> {
+    ) -> Result<(), ()> {
         match self {
             // dependencies of map application are dependencies of its inputs
-            StreamExpression::MapApplication { inputs, .. } => Ok(inputs
-                .iter()
-                .map(|input_expression| {
-                    input_expression.get_dependencies(
-                        nodes_context,
-                        nodes_graphs,
-                        nodes_reduced_graphs,
-                        errors,
-                    )
-                })
-                .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
-                .into_iter()
-                .flatten()
-                .collect()),
+            StreamExpression::MapApplication {
+                inputs,
+                dependencies,
+                ..
+            } => {
+                // propagate dependencies computation
+                inputs
+                    .iter()
+                    .map(|input_expression| {
+                        input_expression.compute_dependencies(
+                            nodes_context,
+                            nodes_graphs,
+                            nodes_reduced_graphs,
+                            errors,
+                        )
+                    })
+                    .collect::<Vec<Result<(), ()>>>()
+                    .into_iter()
+                    .collect::<Result<_, _>>()?;
+
+                // set dependencies
+                dependencies.set(
+                    inputs
+                        .iter()
+                        .map(|input_expression| input_expression.get_dependencies().clone())
+                        .flatten()
+                        .collect(),
+                );
+
+                Ok(())
+            }
             _ => unreachable!(),
         }
     }
 }
 
 #[cfg(test)]
-mod get_dependencies_map_application {
+mod compute_dependencies_map_application {
     use crate::common::{location::Location, r#type::Type};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]
-    fn should_get_dependencies_of_map_application_inputs_with_duplicates() {
+    fn should_compute_dependencies_of_map_application_inputs_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -65,14 +82,15 @@ mod get_dependencies_map_application {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_map_application_dependencies(
+        stream_expression
+            .compute_dependencies_map_application(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 0)];
 

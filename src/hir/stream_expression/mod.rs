@@ -235,7 +235,39 @@ impl StreamExpression {
         }
     }
 
-    /// Get dependencies of a stream expression.
+    /// Get the reference to the stream expression's dependencies.
+    ///
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
+    /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
+    ///
+    /// let mut stream_expression = StreamExpression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: Type::Integer,
+    ///     location: Location::default(),
+    ///     dependencies: Dependencies::from(vec![]),
+    /// };
+    /// let dependencies = stream_expression.get_dependencies();
+    /// assert_eq!(*dependencies, vec![])
+    /// ```
+    pub fn get_dependencies(&self) -> &Vec<(String, usize)> {
+        match self {
+            StreamExpression::Constant { dependencies, .. }
+            | StreamExpression::SignalCall { dependencies, .. }
+            | StreamExpression::FollowedBy { dependencies, .. }
+            | StreamExpression::MapApplication { dependencies, .. }
+            | StreamExpression::NodeApplication { dependencies, .. }
+            | StreamExpression::UnitaryNodeApplication { dependencies, .. }
+            | StreamExpression::Structure { dependencies, .. }
+            | StreamExpression::Array { dependencies, .. }
+            | StreamExpression::Match { dependencies, .. }
+            | StreamExpression::When { dependencies, .. } => dependencies.get().unwrap(),
+        }
+    }
+
+    /// Compute dependencies of a stream expression.
     ///
     /// # Example
     /// ```rust
@@ -366,66 +398,67 @@ impl StreamExpression {
     ///     dependencies: Dependencies::new(),
     /// };
     ///
-    /// let dependencies = stream_expression
-    ///     .get_dependencies(
+    /// stream_expression
+    ///     .compute_dependencies(
     ///         &nodes_context,
     ///         &mut nodes_graphs,
     ///         &mut nodes_reduced_graphs,
     ///         &mut errors,
     ///     )
     ///     .unwrap();
+    /// let dependencies = stream_expression.get_dependencies().clone();
     ///
     /// let control = vec![(String::from("x"), 2)];
     ///
     /// assert_eq!(dependencies, control)
     /// ```
-    pub fn get_dependencies(
+    pub fn compute_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(String, usize)>, ()> {
+    ) -> Result<(), ()> {
         match self {
-            StreamExpression::Constant { .. } => self.get_constant_dependencies(),
-            StreamExpression::SignalCall { .. } => self.get_signal_call_dependencies(),
-            StreamExpression::FollowedBy { .. } => self.get_followed_by_dependencies(
+            StreamExpression::Constant { .. } => self.compute_dependencies_constant(),
+            StreamExpression::SignalCall { .. } => self.compute_dependencies_signal_call(),
+            StreamExpression::FollowedBy { .. } => self.compute_dependencies_followed_by(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::MapApplication { .. } => self.get_map_application_dependencies(
+            StreamExpression::MapApplication { .. } => self.compute_dependencies_map_application(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::Structure { .. } => self.get_structure_dependencies(
+            StreamExpression::Structure { .. } => self.compute_dependencies_structure(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::Array { .. } => self.get_array_dependencies(
+            StreamExpression::Array { .. } => self.compute_dependencies_array(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::Match { .. } => self.get_match_dependencies(
+            StreamExpression::Match { .. } => self.compute_dependencies_match(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::When { .. } => self.get_when_dependencies(
+            StreamExpression::When { .. } => self.compute_dependencies_when(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::NodeApplication { .. } => self.get_node_application_dependencies(
+            StreamExpression::NodeApplication { .. } => self.compute_dependencies_node_application(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
@@ -1163,7 +1196,7 @@ mod change_node_application_into_unitary_node_application {
 }
 
 #[cfg(test)]
-mod get_dependencies {
+mod compute_dependencies {
     use crate::common::{
         constant::Constant, location::Location, pattern::Pattern, r#type::Type, scope::Scope,
     };
@@ -1174,7 +1207,7 @@ mod get_dependencies {
     use std::collections::HashMap;
 
     #[test]
-    fn should_get_dependencies_of_array_elements_with_duplicates() {
+    fn should_compute_dependencies_of_array_elements_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -1216,14 +1249,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 0), (String::from("x"), 0)];
 
@@ -1231,7 +1265,7 @@ mod get_dependencies {
     }
 
     #[test]
-    fn should_get_no_dependencies_from_constant_expression() {
+    fn should_compute_no_dependencies_from_constant_expression() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -1244,14 +1278,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![];
 
@@ -1288,14 +1323,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 1)];
 
@@ -1303,7 +1339,7 @@ mod get_dependencies {
     }
 
     #[test]
-    fn should_get_dependencies_of_map_application_inputs_with_duplicates() {
+    fn should_compute_dependencies_of_map_application_inputs_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -1326,14 +1362,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 0)];
 
@@ -1341,7 +1378,7 @@ mod get_dependencies {
     }
 
     #[test]
-    fn should_get_dependencies_of_match_elements_with_duplicates() {
+    fn should_compute_dependencies_of_match_elements_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -1428,14 +1465,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let mut dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let mut dependencies = stream_expression.get_dependencies().clone();
         dependencies.sort_unstable();
 
         let mut control = vec![
@@ -1449,7 +1487,7 @@ mod get_dependencies {
     }
 
     #[test]
-    fn should_get_dependencies_of_match_elements_without_pattern_dependencies() {
+    fn should_compute_dependencies_of_match_elements_without_pattern_dependencies() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -1538,14 +1576,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("p"), 0)];
 
@@ -1553,7 +1592,7 @@ mod get_dependencies {
     }
 
     #[test]
-    fn should_get_dependencies_of_node_application_with_mapped_depth() {
+    fn should_compute_dependencies_of_node_application_with_mapped_depth() {
         let mut errors = vec![];
 
         let node = Node {
@@ -1674,14 +1713,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 2)];
 
@@ -1702,14 +1742,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 0)];
 
@@ -1717,7 +1758,7 @@ mod get_dependencies {
     }
 
     #[test]
-    fn should_get_dependencies_of_structure_elements_with_duplicates() {
+    fn should_compute_dependencies_of_structure_elements_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -1750,14 +1791,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 0), (String::from("x"), 0)];
 
@@ -1765,7 +1807,7 @@ mod get_dependencies {
     }
 
     #[test]
-    fn should_get_dependencies_of_when_expressions_with_duplicates() {
+    fn should_compute_dependencies_of_when_expressions_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -1798,14 +1840,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 0)];
 
@@ -1813,7 +1856,7 @@ mod get_dependencies {
     }
 
     #[test]
-    fn should_get_dependencies_of_when_expressions_without_local_signal() {
+    fn should_compute_dependencies_of_when_expressions_without_local_signal() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -1846,14 +1889,15 @@ mod get_dependencies {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_dependencies(
+        stream_expression
+            .compute_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("y"), 0)];
 

@@ -1,24 +1,27 @@
 use crate::hir::stream_expression::StreamExpression;
 
 impl StreamExpression {
-    /// Get dependencies of a constant stream expression.
-    pub fn get_constant_dependencies(&self) -> Result<Vec<(String, usize)>, ()> {
+    /// Compute dependencies of a constant stream expression.
+    pub fn compute_dependencies_constant(&self) -> Result<(), ()> {
         match self {
             // no dependencies for constant stream expression
-            StreamExpression::Constant { .. } => Ok(vec![]),
+            StreamExpression::Constant { dependencies, .. } => {
+                dependencies.set(vec![]);
+                Ok(())
+            }
             _ => unreachable!(),
         }
     }
 }
 
 #[cfg(test)]
-mod get_dependencies_constant {
+mod compute_dependencies_constant {
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::stream_expression::StreamExpression;
 
     #[test]
-    fn should_get_no_dependencies_from_constant_expression() {
+    fn should_compute_no_dependencies_from_constant_expression() {
         let stream_expression = StreamExpression::Constant {
             constant: Constant::Integer(1),
             typing: Type::Integer,
@@ -26,7 +29,8 @@ mod get_dependencies_constant {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression.get_constant_dependencies().unwrap();
+        stream_expression.compute_dependencies_constant().unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![];
 
