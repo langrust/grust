@@ -29,6 +29,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_dependencies_followed_by {
     use crate::common::{constant::Constant, location::Location, r#type::Type};
+    use crate::hir::dependencies::Dependencies;
     use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
@@ -51,12 +52,15 @@ mod get_dependencies_followed_by {
                     id: String::from("x"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 }],
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression

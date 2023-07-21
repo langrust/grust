@@ -14,6 +14,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_dependencies_constant {
     use crate::common::{constant::Constant, location::Location, r#type::Type};
+    use crate::hir::dependencies::Dependencies;
     use crate::hir::stream_expression::StreamExpression;
 
     #[test]
@@ -22,6 +23,7 @@ mod get_dependencies_constant {
             constant: Constant::Integer(1),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression.get_constant_dependencies().unwrap();

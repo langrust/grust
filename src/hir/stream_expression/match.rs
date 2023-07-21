@@ -86,6 +86,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_dependencies_match {
     use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
+    use crate::hir::dependencies::Dependencies;
     use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
@@ -101,6 +102,7 @@ mod get_dependencies_match {
                 id: String::from("p"),
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             arms: vec![
                 (
@@ -129,6 +131,7 @@ mod get_dependencies_match {
                         id: String::from("z"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
                 (
@@ -162,14 +165,17 @@ mod get_dependencies_match {
                             id: String::from("z"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let mut dependencies = stream_expression
@@ -204,6 +210,7 @@ mod get_dependencies_match {
                 id: String::from("p"),
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             arms: vec![
                 (
@@ -233,6 +240,7 @@ mod get_dependencies_match {
                         id: String::from("y"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
                 (
@@ -267,14 +275,17 @@ mod get_dependencies_match {
                             id: String::from("y"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression

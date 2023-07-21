@@ -39,8 +39,9 @@ mod hir_from_ast {
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::frontend::hir_from_ast::file::hir_from_ast;
     use crate::hir::{
-        equation::Equation as HIREquation, expression::Expression as HIRExpression,
-        file::File as HIRFile, function::Function as HIRFunction, node::Node as HIRNode,
+        dependencies::Dependencies, equation::Equation as HIREquation,
+        expression::Expression as HIRExpression, file::File as HIRFile,
+        function::Function as HIRFunction, node::Node as HIRNode,
         statement::Statement as HIRStatement,
         stream_expression::StreamExpression as HIRStreamExpression,
     };
@@ -168,9 +169,11 @@ mod hir_from_ast {
                             id: String::from("i"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                     location: Location::default(),
                 },

@@ -1,5 +1,7 @@
 use crate::ast::stream_expression::StreamExpression;
-use crate::hir::stream_expression::StreamExpression as HIRStreamExpression;
+use crate::hir::{
+    dependencies::Dependencies, stream_expression::StreamExpression as HIRStreamExpression,
+};
 
 use crate::frontend::hir_from_ast::expression::hir_from_ast as expression_hir_from_ast;
 
@@ -14,6 +16,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             constant,
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
         StreamExpression::SignalCall {
             id,
@@ -23,6 +26,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             id,
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
         StreamExpression::MapApplication {
             function_expression,
@@ -37,6 +41,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
                 .collect(),
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
         StreamExpression::Structure {
             name,
@@ -51,6 +56,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
                 .collect(),
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
         StreamExpression::Array {
             elements,
@@ -63,6 +69,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
                 .collect(),
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
         StreamExpression::Match {
             expression,
@@ -84,6 +91,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
                 .collect(),
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
         StreamExpression::When {
             id,
@@ -101,6 +109,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             default: Box::new(hir_from_ast(*default)),
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
         StreamExpression::FollowedBy {
             constant,
@@ -112,6 +121,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             expression: Box::new(hir_from_ast(*expression)),
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
         StreamExpression::NodeApplication {
             node,
@@ -128,6 +138,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             signal,
             typing: typing.unwrap(),
             location,
+            dependencies: Dependencies::new(),
         },
     }
 }
@@ -137,7 +148,9 @@ mod hir_from_ast {
     use crate::ast::stream_expression::StreamExpression;
     use crate::common::{location::Location, r#type::Type};
     use crate::frontend::hir_from_ast::stream_expression::hir_from_ast;
-    use crate::hir::stream_expression::StreamExpression as HIRStreamExpression;
+    use crate::hir::{
+        dependencies::Dependencies, stream_expression::StreamExpression as HIRStreamExpression,
+    };
 
     #[test]
     fn should_construct_hir_structure_from_typed_ast() {
@@ -152,6 +165,7 @@ mod hir_from_ast {
             id: String::from("s"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
         assert_eq!(hir_stream_expression, control);
     }
