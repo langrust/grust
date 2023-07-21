@@ -5,19 +5,22 @@ use crate::error::Error;
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
-    /// Get dependencies of a match stream expression.
-    pub fn get_match_dependencies(
+    /// Compute dependencies of a match stream expression.
+    pub fn compute_dependencies_match(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(String, usize)>, ()> {
+    ) -> Result<(), ()> {
         match self {
             // dependencies of match are dependencies of matched expression and
             // dependencies of arms (without new signals defined in patterns)
             StreamExpression::Match {
-                expression, arms, ..
+                expression,
+                arms,
+                dependencies,
+                ..
             } => {
                 // compute arms dependencies
                 let mut arms_dependencies = arms
@@ -27,31 +30,36 @@ impl StreamExpression {
                         let local_signals = pattern.local_identifiers();
 
                         // get arm expression dependencies
+                        arm_expression.compute_dependencies(
+                            nodes_context,
+                            nodes_graphs,
+                            nodes_reduced_graphs,
+                            errors,
+                        )?;
                         let mut arm_dependencies = arm_expression
-                            .get_dependencies(
-                                nodes_context,
-                                nodes_graphs,
-                                nodes_reduced_graphs,
-                                errors,
-                            )?
+                            .get_dependencies()
+                            .clone()
                             .into_iter()
                             .filter(|(signal, _)| !local_signals.contains(signal))
                             .collect::<Vec<(String, usize)>>();
 
                         // get bound dependencies
-                        let mut bound_dependencies = bound
-                            .as_ref()
-                            .map_or(Ok(vec![]), |bound_expression| {
-                                bound_expression.get_dependencies(
+                        let mut bound_dependencies =
+                            bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
+                                bound_expression.compute_dependencies(
                                     nodes_context,
                                     nodes_graphs,
                                     nodes_reduced_graphs,
                                     errors,
-                                )
-                            })?
-                            .into_iter()
-                            .filter(|(signal, _)| !local_signals.contains(signal))
-                            .collect();
+                                )?;
+
+                                Ok(bound_expression
+                                    .get_dependencies()
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(signal, _)| !local_signals.contains(signal))
+                                    .collect())
+                            })?;
 
                         // push all dependencies in arm dependencies
                         arm_dependencies.append(&mut bound_dependencies);
@@ -65,18 +73,19 @@ impl StreamExpression {
                     .collect::<Vec<(String, usize)>>();
 
                 // get matched expression dependencies
-                let mut expression_dependencies = expression.get_dependencies(
+                expression.compute_dependencies(
                     nodes_context,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
                 )?;
+                let mut expression_dependencies = expression.get_dependencies().clone();
 
                 // push all dependencies in arms dependencies
                 arms_dependencies.append(&mut expression_dependencies);
+                dependencies.set(arms_dependencies);
 
-                // return arms dependencies
-                Ok(arms_dependencies)
+                Ok(())
             }
             _ => unreachable!(),
         }
@@ -84,14 +93,14 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_dependencies_match {
+mod compute_dependencies_match {
     use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::{expression::Expression, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]
-    fn should_get_dependencies_of_match_elements_with_duplicates() {
+    fn should_compute_dependencies_of_match_elements_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -178,14 +187,15 @@ mod get_dependencies_match {
             dependencies: Dependencies::new(),
         };
 
-        let mut dependencies = stream_expression
-            .get_match_dependencies(
+        stream_expression
+            .compute_dependencies_match(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let mut dependencies = stream_expression.get_dependencies().clone();
         dependencies.sort_unstable();
 
         let mut control = vec![
@@ -199,7 +209,7 @@ mod get_dependencies_match {
     }
 
     #[test]
-    fn should_get_dependencies_of_match_elements_without_pattern_dependencies() {
+    fn should_compute_dependencies_of_match_elements_without_pattern_dependencies() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -288,14 +298,15 @@ mod get_dependencies_match {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_match_dependencies(
+        stream_expression
+            .compute_dependencies_match(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("p"), 0)];
 

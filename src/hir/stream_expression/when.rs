@@ -5,14 +5,14 @@ use crate::error::Error;
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
-    /// Get dependencies of a when stream expression.
-    pub fn get_when_dependencies(
+    /// Compute dependencies of a when stream expression.
+    pub fn compute_dependencies_when(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(String, usize)>, ()> {
+    ) -> Result<(), ()> {
         match self {
             // dependencies of when are dependencies of the optional expression
             // plus present and default expressions (without the new local signal)
@@ -21,26 +21,42 @@ impl StreamExpression {
                 option,
                 present,
                 default,
+                dependencies,
                 ..
             } => {
                 // get dependencies of optional expression
-                let mut option_dependencies = option.get_dependencies(
+                option.compute_dependencies(
                     nodes_context,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
                 )?;
+                let mut option_dependencies = option.get_dependencies().clone();
 
                 // get dependencies of present expression without local signal
+                present.compute_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let mut present_dependencies = present
-                    .get_dependencies(nodes_context, nodes_graphs, nodes_reduced_graphs, errors)?
+                    .get_dependencies()
+                    .clone()
                     .into_iter()
                     .filter(|(signal, _)| !signal.eq(local_signal))
                     .collect();
 
                 // get dependencies of default expression without local signal
+                default.compute_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let mut default_dependencies = default
-                    .get_dependencies(nodes_context, nodes_graphs, nodes_reduced_graphs, errors)?
+                    .get_dependencies()
+                    .clone()
                     .into_iter()
                     .filter(|(signal, _)| !signal.eq(local_signal))
                     .collect();
@@ -48,9 +64,9 @@ impl StreamExpression {
                 // push all dependencies in optional dependencies
                 option_dependencies.append(&mut present_dependencies);
                 option_dependencies.append(&mut default_dependencies);
+                dependencies.set(option_dependencies);
 
-                // return optional dependencies
-                Ok(option_dependencies)
+                Ok(())
             }
             _ => unreachable!(),
         }
@@ -58,14 +74,14 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_dependencies_when {
+mod compute_dependencies_when {
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::stream_expression::StreamExpression;
     use std::collections::HashMap;
 
     #[test]
-    fn should_get_dependencies_of_when_expressions_with_duplicates() {
+    fn should_compute_dependencies_of_when_expressions_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -98,14 +114,15 @@ mod get_dependencies_when {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_when_dependencies(
+        stream_expression
+            .compute_dependencies_when(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 0)];
 
@@ -113,7 +130,7 @@ mod get_dependencies_when {
     }
 
     #[test]
-    fn should_get_dependencies_of_when_expressions_without_local_signal() {
+    fn should_compute_dependencies_of_when_expressions_without_local_signal() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
@@ -146,14 +163,15 @@ mod get_dependencies_when {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_when_dependencies(
+        stream_expression
+            .compute_dependencies_when(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("y"), 0)];
 

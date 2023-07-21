@@ -8,14 +8,14 @@ use crate::error::Error;
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
-    /// Get dependencies of a node application.
-    pub fn get_node_application_dependencies(
+    /// Compute dependencies of a node application.
+    pub fn compute_dependencies_node_application(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(String, usize)>, ()> {
+    ) -> Result<(), ()> {
         match self {
             // dependencies of node application are reduced dependencies of
             // called signal in called node, mapped to inputs
@@ -24,6 +24,7 @@ impl StreamExpression {
                 inputs,
                 signal,
                 location,
+                dependencies,
                 ..
             } => {
                 // get called node structure
@@ -54,34 +55,41 @@ impl StreamExpression {
 
                 // map "dependencies to inputs" and "input expressions's dependencies"
                 // of node application
-                Ok(inputs
-                    .iter()
-                    .zip(&node.inputs)
-                    .map(|(input_expression, (input_id, _))| {
-                        Ok(local_reduced_graph
-                            .get_weights(signal, input_id)
-                            .iter()
-                            .map(|weight| {
-                                Ok(input_expression
-                                    .get_dependencies(
+                dependencies.set(
+                    inputs
+                        .iter()
+                        .zip(&node.inputs)
+                        .map(|(input_expression, (input_id, _))| {
+                            Ok(local_reduced_graph
+                                .get_weights(signal, input_id)
+                                .iter()
+                                .map(|weight| {
+                                    input_expression.compute_dependencies(
                                         nodes_context,
                                         nodes_graphs,
                                         nodes_reduced_graphs,
                                         errors,
-                                    )?
-                                    .into_iter()
-                                    .map(|(id, depth)| (id, depth + weight))
-                                    .collect())
-                            })
-                            .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
-                            .into_iter()
-                            .flatten()
-                            .collect::<Vec<(String, usize)>>())
-                    })
-                    .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
-                    .into_iter()
-                    .flatten()
-                    .collect::<Vec<(String, usize)>>())
+                                    )?;
+
+                                    Ok(input_expression
+                                        .get_dependencies()
+                                        .clone()
+                                        .into_iter()
+                                        .map(|(id, depth)| (id, depth + weight))
+                                        .collect())
+                                })
+                                .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                                .into_iter()
+                                .flatten()
+                                .collect::<Vec<(String, usize)>>())
+                        })
+                        .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                        .into_iter()
+                        .flatten()
+                        .collect::<Vec<(String, usize)>>(),
+                );
+
+                Ok(())
             }
             _ => unreachable!(),
         }
@@ -89,7 +97,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod get_dependencies_node_application {
+mod compute_dependencies_node_application {
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::{
@@ -98,7 +106,7 @@ mod get_dependencies_node_application {
     use std::collections::HashMap;
 
     #[test]
-    fn should_get_dependencies_of_node_application_with_mapped_depth() {
+    fn should_compute_dependencies_of_node_application_with_mapped_depth() {
         let mut errors = vec![];
 
         let node = Node {
@@ -219,14 +227,15 @@ mod get_dependencies_node_application {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_node_application_dependencies(
+        stream_expression
+            .compute_dependencies_node_application(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 2)];
 

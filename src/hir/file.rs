@@ -394,21 +394,18 @@ mod generate_unitary_nodes {
                                     id: String::from("x"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                                    dependencies: Dependencies::new(),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                                    dependencies: Dependencies::new(),
                                 },
                             ],
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::from(vec![
-                                (String::from("x"), 0),
-                                (String::from("y"), 0),
-                            ]),
+                            dependencies: Dependencies::new(),
                         },
                         location: Location::default(),
                     },
@@ -433,18 +430,18 @@ mod generate_unitary_nodes {
                                     constant: Constant::Integer(2),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![]),
+                                    dependencies: Dependencies::new(),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                                    dependencies: Dependencies::new(),
                                 },
                             ],
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                            dependencies: Dependencies::new(),
                         },
                         location: Location::default(),
                     },
@@ -693,21 +690,18 @@ mod generate_unitary_nodes {
                                 id: String::from("x"),
                                 typing: Type::Integer,
                                 location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                                dependencies: Dependencies::new(),
                             },
                             StreamExpression::SignalCall {
                                 id: String::from("y"),
                                 typing: Type::Integer,
                                 location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                                dependencies: Dependencies::new(),
                             },
                         ],
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![
-                            (String::from("x"), 0),
-                            (String::from("y"), 0),
-                        ]),
+                        dependencies: Dependencies::new(),
                     },
                     location: Location::default(),
                 },
@@ -744,21 +738,18 @@ mod generate_unitary_nodes {
                                     id: String::from("x"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                                    dependencies: Dependencies::new(),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                                    dependencies: Dependencies::new(),
                                 },
                             ],
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::from(vec![
-                                (String::from("x"), 0),
-                                (String::from("y"), 0),
-                            ]),
+                            dependencies: Dependencies::new(),
                         },
                         location: Location::default(),
                     },
@@ -783,18 +774,18 @@ mod generate_unitary_nodes {
                                     constant: Constant::Integer(2),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![]),
+                                    dependencies: Dependencies::new(),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                                    dependencies: Dependencies::new(),
                                 },
                             ],
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                            dependencies: Dependencies::new(),
                         },
                         location: Location::default(),
                     },
@@ -822,7 +813,7 @@ mod generate_unitary_nodes {
                         constant: Constant::Integer(1),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![]),
+                        dependencies: Dependencies::new(),
                     },
                     StreamExpression::NodeApplication {
                         node: String::from("my_node"),
@@ -831,7 +822,7 @@ mod generate_unitary_nodes {
                                 id: String::from("s"),
                                 typing: Type::Integer,
                                 location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
+                                dependencies: Dependencies::new(),
                             },
                             StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
@@ -846,28 +837,22 @@ mod generate_unitary_nodes {
                                     id: String::from("v"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                                    dependencies: Dependencies::new(),
                                 }],
                                 typing: Type::Integer,
                                 location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                                dependencies: Dependencies::new(),
                             },
                         ],
                         signal: String::from("o"),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![
-                            (String::from("s"), 0),
-                            (String::from("v"), 0),
-                        ]),
+                        dependencies: Dependencies::new(),
                     },
                 ],
                 typing: Type::Integer,
                 location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("s"), 0),
-                    (String::from("v"), 0),
-                ]),
+                dependencies: Dependencies::new(),
             },
             location: Location::default(),
         };
@@ -889,26 +874,23 @@ mod generate_unitary_nodes {
                             id: String::from("g"),
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                            dependencies: Dependencies::new(),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                        dependencies: Dependencies::new(),
                     },
                     StreamExpression::SignalCall {
                         id: String::from("v"),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        dependencies: Dependencies::new(),
                     },
                 ],
                 signal: String::from("o1"),
                 typing: Type::Integer,
                 location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("g"), 0),
-                    (String::from("v"), 0),
-                ]),
+                dependencies: Dependencies::new(),
             },
             location: Location::default(),
         };
@@ -930,23 +912,23 @@ mod generate_unitary_nodes {
                             id: String::from("g"),
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                            dependencies: Dependencies::new(),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                        dependencies: Dependencies::new(),
                     },
                     StreamExpression::SignalCall {
                         id: String::from("v"),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        dependencies: Dependencies::new(),
                     },
                 ],
                 signal: String::from("o2"),
                 typing: Type::Integer,
                 location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                dependencies: Dependencies::new(),
             },
             location: Location::default(),
         };
@@ -959,9 +941,9 @@ mod generate_unitary_nodes {
                 (String::from("g"), Type::Integer),
             ],
             unscheduled_equations: HashMap::from([
-                (String::from("x"), equation_1.clone()),
-                (String::from("y"), equation_2.clone()),
-                (String::from("z"), equation_3.clone()),
+                (String::from("x"), equation_1),
+                (String::from("y"), equation_2),
+                (String::from("z"), equation_3),
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
@@ -1445,174 +1427,7 @@ mod generate_unitary_nodes {
             memory: Memory::new(),
             location: Location::default(),
         };
-        let node = Node {
-            id: String::from("test"),
-            is_component: false,
-            inputs: vec![
-                (String::from("s"), Type::Integer),
-                (String::from("v"), Type::Integer),
-                (String::from("g"), Type::Integer),
-            ],
-            unscheduled_equations: HashMap::from([
-                (String::from("x"), equation_1),
-                (String::from("y"), equation_2),
-                (String::from("z"), equation_3),
-            ]),
-            unitary_nodes: HashMap::from([
-                (String::from("x"), unitary_node_1),
-                (String::from("y"), unitary_node_2),
-                (String::from("z"), unitary_node_3),
-            ]),
-            location: Location::default(),
-        };
-        let function = Function {
-            id: String::from("my_function"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            statements: vec![Statement {
-                id: String::from("x"),
-                element_type: Type::Integer,
-                expression: Expression::Call {
-                    id: String::from("i"),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                },
-                location: Location::default(),
-            }],
-            returned: (
-                Type::Integer,
-                Expression::Call {
-                    id: String::from("x"),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-        let control = File {
-            typedefs: vec![],
-            functions: vec![function],
-            nodes: vec![my_node, other_node, node],
-            component: None,
-            location: Location::default(),
-        };
-        assert_eq!(file, control);
-    }
-}
-
-#[cfg(test)]
-mod normalize {
-    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, expression::Expression, file::File,
-        function::Function, memory::Memory, node::Node, statement::Statement,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
-    };
-    use std::collections::HashMap;
-
-    #[test]
-    fn should_normalize_nodes_in_file() {
-        let mut errors = vec![];
-
-        let my_node = Node {
-            id: String::from("my_node"),
-            is_component: false,
-            inputs: vec![
-                (String::from("x"), Type::Integer),
-                (String::from("y"), Type::Integer),
-            ],
-            unscheduled_equations: HashMap::from([(
-                String::from("o"),
-                Equation {
-                    scope: Scope::Output,
-                    id: String::from("o"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
-                        function_expression: Expression::Call {
-                            id: String::from("*"),
-                            typing: Type::Abstract(
-                                vec![Type::Integer, Type::Integer],
-                                Box::new(Type::Integer),
-                            ),
-                            location: Location::default(),
-                        },
-                        inputs: vec![
-                            StreamExpression::SignalCall {
-                                id: String::from("x"),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                            },
-                            StreamExpression::SignalCall {
-                                id: String::from("y"),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                            },
-                        ],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![
-                            (String::from("x"), 0),
-                            (String::from("y"), 0),
-                        ]),
-                    },
-                    location: Location::default(),
-                },
-            )]),
-            unitary_nodes: HashMap::new(),
-            location: Location::default(),
-        };
-
-        let other_node = Node {
-            id: String::from("other_node"),
-            is_component: false,
-            inputs: vec![
-                (String::from("x"), Type::Integer),
-                (String::from("y"), Type::Integer),
-            ],
-            unscheduled_equations: HashMap::from([(
-                String::from("o"),
-                Equation {
-                    scope: Scope::Output,
-                    id: String::from("o"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
-                        function_expression: Expression::Call {
-                            id: String::from("*"),
-                            typing: Type::Abstract(
-                                vec![Type::Integer, Type::Integer],
-                                Box::new(Type::Integer),
-                            ),
-                            location: Location::default(),
-                        },
-                        inputs: vec![
-                            StreamExpression::SignalCall {
-                                id: String::from("x"),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                            },
-                            StreamExpression::SignalCall {
-                                id: String::from("y"),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                            },
-                        ],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![
-                            (String::from("x"), 0),
-                            (String::from("y"), 0),
-                        ]),
-                    },
-                    location: Location::default(),
-                },
-            )]),
-            unitary_nodes: HashMap::new(),
-            location: Location::default(),
-        };
-
+        // out x: int = 1 + my_node(s, v*2).o
         let equation_1 = Equation {
             scope: Scope::Output,
             id: String::from("x"),
@@ -1680,6 +1495,7 @@ mod normalize {
             },
             location: Location::default(),
         };
+        // out y: int = other_node(g-1, v).o1
         let equation_2 = Equation {
             scope: Scope::Output,
             id: String::from("y"),
@@ -1710,13 +1526,51 @@ mod normalize {
                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                     },
                 ],
-                signal: String::from("o"),
+                signal: String::from("o1"),
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![
                     (String::from("g"), 0),
                     (String::from("v"), 0),
                 ]),
+            },
+            location: Location::default(),
+        };
+        // out z: int = other_node(g-1, v).o2
+        let equation_3 = Equation {
+            scope: Scope::Output,
+            id: String::from("z"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::NodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("-1"),
+                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("g"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::new(),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("v"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                    },
+                ],
+                signal: String::from("o2"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
             },
             location: Location::default(),
         };
@@ -1729,8 +1583,272 @@ mod normalize {
                 (String::from("g"), Type::Integer),
             ],
             unscheduled_equations: HashMap::from([
-                (String::from("x"), equation_1.clone()),
-                (String::from("y"), equation_2.clone()),
+                (String::from("x"), equation_1),
+                (String::from("y"), equation_2),
+                (String::from("z"), equation_3),
+            ]),
+            unitary_nodes: HashMap::from([
+                (String::from("x"), unitary_node_1),
+                (String::from("y"), unitary_node_2),
+                (String::from("z"), unitary_node_3),
+            ]),
+            location: Location::default(),
+        };
+        let function = Function {
+            id: String::from("my_function"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            statements: vec![Statement {
+                id: String::from("x"),
+                element_type: Type::Integer,
+                expression: Expression::Call {
+                    id: String::from("i"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                },
+                location: Location::default(),
+            }],
+            returned: (
+                Type::Integer,
+                Expression::Call {
+                    id: String::from("x"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                },
+            ),
+            location: Location::default(),
+        };
+        let control = File {
+            typedefs: vec![],
+            functions: vec![function],
+            nodes: vec![my_node, other_node, node],
+            component: None,
+            location: Location::default(),
+        };
+        assert_eq!(
+            file.nodes.get(2).unwrap().unscheduled_equations.get(&String::from("z")).unwrap(),
+            control.nodes.get(2).unwrap().unscheduled_equations.get(&String::from("z")).unwrap()
+        );
+        assert_eq!(file, control);
+    }
+}
+
+#[cfg(test)]
+mod normalize {
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
+    use crate::hir::{
+        dependencies::Dependencies, equation::Equation, expression::Expression, file::File,
+        function::Function, memory::Memory, node::Node, statement::Statement,
+        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    };
+    use std::collections::HashMap;
+
+    #[test]
+    fn should_normalize_nodes_in_file() {
+        let mut errors = vec![];
+
+        let my_node = Node {
+            id: String::from("my_node"),
+            is_component: false,
+            inputs: vec![
+                (String::from("x"), Type::Integer),
+                (String::from("y"), Type::Integer),
+            ],
+            unscheduled_equations: HashMap::from([(
+                String::from("o"),
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("*"),
+                            typing: Type::Abstract(
+                                vec![Type::Integer, Type::Integer],
+                                Box::new(Type::Integer),
+                            ),
+                            location: Location::default(),
+                        },
+                        inputs: vec![
+                            StreamExpression::SignalCall {
+                                id: String::from("x"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::new(),
+                            },
+                            StreamExpression::SignalCall {
+                                id: String::from("y"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::new(),
+                            },
+                        ],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                    location: Location::default(),
+                },
+            )]),
+            unitary_nodes: HashMap::new(),
+            location: Location::default(),
+        };
+
+        let other_node = Node {
+            id: String::from("other_node"),
+            is_component: false,
+            inputs: vec![
+                (String::from("x"), Type::Integer),
+                (String::from("y"), Type::Integer),
+            ],
+            unscheduled_equations: HashMap::from([(
+                String::from("o"),
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("*"),
+                            typing: Type::Abstract(
+                                vec![Type::Integer, Type::Integer],
+                                Box::new(Type::Integer),
+                            ),
+                            location: Location::default(),
+                        },
+                        inputs: vec![
+                            StreamExpression::SignalCall {
+                                id: String::from("x"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::new(),
+                            },
+                            StreamExpression::SignalCall {
+                                id: String::from("y"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::new(),
+                            },
+                        ],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                    location: Location::default(),
+                },
+            )]),
+            unitary_nodes: HashMap::new(),
+            location: Location::default(),
+        };
+
+        let equation_1 = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+"),
+                    typing: Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    ),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                    StreamExpression::NodeApplication {
+                        node: String::from("my_node"),
+                        inputs: vec![
+                            StreamExpression::SignalCall {
+                                id: String::from("s"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::new(),
+                            },
+                            StreamExpression::MapApplication {
+                                function_expression: Expression::Call {
+                                    id: String::from("*2"),
+                                    typing: Type::Abstract(
+                                        vec![Type::Integer],
+                                        Box::new(Type::Integer),
+                                    ),
+                                    location: Location::default(),
+                                },
+                                inputs: vec![StreamExpression::SignalCall {
+                                    id: String::from("v"),
+                                    typing: Type::Integer,
+                                    location: Location::default(),
+                                    dependencies: Dependencies::new(),
+                                }],
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::new(),
+                            },
+                        ],
+                        signal: String::from("o"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::new(),
+            },
+            location: Location::default(),
+        };
+        let equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::NodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("-1"),
+                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("g"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::new(),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("v"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                ],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::new(),
+            },
+            location: Location::default(),
+        };
+        let node = Node {
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![
+                (String::from("s"), Type::Integer),
+                (String::from("v"), Type::Integer),
+                (String::from("g"), Type::Integer),
+            ],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1),
+                (String::from("y"), equation_2),
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
@@ -2127,6 +2245,113 @@ mod normalize {
             ],
             scheduled_equations: equations_2,
             memory: Memory::new(),
+            location: Location::default(),
+        };
+        let equation_1 = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+"),
+                    typing: Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    ),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![]),
+                    },
+                    StreamExpression::NodeApplication {
+                        node: String::from("my_node"),
+                        inputs: vec![
+                            StreamExpression::SignalCall {
+                                id: String::from("s"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
+                            },
+                            StreamExpression::MapApplication {
+                                function_expression: Expression::Call {
+                                    id: String::from("*2"),
+                                    typing: Type::Abstract(
+                                        vec![Type::Integer],
+                                        Box::new(Type::Integer),
+                                    ),
+                                    location: Location::default(),
+                                },
+                                inputs: vec![StreamExpression::SignalCall {
+                                    id: String::from("v"),
+                                    typing: Type::Integer,
+                                    location: Location::default(),
+                                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                                }],
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                            },
+                        ],
+                        signal: String::from("o"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![
+                            (String::from("s"), 0),
+                            (String::from("v"), 0),
+                        ]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("s"), 0),
+                    (String::from("v"), 0),
+                ]),
+            },
+            location: Location::default(),
+        };
+        let equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::NodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("-1"),
+                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("g"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("v"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                    },
+                ],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("g"), 0),
+                    (String::from("v"), 0),
+                ]),
+            },
             location: Location::default(),
         };
         let node = Node {

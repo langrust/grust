@@ -5,29 +5,49 @@ use crate::error::Error;
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
-    /// Get dependencies of a followed by stream expression.
-    pub fn get_followed_by_dependencies(
+    /// Compute dependencies of a followed by stream expression.
+    pub fn compute_dependencies_followed_by(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(String, usize)>, ()> {
+    ) -> Result<(), ()> {
         match self {
             // dependencies of followed by are dependencies of its following
             // expression, incremented by 1 in depth (because it is a buffer)
-            StreamExpression::FollowedBy { expression, .. } => Ok(expression
-                .get_dependencies(nodes_context, nodes_graphs, nodes_reduced_graphs, errors)?
-                .into_iter()
-                .map(|(id, depth)| (id, depth + 1))
-                .collect()),
+            StreamExpression::FollowedBy {
+                expression,
+                dependencies,
+                ..
+            } => {
+                // propagate dependencies computation
+                expression.compute_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
+
+                // set dependencies with the memory delay
+                dependencies.set(
+                    expression
+                        .get_dependencies()
+                        .clone()
+                        .into_iter()
+                        .map(|(id, depth)| (id, depth + 1))
+                        .collect(),
+                );
+
+                Ok(())
+            }
             _ => unreachable!(),
         }
     }
 }
 
 #[cfg(test)]
-mod get_dependencies_followed_by {
+mod compute_dependencies_followed_by {
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::{expression::Expression, stream_expression::StreamExpression};
@@ -63,14 +83,15 @@ mod get_dependencies_followed_by {
             dependencies: Dependencies::new(),
         };
 
-        let dependencies = stream_expression
-            .get_followed_by_dependencies(
+        stream_expression
+            .compute_dependencies_followed_by(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
             )
             .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
 
         let control = vec![(String::from("x"), 1)];
 

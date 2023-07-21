@@ -383,13 +383,14 @@ impl Node {
                         // retrieve expression
                         let expression = &equation.expression;
 
-                        // get dependencies
-                        let dependencies = expression.get_dependencies(
+                        // compute and get dependencies
+                        expression.compute_dependencies(
                             nodes_context,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
                         )?;
+                        let dependencies = expression.get_dependencies().clone();
 
                         // get node's graph (borrow checker)
                         let graph = nodes_graphs.get_mut(node).unwrap();
