@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use once_cell::sync::OnceCell;
+
 use crate::common::{
     graph::{color::Color, neighbor::Neighbor, Graph},
     location::Location,
@@ -24,6 +26,8 @@ pub struct Node {
     pub unitary_nodes: HashMap<String, UnitaryNode>,
     /// Node location.
     pub location: Location,
+    /// Node dependency graph.
+    pub graph: OnceCell<Graph<Color>>,
 }
 
 impl Node {
@@ -33,6 +37,7 @@ impl Node {
     /// But no edges are added.
     ///
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
@@ -82,6 +87,7 @@ impl Node {
     ///     ]),
     ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     ///
     /// let graph = node.create_initialized_graph();
@@ -132,6 +138,7 @@ impl Node {
     /// This example correspond to the following test.
     ///
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
@@ -183,6 +190,7 @@ impl Node {
     ///     ]),
     ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     /// let mut nodes_context = HashMap::new();
     /// nodes_context.insert(
@@ -220,6 +228,7 @@ impl Node {
         let Node {
             inputs,
             unscheduled_equations,
+            graph,
             ..
         } = self;
 
@@ -254,7 +263,14 @@ impl Node {
             })
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()
+            .collect::<Result<(), ()>>()?;
+
+        // set node's graph
+        graph
+            .set(nodes_graphs.get(&self.id).unwrap().clone())
+            .expect("should be the first time");
+
+        Ok(())
     }
 
     /// Add direct dependencies of a signal.
@@ -271,6 +287,7 @@ impl Node {
     /// This example correspond to the following test.
     ///
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
@@ -322,6 +339,7 @@ impl Node {
     ///     ]),
     ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     /// let mut nodes_context = HashMap::new();
     /// nodes_context.insert(
@@ -442,6 +460,7 @@ impl Node {
     /// This example correspond to the following test.
     ///
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
@@ -493,6 +512,7 @@ impl Node {
     ///     ]),
     ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     /// let mut nodes_context = HashMap::new();
     /// nodes_context.insert(
@@ -619,7 +639,9 @@ impl Node {
     /// # Example
     ///
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use std::collections::HashMap;
+    ///
     /// use grustine::common::{
     ///     graph::{color::Color, Graph}, location::Location, scope::Scope, r#type::Type,
     /// };
@@ -686,6 +708,7 @@ impl Node {
     ///     ]),
     ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     ///
     /// let mut graph = Graph::new();
@@ -697,6 +720,7 @@ impl Node {
     /// graph.add_edge(&String::from("x"), String::from("i1"), 0);
     /// graph.add_edge(&String::from("o1"), String::from("x"), 0);
     /// graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+    /// node.graph.set(graph.clone());
     ///
     /// node.generate_unitary_nodes(&mut graph, &mut errors)
     ///     .unwrap();
@@ -811,7 +835,18 @@ impl Node {
     ///     ]),
     ///     unitary_nodes: HashMap::from([(String::from("o2"), unitary_node_2), (String::from("o1"), unitary_node_1)]),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
+    /// let mut graph = Graph::new();
+    /// graph.add_vertex(String::from("i1"), Color::Black);
+    /// graph.add_vertex(String::from("i2"), Color::Black);
+    /// graph.add_vertex(String::from("x"), Color::Black);
+    /// graph.add_vertex(String::from("o1"), Color::Black);
+    /// graph.add_vertex(String::from("o2"), Color::Black);
+    /// graph.add_edge(&String::from("x"), String::from("i1"), 0);
+    /// graph.add_edge(&String::from("o1"), String::from("x"), 0);
+    /// graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+    /// control.graph.set(graph);
     ///
     /// assert_eq!(node, control)
     /// ```
@@ -956,6 +991,7 @@ impl Node {
     /// This example is tested in the following code.
     ///
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use std::collections::{HashSet, HashMap};
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, r#type::Type};
@@ -1102,6 +1138,7 @@ impl Node {
     ///     ]),
     ///     unitary_nodes: HashMap::from([(String::from("x"), unitary_node_1), (String::from("y"), unitary_node_2)]),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     /// node.normalize();
     ///
@@ -1276,6 +1313,7 @@ impl Node {
     ///     ]),
     ///     unitary_nodes: HashMap::from([(String::from("x"), unitary_node_1), (String::from("y"), unitary_node_2)]),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     /// assert_eq!(node, control);
     /// ```
@@ -1288,6 +1326,7 @@ impl Node {
 
 #[cfg(test)]
 mod add_unitary_node {
+    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::hir::{
@@ -1364,6 +1403,7 @@ mod add_unitary_node {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut graph = Graph::new();
@@ -1375,6 +1415,8 @@ mod add_unitary_node {
         graph.add_edge(&String::from("x"), String::from("i1"), 0);
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+
+        node.graph.set(graph.clone()).unwrap();
 
         node.add_unitary_node(String::from("o1"), &mut graph, &mut errors)
             .unwrap();
@@ -1468,7 +1510,19 @@ mod add_unitary_node {
             ]),
             unitary_nodes: HashMap::from([(String::from("o1"), unitary_node)]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("i1"), Color::Black);
+        graph.add_vertex(String::from("i2"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("o1"), Color::Black);
+        graph.add_vertex(String::from("o2"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("i1"), 0);
+        graph.add_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+        control.graph.set(graph.clone()).unwrap();
 
         assert_eq!(node, control)
     }
@@ -1533,6 +1587,7 @@ mod add_unitary_node {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut graph = Graph::new();
@@ -1544,6 +1599,8 @@ mod add_unitary_node {
         graph.add_edge(&String::from("x"), String::from("i1"), 0);
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+
+        node.graph.set(graph.clone()).unwrap();
 
         node.add_unitary_node(String::from("o1"), &mut graph, &mut errors)
             .unwrap();
@@ -1630,6 +1687,7 @@ mod add_unitary_node {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut graph = Graph::new();
@@ -1642,6 +1700,8 @@ mod add_unitary_node {
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
 
+        node.graph.set(graph.clone()).unwrap();
+
         node.add_unitary_node(String::from("o1"), &mut graph, &mut errors)
             .unwrap_err()
     }
@@ -1649,6 +1709,8 @@ mod add_unitary_node {
 
 #[cfg(test)]
 mod generate_unitary_nodes {
+    use once_cell::sync::OnceCell;
+
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
@@ -1724,6 +1786,7 @@ mod generate_unitary_nodes {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut graph = Graph::new();
@@ -1735,6 +1798,8 @@ mod generate_unitary_nodes {
         graph.add_edge(&String::from("x"), String::from("i1"), 0);
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+
+        node.graph.set(graph.clone()).unwrap();
 
         node.generate_unitary_nodes(&mut graph, &mut errors)
             .unwrap();
@@ -1850,7 +1915,20 @@ mod generate_unitary_nodes {
                 (String::from("o1"), unitary_node_1),
             ]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("i1"), Color::Black);
+        graph.add_vertex(String::from("i2"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("o1"), Color::Black);
+        graph.add_vertex(String::from("o2"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("i1"), 0);
+        graph.add_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+
+        control.graph.set(graph.clone()).unwrap();
 
         assert_eq!(node, control)
     }
@@ -1915,6 +1993,7 @@ mod generate_unitary_nodes {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut graph = Graph::new();
@@ -1926,6 +2005,8 @@ mod generate_unitary_nodes {
         graph.add_edge(&String::from("x"), String::from("i1"), 0);
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+
+        node.graph.set(graph.clone()).unwrap();
 
         node.generate_unitary_nodes(&mut graph, &mut errors)
             .unwrap();
@@ -1998,6 +2079,7 @@ mod generate_unitary_nodes {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut graph = Graph::new();
@@ -2009,6 +2091,8 @@ mod generate_unitary_nodes {
         graph.add_edge(&String::from("x"), String::from("o1"), 0);
         graph.add_edge(&String::from("o1"), String::from("x"), 0);
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+
+        node.graph.set(graph.clone()).unwrap();
 
         node.generate_unitary_nodes(&mut graph, &mut errors)
             .unwrap_err()
@@ -2059,6 +2143,7 @@ mod generate_unitary_nodes {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut graph = Graph::new();
@@ -2068,6 +2153,8 @@ mod generate_unitary_nodes {
         graph.add_vertex(String::from("o1"), Color::Black);
         graph.add_edge(&String::from("x"), String::from("i1"), 0);
         graph.add_edge(&String::from("o1"), String::from("i1"), 0);
+
+        node.graph.set(graph.clone()).unwrap();
 
         node.generate_unitary_nodes(&mut graph, &mut errors)
             .unwrap_err()

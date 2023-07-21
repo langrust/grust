@@ -98,6 +98,8 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod compute_dependencies_node_application {
+    use once_cell::sync::OnceCell;
+
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::{
@@ -183,6 +185,7 @@ mod compute_dependencies_node_application {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut nodes_context = HashMap::new();

@@ -29,6 +29,7 @@ impl File {
     ///
     /// # Example
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
@@ -80,6 +81,7 @@ impl File {
     ///     ]),
     ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     ///
     /// let function = Function {
@@ -352,6 +354,10 @@ impl File {
 
 #[cfg(test)]
 mod generate_unitary_nodes {
+    use once_cell::sync::OnceCell;
+
+    use crate::common::graph::color::Color;
+    use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::{
@@ -449,6 +455,7 @@ mod generate_unitary_nodes {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut file = File {
             typedefs: vec![],
@@ -647,7 +654,17 @@ mod generate_unitary_nodes {
                 ),
             ]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("o1"), Color::Black);
+        graph.add_vertex(String::from("o2"), Color::Black);
+        graph.add_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_edge(&String::from("o1"), String::from("y"), 0);
+        graph.add_edge(&String::from("o2"), String::from("y"), 0);
+        node_control.graph.set(graph).unwrap();
         let control = File {
             typedefs: vec![],
             functions: vec![],
@@ -708,6 +725,7 @@ mod generate_unitary_nodes {
             )]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
         let other_node = Node {
@@ -793,6 +811,7 @@ mod generate_unitary_nodes {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         // out x: int = 1 + my_node(s, v*2).o
         let equation_1 = Equation {
@@ -947,6 +966,7 @@ mod generate_unitary_nodes {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let function = Function {
             id: String::from("my_function"),
@@ -1077,7 +1097,15 @@ mod generate_unitary_nodes {
                 },
             )]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_edge(&String::from("o"), String::from("y"), 0);
+        my_node.graph.set(graph).unwrap();
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
         let other_node = Node {
             id: String::from("other_node"),
@@ -1267,7 +1295,17 @@ mod generate_unitary_nodes {
                 ),
             ]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("o1"), Color::Black);
+        graph.add_vertex(String::from("o2"), Color::Black);
+        graph.add_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_edge(&String::from("o1"), String::from("y"), 0);
+        graph.add_edge(&String::from("o2"), String::from("y"), 0);
+        other_node.graph.set(graph).unwrap();
         // out x: int = 1 + my_node(s, v*2).o
         let unitary_equation_1 = Equation {
             scope: Scope::Output,
@@ -1593,7 +1631,21 @@ mod generate_unitary_nodes {
                 (String::from("z"), unitary_node_3),
             ]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("s"), Color::Black);
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("g"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("z"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("s"), 0);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("y"), String::from("g"), 0);
+        graph.add_edge(&String::from("y"), String::from("v"), 0);
+        graph.add_edge(&String::from("z"), String::from("v"), 0);
+        node.graph.set(graph).unwrap();
         let function = Function {
             id: String::from("my_function"),
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -1645,6 +1697,10 @@ mod generate_unitary_nodes {
 
 #[cfg(test)]
 mod normalize {
+    use once_cell::sync::OnceCell;
+
+    use crate::common::graph::color::Color;
+    use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, expression::Expression, file::File,
@@ -1702,6 +1758,7 @@ mod normalize {
             )]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let other_node = Node {
@@ -1749,6 +1806,7 @@ mod normalize {
             )]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let equation_1 = Equation {
@@ -1863,6 +1921,7 @@ mod normalize {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let function = Function {
             id: String::from("test"),
@@ -1992,7 +2051,15 @@ mod normalize {
                 },
             )]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_edge(&String::from("o"), String::from("y"), 0);
+        my_node.graph.set(graph).unwrap();
 
         let other_node = Node {
             id: String::from("other_node"),
@@ -2090,7 +2157,15 @@ mod normalize {
                 },
             )]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_edge(&String::from("o"), String::from("y"), 0);
+        other_node.graph.set(graph).unwrap();
 
         let equations_1 = vec![
             Equation {
@@ -2382,7 +2457,19 @@ mod normalize {
                 (String::from("y"), unitary_node_2),
             ]),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("s"), Color::Black);
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("g"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("s"), 0);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("y"), String::from("g"), 0);
+        graph.add_edge(&String::from("y"), String::from("v"), 0);
+        node.graph.set(graph).unwrap();
         let function = Function {
             id: String::from("test"),
             inputs: vec![(String::from("i"), Type::Integer)],

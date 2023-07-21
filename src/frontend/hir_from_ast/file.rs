@@ -30,6 +30,7 @@ pub fn hir_from_ast(file: File) -> HIRFile {
 
 #[cfg(test)]
 mod hir_from_ast {
+    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::ast::{
@@ -180,6 +181,7 @@ mod hir_from_ast {
             )]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let control = HIRFile {
             typedefs: vec![],
