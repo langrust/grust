@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::node::Node;
 use crate::frontend::hir_from_ast::equation::hir_from_ast as equation_hir_from_ast;
-use crate::hir::{node::Node as HIRNode};
+use crate::hir::node::Node as HIRNode;
 
 /// Transform AST nodes into HIR nodes.
 pub fn hir_from_ast(node: Node) -> HIRNode {
