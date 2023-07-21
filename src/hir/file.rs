@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::typedef::Typedef;
-use crate::common::{
-    graph::{color::Color, Graph},
-    location::Location,
-};
+use crate::common::location::Location;
 use crate::error::Error;
 use crate::hir::{function::Function, node::Node};
 
@@ -118,9 +115,9 @@ impl File {
     ///     location: Location::default(),
     /// };
     ///
-    /// let nodes_graphs = file.generate_dependency_graphs(&mut errors).unwrap();
+    /// file.generate_dependencies_graphs(&mut errors).unwrap();
     ///
-    /// let graph = nodes_graphs.get(&String::from("test")).unwrap();
+    /// let graph = file.nodes.get(0).unwrap().graph.get().unwrap();
     ///
     /// let mut control = Graph::new();
     /// control.add_vertex(String::from("o"), Color::Black);
@@ -131,10 +128,7 @@ impl File {
     ///
     /// assert_eq!(*graph, control);
     /// ```
-    pub fn generate_dependency_graphs(
-        &self,
-        errors: &mut Vec<Error>,
-    ) -> Result<HashMap<String, Graph<Color>>, ()> {
+    pub fn generate_dependencies_graphs(&self, errors: &mut Vec<Error>) -> Result<(), ()> {
         let File {
             nodes, component, ..
         } = self;
@@ -195,8 +189,7 @@ impl File {
             )
         })?;
 
-        // return direct dependencies graphs
-        Ok(nodes_graphs)
+        Ok(())
     }
 
     /// Generate unitary nodes.
@@ -236,16 +229,13 @@ impl File {
     /// }
     /// ```
     pub fn generate_unitary_nodes(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
-        // generate dependency graph
-        let mut graphs = self.generate_dependencies_graphs(errors)?;
+        // generate dependency graphs
+        self.generate_dependencies_graphs(errors)?;
 
         // unitary nodes computations, it induces schedulings of the node
         self.nodes
             .iter_mut()
-            .map(|node| {
-                let graph = graphs.get_mut(&node.id).unwrap();
-                node.generate_unitary_nodes(graph, errors)
-            })
+            .map(|node| node.generate_unitary_nodes(errors))
             .collect::<Vec<Result<(), ()>>>()
             .into_iter()
             .collect::<Result<(), ()>>()?;
