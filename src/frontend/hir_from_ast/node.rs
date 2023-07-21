@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use once_cell::sync::OnceCell;
+
 use crate::ast::node::Node;
 use crate::frontend::hir_from_ast::equation::hir_from_ast as equation_hir_from_ast;
 use crate::hir::node::Node as HIRNode;
@@ -24,11 +26,13 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
             .collect(),
         unitary_nodes: HashMap::new(),
         location,
+        graph: OnceCell::new(),
     }
 }
 
 #[cfg(test)]
 mod hir_from_ast {
+    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::ast::{
@@ -105,6 +109,7 @@ mod hir_from_ast {
             )]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         assert_eq!(hir_node, control);
     }

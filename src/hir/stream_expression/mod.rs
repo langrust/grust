@@ -271,6 +271,7 @@ impl StreamExpression {
     ///
     /// # Example
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
@@ -354,6 +355,7 @@ impl StreamExpression {
     ///     ]),
     ///     unitary_nodes: HashMap::new(),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     ///
     /// let mut nodes_context = HashMap::new();
@@ -1197,6 +1199,8 @@ mod change_node_application_into_unitary_node_application {
 
 #[cfg(test)]
 mod compute_dependencies {
+    use once_cell::sync::OnceCell;
+
     use crate::common::{
         constant::Constant, location::Location, pattern::Pattern, r#type::Type, scope::Scope,
     };
@@ -1669,6 +1673,7 @@ mod compute_dependencies {
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let mut nodes_context = HashMap::new();
