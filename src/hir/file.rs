@@ -1625,8 +1625,19 @@ mod generate_unitary_nodes {
             location: Location::default(),
         };
         assert_eq!(
-            file.nodes.get(2).unwrap().unscheduled_equations.get(&String::from("z")).unwrap(),
-            control.nodes.get(2).unwrap().unscheduled_equations.get(&String::from("z")).unwrap()
+            file.nodes
+                .get(2)
+                .unwrap()
+                .unscheduled_equations
+                .get(&String::from("z"))
+                .unwrap(),
+            control
+                .nodes
+                .get(2)
+                .unwrap()
+                .unscheduled_equations
+                .get(&String::from("z"))
+                .unwrap()
         );
         assert_eq!(file, control);
     }
