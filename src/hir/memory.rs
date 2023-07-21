@@ -61,7 +61,9 @@ impl Memory {
     /// use std::collections::HashMap;
     ///
     /// use grustine::common::{constant::Constant, r#type::Type, location::Location};
-    /// use grustine::hir::{stream_expression::StreamExpression, memory::Memory};
+    /// use grustine::hir::{
+    ///     dependencies::Dependencies, stream_expression::StreamExpression, memory::Memory
+    /// };
     ///
     /// let mut memory = Memory::new();
     ///
@@ -72,6 +74,7 @@ impl Memory {
     ///         id: String::from("x"),
     ///         typing: Type::Integer,
     ///         location: Location::default(),
+    ///         dependencies: Dependencies::new(),
     ///     });
     ///
     /// assert!(!memory.buffers.is_empty());

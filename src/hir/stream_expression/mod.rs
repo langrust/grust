@@ -10,8 +10,8 @@ use crate::common::{
 };
 use crate::error::Error;
 use crate::hir::{
-    equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
-    memory::Memory, node::Node,
+    dependencies::Dependencies, equation::Equation, expression::Expression,
+    identifier_creator::IdentifierCreator, memory::Memory, node::Node,
 };
 
 mod array;
@@ -35,6 +35,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// Signal call stream expression.
     SignalCall {
@@ -44,6 +46,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// Initialized buffer stream expression.
     FollowedBy {
@@ -55,6 +59,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// Map application stream expression.
     MapApplication {
@@ -66,6 +72,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// Node application stream expression.
     NodeApplication {
@@ -79,6 +87,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// Unitary node application stream expression.
     UnitaryNodeApplication {
@@ -92,6 +102,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// Structure stream expression.
     Structure {
@@ -103,6 +115,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// Array stream expression.
     Array {
@@ -112,6 +126,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// Pattern matching stream expression.
     Match {
@@ -128,6 +144,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
     /// When present stream expression.
     When {
@@ -147,6 +165,8 @@ pub enum StreamExpression {
         typing: Type,
         /// Stream expression location.
         location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
     },
 }
 
@@ -156,13 +176,14 @@ impl StreamExpression {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::hir::stream_expression::StreamExpression;
+    /// use grustine::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
     /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
     ///
     /// let mut stream_expression = StreamExpression::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: Type::Integer,
     ///     location: Location::default(),
+    ///     dependencies: Dependencies::new(),
     /// };
     /// let typing = stream_expression.get_type();
     /// assert_eq!(typing, &Type::Integer)
@@ -187,13 +208,14 @@ impl StreamExpression {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::hir::stream_expression::StreamExpression;
+    /// use grustine::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
     /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
     ///
     /// let mut stream_expression = StreamExpression::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: Type::Integer,
     ///     location: Location::default(),
+    ///     dependencies: Dependencies::new(),
     /// };
     /// let location = stream_expression.get_location();
     /// assert_eq!(location, &Location::default())
@@ -220,7 +242,8 @@ impl StreamExpression {
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
-    ///     equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
+    ///     dependencies::Dependencies, equation::Equation, expression::Expression,
+    ///     node::Node, stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, location::Location, scope::Scope, r#type::Type,
@@ -248,9 +271,11 @@ impl StreamExpression {
     ///                         id: String::from("z"),
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
+    ///                         dependencies: Dependencies::new(),
     ///                     }),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             },
@@ -274,18 +299,22 @@ impl StreamExpression {
     ///                                 id: String::from("x"),
     ///                                 typing: Type::Integer,
     ///                                 location: Location::default(),
+    ///                                 dependencies: Dependencies::new(),
     ///                             },
     ///                             StreamExpression::SignalCall {
     ///                                 id: String::from("y"),
     ///                                 typing: Type::Integer,
     ///                                 location: Location::default(),
+    ///                                 dependencies: Dependencies::new(),
     ///                             },
     ///                         ],
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
+    ///                         dependencies: Dependencies::new(),
     ///                     }),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             },
@@ -318,19 +347,23 @@ impl StreamExpression {
     ///                 id: String::from("x"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::new(),
     ///             }],
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::new(),
     ///         },
     ///         StreamExpression::Constant {
     ///             constant: Constant::Integer(1),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::new(),
     ///         },
     ///     ],
     ///     signal: String::from("o"),
     ///     typing: Type::Integer,
     ///     location: Location::default(),
+    ///     dependencies: Dependencies::new(),
     /// };
     ///
     /// let dependencies = stream_expression
@@ -429,8 +462,8 @@ impl StreamExpression {
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
-    ///     equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
-    ///     stream_expression::StreamExpression,
+    ///     dependencies::Dependencies, equation::Equation, expression::Expression,
+    ///     identifier_creator::IdentifierCreator, stream_expression::StreamExpression,
     /// };
     ///
     /// let mut identifier_creator = IdentifierCreator {
@@ -451,6 +484,7 @@ impl StreamExpression {
     ///             constant: Constant::Integer(1),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![]),
     ///         },
     ///         StreamExpression::UnitaryNodeApplication {
     ///             node: String::from("my_node"),
@@ -459,6 +493,7 @@ impl StreamExpression {
     ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
     ///                 },
     ///                 StreamExpression::MapApplication {
     ///                     function_expression: Expression::Call {
@@ -473,18 +508,22 @@ impl StreamExpression {
     ///                         id: String::from("v"),
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
+    ///                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
     ///                     }],
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
     ///                 },
     ///             ],
     ///             signal: String::from("o"),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
     ///         },
     ///     ],
     ///     typing: Type::Integer,
     ///     location: Location::default(),
+    ///     dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
     /// };
     /// let equations = expression.normalize(&mut identifier_creator);
     ///
@@ -503,9 +542,11 @@ impl StreamExpression {
     ///                 id: String::from("v"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
     ///             }],
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
     ///         },
     ///         location: Location::default(),
     ///     },
@@ -520,16 +561,19 @@ impl StreamExpression {
     ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
     ///                 },
     ///                 StreamExpression::SignalCall {
     ///                     id: String::from("x_1"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
     ///                 },
     ///             ],
     ///             signal: String::from("o"),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
     ///         },
     ///         location: Location::default(),
     ///     },
@@ -550,15 +594,18 @@ impl StreamExpression {
     ///             constant: Constant::Integer(1),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![]),
     ///         },
     ///         StreamExpression::SignalCall {
     ///             id: String::from("x_2"),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("x_2"), 0)]),
     ///         },
     ///     ],
     ///     typing: Type::Integer,
     ///     location: Location::default(),
+    ///     dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
     /// };
     /// assert_eq!(expression, control)
     /// ```
@@ -703,6 +750,7 @@ impl StreamExpression {
                     id: fresh_id.clone(),
                     typing: typing,
                     location: location,
+                    dependencies: Dependencies::from(vec![(fresh_id, 0)]),
                 };
 
                 equations.push(unitary_node_application_equation);
@@ -743,6 +791,7 @@ impl StreamExpression {
                     id: fresh_id.clone(),
                     typing: typing,
                     location: location,
+                    dependencies: Dependencies::from(vec![(fresh_id, 0)]),
                 };
 
                 equations.push(new_equation);
@@ -788,6 +837,7 @@ impl StreamExpression {
                 inputs,
                 typing,
                 location,
+                dependencies,
             } => {
                 let used_inputs = unitary_nodes_used_inputs
                     .get(node)
@@ -808,6 +858,7 @@ impl StreamExpression {
                     inputs,
                     typing: typing.clone(),
                     location: location.clone(),
+                    dependencies: dependencies.clone(),
                 };
             }
             StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
@@ -887,6 +938,7 @@ impl StreamExpression {
                 expression,
                 typing,
                 location,
+                ..
             } => {
                 let memory_id = identifier_creator.new_identifier(
                     String::from("mem"),
@@ -895,9 +947,10 @@ impl StreamExpression {
                 );
                 memory.add_buffer(memory_id.clone(), constant.clone(), *expression.clone());
                 *self = StreamExpression::SignalCall {
-                    id: memory_id,
+                    id: memory_id.clone(),
                     typing: typing.clone(),
                     location: location.clone(),
+                    dependencies: Dependencies::from(vec![(memory_id, 0)]),
                 }
             }
             StreamExpression::MapApplication { inputs, .. } => inputs
@@ -959,7 +1012,9 @@ impl StreamExpression {
 #[cfg(test)]
 mod change_node_application_into_unitary_node_application {
     use crate::common::{location::Location, r#type::Type};
-    use crate::hir::{expression::Expression, stream_expression::StreamExpression};
+    use crate::hir::{
+        dependencies::Dependencies, expression::Expression, stream_expression::StreamExpression,
+    };
     use std::collections::HashMap;
 
     #[test]
@@ -987,19 +1042,23 @@ mod change_node_application_into_unitary_node_application {
                         id: String::from("g"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                     }],
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                 },
                 StreamExpression::SignalCall {
                     id: String::from("v"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                 },
             ],
             signal: String::from("o1"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("g"), 0), (String::from("v"), 0)]),
         };
         expression
             .change_node_application_into_unitary_node_application(&unitary_nodes_used_inputs);
@@ -1018,19 +1077,23 @@ mod change_node_application_into_unitary_node_application {
                         id: String::from("g"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                     }],
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                 },
                 StreamExpression::SignalCall {
                     id: String::from("v"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                 },
             ],
             signal: String::from("o1"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("g"), 0), (String::from("v"), 0)]),
         };
         assert_eq!(expression, control);
     }
@@ -1060,19 +1123,23 @@ mod change_node_application_into_unitary_node_application {
                         id: String::from("g"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                     }],
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                 },
                 StreamExpression::SignalCall {
                     id: String::from("v"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                 },
             ],
             signal: String::from("o2"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
         };
         expression
             .change_node_application_into_unitary_node_application(&unitary_nodes_used_inputs);
@@ -1084,10 +1151,12 @@ mod change_node_application_into_unitary_node_application {
                 id: String::from("v"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
             }],
             signal: String::from("o2"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
         };
         assert_eq!(expression, control);
     }
@@ -1099,7 +1168,8 @@ mod get_dependencies {
         constant::Constant, location::Location, pattern::Pattern, r#type::Type, scope::Scope,
     };
     use crate::hir::{
-        equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, expression::Expression, node::Node,
+        stream_expression::StreamExpression,
     };
     use std::collections::HashMap;
 
@@ -1116,6 +1186,7 @@ mod get_dependencies {
                     id: String::from("x"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 },
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
@@ -1127,18 +1198,22 @@ mod get_dependencies {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     }],
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 },
                 StreamExpression::Constant {
                     constant: Constant::Integer(1),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 },
             ],
             typing: Type::Array(Box::new(Type::Integer), 3),
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1166,6 +1241,7 @@ mod get_dependencies {
             constant: Constant::Integer(1),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1201,12 +1277,15 @@ mod get_dependencies {
                     id: String::from("x"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 }],
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1240,9 +1319,11 @@ mod get_dependencies {
                 id: String::from("x"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1271,6 +1352,7 @@ mod get_dependencies {
                 id: String::from("p"),
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             arms: vec![
                 (
@@ -1299,6 +1381,7 @@ mod get_dependencies {
                         id: String::from("z"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
                 (
@@ -1332,14 +1415,17 @@ mod get_dependencies {
                             id: String::from("z"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let mut dependencies = stream_expression
@@ -1374,6 +1460,7 @@ mod get_dependencies {
                 id: String::from("p"),
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             arms: vec![
                 (
@@ -1403,6 +1490,7 @@ mod get_dependencies {
                         id: String::from("y"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
                 (
@@ -1437,14 +1525,17 @@ mod get_dependencies {
                             id: String::from("y"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1485,9 +1576,11 @@ mod get_dependencies {
                                 id: String::from("z"),
                                 typing: Type::Integer,
                                 location: Location::default(),
+                                dependencies: Dependencies::new(),
                             }),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         },
                         location: Location::default(),
                     },
@@ -1514,18 +1607,22 @@ mod get_dependencies {
                                         id: String::from("x"),
                                         typing: Type::Integer,
                                         location: Location::default(),
+                                        dependencies: Dependencies::new(),
                                     },
                                     StreamExpression::SignalCall {
                                         id: String::from("y"),
                                         typing: Type::Integer,
                                         location: Location::default(),
+                                        dependencies: Dependencies::new(),
                                     },
                                 ],
                                 typing: Type::Integer,
                                 location: Location::default(),
+                                dependencies: Dependencies::new(),
                             }),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         },
                         location: Location::default(),
                     },
@@ -1558,19 +1655,23 @@ mod get_dependencies {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     }],
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 },
                 StreamExpression::Constant {
                     constant: Constant::Integer(1),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 },
             ],
             signal: String::from("o"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1598,6 +1699,7 @@ mod get_dependencies {
             id: String::from("x"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1630,6 +1732,7 @@ mod get_dependencies {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
                 (
@@ -1638,11 +1741,13 @@ mod get_dependencies {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                 ),
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1672,21 +1777,25 @@ mod get_dependencies {
                 id: String::from("x"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             present_body: vec![],
             present: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(0),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             default_body: vec![],
             default: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(1),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1716,21 +1825,25 @@ mod get_dependencies {
                 id: String::from("y"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             present_body: vec![],
             present: Box::new(StreamExpression::SignalCall {
                 id: String::from("x"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             default_body: vec![],
             default: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(1),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -1754,7 +1867,7 @@ mod normalize_to_signal_call {
 
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        equation::Equation, identifier_creator::IdentifierCreator,
+        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
         stream_expression::StreamExpression,
     };
 
@@ -1768,6 +1881,7 @@ mod normalize_to_signal_call {
             id: String::from("x"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
         };
         let equations = expression.normalize_to_signal_call(&mut identifier_creator);
 
@@ -1775,6 +1889,7 @@ mod normalize_to_signal_call {
             id: String::from("x"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
         };
         assert!(equations.is_empty());
         assert_eq!(expression, control)
@@ -1792,9 +1907,11 @@ mod normalize_to_signal_call {
                 id: String::from("x"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
             }),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
         };
         let equations = expression.normalize_to_signal_call(&mut identifier_creator);
 
@@ -1808,9 +1925,11 @@ mod normalize_to_signal_call {
                     id: String::from("x"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                 }),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
             },
             location: Location::default(),
         };
@@ -1820,6 +1939,7 @@ mod normalize_to_signal_call {
             id: String::from("x_1"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
         };
         assert_eq!(expression, control)
     }
@@ -1831,8 +1951,8 @@ mod normalize {
 
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, expression::Expression,
+        identifier_creator::IdentifierCreator, stream_expression::StreamExpression,
     };
 
     #[test]
@@ -1853,6 +1973,7 @@ mod normalize {
                     constant: Constant::Integer(1),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![]),
                 },
                 StreamExpression::UnitaryNodeApplication {
                     node: String::from("my_node"),
@@ -1861,6 +1982,7 @@ mod normalize {
                             id: String::from("s"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                         },
                         StreamExpression::MapApplication {
                             function_expression: Expression::Call {
@@ -1875,18 +1997,25 @@ mod normalize {
                                 id: String::from("v"),
                                 typing: Type::Integer,
                                 location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                             }],
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                         },
                     ],
                     signal: String::from("o"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![
+                        (String::from("s"), 0),
+                        (String::from("v"), 0),
+                    ]),
                 },
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
         };
         let equations = expression.normalize(&mut identifier_creator);
 
@@ -1907,9 +2036,11 @@ mod normalize {
                         id: String::from("v"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                     }],
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                 },
                 location: Location::default(),
             },
@@ -1924,16 +2055,22 @@ mod normalize {
                             id: String::from("s"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                         },
                         StreamExpression::SignalCall {
                             id: String::from("x_1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
                         },
                     ],
                     signal: String::from("o"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![
+                        (String::from("s"), 0),
+                        (String::from("v"), 0),
+                    ]),
                 },
                 location: Location::default(),
             },
@@ -1952,15 +2089,18 @@ mod normalize {
                     constant: Constant::Integer(1),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![]),
                 },
                 StreamExpression::SignalCall {
                     id: String::from("x_2"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x_2"), 0)]),
                 },
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
         };
         assert_eq!(expression, control)
     }
@@ -1972,8 +2112,8 @@ mod memorize {
 
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::{
-        expression::Expression, identifier_creator::IdentifierCreator, memory::Memory,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, expression::Expression, identifier_creator::IdentifierCreator,
+        memory::Memory, stream_expression::StreamExpression,
     };
 
     #[test]
@@ -1994,6 +2134,7 @@ mod memorize {
                     id: String::from("s"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                 },
                 StreamExpression::FollowedBy {
                     constant: Constant::Integer(0),
@@ -2001,13 +2142,16 @@ mod memorize {
                         id: String::from("v"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                     }),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 1)]),
                 },
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 1)]),
         };
         expression.memorize(&mut identifier_creator, &mut memory);
 
@@ -2019,6 +2163,7 @@ mod memorize {
                 id: String::from("v"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
             },
         );
         assert_eq!(memory, control);
@@ -2034,15 +2179,18 @@ mod memorize {
                     id: String::from("s"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                 },
                 StreamExpression::SignalCall {
                     id: String::from("mem"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("mem"), 0)]),
                 },
             ],
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 1)]),
         };
         assert_eq!(expression, control);
     }
@@ -2061,16 +2209,22 @@ mod memorize {
                     id: String::from("s"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                 },
                 StreamExpression::SignalCall {
                     id: String::from("x_1"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
                 },
             ],
             signal: String::from("o"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![
+                (String::from("s"), 0),
+                (String::from("x_1"), 0),
+            ]),
         };
         expression.memorize(&mut identifier_creator, &mut memory);
 
@@ -2089,16 +2243,22 @@ mod memorize {
                     id: String::from("s"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                 },
                 StreamExpression::SignalCall {
                     id: String::from("x_1"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
                 },
             ],
             signal: String::from("o"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::from(vec![
+                (String::from("s"), 0),
+                (String::from("x_1"), 0),
+            ]),
         };
         assert_eq!(expression, control);
     }

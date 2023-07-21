@@ -91,6 +91,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_dependencies_node_application {
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
+    use crate::hir::dependencies::Dependencies;
     use crate::hir::{
         equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
     };
@@ -120,9 +121,11 @@ mod get_dependencies_node_application {
                                 id: String::from("z"),
                                 typing: Type::Integer,
                                 location: Location::default(),
+                                dependencies: Dependencies::new(),
                             }),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         },
                         location: Location::default(),
                     },
@@ -149,18 +152,22 @@ mod get_dependencies_node_application {
                                         id: String::from("x"),
                                         typing: Type::Integer,
                                         location: Location::default(),
+                                        dependencies: Dependencies::new(),
                                     },
                                     StreamExpression::SignalCall {
                                         id: String::from("y"),
                                         typing: Type::Integer,
                                         location: Location::default(),
+                                        dependencies: Dependencies::new(),
                                     },
                                 ],
                                 typing: Type::Integer,
                                 location: Location::default(),
+                                dependencies: Dependencies::new(),
                             }),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         },
                         location: Location::default(),
                     },
@@ -193,19 +200,23 @@ mod get_dependencies_node_application {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     }],
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 },
                 StreamExpression::Constant {
                     constant: Constant::Integer(1),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::new(),
                 },
             ],
             signal: String::from("o"),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression

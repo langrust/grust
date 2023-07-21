@@ -36,7 +36,8 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
-    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
+    ///     dependencies::Dependencies, equation::Equation, node::Node,
+    ///     stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
@@ -58,6 +59,7 @@ impl Node {
     ///                     id: String::from("x"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             }
@@ -72,6 +74,7 @@ impl Node {
     ///                     id: String::from("i"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             }
@@ -132,7 +135,8 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
-    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
+    ///     dependencies::Dependencies, equation::Equation, node::Node,
+    ///     stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
@@ -156,6 +160,7 @@ impl Node {
     ///                     id: String::from("x"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             }
@@ -170,6 +175,7 @@ impl Node {
     ///                     id: String::from("i"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             }
@@ -268,7 +274,8 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
-    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
+    ///     dependencies::Dependencies, equation::Equation, node::Node,
+    ///     stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
@@ -292,6 +299,7 @@ impl Node {
     ///                     id: String::from("x"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             }
@@ -306,6 +314,7 @@ impl Node {
     ///                     id: String::from("i"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             }
@@ -435,7 +444,8 @@ impl Node {
     /// use std::collections::HashMap;
     ///
     /// use grustine::hir::{
-    ///     equation::Equation, node::Node, stream_expression::StreamExpression,
+    ///     dependencies::Dependencies, equation::Equation, node::Node,
+    ///     stream_expression::StreamExpression,
     /// };
     /// use grustine::common::{
     ///     constant::Constant, graph::{color::Color, Graph}, location::Location,
@@ -459,6 +469,7 @@ impl Node {
     ///                     id: String::from("x"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             }
@@ -473,6 +484,7 @@ impl Node {
     ///                     id: String::from("i"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::new(),
     ///                 },
     ///                 location: Location::default(),
     ///             }
@@ -611,8 +623,8 @@ impl Node {
     ///     graph::{color::Color, Graph}, location::Location, scope::Scope, r#type::Type,
     /// };
     /// use grustine::hir::{
-    ///     equation::Equation, node::Node, memory::Memory, stream_expression::StreamExpression,
-    ///     unitary_node::UnitaryNode,
+    ///     dependencies::Dependencies, equation::Equation, node::Node, memory::Memory,
+    ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
     ///
     /// let mut errors = vec![];
@@ -635,6 +647,7 @@ impl Node {
     ///                     id: String::from("x"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("x"), 0)])
     ///                 },
     ///                 location: Location::default(),
     ///             },
@@ -649,6 +662,7 @@ impl Node {
     ///                     id: String::from("i2"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("i2"), 0)])
     ///                 },
     ///                 location: Location::default(),
     ///             },
@@ -663,6 +677,7 @@ impl Node {
     ///                     id: String::from("i1"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("i1"), 0)])
     ///                 },
     ///                 location: Location::default(),
     ///             },
@@ -698,6 +713,7 @@ impl Node {
     ///                 id: String::from("i1"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("i1"), 0)])
     ///             },
     ///             location: Location::default(),
     ///         },
@@ -709,6 +725,7 @@ impl Node {
     ///                 id: String::from("x"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("x"), 0)])
     ///             },
     ///             location: Location::default(),
     ///         },
@@ -729,6 +746,7 @@ impl Node {
     ///                 id: String::from("i2"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("i2"), 0)])
     ///             },
     ///             location: Location::default(),
     ///         },
@@ -754,6 +772,7 @@ impl Node {
     ///                     id: String::from("x"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("x"), 0)])
     ///                 },
     ///                 location: Location::default(),
     ///             },
@@ -768,6 +787,7 @@ impl Node {
     ///                     id: String::from("i2"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("i2"), 0)])
     ///                 },
     ///                 location: Location::default(),
     ///             },
@@ -782,6 +802,7 @@ impl Node {
     ///                     id: String::from("i1"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("i1"), 0)])
     ///                 },
     ///                 location: Location::default(),
     ///             },
@@ -938,8 +959,9 @@ impl Node {
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
-    ///     equation::Equation, expression::Expression, memory::Memory, node::Node,
-    ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    ///     dependencies::Dependencies, equation::Equation, expression::Expression,
+    ///     memory::Memory, node::Node, stream_expression::StreamExpression,
+    ///     unitary_node::UnitaryNode,
     /// };
     ///
     /// let equation_1 = Equation {
@@ -960,6 +982,7 @@ impl Node {
     ///                 constant: Constant::Integer(1),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![])
     ///             },
     ///             StreamExpression::UnitaryNodeApplication {
     ///                 node: String::from("my_node"),
@@ -968,6 +991,7 @@ impl Node {
     ///                         id: String::from("s"),
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
+    ///                         dependencies: Dependencies::from(vec![(String::from("s"), 0)])
     ///                     },
     ///                     StreamExpression::MapApplication {
     ///                         function_expression: Expression::Call {
@@ -982,18 +1006,22 @@ impl Node {
     ///                             id: String::from("v"),
     ///                             typing: Type::Integer,
     ///                             location: Location::default(),
+    ///                             dependencies: Dependencies::from(vec![(String::from("v"), 0)])
     ///                         }],
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
+    ///                         dependencies: Dependencies::from(vec![(String::from("v"), 0)])
     ///                     },
     ///                 ],
     ///                 signal: String::from("o"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)])
     ///             },
     ///         ],
     ///         typing: Type::Integer,
     ///         location: Location::default(),
+    ///         dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)])
     ///     },
     ///     location: Location::default(),
     /// };
@@ -1025,20 +1053,24 @@ impl Node {
     ///                     id: String::from("g"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("g"), 0)])
     ///                 }],
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("g"), 0)])
     ///             },
     ///             StreamExpression::SignalCall {
     ///                 id: String::from("v"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("v"), 0)])
     ///             },
     ///         ],
     ///         signal: String::from("o"),
     ///         typing: Type::Integer,
     ///         location: Location::default(),
-    ///             },
+    ///         dependencies: Dependencies::from(vec![(String::from("g"), 0), (String::from("v"), 0)])
+    ///     },
     ///     location: Location::default(),
     /// };
     /// let unitary_node_2 = UnitaryNode {
@@ -1087,9 +1119,11 @@ impl Node {
     ///                 id: String::from("v"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("v"), 0)])
     ///             }],
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("v"), 0)])
     ///         },
     ///         location: Location::default(),
     ///     },
@@ -1104,16 +1138,19 @@ impl Node {
     ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("s"), 0)])
     ///                 },
     ///                 StreamExpression::SignalCall {
     ///                     id: String::from("x_1"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("x_1"), 0)])
     ///                 },
     ///             ],
     ///             signal: String::from("o"),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)])
     ///         },
     ///         location: Location::default(),
     ///     },
@@ -1135,15 +1172,18 @@ impl Node {
     ///                     constant: Constant::Integer(1),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![])
     ///                 },
     ///                 StreamExpression::SignalCall {
     ///                     id: String::from("x_2"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("x_2"), 0)])
     ///                 },
     ///             ],
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)])
     ///         },
     ///         location: Location::default(),
     ///     }
@@ -1171,9 +1211,11 @@ impl Node {
     ///                 id: String::from("g"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("g"), 0)])
     ///             }],
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("g"), 0)])
     ///         },
     ///         location: Location::default(),
     ///     },
@@ -1188,16 +1230,19 @@ impl Node {
     ///                     id: String::from("x"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("x"), 0)])
     ///                 },
     ///                 StreamExpression::SignalCall {
     ///                     id: String::from("v"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("v"), 0)])
     ///                 },
     ///             ],
     ///             signal: String::from("o"),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("g"), 0), (String::from("v"), 0)])
     ///         },
     ///         location: Location::default(),
     ///     },
@@ -1244,15 +1289,18 @@ impl Node {
 mod add_unitary_node {
     use std::collections::HashMap;
 
-    use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        scope::Scope,
-    };
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
+    };
+    use crate::{
+        common::{
+            graph::{color::Color, Graph},
+            location::Location,
+            r#type::Type,
+            scope::Scope,
+        },
+        hir::dependencies::Dependencies,
     };
 
     #[test]
@@ -1277,6 +1325,7 @@ mod add_unitary_node {
                             id: String::from("x"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1291,6 +1340,7 @@ mod add_unitary_node {
                             id: String::from("i2"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1305,6 +1355,7 @@ mod add_unitary_node {
                             id: String::from("i1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1340,6 +1391,7 @@ mod add_unitary_node {
                         id: String::from("i1"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -1351,6 +1403,7 @@ mod add_unitary_node {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -1376,6 +1429,7 @@ mod add_unitary_node {
                             id: String::from("x"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1390,6 +1444,7 @@ mod add_unitary_node {
                             id: String::from("i2"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1404,6 +1459,7 @@ mod add_unitary_node {
                             id: String::from("i1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1438,6 +1494,7 @@ mod add_unitary_node {
                             id: String::from("x"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1452,6 +1509,7 @@ mod add_unitary_node {
                             id: String::from("i2"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1466,6 +1524,7 @@ mod add_unitary_node {
                             id: String::from("i1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1532,6 +1591,7 @@ mod add_unitary_node {
                             id: String::from("x"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1546,6 +1606,7 @@ mod add_unitary_node {
                             id: String::from("i2"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1560,6 +1621,7 @@ mod add_unitary_node {
                             id: String::from("o1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("o1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1586,15 +1648,18 @@ mod add_unitary_node {
 
 #[cfg(test)]
 mod generate_unitary_nodes {
-    use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        scope::Scope,
-    };
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
+    };
+    use crate::{
+        common::{
+            graph::{color::Color, Graph},
+            location::Location,
+            r#type::Type,
+            scope::Scope,
+        },
+        hir::dependencies::Dependencies,
     };
     use std::collections::HashMap;
 
@@ -1620,6 +1685,7 @@ mod generate_unitary_nodes {
                             id: String::from("x"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1634,6 +1700,7 @@ mod generate_unitary_nodes {
                             id: String::from("i2"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1648,6 +1715,7 @@ mod generate_unitary_nodes {
                             id: String::from("i1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1683,6 +1751,7 @@ mod generate_unitary_nodes {
                         id: String::from("i1"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -1694,6 +1763,7 @@ mod generate_unitary_nodes {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -1713,6 +1783,7 @@ mod generate_unitary_nodes {
                     id: String::from("i2"),
                     typing: Type::Integer,
                     location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                 },
                 location: Location::default(),
             }],
@@ -1737,6 +1808,7 @@ mod generate_unitary_nodes {
                             id: String::from("x"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1751,6 +1823,7 @@ mod generate_unitary_nodes {
                             id: String::from("i2"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1765,6 +1838,7 @@ mod generate_unitary_nodes {
                             id: String::from("i1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1802,6 +1876,7 @@ mod generate_unitary_nodes {
                             id: String::from("x"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1816,6 +1891,7 @@ mod generate_unitary_nodes {
                             id: String::from("i2"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1830,6 +1906,7 @@ mod generate_unitary_nodes {
                             id: String::from("i1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1882,6 +1959,7 @@ mod generate_unitary_nodes {
                             id: String::from("x"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1896,6 +1974,7 @@ mod generate_unitary_nodes {
                             id: String::from("i2"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i2"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1910,6 +1989,7 @@ mod generate_unitary_nodes {
                             id: String::from("o1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("o1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1955,6 +2035,7 @@ mod generate_unitary_nodes {
                             id: String::from("i1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -1969,6 +2050,7 @@ mod generate_unitary_nodes {
                             id: String::from("i1"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                         },
                         location: Location::default(),
                     },

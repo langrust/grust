@@ -46,8 +46,8 @@ impl Equation {
     ///
     /// use grustine::common::{constant::Constant, location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
-    ///     equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
-    ///     stream_expression::StreamExpression,
+    ///     dependencies::Dependencies, equation::Equation, expression::Expression,
+    ///     identifier_creator::IdentifierCreator, stream_expression::StreamExpression,
     /// };
     ///
     /// let mut identifier_creator = IdentifierCreator {
@@ -72,6 +72,7 @@ impl Equation {
     ///                 constant: Constant::Integer(1),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![]),
     ///             },
     ///             StreamExpression::UnitaryNodeApplication {
     ///                 node: String::from("my_node"),
@@ -80,6 +81,7 @@ impl Equation {
     ///                         id: String::from("s"),
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
+    ///                         dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
     ///                     },
     ///                     StreamExpression::MapApplication {
     ///                         function_expression: Expression::Call {
@@ -94,18 +96,22 @@ impl Equation {
     ///                             id: String::from("v"),
     ///                             typing: Type::Integer,
     ///                             location: Location::default(),
+    ///                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
     ///                         }],
     ///                         typing: Type::Integer,
     ///                         location: Location::default(),
+    ///                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
     ///                     },
     ///                 ],
     ///                 signal: String::from("o"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
     ///             },
     ///         ],
     ///         typing: Type::Integer,
     ///         location: Location::default(),
+    ///         dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
     ///     },
     ///     location: Location::default(),
     /// };
@@ -126,9 +132,11 @@ impl Equation {
     ///                 id: String::from("v"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
     ///             }],
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
     ///         },
     ///         location: Location::default(),
     ///     },
@@ -143,16 +151,19 @@ impl Equation {
     ///                     id: String::from("s"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
     ///                 },
     ///                 StreamExpression::SignalCall {
     ///                     id: String::from("x_1"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
     ///                 },
     ///             ],
     ///             signal: String::from("o"),
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
     ///         },
     ///         location: Location::default(),
     ///     },
@@ -174,15 +185,18 @@ impl Equation {
     ///                     constant: Constant::Integer(1),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![]),
     ///                 },
     ///                 StreamExpression::SignalCall {
     ///                     id: String::from("x_2"),
     ///                     typing: Type::Integer,
     ///                     location: Location::default(),
+    ///                     dependencies: Dependencies::from(vec![(String::from("x_2"), 0)]),
     ///                 },
     ///             ],
     ///             typing: Type::Integer,
     ///             location: Location::default(),
+    ///             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
     ///         },
     ///         location: Location::default(),
     ///     }
@@ -241,6 +255,7 @@ mod memorize {
     use std::collections::HashSet;
 
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
+    use crate::hir::dependencies::Dependencies;
     use crate::hir::{
         equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
         memory::Memory, stream_expression::StreamExpression,
@@ -271,6 +286,7 @@ mod memorize {
                         id: String::from("s"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                     },
                     StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
@@ -278,13 +294,19 @@ mod memorize {
                             id: String::from("v"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                         }),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 1)]),
                     },
                 ],
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("s"), 0),
+                    (String::from("v"), 1),
+                ]),
             },
             location: Location::default(),
         };
@@ -298,6 +320,7 @@ mod memorize {
                 id: String::from("v"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
             },
         );
         assert_eq!(memory, control);
@@ -320,15 +343,21 @@ mod memorize {
                         id: String::from("s"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                     },
                     StreamExpression::SignalCall {
                         id: String::from("mem"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("mem"), 0)]),
                     },
                 ],
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("s"), 0),
+                    (String::from("v"), 1),
+                ]),
             },
             location: Location::default(),
         };
@@ -353,16 +382,22 @@ mod memorize {
                         id: String::from("s"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                     },
                     StreamExpression::SignalCall {
                         id: String::from("x_1"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
                     },
                 ],
                 signal: String::from("o"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("s"), 0),
+                    (String::from("x_1"), 0),
+                ]),
             },
             location: Location::default(),
         };
@@ -387,16 +422,22 @@ mod memorize {
                         id: String::from("s"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                     },
                     StreamExpression::SignalCall {
                         id: String::from("x_1"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
                     },
                 ],
                 signal: String::from("o"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("s"), 0),
+                    (String::from("x_1"), 0),
+                ]),
             },
             location: Location::default(),
         };

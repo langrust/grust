@@ -60,6 +60,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod get_dependencies_when {
     use crate::common::{constant::Constant, location::Location, r#type::Type};
+    use crate::hir::dependencies::Dependencies;
     use crate::hir::stream_expression::StreamExpression;
     use std::collections::HashMap;
 
@@ -76,21 +77,25 @@ mod get_dependencies_when {
                 id: String::from("x"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             present_body: vec![],
             present: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(0),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             default_body: vec![],
             default: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(1),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression
@@ -120,21 +125,25 @@ mod get_dependencies_when {
                 id: String::from("y"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             present_body: vec![],
             present: Box::new(StreamExpression::SignalCall {
                 id: String::from("x"),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             default_body: vec![],
             default: Box::new(StreamExpression::Constant {
                 constant: Constant::Integer(1),
                 typing: Type::Integer,
                 location: Location::default(),
+                dependencies: Dependencies::new(),
             }),
             typing: Type::Integer,
             location: Location::default(),
+            dependencies: Dependencies::new(),
         };
 
         let dependencies = stream_expression

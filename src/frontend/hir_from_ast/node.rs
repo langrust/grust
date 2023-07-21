@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::node::Node;
 use crate::frontend::hir_from_ast::equation::hir_from_ast as equation_hir_from_ast;
-use crate::hir::node::Node as HIRNode;
+use crate::hir::{node::Node as HIRNode};
 
 /// Transform AST nodes into HIR nodes.
 pub fn hir_from_ast(node: Node) -> HIRNode {
@@ -37,8 +37,9 @@ mod hir_from_ast {
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::frontend::hir_from_ast::node::hir_from_ast;
     use crate::hir::{
-        equation::Equation as HIREquation, expression::Expression as HIRExpression,
-        node::Node as HIRNode, stream_expression::StreamExpression as HIRStreamExpression,
+        dependencies::Dependencies, equation::Equation as HIREquation,
+        expression::Expression as HIRExpression, node::Node as HIRNode,
+        stream_expression::StreamExpression as HIRStreamExpression,
     };
 
     #[test]
@@ -93,9 +94,11 @@ mod hir_from_ast {
                             id: String::from("i"),
                             typing: Type::Integer,
                             location: Location::default(),
+                            dependencies: Dependencies::new(),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::new(),
                     },
                     location: Location::default(),
                 },

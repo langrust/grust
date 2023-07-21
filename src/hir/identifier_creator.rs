@@ -47,8 +47,8 @@ impl IdentifierCreator {
     /// ```rust
     /// use grustine::common::{location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
-    ///     equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
-    ///     stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    ///     dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+    ///     memory::Memory, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
     ///
     /// let unitary_node = UnitaryNode {
@@ -64,6 +64,7 @@ impl IdentifierCreator {
     ///                 id: String::from("i1"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::new(),
     ///             },
     ///             location: Location::default(),
     ///         },
@@ -75,6 +76,7 @@ impl IdentifierCreator {
     ///                 id: String::from("x"),
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
+    ///                 dependencies: Dependencies::new(),
     ///             },
     ///             location: Location::default(),
     ///         },
@@ -112,8 +114,8 @@ mod new {
 
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+        memory::Memory, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
     #[test]
@@ -131,6 +133,7 @@ mod new {
                         id: String::from("i1"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -142,6 +145,7 @@ mod new {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -162,8 +166,8 @@ mod new {
 mod new_identifier {
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+        memory::Memory, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
     #[test]
@@ -181,6 +185,7 @@ mod new_identifier {
                         id: String::from("i1"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -192,6 +197,7 @@ mod new_identifier {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -225,6 +231,7 @@ mod new_identifier {
                         id: String::from("i1"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -236,6 +243,7 @@ mod new_identifier {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -269,6 +277,7 @@ mod new_identifier {
                         id: String::from("i1"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -280,6 +289,7 @@ mod new_identifier {
                         id: String::from("x"),
                         typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                     },
                     location: Location::default(),
                 },
