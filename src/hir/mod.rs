@@ -27,3 +27,6 @@ pub mod identifier_creator;
 
 /// LanGRust [Memory](crate::hir::memory::Memory) HIR module.
 pub mod memory;
+
+/// LanGRust [Dependencies](crate::hir::dependencies::Dependencies) HIR module.
+pub mod dependencies;

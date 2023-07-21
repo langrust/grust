@@ -13,3 +13,4 @@ lalrpop = "0.19.10"
 lalrpop-util = {version = "0.19.10", features = ["lexer"]}
 codespan-reporting = "0.11.1"
 strum = { version = "0.21", features = ["derive"] }
+once_cell = "1.18.0"
