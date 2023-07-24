@@ -1,5 +1,4 @@
 use crate::ast::file::File;
-use crate::frontend::hir_from_ast::function::hir_from_ast as function_hir_from_ast;
 use crate::frontend::hir_from_ast::node::hir_from_ast as node_hir_from_ast;
 use crate::hir::file::File as HIRFile;
 
@@ -15,10 +14,7 @@ pub fn hir_from_ast(file: File) -> HIRFile {
 
     HIRFile {
         typedefs,
-        functions: functions
-            .into_iter()
-            .map(|function| function_hir_from_ast(function))
-            .collect(),
+        functions: functions,
         nodes: nodes
             .into_iter()
             .map(|node| node_hir_from_ast(node))
@@ -40,11 +36,8 @@ mod hir_from_ast {
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::frontend::hir_from_ast::file::hir_from_ast;
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation as HIREquation,
-        expression::Expression as HIRExpression, file::File as HIRFile,
-        function::Function as HIRFunction, node::Node as HIRNode,
-        statement::Statement as HIRStatement,
-        stream_expression::StreamExpression as HIRStreamExpression,
+        dependencies::Dependencies, equation::Equation as HIREquation, file::File as HIRFile,
+        node::Node as HIRNode, stream_expression::StreamExpression as HIRStreamExpression,
     };
 
     #[test]
@@ -118,33 +111,33 @@ mod hir_from_ast {
         };
         let hir_file = hir_from_ast(ast_file);
 
-        let control_function = HIRFunction {
+        let control_function = Function {
             id: String::from("my_function"),
             inputs: vec![(String::from("x"), Type::Integer)],
-            statements: vec![HIRStatement {
+            statements: vec![Statement {
                 id: String::from("y"),
                 element_type: Type::Integer,
-                expression: HIRExpression::Application {
-                    function_expression: Box::new(HIRExpression::Call {
+                expression: Expression::Application {
+                    function_expression: Box::new(Expression::Call {
                         id: String::from("f"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     }),
-                    inputs: vec![HIRExpression::Call {
+                    inputs: vec![Expression::Call {
                         id: String::from("x"),
-                        typing: Type::Integer,
+                        typing: Some(Type::Integer),
                         location: Location::default(),
                     }],
-                    typing: Type::Integer,
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
                 location: Location::default(),
             }],
             returned: (
                 Type::Integer,
-                HIRExpression::Call {
+                Expression::Call {
                     id: String::from("y"),
-                    typing: Type::Integer,
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
             ),
@@ -161,9 +154,12 @@ mod hir_from_ast {
                     scope: Scope::Output,
                     signal_type: Type::Integer,
                     expression: HIRStreamExpression::MapApplication {
-                        function_expression: HIRExpression::Call {
+                        function_expression: Expression::Call {
                             id: String::from("my_function"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![HIRStreamExpression::SignalCall {

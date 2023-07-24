@@ -1,7 +1,8 @@
+use crate::ast::expression::Expression;
 use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
 use crate::hir::{
-    dependencies::Dependencies, equation::Equation, expression::Expression,
-    identifier_creator::IdentifierCreator, memory::Memory,
+    dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+    memory::Memory,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -343,10 +344,11 @@ impl StreamExpression {
 mod memorize {
     use std::collections::HashSet;
 
+    use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::{
-        dependencies::Dependencies, expression::Expression, identifier_creator::IdentifierCreator,
-        memory::Memory, stream_expression::StreamExpression,
+        dependencies::Dependencies, identifier_creator::IdentifierCreator, memory::Memory,
+        stream_expression::StreamExpression,
     };
 
     #[test]
@@ -359,7 +361,10 @@ mod memorize {
         let mut expression = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
-                typing: Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
                 location: Location::default(),
             },
             inputs: vec![
@@ -404,7 +409,10 @@ mod memorize {
         let control = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
-                typing: Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
                 location: Location::default(),
             },
             inputs: vec![

@@ -41,8 +41,7 @@ mod hir_from_ast {
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::frontend::hir_from_ast::node::hir_from_ast;
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation as HIREquation,
-        expression::Expression as HIRExpression, node::Node as HIRNode,
+        dependencies::Dependencies, equation::Equation as HIREquation, node::Node as HIRNode,
         stream_expression::StreamExpression as HIRStreamExpression,
     };
 
@@ -89,9 +88,12 @@ mod hir_from_ast {
                     scope: Scope::Output,
                     signal_type: Type::Integer,
                     expression: HIRStreamExpression::MapApplication {
-                        function_expression: HIRExpression::Call {
+                        function_expression: Expression::Call {
                             id: String::from("f"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![HIRStreamExpression::SignalCall {
@@ -120,12 +122,12 @@ mod hir_from_ast {
         let ast_expression = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
-                typing: None,
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
                 id: String::from("i"),
-                typing: Some(Type::Integer),
+                typing: None,
                 location: Location::default(),
             }],
             typing: Some(Type::Integer),

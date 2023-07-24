@@ -53,9 +53,9 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod compute_dependencies_map_application {
+    use crate::ast::expression::Expression;
     use crate::common::{location::Location, r#type::Type};
-    use crate::hir::dependencies::Dependencies;
-    use crate::hir::{expression::Expression, stream_expression::StreamExpression};
+    use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]
@@ -68,7 +68,7 @@ mod compute_dependencies_map_application {
         let stream_expression = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
-                typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {

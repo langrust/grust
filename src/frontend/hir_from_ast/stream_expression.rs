@@ -3,8 +3,6 @@ use crate::hir::{
     dependencies::Dependencies, stream_expression::StreamExpression as HIRStreamExpression,
 };
 
-use crate::frontend::hir_from_ast::expression::hir_from_ast as expression_hir_from_ast;
-
 /// Transform AST stream expressions into HIR stream expressions.
 pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression {
     match stream_expression {
@@ -34,7 +32,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             typing,
             location,
         } => HIRStreamExpression::MapApplication {
-            function_expression: expression_hir_from_ast(function_expression),
+            function_expression: function_expression,
             inputs: inputs
                 .into_iter()
                 .map(|input| hir_from_ast(input))
