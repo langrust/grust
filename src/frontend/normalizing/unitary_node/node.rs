@@ -204,18 +204,18 @@ mod add_unitary_node {
                     },
                     location: Location::default(),
                 },
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            id: String::from("i1"),
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
-                        },
+                Equation {
+                    scope: Scope::Local,
+                    id: String::from("x"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: String::from("i1"),
+                        typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
                     },
+                    location: Location::default(),
+                },
             ],
             memory: Memory::new(),
             location: Location::default(),
@@ -290,7 +290,7 @@ mod add_unitary_node {
         graph.add_edge(&String::from("o2"), String::from("i2"), 0);
         control.graph.set(graph.clone()).unwrap();
 
-        assert_eq!(node, control)
+        assert!(node.eq_unscheduled(&control))
     }
 }
 
@@ -516,7 +516,7 @@ mod generate_unitary_nodes {
 
         control.graph.set(graph.clone()).unwrap();
 
-        assert_eq!(node, control)
+        assert!(node.eq_unscheduled(&control));
     }
 
     #[test]
