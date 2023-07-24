@@ -67,7 +67,12 @@ impl Node {
 
         // construct unitary node's subgraph from its output, containing
         // only 0-depth dependencies
-        let mut subgraph = self.graph.get().unwrap().subgraph_from_vertex(&output).subgraph_on_edges(|weight| weight == 0);
+        let mut subgraph = self
+            .graph
+            .get()
+            .unwrap()
+            .subgraph_from_vertex(&output)
+            .subgraph_on_edges(|weight| weight == 0);
 
         // schedule the unitary node
         let schedule = subgraph.topological_sorting(errors).map_err(|signal| {
@@ -501,9 +506,7 @@ mod add_unitary_node {
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
-            inputs: vec![
-                (String::from("i"), Type::Integer),
-            ],
+            inputs: vec![(String::from("i"), Type::Integer)],
             unscheduled_equations: HashMap::from([
                 (
                     String::from("o1"),
@@ -541,7 +544,7 @@ mod add_unitary_node {
                         scope: Scope::Local,
                         id: String::from("x"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::FollowedBy { 
+                        expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(0),
                             expression: Box::new(StreamExpression::SignalCall {
                                 id: String::from("o1"),
@@ -585,7 +588,7 @@ mod add_unitary_node {
                     scope: Scope::Local,
                     id: String::from("x"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::FollowedBy { 
+                    expression: StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("o1"),
@@ -618,9 +621,7 @@ mod add_unitary_node {
         let control = Node {
             id: String::from("test"),
             is_component: false,
-            inputs: vec![
-                (String::from("i"), Type::Integer),
-            ],
+            inputs: vec![(String::from("i"), Type::Integer)],
             unscheduled_equations: HashMap::from([
                 (
                     String::from("o1"),
@@ -658,7 +659,7 @@ mod add_unitary_node {
                         scope: Scope::Local,
                         id: String::from("x"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::FollowedBy { 
+                        expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(0),
                             expression: Box::new(StreamExpression::SignalCall {
                                 id: String::from("o1"),
