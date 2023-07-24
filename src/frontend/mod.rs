@@ -6,3 +6,6 @@ pub mod dependency_graph;
 
 /// Causality analysis of HIR.
 pub mod causality_analysis;
+
+/// Normalization module.
+pub mod normalizing;
