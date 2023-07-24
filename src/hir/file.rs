@@ -1,6 +1,7 @@
+use crate::ast::function::Function;
 use crate::ast::typedef::Typedef;
 use crate::common::location::Location;
-use crate::hir::{function::Function, node::Node};
+use crate::hir::node::Node;
 
 #[derive(Debug, PartialEq)]
 /// A LanGRust [File] is composed of functions nodes,

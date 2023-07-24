@@ -123,10 +123,9 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod change_node_application_into_unitary_node_application {
+    use crate::ast::expression::Expression;
     use crate::common::{location::Location, r#type::Type};
-    use crate::hir::{
-        dependencies::Dependencies, expression::Expression, stream_expression::StreamExpression,
-    };
+    use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]
@@ -147,7 +146,7 @@ mod change_node_application_into_unitary_node_application {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("-1"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
@@ -182,7 +181,7 @@ mod change_node_application_into_unitary_node_application {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("-1"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
@@ -228,7 +227,7 @@ mod change_node_application_into_unitary_node_application {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("-1"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {

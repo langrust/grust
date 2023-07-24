@@ -18,150 +18,19 @@ impl StreamExpression {
     /// Compute dependencies of a stream expression.
     ///
     /// # Example
-    /// ```rust
-    /// use once_cell::sync::OnceCell;
-    /// use std::collections::HashMap;
     ///
-    /// use grustine::hir::{
-    ///     dependencies::Dependencies, equation::Equation, expression::Expression,
-    ///     node::Node, stream_expression::StreamExpression,
-    /// };
-    /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope, r#type::Type,
-    /// };
+    /// Considering the following node:
     ///
-    /// let mut errors = vec![];
-    ///
-    /// let node = Node {
-    ///     id: String::from("my_node"),
-    ///     is_component: false,
-    ///     inputs: vec![
-    ///         (String::from("x"), Type::Integer),
-    ///         (String::from("y"), Type::Integer),
-    ///     ],
-    ///     unscheduled_equations: HashMap::from([
-    ///         (
-    ///             String::from("o"),
-    ///             Equation {
-    ///                 scope: Scope::Output,
-    ///                 id: String::from("o"),
-    ///                 signal_type: Type::Integer,
-    ///                 expression: StreamExpression::FollowedBy {
-    ///                     constant: Constant::Integer(0),
-    ///                     expression: Box::new(StreamExpression::SignalCall {
-    ///                         id: String::from("z"),
-    ///                         typing: Type::Integer,
-    ///                         location: Location::default(),
-    ///                         dependencies: Dependencies::new(),
-    ///                     }),
-    ///                     typing: Type::Integer,
-    ///                     location: Location::default(),
-    ///                     dependencies: Dependencies::new(),
-    ///                 },
-    ///                 location: Location::default(),
-    ///             },
-    ///         ),
-    ///         (
-    ///             String::from("z"),
-    ///             Equation {
-    ///                 scope: Scope::Local,
-    ///                 id: String::from("z"),
-    ///                 signal_type: Type::Integer,
-    ///                 expression: StreamExpression::FollowedBy {
-    ///                     constant: Constant::Integer(1),
-    ///                     expression: Box::new(StreamExpression::MapApplication {
-    ///                         function_expression: Expression::Call {
-    ///                             id: String::from("+"),
-    ///                             typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)))),
-    ///                             location: Location::default(),
-    ///                         },
-    ///                         inputs: vec![
-    ///                             StreamExpression::SignalCall {
-    ///                                 id: String::from("x"),
-    ///                                 typing: Type::Integer,
-    ///                                 location: Location::default(),
-    ///                                 dependencies: Dependencies::new(),
-    ///                             },
-    ///                             StreamExpression::SignalCall {
-    ///                                 id: String::from("y"),
-    ///                                 typing: Type::Integer,
-    ///                                 location: Location::default(),
-    ///                                 dependencies: Dependencies::new(),
-    ///                             },
-    ///                         ],
-    ///                         typing: Type::Integer,
-    ///                         location: Location::default(),
-    ///                         dependencies: Dependencies::new(),
-    ///                     }),
-    ///                     typing: Type::Integer,
-    ///                     location: Location::default(),
-    ///                     dependencies: Dependencies::new(),
-    ///                 },
-    ///                 location: Location::default(),
-    ///             },
-    ///         ),
-    ///     ]),
-    ///     unitary_nodes: HashMap::new(),
-    ///     location: Location::default(),
-    ///     graph: OnceCell::new(),
-    /// };
-    ///
-    /// let mut nodes_context = HashMap::new();
-    /// nodes_context.insert(String::from("my_node"), node);
-    /// let node = nodes_context.get(&String::from("my_node")).unwrap();
-    ///
-    /// let graph = node.create_initialized_graph();
-    /// let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
-    ///
-    /// let reduced_graph = node.create_initialized_graph();
-    /// let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
-    ///
-    /// let stream_expression = StreamExpression::NodeApplication {
-    ///     node: String::from("my_node"),
-    ///     inputs: vec![
-    ///         StreamExpression::MapApplication {
-    ///             function_expression: Expression::Call {
-    ///                 id: String::from("f"),
-    ///                 typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
-    ///                 location: Location::default(),
-    ///             },
-    ///             inputs: vec![StreamExpression::SignalCall {
-    ///                 id: String::from("x"),
-    ///                 typing: Type::Integer,
-    ///                 location: Location::default(),
-    ///                 dependencies: Dependencies::new(),
-    ///             }],
-    ///             typing: Type::Integer,
-    ///             location: Location::default(),
-    ///             dependencies: Dependencies::new(),
-    ///         },
-    ///         StreamExpression::Constant {
-    ///             constant: Constant::Integer(1),
-    ///             typing: Type::Integer,
-    ///             location: Location::default(),
-    ///             dependencies: Dependencies::new(),
-    ///         },
-    ///     ],
-    ///     signal: String::from("o"),
-    ///     typing: Type::Integer,
-    ///     location: Location::default(),
-    ///     dependencies: Dependencies::new(),
-    /// };
-    ///
-    /// stream_expression
-    ///     .compute_dependencies(
-    ///         &nodes_context,
-    ///         &mut nodes_graphs,
-    ///         &mut nodes_reduced_graphs,
-    ///         &mut errors,
-    ///     )
-    ///     .unwrap();
-    /// let dependencies = stream_expression.get_dependencies().clone();
-    ///
-    /// let control = vec![(String::from("x"), 2)];
-    ///
-    /// assert_eq!(dependencies, control)
+    /// ```GR
+    /// node my_node(x: int, y: int) {
+    ///     out o: int = 0 fby z;
+    ///     z: int = 1 fby (x + y);
+    /// }
     /// ```
+    ///
+    /// The stream expression `my_node(f(x), 1).o` depends on the signal `x` with
+    /// a dependency depth of 2. Indeed, the expression depends on the memory
+    /// of the memory of `x` (the signal is behind 2 fby operations).
     pub fn compute_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
@@ -223,11 +92,12 @@ impl StreamExpression {
 mod compute_dependencies {
     use once_cell::sync::OnceCell;
 
+    use crate::ast::expression::Expression;
     use crate::common::{
         constant::Constant, location::Location, pattern::Pattern, r#type::Type, scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, expression::Expression, node::Node,
+        dependencies::Dependencies, equation::Equation, node::Node,
         stream_expression::StreamExpression,
     };
     use std::collections::HashMap;
@@ -250,7 +120,7 @@ mod compute_dependencies {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
@@ -331,7 +201,7 @@ mod compute_dependencies {
             expression: Box::new(StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("add_one"),
-                    typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                    typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::SignalCall {
@@ -374,7 +244,7 @@ mod compute_dependencies {
         let stream_expression = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
-                typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
@@ -471,7 +341,10 @@ mod compute_dependencies {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -582,7 +455,10 @@ mod compute_dependencies {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
-                            typing: Type::Integer,
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -661,10 +537,10 @@ mod compute_dependencies {
                             expression: Box::new(StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer, Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![
@@ -714,7 +590,7 @@ mod compute_dependencies {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {

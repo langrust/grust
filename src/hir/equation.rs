@@ -42,11 +42,12 @@ impl Equation {
 mod memorize {
     use std::collections::HashSet;
 
+    use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::{
-        equation::Equation, expression::Expression, identifier_creator::IdentifierCreator,
-        memory::Memory, stream_expression::StreamExpression,
+        equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
+        stream_expression::StreamExpression,
     };
 
     #[test]
@@ -63,10 +64,10 @@ mod memorize {
             expression: StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
-                    typing: Type::Abstract(
+                    typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
                         Box::new(Type::Integer),
-                    ),
+                    )),
                     location: Location::default(),
                 },
                 inputs: vec![
@@ -120,10 +121,10 @@ mod memorize {
             expression: StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
-                    typing: Type::Abstract(
+                    typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
                         Box::new(Type::Integer),
-                    ),
+                    )),
                     location: Location::default(),
                 },
                 inputs: vec![

@@ -75,6 +75,7 @@ mod generate_dependencies_graphs {
     use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
+    use crate::ast::{expression::Expression, function::Function, statement::Statement};
     use crate::common::{
         graph::{color::Color, Graph},
         location::Location,
@@ -82,8 +83,8 @@ mod generate_dependencies_graphs {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, expression::Expression, file::File,
-        function::Function, node::Node, statement::Statement, stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, file::File, node::Node,
+        stream_expression::StreamExpression,
     };
 
     #[test]
@@ -139,7 +140,7 @@ mod generate_dependencies_graphs {
                 element_type: Type::Integer,
                 expression: Expression::Call {
                     id: String::from("i"),
-                    typing: Type::Integer,
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
                 location: Location::default(),
@@ -148,7 +149,7 @@ mod generate_dependencies_graphs {
                 Type::Integer,
                 Expression::Call {
                     id: String::from("x"),
-                    typing: Type::Integer,
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
             ),

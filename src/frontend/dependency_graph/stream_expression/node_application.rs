@@ -100,10 +100,11 @@ impl StreamExpression {
 mod compute_dependencies_node_application {
     use once_cell::sync::OnceCell;
 
+    use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::dependencies::Dependencies;
     use crate::hir::{
-        equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, node::Node,
+        stream_expression::StreamExpression,
     };
     use std::collections::HashMap;
 
@@ -151,10 +152,10 @@ mod compute_dependencies_node_application {
                             expression: Box::new(StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer, Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![
@@ -204,7 +205,7 @@ mod compute_dependencies_node_application {
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {

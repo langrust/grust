@@ -51,10 +51,10 @@ impl Equation {
 
 #[cfg(test)]
 mod normalize {
+    use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::identifier_creator::IdentifierCreator;
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, expression::Expression,
+        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
         stream_expression::StreamExpression,
     };
 
@@ -68,10 +68,10 @@ mod normalize {
             expression: StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
-                    typing: Type::Abstract(
+                    typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
                         Box::new(Type::Integer),
-                    ),
+                    )),
                     location: Location::default(),
                 },
                 inputs: vec![
@@ -162,10 +162,10 @@ mod normalize {
                 expression: StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("+"),
-                        typing: Type::Abstract(
+                        typing: Some(Type::Abstract(
                             vec![Type::Integer, Type::Integer],
                             Box::new(Type::Integer),
-                        ),
+                        )),
                         location: Location::default(),
                     },
                     inputs: vec![
@@ -208,7 +208,10 @@ mod normalize {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -255,7 +258,7 @@ mod normalize {
                 expression: StreamExpression::MapApplication {
                     function_expression: Expression::Call {
                         id: String::from("-1"),
-                        typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {

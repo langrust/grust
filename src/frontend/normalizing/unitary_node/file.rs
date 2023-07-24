@@ -100,14 +100,12 @@ impl File {
 mod generate_unitary_nodes {
     use once_cell::sync::OnceCell;
 
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use crate::ast::{expression::Expression, function::Function, statement::Statement};
+    use crate::common::graph::{color::Color, Graph};
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::dependencies::Dependencies;
     use crate::hir::{
-        equation::Equation, expression::Expression, file::File, function::Function, memory::Memory,
-        node::Node, statement::Statement, stream_expression::StreamExpression,
-        unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, file::File, memory::Memory, node::Node,
+        stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
 
@@ -133,10 +131,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -169,10 +167,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -227,10 +225,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -266,10 +264,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -311,10 +309,10 @@ mod generate_unitary_nodes {
                             expression: StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer, Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![
@@ -363,10 +361,10 @@ mod generate_unitary_nodes {
                             expression: StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer, Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![
@@ -440,10 +438,10 @@ mod generate_unitary_nodes {
                     expression: StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("*"),
-                            typing: Type::Abstract(
+                            typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
                                 Box::new(Type::Integer),
-                            ),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![
@@ -489,10 +487,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -525,10 +523,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -565,10 +563,10 @@ mod generate_unitary_nodes {
             expression: StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
-                    typing: Type::Abstract(
+                    typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
                         Box::new(Type::Integer),
-                    ),
+                    )),
                     location: Location::default(),
                 },
                 inputs: vec![
@@ -590,10 +588,10 @@ mod generate_unitary_nodes {
                             StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![StreamExpression::SignalCall {
@@ -630,7 +628,10 @@ mod generate_unitary_nodes {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -668,7 +669,10 @@ mod generate_unitary_nodes {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -720,7 +724,7 @@ mod generate_unitary_nodes {
                 element_type: Type::Integer,
                 expression: Expression::Call {
                     id: String::from("i"),
-                    typing: Type::Integer,
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
                 location: Location::default(),
@@ -729,7 +733,7 @@ mod generate_unitary_nodes {
                 Type::Integer,
                 Expression::Call {
                     id: String::from("x"),
-                    typing: Type::Integer,
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
             ),
@@ -761,10 +765,10 @@ mod generate_unitary_nodes {
                     expression: StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("*"),
-                            typing: Type::Abstract(
+                            typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
                                 Box::new(Type::Integer),
-                            ),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![
@@ -807,10 +811,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -868,10 +872,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -907,10 +911,10 @@ mod generate_unitary_nodes {
                         expression: StreamExpression::MapApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
-                                typing: Type::Abstract(
+                                typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
                                     Box::new(Type::Integer),
-                                ),
+                                )),
                                 location: Location::default(),
                             },
                             inputs: vec![
@@ -952,10 +956,10 @@ mod generate_unitary_nodes {
                             expression: StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer, Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![
@@ -1004,10 +1008,10 @@ mod generate_unitary_nodes {
                             expression: StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer, Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![
@@ -1058,10 +1062,10 @@ mod generate_unitary_nodes {
             expression: StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
-                    typing: Type::Abstract(
+                    typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
                         Box::new(Type::Integer),
-                    ),
+                    )),
                     location: Location::default(),
                 },
                 inputs: vec![
@@ -1083,10 +1087,10 @@ mod generate_unitary_nodes {
                             StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![StreamExpression::SignalCall {
@@ -1140,7 +1144,10 @@ mod generate_unitary_nodes {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -1217,10 +1224,10 @@ mod generate_unitary_nodes {
             expression: StreamExpression::MapApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
-                    typing: Type::Abstract(
+                    typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
                         Box::new(Type::Integer),
-                    ),
+                    )),
                     location: Location::default(),
                 },
                 inputs: vec![
@@ -1242,10 +1249,10 @@ mod generate_unitary_nodes {
                             StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
-                                    typing: Type::Abstract(
+                                    typing: Some(Type::Abstract(
                                         vec![Type::Integer],
                                         Box::new(Type::Integer),
-                                    ),
+                                    )),
                                     location: Location::default(),
                                 },
                                 inputs: vec![StreamExpression::SignalCall {
@@ -1288,7 +1295,10 @@ mod generate_unitary_nodes {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -1329,7 +1339,10 @@ mod generate_unitary_nodes {
                     StreamExpression::MapApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
-                            typing: Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
@@ -1398,7 +1411,7 @@ mod generate_unitary_nodes {
                 element_type: Type::Integer,
                 expression: Expression::Call {
                     id: String::from("i"),
-                    typing: Type::Integer,
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
                 location: Location::default(),
@@ -1407,7 +1420,7 @@ mod generate_unitary_nodes {
                 Type::Integer,
                 Expression::Call {
                     id: String::from("x"),
-                    typing: Type::Integer,
+                    typing: Some(Type::Integer),
                     location: Location::default(),
                 },
             ),
