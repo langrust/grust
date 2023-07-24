@@ -44,7 +44,7 @@ impl File {
         // generate dependency graphs
         self.generate_dependencies_graphs(errors)?;
 
-        // unitary nodes computations, it induces schedulings of the node
+        // unitary nodes computations, it induces unused signals tracking
         self.nodes
             .iter_mut()
             .map(|node| node.generate_unitary_nodes(errors))
@@ -79,10 +79,7 @@ impl File {
         // change node application to unitary node application
         self.nodes.iter_mut().for_each(|node| {
             node.unitary_nodes.values_mut().for_each(|unitary_node| {
-                unitary_node
-                    .scheduled_equations
-                    .iter_mut()
-                    .for_each(|equation| {
+                unitary_node.equations.iter_mut().for_each(|equation| {
                         equation
                             .expression
                             .change_node_application_into_unitary_node_application(
@@ -302,7 +299,7 @@ mod generate_unitary_nodes {
                             (String::from("x"), Type::Integer),
                             (String::from("y"), Type::Integer),
                         ],
-                        scheduled_equations: vec![Equation {
+                        equations: vec![Equation {
                             scope: Scope::Output,
                             id: String::from("o1"),
                             signal_type: Type::Integer,
@@ -354,7 +351,7 @@ mod generate_unitary_nodes {
                         node_id: String::from("my_node"),
                         output_id: String::from("o2"),
                         inputs: vec![(String::from("y"), Type::Integer)],
-                        scheduled_equations: vec![Equation {
+                        equations: vec![Equation {
                             scope: Scope::Output,
                             id: String::from("o2"),
                             signal_type: Type::Integer,
@@ -804,7 +801,7 @@ mod generate_unitary_nodes {
                         (String::from("x"), Type::Integer),
                         (String::from("y"), Type::Integer),
                     ],
-                    scheduled_equations: vec![Equation {
+                    equations: vec![Equation {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
@@ -949,7 +946,7 @@ mod generate_unitary_nodes {
                             (String::from("x"), Type::Integer),
                             (String::from("y"), Type::Integer),
                         ],
-                        scheduled_equations: vec![Equation {
+                        equations: vec![Equation {
                             scope: Scope::Output,
                             id: String::from("o1"),
                             signal_type: Type::Integer,
@@ -1001,7 +998,7 @@ mod generate_unitary_nodes {
                         node_id: String::from("other_node"),
                         output_id: String::from("o2"),
                         inputs: vec![(String::from("y"), Type::Integer)],
-                        scheduled_equations: vec![Equation {
+                        equations: vec![Equation {
                             scope: Scope::Output,
                             id: String::from("o2"),
                             signal_type: Type::Integer,
@@ -1129,7 +1126,7 @@ mod generate_unitary_nodes {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: vec![unitary_equation_1],
+            equations: vec![unitary_equation_1],
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -1184,7 +1181,7 @@ mod generate_unitary_nodes {
                 (String::from("v"), Type::Integer),
                 (String::from("g"), Type::Integer),
             ],
-            scheduled_equations: vec![unitary_equation_2],
+            equations: vec![unitary_equation_2],
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -1212,7 +1209,7 @@ mod generate_unitary_nodes {
             node_id: String::from("test"),
             output_id: String::from("z"),
             inputs: vec![(String::from("v"), Type::Integer)],
-            scheduled_equations: vec![unitary_equation_3],
+            equations: vec![unitary_equation_3],
             memory: Memory::new(),
             location: Location::default(),
         };

@@ -379,7 +379,7 @@ mod normalize {
                         (String::from("x"), Type::Integer),
                         (String::from("y"), Type::Integer),
                     ],
-                    scheduled_equations: vec![Equation {
+                    equations: vec![Equation {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
@@ -485,7 +485,7 @@ mod normalize {
                         (String::from("x"), Type::Integer),
                         (String::from("y"), Type::Integer),
                     ],
-                    scheduled_equations: vec![Equation {
+                    equations: vec![Equation {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
@@ -633,7 +633,7 @@ mod normalize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: equations_1,
+            equations: equations_1,
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -698,7 +698,7 @@ mod normalize {
                 (String::from("v"), Type::Integer),
                 (String::from("g"), Type::Integer),
             ],
-            scheduled_equations: equations_2,
+            equations: equations_2,
             memory: Memory::new(),
             location: Location::default(),
         };

@@ -27,12 +27,9 @@ impl UnitaryNode {
     pub fn normalize(&mut self) {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals());
 
-        let UnitaryNode {
-            scheduled_equations,
-            ..
-        } = self;
+        let UnitaryNode { equations, .. } = self;
 
-        *scheduled_equations = scheduled_equations
+        *equations = equations
             .clone()
             .into_iter()
             .flat_map(|equation| equation.normalize(&mut identifier_creator))
@@ -115,7 +112,7 @@ mod normalize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: vec![equation],
+            equations: vec![equation],
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -200,7 +197,7 @@ mod normalize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: equations,
+            equations: equations,
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -262,7 +259,7 @@ mod normalize {
                 (String::from("v"), Type::Integer),
                 (String::from("g"), Type::Integer),
             ],
-            scheduled_equations: vec![equation],
+            equations: vec![equation],
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -333,7 +330,7 @@ mod normalize {
                 (String::from("v"), Type::Integer),
                 (String::from("g"), Type::Integer),
             ],
-            scheduled_equations: equations,
+            equations: equations,
             memory: Memory::new(),
             location: Location::default(),
         };
