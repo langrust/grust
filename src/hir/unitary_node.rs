@@ -10,8 +10,8 @@ pub struct UnitaryNode {
     pub output_id: String,
     /// Unitary node's inputs identifiers and their types.
     pub inputs: Vec<(String, Type)>,
-    /// Unitary node's scheduled equations.
-    pub scheduled_equations: Vec<Equation>,
+    /// Unitary node's equations.
+    pub equations: Vec<Equation>,
     /// Unitary node's memory.
     pub memory: Memory,
     /// Mother node location.
@@ -25,7 +25,7 @@ impl UnitaryNode {
         self.inputs.iter().for_each(|(signal, _)| {
             signals.push(signal.clone());
         });
-        self.scheduled_equations.iter().for_each(|equation| {
+        self.equations.iter().for_each(|equation| {
             signals.push(equation.id.clone());
         });
         signals
@@ -69,7 +69,7 @@ impl UnitaryNode {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals());
         let mut memory = Memory::new();
 
-        self.scheduled_equations
+        self.equations
             .iter_mut()
             .for_each(|equation| equation.memorize(&mut identifier_creator, &mut memory));
 
@@ -137,7 +137,7 @@ mod get_signals {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: vec![equation],
+            equations: vec![equation],
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -212,7 +212,7 @@ mod memorize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: vec![equation],
+            equations: vec![equation],
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -272,7 +272,7 @@ mod memorize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: vec![equation],
+            equations: vec![equation],
             memory,
             location: Location::default(),
         };
@@ -375,7 +375,7 @@ mod memorize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: equations.clone(),
+            equations: equations.clone(),
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -394,7 +394,7 @@ mod memorize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: equations,
+            equations: equations,
             memory,
             location: Location::default(),
         };

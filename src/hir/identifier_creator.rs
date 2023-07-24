@@ -55,7 +55,7 @@ impl IdentifierCreator {
     ///     node_id: String::from("test"),
     ///     output_id: String::from("o1"),
     ///     inputs: vec![(String::from("i1"), Type::Integer)],
-    ///     scheduled_equations: vec![
+    ///     equations: vec![
     ///         Equation {
     ///             scope: Scope::Local,
     ///             id: String::from("x"),
@@ -124,7 +124,7 @@ mod from {
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
-            scheduled_equations: vec![
+            equations: vec![
                 Equation {
                     scope: Scope::Local,
                     id: String::from("x"),
@@ -176,7 +176,7 @@ mod new_identifier {
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
-            scheduled_equations: vec![
+            equations: vec![
                 Equation {
                     scope: Scope::Local,
                     id: String::from("x"),
@@ -222,7 +222,7 @@ mod new_identifier {
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
-            scheduled_equations: vec![
+            equations: vec![
                 Equation {
                     scope: Scope::Local,
                     id: String::from("x"),
@@ -268,7 +268,7 @@ mod new_identifier {
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
-            scheduled_equations: vec![
+            equations: vec![
                 Equation {
                     scope: Scope::Local,
                     id: String::from("x"),

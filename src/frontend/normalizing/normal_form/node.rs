@@ -125,7 +125,7 @@ mod normalize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: vec![equation.clone()],
+            equations: vec![equation.clone()],
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -222,7 +222,7 @@ mod normalize {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            scheduled_equations: equations,
+            equations: equations,
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -296,7 +296,7 @@ mod normalize {
                 (String::from("v"), Type::Integer),
                 (String::from("g"), Type::Integer),
             ],
-            scheduled_equations: vec![equation.clone()],
+            equations: vec![equation.clone()],
             memory: Memory::new(),
             location: Location::default(),
         };
@@ -379,7 +379,7 @@ mod normalize {
                 (String::from("v"), Type::Integer),
                 (String::from("g"), Type::Integer),
             ],
-            scheduled_equations: equations,
+            equations: equations,
             memory: Memory::new(),
             location: Location::default(),
         };
