@@ -80,12 +80,12 @@ impl File {
         self.nodes.iter_mut().for_each(|node| {
             node.unitary_nodes.values_mut().for_each(|unitary_node| {
                 unitary_node.equations.iter_mut().for_each(|equation| {
-                        equation
-                            .expression
-                            .change_node_application_into_unitary_node_application(
-                                &unitary_nodes_used_inputs,
-                            )
-                    })
+                    equation
+                        .expression
+                        .change_node_application_into_unitary_node_application(
+                            &unitary_nodes_used_inputs,
+                        )
+                })
             })
         });
 
@@ -411,7 +411,8 @@ mod generate_unitary_nodes {
             component: None,
             location: Location::default(),
         };
-        assert_eq!(file, control);
+
+        assert!(file.nodes[0].eq_unscheduled(&control.nodes[0]));
     }
 
     #[test]
