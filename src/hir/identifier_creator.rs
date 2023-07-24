@@ -109,7 +109,7 @@ impl IdentifierCreator {
 }
 
 #[cfg(test)]
-mod new {
+mod from {
     use std::collections::HashSet;
 
     use crate::common::{location::Location, r#type::Type, scope::Scope};
