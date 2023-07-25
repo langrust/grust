@@ -1,7 +1,7 @@
 mod equation;
 mod file;
-mod unitary_node;
 mod stream_expression;
+mod unitary_node;
 
 #[derive(PartialEq, Debug)]
 pub enum Union<U, V> {

@@ -1,11 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{
-    common::scope::Scope,
-    hir::{
-        equation::Equation, identifier_creator::IdentifierCreator, unitary_node::UnitaryNode,
-        stream_expression::StreamExpression,
-    },
+use crate::hir::{
+    equation::Equation, identifier_creator::IdentifierCreator, stream_expression::StreamExpression,
+    unitary_node::UnitaryNode,
 };
 
 use super::Union;
@@ -41,8 +38,7 @@ impl UnitaryNode {
         &self,
         identifier_creator: &mut IdentifierCreator,
         inputs: &Vec<StreamExpression>,
-        output: &String,
-        scope: &Scope,
+        new_output_signal: Option<&String>,
     ) -> Vec<Equation> {
         // create the context with the given inputs
         let mut context_map = self
@@ -53,50 +49,43 @@ impl UnitaryNode {
             .collect::<HashMap<_, _>>();
 
         // add output to context
-        context_map.insert(self.output_id.clone(), Union::I1(output.clone()));
+        let same_output = new_output_signal.clone().map_or(false, |new_output_id| {
+            if &self.output_id != new_output_id {
+                context_map.insert(self.output_id.clone(), Union::I1(new_output_id.clone()));
+                false
+            } else {
+                true
+            }
+        });
 
         // add identifiers of the inlined equations to the context
         self.equations.iter().for_each(|equation| {
-            if !(equation.id == self.output_id && &self.output_id == output) {
+            if !same_output || (equation.id != self.output_id) {
                 equation.add_necessary_renaming(identifier_creator, &mut context_map)
             }
         });
 
         // reduce equations according to the context
-        let mut reduced_equations = self.equations
+        self.equations
             .iter()
             .map(|equation| equation.replace_by_context(&context_map))
-            .collect::<Vec<_>>();
-
-        // replace the output equation scope
-        reduced_equations.iter_mut().for_each(|equation| {
-            if &equation.id == output {
-                equation.scope = scope.clone()
-            }
-        });
-
-        reduced_equations
+            .collect()
     }
 }
 
 #[cfg(test)]
 mod instantiate_equations {
     use crate::ast::expression::Expression;
-    use crate::common::{
-        constant::Constant,
-        location::Location,
-        r#type::Type,
-        scope::Scope,
-    };
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::memory::Memory;
     use crate::hir::unitary_node::UnitaryNode;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-         stream_expression::StreamExpression,
+        stream_expression::StreamExpression,
     };
 
     #[test]
-    fn should_instantiate_nodes_equations_with_the_given_inputs() {
+    fn should_instantiate_nodes_equations_with_the_given_inputs_without_output_infos() {
         // node calling_node(i: int) {
         //     o: int = to_be_inlined(o);
         //     out j: int = i * o;
@@ -117,45 +106,45 @@ mod instantiate_equations {
             inputs: vec![(String::from("i"), Type::Integer)],
             equations: vec![
                 Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::FollowedBy {
-                            constant: Constant::Integer(0),
-                            expression: Box::new(StreamExpression::SignalCall {
-                                id: String::from("j"),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
-                            }),
+                    scope: Scope::Output,
+                    id: String::from("o"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::SignalCall {
+                            id: String::from("j"),
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
-                        },
+                            dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
+                        }),
+                        typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
                     },
+                    location: Location::default(),
+                },
                 Equation {
-                        scope: Scope::Local,
-                        id: String::from("j"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
-                            function_expression: Expression::Call {
-                                id: String::from("+1"),
-                                typing: Some(Type::Integer),
-                                location: Location::default(),
-                            },
-                            inputs: vec![StreamExpression::SignalCall {
-                                id: String::from("i"),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
-                            }],
+                    scope: Scope::Local,
+                    id: String::from("j"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("+1"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("i"),
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
-                        },
+                        }],
+                        typing: Type::Integer,
                         location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
                     },
+                    location: Location::default(),
+                },
             ],
             memory: Memory::new(),
             location: Location::default(),
@@ -169,15 +158,144 @@ mod instantiate_equations {
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
             }],
-            &String::from("o"),
-            &Scope::Local,
+            None,
         );
 
-        // o: int = 0 fby j_1;
+        // out o_1: int = 0 fby j_1;
         // j_1: int = o + 1;
         let control = vec![
             Equation {
+                scope: Scope::Output,
+                id: String::from("o_1"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::FollowedBy {
+                    constant: Constant::Integer(0),
+                    expression: Box::new(StreamExpression::SignalCall {
+                        id: String::from("j_1"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
+                    }),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                },
+                location: Location::default(),
+            },
+            Equation {
                 scope: Scope::Local,
+                id: String::from("j_1"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("+1"),
+                        typing: Some(Type::Integer),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("o"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                },
+                location: Location::default(),
+            },
+        ];
+
+        assert_eq!(equations.len(), control.len());
+        for equation in equations {
+            assert!(control
+                .iter()
+                .any(|control_equation| &equation == control_equation))
+        }
+    }
+
+    #[test]
+    fn should_instantiate_nodes_equations_with_the_given_inputs_with_output_infos() {
+        // node calling_node(i: int) {
+        //     o: int = to_be_inlined(o);
+        //     out j: int = i * o;
+        // }
+        let mut identifier_creator = IdentifierCreator::from(vec![
+            String::from("i"),
+            String::from("j"),
+            String::from("o"),
+        ]);
+
+        // node to_be_inlined(i: int) {
+        //     out o: int = 0 fby j;
+        //     j: int = i + 1;
+        // }
+        let unitary_node = UnitaryNode {
+            node_id: String::from("to_be_inlined"),
+            output_id: String::from("o"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![
+                Equation {
+                    scope: Scope::Output,
+                    id: String::from("o"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::SignalCall {
+                            id: String::from("j"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
+                        }),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                    },
+                    location: Location::default(),
+                },
+                Equation {
+                    scope: Scope::Local,
+                    id: String::from("j"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("+1"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("i"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                    },
+                    location: Location::default(),
+                },
+            ],
+            memory: Memory::new(),
+            location: Location::default(),
+        };
+
+        let equations = unitary_node.instantiate_equations(
+            &mut identifier_creator,
+            &vec![StreamExpression::SignalCall {
+                id: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+            }],
+            Some(&String::from("o")),
+        );
+
+        // out o: int = 0 fby j_1;
+        // j_1: int = o + 1;
+        let control = vec![
+            Equation {
+                scope: Scope::Output,
                 id: String::from("o"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FollowedBy {
