@@ -46,10 +46,10 @@ impl StreamExpression {
             StreamExpression::MapApplication { inputs, .. } => inputs
                 .iter_mut()
                 .for_each(|expression| expression.replace_by_context(context_map)),
-            StreamExpression::NodeApplication { inputs, .. } => inputs
+            StreamExpression::UnitaryNodeApplication { inputs, .. } => inputs
                 .iter_mut()
                 .for_each(|expression| expression.replace_by_context(context_map)),
-            StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
+            StreamExpression::NodeApplication { .. } => unreachable!(),
             StreamExpression::Structure { fields, .. } => fields
                 .iter_mut()
                 .for_each(|(_, expression)| expression.replace_by_context(context_map)),
