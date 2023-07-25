@@ -291,19 +291,17 @@ impl Graph<Color> {
                 vertex.set_value(Color::Grey);
 
                 // processus propagation
-                vertex.get_neighbors().iter().any(
-                    |Neighbor {
-                         id: neighbor,
-                         ..
-                     }| {
+                vertex
+                    .get_neighbors()
+                    .iter()
+                    .any(|Neighbor { id: neighbor, .. }| {
                         // visit vertex successors
                         self.is_loop_visit(id_start, neighbor)
-                    },
-                )
+                    })
             }
             // if the vertex has been seen then check if we made a loop
             Color::Grey => id_start == id_current,
-            Color::Black => unreachable!()
+            Color::Black => unreachable!(),
         }
     }
 }
