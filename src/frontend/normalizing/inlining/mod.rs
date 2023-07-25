@@ -1,5 +1,6 @@
 mod equation;
-mod node;
+mod file;
+mod unitary_node;
 mod stream_expression;
 
 #[derive(PartialEq, Debug)]

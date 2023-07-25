@@ -3,15 +3,15 @@ use std::collections::HashMap;
 use crate::{
     common::scope::Scope,
     hir::{
-        equation::Equation, identifier_creator::IdentifierCreator, node::Node,
+        equation::Equation, identifier_creator::IdentifierCreator, unitary_node::UnitaryNode,
         stream_expression::StreamExpression,
     },
 };
 
 use super::Union;
 
-impl Node {
-    /// Instantiate node's equations with inputs.
+impl UnitaryNode {
+    /// Instantiate unitary node's equations with inputs.
     ///
     /// It will return new equations where the input signals are instanciated by
     /// expressions.
@@ -39,7 +39,6 @@ impl Node {
     /// ```
     pub fn instantiate_equations(
         &self,
-        called_signal: &String,
         identifier_creator: &mut IdentifierCreator,
         inputs: &Vec<StreamExpression>,
         output: &String,
@@ -54,33 +53,17 @@ impl Node {
             .collect::<HashMap<_, _>>();
 
         // add output to context
-        context_map.insert(called_signal.clone(), Union::I1(output.clone())); // todo : the scope of the output might change
-
-        // construct called_signal's subgraph
-        let subgraph = self
-            .graph
-            .get()
-            .unwrap()
-            .clone()
-            .subgraph_from_vertex(&called_signal);
-
-        // get usefull equations
-        let equations = subgraph
-            .get_vertices()
-            .iter()
-            .filter_map(|signal| self.unscheduled_equations.get(signal))
-            .map(|equation| equation.clone())
-            .collect::<Vec<_>>();
+        context_map.insert(self.output_id.clone(), Union::I1(output.clone()));
 
         // add identifiers of the inlined equations to the context
-        equations.iter().for_each(|equation| {
-            if !(&equation.id == called_signal && called_signal == output) {
+        self.equations.iter().for_each(|equation| {
+            if !(equation.id == self.output_id && &self.output_id == output) {
                 equation.add_necessary_renaming(identifier_creator, &mut context_map)
             }
         });
 
         // reduce equations according to the context
-        let mut reduced_equations = equations
+        let mut reduced_equations = self.equations
             .iter()
             .map(|equation| equation.replace_by_context(&context_map))
             .collect::<Vec<_>>();
@@ -98,21 +81,18 @@ impl Node {
 
 #[cfg(test)]
 mod instantiate_equations {
-    use std::collections::HashMap;
-
-    use once_cell::sync::OnceCell;
-
     use crate::ast::expression::Expression;
     use crate::common::{
         constant::Constant,
-        graph::{color::Color, Graph},
         location::Location,
         r#type::Type,
         scope::Scope,
     };
+    use crate::hir::memory::Memory;
+    use crate::hir::unitary_node::UnitaryNode;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        node::Node, stream_expression::StreamExpression,
+         stream_expression::StreamExpression,
     };
 
     #[test]
@@ -131,14 +111,12 @@ mod instantiate_equations {
         //     out o: int = 0 fby j;
         //     j: int = i + 1;
         // }
-        let node = Node {
-            id: String::from("to_be_inlined"),
-            is_component: false,
+        let unitary_node = UnitaryNode {
+            node_id: String::from("to_be_inlined"),
+            output_id: String::from("o"),
             inputs: vec![(String::from("i"), Type::Integer)],
-            unscheduled_equations: HashMap::from([
-                (
-                    String::from("o"),
-                    Equation {
+            equations: vec![
+                Equation {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
@@ -156,10 +134,7 @@ mod instantiate_equations {
                         },
                         location: Location::default(),
                     },
-                ),
-                (
-                    String::from("j"),
-                    Equation {
+                Equation {
                         scope: Scope::Local,
                         id: String::from("j"),
                         signal_type: Type::Integer,
@@ -181,22 +156,12 @@ mod instantiate_equations {
                         },
                         location: Location::default(),
                     },
-                ),
-            ]),
-            unitary_nodes: HashMap::new(),
+            ],
+            memory: Memory::new(),
             location: Location::default(),
-            graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::White);
-        graph.add_vertex(String::from("j"), Color::White);
-        graph.add_vertex(String::from("i"), Color::White);
-        graph.add_edge(&String::from("j"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("j"), 1);
-        node.graph.set(graph).unwrap();
 
-        let equations = node.instantiate_equations(
-            &String::from("o"),
+        let equations = unitary_node.instantiate_equations(
             &mut identifier_creator,
             &vec![StreamExpression::SignalCall {
                 id: String::from("o"),
