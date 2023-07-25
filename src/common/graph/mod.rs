@@ -270,6 +270,42 @@ impl Graph<Color> {
             .map(|vertex| vertex.id.clone())
             .collect()
     }
+
+    /// Tells if there is a loop from the given vertex.
+    pub fn is_loop(&mut self, id: &String) -> bool {
+        // initialize all vertices to "unprocessed" state
+        self.vertices
+            .values_mut()
+            .for_each(|vertex| vertex.set_value(Color::White));
+
+        // start visiting the graph
+        self.is_loop_visit(id, id)
+    }
+
+    fn is_loop_visit(&mut self, id_start: &String, id_current: &String) -> bool {
+        // visit vertex successors
+        let vertex = self.get_vertex_mut(id_current);
+        match vertex.get_value() {
+            Color::White => {
+                // update vertex status: processing
+                vertex.set_value(Color::Grey);
+
+                // processus propagation
+                vertex.get_neighbors().iter().any(
+                    |Neighbor {
+                         id: neighbor,
+                         ..
+                     }| {
+                        // visit vertex successors
+                        self.is_loop_visit(id_start, neighbor)
+                    },
+                )
+            }
+            // if the vertex has been seen then check if we made a loop
+            Color::Grey => id_start == id_current,
+            Color::Black => unreachable!()
+        }
+    }
 }
 
 #[cfg(test)]
@@ -764,5 +800,40 @@ mod forgotten_vertices {
         let control = vec![String::from("v4")];
 
         assert_eq!(forgotten_vertices, control)
+    }
+}
+
+#[cfg(test)]
+mod is_loop {
+    use crate::common::graph::{color::Color, Graph};
+
+    #[test]
+    fn should_return_true_if_there_is_a_loop() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), Color::Black);
+        graph.add_vertex(String::from("v2"), Color::Black);
+        graph.add_vertex(String::from("v3"), Color::Black);
+        graph.add_vertex(String::from("v4"), Color::Black);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_edge(&String::from("v2"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v3"), String::from("v1"), 1);
+
+        assert!(graph.is_loop(&String::from("v1")))
+    }
+
+    #[test]
+    fn should_return_false_if_there_is_no_loop() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), Color::Black);
+        graph.add_vertex(String::from("v2"), Color::Black);
+        graph.add_vertex(String::from("v3"), Color::Black);
+        graph.add_vertex(String::from("v4"), Color::Black);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_edge(&String::from("v2"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_edge(&String::from("v3"), String::from("v2"), 1);
+
+        assert!(!graph.is_loop(&String::from("v1")))
     }
 }
