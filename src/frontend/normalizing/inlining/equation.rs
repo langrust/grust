@@ -79,7 +79,25 @@ impl Equation {
     ///
     /// We need to inline the code, the output `fib` is defined before the input `fib`,
     /// which can not be computed by a function call.
-    pub fn inline_when_needed(
+    pub fn inline_when_needed_reccursive(
+        &self,
+        identifier_creator: &mut IdentifierCreator,
+        graph: &mut Graph<Color>,
+        nodes: &HashMap<String, &Node>,
+    ) -> Vec<Equation> {
+        let mut new_equations = self.inline_when_needed(identifier_creator, graph, nodes);
+        let mut current_equations = vec![self.clone()];
+        while current_equations != new_equations {
+            current_equations = new_equations;
+            new_equations = current_equations
+                .iter()
+                .flat_map(|equation| equation.inline_when_needed(identifier_creator, graph, nodes))
+                .collect();
+        }
+        new_equations
+    }
+
+    fn inline_when_needed(
         &self,
         identifier_creator: &mut IdentifierCreator,
         graph: &mut Graph<Color>,
@@ -125,6 +143,8 @@ impl Equation {
                     });
 
                     new_equations.append(&mut retrieved_equations);
+                } else {
+                    new_equations.push(self.clone());
                 }
 
                 new_equations
@@ -339,7 +359,7 @@ mod replace_by_context {
 }
 
 #[cfg(test)]
-mod inline_when_needed_visit {
+mod inline_when_needed {
     use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
@@ -354,7 +374,7 @@ mod inline_when_needed_visit {
     use std::collections::HashMap;
 
     #[test]
-    fn should_remove_inline_root_node_calls_when_inputs_depends_on_outputs() {
+    fn should_inline_root_node_calls_when_inputs_depends_on_outputs() {
         let mut nodes = HashMap::new();
 
         // node my_node(i: int, j: int) {
@@ -666,7 +686,7 @@ mod inline_when_needed_visit {
     }
 
     #[test]
-    fn should_remove_inline_all_node_calls_when_inputs_depends_on_outputs() {
+    fn should_inline_all_node_calls_when_inputs_depends_on_outputs() {
         let mut nodes = HashMap::new();
 
         // node my_node(i: int, j: int) {
@@ -1022,6 +1042,1023 @@ mod inline_when_needed_visit {
             location: Location::default(),
         };
         let control = vec![added_equation, inlined_equation];
+
+        assert_eq!(new_equations, control)
+    }
+}
+
+#[cfg(test)]
+mod inline_when_needed_reccursive {
+    use once_cell::sync::OnceCell;
+
+    use crate::ast::expression::Expression;
+    use crate::common::graph::color::Color;
+    use crate::common::graph::Graph;
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
+    use crate::hir::identifier_creator::IdentifierCreator;
+    use crate::hir::{
+        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node,
+        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    };
+    use std::collections::HashMap;
+
+    #[test]
+    fn should_inline_root_node_calls_when_inputs_depends_on_outputs() {
+        let mut nodes = HashMap::new();
+
+        // node my_node(i: int, j: int) {
+        //     out o: int = i + (0 fby j);
+        // }
+        let my_node_equation = Equation {
+            scope: Scope::Output,
+            id: String::from("o"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+"),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: String::from("i"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                    },
+                    StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::SignalCall {
+                            id: String::from("j"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
+                        }),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("i"), 0),
+                    (String::from("j"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        let my_node = Node {
+            id: String::from("my_node"),
+            is_component: false,
+            inputs: vec![
+                (String::from("i"), Type::Integer),
+                (String::from("j"), Type::Integer),
+            ],
+            unscheduled_equations: HashMap::from([(String::from("o"), my_node_equation.clone())]),
+            unitary_nodes: HashMap::from([(
+                String::from("o"),
+                UnitaryNode {
+                    node_id: String::from("my_node"),
+                    output_id: String::from("o"),
+                    inputs: vec![
+                        (String::from("i"), Type::Integer),
+                        (String::from("j"), Type::Integer),
+                    ],
+                    equations: vec![my_node_equation],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_vertex(String::from("j"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 0);
+        graph.add_edge(&String::from("o"), String::from("j"), 1);
+        my_node.graph.set(graph).unwrap();
+        nodes.insert(String::from("my_node"), &my_node);
+
+        // node other_node(i: int) {
+        //     out o: int = 0 fby i;
+        // }
+        let other_node_equation = Equation {
+            scope: Scope::Output,
+            id: String::from("o"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: String::from("i"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                }),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("i"), 1)]),
+            },
+            location: Location::default(),
+        };
+        let other_node = Node {
+            id: String::from("other_node"),
+            is_component: false,
+            inputs: vec![(String::from("i"), Type::Integer)],
+            unscheduled_equations: HashMap::from([(
+                String::from("o"),
+                other_node_equation.clone(),
+            )]),
+            unitary_nodes: HashMap::from([(
+                String::from("o"),
+                UnitaryNode {
+                    node_id: String::from("other_node"),
+                    output_id: String::from("o"),
+                    inputs: vec![(String::from("i"), Type::Integer)],
+                    equations: vec![other_node_equation],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 1);
+        other_node.graph.set(graph).unwrap();
+        nodes.insert(String::from("other_node"), &other_node);
+
+        // x: int = my_node(v*2, x).o
+        let equation_1 = Equation {
+            scope: Scope::Local,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("my_node"),
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("*2"),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("v"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    },
+                ],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("v"), 0),
+                    (String::from("x"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        // out y: int = other_node(x-1).o
+        let equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                }],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
+            },
+            location: Location::default(),
+        };
+        // node test(v: int) {
+        //     x: int = my_node(v*2, x).o
+        //     out y: int = other_node(x-1).o
+        // }
+        let node = Node {
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1.clone()),
+                (String::from("y"), equation_2.clone()),
+            ]),
+            unitary_nodes: HashMap::from([(
+                String::from("y"),
+                UnitaryNode {
+                    node_id: String::from("test"),
+                    output_id: String::from("y"),
+                    inputs: vec![(String::from("v"), Type::Integer)],
+                    equations: vec![equation_1.clone(), equation_2.clone()],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_edge(&String::from("y"), String::from("x"), 1);
+        node.graph.set(graph.clone()).unwrap();
+        nodes.insert(String::from("test"), &node);
+
+        let mut identifier_creator = IdentifierCreator::from(
+            node.unitary_nodes
+                .get(&String::from("y"))
+                .unwrap()
+                .get_signals(),
+        );
+        let new_equations =
+            equation_1.inline_when_needed_reccursive(&mut identifier_creator, &mut graph, &nodes);
+
+        // x: int = v*2 + 0 fby x
+        let control = [Equation {
+            scope: Scope::Local,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+"),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("*2"),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("v"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                    },
+                    StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                        }),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("i"), 0),
+                    (String::from("j"), 1),
+                ]),
+            },
+            location: Location::default(),
+        }];
+
+        assert_eq!(new_equations, control)
+    }
+
+    #[test]
+    fn should_inline_all_node_calls_when_inputs_depends_on_outputs() {
+        let mut nodes = HashMap::new();
+
+        // node my_node(i: int, j: int) {
+        //     out o: int = i + (0 fby j);
+        // }
+        let my_node_equation = Equation {
+            scope: Scope::Output,
+            id: String::from("o"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+"),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: String::from("i"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                    },
+                    StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::SignalCall {
+                            id: String::from("j"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
+                        }),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("i"), 0),
+                    (String::from("j"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        let my_node = Node {
+            id: String::from("my_node"),
+            is_component: false,
+            inputs: vec![
+                (String::from("i"), Type::Integer),
+                (String::from("j"), Type::Integer),
+            ],
+            unscheduled_equations: HashMap::from([(String::from("o"), my_node_equation.clone())]),
+            unitary_nodes: HashMap::from([(
+                String::from("o"),
+                UnitaryNode {
+                    node_id: String::from("my_node"),
+                    output_id: String::from("o"),
+                    inputs: vec![
+                        (String::from("i"), Type::Integer),
+                        (String::from("j"), Type::Integer),
+                    ],
+                    equations: vec![my_node_equation],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_vertex(String::from("j"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 0);
+        graph.add_edge(&String::from("o"), String::from("j"), 1);
+        my_node.graph.set(graph).unwrap();
+        nodes.insert(String::from("my_node"), &my_node);
+
+        // node other_node(i: int) {
+        //     out o: int = 0 fby i;
+        // }
+        let other_node_equation = Equation {
+            scope: Scope::Output,
+            id: String::from("o"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: String::from("i"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                }),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("i"), 1)]),
+            },
+            location: Location::default(),
+        };
+        let other_node = Node {
+            id: String::from("other_node"),
+            is_component: false,
+            inputs: vec![(String::from("i"), Type::Integer)],
+            unscheduled_equations: HashMap::from([(
+                String::from("o"),
+                other_node_equation.clone(),
+            )]),
+            unitary_nodes: HashMap::from([(
+                String::from("o"),
+                UnitaryNode {
+                    node_id: String::from("other_node"),
+                    output_id: String::from("o"),
+                    inputs: vec![(String::from("i"), Type::Integer)],
+                    equations: vec![other_node_equation],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 1);
+        other_node.graph.set(graph).unwrap();
+        nodes.insert(String::from("other_node"), &other_node);
+
+        // x: int = 1 + my_node(v*2, x).o
+        let equation_1 = Equation {
+            scope: Scope::Local,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("1+"),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![StreamExpression::UnitaryNodeApplication {
+                    node: String::from("my_node"),
+                    inputs: vec![
+                        StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("*2"),
+                                typing: Some(Type::Abstract(
+                                    vec![Type::Integer],
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("v"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                            }],
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        },
+                        StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                        },
+                    ],
+                    signal: String::from("o"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![
+                        (String::from("v"), 0),
+                        (String::from("x"), 1),
+                    ]),
+                }],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("v"), 0),
+                    (String::from("x"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        // out y: int = other_node(x-1).o
+        let equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                }],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
+            },
+            location: Location::default(),
+        };
+        // node test(v: int) {
+        //     x: int = my_node(v*2, x).o
+        //     out y: int = other_node(x-1).o
+        // }
+        let node = Node {
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1.clone()),
+                (String::from("y"), equation_2.clone()),
+            ]),
+            unitary_nodes: HashMap::from([(
+                String::from("y"),
+                UnitaryNode {
+                    node_id: String::from("test"),
+                    output_id: String::from("y"),
+                    inputs: vec![(String::from("v"), Type::Integer)],
+                    equations: vec![equation_1.clone(), equation_2.clone()],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_edge(&String::from("y"), String::from("x"), 1);
+        node.graph.set(graph.clone()).unwrap();
+        nodes.insert(String::from("test"), &node);
+
+        let mut identifier_creator = IdentifierCreator::from(
+            node.unitary_nodes
+                .get(&String::from("y"))
+                .unwrap()
+                .get_signals(),
+        );
+        let new_equations =
+            equation_1.inline_when_needed_reccursive(&mut identifier_creator, &mut graph, &nodes);
+
+        // o: int = v*2 + 0 fby x
+        let added_equation = Equation {
+            scope: Scope::Local,
+            id: String::from("o"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+"),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("*2"),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("v"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                    },
+                    StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                        }),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("i"), 0),
+                    (String::from("j"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        // x: int = 1 + o
+        let inlined_equation = Equation {
+            scope: Scope::Local,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("1+"),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![StreamExpression::SignalCall {
+                    id: String::from("o"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![
+                        (String::from("v"), 0),
+                        (String::from("x"), 1),
+                    ]),
+                }],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("v"), 0),
+                    (String::from("x"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        let control = vec![added_equation, inlined_equation];
+
+        assert_eq!(new_equations, control)
+    }
+
+    #[test]
+    fn should_inline_node_calls_when_needed_recursively() {
+        let mut nodes = HashMap::new();
+
+        // node my_node(i: int, j: int) {
+        //     out o: int = i + other_node(j).o;
+        // }
+        let my_node_equation = Equation {
+            scope: Scope::Output,
+            id: String::from("o"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+"),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: String::from("i"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                    },
+                    StreamExpression::UnitaryNodeApplication {
+                        node: String::from("other_node"),
+                        signal: String::from("o"),
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("j"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("i"), 0),
+                    (String::from("j"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        let my_node = Node {
+            id: String::from("my_node"),
+            is_component: false,
+            inputs: vec![
+                (String::from("i"), Type::Integer),
+                (String::from("j"), Type::Integer),
+            ],
+            unscheduled_equations: HashMap::from([(String::from("o"), my_node_equation.clone())]),
+            unitary_nodes: HashMap::from([(
+                String::from("o"),
+                UnitaryNode {
+                    node_id: String::from("my_node"),
+                    output_id: String::from("o"),
+                    inputs: vec![
+                        (String::from("i"), Type::Integer),
+                        (String::from("j"), Type::Integer),
+                    ],
+                    equations: vec![my_node_equation],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_vertex(String::from("j"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 0);
+        graph.add_edge(&String::from("o"), String::from("j"), 1);
+        my_node.graph.set(graph).unwrap();
+        nodes.insert(String::from("my_node"), &my_node);
+
+        // node other_node(i: int) {
+        //     out o: int = 0 fby i;
+        // }
+        let other_node_equation = Equation {
+            scope: Scope::Output,
+            id: String::from("o"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: String::from("i"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                }),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("i"), 1)]),
+            },
+            location: Location::default(),
+        };
+        let other_node = Node {
+            id: String::from("other_node"),
+            is_component: false,
+            inputs: vec![(String::from("i"), Type::Integer)],
+            unscheduled_equations: HashMap::from([(
+                String::from("o"),
+                other_node_equation.clone(),
+            )]),
+            unitary_nodes: HashMap::from([(
+                String::from("o"),
+                UnitaryNode {
+                    node_id: String::from("other_node"),
+                    output_id: String::from("o"),
+                    inputs: vec![(String::from("i"), Type::Integer)],
+                    equations: vec![other_node_equation],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 1);
+        other_node.graph.set(graph).unwrap();
+        nodes.insert(String::from("other_node"), &other_node);
+
+        // x: int = my_node(v*2, x).o
+        let equation_1 = Equation {
+            scope: Scope::Local,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("my_node"),
+                inputs: vec![
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("*2"),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("v"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    },
+                ],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("v"), 0),
+                    (String::from("x"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        // out y: int = other_node(x-1).o
+        let equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                }],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
+            },
+            location: Location::default(),
+        };
+        // node test(v: int) {
+        //     x: int = my_node(v*2, x).o
+        //     out y: int = other_node(x-1).o
+        // }
+        let node = Node {
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1.clone()),
+                (String::from("y"), equation_2.clone()),
+            ]),
+            unitary_nodes: HashMap::from([(
+                String::from("y"),
+                UnitaryNode {
+                    node_id: String::from("test"),
+                    output_id: String::from("y"),
+                    inputs: vec![(String::from("v"), Type::Integer)],
+                    equations: vec![equation_1.clone(), equation_2.clone()],
+                    memory: Memory::new(),
+                    location: Location::default(),
+                },
+            )]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_edge(&String::from("y"), String::from("x"), 1);
+        node.graph.set(graph.clone()).unwrap();
+        nodes.insert(String::from("test"), &node);
+
+        let mut identifier_creator = IdentifierCreator::from(
+            node.unitary_nodes
+                .get(&String::from("y"))
+                .unwrap()
+                .get_signals(),
+        );
+        let new_equations =
+            equation_1.inline_when_needed_reccursive(&mut identifier_creator, &mut graph, &nodes);
+
+        // o_1: int = 0 fby x
+        // x: int = v*2 + o_1
+        let control = [
+            Equation {
+                scope: Scope::Local,
+                id: String::from("o_1"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::FollowedBy {
+                    constant: Constant::Integer(0),
+                    expression: Box::new(StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("i"), 1)]),
+                },
+                location: Location::default(),
+            },
+            Equation {
+                scope: Scope::Local,
+                id: String::from("x"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("+"),
+                        typing: Some(Type::Abstract(
+                            vec![Type::Integer, Type::Integer],
+                            Box::new(Type::Integer),
+                        )),
+                        location: Location::default(),
+                    },
+                    inputs: vec![
+                        StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("*2"),
+                                typing: Some(Type::Abstract(
+                                    vec![Type::Integer],
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("v"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                            }],
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        },
+                        StreamExpression::SignalCall {
+                            id: String::from("o_1"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                        },
+                    ],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![
+                        (String::from("i"), 0),
+                        (String::from("j"), 1),
+                    ]),
+                },
+                location: Location::default(),
+            },
+        ];
 
         assert_eq!(new_equations, control)
     }
