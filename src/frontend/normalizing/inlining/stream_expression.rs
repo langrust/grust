@@ -1,6 +1,15 @@
 use std::collections::HashMap;
 
-use crate::hir::stream_expression::StreamExpression;
+use crate::{
+    common::{
+        graph::{color::Color, Graph},
+        scope::Scope,
+    },
+    hir::{
+        equation::Equation, identifier_creator::IdentifierCreator, node::Node,
+        stream_expression::StreamExpression,
+    },
+};
 
 use super::Union;
 
@@ -78,6 +87,167 @@ impl StreamExpression {
                     .iter_mut()
                     .for_each(|equation| equation.expression.replace_by_context(context_map));
                 default.replace_by_context(context_map);
+            }
+        }
+    }
+
+    /// Inline node application when it is needed.
+    ///
+    /// Inlining needed for "shifted causality loop".
+    ///
+    /// # Example:
+    /// ```GR
+    /// node semi_fib(i: int) {
+    ///     out o: int = 0 fby (i + 1 fby i);
+    /// }
+    /// ```
+    /// In this example, if an expression `semi_fib(fib).o` is assigned to the
+    /// signal `fib` there is no causality loop.
+    /// But we need to inline the code, a function can not compute an output
+    /// before knowing the input.
+    pub fn inline_when_needed(
+        &mut self,
+        signal_id: &String,
+        identifier_creator: &mut IdentifierCreator,
+        graph: &mut Graph<Color>,
+        nodes: &HashMap<String, &Node>,
+    ) -> Vec<Equation> {
+        match self {
+            StreamExpression::UnitaryNodeApplication {
+                node,
+                inputs,
+                signal,
+                typing,
+                location,
+                dependencies,
+            } => {
+                // inline potential node calls in the inputs
+                let mut new_equations = inputs
+                    .iter_mut()
+                    .map(|expression| {
+                        expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                    })
+                    .flatten()
+                    .collect::<Vec<_>>();
+
+                // a loop in the graph induces that inputs depends on output
+                let should_inline = graph.is_loop(signal_id);
+
+                // then node call must be inlined
+                if should_inline {
+                    let called_node = nodes.get(node).unwrap();
+                    let called_unitary_node = called_node.unitary_nodes.get(signal).unwrap();
+
+                    // get equations from called node, with corresponding inputs
+                    let mut retrieved_equations =
+                        called_unitary_node.instantiate_equations(identifier_creator, inputs, None);
+
+                    // change the expression to a signal call to the output signal
+                    let typing = typing.clone();
+                    let location = location.clone();
+                    let dependencies = dependencies.clone();
+                    retrieved_equations.iter_mut().for_each(|equation| {
+                        if equation.scope == Scope::Output {
+                            *self = StreamExpression::SignalCall {
+                                id: equation.id.clone(),
+                                typing: typing.clone(),
+                                location: location.clone(),
+                                dependencies: dependencies.clone(),
+                            };
+                            equation.scope = Scope::Local
+                        }
+                    });
+
+                    new_equations.append(&mut retrieved_equations);
+                }
+
+                new_equations
+            }
+            StreamExpression::Constant { .. } => vec![],
+            StreamExpression::SignalCall { .. } => vec![],
+            StreamExpression::FollowedBy { expression, .. } => {
+                expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+            }
+            StreamExpression::MapApplication { inputs, .. } => inputs
+                .iter_mut()
+                .map(|expression| {
+                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                })
+                .flatten()
+                .collect(),
+            StreamExpression::NodeApplication { .. } => unreachable!(),
+            StreamExpression::Structure { fields, .. } => fields
+                .iter_mut()
+                .map(|(_, expression)| {
+                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                })
+                .flatten()
+                .collect(),
+            StreamExpression::Array { elements, .. } => elements
+                .iter_mut()
+                .map(|expression| {
+                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                })
+                .flatten()
+                .collect(),
+            StreamExpression::Match {
+                expression, arms, ..
+            } => {
+                let mut new_equations =
+                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+
+                let mut other_new_equations = arms
+                    .iter_mut()
+                    .map(|(_, bound, body, expression)| {
+                        assert!(body.is_empty());
+                        let mut new_equations_bound = bound
+                            .as_mut()
+                            .map(|expression| {
+                                expression.inline_when_needed(
+                                    signal_id,
+                                    identifier_creator,
+                                    graph,
+                                    nodes,
+                                )
+                            })
+                            .unwrap_or_default();
+                        let mut new_equations_expression = expression.inline_when_needed(
+                            signal_id,
+                            identifier_creator,
+                            graph,
+                            nodes,
+                        );
+                        new_equations_bound.append(&mut new_equations_expression);
+                        new_equations_bound
+                    })
+                    .flatten()
+                    .collect::<Vec<_>>();
+
+                new_equations.append(&mut other_new_equations);
+
+                new_equations
+            }
+            StreamExpression::When {
+                option,
+                present_body,
+                present,
+                default_body,
+                default,
+                ..
+            } => {
+                assert!(present_body.is_empty());
+                assert!(default_body.is_empty());
+
+                let mut new_equations_option =
+                    option.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                let mut new_equations_present =
+                    present.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                let mut new_equations_default =
+                    default.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                new_equations_option.append(&mut new_equations_present);
+                new_equations_option.append(&mut new_equations_default);
+
+                new_equations_option
             }
         }
     }
