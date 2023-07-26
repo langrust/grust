@@ -145,7 +145,7 @@ impl Equation {
                     new_equations.append(&mut retrieved_equations);
                 } else {
                     new_equations.push(self.clone());
-                     // todo: make direct dependencies to inputs
+                    // todo: make direct dependencies to inputs
                 }
 
                 new_equations
