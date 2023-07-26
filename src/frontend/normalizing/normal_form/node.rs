@@ -128,6 +128,7 @@ mod normalize {
             equations: vec![equation.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut node = Node {
             id: String::from("test"),
@@ -225,6 +226,7 @@ mod normalize {
             equations: equations,
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let control = Node {
             id: String::from("test"),
@@ -299,6 +301,7 @@ mod normalize {
             equations: vec![equation.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut node = Node {
             id: String::from("test"),
@@ -382,6 +385,7 @@ mod normalize {
             equations: equations,
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let control = Node {
             id: String::from("test"),

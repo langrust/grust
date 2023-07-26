@@ -75,7 +75,7 @@ impl StreamExpression {
                 inputs
                     .iter_mut()
                     .for_each(|expression| expression.replace_by_context(context_map));
-                dependencies.replace_by_context(context_map);
+                dependencies.replace_by_context(context_map); // todo: make direct dependencies to inputs
             }
             StreamExpression::NodeApplication { .. } => unreachable!(),
             StreamExpression::Structure {
@@ -605,6 +605,7 @@ mod inline_when_needed {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -657,6 +658,7 @@ mod inline_when_needed {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -778,6 +780,7 @@ mod inline_when_needed {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),

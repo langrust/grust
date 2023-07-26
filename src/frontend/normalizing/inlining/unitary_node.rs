@@ -75,6 +75,8 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod instantiate_equations {
+    use once_cell::sync::OnceCell;
+
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::memory::Memory;
@@ -148,6 +150,7 @@ mod instantiate_equations {
             ],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let equations = unitary_node.instantiate_equations(
@@ -278,6 +281,7 @@ mod instantiate_equations {
             ],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let equations = unitary_node.instantiate_equations(

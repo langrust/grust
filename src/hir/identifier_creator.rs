@@ -45,6 +45,7 @@ impl IdentifierCreator {
     /// This example is tested in the following code.
     ///
     /// ```rust
+    /// use once_cell::sync::OnceCell;
     /// use grustine::common::{location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
     ///     dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
@@ -83,6 +84,7 @@ impl IdentifierCreator {
     ///     ],
     ///     memory: Memory::new(),
     ///     location: Location::default(),
+    ///     graph: OnceCell::new(),
     /// };
     /// let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
     ///
@@ -111,6 +113,8 @@ impl IdentifierCreator {
 #[cfg(test)]
 mod from {
     use std::collections::HashSet;
+
+    use once_cell::sync::OnceCell;
 
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
@@ -152,6 +156,7 @@ mod from {
             ],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
         let control = IdentifierCreator {
@@ -164,6 +169,8 @@ mod from {
 
 #[cfg(test)]
 mod new_identifier {
+    use once_cell::sync::OnceCell;
+
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
@@ -204,6 +211,7 @@ mod new_identifier {
             ],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
         let identifier = identifier_creator.new_identifier(
@@ -250,6 +258,7 @@ mod new_identifier {
             ],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
         let identifier = identifier_creator.new_identifier(
@@ -296,6 +305,7 @@ mod new_identifier {
             ],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
         identifier_creator.new_identifier(String::from(""), String::from("x"), String::from(""));

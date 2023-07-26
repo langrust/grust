@@ -52,6 +52,8 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod schedule {
+    use once_cell::sync::OnceCell;
+
     use crate::ast::expression::Expression;
     use crate::common::graph::color::Color;
     use crate::common::graph::Graph;
@@ -174,6 +176,7 @@ mod schedule {
             equations: vec![equation_1.clone(), equation_2.clone(), equation_3.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v"), Color::Black);
@@ -199,6 +202,7 @@ mod schedule {
             equations: vec![equation_2.clone(), equation_3.clone(), equation_1.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         assert_eq!(unitary_node, control)
@@ -317,6 +321,7 @@ mod schedule {
             equations: vec![equation_1.clone(), equation_2.clone(), equation_3.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v"), Color::Black);
