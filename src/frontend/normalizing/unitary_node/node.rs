@@ -1,3 +1,5 @@
+use once_cell::sync::OnceCell;
+
 use crate::common::{
     graph::{color::Color, Graph},
     scope::Scope,
@@ -84,6 +86,7 @@ impl Node {
             equations,
             memory: Memory::new(),
             location: location.clone(),
+            graph: OnceCell::new(),
         };
 
         // insert it in node's storage
@@ -219,6 +222,7 @@ mod add_unitary_node {
             ],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let control = Node {
             id: String::from("test"),
@@ -422,6 +426,7 @@ mod generate_unitary_nodes {
             ],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let unitary_node_2 = UnitaryNode {
             node_id: String::from("test"),
@@ -441,6 +446,7 @@ mod generate_unitary_nodes {
             }],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let control = Node {
             id: String::from("test"),

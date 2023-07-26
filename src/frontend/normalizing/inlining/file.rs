@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::hir::{equation::Equation, file::File, identifier_creator::IdentifierCreator};
+use crate::{
+    common::graph::{color::Color, Graph},
+    hir::{equation::Equation, file::File, identifier_creator::IdentifierCreator},
+};
 
 impl File {
     /// Inline node application when it is needed.
@@ -67,13 +70,32 @@ impl File {
             new_equations.append(&mut retrieved_equations)
         });
 
-        // put new equations in node
+        // update node's unitary node
         self.nodes
             .iter_mut()
             .filter(|node| &node.id == node_id)
             .for_each(|node| {
                 let unitary_node = node.unitary_nodes.get_mut(output_id).unwrap();
+                // put new equations in unitary node
                 unitary_node.equations = new_equations.clone();
+                // add a dependency graph to the unitary node
+                let mut graph = Graph::new();
+                unitary_node
+                    .get_signals()
+                    .iter()
+                    .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
+                unitary_node.equations.iter().for_each(
+                    |Equation {
+                         id: from,
+                         expression,
+                         ..
+                     }| {
+                        for (to, weight) in expression.get_dependencies() {
+                            graph.add_edge(from, to.clone(), *weight)
+                        }
+                    },
+                );
+                unitary_node.graph.set(graph).unwrap();
             })
     }
 }
@@ -159,6 +181,7 @@ mod inline_when_needed_visit {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -210,6 +233,7 @@ mod inline_when_needed_visit {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -316,6 +340,7 @@ mod inline_when_needed_visit {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -397,6 +422,15 @@ mod inline_when_needed_visit {
             },
             location: Location::default(),
         };
+
+        let mut unitary_graph = Graph::new();
+        unitary_graph.add_vertex(String::from("v"), Color::White);
+        unitary_graph.add_vertex(String::from("x"), Color::White);
+        unitary_graph.add_vertex(String::from("y"), Color::White);
+        unitary_graph.add_edge(&String::from("x"), String::from("v"), 0);
+        unitary_graph.add_edge(&String::from("x"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+
         // node test(v: int) {
         //     x: int = v*2 + 0 fby x
         //     out y: int = other_node(x-1).o
@@ -418,6 +452,7 @@ mod inline_when_needed_visit {
                     equations: vec![inlined_equation, equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::from(unitary_graph),
                 },
             )]),
             location: Location::default(),
@@ -502,6 +537,7 @@ mod inline_when_needed_visit {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -553,6 +589,7 @@ mod inline_when_needed_visit {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -675,6 +712,7 @@ mod inline_when_needed_visit {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -782,6 +820,17 @@ mod inline_when_needed_visit {
             },
             location: Location::default(),
         };
+
+        let mut unitary_graph = Graph::new();
+        unitary_graph.add_vertex(String::from("v"), Color::White);
+        unitary_graph.add_vertex(String::from("x"), Color::White);
+        unitary_graph.add_vertex(String::from("y"), Color::White);
+        unitary_graph.add_vertex(String::from("o"), Color::White);
+        unitary_graph.add_edge(&String::from("x"), String::from("o"), 0);
+        unitary_graph.add_edge(&String::from("o"), String::from("v"), 0);
+        unitary_graph.add_edge(&String::from("o"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+
         // node test(v: int) {
         //     o: int = v*2 + 0 fby x
         //     x: int = 1 + o
@@ -804,6 +853,7 @@ mod inline_when_needed_visit {
                     equations: vec![added_equation, inlined_equation, equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::from(unitary_graph),
                 },
             )]),
             location: Location::default(),
@@ -903,6 +953,7 @@ mod inline_when_needed {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -954,6 +1005,7 @@ mod inline_when_needed {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -1060,6 +1112,7 @@ mod inline_when_needed {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -1141,6 +1194,15 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
+
+        let mut unitary_graph = Graph::new();
+        unitary_graph.add_vertex(String::from("v"), Color::White);
+        unitary_graph.add_vertex(String::from("x"), Color::White);
+        unitary_graph.add_vertex(String::from("y"), Color::White);
+        unitary_graph.add_edge(&String::from("x"), String::from("v"), 0);
+        unitary_graph.add_edge(&String::from("x"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+
         // node test(v: int) {
         //     x: int = v*2 + 0 fby x
         //     out y: int = other_node(x-1).o
@@ -1162,6 +1224,7 @@ mod inline_when_needed {
                     equations: vec![inlined_equation, equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::from(unitary_graph),
                 },
             )]),
             location: Location::default(),
@@ -1246,6 +1309,7 @@ mod inline_when_needed {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -1297,6 +1361,7 @@ mod inline_when_needed {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -1419,6 +1484,7 @@ mod inline_when_needed {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -1526,6 +1592,17 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
+
+        let mut unitary_graph = Graph::new();
+        unitary_graph.add_vertex(String::from("v"), Color::White);
+        unitary_graph.add_vertex(String::from("x"), Color::White);
+        unitary_graph.add_vertex(String::from("y"), Color::White);
+        unitary_graph.add_vertex(String::from("o"), Color::White);
+        unitary_graph.add_edge(&String::from("x"), String::from("o"), 0);
+        unitary_graph.add_edge(&String::from("o"), String::from("v"), 0);
+        unitary_graph.add_edge(&String::from("o"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+
         // node test(v: int) {
         //     o: int = v*2 + 0 fby x
         //     x: int = 1 + o
@@ -1548,6 +1625,7 @@ mod inline_when_needed {
                     equations: vec![added_equation, inlined_equation, equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::from(unitary_graph),
                 },
             )]),
             location: Location::default(),
@@ -1633,6 +1711,7 @@ mod inline_when_needed {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -1684,6 +1763,7 @@ mod inline_when_needed {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -1790,6 +1870,7 @@ mod inline_when_needed {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -1884,6 +1965,17 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
+
+        let mut unitary_graph = Graph::new();
+        unitary_graph.add_vertex(String::from("v"), Color::White);
+        unitary_graph.add_vertex(String::from("x"), Color::White);
+        unitary_graph.add_vertex(String::from("y"), Color::White);
+        unitary_graph.add_vertex(String::from("o_1"), Color::White);
+        unitary_graph.add_edge(&String::from("x"), String::from("v"), 0);
+        unitary_graph.add_edge(&String::from("x"), String::from("o_1"), 0);
+        unitary_graph.add_edge(&String::from("o_1"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+
         // node test(v: int) {
         //     o_1: int = 0 fby x
         //     x: int = v*2 + o_1
@@ -1906,6 +1998,7 @@ mod inline_when_needed {
                     equations: vec![inlined_equation, new_equation_1, equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::from(unitary_graph),
                 },
             )]),
             location: Location::default(),

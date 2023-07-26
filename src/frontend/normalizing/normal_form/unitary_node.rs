@@ -39,6 +39,8 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod normalize {
+    use once_cell::sync::OnceCell;
+
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
@@ -115,6 +117,7 @@ mod normalize {
             equations: vec![equation],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         unitary_node.normalize();
 
@@ -200,6 +203,7 @@ mod normalize {
             equations: equations,
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         assert_eq!(unitary_node, control);
     }
@@ -262,6 +266,7 @@ mod normalize {
             equations: vec![equation],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         unitary_node.normalize();
 
@@ -333,6 +338,7 @@ mod normalize {
             equations: equations,
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         assert_eq!(unitary_node, control);
     }

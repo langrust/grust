@@ -343,6 +343,7 @@ mod generate_unitary_nodes {
                         }],
                         memory: Memory::new(),
                         location: Location::default(),
+                        graph: OnceCell::new(),
                     },
                 ),
                 (
@@ -389,6 +390,7 @@ mod generate_unitary_nodes {
                         }],
                         memory: Memory::new(),
                         location: Location::default(),
+                        graph: OnceCell::new(),
                     },
                 ),
             ]),
@@ -840,6 +842,7 @@ mod generate_unitary_nodes {
                     }],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -991,6 +994,7 @@ mod generate_unitary_nodes {
                         }],
                         memory: Memory::new(),
                         location: Location::default(),
+                        graph: OnceCell::new(),
                     },
                 ),
                 (
@@ -1037,6 +1041,7 @@ mod generate_unitary_nodes {
                         }],
                         memory: Memory::new(),
                         location: Location::default(),
+                        graph: OnceCell::new(),
                     },
                 ),
             ]),
@@ -1130,6 +1135,7 @@ mod generate_unitary_nodes {
             equations: vec![unitary_equation_1],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         // out y: int = other_node(g-1, v).o1
         let unitary_equation_2 = Equation {
@@ -1185,6 +1191,7 @@ mod generate_unitary_nodes {
             equations: vec![unitary_equation_2],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         // out z: int = other_node(g-1, v).o2
         let unitary_equation_3 = Equation {
@@ -1213,6 +1220,7 @@ mod generate_unitary_nodes {
             equations: vec![unitary_equation_3],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         // out x: int = 1 + my_node(s, v*2).o
         let equation_1 = Equation {

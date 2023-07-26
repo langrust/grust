@@ -164,6 +164,7 @@ mod schedule {
             equations: vec![equation_1.clone(), equation_2.clone(), equation_3.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let node = Node {
             id: String::from("test"),
@@ -219,6 +220,7 @@ mod schedule {
             equations: vec![equation_2.clone(), equation_3.clone(), equation_1.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         assert_eq!(unitary_node, &control)
@@ -337,6 +339,7 @@ mod schedule {
             equations: vec![equation_1.clone(), equation_2.clone(), equation_3.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let node = Node {

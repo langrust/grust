@@ -1,4 +1,10 @@
-use crate::common::{location::Location, r#type::Type};
+use once_cell::sync::OnceCell;
+
+use crate::common::{
+    graph::{color::Color, Graph},
+    location::Location,
+    r#type::Type,
+};
 use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -16,6 +22,8 @@ pub struct UnitaryNode {
     pub memory: Memory,
     /// Mother node location.
     pub location: Location,
+    /// Unitary node dependency graph.
+    pub graph: OnceCell<Graph<Color>>,
 }
 
 impl UnitaryNode {
@@ -95,6 +103,8 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod get_signals {
+    use once_cell::sync::OnceCell;
+
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
@@ -156,6 +166,7 @@ mod get_signals {
             equations: vec![equation],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let mut signals = unitary_node.get_signals();
 
@@ -170,6 +181,8 @@ mod get_signals {
 
 #[cfg(test)]
 mod eq_unscheduled {
+    use once_cell::sync::OnceCell;
+
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, memory::Memory,
@@ -215,6 +228,7 @@ mod eq_unscheduled {
             equations: vec![equation_1, equation_2],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let other = unitary_node.clone();
@@ -261,6 +275,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let other = UnitaryNode {
@@ -270,6 +285,7 @@ mod eq_unscheduled {
             equations: vec![equation_2, equation_1],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         assert!(unitary_node.eq_unscheduled(&other))
@@ -314,6 +330,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_2],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let other = UnitaryNode {
@@ -323,6 +340,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_1],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         assert!(!unitary_node.eq_unscheduled(&other))
@@ -367,6 +385,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let other = UnitaryNode {
@@ -376,6 +395,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_2.clone(), equation_1],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         assert!(!unitary_node.eq_unscheduled(&other))
@@ -384,6 +404,8 @@ mod eq_unscheduled {
 
 #[cfg(test)]
 mod memorize {
+    use once_cell::sync::OnceCell;
+
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
@@ -445,6 +467,7 @@ mod memorize {
             equations: vec![equation],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         unitary_node.memorize();
 
@@ -505,6 +528,7 @@ mod memorize {
             equations: vec![equation],
             memory,
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         assert_eq!(unitary_node, control);
     }
@@ -608,6 +632,7 @@ mod memorize {
             equations: equations.clone(),
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         unitary_node.memorize();
 
@@ -627,6 +652,7 @@ mod memorize {
             equations: equations,
             memory,
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         assert_eq!(unitary_node, control);
     }

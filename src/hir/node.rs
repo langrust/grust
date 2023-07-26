@@ -82,6 +82,7 @@ mod eq_unscheduled {
             equations: vec![equation.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let node = Node {
             id: String::from("test"),
@@ -137,6 +138,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let node = Node {
@@ -159,6 +161,7 @@ mod eq_unscheduled {
             equations: vec![equation_2.clone(), equation_1.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let other = Node {
             id: String::from("test"),
@@ -215,6 +218,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let node = Node {
@@ -237,6 +241,7 @@ mod eq_unscheduled {
             equations: vec![equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let other = Node {
             id: String::from("test"),
@@ -293,6 +298,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let unitary_node_2 = UnitaryNode {
             node_id: String::from("test"),
@@ -301,6 +307,7 @@ mod eq_unscheduled {
             equations: vec![equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let node = Node {
@@ -377,6 +384,7 @@ mod eq_unscheduled {
             equations: vec![equation_1.clone(), equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
 
         let node = Node {
@@ -399,6 +407,7 @@ mod eq_unscheduled {
             equations: vec![equation_2.clone(), equation_1.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let unitary_node_2 = UnitaryNode {
             node_id: String::from("test"),
@@ -407,6 +416,7 @@ mod eq_unscheduled {
             equations: vec![equation_2.clone()],
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let other = Node {
             id: String::from("test"),

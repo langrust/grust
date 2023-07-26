@@ -417,6 +417,7 @@ mod normalize {
                     }],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -523,6 +524,7 @@ mod normalize {
                     }],
                     memory: Memory::new(),
                     location: Location::default(),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -636,6 +638,7 @@ mod normalize {
             equations: equations_1,
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let equations_2 = vec![
             Equation {
@@ -701,6 +704,7 @@ mod normalize {
             equations: equations_2,
             memory: Memory::new(),
             location: Location::default(),
+            graph: OnceCell::new(),
         };
         let equation_1 = Equation {
             scope: Scope::Output,
