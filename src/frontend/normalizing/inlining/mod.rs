@@ -1,3 +1,4 @@
+mod dependencies;
 mod equation;
 mod file;
 mod stream_expression;
