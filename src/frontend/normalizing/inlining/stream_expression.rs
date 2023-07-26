@@ -6,8 +6,8 @@ use crate::{
         scope::Scope,
     },
     hir::{
-        equation::Equation, identifier_creator::IdentifierCreator, node::Node,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+        node::Node, stream_expression::StreamExpression,
     },
 };
 
@@ -31,33 +31,78 @@ impl StreamExpression {
         context_map: &HashMap<String, Union<String, StreamExpression>>,
     ) {
         match self {
-            StreamExpression::Constant { .. } => (),
-            StreamExpression::SignalCall { ref mut id, .. } => {
+            StreamExpression::Constant { dependencies, .. } => {
+                dependencies.replace_by_context(context_map)
+            }
+            StreamExpression::SignalCall {
+                ref mut id,
+                dependencies,
+                ..
+            } => {
                 if let Some(element) = context_map.get(id) {
                     match element {
-                        Union::I1(new_id) => *id = new_id.clone(),
+                        Union::I1(new_id) => {
+                            *id = new_id.clone();
+                            dependencies.replace_by_context(context_map);
+                        }
                         Union::I2(new_expression) => *self = new_expression.clone(),
                     }
                 }
             }
-            StreamExpression::FollowedBy { expression, .. } => {
-                expression.replace_by_context(context_map)
+            StreamExpression::FollowedBy {
+                expression,
+                dependencies,
+                ..
+            } => {
+                expression.replace_by_context(context_map);
+                dependencies.replace_by_context(context_map);
             }
-            StreamExpression::MapApplication { inputs, .. } => inputs
-                .iter_mut()
-                .for_each(|expression| expression.replace_by_context(context_map)),
-            StreamExpression::UnitaryNodeApplication { inputs, .. } => inputs
-                .iter_mut()
-                .for_each(|expression| expression.replace_by_context(context_map)),
+            StreamExpression::MapApplication {
+                inputs,
+                dependencies,
+                ..
+            } => {
+                inputs
+                    .iter_mut()
+                    .for_each(|expression| expression.replace_by_context(context_map));
+                dependencies.replace_by_context(context_map);
+            }
+            StreamExpression::UnitaryNodeApplication {
+                inputs,
+                dependencies,
+                ..
+            } => {
+                inputs
+                    .iter_mut()
+                    .for_each(|expression| expression.replace_by_context(context_map));
+                dependencies.replace_by_context(context_map);
+            }
             StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::Structure { fields, .. } => fields
-                .iter_mut()
-                .for_each(|(_, expression)| expression.replace_by_context(context_map)),
-            StreamExpression::Array { elements, .. } => elements
-                .iter_mut()
-                .for_each(|expression| expression.replace_by_context(context_map)),
+            StreamExpression::Structure {
+                fields,
+                dependencies,
+                ..
+            } => {
+                fields
+                    .iter_mut()
+                    .for_each(|(_, expression)| expression.replace_by_context(context_map));
+                dependencies.replace_by_context(context_map);
+            }
+            StreamExpression::Array {
+                elements,
+                dependencies,
+                ..
+            } => {
+                elements
+                    .iter_mut()
+                    .for_each(|expression| expression.replace_by_context(context_map));
+                dependencies.replace_by_context(context_map);
+            }
             StreamExpression::Match {
-                expression, arms, ..
+                expression,
+                arms,
+                dependencies,
+                ..
             } => {
                 expression.replace_by_context(context_map);
                 arms.iter_mut().for_each(|(_, bound, body, expression)| {
@@ -68,7 +113,8 @@ impl StreamExpression {
                     body.iter_mut()
                         .for_each(|equation| equation.expression.replace_by_context(context_map));
                     expression.replace_by_context(context_map);
-                })
+                });
+                dependencies.replace_by_context(context_map);
             }
             StreamExpression::When {
                 option,
@@ -76,6 +122,7 @@ impl StreamExpression {
                 present,
                 default_body,
                 default,
+                dependencies,
                 ..
             } => {
                 option.replace_by_context(context_map);
@@ -87,6 +134,7 @@ impl StreamExpression {
                     .iter_mut()
                     .for_each(|equation| equation.expression.replace_by_context(context_map));
                 default.replace_by_context(context_map);
+                dependencies.replace_by_context(context_map);
             }
         }
     }
@@ -119,15 +167,14 @@ impl StreamExpression {
                 signal,
                 typing,
                 location,
-                dependencies,
+                ref mut dependencies,
             } => {
                 // inline potential node calls in the inputs
                 let mut new_equations = inputs
                     .iter_mut()
-                    .map(|expression| {
+                    .flat_map(|expression| {
                         expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
                     })
-                    .flatten()
                     .collect::<Vec<_>>();
 
                 // a loop in the graph induces that inputs depends on output
@@ -145,53 +192,115 @@ impl StreamExpression {
                     // change the expression to a signal call to the output signal
                     let typing = typing.clone();
                     let location = location.clone();
-                    let dependencies = dependencies.clone();
                     retrieved_equations.iter_mut().for_each(|equation| {
                         if equation.scope == Scope::Output {
                             *self = StreamExpression::SignalCall {
                                 id: equation.id.clone(),
                                 typing: typing.clone(),
                                 location: location.clone(),
-                                dependencies: dependencies.clone(),
+                                dependencies: Dependencies::from(vec![(equation.id.clone(), 0)]),
                             };
                             equation.scope = Scope::Local
                         }
                     });
 
                     new_equations.append(&mut retrieved_equations);
+                } else {
+                    // change dependencies to be the sum of inputs dependencies
+                    *dependencies = Dependencies::from(
+                        inputs
+                            .iter()
+                            .flat_map(|expression| expression.get_dependencies().clone())
+                            .collect(),
+                    );
                 }
 
                 new_equations
             }
             StreamExpression::Constant { .. } => vec![],
             StreamExpression::SignalCall { .. } => vec![],
-            StreamExpression::FollowedBy { expression, .. } => {
-                expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+            StreamExpression::FollowedBy {
+                expression,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations =
+                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                *dependencies = Dependencies::from(
+                    expression
+                        .get_dependencies()
+                        .iter()
+                        .map(|(id, depth)| (id.clone(), depth + 1))
+                        .collect(),
+                );
+                new_equations
             }
-            StreamExpression::MapApplication { inputs, .. } => inputs
-                .iter_mut()
-                .map(|expression| {
-                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
-                })
-                .flatten()
-                .collect(),
+            StreamExpression::MapApplication {
+                inputs,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = inputs
+                    .iter_mut()
+                    .map(|expression| {
+                        expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                    })
+                    .flatten()
+                    .collect();
+                *dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .collect(),
+                );
+                new_equations
+            }
             StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::Structure { fields, .. } => fields
-                .iter_mut()
-                .map(|(_, expression)| {
-                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
-                })
-                .flatten()
-                .collect(),
-            StreamExpression::Array { elements, .. } => elements
-                .iter_mut()
-                .map(|expression| {
-                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
-                })
-                .flatten()
-                .collect(),
+            StreamExpression::Structure {
+                fields,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = fields
+                    .iter_mut()
+                    .map(|(_, expression)| {
+                        expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                    })
+                    .flatten()
+                    .collect();
+                *dependencies = Dependencies::from(
+                    fields
+                        .iter()
+                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                        .collect(),
+                );
+                new_equations
+            }
+            StreamExpression::Array {
+                elements,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = elements
+                    .iter_mut()
+                    .map(|expression| {
+                        expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                    })
+                    .flatten()
+                    .collect();
+                *dependencies = Dependencies::from(
+                    elements
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .collect(),
+                );
+                new_equations
+            }
             StreamExpression::Match {
-                expression, arms, ..
+                expression,
+                arms,
+                ref mut dependencies,
+                ..
             } => {
                 let mut new_equations =
                     expression.inline_when_needed(signal_id, identifier_creator, graph, nodes);
@@ -225,6 +334,47 @@ impl StreamExpression {
 
                 new_equations.append(&mut other_new_equations);
 
+                // get arms dependencies
+                let mut arms_dependencies = arms
+                    .iter()
+                    .flat_map(|(pattern, bound, _, arm_expression)| {
+                        // get local signals defined in pattern
+                        let local_signals = pattern.local_identifiers();
+
+                        // get arm expression dependencies
+                        let mut arm_dependencies = arm_expression
+                            .get_dependencies()
+                            .clone()
+                            .into_iter()
+                            .filter(|(signal, _)| !local_signals.contains(signal))
+                            .collect::<Vec<(String, usize)>>();
+
+                        // get bound dependencies
+                        let mut bound_dependencies =
+                            bound.as_ref().map_or(vec![], |bound_expression| {
+                                bound_expression
+                                    .get_dependencies()
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(signal, _)| !local_signals.contains(signal))
+                                    .collect()
+                            });
+
+                        // push all dependencies in arm dependencies
+                        arm_dependencies.append(&mut bound_dependencies);
+
+                        // return arm dependencies
+                        arm_dependencies
+                    })
+                    .collect::<Vec<(String, usize)>>();
+
+                // get matched expression dependencies
+                let mut expression_dependencies = expression.get_dependencies().clone();
+
+                // push all dependencies in arms dependencies
+                arms_dependencies.append(&mut expression_dependencies);
+                *dependencies = Dependencies::from(arms_dependencies);
+
                 new_equations
             }
             StreamExpression::When {
@@ -233,6 +383,7 @@ impl StreamExpression {
                 present,
                 default_body,
                 default,
+                ref mut dependencies,
                 ..
             } => {
                 assert!(present_body.is_empty());
@@ -246,6 +397,17 @@ impl StreamExpression {
                     default.inline_when_needed(signal_id, identifier_creator, graph, nodes);
                 new_equations_option.append(&mut new_equations_present);
                 new_equations_option.append(&mut new_equations_default);
+
+                // get option expression dependencies
+                let mut option_dependencies = option.get_dependencies().clone();
+                // get present expression dependencies
+                let mut present_dependencies = present.get_dependencies().clone();
+                // get default expression dependencies
+                let mut default_dependencies = default.get_dependencies().clone();
+                // push all dependencies in arms dependencies
+                option_dependencies.append(&mut present_dependencies);
+                option_dependencies.append(&mut default_dependencies);
+                *dependencies = Dependencies::from(option_dependencies);
 
                 new_equations_option
             }
@@ -331,7 +493,7 @@ mod replace_by_context {
                     id: String::from("a"),
                     typing: Type::Integer,
                     location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                 },
                 StreamExpression::MapApplication {
                     function_expression: Expression::Call {
@@ -352,7 +514,7 @@ mod replace_by_context {
             ],
             typing: Type::Integer,
             location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x"), 0), (String::from("y"), 0)]),
+            dependencies: Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]),
         };
 
         assert_eq!(expression, control)
@@ -688,14 +850,14 @@ mod inline_when_needed {
                         }),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
                     },
                 ],
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![
-                    (String::from("i"), 0),
-                    (String::from("j"), 1),
+                    (String::from("v"), 0),
+                    (String::from("x"), 1),
                 ]),
             },
             location: Location::default(),
@@ -715,14 +877,11 @@ mod inline_when_needed {
                 id: String::from("o"),
                 typing: Type::Integer,
                 location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("v"), 0),
-                    (String::from("x"), 1),
-                ]),
+                dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
             }],
             typing: Type::Integer,
             location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("v"), 0), (String::from("x"), 1)]),
+            dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
         };
         assert_eq!(expression_1, control);
     }
