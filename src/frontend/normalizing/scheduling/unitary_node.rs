@@ -1,10 +1,13 @@
-use crate::{hir::unitary_node::UnitaryNode, common::graph::{Graph, color::Color}};
+use crate::{
+    common::graph::{color::Color, Graph},
+    hir::unitary_node::UnitaryNode,
+};
 
 impl UnitaryNode {
     /// Schedule equations.
-    /// 
+    ///
     /// # Example.
-    /// 
+    ///
     /// ```GR
     /// node test(v: int) {
     ///     out y: int = x-1
@@ -12,11 +15,11 @@ impl UnitaryNode {
     ///     x: int = v*2 + o_1
     /// }
     /// ```
-    /// 
+    ///
     /// In the node above, signal `y` depends on the current value of `x`,
     /// `o_1` depends on the memory of `x` and `x` depends on `v` and `o_1`.
     /// The node is causal and should be scheduled as bellow:
-    /// 
+    ///
     /// ```GR
     /// node test(v: int) {
     ///     o_1: int = 0 fby x  // depends on no current values of signals
@@ -24,19 +27,22 @@ impl UnitaryNode {
     ///     out y: int = x-1    // depends on the computed value of `x`
     /// }
     /// ```
-    pub fn schedule(
-        &mut self,
-        graph: &Graph<Color>,
-    ) {
-        let mut subgraph = graph.subgraph_from_vertex(&self.output_id)
+    pub fn schedule(&mut self, graph: &Graph<Color>) {
+        let mut subgraph = graph
+            .subgraph_from_vertex(&self.output_id)
             .subgraph_on_edges(|weight| weight == 0);
 
         let mut errors = vec![];
         let schedule = subgraph.topological_sorting(&mut errors).unwrap();
         assert!(errors.is_empty());
 
-        let scheduled_equations = schedule.into_iter()
-            .filter_map(|signal_id| self.equations.iter().position(|equation| equation.id == signal_id))
+        let scheduled_equations = schedule
+            .into_iter()
+            .filter_map(|signal_id| {
+                self.equations
+                    .iter()
+                    .position(|equation| equation.id == signal_id)
+            })
             .map(|index| self.equations.get(index).unwrap().clone())
             .collect();
 
@@ -47,11 +53,11 @@ impl UnitaryNode {
 #[cfg(test)]
 mod schedule {
     use crate::ast::expression::Expression;
-    use crate::common::graph::Graph;
     use crate::common::graph::color::Color;
+    use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, 
+        dependencies::Dependencies, equation::Equation, memory::Memory,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
@@ -321,7 +327,6 @@ mod schedule {
         graph.add_edge(&String::from("o_1"), String::from("x"), 1);
         graph.add_edge(&String::from("x"), String::from("v"), 0);
         graph.add_edge(&String::from("x"), String::from("o_1"), 0);
-
 
         let control = unitary_node.clone();
 
