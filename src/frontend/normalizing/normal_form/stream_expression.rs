@@ -5,9 +5,9 @@ use crate::hir::{
 };
 
 impl StreamExpression {
-    /// Normalize HIR expressions.
+    /// Change HIR expression into a normal form.
     ///
-    /// Normalize HIR expressions as follows:
+    /// The normal form of an expression is as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -24,18 +24,18 @@ impl StreamExpression {
     /// x_2: int = my_node(s, x_1).o;
     /// x: int = 1 + x_2;
     /// ```
-    pub fn normalize(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
-        self.normalize_root(identifier_creator)
+    pub fn normal_form(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
+        self.normal_form_root(identifier_creator)
     }
 
-    fn normalize_root(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
+    fn normal_form_root(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
         match self {
             StreamExpression::FollowedBy {
                 expression,
                 ref mut dependencies,
                 ..
             } => {
-                let new_equations = expression.normalize_cascade(identifier_creator);
+                let new_equations = expression.normal_form_cascade(identifier_creator);
 
                 *dependencies = Dependencies::from(
                     expression
@@ -54,7 +54,7 @@ impl StreamExpression {
             } => {
                 let new_equations = inputs
                     .iter_mut()
-                    .flat_map(|expression| expression.normalize_cascade(identifier_creator))
+                    .flat_map(|expression| expression.normal_form_cascade(identifier_creator))
                     .collect();
 
                 *dependencies = Dependencies::from(
@@ -74,7 +74,9 @@ impl StreamExpression {
             } => {
                 let new_equations = inputs
                     .iter_mut()
-                    .flat_map(|expression| expression.normalize_to_signal_call(identifier_creator))
+                    .flat_map(|expression| {
+                        expression.normal_form_to_signal_call(identifier_creator)
+                    })
                     .collect();
 
                 // change dependencies to be the sum of inputs dependencies
@@ -94,7 +96,7 @@ impl StreamExpression {
             } => {
                 let new_equations = fields
                     .iter_mut()
-                    .flat_map(|(_, expression)| expression.normalize_cascade(identifier_creator))
+                    .flat_map(|(_, expression)| expression.normal_form_cascade(identifier_creator))
                     .collect();
 
                 *dependencies = Dependencies::from(
@@ -113,7 +115,7 @@ impl StreamExpression {
             } => {
                 let new_equations = elements
                     .iter_mut()
-                    .flat_map(|expression| expression.normalize_cascade(identifier_creator))
+                    .flat_map(|expression| expression.normal_form_cascade(identifier_creator))
                     .collect();
 
                 *dependencies = Dependencies::from(
@@ -131,7 +133,7 @@ impl StreamExpression {
                 ref mut dependencies,
                 ..
             } => {
-                let mut equations = expression.normalize_cascade(identifier_creator);
+                let mut equations = expression.normal_form_cascade(identifier_creator);
                 let mut expression_dependencies = expression.get_dependencies().clone();
 
                 arms.iter_mut()
@@ -139,7 +141,7 @@ impl StreamExpression {
                         let (mut bound_equations, mut bound_dependencies) =
                             bound.as_mut().map_or((vec![], vec![]), |expression| {
                                 (
-                                    expression.normalize_cascade(identifier_creator),
+                                    expression.normal_form_cascade(identifier_creator),
                                     expression.get_dependencies().clone(),
                                 )
                             });
@@ -147,7 +149,7 @@ impl StreamExpression {
                         expression_dependencies.append(&mut bound_dependencies);
 
                         let mut matched_expression_equations =
-                            matched_expression.normalize_cascade(identifier_creator);
+                            matched_expression.normal_form_cascade(identifier_creator);
                         let mut matched_expression_dependencies =
                             matched_expression.get_dependencies().clone();
                         body.append(&mut matched_expression_equations);
@@ -167,15 +169,15 @@ impl StreamExpression {
                 ref mut dependencies,
                 ..
             } => {
-                let new_equations = option.normalize_cascade(identifier_creator);
+                let new_equations = option.normal_form_cascade(identifier_creator);
                 let mut option_dependencies = option.get_dependencies().clone();
 
-                let mut present_equations = present.normalize_cascade(identifier_creator);
+                let mut present_equations = present.normal_form_cascade(identifier_creator);
                 let mut present_dependencies = present.get_dependencies().clone();
                 present_body.append(&mut present_equations);
                 option_dependencies.append(&mut present_dependencies);
 
-                let mut default_equations = default.normalize_cascade(identifier_creator);
+                let mut default_equations = default.normal_form_cascade(identifier_creator);
                 let mut default_dependencies = default.get_dependencies().clone();
                 default_body.append(&mut default_equations);
                 option_dependencies.append(&mut default_dependencies);
@@ -188,8 +190,8 @@ impl StreamExpression {
         }
     }
 
-    fn normalize_cascade(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
-        let mut new_equations = self.normalize_root(identifier_creator);
+    fn normal_form_cascade(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
+        let mut new_equations = self.normal_form_root(identifier_creator);
         match self {
             StreamExpression::UnitaryNodeApplication { .. } => {
                 let fresh_id = identifier_creator.new_identifier(
@@ -224,14 +226,14 @@ impl StreamExpression {
         }
     }
 
-    fn normalize_to_signal_call(
+    fn normal_form_to_signal_call(
         &mut self,
         identifier_creator: &mut IdentifierCreator,
     ) -> Vec<Equation> {
         match self {
             StreamExpression::SignalCall { .. } => vec![],
             _ => {
-                let mut equations = self.normalize_cascade(identifier_creator);
+                let mut equations = self.normal_form_cascade(identifier_creator);
 
                 let typing = self.get_type().clone();
                 let location = self.get_location().clone();
@@ -265,7 +267,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod normalize_to_signal_call {
+mod normal_form_to_signal_call {
     use std::collections::HashSet;
 
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
@@ -286,7 +288,7 @@ mod normalize_to_signal_call {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
         };
-        let equations = expression.normalize_to_signal_call(&mut identifier_creator);
+        let equations = expression.normal_form_to_signal_call(&mut identifier_creator);
 
         let control = StreamExpression::SignalCall {
             id: String::from("x"),
@@ -316,7 +318,7 @@ mod normalize_to_signal_call {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
         };
-        let equations = expression.normalize_to_signal_call(&mut identifier_creator);
+        let equations = expression.normal_form_to_signal_call(&mut identifier_creator);
 
         let control = Equation {
             scope: Scope::Local,
@@ -349,7 +351,7 @@ mod normalize_to_signal_call {
 }
 
 #[cfg(test)]
-mod normalize {
+mod normal_form {
     use std::collections::HashSet;
 
     use crate::ast::expression::Expression;
@@ -360,7 +362,7 @@ mod normalize {
     };
 
     #[test]
-    fn should_normalize_node_applications_to_be_root_expressions() {
+    fn should_change_node_applications_to_be_root_expressions() {
         // x: int = 1 + my_node(s, v*2).o;
         let mut identifier_creator = IdentifierCreator {
             signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
@@ -421,7 +423,7 @@ mod normalize {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
         };
-        let equations = expression.normalize(&mut identifier_creator);
+        let equations = expression.normal_form(&mut identifier_creator);
 
         // x_2: int = my_node(s, x_1).o;
         let control = Equation {
@@ -485,7 +487,7 @@ mod normalize {
     }
 
     #[test]
-    fn should_normalize_inputs_expressions_to_be_signal_calls() {
+    fn should_change_inputs_expressions_to_be_signal_calls() {
         // x: int = 1 + my_node(s, v*2).o;
         let mut identifier_creator = IdentifierCreator {
             signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
@@ -546,7 +548,7 @@ mod normalize {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
         };
-        let equations = expression.normalize(&mut identifier_creator);
+        let equations = expression.normal_form(&mut identifier_creator);
 
         // x_1: int = v*2;
         // x_2: int = my_node(s, x_1).o;

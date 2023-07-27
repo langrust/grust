@@ -1,9 +1,9 @@
 use crate::hir::{identifier_creator::IdentifierCreator, unitary_node::UnitaryNode};
 
 impl UnitaryNode {
-    /// Normalize HIR unitary nodes.
+    /// Change HIR unitary node into a normal form.
     ///
-    /// Normalize HIR unitary node's equations as follows:
+    /// The normal form of an unitary node is as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -24,7 +24,7 @@ impl UnitaryNode {
     ///     out x: int = 1 + x_2;
     /// }
     /// ```
-    pub fn normalize(&mut self) {
+    pub fn normal_form(&mut self) {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals());
 
         let UnitaryNode { equations, .. } = self;
@@ -32,13 +32,13 @@ impl UnitaryNode {
         *equations = equations
             .clone()
             .into_iter()
-            .flat_map(|equation| equation.normalize(&mut identifier_creator))
+            .flat_map(|equation| equation.normal_form(&mut identifier_creator))
             .collect();
     }
 }
 
 #[cfg(test)]
-mod normalize {
+mod normal_form {
     use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
@@ -49,7 +49,7 @@ mod normalize {
     };
 
     #[test]
-    fn should_normalize_node_applications_to_be_root_expressions() {
+    fn should_change_node_applications_to_be_root_expressions() {
         // node test(s: int, v: int) {
         //     out x: int = 1 + my_node(s, v).o;
         // }
@@ -119,7 +119,7 @@ mod normalize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        unitary_node.normalize();
+        unitary_node.normal_form();
 
         // node test(s: int, v: int) {
         //     x_1: int = my_node(s, v).o;
@@ -206,7 +206,7 @@ mod normalize {
     }
 
     #[test]
-    fn should_normalize_inputs_expressions_to_be_signal_calls() {
+    fn should_change_inputs_expressions_to_be_signal_calls() {
         // node test(v: int, g: int) {
         //     out y: int = other_node(g-1, v).o;
         // }
@@ -265,7 +265,7 @@ mod normalize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        unitary_node.normalize();
+        unitary_node.normal_form();
 
         // node test(v: int, g: int) {
         //     x: int = g-1;

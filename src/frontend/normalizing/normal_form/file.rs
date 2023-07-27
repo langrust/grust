@@ -1,9 +1,9 @@
 use crate::hir::file::File;
 
 impl File {
-    /// Normalize HIR file.
+    /// Change HIR file into a normal form.
     ///
-    /// Normalize all nodes of a file as follows:
+    /// The normal form of a node is as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -37,7 +37,7 @@ impl File {
     /// }
     /// ```
     ///
-    /// Which are normalized into:
+    /// Which are transformed into:
     ///
     /// ```GR
     /// node test_x(s: int, v: int) {
@@ -52,13 +52,13 @@ impl File {
     /// ```
     ///
     /// This example is tested in source.
-    pub fn normalize(&mut self) {
-        self.nodes.iter_mut().for_each(|node| node.normalize())
+    pub fn normal_form(&mut self) {
+        self.nodes.iter_mut().for_each(|node| node.normal_form())
     }
 }
 
 #[cfg(test)]
-mod normalize {
+mod normal_form {
     use once_cell::sync::OnceCell;
 
     use crate::ast::{expression::Expression, function::Function, statement::Statement};
@@ -72,7 +72,7 @@ mod normalize {
     use std::collections::HashMap;
 
     #[test]
-    fn should_normalize_nodes_in_file() {
+    fn should_change_nodes_to_their_normal_form_in_file() {
         // node my_node(x: int, y: int) {
         //     out o: int = x * y
         // }
@@ -382,7 +382,7 @@ mod normalize {
             component: None,
             location: Location::default(),
         };
-        file.normalize();
+        file.normal_form();
 
         // node my_node(x: int, y: int) {
         //     out o: int = x * y

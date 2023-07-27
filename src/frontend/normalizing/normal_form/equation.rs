@@ -1,9 +1,9 @@
 use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator};
 
 impl Equation {
-    /// Normalize HIR equations.
+    /// Change HIR equation into a normal form.
     ///
-    /// Normalize HIR equations as follows:
+    /// The normal form of an equation is as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -20,7 +20,7 @@ impl Equation {
     /// x_2: int = my_node(s, x_1).o;
     /// x: int = 1 + x_2;
     /// ```
-    pub fn normalize(self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
+    pub fn normal_form(self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
         let Equation {
             scope,
             id,
@@ -29,11 +29,11 @@ impl Equation {
             location,
         } = self;
 
-        // normalize expression and get additional equations
-        let mut equations = expression.normalize(identifier_creator);
+        // change expression into normal form and get additional equations
+        let mut equations = expression.normal_form(identifier_creator);
 
         // recreate the new equation with modified expression
-        let normalized_equation = Equation {
+        let normal_formed_equation = Equation {
             scope,
             id,
             signal_type,
@@ -41,8 +41,8 @@ impl Equation {
             location,
         };
 
-        // push normalized equation in the equations storage (in scheduling order)
-        equations.push(normalized_equation);
+        // push normal_formed equation in the equations storage (in scheduling order)
+        equations.push(normal_formed_equation);
 
         // return equations
         equations
@@ -50,7 +50,7 @@ impl Equation {
 }
 
 #[cfg(test)]
-mod normalize {
+mod normal_form {
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
@@ -59,7 +59,7 @@ mod normalize {
     };
 
     #[test]
-    fn should_normalize_node_applications_to_be_root_expressions() {
+    fn should_change_node_applications_to_be_root_expressions() {
         // out x: int = 1 + my_node(s, v).o;
         let equation = Equation {
             scope: Scope::Output,
@@ -120,7 +120,7 @@ mod normalize {
             String::from("s"),
             String::from("x"),
         ]);
-        let equations = equation.normalize(&mut identifier_creator);
+        let equations = equation.normal_form(&mut identifier_creator);
 
         // x_1: int = my_node(s, v).o;
         // out x: int = 1 + x_1;
@@ -193,7 +193,7 @@ mod normalize {
     }
 
     #[test]
-    fn should_normalize_inputs_expressions_to_be_signal_calls() {
+    fn should_change_inputs_expressions_to_be_signal_calls() {
         // out y: int = other_node(g-1, v).o;
         let equation = Equation {
             scope: Scope::Output,
@@ -243,7 +243,7 @@ mod normalize {
             String::from("g"),
             String::from("y"),
         ]);
-        let equations = equation.normalize(&mut identifier_creator);
+        let equations = equation.normal_form(&mut identifier_creator);
 
         // x: int = g-1;
         // out y: int = other_node(x, v).o;
