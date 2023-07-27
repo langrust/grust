@@ -1,9 +1,9 @@
 use crate::hir::node::Node;
 
 impl Node {
-    /// Normalize HIR node.
+    /// Change HIR node into a normal form.
     ///
-    /// Normalize all unitary nodes of a node as follows:
+    /// The normal form of a node is as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -27,7 +27,7 @@ impl Node {
     /// }
     /// ```
     ///
-    /// Which are normalized into:
+    /// Which are transformed into:
     ///
     /// ```GR
     /// node test_x(s: int, v: int) {
@@ -40,15 +40,15 @@ impl Node {
     ///     out y: int = other_node(x_1, v).o;
     /// }
     /// ```
-    pub fn normalize(&mut self) {
+    pub fn normal_form(&mut self) {
         self.unitary_nodes
             .values_mut()
-            .for_each(|unitary_node| unitary_node.normalize())
+            .for_each(|unitary_node| unitary_node.normal_form())
     }
 }
 
 #[cfg(test)]
-mod normalize {
+mod normal_form {
     use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
@@ -60,7 +60,7 @@ mod normalize {
     };
 
     #[test]
-    fn should_normalize_node_applications_to_be_root_expressions() {
+    fn should_change_node_applications_to_be_root_expressions() {
         // node test(s: int, v: int) {
         //     out x: int = 1 + my_node(s, v).o;
         // }
@@ -142,7 +142,7 @@ mod normalize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        node.normalize();
+        node.normal_form();
 
         // node test(s: int, v: int) {
         //     x_1: int = my_node(s, v).o;
@@ -241,7 +241,7 @@ mod normalize {
     }
 
     #[test]
-    fn should_normalize_inputs_expressions_to_be_signal_calls() {
+    fn should_change_inputs_expressions_to_be_signal_calls() {
         // node test(v: int, g: int) {
         //     out y: int = other_node(g-1, v).o;
         // }
@@ -312,7 +312,7 @@ mod normalize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        node.normalize();
+        node.normal_form();
 
         // node test(v: int, g: int) {
         //     x: int = g-1;
