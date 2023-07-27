@@ -31,19 +31,18 @@ impl StreamExpression {
         context_map: &HashMap<String, Union<String, StreamExpression>>,
     ) {
         match self {
-            StreamExpression::Constant { dependencies, .. } => {
-                dependencies.replace_by_context(context_map)
-            }
+            StreamExpression::Constant { .. } => (),
             StreamExpression::SignalCall {
                 ref mut id,
-                dependencies,
+                ref mut dependencies,
                 ..
             } => {
                 if let Some(element) = context_map.get(id) {
                     match element {
                         Union::I1(new_id) => {
                             *id = new_id.clone();
-                            dependencies.replace_by_context(context_map);
+                            *dependencies =
+                                Dependencies::from(vec![(String::from(new_id.clone()), 0)]);
                         }
                         Union::I2(new_expression) => *self = new_expression.clone(),
                     }
@@ -51,52 +50,84 @@ impl StreamExpression {
             }
             StreamExpression::FollowedBy {
                 expression,
-                dependencies,
+                ref mut dependencies,
                 ..
             } => {
                 expression.replace_by_context(context_map);
-                dependencies.replace_by_context(context_map);
+
+                *dependencies = Dependencies::from(
+                    expression
+                        .get_dependencies()
+                        .iter()
+                        .map(|(id, depth)| (id.clone(), *depth + 1))
+                        .collect(),
+                );
             }
             StreamExpression::MapApplication {
                 inputs,
-                dependencies,
+                ref mut dependencies,
                 ..
             } => {
                 inputs
                     .iter_mut()
                     .for_each(|expression| expression.replace_by_context(context_map));
-                dependencies.replace_by_context(context_map);
+
+                *dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .collect(),
+                );
             }
             StreamExpression::UnitaryNodeApplication {
                 inputs,
-                dependencies,
+                ref mut dependencies,
                 ..
             } => {
                 inputs
                     .iter_mut()
                     .for_each(|expression| expression.replace_by_context(context_map));
-                dependencies.replace_by_context(context_map); // todo: make direct dependencies to inputs
+
+                // change dependencies to be the sum of inputs dependencies
+                *dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .collect(),
+                );
             }
             StreamExpression::NodeApplication { .. } => unreachable!(),
             StreamExpression::Structure {
                 fields,
-                dependencies,
+                ref mut dependencies,
                 ..
             } => {
                 fields
                     .iter_mut()
                     .for_each(|(_, expression)| expression.replace_by_context(context_map));
-                dependencies.replace_by_context(context_map);
+
+                *dependencies = Dependencies::from(
+                    fields
+                        .iter()
+                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                        .collect(),
+                );
             }
             StreamExpression::Array {
                 elements,
-                dependencies,
+                ref mut dependencies,
                 ..
             } => {
                 elements
                     .iter_mut()
                     .for_each(|expression| expression.replace_by_context(context_map));
-                dependencies.replace_by_context(context_map);
+
+                *dependencies = Dependencies::from(
+                    elements
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .collect(),
+                );
             }
             StreamExpression::Match {
                 expression,
@@ -105,16 +136,32 @@ impl StreamExpression {
                 ..
             } => {
                 expression.replace_by_context(context_map);
-                arms.iter_mut().for_each(|(_, bound, body, expression)| {
+                let mut expression_dependencies = expression.get_dependencies().clone();
+
+                let mut arms_dependencies = arms
+                    .iter_mut()
+                    .flat_map(|(_, bound, body, expression)| {
                     // todo!("get pattern's context");
-                    bound
-                        .as_mut()
-                        .map(|expression| expression.replace_by_context(context_map));
-                    body.iter_mut()
-                        .for_each(|equation| equation.expression.replace_by_context(context_map));
+                        let mut bound_dependencies = bound.as_mut().map_or(vec![], |expression| {
                     expression.replace_by_context(context_map);
+                            expression.get_dependencies().clone()
                 });
-                dependencies.replace_by_context(context_map);
+
+                        assert!(body.is_empty());
+                        // body.iter_mut().for_each(|equation| {
+                        //     equation.expression.replace_by_context(context_map)
+                        // });
+
+                        expression.replace_by_context(context_map);
+                        let mut expression_dependencies = expression.get_dependencies().clone();
+
+                        expression_dependencies.append(&mut bound_dependencies);
+                        expression_dependencies
+                    })
+                    .collect();
+
+                expression_dependencies.append(&mut arms_dependencies);
+                *dependencies = Dependencies::from(expression_dependencies);
             }
             StreamExpression::When {
                 option,
@@ -122,19 +169,31 @@ impl StreamExpression {
                 present,
                 default_body,
                 default,
-                dependencies,
+                ref mut dependencies,
                 ..
             } => {
                 option.replace_by_context(context_map);
-                present_body
-                    .iter_mut()
-                    .for_each(|equation| equation.expression.replace_by_context(context_map));
+                let mut option_dependencies = option.get_dependencies().clone();
+
+                assert!(present_body.is_empty());
+                // present_body
+                //     .iter_mut()
+                //     .for_each(|equation| equation.expression.replace_by_context(context_map));
+
                 present.replace_by_context(context_map);
-                default_body
-                    .iter_mut()
-                    .for_each(|equation| equation.expression.replace_by_context(context_map));
+                let mut present_dependencies = present.get_dependencies().clone();
+
+                assert!(default_body.is_empty());
+                // default_body
+                //     .iter_mut()
+                //     .for_each(|equation| equation.expression.replace_by_context(context_map));
+
                 default.replace_by_context(context_map);
-                dependencies.replace_by_context(context_map);
+                let mut default_dependencies = default.get_dependencies().clone();
+
+                option_dependencies.append(&mut present_dependencies);
+                option_dependencies.append(&mut default_dependencies);
+                *dependencies = Dependencies::from(option_dependencies);
             }
         }
     }
@@ -512,6 +571,126 @@ mod replace_by_context {
                     dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
                 },
             ],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]),
+        };
+
+        assert_eq!(expression, control)
+    }
+    #[test]
+    fn should_refactor_unitary_application_dependencies_to_input_dependencies() {
+        // 1 + my_node(x, y).o // depending on [x: 1; y: 0]
+        let mut expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("1+"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::UnitaryNodeApplication {
+                node: String::from("my_node"),
+                signal: String::from("o"),
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    },
+                    StreamExpression::SignalCall {
+                        id: String::from("y"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("x"), 1),
+                    (String::from("y"), 0),
+                ]),
+            }],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("x"), 1), (String::from("y"), 0)]),
+        };
+
+        let context_map = HashMap::from([
+            (String::from("x"), Union::I1(String::from("a"))),
+            (
+                String::from("y"),
+                Union::I2(StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("/2"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("b"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                }),
+            ),
+        ]);
+
+        expression.replace_by_context(&context_map);
+
+        // 1 + my_node(a, b/2).o // depending on [a: 0; b: 0]
+        let control = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("1+"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::UnitaryNodeApplication {
+                node: String::from("my_node"),
+                signal: String::from("o"),
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: String::from("a"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
+                    },
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("/2"),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("b"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("a"), 0),
+                    (String::from("b"), 0),
+                ]),
+            }],
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]),
