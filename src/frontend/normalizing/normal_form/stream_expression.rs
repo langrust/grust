@@ -30,43 +30,132 @@ impl StreamExpression {
 
     fn normalize_root(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
         match self {
-            StreamExpression::FollowedBy { expression, .. } => {
-                expression.normalize_cascade(identifier_creator)
+            StreamExpression::FollowedBy {
+                expression,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = expression.normalize_cascade(identifier_creator);
+
+                *dependencies = Dependencies::from(
+                    expression
+                        .get_dependencies()
+                        .iter()
+                        .map(|(id, depth)| (id.clone(), *depth + 1))
+                        .collect(),
+                );
+
+                new_equations
             }
-            StreamExpression::MapApplication { inputs, .. } => inputs
+            StreamExpression::MapApplication {
+                inputs,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = inputs
                 .iter_mut()
                 .flat_map(|expression| expression.normalize_cascade(identifier_creator))
+                    .collect();
+
+                *dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
                 .collect(),
+                );
+
+                new_equations
+            }
             StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::UnitaryNodeApplication { inputs, .. } => {
-                let equations = inputs
+            StreamExpression::UnitaryNodeApplication {
+                inputs,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = inputs
                     .iter_mut()
                     .flat_map(|expression| expression.normalize_to_signal_call(identifier_creator))
                     .collect();
 
-                equations
+                // change dependencies to be the sum of inputs dependencies
+                *dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .collect(),
+                );
+
+                new_equations
             }
-            StreamExpression::Structure { fields, .. } => fields
+            StreamExpression::Structure {
+                fields,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = fields
                 .iter_mut()
                 .flat_map(|(_, expression)| expression.normalize_cascade(identifier_creator))
+                    .collect();
+
+                *dependencies = Dependencies::from(
+                    fields
+                        .iter()
+                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
                 .collect(),
-            StreamExpression::Array { elements, .. } => elements
+                );
+
+                new_equations
+            }
+            StreamExpression::Array {
+                elements,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = elements
                 .iter_mut()
                 .flat_map(|expression| expression.normalize_cascade(identifier_creator))
+                    .collect();
+
+                *dependencies = Dependencies::from(
+                    elements
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
                 .collect(),
+                );
+
+                new_equations
+            }
             StreamExpression::Match {
-                expression, arms, ..
+                expression,
+                arms,
+                ref mut dependencies,
+                ..
             } => {
                 let mut equations = expression.normalize_cascade(identifier_creator);
-                arms.iter_mut().for_each(|(_, option, body, expression)| {
-                    let mut option_equations = option.as_mut().map_or(vec![], |option| {
-                        option.normalize_cascade(identifier_creator)
-                    });
-                    equations.append(&mut option_equations);
+                let mut expression_dependencies = expression.get_dependencies().clone();
 
-                    let mut expression_equations = expression.normalize_cascade(identifier_creator);
-                    body.append(&mut expression_equations)
-                });
+                arms.iter_mut()
+                    .for_each(|(_, bound, body, matched_expression)| {
+                        let (mut bound_equations, mut bound_dependencies) =
+                            bound.as_mut().map_or((vec![], vec![]), |expression| {
+                                (
+                                    expression.normalize_cascade(identifier_creator),
+                                    expression.get_dependencies().clone(),
+                                )
+                            });
+                        equations.append(&mut bound_equations);
+                        expression_dependencies.append(&mut bound_dependencies);
+
+                        let mut matched_expression_equations =
+                            matched_expression.normalize_cascade(identifier_creator);
+                        let mut matched_expression_dependencies =
+                            matched_expression.get_dependencies().clone();
+                        body.append(&mut matched_expression_equations);
+                        expression_dependencies.append(&mut matched_expression_dependencies)
+                    });
+
+                *dependencies = Dependencies::from(expression_dependencies);
+
                 equations
             }
             StreamExpression::When {
@@ -75,75 +164,34 @@ impl StreamExpression {
                 present,
                 default_body,
                 default,
+                ref mut dependencies,
                 ..
             } => {
+                let new_equations = option.normalize_cascade(identifier_creator);
+                let mut option_dependencies = option.get_dependencies().clone();
+
                 let mut present_equations = present.normalize_cascade(identifier_creator);
+                let mut present_dependencies = present.get_dependencies().clone();
                 present_body.append(&mut present_equations);
+                option_dependencies.append(&mut present_dependencies);
 
                 let mut default_equations = default.normalize_cascade(identifier_creator);
+                let mut default_dependencies = default.get_dependencies().clone();
                 default_body.append(&mut default_equations);
+                option_dependencies.append(&mut default_dependencies);
 
-                option.normalize_cascade(identifier_creator)
+                *dependencies = Dependencies::from(option_dependencies);
+
+                new_equations
             }
             _ => vec![],
         }
     }
 
     fn normalize_cascade(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
+        let mut new_equations = self.normalize_root(identifier_creator);
         match self {
-            StreamExpression::FollowedBy { expression, .. } => {
-                expression.normalize_cascade(identifier_creator)
-            }
-            StreamExpression::MapApplication { inputs, .. } => inputs
-                .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
-                .collect(),
-            StreamExpression::Structure { fields, .. } => fields
-                .iter_mut()
-                .flat_map(|(_, expression)| expression.normalize_cascade(identifier_creator))
-                .collect(),
-            StreamExpression::Array { elements, .. } => elements
-                .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
-                .collect(),
-            StreamExpression::Match {
-                expression, arms, ..
-            } => {
-                let mut equations = expression.normalize_cascade(identifier_creator);
-                arms.iter_mut().for_each(|(_, option, body, expression)| {
-                    let mut option_equations = option.as_mut().map_or(vec![], |option| {
-                        option.normalize_cascade(identifier_creator)
-                    });
-                    equations.append(&mut option_equations);
-
-                    let mut expression_equations = expression.normalize_cascade(identifier_creator);
-                    body.append(&mut expression_equations)
-                });
-                equations
-            }
-            StreamExpression::When {
-                option,
-                present_body,
-                present,
-                default_body,
-                default,
-                ..
-            } => {
-                let mut present_equations = present.normalize_cascade(identifier_creator);
-                present_body.append(&mut present_equations);
-
-                let mut default_equations = default.normalize_cascade(identifier_creator);
-                default_body.append(&mut default_equations);
-
-                option.normalize_cascade(identifier_creator)
-            }
-            StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::UnitaryNodeApplication { inputs, .. } => {
-                let mut equations = inputs
-                    .iter_mut()
-                    .flat_map(|expression| expression.normalize_to_signal_call(identifier_creator))
-                    .collect::<Vec<_>>();
-
+            StreamExpression::UnitaryNodeApplication { .. } => {
                 let fresh_id = identifier_creator.new_identifier(
                     String::from("x"),
                     String::from(""),
@@ -168,11 +216,11 @@ impl StreamExpression {
                     dependencies: Dependencies::from(vec![(fresh_id, 0)]),
                 };
 
-                equations.push(unitary_node_application_equation);
+                new_equations.push(unitary_node_application_equation);
 
-                equations
+                new_equations
             }
-            _ => vec![],
+            _ => new_equations,
         }
     }
 
