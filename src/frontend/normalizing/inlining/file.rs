@@ -422,6 +422,36 @@ mod inline_when_needed_visit {
             },
             location: Location::default(),
         };
+        // out y: int = other_node(x-1).o
+        let new_equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                }],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+            },
+            location: Location::default(),
+        };
 
         let mut unitary_graph = Graph::new();
         unitary_graph.add_vertex(String::from("v"), Color::White);
@@ -429,7 +459,7 @@ mod inline_when_needed_visit {
         unitary_graph.add_vertex(String::from("y"), Color::White);
         unitary_graph.add_edge(&String::from("x"), String::from("v"), 0);
         unitary_graph.add_edge(&String::from("x"), String::from("x"), 1);
-        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 0);
 
         // node test(v: int) {
         //     x: int = v*2 + 0 fby x
@@ -449,7 +479,7 @@ mod inline_when_needed_visit {
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
-                    equations: vec![inlined_equation, equation_2],
+                    equations: vec![inlined_equation, new_equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
                     graph: OnceCell::from(unitary_graph),
@@ -820,6 +850,36 @@ mod inline_when_needed_visit {
             },
             location: Location::default(),
         };
+        // out y: int = other_node(x-1).o
+        let new_equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                }],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+            },
+            location: Location::default(),
+        };
 
         let mut unitary_graph = Graph::new();
         unitary_graph.add_vertex(String::from("v"), Color::White);
@@ -829,7 +889,7 @@ mod inline_when_needed_visit {
         unitary_graph.add_edge(&String::from("x"), String::from("o"), 0);
         unitary_graph.add_edge(&String::from("o"), String::from("v"), 0);
         unitary_graph.add_edge(&String::from("o"), String::from("x"), 1);
-        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 0);
 
         // node test(v: int) {
         //     o: int = v*2 + 0 fby x
@@ -850,7 +910,7 @@ mod inline_when_needed_visit {
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
-                    equations: vec![added_equation, inlined_equation, equation_2],
+                    equations: vec![added_equation, inlined_equation, new_equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
                     graph: OnceCell::from(unitary_graph),
@@ -1194,6 +1254,36 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
+        // out y: int = other_node(x-1).o
+        let new_equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                }],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+            },
+            location: Location::default(),
+        };
 
         let mut unitary_graph = Graph::new();
         unitary_graph.add_vertex(String::from("v"), Color::White);
@@ -1201,7 +1291,7 @@ mod inline_when_needed {
         unitary_graph.add_vertex(String::from("y"), Color::White);
         unitary_graph.add_edge(&String::from("x"), String::from("v"), 0);
         unitary_graph.add_edge(&String::from("x"), String::from("x"), 1);
-        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 0);
 
         // node test(v: int) {
         //     x: int = v*2 + 0 fby x
@@ -1221,7 +1311,7 @@ mod inline_when_needed {
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
-                    equations: vec![inlined_equation, equation_2],
+                    equations: vec![inlined_equation, new_equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
                     graph: OnceCell::from(unitary_graph),
@@ -1592,6 +1682,36 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
+        // out y: int = other_node(x-1).o
+        let new_equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                }],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+            },
+            location: Location::default(),
+        };
 
         let mut unitary_graph = Graph::new();
         unitary_graph.add_vertex(String::from("v"), Color::White);
@@ -1601,7 +1721,7 @@ mod inline_when_needed {
         unitary_graph.add_edge(&String::from("x"), String::from("o"), 0);
         unitary_graph.add_edge(&String::from("o"), String::from("v"), 0);
         unitary_graph.add_edge(&String::from("o"), String::from("x"), 1);
-        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 0);
 
         // node test(v: int) {
         //     o: int = v*2 + 0 fby x
@@ -1622,7 +1742,7 @@ mod inline_when_needed {
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
-                    equations: vec![added_equation, inlined_equation, equation_2],
+                    equations: vec![added_equation, inlined_equation, new_equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
                     graph: OnceCell::from(unitary_graph),
@@ -1965,6 +2085,36 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
+        // out y: int = other_node(x-1).o
+        let new_equation_2 = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                node: String::from("other_node"),
+                inputs: vec![StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                }],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+            },
+            location: Location::default(),
+        };
 
         let mut unitary_graph = Graph::new();
         unitary_graph.add_vertex(String::from("v"), Color::White);
@@ -1974,7 +2124,7 @@ mod inline_when_needed {
         unitary_graph.add_edge(&String::from("x"), String::from("v"), 0);
         unitary_graph.add_edge(&String::from("x"), String::from("o_1"), 0);
         unitary_graph.add_edge(&String::from("o_1"), String::from("x"), 1);
-        unitary_graph.add_edge(&String::from("y"), String::from("x"), 1);
+        unitary_graph.add_edge(&String::from("y"), String::from("x"), 0);
 
         // node test(v: int) {
         //     o_1: int = 0 fby x
@@ -1995,7 +2145,7 @@ mod inline_when_needed {
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
-                    equations: vec![inlined_equation, new_equation_1, equation_2],
+                    equations: vec![inlined_equation, new_equation_1, new_equation_2],
                     memory: Memory::new(),
                     location: Location::default(),
                     graph: OnceCell::from(unitary_graph),
