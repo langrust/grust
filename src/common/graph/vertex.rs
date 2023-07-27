@@ -1,7 +1,7 @@
 use crate::common::graph::neighbor::Neighbor;
 
 /// Vertex structure for graph.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Vertex<T> {
     /// Name fo the vertex.
     pub id: String,
@@ -9,6 +9,11 @@ pub struct Vertex<T> {
     pub value: T,
     /// Vertex's neighbors.
     pub neighbors: Vec<Neighbor>,
+}
+impl<T> PartialEq for Vertex<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id && self.neighbors == other.neighbors
+    }
 }
 
 impl<T> Vertex<T> {
@@ -180,13 +185,7 @@ mod set_value {
         let mut vertex = Vertex::new(String::from("v1"), 1);
         vertex.set_value(2);
 
-        let control = Vertex {
-            id: String::from("v1"),
-            value: 2,
-            neighbors: vec![],
-        };
-
-        assert_eq!(vertex, control)
+        assert_eq!(vertex.value, 2)
     }
 }
 
