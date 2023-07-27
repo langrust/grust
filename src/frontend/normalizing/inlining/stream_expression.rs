@@ -132,19 +132,19 @@ impl StreamExpression {
             StreamExpression::Match {
                 expression,
                 arms,
-                dependencies,
+                ref mut dependencies,
                 ..
             } => {
                 expression.replace_by_context(context_map);
                 let mut expression_dependencies = expression.get_dependencies().clone();
 
-                let mut arms_dependencies = arms
-                    .iter_mut()
-                    .flat_map(|(_, bound, body, expression)| {
+                arms.iter_mut()
+                    .for_each(|(_, bound, body, matched_expression)| {
                         // todo!("get pattern's context");
-                        let mut bound_dependencies = bound.as_mut().map_or(vec![], |expression| {
+                        bound.as_mut().map(|expression| {
                             expression.replace_by_context(context_map);
-                            expression.get_dependencies().clone()
+                            let mut bound_dependencies = expression.get_dependencies().clone();
+                            expression_dependencies.append(&mut bound_dependencies);
                         });
 
                         assert!(body.is_empty());
@@ -152,15 +152,12 @@ impl StreamExpression {
                         //     equation.expression.replace_by_context(context_map)
                         // });
 
-                        expression.replace_by_context(context_map);
-                        let mut expression_dependencies = expression.get_dependencies().clone();
+                        matched_expression.replace_by_context(context_map);
+                        let mut matched_expression_dependencies =
+                            matched_expression.get_dependencies().clone();
+                        expression_dependencies.append(&mut matched_expression_dependencies);
+                    });
 
-                        expression_dependencies.append(&mut bound_dependencies);
-                        expression_dependencies
-                    })
-                    .collect();
-
-                expression_dependencies.append(&mut arms_dependencies);
                 *dependencies = Dependencies::from(expression_dependencies);
             }
             StreamExpression::When {
