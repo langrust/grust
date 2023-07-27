@@ -141,11 +141,11 @@ impl StreamExpression {
                 let mut arms_dependencies = arms
                     .iter_mut()
                     .flat_map(|(_, bound, body, expression)| {
-                    // todo!("get pattern's context");
+                        // todo!("get pattern's context");
                         let mut bound_dependencies = bound.as_mut().map_or(vec![], |expression| {
-                    expression.replace_by_context(context_map);
+                            expression.replace_by_context(context_map);
                             expression.get_dependencies().clone()
-                });
+                        });
 
                         assert!(body.is_empty());
                         // body.iter_mut().for_each(|equation| {
@@ -484,7 +484,7 @@ mod replace_by_context {
     use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
 
     #[test]
-    fn should_replace_all_occurence_of_identifiers_by_context() {
+    fn should_replace_all_occurence_of_identifiers_in_expression_by_context() {
         let mut expression = StreamExpression::MapApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
@@ -578,6 +578,67 @@ mod replace_by_context {
 
         assert_eq!(expression, control)
     }
+
+    #[test]
+    fn should_replace_all_occurence_of_identifiers_in_dependencies_by_context() {
+        let mut expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("+"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            inputs: vec![
+                StreamExpression::SignalCall {
+                    id: String::from("x"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                },
+                StreamExpression::SignalCall {
+                    id: String::from("y"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                },
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("x"), 0), (String::from("y"), 0)]),
+        };
+
+        let context_map = HashMap::from([
+            (String::from("x"), Union::I1(String::from("a"))),
+            (
+                String::from("y"),
+                Union::I2(StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("/2"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("b"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                }),
+            ),
+        ]);
+
+        expression.replace_by_context(&context_map);
+
+        let control = Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]);
+
+        assert_eq!(expression.get_dependencies(), control.get().unwrap())
+    }
+
     #[test]
     fn should_refactor_unitary_application_dependencies_to_input_dependencies() {
         // 1 + my_node(x, y).o // depending on [x: 1; y: 0]
