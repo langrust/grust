@@ -41,9 +41,6 @@ impl File {
     /// }
     /// ```
     pub fn generate_unitary_nodes(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
-        // generate dependency graphs
-        self.generate_dependencies_graphs(errors)?;
-
         // unitary nodes computations, it induces unused signals tracking
         self.nodes
             .iter_mut()
@@ -139,18 +136,21 @@ mod generate_unitary_nodes {
                                     id: String::from("x"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                                 },
                             ],
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::new(),
+                            dependencies: Dependencies::from(vec![
+                                (String::from("x"), 0),
+                                (String::from("y"), 0),
+                            ]),
                         },
                         location: Location::default(),
                     },
@@ -175,18 +175,18 @@ mod generate_unitary_nodes {
                                     constant: Constant::Integer(2),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                                 },
                             ],
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::new(),
+                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -196,6 +196,16 @@ mod generate_unitary_nodes {
             location: Location::default(),
             graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("o1"), Color::Black);
+        graph.add_vertex(String::from("o2"), Color::Black);
+        graph.add_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_edge(&String::from("o1"), String::from("y"), 0);
+        graph.add_edge(&String::from("o2"), String::from("y"), 0);
+        node.graph.set(graph.clone()).unwrap();
+
         let mut file = File {
             typedefs: vec![],
             functions: vec![],
@@ -395,17 +405,9 @@ mod generate_unitary_nodes {
                 ),
             ]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_edge(&String::from("o1"), String::from("y"), 0);
-        graph.add_edge(&String::from("o2"), String::from("y"), 0);
-        node_control.graph.set(graph).unwrap();
+
         let control = File {
             typedefs: vec![],
             functions: vec![],
@@ -414,6 +416,8 @@ mod generate_unitary_nodes {
             location: Location::default(),
         };
 
+        println!("{:?}", file.nodes[0]);
+        println!("{:?}", control.nodes[0]);
         assert!(file.nodes[0].eq_unscheduled(&control.nodes[0]));
     }
 
@@ -449,18 +453,21 @@ mod generate_unitary_nodes {
                                 id: String::from("x"),
                                 typing: Type::Integer,
                                 location: Location::default(),
-                                dependencies: Dependencies::new(),
+                                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                             },
                             StreamExpression::SignalCall {
                                 id: String::from("y"),
                                 typing: Type::Integer,
                                 location: Location::default(),
-                                dependencies: Dependencies::new(),
+                                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                             },
                         ],
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::new(),
+                        dependencies: Dependencies::from(vec![
+                            (String::from("x"), 0),
+                            (String::from("y"), 0),
+                        ]),
                     },
                     location: Location::default(),
                 },
@@ -469,6 +476,14 @@ mod generate_unitary_nodes {
             location: Location::default(),
             graph: OnceCell::new(),
         };
+        let mut my_node_graph = Graph::new();
+        my_node_graph.add_vertex(String::from("x"), Color::Black);
+        my_node_graph.add_vertex(String::from("y"), Color::Black);
+        my_node_graph.add_vertex(String::from("o"), Color::Black);
+        my_node_graph.add_edge(&String::from("o"), String::from("x"), 0);
+        my_node_graph.add_edge(&String::from("o"), String::from("y"), 0);
+        my_node.graph.set(my_node_graph.clone()).unwrap();
+
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
         let other_node = Node {
             id: String::from("other_node"),
@@ -498,18 +513,21 @@ mod generate_unitary_nodes {
                                     id: String::from("x"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                                 },
                             ],
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::new(),
+                            dependencies: Dependencies::from(vec![
+                                (String::from("x"), 0),
+                                (String::from("y"), 0),
+                            ]),
                         },
                         location: Location::default(),
                     },
@@ -534,18 +552,18 @@ mod generate_unitary_nodes {
                                     constant: Constant::Integer(2),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                                 },
                             ],
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::new(),
+                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                         },
                         location: Location::default(),
                     },
@@ -555,6 +573,16 @@ mod generate_unitary_nodes {
             location: Location::default(),
             graph: OnceCell::new(),
         };
+        let mut other_node_graph = Graph::new();
+        other_node_graph.add_vertex(String::from("x"), Color::Black);
+        other_node_graph.add_vertex(String::from("y"), Color::Black);
+        other_node_graph.add_vertex(String::from("o1"), Color::Black);
+        other_node_graph.add_vertex(String::from("o2"), Color::Black);
+        other_node_graph.add_edge(&String::from("o1"), String::from("x"), 0);
+        other_node_graph.add_edge(&String::from("o1"), String::from("y"), 0);
+        other_node_graph.add_edge(&String::from("o2"), String::from("y"), 0);
+        other_node.graph.set(other_node_graph.clone()).unwrap();
+
         // out x: int = 1 + my_node(s, v*2).o
         let equation_1 = Equation {
             scope: Scope::Output,
@@ -574,7 +602,7 @@ mod generate_unitary_nodes {
                         constant: Constant::Integer(1),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::new(),
+                        dependencies: Dependencies::from(vec![]),
                     },
                     StreamExpression::NodeApplication {
                         node: String::from("my_node"),
@@ -583,7 +611,7 @@ mod generate_unitary_nodes {
                                 id: String::from("s"),
                                 typing: Type::Integer,
                                 location: Location::default(),
-                                dependencies: Dependencies::new(),
+                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                             },
                             StreamExpression::MapApplication {
                                 function_expression: Expression::Call {
@@ -598,22 +626,28 @@ mod generate_unitary_nodes {
                                     id: String::from("v"),
                                     typing: Type::Integer,
                                     location: Location::default(),
-                                    dependencies: Dependencies::new(),
+                                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                                 }],
                                 typing: Type::Integer,
                                 location: Location::default(),
-                                dependencies: Dependencies::new(),
+                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                             },
                         ],
                         signal: String::from("o"),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::new(),
+                        dependencies: Dependencies::from(vec![
+                            (String::from("s"), 0),
+                            (String::from("v"), 0),
+                        ]),
                     },
                 ],
                 typing: Type::Integer,
                 location: Location::default(),
-                dependencies: Dependencies::new(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("s"), 0),
+                    (String::from("v"), 0),
+                ]),
             },
             location: Location::default(),
         };
@@ -638,23 +672,26 @@ mod generate_unitary_nodes {
                             id: String::from("g"),
                             typing: Type::Integer,
                             location: Location::default(),
-                            dependencies: Dependencies::new(),
+                            dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                         }],
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::new(),
+                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                     },
                     StreamExpression::SignalCall {
                         id: String::from("v"),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::new(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                     },
                 ],
                 signal: String::from("o1"),
                 typing: Type::Integer,
                 location: Location::default(),
-                dependencies: Dependencies::new(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("g"), 0),
+                    (String::from("v"), 0),
+                ]),
             },
             location: Location::default(),
         };
@@ -689,13 +726,13 @@ mod generate_unitary_nodes {
                         id: String::from("v"),
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::new(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                     },
                 ],
                 signal: String::from("o2"),
                 typing: Type::Integer,
                 location: Location::default(),
-                dependencies: Dependencies::new(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
             },
             location: Location::default(),
         };
@@ -708,14 +745,28 @@ mod generate_unitary_nodes {
                 (String::from("g"), Type::Integer),
             ],
             unscheduled_equations: HashMap::from([
-                (String::from("x"), equation_1),
-                (String::from("y"), equation_2),
-                (String::from("z"), equation_3),
+                (String::from("x"), equation_1.clone()),
+                (String::from("y"), equation_2.clone()),
+                (String::from("z"), equation_3.clone()),
             ]),
             unitary_nodes: HashMap::new(),
             location: Location::default(),
             graph: OnceCell::new(),
         };
+        let mut node_graph = Graph::new();
+        node_graph.add_vertex(String::from("s"), Color::Black);
+        node_graph.add_vertex(String::from("v"), Color::Black);
+        node_graph.add_vertex(String::from("g"), Color::Black);
+        node_graph.add_vertex(String::from("x"), Color::Black);
+        node_graph.add_vertex(String::from("y"), Color::Black);
+        node_graph.add_vertex(String::from("z"), Color::Black);
+        node_graph.add_edge(&String::from("x"), String::from("s"), 0);
+        node_graph.add_edge(&String::from("x"), String::from("v"), 0);
+        node_graph.add_edge(&String::from("y"), String::from("g"), 0);
+        node_graph.add_edge(&String::from("y"), String::from("v"), 0);
+        node_graph.add_edge(&String::from("z"), String::from("v"), 0);
+        node.graph.set(node_graph.clone()).unwrap();
+
         let function = Function {
             id: String::from("my_function"),
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -846,15 +897,8 @@ mod generate_unitary_nodes {
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(my_node_graph),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
-        graph.add_edge(&String::from("o"), String::from("y"), 0);
-        my_node.graph.set(graph).unwrap();
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
         let other_node = Node {
             id: String::from("other_node"),
@@ -1046,17 +1090,9 @@ mod generate_unitary_nodes {
                 ),
             ]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(other_node_graph),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_edge(&String::from("o1"), String::from("y"), 0);
-        graph.add_edge(&String::from("o2"), String::from("y"), 0);
-        other_node.graph.set(graph).unwrap();
+
         // out x: int = 1 + my_node(s, v*2).o
         let unitary_equation_1 = Equation {
             scope: Scope::Output,
@@ -1222,159 +1258,6 @@ mod generate_unitary_nodes {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        // out x: int = 1 + my_node(s, v*2).o
-        let equation_1 = Equation {
-            scope: Scope::Output,
-            id: String::from("x"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
-                function_expression: Expression::Call {
-                    id: String::from("+"),
-                    typing: Some(Type::Abstract(
-                        vec![Type::Integer, Type::Integer],
-                        Box::new(Type::Integer),
-                    )),
-                    location: Location::default(),
-                },
-                inputs: vec![
-                    StreamExpression::Constant {
-                        constant: Constant::Integer(1),
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![]),
-                    },
-                    StreamExpression::NodeApplication {
-                        node: String::from("my_node"),
-                        inputs: vec![
-                            StreamExpression::SignalCall {
-                                id: String::from("s"),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
-                            },
-                            StreamExpression::MapApplication {
-                                function_expression: Expression::Call {
-                                    id: String::from("*2"),
-                                    typing: Some(Type::Abstract(
-                                        vec![Type::Integer],
-                                        Box::new(Type::Integer),
-                                    )),
-                                    location: Location::default(),
-                                },
-                                inputs: vec![StreamExpression::SignalCall {
-                                    id: String::from("v"),
-                                    typing: Type::Integer,
-                                    location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                                }],
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                            },
-                        ],
-                        signal: String::from("o"),
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![
-                            (String::from("s"), 0),
-                            (String::from("v"), 0),
-                        ]),
-                    },
-                ],
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("s"), 0),
-                    (String::from("v"), 0),
-                ]),
-            },
-            location: Location::default(),
-        };
-        // out y: int = other_node(g-1, v).o1
-        let equation_2 = Equation {
-            scope: Scope::Output,
-            id: String::from("y"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::NodeApplication {
-                node: String::from("other_node"),
-                inputs: vec![
-                    StreamExpression::MapApplication {
-                        function_expression: Expression::Call {
-                            id: String::from("-1"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("g"),
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
-                    },
-                    StreamExpression::SignalCall {
-                        id: String::from("v"),
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                    },
-                ],
-                signal: String::from("o1"),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("g"), 0),
-                    (String::from("v"), 0),
-                ]),
-            },
-            location: Location::default(),
-        };
-        // out z: int = other_node(g-1, v).o2
-        let equation_3 = Equation {
-            scope: Scope::Output,
-            id: String::from("z"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::NodeApplication {
-                node: String::from("other_node"),
-                inputs: vec![
-                    StreamExpression::MapApplication {
-                        function_expression: Expression::Call {
-                            id: String::from("-1"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("g"),
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::new(),
-                    },
-                    StreamExpression::SignalCall {
-                        id: String::from("v"),
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                    },
-                ],
-                signal: String::from("o2"),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-            },
-            location: Location::default(),
-        };
         let node = Node {
             id: String::from("test"),
             is_component: false,
@@ -1394,21 +1277,9 @@ mod generate_unitary_nodes {
                 (String::from("z"), unitary_node_3),
             ]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(node_graph),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("s"), Color::Black);
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("g"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("z"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("s"), 0);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("y"), String::from("g"), 0);
-        graph.add_edge(&String::from("y"), String::from("v"), 0);
-        graph.add_edge(&String::from("z"), String::from("v"), 0);
-        node.graph.set(graph).unwrap();
+
         let function = Function {
             id: String::from("my_function"),
             inputs: vec![(String::from("i"), Type::Integer)],
