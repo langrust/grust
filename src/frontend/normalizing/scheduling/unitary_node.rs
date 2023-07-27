@@ -1,7 +1,4 @@
-use crate::{
-    common::graph::{color::Color, Graph},
-    hir::unitary_node::UnitaryNode,
-};
+use crate::hir::unitary_node::UnitaryNode;
 
 impl UnitaryNode {
     /// Schedule equations.
@@ -27,9 +24,11 @@ impl UnitaryNode {
     ///     out y: int = x-1    // depends on the computed value of `x`
     /// }
     /// ```
-    pub fn schedule(&mut self, graph: &Graph<Color>) {
-        let mut subgraph = graph
-            .subgraph_from_vertex(&self.output_id)
+    pub fn schedule(&mut self) {
+        let mut subgraph = self
+            .graph
+            .get_mut()
+            .unwrap()
             .subgraph_on_edges(|weight| weight == 0);
 
         let mut errors = vec![];
@@ -187,8 +186,9 @@ mod schedule {
         graph.add_edge(&String::from("o_1"), String::from("x"), 1);
         graph.add_edge(&String::from("x"), String::from("v"), 0);
         graph.add_edge(&String::from("x"), String::from("o_1"), 0);
+        unitary_node.graph.set(graph.clone()).unwrap();
 
-        unitary_node.schedule(&graph);
+        unitary_node.schedule();
 
         // node test(v: int) {
         //     o_1: int = 0 fby x
@@ -204,6 +204,7 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
+        control.graph.set(graph).unwrap();
 
         assert_eq!(unitary_node, control)
     }
@@ -332,10 +333,11 @@ mod schedule {
         graph.add_edge(&String::from("o_1"), String::from("x"), 1);
         graph.add_edge(&String::from("x"), String::from("v"), 0);
         graph.add_edge(&String::from("x"), String::from("o_1"), 0);
+        unitary_node.graph.set(graph).unwrap();
 
         let control = unitary_node.clone();
 
-        unitary_node.schedule(&graph);
+        unitary_node.schedule();
 
         assert!(unitary_node.eq_unscheduled(&control))
     }
