@@ -208,10 +208,7 @@ mod normalize {
                     ],
                     typing: Type::Integer,
                     location: Location::default(),
-                    dependencies: Dependencies::from(vec![
-                        (String::from("s"), 0),
-                        (String::from("v"), 0),
-                    ]),
+                    dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
                 },
                 location: Location::default(),
             },
@@ -368,7 +365,7 @@ mod normalize {
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![
-                        (String::from("g"), 0),
+                        (String::from("x"), 0),
                         (String::from("v"), 0),
                     ]),
                 },

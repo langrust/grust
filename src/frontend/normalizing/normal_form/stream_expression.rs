@@ -53,15 +53,15 @@ impl StreamExpression {
                 ..
             } => {
                 let new_equations = inputs
-                .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
+                    .iter_mut()
+                    .flat_map(|expression| expression.normalize_cascade(identifier_creator))
                     .collect();
 
                 *dependencies = Dependencies::from(
                     inputs
                         .iter()
                         .flat_map(|expression| expression.get_dependencies().clone())
-                .collect(),
+                        .collect(),
                 );
 
                 new_equations
@@ -93,15 +93,15 @@ impl StreamExpression {
                 ..
             } => {
                 let new_equations = fields
-                .iter_mut()
-                .flat_map(|(_, expression)| expression.normalize_cascade(identifier_creator))
+                    .iter_mut()
+                    .flat_map(|(_, expression)| expression.normalize_cascade(identifier_creator))
                     .collect();
 
                 *dependencies = Dependencies::from(
                     fields
                         .iter()
                         .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                .collect(),
+                        .collect(),
                 );
 
                 new_equations
@@ -112,15 +112,15 @@ impl StreamExpression {
                 ..
             } => {
                 let new_equations = elements
-                .iter_mut()
-                .flat_map(|expression| expression.normalize_cascade(identifier_creator))
+                    .iter_mut()
+                    .flat_map(|expression| expression.normalize_cascade(identifier_creator))
                     .collect();
 
                 *dependencies = Dependencies::from(
                     elements
                         .iter()
                         .flat_map(|expression| expression.get_dependencies().clone())
-                .collect(),
+                        .collect(),
                 );
 
                 new_equations
@@ -449,7 +449,7 @@ mod normalize {
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![
                     (String::from("s"), 0),
-                    (String::from("v"), 0),
+                    (String::from("x_1"), 0),
                 ]),
             },
             location: Location::default(),
@@ -479,7 +479,7 @@ mod normalize {
             ],
             typing: Type::Integer,
             location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
+            dependencies: Dependencies::from(vec![(String::from("x_2"), 0)]),
         };
         assert_eq!(expression, control)
     }
@@ -598,7 +598,7 @@ mod normalize {
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![
                         (String::from("s"), 0),
-                        (String::from("v"), 0),
+                        (String::from("x_1"), 0),
                     ]),
                 },
                 location: Location::default(),
