@@ -26,10 +26,9 @@ impl File {
     /// ```
     pub fn schedule(&mut self) {
         self.nodes.iter_mut().for_each(|node| {
-            let graph = node.graph.get().unwrap();
             node.unitary_nodes
                 .iter_mut()
-                .for_each(|(_, unitary_node)| unitary_node.schedule(graph))
+                .for_each(|(_, unitary_node)| unitary_node.schedule())
         })
     }
 }
@@ -166,6 +165,16 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("o_1"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_edge(&String::from("y"), String::from("x"), 0);
+        graph.add_edge(&String::from("o_1"), String::from("x"), 1);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("x"), String::from("o_1"), 0);
+        unitary_node.graph.set(graph.clone()).unwrap();
         let node = Node {
             id: String::from("test"),
             is_component: false,
@@ -179,16 +188,7 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o_1"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("y"), String::from("x"), 0);
-        graph.add_edge(&String::from("o_1"), String::from("x"), 1);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("o_1"), 0);
-        node.graph.set(graph).unwrap();
+        node.graph.set(graph.clone()).unwrap();
 
         let mut file = File {
             typedefs: vec![],
@@ -222,6 +222,7 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
+        control.graph.set(graph).unwrap();
 
         assert_eq!(unitary_node, &control)
     }
@@ -341,6 +342,16 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_vertex(String::from("o_1"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_edge(&String::from("y"), String::from("x"), 0);
+        graph.add_edge(&String::from("o_1"), String::from("x"), 1);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("x"), String::from("o_1"), 0);
+        unitary_node.graph.set(graph.clone()).unwrap();
 
         let node = Node {
             id: String::from("test"),
@@ -355,15 +366,6 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o_1"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("y"), String::from("x"), 0);
-        graph.add_edge(&String::from("o_1"), String::from("x"), 1);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("o_1"), 0);
         node.graph.set(graph).unwrap();
 
         let mut file = File {
