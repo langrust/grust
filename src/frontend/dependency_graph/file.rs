@@ -5,7 +5,7 @@ use crate::hir::file::File;
 
 impl File {
     /// Generate dependency graph for every nodes/component.
-    pub fn generate_dependencies_graphs(&self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn generate_dependency_graphs(&self, errors: &mut Vec<Error>) -> Result<(), ()> {
         let File {
             nodes, component, ..
         } = self;
@@ -41,7 +41,7 @@ impl File {
             .map(|node| (node.id.clone(), node.clone()))
             .collect::<HashMap<_, _>>();
 
-        // every nodes complete their dependencies graphs
+        // every nodes complete their dependency graphs
         nodes
             .into_iter()
             .map(|node| {
@@ -56,7 +56,7 @@ impl File {
             .into_iter()
             .collect::<Result<(), ()>>()?;
 
-        // optional component completes its dependencies graph
+        // optional component completes its dependency graph
         component.as_ref().map_or(Ok(()), |component| {
             component.add_all_dependencies(
                 &nodes_context,
@@ -71,7 +71,7 @@ impl File {
 }
 
 #[cfg(test)]
-mod generate_dependencies_graphs {
+mod generate_dependency_graphs {
     use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
@@ -164,7 +164,7 @@ mod generate_dependencies_graphs {
             location: Location::default(),
         };
 
-        file.generate_dependencies_graphs(&mut errors).unwrap();
+        file.generate_dependency_graphs(&mut errors).unwrap();
 
         let graph = file.nodes.get(0).unwrap().graph.get().unwrap();
 

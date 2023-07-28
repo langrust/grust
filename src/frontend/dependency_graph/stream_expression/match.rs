@@ -6,7 +6,7 @@ use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Compute dependencies of a match stream expression.
-    pub fn compute_dependencies_match(
+    pub fn compute_match_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -93,9 +93,9 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod compute_dependencies_match {
-    use crate::ast::expression::Expression;
-    use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
+mod compute_match_dependencies {
+    use crate::ast::{expression::Expression, pattern::Pattern};
+    use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
@@ -191,7 +191,7 @@ mod compute_dependencies_match {
         };
 
         stream_expression
-            .compute_dependencies_match(
+            .compute_match_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
@@ -305,7 +305,7 @@ mod compute_dependencies_match {
         };
 
         stream_expression
-            .compute_dependencies_match(
+            .compute_match_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
