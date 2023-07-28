@@ -39,45 +39,45 @@ impl StreamExpression {
         errors: &mut Vec<Error>,
     ) -> Result<(), ()> {
         match self {
-            StreamExpression::Constant { .. } => self.compute_dependencies_constant(),
-            StreamExpression::SignalCall { .. } => self.compute_dependencies_signal_call(),
-            StreamExpression::FollowedBy { .. } => self.compute_dependencies_followed_by(
+            StreamExpression::Constant { .. } => self.compute_constant_dependencies(),
+            StreamExpression::SignalCall { .. } => self.compute_signal_call_dependencies(),
+            StreamExpression::FollowedBy { .. } => self.compute_followed_by_dependencies(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::MapApplication { .. } => self.compute_dependencies_map_application(
+            StreamExpression::MapApplication { .. } => self.compute_map_application_dependencies(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::Structure { .. } => self.compute_dependencies_structure(
+            StreamExpression::Structure { .. } => self.compute_structure_dependencies(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::Array { .. } => self.compute_dependencies_array(
+            StreamExpression::Array { .. } => self.compute_array_dependencies(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::Match { .. } => self.compute_dependencies_match(
+            StreamExpression::Match { .. } => self.compute_match_dependencies(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::When { .. } => self.compute_dependencies_when(
+            StreamExpression::When { .. } => self.compute_when_dependencies(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::NodeApplication { .. } => self.compute_dependencies_node_application(
+            StreamExpression::NodeApplication { .. } => self.compute_node_application_dependencies(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,

@@ -6,7 +6,7 @@ use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Compute dependencies of an array stream expression.
-    pub fn compute_dependencies_array(
+    pub fn compute_array_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -52,7 +52,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod compute_dependencies_array {
+mod compute_array_dependencies {
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
@@ -102,7 +102,7 @@ mod compute_dependencies_array {
         };
 
         stream_expression
-            .compute_dependencies_array(
+            .compute_array_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,

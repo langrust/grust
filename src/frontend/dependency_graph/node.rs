@@ -34,7 +34,7 @@ impl Node {
         graph
     }
 
-    /// Complete dependencies graph of the node.
+    /// Complete dependency graph of the node.
     ///
     /// # Example
     ///

@@ -9,7 +9,7 @@ use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Compute dependencies of a node application.
-    pub fn compute_dependencies_node_application(
+    pub fn compute_node_application_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -97,7 +97,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod compute_dependencies_node_application {
+mod compute_node_application_dependencies {
     use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
@@ -232,7 +232,7 @@ mod compute_dependencies_node_application {
         };
 
         stream_expression
-            .compute_dependencies_node_application(
+            .compute_node_application_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,

@@ -2,7 +2,7 @@ use crate::hir::stream_expression::StreamExpression;
 
 impl StreamExpression {
     /// Compute dependencies of a signal call.
-    pub fn compute_dependencies_signal_call(&self) -> Result<(), ()> {
+    pub fn compute_signal_call_dependencies(&self) -> Result<(), ()> {
         match self {
             // signal call depends on called signal with depth of 0
             StreamExpression::SignalCall {
@@ -18,7 +18,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod compute_dependencies_signal_call {
+mod compute_signal_call_dependencies {
     use crate::common::{location::Location, r#type::Type};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::stream_expression::StreamExpression;
@@ -33,7 +33,7 @@ mod compute_dependencies_signal_call {
         };
 
         stream_expression
-            .compute_dependencies_signal_call()
+            .compute_signal_call_dependencies()
             .unwrap();
         let dependencies = stream_expression.get_dependencies().clone();
 

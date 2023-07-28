@@ -6,7 +6,7 @@ use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Compute dependencies of a when stream expression.
-    pub fn compute_dependencies_when(
+    pub fn compute_when_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -74,7 +74,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod compute_dependencies_when {
+mod compute_when_dependencies {
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::stream_expression::StreamExpression;
@@ -115,7 +115,7 @@ mod compute_dependencies_when {
         };
 
         stream_expression
-            .compute_dependencies_when(
+            .compute_when_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
@@ -164,7 +164,7 @@ mod compute_dependencies_when {
         };
 
         stream_expression
-            .compute_dependencies_when(
+            .compute_when_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
