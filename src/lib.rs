@@ -101,5 +101,7 @@ pub mod error;
 pub mod frontend;
 /// LanGRust HIR module.
 pub mod hir;
+/// LanGRust LIR module.
+pub mod lir;
 /// LanGRust parser module.
 pub mod parser;
