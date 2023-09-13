@@ -1,5 +1,7 @@
 /// LIR [Block](crate::lir::statement::block::Block) module.
 pub mod block;
+/// LIR [Expression](crate::lir::expression::Expression) module.
+pub mod expression;
 /// LIR [File](crate::lir::file::File) module.
 pub mod file;
 /// LIR [Item](crate::lir::item::Item) module.
