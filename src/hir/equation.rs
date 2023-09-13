@@ -4,7 +4,7 @@ use crate::hir::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-/// LanGRust equation AST.
+/// LanGRust equation HIR.
 pub struct Equation {
     /// Signal's scope.
     pub scope: Scope,

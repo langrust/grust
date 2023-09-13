@@ -10,7 +10,7 @@ use crate::common::{
 use crate::hir::{equation::Equation, unitary_node::UnitaryNode};
 
 #[derive(Debug, PartialEq, Clone)]
-/// LanGRust node AST.
+/// LanGRust node HIR.
 pub struct Node {
     /// Node identifier.
     pub id: String,
