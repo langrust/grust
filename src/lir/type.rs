@@ -11,3 +11,14 @@ pub enum Type {
     /// Mutable reference type.
     MutableReference(DSLType),
 }
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::Owned(r#type) => write!(f, "{}", r#type),
+            Type::Mutable(r#type) => write!(f, "mut {}", r#type),
+            Type::Reference(r#type) => write!(f, "&{}", r#type),
+            Type::MutableReference(r#type) => write!(f, "&mut {}", r#type),
+        }
+    }
+}
