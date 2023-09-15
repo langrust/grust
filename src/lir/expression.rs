@@ -126,6 +126,13 @@ pub enum Expression {
         /// The `false` block.
         else_branch: Option<Block>,
     },
+    /// A match expression: `match c { Color::Blue => 1, _ => 0, }`
+    Match {
+        /// The matched expression.
+        matched: Box<Expression>,
+        /// The pattern matching arms.
+        arms: Vec<Arm>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -242,6 +249,14 @@ impl std::fmt::Display for Expression {
                 };
                 write!(f, "if {} {}{}", condition, then_branch, else_branch)
             }
+            Expression::Match { matched, arms } => {
+                let arms = arms
+                    .iter()
+                    .map(|arm| format!("{arm}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "match {} {{{}}}", matched, arms)
+            }
         }
     }
 }
@@ -257,5 +272,26 @@ pub struct FieldExpression {
 impl std::fmt::Display for FieldExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {}", self.name, self.expression)
+    }
+}
+
+/// An arm in a match expression: `Point { x: 0, y } if y > 0 => y,`
+pub struct Arm {
+    /// The pattern matching.
+    pub pattern: Pattern,
+    /// An optional guard.
+    pub guard: Option<Expression>,
+    /// The body of the arm.
+    pub body: Expression,
+}
+
+impl std::fmt::Display for Arm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let guard = if let Some(guard) = &self.guard {
+            format!(" if {guard}")
+        } else {
+            "".to_string()
+        };
+        write!(f, "{}{} => {},", self.pattern, guard, self.body)
     }
 }
