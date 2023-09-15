@@ -7,6 +7,19 @@ pub struct File {
     /// Items present in the file.
     pub items: Vec<Item>,
 }
+impl File {
+    /// Generate the file at its location path.
+    pub fn generate(&self) {
+        let file_str = self.to_string();
+        let syntax_tree: syn::File = syn::parse_str(&file_str).unwrap();
+        let pretty_file = prettyplease::unparse(&syntax_tree);
+
+        if let Some(p) = AsRef::<std::path::Path>::as_ref(&self.path).parent() {
+            std::fs::create_dir_all(p).unwrap()
+        };
+        std::fs::write(self.path.clone(), pretty_file).unwrap();
+    }
+}
 
 impl std::fmt::Display for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
