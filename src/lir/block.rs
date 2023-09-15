@@ -1,4 +1,4 @@
-use crate::ast::statement::Statement;
+use crate::lir::statement::Statement;
 
 /// A block of statements.
 pub struct Block {
