@@ -6,6 +6,8 @@ pub mod expression;
 pub mod file;
 /// LIR [Item](crate::lir::item::Item) module.
 pub mod item;
+/// LIR [Pattern](crate::lir::pattern::Pattern) module.
+pub mod pattern;
 /// LIR [Project](crate::lir::project::Project) module.
 pub mod project;
 /// LIR [Statement](crate::lir::statement::Statement) module.
