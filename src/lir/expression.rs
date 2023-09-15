@@ -100,6 +100,11 @@ pub enum Expression {
         /// The body of the async block.
         body: Block,
     },
+    /// An awit expression: `my_future.await`.
+    Await {
+        /// The expression awited.
+        expression: Box<Expression>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -187,6 +192,7 @@ impl std::fmt::Display for Expression {
                 let r#move = if *r#move { "move " } else { "" };
                 write!(f, "{}{}", r#move, body)
             }
+            Expression::Await { expression } => write!(f, "{}.await", expression),
         }
     }
 }
