@@ -9,3 +9,10 @@ pub struct TypeAlias {
     /// Type that is aliased.
     pub r#type: Type,
 }
+
+impl std::fmt::Display for TypeAlias {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let visibility = if self.public_visibility { "pub " } else { "" };
+        write!(f, "{}type {} = {};", visibility, self.name, self.r#type)
+    }
+}
