@@ -42,11 +42,11 @@ impl std::fmt::Display for Item {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Item::Enumeration(enumeration) => write!(f, "{enumeration}"),
-            Item::Function(_) => todo!(),
-            Item::Implementation(_) => todo!(),
+            Item::Function(function) => write!(f, "{function}"),
+            Item::Implementation(implementation) => write!(f, "{implementation}"),
             Item::Import(import) => write!(f, "{import}"),
             Item::Structure(structure) => write!(f, "{structure}"),
-            Item::Trait(_) => todo!(),
+            Item::Trait(r#trait) => write!(f, "{}", r#trait),
             Item::TypeAlias(type_alias) => write!(f, "{type_alias}"),
         }
     }
