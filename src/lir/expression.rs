@@ -59,6 +59,13 @@ pub enum Expression {
         /// The expression assigned to the receiver.
         right: Box<Expression>,
     },
+    /// A field access: `my_point.x`.
+    FieldAccess {
+        /// The structure typed expression.
+        expression: Box<Expression>,
+        /// The identifier of the field.
+        field: String,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -96,6 +103,7 @@ impl std::fmt::Display for Expression {
                 right,
             } => write!(f, "{left}{}{right}", operator.to_string()),
             Expression::Assignement { left, right } => write!(f, "{left} = {right}"),
+            Expression::FieldAccess { expression, field } => write!(f, "{expression}.{field}"),
         }
     }
 }
