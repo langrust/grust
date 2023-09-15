@@ -1,5 +1,7 @@
 use crate::common::constant::Constant;
 
+use super::block::Block;
+
 /// Rust expressions.
 pub enum Expression {
     /// A literal expression: `1` or `"hello world"`.
@@ -19,11 +21,17 @@ pub enum Expression {
         /// The filled fields.
         fields: Vec<FieldExpression>,
     },
+    /// A block scope: `{ let x = 1; x }`.
+    Block {
+        /// The block.
+        block: Block,
+    }
 }
 
 impl std::fmt::Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Expression::Block { block } => write!(f, "{block}"),
             Expression::Literal { literal } => write!(f, "{literal}"),
             Expression::Identifier { identifier } => write!(f, "{identifier}"),
             Expression::Structure { name, fields } => {
