@@ -45,6 +45,13 @@ pub enum Expression {
         /// The arguments.
         arguments: Vec<Expression>,
     },
+    /// A macro call: `vec![1, 2, 3]`.
+    Macro {
+        /// The macro called.
+        r#macro: String,
+        /// The arguments.
+        arguments: Vec<Expression>,
+    },
     /// An unary operation: `-x`.
     Unary {
         /// The operator.
@@ -157,6 +164,14 @@ impl std::fmt::Display for Expression {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "{}.{}({})", receiver, method, arguments)
+            }
+            Expression::Macro { r#macro, arguments } => {
+                let arguments = arguments
+                    .iter()
+                    .map(|argument| format!("{argument}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "{}!({})", r#macro, arguments)
             }
             Expression::Unary {
                 operator,
