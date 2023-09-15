@@ -12,3 +12,13 @@ pub enum Statement {
     /// An expression.
     Expression(Expression),
 }
+
+impl std::fmt::Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::Let(r#let) => write!(f, "{}", r#let),
+            Statement::Item(item) => write!(f, "{item}"),
+            Statement::Expression(expression) => write!(f, "{expression}"),
+        }
+    }
+}
