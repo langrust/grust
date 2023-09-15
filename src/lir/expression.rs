@@ -93,6 +93,13 @@ pub enum Expression {
         /// The body of the closure.
         body: Box<Expression>,
     },
+    /// An async block expression: `async { my_future.await }`.
+    Async {
+        /// Move used element: `true` is move, `false` is normal.
+        r#move: bool,
+        /// The body of the async block.
+        body: Block,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -175,6 +182,10 @@ impl std::fmt::Display for Expression {
                     "".to_string()
                 };
                 write!(f, "{}{}{}{}", r#move, inputs, output, body)
+            }
+            Expression::Async { r#move, body } => {
+                let r#move = if *r#move { "move " } else { "" };
+                write!(f, "{}{}", r#move, body)
             }
         }
     }
