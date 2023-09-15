@@ -75,6 +75,13 @@ pub enum Expression {
         /// The identifier of the field.
         field: String,
     },
+    /// A reference: `&mut x`.
+    Reference {
+        /// Mutability: `true` is mutable, `false` is immutable.
+        mutable: bool,
+        /// The referenced expression.
+        expression: Box<Expression>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -125,6 +132,13 @@ impl std::fmt::Display for Expression {
             } => write!(f, "{left}{}{right}", operator.to_string()),
             Expression::Assignement { left, right } => write!(f, "{left} = {right}"),
             Expression::FieldAccess { expression, field } => write!(f, "{expression}.{field}"),
+            Expression::Reference {
+                mutable,
+                expression,
+            } => {
+                let mutable = if *mutable { "mut " } else { "" };
+                write!(f, "&{}{}", mutable, expression)
+            }
         }
     }
 }
