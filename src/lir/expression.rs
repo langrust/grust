@@ -25,7 +25,14 @@ pub enum Expression {
     Block {
         /// The block.
         block: Block,
-    }
+    },
+    /// A function call: `foo(x, y)`.
+    FunctionCall {
+        /// The function called.
+        function: Box<Expression>,
+        /// The arguments.
+        arguments: Vec<Expression>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -41,6 +48,17 @@ impl std::fmt::Display for Expression {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "{} {{{}}}", name, fields)
+            }
+            Expression::FunctionCall {
+                function,
+                arguments,
+            } => {
+                let arguments = arguments
+                    .iter()
+                    .map(|argument| format!("{argument}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "{}({})", function, arguments)
             }
         }
     }
