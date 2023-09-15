@@ -36,6 +36,15 @@ pub enum Expression {
         /// The arguments.
         arguments: Vec<Expression>,
     },
+    /// A method call: `a.foo(x, y)`.
+    MethodCall {
+        /// The receiver which perform the method.
+        receiver: Box<Expression>,
+        /// The method called.
+        method: String,
+        /// The arguments.
+        arguments: Vec<Expression>,
+    },
     /// An unary operation: `-x`.
     Unary {
         /// The operator.
@@ -92,6 +101,18 @@ impl std::fmt::Display for Expression {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "{}({})", function, arguments)
+            }
+            Expression::MethodCall {
+                receiver,
+                method,
+                arguments,
+            } => {
+                let arguments = arguments
+                    .iter()
+                    .map(|argument| format!("{argument}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "{}.{}({})", receiver, method, arguments)
             }
             Expression::Unary {
                 operator,
