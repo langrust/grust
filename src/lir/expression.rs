@@ -1,4 +1,7 @@
-use crate::common::constant::Constant;
+use crate::common::{
+    constant::Constant,
+    operator::{BinaryOperator, UnaryOperator},
+};
 
 use super::block::Block;
 
@@ -33,6 +36,22 @@ pub enum Expression {
         /// The arguments.
         arguments: Vec<Expression>,
     },
+    /// An unary operation: `-x`.
+    Unary {
+        /// The operator.
+        operator: UnaryOperator,
+        /// The expression.
+        expression: Box<Expression>,
+    },
+    /// A binary operation: `x + y`.
+    Binary {
+        /// The left expression.
+        left: Box<Expression>,
+        /// The operator.
+        operator: BinaryOperator,
+        /// The right expression.
+        right: Box<Expression>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -60,6 +79,15 @@ impl std::fmt::Display for Expression {
                     .join(", ");
                 write!(f, "{}({})", function, arguments)
             }
+            Expression::Unary {
+                operator,
+                expression,
+            } => write!(f, "{}{expression}", operator.to_string()),
+            Expression::Binary {
+                left,
+                operator,
+                right,
+            } => write!(f, "{left}{}{right}", operator.to_string()),
         }
     }
 }
