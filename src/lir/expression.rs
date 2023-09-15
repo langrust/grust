@@ -52,6 +52,13 @@ pub enum Expression {
         /// The right expression.
         right: Box<Expression>,
     },
+    /// An assignement expression: `x = y + 1`.
+    Assignement {
+        /// The receiver.
+        left: Box<Expression>,
+        /// The expression assigned to the receiver.
+        right: Box<Expression>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -88,6 +95,7 @@ impl std::fmt::Display for Expression {
                 operator,
                 right,
             } => write!(f, "{left}{}{right}", operator.to_string()),
+            Expression::Assignement { left, right } => write!(f, "{left} = {right}"),
         }
     }
 }
