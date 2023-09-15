@@ -105,6 +105,11 @@ pub enum Expression {
         /// The expression awited.
         expression: Box<Expression>,
     },
+    /// A tuple expression: `(x, y)`
+    Tuple {
+        /// Elements of the tuple.
+        elements: Vec<Expression>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -193,6 +198,14 @@ impl std::fmt::Display for Expression {
                 write!(f, "{}{}", r#move, body)
             }
             Expression::Await { expression } => write!(f, "{}.await", expression),
+            Expression::Tuple { elements } => {
+                let elements = elements
+                    .iter()
+                    .map(|element| format!("{element}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "({})", elements)
+            }
         }
     }
 }
