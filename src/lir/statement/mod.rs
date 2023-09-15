@@ -9,8 +9,10 @@ pub enum Statement {
     Let(Let),
     /// An item definition.
     Item(Item),
-    /// An expression.
-    Expression(Expression),
+    /// An internal expression, endding with a semicolon.
+    ExpressionIntern(Expression),
+    /// The last expression, no semicolon.
+    ExpressionLast(Expression),
 }
 
 impl std::fmt::Display for Statement {
@@ -18,7 +20,8 @@ impl std::fmt::Display for Statement {
         match self {
             Statement::Let(r#let) => write!(f, "{}", r#let),
             Statement::Item(item) => write!(f, "{item}"),
-            Statement::Expression(expression) => write!(f, "{expression}"),
+            Statement::ExpressionIntern(expression) => write!(f, "{expression};"),
+            Statement::ExpressionLast(expression) => write!(f, "{expression}"),
         }
     }
 }
