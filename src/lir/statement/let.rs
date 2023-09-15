@@ -11,3 +11,15 @@ pub struct Let {
     /// The associated expression.
     pub expression: Expression,
 }
+
+impl std::fmt::Display for Let {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let reference = if self.reference { "ref " } else { "" };
+        let mutable = if self.mutable { "mut " } else { "" };
+        write!(
+            f,
+            "let {}{}{} = {};",
+            reference, mutable, self.identifiant, self.expression
+        )
+    }
+}
