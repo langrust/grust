@@ -16,6 +16,27 @@ pub enum Import {
     },
 }
 
+impl std::fmt::Display for Import {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Import::Module {
+                public_visibility,
+                name,
+            } => {
+                let visibility = if *public_visibility { "pub " } else { "" };
+                write!(f, "{}mod {};", visibility, name)
+            }
+            Import::Use {
+                public_visibility,
+                tree,
+            } => {
+                let visibility = if *public_visibility { "pub " } else { "" };
+                write!(f, "{}use {};", visibility, tree)
+            }
+        }
+    }
+}
+
 /// A path of an `use` import.
 pub enum PathTree {
     /// Path prefix of import: `std::sync::...`
@@ -39,4 +60,29 @@ pub enum PathTree {
     },
     /// All items from module: `std::*`
     Star,
+}
+
+impl std::fmt::Display for PathTree {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PathTree::Path { module_name, tree } => write!(f, "{module_name}::{tree}"),
+            PathTree::Name { name, alias } => {
+                let alias = if let Some(alias) = alias {
+                    format!(" as {alias}")
+                } else {
+                    "".to_string()
+                };
+                write!(f, "{name}{alias}")
+            }
+            PathTree::Group { trees } => {
+                let trees = trees
+                    .iter()
+                    .map(|path| format!("{path}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "{{{}}}", trees)
+            }
+            PathTree::Star => write!(f, "*"),
+        }
+    }
 }
