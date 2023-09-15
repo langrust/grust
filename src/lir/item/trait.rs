@@ -10,6 +10,19 @@ pub struct Trait {
     pub items: Vec<TraitAssociatedItem>,
 }
 
+impl std::fmt::Display for Trait {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let visibility = if self.public_visibility { "pub " } else { "" };
+        let items = self
+            .items
+            .iter()
+            .map(|item| format!("{item}"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        write!(f, "{}trait {} {{{}}}", visibility, self.trait_name, items)
+    }
+}
+
 /// Items that can be defined in a trait.
 pub enum TraitAssociatedItem {
     /// Trait associated type definition.
@@ -26,4 +39,27 @@ pub enum TraitAssociatedItem {
         /// Default body.
         default: Option<Block>,
     },
+}
+
+impl std::fmt::Display for TraitAssociatedItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TraitAssociatedItem::TraitAssociatedType { name, default } => {
+                let default = if let Some(default) = default {
+                    format!(" = {default}")
+                } else {
+                    "".to_string()
+                };
+                write!(f, "type {name}{default};")
+            }
+            TraitAssociatedItem::TraitAssociatedMethod { signature, default } => {
+                let default = if let Some(default) = default {
+                    format!(" {default}")
+                } else {
+                    ";".to_string()
+                };
+                write!(f, "{signature}{default}")
+            }
+        }
+    }
 }
