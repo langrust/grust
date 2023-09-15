@@ -110,6 +110,15 @@ pub enum Expression {
         /// Elements of the tuple.
         elements: Vec<Expression>,
     },
+    /// An if_then_else expression: `if test { "ok" } else { "oh no" }`.
+    IfThenElse {
+        /// The test expression.
+        condition: Box<Expression>,
+        /// The `true` block.
+        then_branch: Block,
+        /// The `false` block.
+        else_branch: Option<Block>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -205,6 +214,18 @@ impl std::fmt::Display for Expression {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "({})", elements)
+            }
+            Expression::IfThenElse {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                let else_branch = if let Some(else_branch) = else_branch {
+                    format!(" else {else_branch}")
+                } else {
+                    "".to_string()
+                };
+                write!(f, "if {} {}{}", condition, then_branch, else_branch)
             }
         }
     }
