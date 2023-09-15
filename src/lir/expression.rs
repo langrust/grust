@@ -3,7 +3,7 @@ use crate::common::{
     operator::{BinaryOperator, UnaryOperator},
 };
 
-use super::block::Block;
+use super::{block::Block, pattern::Pattern, r#type::Type};
 
 /// Rust expressions.
 pub enum Expression {
@@ -82,6 +82,17 @@ pub enum Expression {
         /// The referenced expression.
         expression: Box<Expression>,
     },
+    /// A closure expression: `|x, y| x * y`.
+    Closure {
+        /// Move used element: `true` is move, `false` is normal.
+        r#move: bool,
+        /// The closure inputs as a pattern.
+        inputs: Vec<Pattern>,
+        /// The optional output type.
+        output: Option<Type>,
+        /// The body of the closure.
+        body: Box<Expression>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -138,6 +149,32 @@ impl std::fmt::Display for Expression {
             } => {
                 let mutable = if *mutable { "mut " } else { "" };
                 write!(f, "&{}{}", mutable, expression)
+            }
+            Expression::Closure {
+                r#move,
+                inputs,
+                output,
+                body,
+            } => {
+                let r#move = if *r#move { "move " } else { "" };
+                let inputs = if inputs.is_empty() {
+                    "".to_string()
+                } else {
+                    format!(
+                        "|{}|",
+                        inputs
+                            .iter()
+                            .map(|input| format!("{input}"))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )
+                };
+                let output = if let Some(output) = output {
+                    format!(" -> {output} ")
+                } else {
+                    "".to_string()
+                };
+                write!(f, "{}{}{}{}", r#move, inputs, output, body)
             }
         }
     }
