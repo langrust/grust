@@ -23,7 +23,7 @@ impl std::fmt::Display for Implementation {
             .map(|item| format!("{item}"))
             .collect::<Vec<_>>()
             .join(" ");
-        write!(f, "impl{} {} {{{}}}", trait_name, self.type_name, items)
+        write!(f, "impl{} {} {{ {} }}", trait_name, self.type_name, items)
     }
 }
 
