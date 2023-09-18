@@ -19,7 +19,7 @@ impl std::fmt::Display for Trait {
             .map(|item| format!("{item}"))
             .collect::<Vec<_>>()
             .join(" ");
-        write!(f, "{}trait {} {{{}}}", visibility, self.trait_name, items)
+        write!(f, "{}trait {} {{ {} }}", visibility, self.trait_name, items)
     }
 }
 

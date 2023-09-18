@@ -1,4 +1,4 @@
-use crate::lir::r#type::Type;
+use crate::{common::r#type::Type as DSLType, lir::r#type::Type};
 
 /// Function or method signature.
 pub struct Signature {
@@ -28,11 +28,15 @@ impl std::fmt::Display for Signature {
             .map(|(id, r#type)| format!("{id}: {}", r#type))
             .collect::<Vec<_>>()
             .join(", ");
-        write!(
-            f,
-            "{}fn {}({}{}) -> {}",
-            visibility, self.name, receiver, inputs, self.output
-        )
+        if let Type::Owned(DSLType::Unit) = self.output {
+            write!(f, "{}fn {}({}{})", visibility, self.name, receiver, inputs)
+        } else {
+            write!(
+                f,
+                "{}fn {}({}{}) -> {}",
+                visibility, self.name, receiver, inputs, self.output
+            )
+        }
     }
 }
 
