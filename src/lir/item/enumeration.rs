@@ -12,6 +12,9 @@ impl std::fmt::Display for Enumeration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let visibility = if self.public_visibility { "pub " } else { "" };
         let elements = self.elements.join(", ");
+        write!(f, "{}enum {} {{ {} }}", visibility, self.name, elements)
+    }
+}
 
 #[cfg(test)]
 mod fmt {
