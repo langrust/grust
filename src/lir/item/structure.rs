@@ -19,7 +19,7 @@ impl std::fmt::Display for Structure {
             .map(|field| format!("{field}"))
             .collect::<Vec<_>>()
             .join(", ");
-        write!(f, "{}struct {} {{{}}}", visibility, self.name, fields)
+        write!(f, "{}struct {} {{ {} }}", visibility, self.name, fields)
     }
 }
 
