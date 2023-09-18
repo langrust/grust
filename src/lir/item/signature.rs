@@ -51,3 +51,46 @@ impl std::fmt::Display for Receiver {
         write!(f, "{}{}self", reference, mutable)
     }
 }
+
+#[cfg(test)]
+mod fmt {
+    use crate::{
+        common::r#type::Type as DSLType,
+        lir::{
+            item::signature::{Receiver, Signature},
+            r#type::Type,
+        },
+    };
+
+    #[test]
+    fn should_format_signature_without_receiver() {
+        let signature = Signature {
+            public_visibility: true,
+            name: String::from("foo"),
+            receiver: None,
+            inputs: vec![
+                (String::from("x"), Type::Owned(DSLType::Integer)),
+                (String::from("y"), Type::Owned(DSLType::Integer)),
+            ],
+            output: Type::Owned(DSLType::Integer),
+        };
+        let control = String::from("pub fn foo(x: i64, y: i64) -> i64");
+        assert_eq!(format!("{}", signature), control)
+    }
+
+    #[test]
+    fn should_format_signature_with_receiver() {
+        let signature = Signature {
+            public_visibility: true,
+            name: String::from("foo"),
+            receiver: Some(Receiver {
+                reference: true,
+                mutable: true,
+            }),
+            inputs: vec![(String::from("y"), Type::Owned(DSLType::Integer))],
+            output: Type::Owned(DSLType::Integer),
+        };
+        let control = String::from("pub fn foo(&mut self, y: i64) -> i64");
+        assert_eq!(format!("{}", signature), control)
+    }
+}
