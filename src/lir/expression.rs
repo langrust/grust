@@ -295,3 +295,403 @@ impl std::fmt::Display for Arm {
         write!(f, "{}{} => {},", self.pattern, guard, self.body)
     }
 }
+
+#[cfg(test)]
+mod fmt {
+    use crate::{
+        common::{
+            constant::Constant,
+            operator::{BinaryOperator, UnaryOperator},
+            r#type::Type as DSLType,
+        },
+        lir::{
+            block::Block,
+            expression::{Arm, FieldExpression},
+            pattern::FieldPattern,
+            pattern::Pattern,
+            r#type::Type,
+            statement::{r#let::Let, Statement},
+        },
+    };
+
+    use super::Expression;
+
+    #[test]
+    fn should_format_literal_expression() {
+        let expression = Expression::Literal {
+            literal: Constant::Integer(1),
+        };
+        let control = String::from("1i64");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_identifier_expression() {
+        let expression = Expression::Identifier {
+            identifier: String::from("x"),
+        };
+        let control = String::from("x");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_tuple_expression() {
+        let expression = Expression::Tuple {
+            elements: vec![
+                Expression::Literal {
+                    literal: Constant::Integer(1),
+                },
+                Expression::Identifier {
+                    identifier: String::from("y"),
+                },
+            ],
+        };
+        let control = String::from("(1i64, y)");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_structure_expression() {
+        let expression = Expression::Structure {
+            name: String::from("Point"),
+            fields: vec![
+                FieldExpression {
+                    name: String::from("x"),
+                    expression: Expression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                },
+                FieldExpression {
+                    name: String::from("y"),
+                    expression: Expression::Identifier {
+                        identifier: String::from("y"),
+                    },
+                },
+            ],
+        };
+        let control = String::from("Point { x: 1i64, y }");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_unary_expression() {
+        let expression = Expression::Unary {
+            operator: UnaryOperator::Neg,
+            expression: Box::new(Expression::Identifier {
+                identifier: String::from("x"),
+            }),
+        };
+        let control = String::from("-x");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_binary_expression() {
+        let expression = Expression::Binary {
+            left: Box::new(Expression::Identifier {
+                identifier: String::from("x"),
+            }),
+            operator: BinaryOperator::Add,
+            right: Box::new(Expression::Literal {
+                literal: Constant::Integer(1),
+            }),
+        };
+        let control = String::from("x + 1i64");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_assignement_expression() {
+        let expression = Expression::Assignement {
+            left: Box::new(Expression::Identifier {
+                identifier: String::from("x"),
+            }),
+            right: Box::new(Expression::Binary {
+                left: Box::new(Expression::Identifier {
+                    identifier: String::from("x"),
+                }),
+                operator: BinaryOperator::Add,
+                right: Box::new(Expression::Literal {
+                    literal: Constant::Integer(1),
+                }),
+            }),
+        };
+        let control = String::from("x = x + 1i64");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_block_expression() {
+        let expression = Expression::Block {
+            block: Block {
+                statements: vec![
+                    Statement::Let(Let {
+                        reference: false,
+                        mutable: true,
+                        identifiant: String::from("x"),
+                        expression: Expression::Literal {
+                            literal: Constant::Integer(1),
+                        },
+                    }),
+                    Statement::ExpressionIntern(Expression::Assignement {
+                        left: Box::new(Expression::Identifier {
+                            identifier: String::from("x"),
+                        }),
+                        right: Box::new(Expression::Binary {
+                            left: Box::new(Expression::Identifier {
+                                identifier: String::from("x"),
+                            }),
+                            operator: BinaryOperator::Add,
+                            right: Box::new(Expression::Literal {
+                                literal: Constant::Integer(1),
+                            }),
+                        }),
+                    }),
+                    Statement::ExpressionLast(Expression::Identifier {
+                        identifier: String::from("x"),
+                    }),
+                ],
+            },
+        };
+        let control = String::from("{ let mut x = 1i64; x = x + 1i64; x }");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_if_then_else_expression() {
+        let expression = Expression::IfThenElse {
+            condition: Box::new(Expression::Identifier {
+                identifier: String::from("test"),
+            }),
+            then_branch: Block {
+                statements: vec![
+                    Statement::ExpressionIntern(Expression::Assignement {
+                        left: Box::new(Expression::Identifier {
+                            identifier: String::from("x"),
+                        }),
+                        right: Box::new(Expression::Binary {
+                            left: Box::new(Expression::Identifier {
+                                identifier: String::from("x"),
+                            }),
+                            operator: BinaryOperator::Add,
+                            right: Box::new(Expression::Literal {
+                                literal: Constant::Integer(1),
+                            }),
+                        }),
+                    }),
+                    Statement::ExpressionLast(Expression::Identifier {
+                        identifier: String::from("x"),
+                    }),
+                ],
+            },
+            else_branch: Some(Block {
+                statements: vec![
+                    Statement::ExpressionIntern(Expression::Assignement {
+                        left: Box::new(Expression::Identifier {
+                            identifier: String::from("x"),
+                        }),
+                        right: Box::new(Expression::Binary {
+                            left: Box::new(Expression::Identifier {
+                                identifier: String::from("x"),
+                            }),
+                            operator: BinaryOperator::Mul,
+                            right: Box::new(Expression::Literal {
+                                literal: Constant::Integer(2),
+                            }),
+                        }),
+                    }),
+                    Statement::ExpressionLast(Expression::Identifier {
+                        identifier: String::from("x"),
+                    }),
+                ],
+            }),
+        };
+        let control = String::from("if test { x = x + 1i64; x } else { x = x * 2i64; x }");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_function_call_expression() {
+        let expression = Expression::FunctionCall {
+            function: Box::new(Expression::Identifier {
+                identifier: String::from("foo"),
+            }),
+            arguments: vec![
+                Expression::Identifier {
+                    identifier: String::from("a"),
+                },
+                Expression::Identifier {
+                    identifier: String::from("b"),
+                },
+            ],
+        };
+        let control = String::from("foo(a, b)");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_method_call_expression() {
+        let expression = Expression::MethodCall {
+            receiver: Box::new(Expression::Identifier {
+                identifier: String::from("a"),
+            }),
+            method: String::from("foo"),
+            arguments: vec![Expression::Identifier {
+                identifier: String::from("b"),
+            }],
+        };
+        let control = String::from("a.foo(b)");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_macro_call_expression() {
+        let expression = Expression::Macro {
+            r#macro: String::from("vec"),
+            arguments: vec![
+                Expression::Identifier {
+                    identifier: String::from("a"),
+                },
+                Expression::Identifier {
+                    identifier: String::from("b"),
+                },
+            ],
+        };
+        let control = String::from("vec!(a, b)");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_field_access_expression() {
+        let expression = Expression::FieldAccess {
+            expression: Box::new(Expression::Identifier {
+                identifier: String::from("my_point"),
+            }),
+            field: String::from("x"),
+        };
+        let control = String::from("my_point.x");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_reference_expression() {
+        let expression = Expression::Reference {
+            mutable: true,
+            expression: Box::new(Expression::Identifier {
+                identifier: String::from("x"),
+            }),
+        };
+        let control = String::from("&mut x");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_closure_expression() {
+        let expression = Expression::Closure {
+            r#move: true,
+            inputs: vec![Pattern::Identifier {
+                reference: false,
+                mutable: false,
+                identifier: String::from("a"),
+            }],
+            output: Some(Type::Owned(DSLType::Integer)),
+            body: Box::new(Expression::Binary {
+                left: Box::new(Expression::Identifier {
+                    identifier: String::from("x"),
+                }),
+                operator: BinaryOperator::Add,
+                right: Box::new(Expression::Identifier {
+                    identifier: String::from("a"),
+                }),
+            }),
+        };
+        let control = String::from("move |a| -> i64 { x + a }");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_await_expression() {
+        let expression = Expression::Await {
+            expression: Box::new(Expression::FunctionCall {
+                function: Box::new(Expression::Identifier {
+                    identifier: String::from("get_message"),
+                }),
+                arguments: vec![],
+            }),
+        };
+        let control = String::from("get_message().await");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_async_expression() {
+        let expression = Expression::Async {
+            r#move: false,
+            body: Block {
+                statements: vec![
+                    Statement::Let(Let {
+                        reference: false,
+                        mutable: true,
+                        identifiant: String::from("x"),
+                        expression: Expression::Await {
+                            expression: Box::new(Expression::FunctionCall {
+                                function: Box::new(Expression::Identifier {
+                                    identifier: String::from("get_message"),
+                                }),
+                                arguments: vec![],
+                            }),
+                        },
+                    }),
+                    Statement::ExpressionIntern(Expression::Assignement {
+                        left: Box::new(Expression::Identifier {
+                            identifier: String::from("x"),
+                        }),
+                        right: Box::new(Expression::Binary {
+                            left: Box::new(Expression::Identifier {
+                                identifier: String::from("x"),
+                            }),
+                            operator: BinaryOperator::Add,
+                            right: Box::new(Expression::Literal {
+                                literal: Constant::Integer(1),
+                            }),
+                        }),
+                    }),
+                    Statement::ExpressionLast(Expression::Identifier {
+                        identifier: String::from("x"),
+                    }),
+                ],
+            },
+        };
+        let control = String::from("async { let mut x = get_message().await; x = x + 1i64; x }");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_match_expression() {
+        let expression = Expression::Match {
+            matched: Box::new(Expression::Identifier {
+                identifier: String::from("c"),
+            }),
+            arms: vec![
+                Arm {
+                    pattern: Pattern::Literal {
+                        literal: Constant::Enumeration(String::from("Color"), String::from("Blue")),
+                    },
+                    guard: None,
+                    body: Expression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                },
+                Arm {
+                    pattern: Pattern::Default,
+                    guard: None,
+                    body: Expression::Literal {
+                        literal: Constant::Integer(0),
+                    },
+                },
+            ],
+        };
+        let control = String::from("match c { Color::Blue => 1i64, _ => 0i64, }");
+        assert_eq!(format!("{}", expression), control)
+    }
+}
