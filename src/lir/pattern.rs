@@ -196,19 +196,22 @@ mod fmt {
     fn should_format_structure_pattern() {
         let pattern = Pattern::Structure {
             name: String::from("Point"),
-            fields: vec![FieldPattern {
-                name: String::from("x"),
-                pattern: Pattern::Identifier {
-                    reference: false,
-                    mutable: false,
-                    identifier: String::from("x"),
+            fields: vec![
+                FieldPattern {
+                    name: String::from("x"),
+                    pattern: Pattern::Identifier {
+                        reference: false,
+                        mutable: false,
+                        identifier: String::from("x"),
+                    },
                 },
-            }, FieldPattern {
-                name: String::from("y"),
-                pattern: Pattern::Literal {
-                    literal: Constant::Integer(1),
+                FieldPattern {
+                    name: String::from("y"),
+                    pattern: Pattern::Literal {
+                        literal: Constant::Integer(1),
+                    },
                 },
-            }],
+            ],
             dots: true,
         };
         let control = String::from("Point { x, y: 1i64, .. }");
