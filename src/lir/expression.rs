@@ -307,7 +307,6 @@ mod fmt {
         lir::{
             block::Block,
             expression::{Arm, FieldExpression},
-            pattern::FieldPattern,
             pattern::Pattern,
             r#type::Type,
             statement::{r#let::Let, Statement},
