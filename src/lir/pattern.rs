@@ -74,7 +74,7 @@ impl std::fmt::Display for Pattern {
                     .collect::<Vec<_>>()
                     .join(", ");
                 let dots = if *dots { ", .." } else { "" };
-                write!(f, "{} {{{}{}}}", name, fields, dots)
+                write!(f, "{} {{ {}{} }}", name, fields, dots)
             }
             Pattern::Tuple { elements } => {
                 let elements = elements
@@ -100,7 +100,13 @@ pub struct FieldPattern {
 
 impl std::fmt::Display for FieldPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.name, self.pattern)
+        if self.pattern.to_string() == self.name {
+            write!(f, "{}", self.name)
+        } else {
+            write!(f, "{}: {}", self.name, self.pattern)
+        }
+    }
+}
 
 #[cfg(test)]
 mod fmt {
