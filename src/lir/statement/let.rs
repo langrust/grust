@@ -23,3 +23,24 @@ impl std::fmt::Display for Let {
         )
     }
 }
+
+#[cfg(test)]
+mod fmt {
+    use crate::{common::constant::Constant, lir::statement::r#let::Let};
+
+    use super::Expression;
+
+    #[test]
+    fn should_format_let_binding() {
+        let let_binding = Let {
+            reference: false,
+            mutable: true,
+            identifiant: String::from("x"),
+            expression: Expression::Literal {
+                literal: Constant::Integer(1),
+            },
+        };
+        let control = String::from("let mut x = 1i64;");
+        assert_eq!(format!("{}", let_binding), control)
+    }
+}
