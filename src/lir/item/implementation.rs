@@ -57,3 +57,74 @@ impl std::fmt::Display for AssociatedItem {
         }
     }
 }
+
+#[cfg(test)]
+mod fmt {
+    use crate::{
+        common::{constant::Constant, r#type::Type as DSLType},
+        lir::{
+            block::Block,
+            expression::Expression,
+            item::{
+                implementation::{AssociatedItem, Implementation},
+                signature::{Receiver, Signature},
+            },
+            r#type::Type,
+            statement::Statement,
+        },
+    };
+
+    #[test]
+    fn should_format_trait_implementation() {
+        let r#trait = Implementation {
+            trait_name: Some(String::from("Display")),
+            type_name: String::from("Point"),
+            items: vec![
+                AssociatedItem::AssociatedType {
+                    name: String::from("MyString"),
+                    r#type: Type::Owned(DSLType::String),
+                },
+                AssociatedItem::AssociatedMethod {
+                    signature: Signature {
+                        public_visibility: false,
+                        name: String::from("fmt"),
+                        receiver: Some(Receiver {
+                            reference: true,
+                            mutable: false,
+                        }),
+                        inputs: vec![(String::from("f"), Type::MutableReference(DSLType::String))],
+                        output: Type::Owned(DSLType::Unit),
+                    },
+                    body: Block {
+                        statements: vec![Statement::ExpressionIntern(Expression::Macro {
+                            r#macro: String::from("write"),
+                            arguments: vec![
+                                Expression::Identifier {
+                                    identifier: String::from("f"),
+                                },
+                                Expression::Literal {
+                                    literal: Constant::String(String::from("({}, {})")),
+                                },
+                                Expression::FieldAccess {
+                                    expression: Box::new(Expression::Identifier {
+                                        identifier: String::from("self"),
+                                    }),
+                                    field: String::from("x"),
+                                },
+                                Expression::FieldAccess {
+                                    expression: Box::new(Expression::Identifier {
+                                        identifier: String::from("self"),
+                                    }),
+                                    field: String::from("y"),
+                                },
+                            ],
+                        })],
+                    },
+                },
+            ],
+        };
+        let control = String::from("impl Display for Point { type MyString = String; ")
+            + "fn fmt(&self, f: &mut String) { write!(f, \"({}, {})\", self.x, self.y); } }";
+        assert_eq!(format!("{}", r#trait), control)
+    }
+}
