@@ -80,7 +80,7 @@ impl std::fmt::Display for PathTree {
                     .map(|path| format!("{path}"))
                     .collect::<Vec<_>>()
                     .join(", ");
-                write!(f, "{{{}}}", trees)
+                write!(f, "{{ {} }}", trees)
             }
             PathTree::Star => write!(f, "*"),
         }
