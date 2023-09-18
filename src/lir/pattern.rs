@@ -101,5 +101,111 @@ pub struct FieldPattern {
 impl std::fmt::Display for FieldPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {}", self.name, self.pattern)
+
+#[cfg(test)]
+mod fmt {
+    use crate::{
+        common::{constant::Constant, r#type::Type as DSLType},
+        lir::{pattern::FieldPattern, r#type::Type},
+    };
+
+    use super::Pattern;
+
+    #[test]
+    fn should_format_default_pattern() {
+        let pattern = Pattern::Default;
+        let control = String::from("_");
+        assert_eq!(format!("{}", pattern), control)
+    }
+
+    #[test]
+    fn should_format_identifier_pattern() {
+        let pattern = Pattern::Identifier {
+            reference: true,
+            mutable: true,
+            identifier: String::from("x"),
+        };
+        let control = String::from("ref mut x");
+        assert_eq!(format!("{}", pattern), control)
+    }
+
+    #[test]
+    fn should_format_literal_pattern() {
+        let pattern = Pattern::Literal {
+            literal: Constant::Integer(1),
+        };
+        let control = String::from("1i64");
+        assert_eq!(format!("{}", pattern), control)
+    }
+
+    #[test]
+    fn should_format_reference_pattern() {
+        let pattern = Pattern::Reference {
+            mutable: true,
+            pattern: Box::new(Pattern::Identifier {
+                reference: false,
+                mutable: false,
+                identifier: String::from("x"),
+            }),
+        };
+        let control = String::from("&mut x");
+        assert_eq!(format!("{}", pattern), control)
+    }
+
+    #[test]
+    fn should_format_tuple_pattern() {
+        let pattern = Pattern::Tuple {
+            elements: vec![
+                Pattern::Identifier {
+                    reference: false,
+                    mutable: false,
+                    identifier: String::from("x"),
+                },
+                Pattern::Identifier {
+                    reference: false,
+                    mutable: false,
+                    identifier: String::from("y"),
+                },
+            ],
+        };
+        let control = String::from("(x, y)");
+        assert_eq!(format!("{}", pattern), control)
+    }
+
+    #[test]
+    fn should_format_type_pattern() {
+        let pattern = Pattern::Typed {
+            pattern: Box::new(Pattern::Identifier {
+                reference: false,
+                mutable: false,
+                identifier: String::from("x"),
+            }),
+            r#type: Type::Reference(DSLType::Integer),
+        };
+        let control = String::from("x: &i64");
+        assert_eq!(format!("{}", pattern), control)
+    }
+
+    #[test]
+    fn should_format_structure_pattern() {
+        let pattern = Pattern::Structure {
+            name: String::from("Point"),
+            fields: vec![FieldPattern {
+                name: String::from("x"),
+                pattern: Pattern::Identifier {
+                    reference: false,
+                    mutable: false,
+                    identifier: String::from("x"),
+                },
+            }, FieldPattern {
+                name: String::from("y"),
+                pattern: Pattern::Literal {
+                    literal: Constant::Integer(1),
+                },
+            }],
+            dots: true,
+        };
+        let control = String::from("Point { x, y: 1i64, .. }");
+        assert_eq!(format!("{}", pattern), control)
     }
 }
