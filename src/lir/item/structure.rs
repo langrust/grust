@@ -39,3 +39,41 @@ impl std::fmt::Display for Field {
         write!(f, "{}{}: {}", visibility, self.name, self.r#type)
     }
 }
+
+#[cfg(test)]
+mod fmt {
+    use crate::{
+        common::r#type::Type as DSLType,
+        lir::{
+            item::structure::{Field, Structure},
+            r#type::Type,
+        },
+    };
+
+    #[test]
+    fn should_format_structure_definition() {
+        let structure = Structure {
+            public_visibility: true,
+            name: String::from("Point"),
+            fields: vec![
+                Field {
+                    public_visibility: true,
+                    name: String::from("x"),
+                    r#type: Type::Owned(DSLType::Integer),
+                },
+                Field {
+                    public_visibility: true,
+                    name: String::from("y"),
+                    r#type: Type::Owned(DSLType::Integer),
+                },
+                Field {
+                    public_visibility: false,
+                    name: String::from("z"),
+                    r#type: Type::Owned(DSLType::Integer),
+                },
+            ],
+        };
+        let control = String::from("pub struct Point { pub x: i64, pub y: i64, z: i64 }");
+        assert_eq!(format!("{}", structure), control)
+    }
+}
