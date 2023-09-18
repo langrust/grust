@@ -63,3 +63,46 @@ impl std::fmt::Display for TraitAssociatedItem {
         }
     }
 }
+
+#[cfg(test)]
+mod fmt {
+    use crate::{
+        common::r#type::Type as DSLType,
+        lir::{
+            item::signature::{Receiver, Signature},
+            r#type::Type,
+        },
+    };
+
+    use super::{Trait, TraitAssociatedItem};
+
+    #[test]
+    fn should_format_trait_definition() {
+        let r#trait = Trait {
+            public_visibility: true,
+            trait_name: String::from("Display"),
+            items: vec![
+                TraitAssociatedItem::TraitAssociatedType {
+                    name: String::from("MyString"),
+                    default: None,
+                },
+                TraitAssociatedItem::TraitAssociatedMethod {
+                    signature: Signature {
+                        public_visibility: false,
+                        name: String::from("fmt"),
+                        receiver: Some(Receiver {
+                            reference: true,
+                            mutable: false,
+                        }),
+                        inputs: vec![(String::from("f"), Type::MutableReference(DSLType::String))],
+                        output: Type::Owned(DSLType::Unit),
+                    },
+                    default: None,
+                },
+            ],
+        };
+        let control =
+            String::from("pub trait Display { type MyString; fn fmt(&self, f: &mut String); }");
+        assert_eq!(format!("{}", r#trait), control)
+    }
+}
