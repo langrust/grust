@@ -147,7 +147,7 @@ impl std::fmt::Display for Expression {
                     .map(|field| format!("{field}"))
                     .collect::<Vec<_>>()
                     .join(", ");
-                write!(f, "{} {{{}}}", name, fields)
+                write!(f, "{} {{ {} }}", name, fields)
             }
             Expression::FunctionCall {
                 function,
@@ -205,28 +205,24 @@ impl std::fmt::Display for Expression {
                 body,
             } => {
                 let r#move = if *r#move { "move " } else { "" };
-                let inputs = if inputs.is_empty() {
-                    "".to_string()
+                let inputs = inputs
+                    .iter()
+                    .map(|input| format!("{input}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                if let Some(output) = output {
+                    if let Expression::Block { .. } = body.as_ref() {
+                        write!(f, "{}|{}| -> {} {}", r#move, inputs, output, body)
+                    } else {
+                        write!(f, "{}|{}| -> {} {{ {} }}", r#move, inputs, output, body)
+                    }
                 } else {
-                    format!(
-                        "|{}|",
-                        inputs
-                            .iter()
-                            .map(|input| format!("{input}"))
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    )
-                };
-                let output = if let Some(output) = output {
-                    format!(" -> {output} ")
-                } else {
-                    "".to_string()
-                };
-                write!(f, "{}{}{}{}", r#move, inputs, output, body)
+                    write!(f, "{}|{}| {}", r#move, inputs, body)
+                }
             }
             Expression::Async { r#move, body } => {
                 let r#move = if *r#move { "move " } else { "" };
-                write!(f, "{}{}", r#move, body)
+                write!(f, "async {}{}", r#move, body)
             }
             Expression::Await { expression } => write!(f, "{}.await", expression),
             Expression::Tuple { elements } => {
@@ -254,8 +250,8 @@ impl std::fmt::Display for Expression {
                     .iter()
                     .map(|arm| format!("{arm}"))
                     .collect::<Vec<_>>()
-                    .join(", ");
-                write!(f, "match {} {{{}}}", matched, arms)
+                    .join(" ");
+                write!(f, "match {} {{ {} }}", matched, arms)
             }
         }
     }
@@ -271,7 +267,11 @@ pub struct FieldExpression {
 
 impl std::fmt::Display for FieldExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.name, self.expression)
+        if self.expression.to_string() == self.name {
+            write!(f, "{}", self.name)
+        } else {
+            write!(f, "{}: {}", self.name, self.expression)
+        }
     }
 }
 
