@@ -1,5 +1,12 @@
+use crate::{
+    common::r#type::Type,
+    mir::item::node_file::state::{init::Init, step::Step},
+};
+
 /// MIR [Init](crate::mir::item::node_file::state::init::Init) module.
 pub mod init;
+/// MIR [Step](crate::mir::item::node_file::state::step::Step) module.
+pub mod step;
 
 /// A node state structure.
 pub struct State {
@@ -7,6 +14,10 @@ pub struct State {
     pub node_name: String,
     /// The state's elements.
     pub elements: Vec<StateElement>,
+    /// The step function.
+    pub step: Step,
+    /// The init function.
+    pub init: Init,
 }
 
 /// A state element structure.
