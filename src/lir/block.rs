@@ -25,6 +25,7 @@ mod fmt {
         lir::{
             block::Block,
             expression::Expression,
+            pattern::Pattern,
             statement::{r#let::Let, Statement},
         },
     };
@@ -34,9 +35,11 @@ mod fmt {
         let block = Block {
             statements: vec![
                 Statement::Let(Let {
-                    reference: false,
-                    mutable: true,
-                    identifiant: String::from("x"),
+                    pattern: Pattern::Identifier {
+                        reference: false,
+                        mutable: true,
+                        identifier: String::from("x"),
+                    },
                     expression: Expression::Literal {
                         literal: Constant::Integer(1),
                     },

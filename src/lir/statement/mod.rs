@@ -44,23 +44,26 @@ mod fmt {
                 structure::{Field, Structure},
                 type_alias::TypeAlias,
             },
+            pattern::Pattern,
             r#type::Type,
             statement::{r#let::Let, Statement},
         },
     };
 
     #[test]
-    fn should_format_let_binding_statement() {
-        let statement = Statement::Let(Let {
-            reference: false,
-            mutable: true,
-            identifiant: String::from("x"),
+    fn should_format_let_binding() {
+        let let_binding = Let {
+            pattern: Pattern::Identifier {
+                reference: false,
+                mutable: true,
+                identifier: String::from("x"),
+            },
             expression: Expression::Literal {
                 literal: Constant::Integer(1),
             },
-        });
+        };
         let control = String::from("let mut x = 1i64;");
-        assert_eq!(format!("{}", statement), control)
+        assert_eq!(format!("{}", let_binding), control)
     }
 
     #[test]
@@ -125,9 +128,11 @@ mod fmt {
             body: Block {
                 statements: vec![
                     Statement::Let(Let {
-                        reference: false,
-                        mutable: true,
-                        identifiant: String::from("z"),
+                        pattern: Pattern::Identifier {
+                            reference: false,
+                            mutable: true,
+                            identifier: String::from("z"),
+                        },
                         expression: Expression::Binary {
                             left: Box::new(Expression::Identifier {
                                 identifier: String::from("x"),

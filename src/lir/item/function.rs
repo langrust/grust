@@ -22,6 +22,7 @@ mod fmt {
             block::Block,
             expression::Expression,
             item::{function::Function, signature::Signature},
+            pattern::Pattern,
             r#type::Type,
             statement::{r#let::Let, Statement},
         },
@@ -43,9 +44,11 @@ mod fmt {
             body: Block {
                 statements: vec![
                     Statement::Let(Let {
-                        reference: false,
-                        mutable: true,
-                        identifiant: String::from("z"),
+                        pattern: Pattern::Identifier {
+                            reference: false,
+                            mutable: true,
+                            identifier: String::from("z"),
+                        },
                         expression: Expression::Binary {
                             left: Box::new(Expression::Identifier {
                                 identifier: String::from("x"),
