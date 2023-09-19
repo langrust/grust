@@ -1,6 +1,7 @@
 use crate::common::r#type::Type as DSLType;
 
 /// The four different kind of type in Rust.
+#[derive(Debug, PartialEq)]
 pub enum Type {
     /// Owned type.
     Owned(DSLType),

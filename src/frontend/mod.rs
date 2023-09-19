@@ -9,3 +9,6 @@ pub mod causality_analysis;
 
 /// Normalization module.
 pub mod normalizing;
+
+/// LIR construction from MIR.
+pub mod lir_from_mir;
