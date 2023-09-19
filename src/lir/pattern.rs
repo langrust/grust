@@ -3,6 +3,7 @@ use crate::common::constant::Constant;
 use super::r#type::Type;
 
 /// Rust patterns used in match expression, closure, etc.
+#[derive(Debug, PartialEq)]
 pub enum Pattern {
     /// An identifier pattern: `ref x`.
     Identifier {
@@ -91,6 +92,14 @@ impl std::fmt::Display for Pattern {
                     .join(", ");
                 write!(f, "({})", elements)
             }
+            Pattern::TupleStructure { name, elements } => {
+                let elements = elements
+                    .iter()
+                    .map(|element| format!("{element}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "{}({})", name, elements)
+            }
             Pattern::Typed { pattern, r#type } => write!(f, "{}: {}", pattern, r#type),
             Pattern::Default => write!(f, "_"),
         }
@@ -98,6 +107,7 @@ impl std::fmt::Display for Pattern {
 }
 
 /// A structure's field filled with a pattern.
+#[derive(Debug, PartialEq)]
 pub struct FieldPattern {
     /// Name of the field.
     pub name: String,
