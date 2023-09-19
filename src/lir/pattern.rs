@@ -39,6 +39,13 @@ pub enum Pattern {
         /// Elements of the tuple.
         elements: Vec<Pattern>,
     },
+    /// A tuple structure pattern: `Some(x)`
+    TupleStructure {
+        /// The name of the structure.
+        name: String,
+        /// Elements of the tuple.
+        elements: Vec<Pattern>,
+    },
     /// A typed pattern: `x: i64`.
     Typed {
         /// The typed pattern.
