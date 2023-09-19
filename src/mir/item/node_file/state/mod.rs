@@ -1,3 +1,5 @@
+/// MIR [Init](crate::mir::item::node_file::state::init::Init) module.
+pub mod init;
 
 /// A node state structure.
 pub struct State {
