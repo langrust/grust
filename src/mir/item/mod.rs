@@ -4,5 +4,7 @@ pub mod array_alias;
 pub mod enumeration;
 /// MIR [Function](crate::mir::item::function::Function) module.
 pub mod function;
+/// MIR [NodeFile](crate::mir::item::node_file::NodeFile) module.
+pub mod node_file;
 /// MIR [Structure](crate::mir::item::structure::Structure) module.
 pub mod structure;
