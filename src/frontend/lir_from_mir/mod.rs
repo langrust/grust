@@ -2,6 +2,8 @@
 pub mod block;
 /// LIR expression construction from MIR expression.
 pub mod expression;
+/// LIR item construction from MIR item.
+pub mod item;
 /// LIR pattern construction from MIR pattern.
 pub mod pattern;
 /// LIR statement construction from MIR statement.
