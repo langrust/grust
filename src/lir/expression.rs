@@ -24,6 +24,11 @@ pub enum Expression {
         /// The filled fields.
         fields: Vec<FieldExpression>,
     },
+    /// An array creation: `[1, 2, x]`.
+    Array {
+        /// The elements.
+        elements: Vec<Expression>,
+    },
     /// A block scope: `{ let x = 1; x }`.
     Block {
         /// The block.
@@ -148,6 +153,14 @@ impl std::fmt::Display for Expression {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "{} {{ {} }}", name, fields)
+            }
+            Expression::Array { elements } => {
+                let elements = elements
+                    .iter()
+                    .map(|argument| format!("{argument}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "[{}]", elements)
             }
             Expression::FunctionCall {
                 function,
@@ -346,6 +359,22 @@ mod fmt {
             ],
         };
         let control = String::from("(1i64, y)");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_array_expression() {
+        let expression = Expression::Array {
+            elements: vec![
+                Expression::Literal {
+                    literal: Constant::Integer(1),
+                },
+                Expression::Identifier {
+                    identifier: String::from("y"),
+                },
+            ],
+        };
+        let control = String::from("[1i64, y]");
         assert_eq!(format!("{}", expression), control)
     }
 
