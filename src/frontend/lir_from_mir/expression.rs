@@ -31,7 +31,13 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                 .collect();
             LIRExpression::Structure { name, fields }
         }
-        Expression::Array { elements } => todo!(),
+        Expression::Array { elements } => {
+            let elements = elements
+                .into_iter()
+                .map(|expression| lir_from_mir(expression))
+                .collect();
+            LIRExpression::Array { elements }
+        }
         Expression::Block { block } => LIRExpression::Block {
             block: block_lir_from_mir(block),
         },
