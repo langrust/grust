@@ -3,14 +3,51 @@ use crate::common::r#type::Type as DSLType;
 /// The four different kind of type in Rust.
 #[derive(Debug, PartialEq)]
 pub enum Type {
-    /// Owned type.
-    Owned(DSLType),
-    /// Mutable owned type.
-    Mutable(DSLType),
+    /// Simple type.
+    Identifier {
+        /// The identifier to the type.
+        identifier: String,
+    },
+    /// Array type.
+    Array {
+        /// Type of the elements.
+        element: Box<Type>,
+        /// Size of the array.
+        size: usize,
+    },
+    /// Function type.
+    Function {
+        /// Types of the arguments.
+        arguments: Vec<Type>,
+        /// Output type.
+        output: Box<Type>,
+    },
+    /// Closure type.
+    Closure {
+        /// Types of the arguments.
+        arguments: Vec<Type>,
+        /// Output type.
+        output: Box<Type>,
+    },
+    /// Realization of generic type.
+    Generic {
+        /// The generic type.
+        generic: Box<Type>,
+        /// The ralization arguments.
+        arguments: Vec<Type>,
+    },
     /// Reference type.
-    Reference(DSLType),
-    /// Mutable reference type.
-    MutableReference(DSLType),
+    Reference {
+        /// Optionally mutable.
+        mutable: bool,
+        /// The type of the element in reference.
+        element: Box<Type>,
+    },
+    /// Tuple type.
+    Tuple {
+        /// Ordered types in the tuple.
+        elements: Vec<Type>,
+    },
 }
 
 impl std::fmt::Display for Type {
