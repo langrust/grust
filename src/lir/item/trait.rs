@@ -66,12 +66,9 @@ impl std::fmt::Display for TraitAssociatedItem {
 
 #[cfg(test)]
 mod fmt {
-    use crate::{
-        common::r#type::Type as DSLType,
-        lir::{
-            item::signature::{Receiver, Signature},
-            r#type::Type,
-        },
+    use crate::lir::{
+        item::signature::{Receiver, Signature},
+        r#type::Type,
     };
 
     use super::{Trait, TraitAssociatedItem};
@@ -94,8 +91,18 @@ mod fmt {
                             reference: true,
                             mutable: false,
                         }),
-                        inputs: vec![(String::from("f"), Type::MutableReference(DSLType::String))],
-                        output: Type::Owned(DSLType::Unit),
+                        inputs: vec![(
+                            String::from("f"),
+                            Type::Reference {
+                                mutable: true,
+                                element: Box::new(Type::Identifier {
+                                    identifier: String::from("String"),
+                                }),
+                            },
+                        )],
+                        output: Type::Identifier {
+                            identifier: String::from("()"),
+                        },
                     },
                     default: None,
                 },

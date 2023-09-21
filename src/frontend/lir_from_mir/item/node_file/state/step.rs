@@ -1,4 +1,3 @@
-use crate::common::r#type::Type;
 use crate::frontend::lir_from_mir::expression::lir_from_mir as expression_lir_from_mir;
 use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
 use crate::frontend::lir_from_mir::statement::lir_from_mir as statement_lir_from_mir;
@@ -21,7 +20,9 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
         }),
         inputs: vec![(
             String::from("input"),
-            LIRType::Owned(Type::Structure(step.node_name.clone() + "Input")),
+            LIRType::Identifier {
+                identifier: step.node_name.clone() + "Input",
+            },
         )],
         output: type_lir_from_mir(step.output_type), // TODO : ADD TUPLE
     };

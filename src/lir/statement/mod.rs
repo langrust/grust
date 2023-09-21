@@ -29,7 +29,7 @@ impl std::fmt::Display for Statement {
 #[cfg(test)]
 mod fmt {
     use crate::{
-        common::{constant::Constant, operator::BinaryOperator, r#type::Type as DSLType},
+        common::{constant::Constant, operator::BinaryOperator},
         lir::{
             block::Block,
             expression::Expression,
@@ -120,10 +120,22 @@ mod fmt {
                 name: String::from("foo"),
                 receiver: None,
                 inputs: vec![
-                    (String::from("x"), Type::Owned(DSLType::Integer)),
-                    (String::from("y"), Type::Owned(DSLType::Integer)),
+                    (
+                        String::from("x"),
+                        Type::Identifier {
+                            identifier: String::from("i64"),
+                        },
+                    ),
+                    (
+                        String::from("y"),
+                        Type::Identifier {
+                            identifier: String::from("i64"),
+                        },
+                    ),
                 ],
-                output: Type::Owned(DSLType::Integer),
+                output: Type::Identifier {
+                    identifier: String::from("i64"),
+                },
             },
             body: Block {
                 statements: vec![
@@ -177,7 +189,9 @@ mod fmt {
             items: vec![
                 AssociatedItem::AssociatedType {
                     name: String::from("MyString"),
-                    r#type: Type::Owned(DSLType::String),
+                    r#type: Type::Identifier {
+                        identifier: String::from("String"),
+                    },
                 },
                 AssociatedItem::AssociatedMethod {
                     signature: Signature {
@@ -187,8 +201,18 @@ mod fmt {
                             reference: true,
                             mutable: false,
                         }),
-                        inputs: vec![(String::from("f"), Type::MutableReference(DSLType::String))],
-                        output: Type::Owned(DSLType::Unit),
+                        inputs: vec![(
+                            String::from("f"),
+                            Type::Reference {
+                                mutable: true,
+                                element: Box::new(Type::Identifier {
+                                    identifier: String::from("String"),
+                                }),
+                            },
+                        )],
+                        output: Type::Identifier {
+                            identifier: String::from("()"),
+                        },
                     },
                     body: Block {
                         statements: vec![Statement::ExpressionIntern(Expression::Macro {
@@ -331,17 +355,23 @@ mod fmt {
                 Field {
                     public_visibility: true,
                     name: String::from("x"),
-                    r#type: Type::Owned(DSLType::Integer),
+                    r#type: Type::Identifier {
+                        identifier: String::from("i64"),
+                    },
                 },
                 Field {
                     public_visibility: true,
                     name: String::from("y"),
-                    r#type: Type::Owned(DSLType::Integer),
+                    r#type: Type::Identifier {
+                        identifier: String::from("i64"),
+                    },
                 },
                 Field {
                     public_visibility: false,
                     name: String::from("z"),
-                    r#type: Type::Owned(DSLType::Integer),
+                    r#type: Type::Identifier {
+                        identifier: String::from("i64"),
+                    },
                 },
             ],
         }));
@@ -367,8 +397,18 @@ mod fmt {
                             reference: true,
                             mutable: false,
                         }),
-                        inputs: vec![(String::from("f"), Type::MutableReference(DSLType::String))],
-                        output: Type::Owned(DSLType::Unit),
+                        inputs: vec![(
+                            String::from("f"),
+                            Type::Reference {
+                                mutable: true,
+                                element: Box::new(Type::Identifier {
+                                    identifier: String::from("String"),
+                                }),
+                            },
+                        )],
+                        output: Type::Identifier {
+                            identifier: String::from("()"),
+                        },
                     },
                     default: None,
                 },
@@ -384,7 +424,9 @@ mod fmt {
         let alias = Statement::Item(Item::TypeAlias(TypeAlias {
             public_visibility: true,
             name: String::from("Integer"),
-            r#type: Type::Owned(DSLType::Integer),
+            r#type: Type::Identifier {
+                identifier: String::from("i64"),
+            },
         }));
         let control = String::from("pub type Integer = i64;");
         assert_eq!(format!("{}", alias), control)

@@ -1,4 +1,4 @@
-use crate::common::r#type::Type;
+use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
 use crate::lir::item::type_alias::TypeAlias;
 use crate::lir::r#type::Type as LIRType;
 use crate::mir::item::array_alias::ArrayAlias;
@@ -8,9 +8,9 @@ pub fn lir_from_mir(array_alias: ArrayAlias) -> TypeAlias {
     TypeAlias {
         public_visibility: true,
         name: array_alias.name,
-        r#type: LIRType::Owned(Type::Array(
-            Box::new(array_alias.array_type),
-            array_alias.size,
-        )),
+        r#type: LIRType::Array {
+            element: Box::new(type_lir_from_mir(array_alias.array_type)),
+            size: array_alias.size,
+        },
     }
 }

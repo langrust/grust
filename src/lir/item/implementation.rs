@@ -61,7 +61,7 @@ impl std::fmt::Display for AssociatedItem {
 #[cfg(test)]
 mod fmt {
     use crate::{
-        common::{constant::Constant, r#type::Type as DSLType},
+        common::constant::Constant,
         lir::{
             block::Block,
             expression::Expression,
@@ -82,7 +82,9 @@ mod fmt {
             items: vec![
                 AssociatedItem::AssociatedType {
                     name: String::from("MyString"),
-                    r#type: Type::Owned(DSLType::String),
+                    r#type: Type::Identifier {
+                        identifier: String::from("String"),
+                    },
                 },
                 AssociatedItem::AssociatedMethod {
                     signature: Signature {
@@ -92,8 +94,18 @@ mod fmt {
                             reference: true,
                             mutable: false,
                         }),
-                        inputs: vec![(String::from("f"), Type::MutableReference(DSLType::String))],
-                        output: Type::Owned(DSLType::Unit),
+                        inputs: vec![(
+                            String::from("f"),
+                            Type::Reference {
+                                mutable: true,
+                                element: Box::new(Type::Identifier {
+                                    identifier: String::from("String"),
+                                }),
+                            },
+                        )],
+                        output: Type::Identifier {
+                            identifier: String::from("()"),
+                        },
                     },
                     body: Block {
                         statements: vec![Statement::ExpressionIntern(Expression::Macro {

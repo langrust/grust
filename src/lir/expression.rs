@@ -315,7 +315,6 @@ mod fmt {
         common::{
             constant::Constant,
             operator::{BinaryOperator, UnaryOperator},
-            r#type::Type as DSLType,
         },
         lir::{
             block::Block,
@@ -624,7 +623,9 @@ mod fmt {
                 mutable: false,
                 identifier: String::from("a"),
             }],
-            output: Some(Type::Owned(DSLType::Integer)),
+            output: Some(Type::Identifier {
+                identifier: String::from("i64"),
+            }),
             body: Box::new(Expression::Binary {
                 left: Box::new(Expression::Identifier {
                     identifier: String::from("x"),

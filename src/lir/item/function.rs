@@ -17,7 +17,7 @@ impl std::fmt::Display for Function {
 #[cfg(test)]
 mod fmt {
     use crate::{
-        common::{constant::Constant, operator::BinaryOperator, r#type::Type as DSLType},
+        common::{constant::Constant, operator::BinaryOperator},
         lir::{
             block::Block,
             expression::Expression,
@@ -36,10 +36,22 @@ mod fmt {
                 name: String::from("foo"),
                 receiver: None,
                 inputs: vec![
-                    (String::from("x"), Type::Owned(DSLType::Integer)),
-                    (String::from("y"), Type::Owned(DSLType::Integer)),
+                    (
+                        String::from("x"),
+                        Type::Identifier {
+                            identifier: String::from("i64"),
+                        },
+                    ),
+                    (
+                        String::from("y"),
+                        Type::Identifier {
+                            identifier: String::from("i64"),
+                        },
+                    ),
                 ],
-                output: Type::Owned(DSLType::Integer),
+                output: Type::Identifier {
+                    identifier: String::from("i64"),
+                },
             },
             body: Block {
                 statements: vec![
