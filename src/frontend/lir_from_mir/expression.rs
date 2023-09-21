@@ -1,3 +1,4 @@
+use crate::common::operator::{BinaryOperator, UnaryOperator};
 use crate::lir::expression::{Arm, Expression as LIRExpression, FieldExpression};
 use crate::lir::pattern::Pattern;
 use crate::mir::expression::Expression;
@@ -6,6 +7,8 @@ use super::{
     block::lir_from_mir as block_lir_from_mir, pattern::lir_from_mir as pattern_lir_from_mir,
     r#type::lir_from_mir as type_lir_from_mir,
 };
+
+use strum::IntoEnumIterator;
 
 /// Transform MIR expression into LIR expression.
 pub fn lir_from_mir(expression: Expression) -> LIRExpression {
@@ -43,17 +46,48 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
         },
         Expression::FunctionCall {
             function,
-            arguments,
-        } => {
-            let arguments = arguments
-                .into_iter()
-                .map(|expression| lir_from_mir(expression))
-                .collect();
-            LIRExpression::FunctionCall {
-                function: Box::new(lir_from_mir(*function)),
-                arguments,
+            mut arguments,
+        } => match function.as_ref() {
+            Expression::Identifier { identifier } => {
+                if let Some(binary) = BinaryOperator::iter()
+                    .filter(|binary| binary.to_string() == *identifier)
+                    .next()
+                {
+                    LIRExpression::Binary {
+                        left: Box::new(lir_from_mir(arguments.remove(0))),
+                        operator: binary,
+                        right: Box::new(lir_from_mir(arguments.remove(0))),
+                    }
+                } else if let Some(unary) = UnaryOperator::iter()
+                    .filter(|unary| unary.to_string() == *identifier)
+                    .next()
+                {
+                    LIRExpression::Unary {
+                        operator: unary,
+                        expression: Box::new(lir_from_mir(arguments.remove(0))),
+                    }
+                } else {
+                    let arguments = arguments
+                        .into_iter()
+                        .map(|expression| lir_from_mir(expression))
+                        .collect();
+                    LIRExpression::FunctionCall {
+                        function: Box::new(lir_from_mir(*function)),
+                        arguments,
+                    }
+                }
             }
-        }
+            _ => {
+                let arguments = arguments
+                    .into_iter()
+                    .map(|expression| lir_from_mir(expression))
+                    .collect();
+                LIRExpression::FunctionCall {
+                    function: Box::new(lir_from_mir(*function)),
+                    arguments,
+                }
+            }
+        },
         Expression::NodeCall {
             node_identifier,
             input_name,
@@ -141,6 +175,7 @@ mod lir_from_mir {
     use crate::ast::pattern::Pattern;
     use crate::common::constant::Constant;
     use crate::common::location::Location;
+    use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::expression::lir_from_mir;
     use crate::lir::block::Block as LIRBlock;
@@ -321,6 +356,33 @@ mod lir_from_mir {
                     identifier: String::from("b"),
                 },
             ],
+        };
+        assert_eq!(lir_from_mir(expression), control)
+    }
+
+    #[test]
+    fn should_create_lir_binary_from_mir_function_call() {
+        let expression = Expression::FunctionCall {
+            function: Box::new(Expression::Identifier {
+                identifier: String::from(" + "),
+            }),
+            arguments: vec![
+                Expression::Identifier {
+                    identifier: String::from("a"),
+                },
+                Expression::Identifier {
+                    identifier: String::from("b"),
+                },
+            ],
+        };
+        let control = LIRExpression::Binary {
+            left: Box::new(LIRExpression::Identifier {
+                identifier: String::from("a"),
+            }),
+            operator: BinaryOperator::Add,
+            right: Box::new(LIRExpression::Identifier {
+                identifier: String::from("b"),
+            }),
         };
         assert_eq!(lir_from_mir(expression), control)
     }
