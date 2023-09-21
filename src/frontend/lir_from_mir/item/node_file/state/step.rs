@@ -24,7 +24,14 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
                 identifier: step.node_name.clone() + "Input",
             },
         )],
-        output: type_lir_from_mir(step.output_type), // TODO : ADD TUPLE
+        output: LIRType::Tuple {
+            elements: vec![
+                LIRType::Identifier {
+                    identifier: step.node_name.clone() + "State",
+                },
+                type_lir_from_mir(step.output_type),
+            ],
+        },
     };
     let mut statements = step
         .body
