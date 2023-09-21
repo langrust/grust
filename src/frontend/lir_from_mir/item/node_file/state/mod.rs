@@ -1,4 +1,3 @@
-use crate::common::r#type::Type;
 use crate::frontend::lir_from_mir::item::node_file::state::init::lir_from_mir as init_lir_from_mir;
 use crate::frontend::lir_from_mir::item::node_file::state::step::lir_from_mir as step_lir_from_mir;
 use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
@@ -29,7 +28,9 @@ pub fn lir_from_mir(state: State) -> (Structure, Implementation) {
             } => Field {
                 public_visibility: false,
                 name: identifier,
-                r#type: LIRType::Owned(Type::Structure(node_name + "State")),
+                r#type: LIRType::Identifier {
+                    identifier: node_name + "State",
+                },
             },
         })
         .collect();

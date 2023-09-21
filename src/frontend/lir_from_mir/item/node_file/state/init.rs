@@ -1,4 +1,3 @@
-use crate::common::r#type::Type;
 use crate::lir::block::Block;
 use crate::lir::expression::{Expression, FieldExpression};
 use crate::lir::item::implementation::AssociatedItem;
@@ -14,7 +13,9 @@ pub fn lir_from_mir(init: Init) -> AssociatedItem {
         name: String::from("init"),
         receiver: None,
         inputs: vec![],
-        output: LIRType::Owned(Type::Structure(init.node_name.clone() + "State")),
+        output: LIRType::Identifier {
+            identifier: init.node_name.clone() + "State",
+        },
     };
     let fields = init
         .state_elements_init

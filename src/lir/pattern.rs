@@ -128,7 +128,7 @@ impl std::fmt::Display for FieldPattern {
 #[cfg(test)]
 mod fmt {
     use crate::{
-        common::{constant::Constant, r#type::Type as DSLType},
+        common::constant::Constant,
         lir::{pattern::FieldPattern, r#type::Type},
     };
 
@@ -203,7 +203,12 @@ mod fmt {
                 mutable: false,
                 identifier: String::from("x"),
             }),
-            r#type: Type::Reference(DSLType::Integer),
+            r#type: Type::Reference {
+                mutable: false,
+                element: Box::new(Type::Identifier {
+                    identifier: String::from("i64"),
+                }),
+            }, //Type::Reference(DSLType::Integer),
         };
         let control = String::from("x: &i64");
         assert_eq!(format!("{}", pattern), control)

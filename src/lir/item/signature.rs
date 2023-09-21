@@ -1,4 +1,4 @@
-use crate::{common::r#type::Type as DSLType, lir::r#type::Type};
+use crate::lir::r#type::Type;
 
 /// Function or method signature.
 pub struct Signature {
@@ -28,14 +28,17 @@ impl std::fmt::Display for Signature {
             .map(|(id, r#type)| format!("{id}: {}", r#type))
             .collect::<Vec<_>>()
             .join(", ");
-        if let Type::Owned(DSLType::Unit) = self.output {
-            write!(f, "{}fn {}({}{})", visibility, self.name, receiver, inputs)
-        } else {
-            write!(
-                f,
-                "{}fn {}({}{}) -> {}",
-                visibility, self.name, receiver, inputs, self.output
-            )
+        match &self.output {
+            Type::Identifier { identifier } if identifier == &String::from("()") => {
+                write!(f, "{}fn {}({}{})", visibility, self.name, receiver, inputs)
+            }
+            _ => {
+                write!(
+                    f,
+                    "{}fn {}({}{}) -> {}",
+                    visibility, self.name, receiver, inputs, self.output
+                )
+            }
         }
     }
 }
@@ -58,12 +61,9 @@ impl std::fmt::Display for Receiver {
 
 #[cfg(test)]
 mod fmt {
-    use crate::{
-        common::r#type::Type as DSLType,
-        lir::{
-            item::signature::{Receiver, Signature},
-            r#type::Type,
-        },
+    use crate::lir::{
+        item::signature::{Receiver, Signature},
+        r#type::Type,
     };
 
     #[test]
@@ -73,10 +73,22 @@ mod fmt {
             name: String::from("foo"),
             receiver: None,
             inputs: vec![
-                (String::from("x"), Type::Owned(DSLType::Integer)),
-                (String::from("y"), Type::Owned(DSLType::Integer)),
+                (
+                    String::from("x"),
+                    Type::Identifier {
+                        identifier: String::from("i64"),
+                    },
+                ),
+                (
+                    String::from("y"),
+                    Type::Identifier {
+                        identifier: String::from("i64"),
+                    },
+                ),
             ],
-            output: Type::Owned(DSLType::Integer),
+            output: Type::Identifier {
+                identifier: String::from("i64"),
+            },
         };
         let control = String::from("pub fn foo(x: i64, y: i64) -> i64");
         assert_eq!(format!("{}", signature), control)
@@ -91,8 +103,15 @@ mod fmt {
                 reference: true,
                 mutable: true,
             }),
-            inputs: vec![(String::from("y"), Type::Owned(DSLType::Integer))],
-            output: Type::Owned(DSLType::Integer),
+            inputs: vec![(
+                String::from("y"),
+                Type::Identifier {
+                    identifier: String::from("i64"),
+                },
+            )],
+            output: Type::Identifier {
+                identifier: String::from("i64"),
+            },
         };
         let control = String::from("pub fn foo(&mut self, y: i64) -> i64");
         assert_eq!(format!("{}", signature), control)

@@ -19,17 +19,16 @@ impl std::fmt::Display for TypeAlias {
 
 #[cfg(test)]
 mod fmt {
-    use crate::{
-        common::r#type::Type as DSLType,
-        lir::{item::type_alias::TypeAlias, r#type::Type},
-    };
+    use crate::lir::{item::type_alias::TypeAlias, r#type::Type};
 
     #[test]
     fn should_format_type_alias_definition() {
         let alias = TypeAlias {
             public_visibility: true,
             name: String::from("Integer"),
-            r#type: Type::Owned(DSLType::Integer),
+            r#type: Type::Identifier {
+                identifier: String::from("i64"),
+            },
         };
         let control = String::from("pub type Integer = i64;");
         assert_eq!(format!("{}", alias), control)

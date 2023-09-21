@@ -42,12 +42,9 @@ impl std::fmt::Display for Field {
 
 #[cfg(test)]
 mod fmt {
-    use crate::{
-        common::r#type::Type as DSLType,
-        lir::{
-            item::structure::{Field, Structure},
-            r#type::Type,
-        },
+    use crate::lir::{
+        item::structure::{Field, Structure},
+        r#type::Type,
     };
 
     #[test]
@@ -59,17 +56,23 @@ mod fmt {
                 Field {
                     public_visibility: true,
                     name: String::from("x"),
-                    r#type: Type::Owned(DSLType::Integer),
+                    r#type: Type::Identifier {
+                        identifier: String::from("i64"),
+                    },
                 },
                 Field {
                     public_visibility: true,
                     name: String::from("y"),
-                    r#type: Type::Owned(DSLType::Integer),
+                    r#type: Type::Identifier {
+                        identifier: String::from("i64"),
+                    },
                 },
                 Field {
                     public_visibility: false,
                     name: String::from("z"),
-                    r#type: Type::Owned(DSLType::Integer),
+                    r#type: Type::Identifier {
+                        identifier: String::from("i64"),
+                    },
                 },
             ],
         };
