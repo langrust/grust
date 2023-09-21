@@ -1,4 +1,5 @@
 /// An import declaration.
+#[derive(Debug, PartialEq)]
 pub enum Import {
     /// A module import: `mod my_submodule`.
     Module {
@@ -38,6 +39,7 @@ impl std::fmt::Display for Import {
 }
 
 /// A path of an `use` import.
+#[derive(Debug, PartialEq)]
 pub enum PathTree {
     /// Path prefix of import: `std::sync::...`
     Path {

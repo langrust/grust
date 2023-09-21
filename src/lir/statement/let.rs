@@ -1,6 +1,7 @@
 use crate::lir::{expression::Expression, pattern::Pattern};
 
 /// A `let` binding: `let x: u64 = 5`.
+#[derive(Debug, PartialEq)]
 pub struct Let {
     /// The created pattern variables.
     pub pattern: Pattern,

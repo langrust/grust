@@ -1,6 +1,7 @@
 use crate::lir::r#type::Type;
 
 /// Type alias in Rust.
+#[derive(Debug, PartialEq)]
 pub struct TypeAlias {
     /// Visibility: `true` is public, `false` is private.
     pub public_visibility: bool,

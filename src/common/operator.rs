@@ -18,7 +18,7 @@ use crate::common::r#type::Type;
 /// - [BinaryOperator::Leq], "lower or equal" `<=`
 /// - [BinaryOperator::Grt], "greater" `>`
 /// - [BinaryOperator::Low], "lower" `<`
-#[derive(EnumIter)]
+#[derive(EnumIter, Debug, PartialEq)]
 pub enum BinaryOperator {
     /// Multiplication, `x * y`.
     Mul,
@@ -135,7 +135,7 @@ impl BinaryOperator {
 /// - [UnaryOperator::Neg] is the numerical negation `-`
 /// - [UnaryOperator::Not], the logical negation `!`
 /// - [UnaryOperator::Brackets], is the use of brackets `(_)`
-#[derive(EnumIter)]
+#[derive(EnumIter, Debug, PartialEq)]
 pub enum UnaryOperator {
     /// Numerical negation, `-x`.
     Neg,
