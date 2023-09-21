@@ -21,6 +21,7 @@ pub mod r#trait;
 pub mod type_alias;
 
 /// All items that can be defined in a module or a scope.
+#[derive(Debug, PartialEq)]
 pub enum Item {
     /// An enumeration definition: `enum Color { Blue, Yellow }`.
     Enumeration(Enumeration),

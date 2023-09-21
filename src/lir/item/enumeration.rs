@@ -1,4 +1,5 @@
 /// A Rust enumeration.
+#[derive(Debug, PartialEq)]
 pub struct Enumeration {
     /// Visibility: `true` is public, `false` is private.
     pub public_visibility: bool,

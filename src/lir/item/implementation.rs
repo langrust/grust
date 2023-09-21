@@ -1,6 +1,7 @@
 use crate::lir::{block::Block, item::signature::Signature, r#type::Type};
 
 /// Rust trait or type implementation.
+#[derive(Debug, PartialEq)]
 pub struct Implementation {
     /// The optional trait that might is implemented.
     pub trait_name: Option<String>,
@@ -28,6 +29,7 @@ impl std::fmt::Display for Implementation {
 }
 
 /// Items that can be defined in an implementation.
+#[derive(Debug, PartialEq)]
 pub enum AssociatedItem {
     /// Associated type definition.
     AssociatedType {

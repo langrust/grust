@@ -1,6 +1,7 @@
 use crate::lir::r#type::Type;
 
 /// Function or method signature.
+#[derive(Debug, PartialEq)]
 pub struct Signature {
     /// Visibility: `true` is public, `false` is private.
     pub public_visibility: bool,
@@ -44,6 +45,7 @@ impl std::fmt::Display for Signature {
 }
 
 /// The `self` argument of a method.
+#[derive(Debug, PartialEq)]
 pub struct Receiver {
     /// Reference: `true` is reference, `false` is owned.
     pub reference: bool,

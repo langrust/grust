@@ -1,6 +1,7 @@
 use crate::lir::r#type::Type;
 
 /// A Rust structure.
+#[derive(Debug, PartialEq)]
 pub struct Structure {
     /// Visibility: `true` is public, `false` is private.
     pub public_visibility: bool,
@@ -24,6 +25,7 @@ impl std::fmt::Display for Structure {
 }
 
 /// A structure's field.
+#[derive(Debug, PartialEq)]
 pub struct Field {
     /// Visibility: `true` is public, `false` is private.
     pub public_visibility: bool,

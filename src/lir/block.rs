@@ -1,6 +1,7 @@
 use crate::lir::statement::Statement;
 
 /// A block of statements.
+#[derive(Debug, PartialEq)]
 pub struct Block {
     /// Statements of the block.
     pub statements: Vec<Statement>,
