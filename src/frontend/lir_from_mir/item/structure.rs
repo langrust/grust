@@ -19,3 +19,44 @@ pub fn lir_from_mir(structure: Structure) -> LIRStructure {
         fields,
     }
 }
+
+#[cfg(test)]
+mod lir_from_mir {
+    use crate::common::r#type::Type;
+    use crate::frontend::lir_from_mir::item::structure::lir_from_mir;
+    use crate::lir::item::structure::{Field, Structure as LIRStructure};
+    use crate::lir::r#type::Type as LIRType;
+    use crate::mir::item::structure::Structure;
+
+    #[test]
+    fn should_create_lir_structure_from_mir_structure() {
+        let structure = Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (String::from("x"), Type::Integer),
+                (String::from("y"), Type::Integer),
+            ],
+        };
+        let control = LIRStructure {
+            public_visibility: true,
+            name: String::from("Point"),
+            fields: vec![
+                Field {
+                    public_visibility: true,
+                    name: String::from("x"),
+                    r#type: LIRType::Identifier {
+                        identifier: String::from("i64"),
+                    },
+                },
+                Field {
+                    public_visibility: true,
+                    name: String::from("y"),
+                    r#type: LIRType::Identifier {
+                        identifier: String::from("i64"),
+                    },
+                },
+            ],
+        };
+        assert_eq!(lir_from_mir(structure), control)
+    }
+}
