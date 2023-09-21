@@ -34,8 +34,11 @@ mod lir_from_mir {
             public_visibility: false,
             tree: PathTree::Path {
                 module_name: String::from("functions"),
-                tree: Box::new(PathTree::Name { name: String::from("foo"), alias: None }),
-            }
+                tree: Box::new(PathTree::Name {
+                    name: String::from("foo"),
+                    alias: None,
+                }),
+            },
         };
         assert_eq!(lir_from_mir(import), control)
     }

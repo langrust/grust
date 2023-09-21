@@ -24,7 +24,7 @@ pub fn lir_from_mir(input: Input) -> Structure {
 mod lir_from_mir {
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::item::node_file::input::lir_from_mir;
-    use crate::lir::item::structure::{Structure, Field};
+    use crate::lir::item::structure::{Field, Structure};
     use crate::lir::r#type::Type as LIRType;
     use crate::mir::item::node_file::input::{Input, InputElement};
 
@@ -32,15 +32,22 @@ mod lir_from_mir {
     fn should_create_lir_structure_from_mir_node_input() {
         let input = Input {
             node_name: format!("Node"),
-            elements: vec![
-                InputElement { identifier: format!("i"), r#type: Type::Integer }
-            ],
+            elements: vec![InputElement {
+                identifier: format!("i"),
+                r#type: Type::Integer,
+            }],
         };
-        let control = Structure { public_visibility: true, name: format!("NodeInput"), fields: vec![
-            Field { public_visibility: true, name: format!("i"), r#type: LIRType::Identifier {
-                identifier: String::from("i64"),
-            } }
-        ] };
+        let control = Structure {
+            public_visibility: true,
+            name: format!("NodeInput"),
+            fields: vec![Field {
+                public_visibility: true,
+                name: format!("i"),
+                r#type: LIRType::Identifier {
+                    identifier: String::from("i64"),
+                },
+            }],
+        };
         assert_eq!(lir_from_mir(input), control)
     }
 }
