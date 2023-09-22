@@ -37,7 +37,7 @@ pub fn lir_from_mir(init: Init) -> AssociatedItem {
                 name: identifier,
                 expression: Expression::FunctionCall {
                     function: Box::new(Expression::Identifier {
-                        identifier: node_name + "State::init()",
+                        identifier: node_name + "State::init",
                     }),
                     arguments: vec![],
                 },
