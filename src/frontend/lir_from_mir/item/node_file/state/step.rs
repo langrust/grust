@@ -54,11 +54,11 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
         .collect();
     let statement = Statement::ExpressionLast(Expression::Tuple {
         elements: vec![
-            expression_lir_from_mir(step.output_expression),
             Expression::Structure {
                 name: step.node_name + "State",
                 fields,
             },
+            expression_lir_from_mir(step.output_expression),
         ],
     });
 
