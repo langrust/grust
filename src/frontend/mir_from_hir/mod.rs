@@ -4,6 +4,9 @@ pub mod file;
 /// MIR function construction from HIR function.
 pub mod function;
 
+/// MIR node files construction from HIR node.
+pub mod node;
+
 
 /// MIR statement construction from HIR statement.
 pub mod statement;
