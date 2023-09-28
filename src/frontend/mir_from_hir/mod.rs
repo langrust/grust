@@ -13,6 +13,9 @@ pub mod expression;
 /// MIR statement construction from HIR statement.
 pub mod statement;
 
+/// MIR expression construction from HIR stream expression.
+pub mod stream_expression;
+
 /// MIR statement construction from HIR equation.
 pub mod equation;
 
