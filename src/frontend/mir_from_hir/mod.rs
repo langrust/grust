@@ -11,3 +11,6 @@ pub mod statement;
 /// MIR statement construction from HIR equation.
 pub mod equation;
 
+/// MIR node file construction from HIR unitary node.
+pub mod unitary_node;
+
