@@ -21,9 +21,12 @@ pub struct Memory {
 /// Buffer initial_valueized by a constant.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Buffer {
-    typing: Type,
-    initial_value: Constant,
-    expression: StreamExpression,
+    /// Buffer type.
+    pub typing: Type,
+    /// Buffer initial value.
+    pub initial_value: Constant,
+    /// Buffer update expression.
+    pub expression: StreamExpression,
 }
 
 /// Called unitary node' name.
@@ -32,8 +35,10 @@ pub struct Buffer {
 /// node and the name of the called output signal.
 #[derive(Debug, PartialEq, Clone)]
 pub struct CalledNode {
-    node_id: String,
-    signal_id: String,
+    /// Node name.
+    pub node_id: String,
+    /// Output signal name.
+    pub signal_id: String,
 }
 
 impl Memory {
