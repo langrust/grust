@@ -14,3 +14,5 @@ pub mod equation;
 /// MIR node file construction from HIR unitary node.
 pub mod unitary_node;
 
+/// MIR item construction from HIR typedef.
+pub mod typedef;
