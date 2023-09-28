@@ -7,6 +7,8 @@ pub mod function;
 /// MIR node files construction from HIR node.
 pub mod node;
 
+/// MIR expression construction from HIR expression.
+pub mod expression;
 
 /// MIR statement construction from HIR statement.
 pub mod statement;
