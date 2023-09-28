@@ -1,6 +1,9 @@
 /// MIR file construction from HIR project.
 pub mod file;
 
+/// MIR function construction from HIR function.
+pub mod function;
+
 
 /// MIR statement construction from HIR statement.
 pub mod statement;
