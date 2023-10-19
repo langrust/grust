@@ -300,7 +300,7 @@ mod change_node_application_into_unitary_node_application {
         };
         assert_eq!(expression, control);
     }
-    
+
     #[test]
     fn should_add_input_identifiers_in_unitary_node_application_inputs() {
         // my_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
