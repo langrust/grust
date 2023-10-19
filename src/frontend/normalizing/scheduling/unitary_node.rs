@@ -64,29 +64,35 @@ mod schedule {
 
     #[test]
     fn should_schedule_equations_according_to_dependencies() {
-        // out y: int = x-1
+        // out y: int = other_node(x-1).o
         let equation_1 = Equation {
             scope: Scope::Output,
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
                 node: String::from("other_node"),
-                inputs: vec![StreamExpression::MapApplication {
-                    function_expression: Expression::Call {
-                        id: String::from("-1"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        id: String::from("x"),
+                inputs: vec![(
+                    format!("i"),
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("-1"),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                        }],
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                }],
+                    },
+                )],
                 signal: String::from("o"),
                 typing: Type::Integer,
                 location: Location::default(),
@@ -164,7 +170,7 @@ mod schedule {
             location: Location::default(),
         };
         // node test(v: int) {
-        //     out y: int = x-1
+        //     out y: int = other_node(x-1).o
         //     o_1: int = 0 fby x
         //     x: int = v*2 + o_1
         // }
@@ -193,7 +199,7 @@ mod schedule {
         // node test(v: int) {
         //     o_1: int = 0 fby x
         //     x: int = v*2 + o_1
-        //     out y: int = x-1
+        //     out y: int = other_node(x-1).o
         // }
         let control = UnitaryNode {
             node_id: String::from("test"),
@@ -211,29 +217,35 @@ mod schedule {
 
     #[test]
     fn should_ensure_unscheduled_equality() {
-        // out y: int = x-1
+        // out y: int = other_node(x-1).o
         let equation_1 = Equation {
             scope: Scope::Output,
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
                 node: String::from("other_node"),
-                inputs: vec![StreamExpression::MapApplication {
-                    function_expression: Expression::Call {
-                        id: String::from("-1"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        id: String::from("x"),
+                inputs: vec![(
+                    format!("i"),
+                    StreamExpression::MapApplication {
+                        function_expression: Expression::Call {
+                            id: String::from("-1"),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![StreamExpression::SignalCall {
+                            id: String::from("x"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                        }],
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                }],
+                    },
+                )],
                 signal: String::from("o"),
                 typing: Type::Integer,
                 location: Location::default(),
@@ -311,7 +323,7 @@ mod schedule {
             location: Location::default(),
         };
         // node test(v: int) {
-        //     out y: int = x-1
+        //     out y: int = other_node(x-1).o
         //     o_1: int = 0 fby x
         //     x: int = v*2 + o_1
         // }
