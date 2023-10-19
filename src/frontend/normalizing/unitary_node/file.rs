@@ -64,14 +64,16 @@ impl File {
                                 output.clone(),
                                 node.inputs
                                     .iter()
-                                    .map(|input| unitary_node.inputs.contains(input))
-                                    .collect::<Vec<bool>>(),
+                                    .map(|input| {
+                                        (input.0.clone(), unitary_node.inputs.contains(input))
+                                    })
+                                    .collect::<Vec<_>>(),
                             )
                         })
-                        .collect::<HashMap<String, Vec<bool>>>(),
+                        .collect::<HashMap<String, Vec<_>>>(),
                 )
             })
-            .collect::<HashMap<String, HashMap<String, Vec<bool>>>>();
+            .collect::<HashMap<String, HashMap<String, Vec<_>>>>();
 
         // change node application to unitary node application
         self.nodes.iter_mut().for_each(|node| {
@@ -1117,31 +1119,40 @@ mod generate_unitary_nodes {
                     StreamExpression::UnitaryNodeApplication {
                         node: String::from("my_node"),
                         inputs: vec![
-                            StreamExpression::SignalCall {
-                                id: String::from("s"),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
-                            },
-                            StreamExpression::MapApplication {
-                                function_expression: Expression::Call {
-                                    id: String::from("*2"),
-                                    typing: Some(Type::Abstract(
-                                        vec![Type::Integer],
-                                        Box::new(Type::Integer),
-                                    )),
+                            (
+                                format!("x"),
+                                StreamExpression::SignalCall {
+                                    id: String::from("s"),
+                                    typing: Type::Integer,
                                     location: Location::default(),
+                                    dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                                 },
-                                inputs: vec![StreamExpression::SignalCall {
-                                    id: String::from("v"),
+                            ),
+                            (
+                                format!("y"),
+                                StreamExpression::MapApplication {
+                                    function_expression: Expression::Call {
+                                        id: String::from("*2"),
+                                        typing: Some(Type::Abstract(
+                                            vec![Type::Integer],
+                                            Box::new(Type::Integer),
+                                        )),
+                                        location: Location::default(),
+                                    },
+                                    inputs: vec![StreamExpression::SignalCall {
+                                        id: String::from("v"),
+                                        typing: Type::Integer,
+                                        location: Location::default(),
+                                        dependencies: Dependencies::from(vec![(
+                                            String::from("v"),
+                                            0,
+                                        )]),
+                                    }],
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                                }],
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                            },
+                                },
+                            ),
                         ],
                         signal: String::from("o"),
                         typing: Type::Integer,
@@ -1181,31 +1192,37 @@ mod generate_unitary_nodes {
             expression: StreamExpression::UnitaryNodeApplication {
                 node: String::from("other_node"),
                 inputs: vec![
-                    StreamExpression::MapApplication {
-                        function_expression: Expression::Call {
-                            id: String::from("-1"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("g"),
+                    (
+                        format!("x"),
+                        StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("-1"),
+                                typing: Some(Type::Abstract(
+                                    vec![Type::Integer],
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("g"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                            }],
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
-                    },
-                    StreamExpression::SignalCall {
-                        id: String::from("v"),
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                    },
+                        },
+                    ),
+                    (
+                        format!("y"),
+                        StreamExpression::SignalCall {
+                            id: String::from("v"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        },
+                    ),
                 ],
                 signal: String::from("o1"),
                 typing: Type::Integer,
@@ -1236,12 +1253,15 @@ mod generate_unitary_nodes {
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
                 node: String::from("other_node"),
-                inputs: vec![StreamExpression::SignalCall {
-                    id: String::from("v"),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                }],
+                inputs: vec![(
+                    format!("y"),
+                    StreamExpression::SignalCall {
+                        id: String::from("v"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                    },
+                )],
                 signal: String::from("o2"),
                 typing: Type::Integer,
                 location: Location::default(),

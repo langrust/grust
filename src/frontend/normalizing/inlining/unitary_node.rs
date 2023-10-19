@@ -37,15 +37,13 @@ impl UnitaryNode {
     pub fn instantiate_equations(
         &self,
         identifier_creator: &mut IdentifierCreator,
-        inputs: &Vec<StreamExpression>,
+        inputs: &Vec<(String, StreamExpression)>,
         new_output_signal: Option<&String>,
     ) -> Vec<Equation> {
         // create the context with the given inputs
-        let mut context_map = self
-            .inputs
+        let mut context_map = inputs
             .iter()
-            .zip(inputs)
-            .map(|((input, _), expression)| (input.clone(), Union::I2(expression.clone())))
+            .map(|(input, expression)| (input.clone(), Union::I2(expression.clone())))
             .collect::<HashMap<_, _>>();
 
         // add output to context
@@ -155,12 +153,15 @@ mod instantiate_equations {
 
         let equations = unitary_node.instantiate_equations(
             &mut identifier_creator,
-            &vec![StreamExpression::SignalCall {
-                id: String::from("o"),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
-            }],
+            &vec![(
+                format!("i"),
+                StreamExpression::SignalCall {
+                    id: String::from("o"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+                },
+            )],
             None,
         );
 
@@ -286,12 +287,15 @@ mod instantiate_equations {
 
         let equations = unitary_node.instantiate_equations(
             &mut identifier_creator,
-            &vec![StreamExpression::SignalCall {
-                id: String::from("o"),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
-            }],
+            &vec![(
+                format!("i"),
+                StreamExpression::SignalCall {
+                    id: String::from("o"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+                },
+            )],
             Some(&String::from("o")),
         );
 
