@@ -98,7 +98,10 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
         } => Expression::NodeCall {
             node_identifier: node.clone() + &signal,
             input_name: node.clone() + &signal + "Inputs",
-            input_fields: todo!(),
+            input_fields: inputs
+                .into_iter()
+                .map(|(id, expression)| (id, mir_from_hir(expression)))
+                .collect(),
         },
         _ => unreachable!(),
     }
