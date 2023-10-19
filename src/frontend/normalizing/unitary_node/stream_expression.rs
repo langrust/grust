@@ -300,4 +300,76 @@ mod change_node_application_into_unitary_node_application {
         };
         assert_eq!(expression, control);
     }
+    
+    #[test]
+    fn should_add_input_identifiers_in_unitary_node_application_inputs() {
+        // my_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
+        let unitary_nodes_used_inputs = HashMap::from([(
+            String::from("my_node"),
+            HashMap::from([
+                (
+                    String::from("o1"),
+                    vec![(format!("x"), true), (format!("y"), true)],
+                ),
+                (
+                    String::from("o2"),
+                    vec![(format!("x"), false), (format!("y"), true)],
+                ),
+            ]),
+        )]);
+
+        // expression = my_node(g-1, v).o2
+        let mut expression = StreamExpression::NodeApplication {
+            node: String::from("my_node"),
+            inputs: vec![
+                StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("-1"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        id: String::from("g"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                },
+                StreamExpression::SignalCall {
+                    id: String::from("v"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                },
+            ],
+            signal: String::from("o2"),
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+        };
+        expression
+            .change_node_application_into_unitary_node_application(&unitary_nodes_used_inputs);
+
+        // control = my_node(v).o2
+        let control = StreamExpression::UnitaryNodeApplication {
+            node: String::from("my_node"),
+            inputs: vec![(
+                format!("y"),
+                StreamExpression::SignalCall {
+                    id: String::from("v"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                },
+            )],
+            signal: String::from("o2"),
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+        };
+        assert_eq!(expression, control);
+    }
 }
