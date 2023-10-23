@@ -73,7 +73,9 @@ pub enum StreamExpression {
     },
     /// Unitary node application stream expression.
     UnitaryNodeApplication {
-        /// The mother node.
+        /// The node state identifier.
+        id: Option<String>,
+        /// The mother node type.
         node: String,
         /// The output signal corresponding to the unitary node.
         signal: String,
