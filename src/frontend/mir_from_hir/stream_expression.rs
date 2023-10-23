@@ -91,7 +91,6 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
             ],
         },
         StreamExpression::UnitaryNodeApplication {
-            id: None,
             node,
             signal,
             inputs,
