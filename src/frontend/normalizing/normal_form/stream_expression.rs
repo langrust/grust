@@ -220,6 +220,21 @@ impl StreamExpression {
         }
     }
 
+    /// Change HIR expression into a signal call.
+    ///
+    /// If the expression is not a signal call, then normalize the expression,
+    /// create an equation with the normalized expression and change current
+    /// expression into a call to the equation.
+    ///
+    /// # Example
+    ///
+    /// The expression `1 + my_node(s, v*2).o` becomes `x` along with:
+    ///
+    /// ```GR
+    /// x_1: int = v*2;
+    /// x_2: int = my_node(s, x_1).o;
+    /// x: int = 1 + x_2;
+    /// ```
     pub fn into_signal_call(
         &mut self,
         identifier_creator: &mut IdentifierCreator,
