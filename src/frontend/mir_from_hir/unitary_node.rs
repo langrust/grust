@@ -219,3 +219,418 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
         },
     }
 }
+
+#[cfg(test)]
+mod get_imports {
+    use crate::{
+        ast::expression::Expression,
+        common::{location::Location, r#type::Type},
+        frontend::mir_from_hir::unitary_node::get_imports,
+        hir::{dependencies::Dependencies, stream_expression::StreamExpression},
+        mir::item::node_file::import::Import,
+    };
+
+    #[test]
+    fn should_get_function_import_from_function_call_expression() {
+        let expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: format!("my_function"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::SignalCall {
+                id: format!("x"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+            }],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+        };
+        let control = vec![Import::Function(format!("my_function"))];
+        assert_eq!(get_imports(&expression), control)
+    }
+
+    #[test]
+    fn should_get_node_import_from_node_call_expression() {
+        let expression = StreamExpression::UnitaryNodeApplication {
+            id: Some(format!("my_nodeox")),
+            node: format!("my_node"),
+            signal: format!("o"),
+            inputs: vec![(
+                format!("i"),
+                StreamExpression::SignalCall {
+                    id: format!("x"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+                },
+            )],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+        };
+        let control = vec![Import::NodeFile(format!("my_node"))];
+        assert_eq!(get_imports(&expression), control)
+    }
+}
+
+#[cfg(test)]
+mod get_state_elements {
+    use std::collections::HashMap;
+
+    use crate::{
+        ast::expression::Expression as ASTExpression,
+        common::{constant::Constant, location::Location, r#type::Type},
+        frontend::mir_from_hir::unitary_node::get_state_elements,
+        hir::{
+            dependencies::Dependencies,
+            memory::{Buffer, CalledNode, Memory},
+            stream_expression::StreamExpression,
+        },
+        mir::{
+            expression::Expression,
+            item::node_file::state::{
+                init::StateElementInit, step::StateElementStep, StateElement,
+            },
+        },
+    };
+
+    #[test]
+    fn should_get_buffer_element_initialization_and_update() {
+        let memory = Memory {
+            buffers: HashMap::from([(
+                format!("mem_i"),
+                Buffer {
+                    typing: Type::Integer,
+                    initial_value: Constant::Integer(0),
+                    expression: StreamExpression::MapApplication {
+                        function_expression: ASTExpression::Call {
+                            id: format!(" + "),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer, Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![
+                            StreamExpression::SignalCall {
+                                id: format!("i"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+                            },
+                            StreamExpression::Constant {
+                                constant: Constant::Integer(1),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::new(),
+                            },
+                        ],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+                    },
+                },
+            )]),
+            called_nodes: HashMap::new(),
+        };
+        let control = (
+            vec![StateElement::Buffer {
+                identifier: format!("mem_i"),
+                r#type: Type::Integer,
+            }],
+            vec![StateElementInit::BufferInit {
+                identifier: format!("mem_i"),
+                initial_value: Constant::Integer(0),
+            }],
+            vec![StateElementStep {
+                identifier: format!("mem_i"),
+                expression: Expression::FunctionCall {
+                    function: Box::new(Expression::Identifier {
+                        identifier: format!(" + "),
+                    }),
+                    arguments: vec![
+                        Expression::Identifier {
+                            identifier: format!("i"),
+                        },
+                        Expression::Literal {
+                            literal: Constant::Integer(1),
+                        },
+                    ],
+                },
+            }],
+        );
+        assert_eq!(get_state_elements(memory), control)
+    }
+
+    #[test]
+    fn should_get_called_node_element_initialization_and_update() {
+        let memory = Memory {
+            buffers: HashMap::new(),
+            called_nodes: HashMap::from([(
+                format!("my_nodeox"),
+                CalledNode {
+                    node_id: format!("my_node"),
+                    signal_id: format!("o"),
+                },
+            )]),
+        };
+        let control = (
+            vec![StateElement::CalledNode {
+                identifier: format!("my_nodeox"),
+                node_name: format!("my_nodeo"),
+            }],
+            vec![StateElementInit::CalledNodeInit {
+                identifier: format!("my_nodeox"),
+                node_name: format!("my_nodeo"),
+            }],
+            vec![StateElementStep {
+                identifier: format!("my_nodeox"),
+                expression: Expression::Identifier {
+                    identifier: format!("my_nodeox"),
+                },
+            }],
+        );
+        assert_eq!(get_state_elements(memory), control)
+    }
+}
+
+#[cfg(test)]
+mod mir_from_hir {
+    use std::collections::HashMap;
+
+    use once_cell::sync::OnceCell;
+
+    use crate::{
+        ast::expression::Expression as ASTExpression,
+        common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
+        frontend::mir_from_hir::unitary_node::mir_from_hir,
+        hir::{
+            dependencies::Dependencies,
+            equation::Equation,
+            memory::{Buffer, CalledNode, Memory},
+            stream_expression::StreamExpression,
+            unitary_node::UnitaryNode,
+        },
+        mir::{
+            expression::Expression,
+            item::node_file::{
+                import::Import,
+                input::{Input, InputElement},
+                state::{
+                    init::{Init, StateElementInit},
+                    step::{StateElementStep, Step},
+                    State, StateElement,
+                },
+                NodeFile,
+            },
+            statement::Statement,
+        },
+    };
+
+    #[test]
+    fn should_transform_hir_unitary_node_definition_into_mir_node_file() {
+        let memory = Memory {
+            buffers: HashMap::from([(
+                format!("mem_i"),
+                Buffer {
+                    typing: Type::Integer,
+                    initial_value: Constant::Integer(0),
+                    expression: StreamExpression::MapApplication {
+                        function_expression: ASTExpression::Call {
+                            id: format!(" + "),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer, Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![
+                            StreamExpression::SignalCall {
+                                id: format!("i"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+                            },
+                            StreamExpression::Constant {
+                                constant: Constant::Integer(1),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::new(),
+                            },
+                        ],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+                    },
+                },
+            )]),
+            called_nodes: HashMap::from([(
+                format!("other_nodeoo"),
+                CalledNode {
+                    node_id: format!("other_node"),
+                    signal_id: format!("o"),
+                },
+            )]),
+        };
+        let unitary_node = UnitaryNode {
+            node_id: format!("my_node"),
+            output_id: format!("o"),
+            inputs: vec![(format!("x"), Type::Integer)],
+            equations: vec![
+                Equation {
+                    scope: Scope::Local,
+                    id: format!("i"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::SignalCall {
+                        id: format!("mem_i"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(format!("i"), 1)]),
+                    },
+                    location: Location::default(),
+                },
+                Equation {
+                    scope: Scope::Output,
+                    id: format!("o"),
+                    signal_type: Type::Integer,
+                    expression: StreamExpression::UnitaryNodeApplication {
+                        id: Some(format!("other_nodeoo")),
+                        node: format!("other_node"),
+                        signal: format!("o"),
+                        inputs: vec![
+                            (
+                                format!("a"),
+                                StreamExpression::SignalCall {
+                                    id: format!("x"),
+                                    typing: Type::Integer,
+                                    location: Location::default(),
+                                    dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                                },
+                            ),
+                            (
+                                format!("b"),
+                                StreamExpression::SignalCall {
+                                    id: format!("i"),
+                                    typing: Type::Integer,
+                                    location: Location::default(),
+                                    dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+                                },
+                            ),
+                        ],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![
+                            (format!("x"), 0),
+                            (format!("i"), 0),
+                        ]),
+                    },
+                    location: Location::default(),
+                },
+            ],
+            memory,
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let control = NodeFile {
+            name: format!("my_nodeo"),
+            imports: vec![Import::NodeFile(format!("other_node"))],
+            input: Input {
+                node_name: format!("my_nodeo"),
+                elements: vec![InputElement {
+                    identifier: format!("x"),
+                    r#type: Type::Integer,
+                }],
+            },
+            state: State {
+                node_name: format!("my_nodeo"),
+                elements: vec![
+                    StateElement::Buffer {
+                        identifier: format!("mem_i"),
+                        r#type: Type::Integer,
+                    },
+                    StateElement::CalledNode {
+                        identifier: format!("other_nodeoo"),
+                        node_name: format!("other_nodeo"),
+                    },
+                ],
+                step: Step {
+                    node_name: format!("my_nodeo"),
+                    output_type: Type::Integer,
+                    body: vec![
+                        Statement::Let {
+                            identifier: format!("i"),
+                            expression: Expression::MemoryAccess {
+                                identifier: format!("mem_i"),
+                            },
+                        },
+                        Statement::LetTuple {
+                            identifiers: vec![format!("other_nodeoo"), format!("o")],
+                            expression: Expression::NodeCall {
+                                node_identifier: format!("other_nodeoo"),
+                                input_name: format!("other_nodeInput"),
+                                input_fields: vec![
+                                    (
+                                        format!("a"),
+                                        Expression::Identifier {
+                                            identifier: format!("x"),
+                                        },
+                                    ),
+                                    (
+                                        format!("b"),
+                                        Expression::Identifier {
+                                            identifier: format!("i"),
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                    ],
+                    state_elements_step: vec![
+                        StateElementStep {
+                            identifier: format!("mem_i"),
+                            expression: Expression::FunctionCall {
+                                function: Box::new(Expression::Identifier {
+                                    identifier: format!(" + "),
+                                }),
+                                arguments: vec![
+                                    Expression::Identifier {
+                                        identifier: format!("i"),
+                                    },
+                                    Expression::Literal {
+                                        literal: Constant::Integer(1),
+                                    },
+                                ],
+                            },
+                        },
+                        StateElementStep {
+                            identifier: format!("other_nodeoo"),
+                            expression: Expression::Identifier {
+                                identifier: format!("other_nodeoo"),
+                            },
+                        },
+                    ],
+                    output_expression: Expression::Identifier {
+                        identifier: format!("o"),
+                    },
+                },
+                init: Init {
+                    node_name: format!("my_nodeo"),
+                    state_elements_init: vec![
+                        StateElementInit::BufferInit {
+                            identifier: format!("mem_i"),
+                            initial_value: Constant::Integer(0),
+                        },
+                        StateElementInit::CalledNodeInit {
+                            identifier: format!("other_nodeoo"),
+                            node_name: format!("other_nodeo"),
+                        },
+                    ],
+                },
+            },
+        };
+        assert_eq!(mir_from_hir(unitary_node), control)
+    }
+}
