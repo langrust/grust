@@ -46,6 +46,12 @@ impl Equation {
                     })
                     .collect::<Vec<_>>();
 
+                // set the identifier to the node state
+                *node_state_id = Some(identifier_creator.new_identifier(
+                    String::from(""),
+                    node.clone() + signal,
+                    id.clone(),
+                ));
 
                 // change dependencies to be the sum of inputs dependencies
                 *dependencies = Dependencies::from(
@@ -165,7 +171,7 @@ mod normal_form {
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: None,
+                    id: Some(format!("my_nodeox_1")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -324,7 +330,7 @@ mod normal_form {
                 id: String::from("y"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: None,
+                    id: Some(format!("other_nodeoy")),
                     node: String::from("other_node"),
                     inputs: vec![
                         (
@@ -358,5 +364,75 @@ mod normal_form {
             },
         ];
         assert_eq!(equations, control);
+    }
+
+    #[test]
+    fn should_set_identifier_to_node_state_in_unitary_node_application() {
+        // out y: int = other_node(g-1, v).o;
+        let equation = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
+                node: String::from("other_node"),
+                inputs: vec![
+                    (
+                        format!("x"),
+                        StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("-1"),
+                                typing: Some(Type::Abstract(
+                                    vec![Type::Integer],
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("g"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                            }],
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                        },
+                    ),
+                    (
+                        format!("y"),
+                        StreamExpression::SignalCall {
+                            id: String::from("v"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        },
+                    ),
+                ],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("g"), 0),
+                    (String::from("v"), 0),
+                ]),
+            },
+            location: Location::default(),
+        };
+        let mut identifier_creator = IdentifierCreator::from(vec![
+            String::from("v"),
+            String::from("g"),
+            String::from("y"),
+        ]);
+        let equations = equation.normal_form(&mut identifier_creator);
+
+        for Equation { expression, .. } in equations {
+            if let StreamExpression::UnitaryNodeApplication {
+                id,
+                ..
+            } = expression {
+                assert!(id.is_some())
+            }
+        }
     }
 }

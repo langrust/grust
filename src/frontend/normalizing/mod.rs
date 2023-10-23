@@ -1087,7 +1087,7 @@ mod normalize {
                     id: String::from("x_2"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::UnitaryNodeApplication {
-                        id: None,
+                        id: Some(format!("my_nodeo2x_2")),
                         node: String::from("my_node"),
                         signal: String::from("o2"),
                         inputs: vec![(
@@ -1135,7 +1135,7 @@ mod normalize {
                     id: String::from("x"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::UnitaryNodeApplication {
-                        id: None,
+                        id: Some(format!("my_nodeo1x")),
                         node: String::from("my_node"),
                         signal: String::from("o1"),
                         inputs: vec![

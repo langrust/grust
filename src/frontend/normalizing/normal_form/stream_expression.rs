@@ -77,6 +77,12 @@ impl StreamExpression {
                     String::from(""),
                 );
 
+                // set the identifier to the node state
+                *id = Some(identifier_creator.new_identifier(
+                    String::from(""),
+                    node.clone() + signal,
+                    fresh_id.clone(),
+                ));
 
                 // change dependencies to be the sum of inputs dependencies
                 *dependencies = Dependencies::from(
@@ -421,7 +427,7 @@ mod normal_form {
             id: String::from("x_2"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: None,
+                id: Some(format!("my_nodeox_2")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -584,7 +590,7 @@ mod normal_form {
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: None,
+                    id: Some(format!("my_nodeox_2")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -618,5 +624,86 @@ mod normal_form {
             },
         ];
         assert_eq!(equations, control)
+    }
+
+    #[test]
+    fn should_set_identifier_to_node_state_in_unitary_node_application() {
+        // x: int = 1 + my_node(s, v*2).o;
+        let mut identifier_creator = IdentifierCreator {
+            signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
+        };
+
+        let mut expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("+"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                location: Location::default(),
+            },
+            inputs: vec![
+                StreamExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![]),
+                },
+                StreamExpression::UnitaryNodeApplication {
+                    id: None,
+                    node: String::from("my_node"),
+                    inputs: vec![
+                        (
+                            format!("x"),
+                            StreamExpression::SignalCall {
+                                id: String::from("s"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
+                            },
+                        ),
+                        (
+                            format!("y"),
+                            StreamExpression::MapApplication {
+                                function_expression: Expression::Call {
+                                    id: String::from("*2"),
+                                    typing: Some(Type::Abstract(
+                                        vec![Type::Integer],
+                                        Box::new(Type::Integer),
+                                    )),
+                                    location: Location::default(),
+                                },
+                                inputs: vec![StreamExpression::SignalCall {
+                                    id: String::from("v"),
+                                    typing: Type::Integer,
+                                    location: Location::default(),
+                                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                                }],
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                            },
+                        ),
+                    ],
+                    signal: String::from("o"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![
+                        (String::from("s"), 0),
+                        (String::from("v"), 0),
+                    ]),
+                },
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
+        };
+        let equations = expression.normal_form(&mut identifier_creator);
+
+        for Equation { expression, .. } in equations {
+            if let StreamExpression::UnitaryNodeApplication {
+                id,
+                ..
+            } = expression {
+                assert!(id.is_some())
+            }
+        }
     }
 }
