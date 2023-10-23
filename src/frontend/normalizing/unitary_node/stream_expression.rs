@@ -61,6 +61,7 @@ impl StreamExpression {
                     .collect::<Vec<_>>();
 
                 *self = StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: node.clone(),
                     signal: signal.clone(),
                     inputs,
@@ -69,7 +70,7 @@ impl StreamExpression {
                     dependencies: dependencies.clone(),
                 };
             }
-            StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
+            StreamExpression::UnitaryNodeApplication { id: None, .. } => unreachable!(),
             StreamExpression::Structure { fields, .. } => {
                 fields.iter_mut().for_each(|(_, expression)| {
                     expression.change_node_application_into_unitary_node_application(
@@ -187,6 +188,7 @@ mod change_node_application_into_unitary_node_application {
 
         // control = my_node(g-1, v).o1
         let control = StreamExpression::UnitaryNodeApplication {
+            id: None,
             node: String::from("my_node"),
             inputs: vec![
                 (
@@ -283,6 +285,7 @@ mod change_node_application_into_unitary_node_application {
 
         // control = my_node(v).o2
         let control = StreamExpression::UnitaryNodeApplication {
+            id: None,
             node: String::from("my_node"),
             inputs: vec![(
                 format!("y"),
@@ -355,6 +358,7 @@ mod change_node_application_into_unitary_node_application {
 
         // control = my_node(v).o2
         let control = StreamExpression::UnitaryNodeApplication {
+            id: None,
             node: String::from("my_node"),
             inputs: vec![(
                 format!("y"),

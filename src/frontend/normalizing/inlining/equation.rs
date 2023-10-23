@@ -105,6 +105,7 @@ impl Equation {
     ) -> Vec<Equation> {
         match &self.expression {
             StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node,
                 inputs,
                 signal,
@@ -160,6 +161,7 @@ impl Equation {
                         id: self.id.clone(),
                         signal_type: self.signal_type.clone(),
                         expression: StreamExpression::UnitaryNodeApplication {
+                            id: None,
                             node: node.clone(),
                             inputs,
                             signal: signal.clone(),
@@ -540,6 +542,7 @@ mod inline_when_needed {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -590,6 +593,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -876,6 +880,7 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -933,6 +938,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -1118,6 +1124,7 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::UnitaryNodeApplication {
+                        id: None,
                         node: String::from("other_node"),
                         inputs: vec![(
                             format!("i"),
@@ -1256,6 +1263,7 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -1313,6 +1321,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -1405,6 +1414,7 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::UnitaryNodeApplication {
+                        id: None,
                         node: String::from("other_node"),
                         inputs: vec![(
                             format!("i"),
@@ -1643,6 +1653,7 @@ mod inline_when_needed_reccursive {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -1693,6 +1704,7 @@ mod inline_when_needed_reccursive {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -1979,6 +1991,7 @@ mod inline_when_needed_reccursive {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -2036,6 +2049,7 @@ mod inline_when_needed_reccursive {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -2227,6 +2241,7 @@ mod inline_when_needed_reccursive {
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
                     },
                     StreamExpression::UnitaryNodeApplication {
+                        id: None,
                         node: String::from("other_node"),
                         signal: String::from("o"),
                         inputs: vec![(
@@ -2344,6 +2359,7 @@ mod inline_when_needed_reccursive {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -2394,6 +2410,7 @@ mod inline_when_needed_reccursive {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),

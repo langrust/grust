@@ -563,6 +563,7 @@ mod memorize {
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("my_node"),
                     inputs: vec![
                         (
