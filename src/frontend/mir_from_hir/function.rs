@@ -32,3 +32,95 @@ pub fn mir_from_hir(function: Function) -> MIRFunction {
         body: Block { statements },
     }
 }
+
+#[cfg(test)]
+mod mir_from_hir {
+    use crate::{
+        ast::{
+            expression::Expression as ASTExpression, function::Function as ASTFunction,
+            statement::Statement as ASTStatement,
+        },
+        common::{location::Location, r#type::Type},
+        frontend::mir_from_hir::function::mir_from_hir,
+        mir::{
+            block::Block, expression::Expression, item::function::Function, statement::Statement,
+        },
+    };
+
+    #[test]
+    fn should_transform_ast_function_definition_into_mir_function_definition() {
+        let function = ASTFunction {
+            id: format!("add"),
+            inputs: vec![(format!("x"), Type::Integer), (format!("y"), Type::Integer)],
+            statements: vec![ASTStatement {
+                id: format!("o"),
+                expression: ASTExpression::Application {
+                    function_expression: Box::new(ASTExpression::Call {
+                        id: format!(" + "),
+                        typing: Some(Type::Abstract(
+                            vec![Type::Integer, Type::Integer],
+                            Box::new(Type::Integer),
+                        )),
+                        location: Location::default(),
+                    }),
+                    inputs: vec![
+                        ASTExpression::Call {
+                            id: format!("x"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                        ASTExpression::Call {
+                            id: format!("y"),
+                            typing: Some(Type::Integer),
+                            location: Location::default(),
+                        },
+                    ],
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+                element_type: Type::Integer,
+                location: Location::default(),
+            }],
+            returned: (
+                Type::Integer,
+                ASTExpression::Call {
+                    id: format!("o"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+            ),
+            location: Location::default(),
+        };
+        let control = Function {
+            name: format!("add"),
+            inputs: vec![(format!("x"), Type::Integer), (format!("y"), Type::Integer)],
+            output: Type::Integer,
+            body: Block {
+                statements: vec![
+                    Statement::Let {
+                        identifier: format!("o"),
+                        expression: Expression::FunctionCall {
+                            function: Box::new(Expression::Identifier {
+                                identifier: format!(" + "),
+                            }),
+                            arguments: vec![
+                                Expression::Identifier {
+                                    identifier: format!("x"),
+                                },
+                                Expression::Identifier {
+                                    identifier: format!("y"),
+                                },
+                            ],
+                        },
+                    },
+                    Statement::ExpressionLast {
+                        expression: Expression::Identifier {
+                            identifier: format!("o"),
+                        },
+                    },
+                ],
+            },
+        };
+        assert_eq!(mir_from_hir(function), control)
+    }
+}
