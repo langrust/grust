@@ -224,9 +224,9 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
 mod get_imports {
     use crate::{
         ast::expression::Expression,
-        common::{location::Location, r#type::Type, scope::Scope},
+        common::{location::Location, r#type::Type},
         frontend::mir_from_hir::unitary_node::get_imports,
-        hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
+        hir::{dependencies::Dependencies, stream_expression::StreamExpression},
         mir::item::node_file::import::Import,
     };
 
@@ -239,17 +239,14 @@ mod get_imports {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
-                signal: Signal {
-                    id: format!("x"),
-                    scope: Scope::Input,
-                },
+                id: format!("x"),
                 typing: Type::Integer,
                 location: Location::default(),
-                dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                dependencies: Dependencies::from(vec![(format!("i"), 0)]),
             }],
             typing: Type::Integer,
             location: Location::default(),
-            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+            dependencies: Dependencies::from(vec![(format!("i"), 0)]),
         };
         let control = vec![Import::Function(format!("my_function"))];
         assert_eq!(get_imports(&expression), control)
@@ -264,18 +261,15 @@ mod get_imports {
             inputs: vec![(
                 format!("i"),
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: format!("x"),
-                        scope: Scope::Input,
-                    },
+                    id: format!("x"),
                     typing: Type::Integer,
                     location: Location::default(),
-                    dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                    dependencies: Dependencies::from(vec![(format!("i"), 0)]),
                 },
             )],
             typing: Type::Integer,
             location: Location::default(),
-            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+            dependencies: Dependencies::from(vec![(format!("i"), 0)]),
         };
         let control = vec![Import::NodeFile(format!("my_node"))];
         assert_eq!(get_imports(&expression), control)
@@ -288,12 +282,11 @@ mod get_state_elements {
 
     use crate::{
         ast::expression::Expression as ASTExpression,
-        common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
+        common::{constant::Constant, location::Location, r#type::Type},
         frontend::mir_from_hir::unitary_node::get_state_elements,
         hir::{
             dependencies::Dependencies,
             memory::{Buffer, CalledNode, Memory},
-            signal::Signal,
             stream_expression::StreamExpression,
         },
         mir::{
@@ -323,10 +316,7 @@ mod get_state_elements {
                         },
                         inputs: vec![
                             StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: format!("i"),
-                                    scope: Scope::Local,
-                                },
+                                id: format!("i"),
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(format!("i"), 0)]),
@@ -421,7 +411,6 @@ mod mir_from_hir {
             dependencies::Dependencies,
             equation::Equation,
             memory::{Buffer, CalledNode, Memory},
-            signal::Signal,
             stream_expression::StreamExpression,
             unitary_node::UnitaryNode,
         },
@@ -431,7 +420,6 @@ mod mir_from_hir {
                 import::Import,
                 input::{Input, InputElement},
                 state::{
-                    init::{Init, StateElementInit},
                     step::{StateElementStep, Step},
                     State, StateElement,
                 },
@@ -460,10 +448,7 @@ mod mir_from_hir {
                         },
                         inputs: vec![
                             StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: format!("i"),
-                                    scope: Scope::Local,
-                                },
+                                id: format!("i"),
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(format!("i"), 0)]),
@@ -498,11 +483,35 @@ mod mir_from_hir {
                     scope: Scope::Local,
                     id: format!("i"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: format!("i"),
-                            scope: Scope::Memory,
-                        },
+                    expression: StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::MapApplication {
+                            function_expression: ASTExpression::Call {
+                                id: format!(" + "),
+                                typing: Some(Type::Abstract(
+                                    vec![Type::Integer, Type::Integer],
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![
+                                StreamExpression::SignalCall {
+                                    id: format!("i"),
+                                    typing: Type::Integer,
+                                    location: Location::default(),
+                                    dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+                                },
+                                StreamExpression::Constant {
+                                    constant: Constant::Integer(1),
+                                    typing: Type::Integer,
+                                    location: Location::default(),
+                                    dependencies: Dependencies::new(),
+                                },
+                            ],
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(format!("i"), 0)]),
+                        }),
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("i"), 1)]),
@@ -521,10 +530,7 @@ mod mir_from_hir {
                             (
                                 format!("a"),
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: format!("x"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: format!("x"),
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -533,10 +539,7 @@ mod mir_from_hir {
                             (
                                 format!("b"),
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: format!("i"),
-                                        scope: Scope::Local,
-                                    },
+                                    id: format!("i"),
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(format!("i"), 0)]),
@@ -570,13 +573,13 @@ mod mir_from_hir {
             state: State {
                 node_name: format!("my_nodeo"),
                 elements: vec![
+                    StateElement::CalledNode {
+                        identifier: format!("other_nodeoo"),
+                        node_name: format!("other_node"),
+                    },
                     StateElement::Buffer {
                         identifier: format!("mem_i"),
                         r#type: Type::Integer,
-                    },
-                    StateElement::CalledNode {
-                        identifier: format!("other_nodeoo"),
-                        node_name: format!("other_nodeo"),
                     },
                 ],
                 step: Step {
@@ -590,28 +593,17 @@ mod mir_from_hir {
                             },
                         },
                         Statement::LetTuple {
-                            identifiers: vec![format!("other_nodeoo"), format!("o")],
-                            expression: Expression::NodeCall {
-                                node_identifier: format!("other_nodeoo"),
-                                input_name: format!("other_nodeInput"),
-                                input_fields: vec![
-                                    (
-                                        format!("a"),
-                                        Expression::Identifier {
-                                            identifier: format!("x"),
-                                        },
-                                    ),
-                                    (
-                                        format!("b"),
-                                        Expression::Identifier {
-                                            identifier: format!("i"),
-                                        },
-                                    ),
-                                ],
-                            },
+                            identifiers: todo!(),
+                            expression: todo!(),
                         },
                     ],
                     state_elements_step: vec![
+                        StateElementStep {
+                            identifier: format!("other_nodeoo"),
+                            expression: Expression::Identifier {
+                                identifier: format!("other_nodeoo"),
+                            },
+                        },
                         StateElementStep {
                             identifier: format!("mem_i"),
                             expression: Expression::FunctionCall {
@@ -628,30 +620,10 @@ mod mir_from_hir {
                                 ],
                             },
                         },
-                        StateElementStep {
-                            identifier: format!("other_nodeoo"),
-                            expression: Expression::Identifier {
-                                identifier: format!("other_nodeoo"),
-                            },
-                        },
                     ],
-                    output_expression: Expression::Identifier {
-                        identifier: format!("o"),
-                    },
+                    output_expression: todo!(),
                 },
-                init: Init {
-                    node_name: format!("my_nodeo"),
-                    state_elements_init: vec![
-                        StateElementInit::BufferInit {
-                            identifier: format!("mem_i"),
-                            initial_value: Constant::Integer(0),
-                        },
-                        StateElementInit::CalledNodeInit {
-                            identifier: format!("other_nodeoo"),
-                            node_name: format!("other_nodeo"),
-                        },
-                    ],
-                },
+                init: todo!(),
             },
         };
         assert_eq!(mir_from_hir(unitary_node), control)
