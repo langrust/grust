@@ -85,8 +85,8 @@ mod normal_form {
                         dependencies: Dependencies::from(vec![]),
                     },
                     StreamExpression::UnitaryNodeApplication {
-                        id: None,
-                        node: String::from("my_node"),
+                id: None,
+                node: String::from("my_node"),
                         inputs: vec![
                             (
                                 format!("x"),
@@ -161,8 +161,8 @@ mod normal_form {
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: None,
-                    node: String::from("my_node"),
+                    id: Some(format!("my_nodeox_1")),
+                node: String::from("my_node"),
                     inputs: vec![
                         (
                             format!("x"),
@@ -367,7 +367,7 @@ mod normal_form {
                 id: String::from("y"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: None,
+                    id: Some(format!("other_nodeoy")),
                     node: String::from("other_node"),
                     inputs: vec![
                         (
@@ -425,5 +425,96 @@ mod normal_form {
             graph: OnceCell::new(),
         };
         assert_eq!(node, control);
+    }
+
+    #[test]
+    fn should_set_identifier_to_node_state_in_unitary_node_application() {
+        // node test(v: int, g: int) {
+        //     out y: int = other_node(g-1, v).o;
+        // }
+        let equation = Equation {
+            scope: Scope::Output,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
+                node: String::from("other_node"),
+                inputs: vec![
+                    (
+                        format!("x"),
+                        StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("-1"),
+                                typing: Some(Type::Abstract(
+                                    vec![Type::Integer],
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                id: String::from("g"),
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                            }],
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
+                        },
+                    ),
+                    (
+                        format!("y"),
+                        StreamExpression::SignalCall {
+                            id: String::from("v"),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        },
+                    ),
+                ],
+                signal: String::from("o"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("g"), 0),
+                    (String::from("v"), 0),
+                ]),
+            },
+            location: Location::default(),
+        };
+        let unitary_node = UnitaryNode {
+            node_id: String::from("test"),
+            output_id: String::from("y"),
+            inputs: vec![
+                (String::from("v"), Type::Integer),
+                (String::from("g"), Type::Integer),
+            ],
+            equations: vec![equation.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut node = Node {
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![
+                (String::from("v"), Type::Integer),
+                (String::from("g"), Type::Integer),
+            ],
+            unscheduled_equations: HashMap::from([(String::from("y"), equation.clone())]),
+            unitary_nodes: HashMap::from([(String::from("y"), unitary_node)]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        node.normal_form();
+
+        for Equation { expression, .. } in node.unitary_nodes.get(&String::from("y")).unwrap().equations.iter() {
+            if let StreamExpression::UnitaryNodeApplication {
+                id,
+                ..
+            } = expression {
+                assert!(id.is_some())
+            }
+        }
     }
 }
