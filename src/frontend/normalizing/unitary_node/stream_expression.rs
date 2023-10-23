@@ -70,7 +70,7 @@ impl StreamExpression {
                     dependencies: dependencies.clone(),
                 };
             }
-            StreamExpression::UnitaryNodeApplication { id: None, .. } => unreachable!(),
+            StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
             StreamExpression::Structure { fields, .. } => {
                 fields.iter_mut().for_each(|(_, expression)| {
                     expression.change_node_application_into_unitary_node_application(

@@ -31,7 +31,7 @@ fn get_imports(expression: &StreamExpression) -> Vec<Import> {
             function_expression: Expression::Call { id, .. },
             ..
         } => vec![Import::Function(id.clone())],
-        StreamExpression::UnitaryNodeApplication { id: None, node, .. } => {
+        StreamExpression::UnitaryNodeApplication { node, .. } => {
             vec![Import::NodeFile(node.clone())]
         }
         StreamExpression::Structure { fields, .. } => fields
