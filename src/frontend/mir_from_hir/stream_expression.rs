@@ -106,3 +106,401 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
         _ => unreachable!(),
     }
 }
+
+#[cfg(test)]
+mod mir_from_hir {
+    use crate::{
+        ast::{expression::Expression as ASTExpression, pattern::Pattern},
+        common::{constant::Constant, location::Location, r#type::Type},
+        frontend::mir_from_hir::stream_expression::mir_from_hir,
+        hir::{dependencies::Dependencies, stream_expression::StreamExpression},
+        mir::expression::Expression,
+    };
+
+    #[test]
+    fn should_transform_hir_constant_into_mir_literal() {
+        let expression = StreamExpression::Constant {
+            constant: Constant::Integer(1),
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::new(),
+        };
+        let control = Expression::Literal {
+            literal: Constant::Integer(1),
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_hir_signal_call_into_mir_identifier() {
+        let expression = StreamExpression::SignalCall {
+            id: format!("x"),
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+        };
+        let control = Expression::Identifier {
+            identifier: format!("x"),
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_hir_map_application_into_mir_function_call() {
+        let expression = StreamExpression::MapApplication {
+            function_expression: ASTExpression::Call {
+                id: format!(" + "),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            inputs: vec![
+                StreamExpression::SignalCall {
+                    id: format!("x"),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                },
+                StreamExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::new(),
+                },
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+        };
+        let control = Expression::FunctionCall {
+            function: Box::new(Expression::Identifier {
+                identifier: format!(" + "),
+            }),
+            arguments: vec![
+                Expression::Identifier {
+                    identifier: format!("x"),
+                },
+                Expression::Literal {
+                    literal: Constant::Integer(1),
+                },
+            ],
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_hir_structure_into_mir_structure() {
+        let expression = StreamExpression::Structure {
+            name: format!("Point"),
+            fields: vec![
+                (
+                    format!("x"),
+                    StreamExpression::SignalCall {
+                        id: format!("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                    },
+                ),
+                (
+                    format!("y"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                ),
+            ],
+            typing: Type::Structure(format!("Point")),
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+        };
+        let control = Expression::Structure {
+            name: format!("Point"),
+            fields: vec![
+                (
+                    format!("x"),
+                    Expression::Identifier {
+                        identifier: format!("x"),
+                    },
+                ),
+                (
+                    format!("y"),
+                    Expression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                ),
+            ],
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_hir_array_into_mir_array() {
+        let expression = StreamExpression::Array {
+            elements: vec![StreamExpression::SignalCall {
+                id: format!("x"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+            }],
+            typing: Type::Array(Box::new(Type::Integer), 1),
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+        };
+        let control = Expression::Array {
+            elements: vec![Expression::Identifier {
+                identifier: format!("x"),
+            }],
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_hir_match_into_mir_match() {
+        let expression = StreamExpression::Match {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: format!("p"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(format!("p"), 0)]),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: format!("Point"),
+                        fields: vec![
+                            (
+                                format!("x"),
+                                Pattern::Identifier {
+                                    name: format!("x"),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                format!("y"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    vec![],
+                    StreamExpression::SignalCall {
+                        id: format!("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                    },
+                ),
+                (
+                    Pattern::Default {
+                        location: Location::default(),
+                    },
+                    None,
+                    vec![],
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                ),
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("p"), 0)]),
+        };
+        let control = Expression::Match {
+            matched: Box::new(Expression::Identifier {
+                identifier: format!("p"),
+            }),
+            arms: vec![
+                (
+                    Pattern::Structure {
+                        name: format!("Point"),
+                        fields: vec![
+                            (
+                                format!("x"),
+                                Pattern::Identifier {
+                                    name: format!("x"),
+                                    location: Location::default(),
+                                },
+                            ),
+                            (
+                                format!("y"),
+                                Pattern::Constant {
+                                    constant: Constant::Integer(0),
+                                    location: Location::default(),
+                                },
+                            ),
+                        ],
+                        location: Location::default(),
+                    },
+                    None,
+                    Expression::Identifier {
+                        identifier: format!("x"),
+                    },
+                ),
+                (
+                    Pattern::Default {
+                        location: Location::default(),
+                    },
+                    None,
+                    Expression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                ),
+            ],
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_hir_when_into_mir_match() {
+        let expression = StreamExpression::When {
+            id: format!("x"),
+            option: Box::new(StreamExpression::SignalCall {
+                id: format!("x"),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+            }),
+            present_body: vec![],
+            present: Box::new(StreamExpression::MapApplication {
+                function_expression: ASTExpression::Call {
+                    id: format!(" + "),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        id: format!("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                    },
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+            }),
+            default_body: vec![],
+            default: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(1),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::new(),
+            }),
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("p"), 0)]),
+        };
+        let control = Expression::Match {
+            matched: Box::new(Expression::Identifier {
+                identifier: format!("x"),
+            }),
+            arms: vec![
+                (
+                    Pattern::Some {
+                        pattern: Box::new(Pattern::Identifier {
+                            name: format!("x"),
+                            location: Location::default(),
+                        }),
+                        location: Location::default(),
+                    },
+                    None,
+                    Expression::FunctionCall {
+                        function: Box::new(Expression::Identifier {
+                            identifier: format!(" + "),
+                        }),
+                        arguments: vec![
+                            Expression::Identifier {
+                                identifier: format!("x"),
+                            },
+                            Expression::Literal {
+                                literal: Constant::Integer(1),
+                            },
+                        ],
+                    },
+                ),
+                (
+                    Pattern::None {
+                        location: Location::default(),
+                    },
+                    None,
+                    Expression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                ),
+            ],
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_hir_unitary_node_application_into_mir_node_call() {
+        let expression = StreamExpression::UnitaryNodeApplication {
+            id: Some(format!("my_nodeox")),
+            node: format!("my_node"),
+            signal: format!("o"),
+            inputs: vec![
+                (
+                    format!("i"),
+                    StreamExpression::SignalCall {
+                        id: format!("x"),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                    },
+                ),
+                (
+                    format!("j"),
+                    StreamExpression::Constant {
+                        constant: Constant::Integer(1),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                ),
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+        };
+        let control = Expression::NodeCall {
+            node_identifier: format!("my_nodeox"),
+            input_name: format!("my_nodeoInput"),
+            input_fields: vec![
+                (
+                    format!("i"),
+                    Expression::Identifier {
+                        identifier: format!("x"),
+                    },
+                ),
+                (
+                    format!("j"),
+                    Expression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                ),
+            ],
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+}
