@@ -1,4 +1,5 @@
 /// A node's import.
+#[derive(Debug, PartialEq)]
 pub enum Import {
     /// Import of another node.
     NodeFile(String),

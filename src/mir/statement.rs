@@ -1,6 +1,7 @@
 use crate::mir::expression::Expression;
 
 /// A statement declaration.
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     /// A let-statement creating one variable: `let x = y + 1;`.
     Let {

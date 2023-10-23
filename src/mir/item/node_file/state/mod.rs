@@ -9,6 +9,7 @@ pub mod init;
 pub mod step;
 
 /// A node state structure.
+#[derive(Debug, PartialEq)]
 pub struct State {
     /// The node's name.
     pub node_name: String,
@@ -21,6 +22,7 @@ pub struct State {
 }
 
 /// A state element structure.
+#[derive(Debug, PartialEq)]
 pub enum StateElement {
     /// A buffer.
     Buffer {
