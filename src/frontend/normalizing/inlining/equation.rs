@@ -880,8 +880,8 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: None,
-                node: String::from("my_node"),
+                    id: None,
+                    node: String::from("my_node"),
                     inputs: vec![
                         (
                             format!("i"),
@@ -1124,8 +1124,8 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::UnitaryNodeApplication {
-                id: None,
-                node: String::from("other_node"),
+                        id: None,
+                        node: String::from("other_node"),
                         inputs: vec![(
                             format!("i"),
                             StreamExpression::SignalCall {
@@ -1263,8 +1263,8 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: None,
-                node: String::from("my_node"),
+                    id: None,
+                    node: String::from("my_node"),
                     inputs: vec![
                         (
                             format!("i"),
@@ -1414,8 +1414,8 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::UnitaryNodeApplication {
-                id: None,
-                node: String::from("other_node"),
+                        id: None,
+                        node: String::from("other_node"),
                         inputs: vec![(
                             format!("i"),
                             StreamExpression::MapApplication {
@@ -2241,8 +2241,8 @@ mod inline_when_needed_reccursive {
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
                     },
                     StreamExpression::UnitaryNodeApplication {
-                id: None,
-                node: String::from("other_node"),
+                        id: None,
+                        node: String::from("other_node"),
                         signal: String::from("o"),
                         inputs: vec![(
                             format!("i"),

@@ -85,8 +85,8 @@ mod normal_form {
                         dependencies: Dependencies::from(vec![]),
                     },
                     StreamExpression::UnitaryNodeApplication {
-                id: None,
-                node: String::from("my_node"),
+                        id: None,
+                        node: String::from("my_node"),
                         inputs: vec![
                             (
                                 format!("x"),
@@ -162,7 +162,7 @@ mod normal_form {
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
                     id: Some(format!("my_nodeox_1")),
-                node: String::from("my_node"),
+                    node: String::from("my_node"),
                     inputs: vec![
                         (
                             format!("x"),
@@ -508,11 +508,14 @@ mod normal_form {
         };
         node.normal_form();
 
-        for Equation { expression, .. } in node.unitary_nodes.get(&String::from("y")).unwrap().equations.iter() {
-            if let StreamExpression::UnitaryNodeApplication {
-                id,
-                ..
-            } = expression {
+        for Equation { expression, .. } in node
+            .unitary_nodes
+            .get(&String::from("y"))
+            .unwrap()
+            .equations
+            .iter()
+        {
+            if let StreamExpression::UnitaryNodeApplication { id, .. } = expression {
                 assert!(id.is_some())
             }
         }
