@@ -563,7 +563,7 @@ mod memorize {
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: None,
+                    id: Some(format!("my_nodeoy")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -645,7 +645,7 @@ mod memorize {
 
         let mut memory = Memory::new();
         memory.add_called_node(
-            String::from("memmy_nodeo"),
+            String::from("my_nodeoy"),
             String::from("my_node"),
             String::from("o"),
         );
