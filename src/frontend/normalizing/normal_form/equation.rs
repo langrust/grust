@@ -1,4 +1,4 @@
-use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator};
+use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, stream_expression::StreamExpression, dependencies::Dependencies};
 
 impl Equation {
     /// Change HIR equation into a normal form.
@@ -30,7 +30,35 @@ impl Equation {
         } = self;
 
         // change expression into normal form and get additional equations
-        let mut equations = expression.normal_form(identifier_creator);
+        let mut equations = match expression {
+            StreamExpression::UnitaryNodeApplication {
+                id: ref mut node_state_id,
+                ref node,
+                ref signal,
+                ref mut inputs,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = inputs
+                    .iter_mut()
+                    .flat_map(|(_, expression)| {
+                        expression.normal_form_to_signal_call(identifier_creator)
+                    })
+                    .collect::<Vec<_>>();
+
+
+                // change dependencies to be the sum of inputs dependencies
+                *dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                        .collect(),
+                );
+
+                new_equations
+            }
+            _ => expression.normal_form(identifier_creator),
+        };
 
         // recreate the new equation with modified expression
         let normal_formed_equation = Equation {
