@@ -42,7 +42,7 @@ impl Equation {
                 let new_equations = inputs
                     .iter_mut()
                     .flat_map(|(_, expression)| {
-                        expression.normal_form_to_signal_call(identifier_creator)
+                        expression.into_signal_call(identifier_creator)
                     })
                     .collect::<Vec<_>>();
 
