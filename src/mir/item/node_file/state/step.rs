@@ -4,6 +4,7 @@ use crate::{
 };
 
 /// A step function.
+#[derive(Debug, PartialEq)]
 pub struct Step {
     /// The node's name.
     pub node_name: String,
@@ -18,6 +19,7 @@ pub struct Step {
 }
 
 /// A state element structure for the step update.
+#[derive(Debug, PartialEq)]
 pub struct StateElementStep {
     /// The name of the memory storage.
     pub identifier: String,

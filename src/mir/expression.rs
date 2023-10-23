@@ -6,6 +6,7 @@ use crate::{
 use super::block::Block;
 
 /// MIR expressions.
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     /// A literal expression: `1` or `"hello world"`.
     Literal {

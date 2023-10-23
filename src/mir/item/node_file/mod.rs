@@ -8,6 +8,7 @@ pub mod input;
 pub mod state;
 
 /// A node-file structure.
+#[derive(Debug, PartialEq)]
 pub struct NodeFile {
     /// The node's name.
     pub name: String,

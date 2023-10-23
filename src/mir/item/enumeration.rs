@@ -1,4 +1,5 @@
 /// An enumeration definition.
+#[derive(Debug, PartialEq)]
 pub struct Enumeration {
     /// The enumeration's name.
     pub name: String,
