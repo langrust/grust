@@ -70,6 +70,7 @@ mod schedule {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -223,6 +224,7 @@ mod schedule {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),

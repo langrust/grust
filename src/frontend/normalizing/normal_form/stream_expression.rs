@@ -68,6 +68,7 @@ impl StreamExpression {
             }
             StreamExpression::NodeApplication { .. } => unreachable!(),
             StreamExpression::UnitaryNodeApplication {
+                id: None,
                 inputs,
                 ref mut dependencies,
                 ..
@@ -193,7 +194,7 @@ impl StreamExpression {
     fn normal_form_cascade(&mut self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
         let mut new_equations = self.normal_form_root(identifier_creator);
         match self {
-            StreamExpression::UnitaryNodeApplication { .. } => {
+            StreamExpression::UnitaryNodeApplication { id: None, .. } => {
                 let fresh_id = identifier_creator.new_identifier(
                     String::from("x"),
                     String::from(""),
@@ -382,6 +383,7 @@ mod normal_form {
                     dependencies: Dependencies::from(vec![]),
                 },
                 StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -437,6 +439,7 @@ mod normal_form {
             id: String::from("x_2"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -519,6 +522,7 @@ mod normal_form {
                     dependencies: Dependencies::from(vec![]),
                 },
                 StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -598,6 +602,7 @@ mod normal_form {
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("my_node"),
                     inputs: vec![
                         (

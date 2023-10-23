@@ -1117,6 +1117,7 @@ mod generate_unitary_nodes {
                         dependencies: Dependencies::from(vec![]),
                     },
                     StreamExpression::UnitaryNodeApplication {
+                        id: None,
                         node: String::from("my_node"),
                         inputs: vec![
                             (
@@ -1190,6 +1191,7 @@ mod generate_unitary_nodes {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![
                     (
@@ -1252,6 +1254,7 @@ mod generate_unitary_nodes {
             id: String::from("z"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("y"),

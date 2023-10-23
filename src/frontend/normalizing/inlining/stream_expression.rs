@@ -241,6 +241,7 @@ impl StreamExpression {
                 typing,
                 location,
                 ref mut dependencies,
+                ..
             } => {
                 // inline potential node calls in the inputs
                 let mut new_equations = inputs
@@ -1070,6 +1071,7 @@ mod replace_by_context {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("my_node"),
                 signal: String::from("o"),
                 inputs: vec![
@@ -1140,6 +1142,7 @@ mod replace_by_context {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("my_node"),
                 signal: String::from("o"),
                 inputs: vec![
@@ -1352,6 +1355,7 @@ mod inline_when_needed {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -1411,6 +1415,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),

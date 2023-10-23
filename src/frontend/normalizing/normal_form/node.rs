@@ -85,6 +85,7 @@ mod normal_form {
                         dependencies: Dependencies::from(vec![]),
                     },
                     StreamExpression::UnitaryNodeApplication {
+                        id: None,
                         node: String::from("my_node"),
                         inputs: vec![
                             (
@@ -160,6 +161,7 @@ mod normal_form {
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -262,6 +264,7 @@ mod normal_form {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
+                id: None,
                 node: String::from("other_node"),
                 inputs: vec![
                     (
@@ -364,6 +367,7 @@ mod normal_form {
                 id: String::from("y"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
+                    id: None,
                     node: String::from("other_node"),
                     inputs: vec![
                         (

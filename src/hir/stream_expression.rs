@@ -290,7 +290,12 @@ impl StreamExpression {
                 .iter_mut()
                 .for_each(|expression| expression.memorize(identifier_creator, memory)),
             StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::UnitaryNodeApplication { node, signal, .. } => {
+            StreamExpression::UnitaryNodeApplication {
+                id: None,
+                node,
+                signal,
+                ..
+            } => {
                 let memory_id = identifier_creator.new_identifier(
                     String::from("mem"),
                     node.clone(),
@@ -446,6 +451,7 @@ mod memorize {
         let mut memory = Memory::new();
 
         let mut expression = StreamExpression::UnitaryNodeApplication {
+            id: None,
             node: String::from("my_node"),
             inputs: vec![
                 (
@@ -486,6 +492,7 @@ mod memorize {
         assert_eq!(memory, control);
 
         let control = StreamExpression::UnitaryNodeApplication {
+            id: None,
             node: String::from("my_node"),
             inputs: vec![
                 (
