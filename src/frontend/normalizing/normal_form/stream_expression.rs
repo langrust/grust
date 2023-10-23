@@ -63,14 +63,19 @@ impl StreamExpression {
                 new_equations
             }
             StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::UnitaryNodeApplication { ref mut id, ref node, ref signal, ref mut inputs, ref mut dependencies, .. } => {
+            StreamExpression::UnitaryNodeApplication {
+                ref mut id,
+                ref node,
+                ref signal,
+                ref mut inputs,
+                ref mut dependencies,
+                ..
+            } => {
                 let mut new_equations = inputs
                     .iter_mut()
-                    .flat_map(|(_, expression)| {
-                        expression.into_signal_call(identifier_creator)
-                    })
+                    .flat_map(|(_, expression)| expression.into_signal_call(identifier_creator))
                     .collect::<Vec<_>>();
-                
+
                 let fresh_id = identifier_creator.new_identifier(
                     String::from("x"),
                     String::from(""),
@@ -698,10 +703,7 @@ mod normal_form {
         let equations = expression.normal_form(&mut identifier_creator);
 
         for Equation { expression, .. } in equations {
-            if let StreamExpression::UnitaryNodeApplication {
-                id,
-                ..
-            } = expression {
+            if let StreamExpression::UnitaryNodeApplication { id, .. } = expression {
                 assert!(id.is_some())
             }
         }

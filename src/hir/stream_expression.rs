@@ -290,9 +290,9 @@ impl StreamExpression {
                 .iter_mut()
                 .for_each(|expression| expression.memorize(identifier_creator, memory)),
             StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::UnitaryNodeApplication { id, node, signal, .. } => {
-                memory.add_called_node(id.clone().unwrap(), node.clone(), signal.clone())
-            }
+            StreamExpression::UnitaryNodeApplication {
+                id, node, signal, ..
+            } => memory.add_called_node(id.clone().unwrap(), node.clone(), signal.clone()),
             StreamExpression::Structure { fields, .. } => fields
                 .iter_mut()
                 .for_each(|(_, expression)| expression.memorize(identifier_creator, memory)),

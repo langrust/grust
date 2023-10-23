@@ -1,4 +1,7 @@
-use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, stream_expression::StreamExpression, dependencies::Dependencies};
+use crate::hir::{
+    dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+    stream_expression::StreamExpression,
+};
 
 impl Equation {
     /// Change HIR equation into a normal form.
@@ -41,9 +44,7 @@ impl Equation {
             } => {
                 let new_equations = inputs
                     .iter_mut()
-                    .flat_map(|(_, expression)| {
-                        expression.into_signal_call(identifier_creator)
-                    })
+                    .flat_map(|(_, expression)| expression.into_signal_call(identifier_creator))
                     .collect::<Vec<_>>();
 
                 // set the identifier to the node state
@@ -427,10 +428,7 @@ mod normal_form {
         let equations = equation.normal_form(&mut identifier_creator);
 
         for Equation { expression, .. } in equations {
-            if let StreamExpression::UnitaryNodeApplication {
-                id,
-                ..
-            } = expression {
+            if let StreamExpression::UnitaryNodeApplication { id, .. } = expression {
                 assert!(id.is_some())
             }
         }

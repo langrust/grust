@@ -438,10 +438,7 @@ mod normal_form {
         unitary_node.normal_form();
 
         for Equation { expression, .. } in unitary_node.equations {
-            if let StreamExpression::UnitaryNodeApplication {
-                id,
-                ..
-            } = expression {
+            if let StreamExpression::UnitaryNodeApplication { id, .. } = expression {
                 assert!(id.is_some())
             }
         }
