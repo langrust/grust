@@ -209,14 +209,14 @@ impl StreamExpression {
         }
     }
 
-
+    pub fn into_signal_call(
         &mut self,
         identifier_creator: &mut IdentifierCreator,
     ) -> Vec<Equation> {
         match self {
             StreamExpression::SignalCall { .. } => vec![],
             _ => {
-                let mut equations = self.normal_form_cascade(identifier_creator);
+                let mut equations = self.normal_form(identifier_creator);
 
                 let typing = self.get_type().clone();
                 let location = self.get_location().clone();
@@ -250,7 +250,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod normal_form_to_signal_call {
+mod into_signal_call {
     use std::collections::HashSet;
 
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
@@ -271,7 +271,7 @@ mod normal_form_to_signal_call {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
         };
-        let equations = expression.normal_form_to_signal_call(&mut identifier_creator);
+        let equations = expression.into_signal_call(&mut identifier_creator);
 
         let control = StreamExpression::SignalCall {
             id: String::from("x"),
@@ -301,7 +301,7 @@ mod normal_form_to_signal_call {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
         };
-        let equations = expression.normal_form_to_signal_call(&mut identifier_creator);
+        let equations = expression.into_signal_call(&mut identifier_creator);
 
         let control = Equation {
             scope: Scope::Local,
