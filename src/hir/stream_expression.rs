@@ -279,6 +279,7 @@ impl StreamExpression {
                     String::from(""),
                 );
                 memory.add_buffer(memory_id.clone(), constant.clone(), *expression.clone());
+                // todo : this should be a memory call
                 *self = StreamExpression::SignalCall {
                     id: memory_id.clone(),
                     typing: typing.clone(),
