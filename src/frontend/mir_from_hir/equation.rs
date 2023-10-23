@@ -8,9 +8,9 @@ use super::stream_expression::mir_from_hir as stream_expression_mir_from_hir;
 /// Transform HIR equation into MIR statement.
 pub fn mir_from_hir(equation: Equation) -> Statement {
     let Equation { id, expression, .. } = equation;
-    match expression {
-        StreamExpression::UnitaryNodeApplication { .. } => Statement::LetTuple {
-            identifiers: vec![todo!("what is the node state's name?"), id],
+    match &expression {
+        StreamExpression::UnitaryNodeApplication { id: node_state_id, .. } => Statement::LetTuple {
+            identifiers: vec![ node_state_id.clone().unwrap(), id],
             expression: stream_expression_mir_from_hir(expression),
         },
         _ => Statement::Let {
