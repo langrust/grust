@@ -214,19 +214,15 @@ mod normalize {
                             },
                             inputs: vec![
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("x"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("x"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("y"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -258,10 +254,8 @@ mod normalize {
                                 location: Location::default(),
                             },
                             inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("y"),
-                                    scope: Scope::Input,
-                                },
+                                id: String::from("y"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -299,10 +293,8 @@ mod normalize {
                     expression: StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -353,19 +345,15 @@ mod normalize {
                             signal: String::from("o1"),
                             inputs: vec![
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("y"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("v"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("v"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -410,10 +398,8 @@ mod normalize {
                                             location: Location::default(),
                                         },
                                         inputs: vec![StreamExpression::SignalCall {
-                                            signal: Signal {
-                                                id: String::from("g"),
-                                                scope: Scope::Input,
-                                            },
+                                            id: String::from("g"),
+                                            scope: Scope::Input,
                                             typing: Type::Integer,
                                             location: Location::default(),
                                             dependencies: Dependencies::from(vec![(
@@ -438,10 +424,8 @@ mod normalize {
                                             location: Location::default(),
                                         },
                                         inputs: vec![StreamExpression::SignalCall {
-                                            signal: Signal {
-                                                id: String::from("v"),
-                                                scope: Scope::Input,
-                                            },
+                                            id: String::from("v"),
+                                            scope: Scope::Input,
                                             typing: Type::Integer,
                                             location: Location::default(),
                                             dependencies: Dependencies::from(vec![(
@@ -478,10 +462,8 @@ mod normalize {
                             node: String::from("mem"),
                             signal: String::from("o"),
                             inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("z"),
-                                    scope: Scope::Local,
-                                },
+                                id: String::from("z"),
+                                scope: Scope::Local,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("z"), 0)]),
@@ -551,19 +533,15 @@ mod normalize {
                             },
                             inputs: vec![
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("x"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("x"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("y"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -595,10 +573,8 @@ mod normalize {
                                 location: Location::default(),
                             },
                             inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("y"),
-                                    scope: Scope::Input,
-                                },
+                                id: String::from("y"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -636,10 +612,8 @@ mod normalize {
                     expression: StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -686,19 +660,15 @@ mod normalize {
                             signal: String::from("o1"),
                             inputs: vec![
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("y"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("v"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("v"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -743,10 +713,8 @@ mod normalize {
                                             location: Location::default(),
                                         },
                                         inputs: vec![StreamExpression::SignalCall {
-                                            signal: Signal {
-                                                id: String::from("y"),
-                                                scope: Scope::Input,
-                                            },
+                                            id: String::from("y"),
+                                            scope: Scope::Input,
                                             typing: Type::Integer,
                                             location: Location::default(),
                                             dependencies: Dependencies::from(vec![(
@@ -771,10 +739,8 @@ mod normalize {
                                             location: Location::default(),
                                         },
                                         inputs: vec![StreamExpression::SignalCall {
-                                            signal: Signal {
-                                                id: String::from("v"),
-                                                scope: Scope::Input,
-                                            },
+                                            id: String::from("v"),
+                                            scope: Scope::Input,
                                             typing: Type::Integer,
                                             location: Location::default(),
                                             dependencies: Dependencies::from(vec![(
@@ -811,10 +777,8 @@ mod normalize {
                             node: String::from("mem"),
                             signal: String::from("o"),
                             inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("z"),
-                                    scope: Scope::Local,
-                                },
+                                id: String::from("z"),
+                                scope: Scope::Local,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("z"), 0)]),
@@ -873,19 +837,15 @@ mod normalize {
                     },
                     inputs: vec![
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                         },
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("y"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -929,10 +889,8 @@ mod normalize {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("y"),
-                            scope: Scope::Input,
-                        },
+                        id: String::from("y"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -980,19 +938,15 @@ mod normalize {
                             },
                             inputs: vec![
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("x"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("x"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("y"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -1024,10 +978,8 @@ mod normalize {
                                 location: Location::default(),
                             },
                             inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("y"),
-                                    scope: Scope::Input,
-                                },
+                                id: String::from("y"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -1066,10 +1018,8 @@ mod normalize {
                 expression: StreamExpression::FollowedBy {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("i"),
-                            scope: Scope::Input,
-                        },
+                        id: String::from("i"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1097,10 +1047,8 @@ mod normalize {
                     expression: StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1149,10 +1097,8 @@ mod normalize {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("v"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("v"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1174,10 +1120,8 @@ mod normalize {
                         inputs: vec![(
                             format!("y"),
                             StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("1"),
-                                    scope: Scope::Local,
-                                },
+                                id: String::from("x_1"),
+                                scope: Scope::Local,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
@@ -1203,10 +1147,8 @@ mod normalize {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("2"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x_2"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x_2"), 0)]),
@@ -1229,10 +1171,8 @@ mod normalize {
                             (
                                 format!("x"),
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("y"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -1241,10 +1181,8 @@ mod normalize {
                             (
                                 format!("y"),
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("v"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("v"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1282,10 +1220,8 @@ mod normalize {
                 expression: StreamExpression::FollowedBy {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("z"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("z"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("z"), 0)]),
@@ -1325,19 +1261,15 @@ mod normalize {
                             signal: String::from("o1"),
                             inputs: vec![
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("y"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("v"),
-                                        scope: Scope::Input,
-                                    },
+                                    id: String::from("v"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1382,10 +1314,8 @@ mod normalize {
                                             location: Location::default(),
                                         },
                                         inputs: vec![StreamExpression::SignalCall {
-                                            signal: Signal {
-                                                id: String::from("y"),
-                                                scope: Scope::Input,
-                                            },
+                                            id: String::from("y"),
+                                            scope: Scope::Input,
                                             typing: Type::Integer,
                                             location: Location::default(),
                                             dependencies: Dependencies::from(vec![(
@@ -1410,10 +1340,8 @@ mod normalize {
                                             location: Location::default(),
                                         },
                                         inputs: vec![StreamExpression::SignalCall {
-                                            signal: Signal {
-                                                id: String::from("v"),
-                                                scope: Scope::Input,
-                                            },
+                                            id: String::from("v"),
+                                            scope: Scope::Input,
                                             typing: Type::Integer,
                                             location: Location::default(),
                                             dependencies: Dependencies::from(vec![(
@@ -1450,10 +1378,8 @@ mod normalize {
                             node: String::from("mem"),
                             signal: String::from("o"),
                             inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("z"),
-                                    scope: Scope::Local,
-                                },
+                                id: String::from("z"),
+                                scope: Scope::Local,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("z"), 0)]),

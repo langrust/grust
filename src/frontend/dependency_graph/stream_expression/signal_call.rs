@@ -29,10 +29,8 @@ mod compute_signal_call_dependencies {
     #[test]
     fn should_dependencies_of_signal_call_is_signal_with_zero_depth() {
         let stream_expression = StreamExpression::SignalCall {
-            signal: Signal {
-                id: String::from("x"),
-                scope: Scope::Local,
-            },
+            id: String::from("x"),
+            scope: Scope::Local,
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::new(),

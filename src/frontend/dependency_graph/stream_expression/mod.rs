@@ -112,10 +112,8 @@ mod compute_dependencies {
         let stream_expression = StreamExpression::Array {
             elements: vec![
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("x"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::new(),
@@ -127,10 +125,8 @@ mod compute_dependencies {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -211,10 +207,8 @@ mod compute_dependencies {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("x"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::new(),
@@ -257,10 +251,8 @@ mod compute_dependencies {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("x"),
-                    scope: Scope::Local,
-                },
+                id: String::from("x"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -294,10 +286,8 @@ mod compute_dependencies {
 
         let stream_expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
+                id: String::from("p"),
+                scope: Scope::Local,
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -326,10 +316,8 @@ mod compute_dependencies {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("z"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("z"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -366,10 +354,8 @@ mod compute_dependencies {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("z"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("z"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -415,10 +401,8 @@ mod compute_dependencies {
 
         let stream_expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
+                id: String::from("p"),
+                scope: Scope::Local,
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -448,10 +432,8 @@ mod compute_dependencies {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("y"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("y"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -489,10 +471,8 @@ mod compute_dependencies {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("y"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -544,10 +524,8 @@ mod compute_dependencies {
                         expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(0),
                             expression: Box::new(StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("z"),
-                                    scope: Scope::Local,
-                                },
+                                id: String::from("z"),
+                                scope: Scope::Local,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::new(),
@@ -578,19 +556,15 @@ mod compute_dependencies {
                                 },
                                 inputs: vec![
                                     StreamExpression::SignalCall {
-                                        signal: Signal {
-                                            id: String::from("x"),
-                                            scope: Scope::Local,
-                                        },
+                                        id: String::from("x"),
+                                        scope: Scope::Local,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::new(),
                                     },
                                     StreamExpression::SignalCall {
-                                        signal: Signal {
-                                            id: String::from("y"),
-                                            scope: Scope::Local,
-                                        },
+                                        id: String::from("y"),
+                                        scope: Scope::Local,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::new(),
@@ -633,10 +607,8 @@ mod compute_dependencies {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -681,10 +653,8 @@ mod compute_dependencies {
         let mut errors = vec![];
 
         let stream_expression = StreamExpression::SignalCall {
-            signal: Signal {
-                id: String::from("x"),
-                scope: Scope::Local,
-            },
+            id: String::from("x"),
+            scope: Scope::Local,
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::new(),
@@ -718,10 +688,8 @@ mod compute_dependencies {
                 (
                     String::from("x"),
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -730,10 +698,8 @@ mod compute_dependencies {
                 (
                     String::from("y"),
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -770,10 +736,8 @@ mod compute_dependencies {
         let stream_expression = StreamExpression::When {
             id: String::from("x"),
             option: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("x"),
-                    scope: Scope::Local,
-                },
+                id: String::from("x"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -822,20 +786,16 @@ mod compute_dependencies {
         let stream_expression = StreamExpression::When {
             id: String::from("x"),
             option: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("y"),
-                    scope: Scope::Local,
-                },
+                id: String::from("y"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),
             }),
             present_body: vec![],
             present: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("x"),
-                    scope: Scope::Local,
-                },
+                id: String::from("x"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),

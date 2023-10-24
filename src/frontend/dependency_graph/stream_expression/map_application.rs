@@ -55,9 +55,7 @@ impl StreamExpression {
 mod compute_map_application_dependencies {
     use crate::ast::expression::Expression;
     use crate::common::{location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression,
-    };
+    use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]
@@ -74,10 +72,8 @@ mod compute_map_application_dependencies {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("x"),
-                    scope: Scope::Local,
-                },
+                id: String::from("x"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),
