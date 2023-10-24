@@ -165,10 +165,8 @@ mod change_node_application_into_unitary_node_application {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("g"),
-                            scope: Scope::Input,
-                        },
+                        id: String::from("g"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
@@ -178,10 +176,8 @@ mod change_node_application_into_unitary_node_application {
                     dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                 },
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("v"),
-                        scope: Scope::Input,
-                    },
+                    id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -212,10 +208,8 @@ mod change_node_application_into_unitary_node_application {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("g"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("g"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
@@ -228,10 +222,8 @@ mod change_node_application_into_unitary_node_application {
                 (
                     format!("y"),
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("v"),
-                            scope: Scope::Input,
-                        },
+                        id: String::from("v"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -274,10 +266,8 @@ mod change_node_application_into_unitary_node_application {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("g"),
-                            scope: Scope::Input,
-                        },
+                        id: String::from("g"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
@@ -287,10 +277,8 @@ mod change_node_application_into_unitary_node_application {
                     dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                 },
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("v"),
-                        scope: Scope::Input,
-                    },
+                    id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -311,10 +299,8 @@ mod change_node_application_into_unitary_node_application {
             inputs: vec![(
                 format!("y"),
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("v"),
-                        scope: Scope::Input,
-                    },
+                    id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -356,10 +342,8 @@ mod change_node_application_into_unitary_node_application {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("g"),
-                            scope: Scope::Input,
-                        },
+                        id: String::from("g"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
@@ -369,10 +353,8 @@ mod change_node_application_into_unitary_node_application {
                     dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
                 },
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("v"),
-                        scope: Scope::Input,
-                    },
+                    id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -393,10 +375,8 @@ mod change_node_application_into_unitary_node_application {
             inputs: vec![(
                 format!("y"),
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("v"),
-                        scope: Scope::Input,
-                    },
+                    id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),

@@ -72,10 +72,8 @@ mod compute_followed_by_dependencies {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("x"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::new(),

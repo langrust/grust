@@ -71,10 +71,8 @@ mod compute_structure_dependencies {
                 (
                     String::from("x"),
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -83,10 +81,8 @@ mod compute_structure_dependencies {
                 (
                     String::from("y"),
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),

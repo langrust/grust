@@ -145,11 +145,10 @@ mod mir_from_hir {
 
     #[test]
     fn should_transform_hir_local_signal_call_into_mir_identifier() {
+        // todo : make memory, input, output signal access
         let expression = StreamExpression::SignalCall {
-            signal: Signal {
-                id: format!("x"),
-                scope: Scope::Local,
-            },
+            id: format!("x"),
+            scope: Scope::Local,
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -224,10 +223,8 @@ mod mir_from_hir {
             },
             inputs: vec![
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: format!("x"),
-                        scope: Scope::Local,
-                    },
+                    id: format!("x"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -267,10 +264,8 @@ mod mir_from_hir {
                 (
                     format!("x"),
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: format!("x"),
-                            scope: Scope::Local,
-                        },
+                        id: format!("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -314,10 +309,8 @@ mod mir_from_hir {
     fn should_transform_hir_array_into_mir_array() {
         let expression = StreamExpression::Array {
             elements: vec![StreamExpression::SignalCall {
-                signal: Signal {
-                    id: format!("x"),
-                    scope: Scope::Local,
-                },
+                id: format!("x"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -338,10 +331,8 @@ mod mir_from_hir {
     fn should_transform_hir_match_into_mir_match() {
         let expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: format!("p"),
-                    scope: Scope::Local,
-                },
+                id: format!("p"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(format!("p"), 0)]),
@@ -371,10 +362,8 @@ mod mir_from_hir {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: format!("x"),
-                            scope: Scope::Local,
-                        },
+                        id: format!("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -448,10 +437,8 @@ mod mir_from_hir {
         let expression = StreamExpression::When {
             id: format!("x"),
             option: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: format!("x"),
-                    scope: Scope::Local,
-                },
+                id: format!("x"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -468,10 +455,8 @@ mod mir_from_hir {
                 },
                 inputs: vec![
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: format!("x"),
-                            scope: Scope::Local,
-                        },
+                        id: format!("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -550,10 +535,8 @@ mod mir_from_hir {
                 (
                     format!("i"),
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: format!("x"),
-                            scope: Scope::Local,
-                        },
+                        id: format!("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("x"), 0)]),

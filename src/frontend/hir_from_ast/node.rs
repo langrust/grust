@@ -107,10 +107,8 @@ mod hir_from_ast {
                             location: Location::default(),
                         },
                         inputs: vec![HIRStreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),

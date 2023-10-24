@@ -71,10 +71,8 @@ mod memorize {
                 },
                 inputs: vec![
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("s"),
-                            scope: Scope::Input,
-                        },
+                        id: String::from("s"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
@@ -82,10 +80,8 @@ mod memorize {
                     StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("v"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("v"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -111,10 +107,8 @@ mod memorize {
             String::from("mem"),
             Constant::Integer(0),
             StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("v"),
-                    scope: Scope::Input,
-                },
+                id: String::from("v"),
+                scope: Scope::Input,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -137,19 +131,15 @@ mod memorize {
                 },
                 inputs: vec![
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("s"),
-                            scope: Scope::Input,
-                        },
+                        id: String::from("s"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                     },
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("m"),
-                            scope: Scope::Memory,
-                        },
+                        id: String::from("mem"),
+                        scope: Scope::Memory,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("mem"), 0)]),
@@ -185,10 +175,8 @@ mod memorize {
                     (
                         format!("x"),
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("s"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("s"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
@@ -197,10 +185,8 @@ mod memorize {
                     (
                         format!("y"),
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("1"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x_1"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
@@ -238,10 +224,8 @@ mod memorize {
                     (
                         format!("x"),
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("s"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("s"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
@@ -250,10 +234,8 @@ mod memorize {
                     (
                         format!("y"),
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("1"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x_1"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),

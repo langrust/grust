@@ -35,9 +35,11 @@ impl StreamExpression {
             StreamExpression::SignalCall {
                 ref mut signal,
                 ref mut dependencies,
+                ref mut scope,
                 ..
             } => {
-                if let Some(element) = context_map.get(&signal.id) {
+                // todo: change scope according to context
+                if let Some(element) = context_map.get(id) {
                     match element {
                         Union::I1(new_signal) => {
                             *signal = new_signal.clone();
@@ -269,10 +271,8 @@ impl StreamExpression {
                     retrieved_equations.iter_mut().for_each(|equation| {
                         if equation.scope == Scope::Output {
                             *self = StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: equation.id.clone(),
-                                    scope: Scope::Local,
-                                },
+                                id: equation.id.clone(),
+                                scope: Scope::Local,
                                 typing: typing.clone(),
                                 location: location.clone(),
                                 dependencies: Dependencies::from(vec![(equation.id.clone(), 0)]),
@@ -516,19 +516,15 @@ mod replace_by_context {
             },
             inputs: vec![
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("x"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                 },
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("y"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("y"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -556,10 +552,8 @@ mod replace_by_context {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("b"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
@@ -584,10 +578,8 @@ mod replace_by_context {
             },
             inputs: vec![
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("a"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("a"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
@@ -599,10 +591,8 @@ mod replace_by_context {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("b"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
@@ -633,19 +623,15 @@ mod replace_by_context {
             },
             inputs: vec![
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("x"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                 },
                 StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("y"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("y"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -673,10 +659,8 @@ mod replace_by_context {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("b"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
@@ -699,10 +683,8 @@ mod replace_by_context {
     fn should_not_replace_occurence_of_identifiers_in_branches_when_introduced_by_pattern() {
         let mut expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
+                id: String::from("p"),
+                scope: Scope::Local,
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
@@ -732,10 +714,8 @@ mod replace_by_context {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("y"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("y"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -773,10 +753,8 @@ mod replace_by_context {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("y"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -809,10 +787,8 @@ mod replace_by_context {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("b"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
@@ -828,10 +804,8 @@ mod replace_by_context {
 
         let control = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
+                id: String::from("p"),
+                scope: Scope::Local,
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
@@ -861,10 +835,8 @@ mod replace_by_context {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("y"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("y"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -902,10 +874,8 @@ mod replace_by_context {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("y"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -928,10 +898,8 @@ mod replace_by_context {
     fn should_replace_occurence_of_identifiers_in_branches_when_not_introduced_by_pattern() {
         let mut expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
+                id: String::from("p"),
+                scope: Scope::Local,
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
@@ -961,10 +929,8 @@ mod replace_by_context {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("y"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("y"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -1002,10 +968,8 @@ mod replace_by_context {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("y"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -1038,10 +1002,8 @@ mod replace_by_context {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("b"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
@@ -1057,10 +1019,8 @@ mod replace_by_context {
 
         let control = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
+                id: String::from("p"),
+                scope: Scope::Local,
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
@@ -1090,10 +1050,8 @@ mod replace_by_context {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("a"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("a"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
@@ -1131,10 +1089,8 @@ mod replace_by_context {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("y"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -1173,10 +1129,8 @@ mod replace_by_context {
                     (
                         format!("i"),
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1185,10 +1139,8 @@ mod replace_by_context {
                     (
                         format!("j"),
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("y"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -1224,10 +1176,8 @@ mod replace_by_context {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("b"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
@@ -1259,10 +1209,8 @@ mod replace_by_context {
                     (
                         format!("i"),
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("a"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("a"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
@@ -1280,10 +1228,8 @@ mod replace_by_context {
                                 location: Location::default(),
                             },
                             inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("b"),
-                                    scope: Scope::Local,
-                                },
+                                id: String::from("b"),
+                                scope: Scope::Local,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
@@ -1347,10 +1293,8 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("i"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("i"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1358,10 +1302,8 @@ mod inline_when_needed {
                     StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("j"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("j"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -1425,10 +1367,8 @@ mod inline_when_needed {
             expression: StreamExpression::FollowedBy {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("i"),
-                        scope: Scope::Local,
-                    },
+                    id: String::from("i"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1495,10 +1435,8 @@ mod inline_when_needed {
                                 location: Location::default(),
                             },
                             inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("v"),
-                                    scope: Scope::Local,
-                                },
+                                id: String::from("v"),
+                                scope: Scope::Local,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1511,10 +1449,8 @@ mod inline_when_needed {
                     (
                         format!("j"),
                         StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1560,10 +1496,8 @@ mod inline_when_needed {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1655,10 +1589,8 @@ mod inline_when_needed {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("v"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("v"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1670,10 +1602,8 @@ mod inline_when_needed {
                     StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1704,10 +1634,8 @@ mod inline_when_needed {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("o"),
-                    scope: Scope::Local,
-                },
+                id: String::from("o"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("o"), 0)]),

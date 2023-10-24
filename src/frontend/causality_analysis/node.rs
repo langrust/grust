@@ -83,10 +83,8 @@ mod causal {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -101,10 +99,8 @@ mod causal {
                         id: String::from("x"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
+                            id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -144,10 +140,8 @@ mod causal {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -164,10 +158,8 @@ mod causal {
                         expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(0),
                             expression: Box::new(StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("o"),
-                                    scope: Scope::Output,
-                                },
+                                id: String::from("o"),
+                                scope: Scope::Output,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -210,10 +202,8 @@ mod causal {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
+                            id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -228,10 +218,8 @@ mod causal {
                         id: String::from("x"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("o"),
-                                scope: Scope::Output,
-                            },
+                            id: String::from("o"),
+                            scope: Scope::Output,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),

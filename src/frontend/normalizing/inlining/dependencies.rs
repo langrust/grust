@@ -73,10 +73,8 @@ mod replace_by_context {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
+                        id: String::from("b"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
