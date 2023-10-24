@@ -70,6 +70,7 @@ mod mir_from_hir {
                         format!("i"),
                         StreamExpression::SignalCall {
                             id: format!("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(format!("x"), 0)]),

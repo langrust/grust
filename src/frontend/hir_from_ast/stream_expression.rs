@@ -22,6 +22,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             location,
         } => HIRStreamExpression::SignalCall {
             id,
+            scope: todo!(),
             typing: typing.unwrap(),
             location,
             dependencies: Dependencies::new(),
@@ -161,6 +162,7 @@ mod hir_from_ast {
 
         let control = HIRStreamExpression::SignalCall {
             id: String::from("s"),
+            scope: todo!(),
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::new(),

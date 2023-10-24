@@ -75,7 +75,7 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod compute_when_dependencies {
-    use crate::common::{constant::Constant, location::Location, r#type::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::stream_expression::StreamExpression;
     use std::collections::HashMap;
@@ -91,6 +91,7 @@ mod compute_when_dependencies {
             id: String::from("x"),
             option: Box::new(StreamExpression::SignalCall {
                 id: String::from("x"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -140,6 +141,7 @@ mod compute_when_dependencies {
             id: String::from("x"),
             option: Box::new(StreamExpression::SignalCall {
                 id: String::from("y"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -147,6 +149,7 @@ mod compute_when_dependencies {
             present_body: vec![],
             present: Box::new(StreamExpression::SignalCall {
                 id: String::from("x"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),

@@ -135,6 +135,7 @@ mod inline_when_needed_visit {
                 inputs: vec![
                     StreamExpression::SignalCall {
                         id: String::from("i"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -143,6 +144,7 @@ mod inline_when_needed_visit {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("j"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -206,6 +208,7 @@ mod inline_when_needed_visit {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("i"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -267,6 +270,7 @@ mod inline_when_needed_visit {
                             },
                             inputs: vec![StreamExpression::SignalCall {
                                 id: String::from("v"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -280,6 +284,7 @@ mod inline_when_needed_visit {
                         format!("j"),
                         StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -317,6 +322,7 @@ mod inline_when_needed_visit {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -406,6 +412,7 @@ mod inline_when_needed_visit {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("v"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -418,6 +425,7 @@ mod inline_when_needed_visit {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -457,6 +465,7 @@ mod inline_when_needed_visit {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -542,6 +551,7 @@ mod inline_when_needed_visit {
                 inputs: vec![
                     StreamExpression::SignalCall {
                         id: String::from("i"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -550,6 +560,7 @@ mod inline_when_needed_visit {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("j"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -613,6 +624,7 @@ mod inline_when_needed_visit {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("i"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -683,6 +695,7 @@ mod inline_when_needed_visit {
                                 },
                                 inputs: vec![StreamExpression::SignalCall {
                                     id: String::from("v"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -696,6 +709,7 @@ mod inline_when_needed_visit {
                             format!("j"),
                             StreamExpression::SignalCall {
                                 id: String::from("x"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -740,6 +754,7 @@ mod inline_when_needed_visit {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -829,6 +844,7 @@ mod inline_when_needed_visit {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("v"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -841,6 +857,7 @@ mod inline_when_needed_visit {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -875,6 +892,7 @@ mod inline_when_needed_visit {
                 },
                 inputs: vec![StreamExpression::SignalCall {
                     id: String::from("o"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -906,6 +924,7 @@ mod inline_when_needed_visit {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1009,6 +1028,7 @@ mod inline_when_needed {
                 inputs: vec![
                     StreamExpression::SignalCall {
                         id: String::from("i"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1017,6 +1037,7 @@ mod inline_when_needed {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("j"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -1080,6 +1101,7 @@ mod inline_when_needed {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("i"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1141,6 +1163,7 @@ mod inline_when_needed {
                             },
                             inputs: vec![StreamExpression::SignalCall {
                                 id: String::from("v"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1154,6 +1177,7 @@ mod inline_when_needed {
                         format!("j"),
                         StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1191,6 +1215,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1280,6 +1305,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("v"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1292,6 +1318,7 @@ mod inline_when_needed {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1331,6 +1358,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1416,6 +1444,7 @@ mod inline_when_needed {
                 inputs: vec![
                     StreamExpression::SignalCall {
                         id: String::from("i"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1424,6 +1453,7 @@ mod inline_when_needed {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("j"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -1487,6 +1517,7 @@ mod inline_when_needed {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("i"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1557,6 +1588,7 @@ mod inline_when_needed {
                                 },
                                 inputs: vec![StreamExpression::SignalCall {
                                     id: String::from("v"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1570,6 +1602,7 @@ mod inline_when_needed {
                             format!("j"),
                             StreamExpression::SignalCall {
                                 id: String::from("x"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1614,6 +1647,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1703,6 +1737,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("v"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1715,6 +1750,7 @@ mod inline_when_needed {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1749,6 +1785,7 @@ mod inline_when_needed {
                 },
                 inputs: vec![StreamExpression::SignalCall {
                     id: String::from("o"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -1780,6 +1817,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -1868,6 +1906,7 @@ mod inline_when_needed {
                 inputs: vec![
                     StreamExpression::SignalCall {
                         id: String::from("i"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -1880,6 +1919,7 @@ mod inline_when_needed {
                             format!("i"),
                             StreamExpression::SignalCall {
                                 id: String::from("j"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -1944,6 +1984,7 @@ mod inline_when_needed {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("i"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -2005,6 +2046,7 @@ mod inline_when_needed {
                             },
                             inputs: vec![StreamExpression::SignalCall {
                                 id: String::from("v"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -2018,6 +2060,7 @@ mod inline_when_needed {
                         format!("j"),
                         StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -2055,6 +2098,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -2127,6 +2171,7 @@ mod inline_when_needed {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("x"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -2163,6 +2208,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("v"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -2174,6 +2220,7 @@ mod inline_when_needed {
                     StreamExpression::SignalCall {
                         id: String::from("o_1"),
                         typing: Type::Integer,
+                        scope: Scope::Local,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("o_1"), 0)]),
                     },
@@ -2208,6 +2255,7 @@ mod inline_when_needed {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),

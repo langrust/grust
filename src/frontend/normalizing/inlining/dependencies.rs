@@ -45,7 +45,7 @@ mod replace_by_context {
     use std::collections::HashMap;
 
     use crate::ast::expression::Expression;
-    use crate::common::{location::Location, r#type::Type};
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::frontend::normalizing::inlining::Union;
     use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
 
@@ -66,6 +66,7 @@ mod replace_by_context {
                     },
                     inputs: vec![StreamExpression::SignalCall {
                         id: String::from("b"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),

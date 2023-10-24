@@ -69,6 +69,7 @@ mod eq_unscheduled {
             signal_type: Type::Integer,
             expression: StreamExpression::SignalCall {
                 id: String::from("y"),
+                scope: Scope::Input,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -107,6 +108,7 @@ mod eq_unscheduled {
             signal_type: Type::Integer,
             expression: StreamExpression::SignalCall {
                 id: String::from("y"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -121,6 +123,7 @@ mod eq_unscheduled {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -187,6 +190,7 @@ mod eq_unscheduled {
             signal_type: Type::Integer,
             expression: StreamExpression::SignalCall {
                 id: String::from("y"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -201,6 +205,7 @@ mod eq_unscheduled {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -267,6 +272,7 @@ mod eq_unscheduled {
             signal_type: Type::Integer,
             expression: StreamExpression::SignalCall {
                 id: String::from("y"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -281,6 +287,7 @@ mod eq_unscheduled {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -353,6 +360,7 @@ mod eq_unscheduled {
             signal_type: Type::Integer,
             expression: StreamExpression::SignalCall {
                 id: String::from("y"),
+                scope: Scope::Local,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -367,6 +375,7 @@ mod eq_unscheduled {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
                     id: String::from("v"),
+                    scope: Scope::Input,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),

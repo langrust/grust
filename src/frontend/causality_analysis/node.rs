@@ -84,6 +84,7 @@ mod causal {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -99,6 +100,7 @@ mod causal {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -139,6 +141,7 @@ mod causal {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -156,6 +159,7 @@ mod causal {
                             constant: Constant::Integer(0),
                             expression: Box::new(StreamExpression::SignalCall {
                                 id: String::from("o"),
+                                scope: Scope::Output,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -199,6 +203,7 @@ mod causal {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -214,6 +219,7 @@ mod causal {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("o"),
+                            scope: Scope::Output,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),

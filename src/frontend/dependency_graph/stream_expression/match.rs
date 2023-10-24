@@ -95,7 +95,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod compute_match_dependencies {
     use crate::ast::{expression::Expression, pattern::Pattern};
-    use crate::common::{constant::Constant, location::Location, r#type::Type};
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
@@ -109,6 +109,7 @@ mod compute_match_dependencies {
         let stream_expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
                 id: String::from("p"),
+                scope: Scope::Local,
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -138,6 +139,7 @@ mod compute_match_dependencies {
                     vec![],
                     StreamExpression::SignalCall {
                         id: String::from("z"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -175,6 +177,7 @@ mod compute_match_dependencies {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("z"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -221,6 +224,7 @@ mod compute_match_dependencies {
         let stream_expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
                 id: String::from("p"),
+                scope: Scope::Local,
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -251,6 +255,7 @@ mod compute_match_dependencies {
                     vec![],
                     StreamExpression::SignalCall {
                         id: String::from("y"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -289,6 +294,7 @@ mod compute_match_dependencies {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("y"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),

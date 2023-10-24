@@ -49,6 +49,7 @@ impl StreamExpression {
 #[cfg(test)]
 mod compute_followed_by_dependencies {
     use crate::ast::expression::Expression;
+    use crate::common::scope::Scope;
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
     use std::collections::HashMap;
@@ -70,6 +71,7 @@ mod compute_followed_by_dependencies {
                 },
                 inputs: vec![StreamExpression::SignalCall {
                     id: String::from("x"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::new(),
