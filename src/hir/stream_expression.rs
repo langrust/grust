@@ -1,5 +1,6 @@
-use crate::ast::expression::Expression;
-use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
+use crate::ast::{expression::Expression, pattern::Pattern};
+use crate::common::scope::Scope;
+use crate::common::{constant::Constant, location::Location, r#type::Type};
 use crate::hir::{
     dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
     memory::Memory,
@@ -23,6 +24,8 @@ pub enum StreamExpression {
     SignalCall {
         /// Signal identifier.
         id: String,
+        /// Signal scope.
+        scope: Scope,
         /// Stream Expression type.
         typing: Type,
         /// Stream expression location.
