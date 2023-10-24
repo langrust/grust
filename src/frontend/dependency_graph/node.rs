@@ -312,6 +312,7 @@ mod create_initialized_graph {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -327,6 +328,7 @@ mod create_initialized_graph {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -384,6 +386,7 @@ mod add_all_dependencies {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -399,6 +402,7 @@ mod add_all_dependencies {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -475,6 +479,7 @@ mod add_signal_dependencies {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -490,6 +495,7 @@ mod add_signal_dependencies {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -567,6 +573,7 @@ mod add_signal_inputs_dependencies {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("x"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -582,6 +589,7 @@ mod add_signal_inputs_dependencies {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),

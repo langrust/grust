@@ -136,12 +136,14 @@ mod generate_unitary_nodes {
                             inputs: vec![
                                 StreamExpression::SignalCall {
                                     id: String::from("x"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -181,6 +183,7 @@ mod generate_unitary_nodes {
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -243,12 +246,14 @@ mod generate_unitary_nodes {
                             inputs: vec![
                                 StreamExpression::SignalCall {
                                     id: String::from("x"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -288,6 +293,7 @@ mod generate_unitary_nodes {
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -327,6 +333,7 @@ mod generate_unitary_nodes {
                                 inputs: vec![
                                     StreamExpression::SignalCall {
                                         id: String::from("x"),
+                                        scope: Scope::Input,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::from(vec![(
@@ -336,6 +343,7 @@ mod generate_unitary_nodes {
                                     },
                                     StreamExpression::SignalCall {
                                         id: String::from("y"),
+                                        scope: Scope::Input,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::from(vec![(
@@ -386,6 +394,7 @@ mod generate_unitary_nodes {
                                     },
                                     StreamExpression::SignalCall {
                                         id: String::from("y"),
+                                        scope: Scope::Input,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::from(vec![(
@@ -453,12 +462,14 @@ mod generate_unitary_nodes {
                         inputs: vec![
                             StreamExpression::SignalCall {
                                 id: String::from("x"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                             },
                             StreamExpression::SignalCall {
                                 id: String::from("y"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -513,12 +524,14 @@ mod generate_unitary_nodes {
                             inputs: vec![
                                 StreamExpression::SignalCall {
                                     id: String::from("x"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -558,6 +571,7 @@ mod generate_unitary_nodes {
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -611,6 +625,7 @@ mod generate_unitary_nodes {
                         inputs: vec![
                             StreamExpression::SignalCall {
                                 id: String::from("s"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
@@ -626,6 +641,7 @@ mod generate_unitary_nodes {
                                 },
                                 inputs: vec![StreamExpression::SignalCall {
                                     id: String::from("v"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -672,6 +688,7 @@ mod generate_unitary_nodes {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("g"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
@@ -682,6 +699,7 @@ mod generate_unitary_nodes {
                     },
                     StreamExpression::SignalCall {
                         id: String::from("v"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -716,6 +734,7 @@ mod generate_unitary_nodes {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("g"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -726,6 +745,7 @@ mod generate_unitary_nodes {
                     },
                     StreamExpression::SignalCall {
                         id: String::from("v"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -827,12 +847,14 @@ mod generate_unitary_nodes {
                         inputs: vec![
                             StreamExpression::SignalCall {
                                 id: String::from("x"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                             },
                             StreamExpression::SignalCall {
                                 id: String::from("y"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -873,12 +895,14 @@ mod generate_unitary_nodes {
                             inputs: vec![
                                 StreamExpression::SignalCall {
                                     id: String::from("x"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -928,12 +952,14 @@ mod generate_unitary_nodes {
                             inputs: vec![
                                 StreamExpression::SignalCall {
                                     id: String::from("x"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -973,6 +999,7 @@ mod generate_unitary_nodes {
                                 },
                                 StreamExpression::SignalCall {
                                     id: String::from("y"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
@@ -1012,6 +1039,7 @@ mod generate_unitary_nodes {
                                 inputs: vec![
                                     StreamExpression::SignalCall {
                                         id: String::from("x"),
+                                        scope: Scope::Input,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::from(vec![(
@@ -1021,6 +1049,7 @@ mod generate_unitary_nodes {
                                     },
                                     StreamExpression::SignalCall {
                                         id: String::from("y"),
+                                        scope: Scope::Input,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::from(vec![(
@@ -1071,6 +1100,7 @@ mod generate_unitary_nodes {
                                     },
                                     StreamExpression::SignalCall {
                                         id: String::from("y"),
+                                        scope: Scope::Input,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::from(vec![(
@@ -1124,6 +1154,7 @@ mod generate_unitary_nodes {
                                 format!("x"),
                                 StreamExpression::SignalCall {
                                     id: String::from("s"),
+                                    scope: Scope::Input,
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
@@ -1142,6 +1173,7 @@ mod generate_unitary_nodes {
                                     },
                                     inputs: vec![StreamExpression::SignalCall {
                                         id: String::from("v"),
+                                        scope: Scope::Input,
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::from(vec![(
@@ -1207,6 +1239,7 @@ mod generate_unitary_nodes {
                             },
                             inputs: vec![StreamExpression::SignalCall {
                                 id: String::from("g"),
+                                scope: Scope::Input,
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("g"), 0)]),
@@ -1220,6 +1253,7 @@ mod generate_unitary_nodes {
                         format!("y"),
                         StreamExpression::SignalCall {
                             id: String::from("v"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -1260,6 +1294,7 @@ mod generate_unitary_nodes {
                     format!("y"),
                     StreamExpression::SignalCall {
                         id: String::from("v"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),

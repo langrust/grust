@@ -19,7 +19,7 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod compute_signal_call_dependencies {
-    use crate::common::{location::Location, r#type::Type};
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::dependencies::Dependencies;
     use crate::hir::stream_expression::StreamExpression;
 
@@ -27,6 +27,7 @@ mod compute_signal_call_dependencies {
     fn should_dependencies_of_signal_call_is_signal_with_zero_depth() {
         let stream_expression = StreamExpression::SignalCall {
             id: String::from("x"),
+            scope: Scope::Local,
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::new(),

@@ -285,6 +285,7 @@ impl StreamExpression {
                 // todo : this should be a memory call
                 *self = StreamExpression::SignalCall {
                     id: memory_id.clone(),
+                    scope: Scope::Memory,
                     typing: typing.clone(),
                     location: location.clone(),
                     dependencies: Dependencies::from(vec![(memory_id, 0)]),
@@ -346,6 +347,7 @@ mod memorize {
     use std::collections::HashSet;
 
     use crate::ast::expression::Expression;
+    use crate::common::scope::Scope;
     use crate::common::{constant::Constant, location::Location, r#type::Type};
     use crate::hir::{
         dependencies::Dependencies, identifier_creator::IdentifierCreator, memory::Memory,
@@ -371,6 +373,7 @@ mod memorize {
             inputs: vec![
                 StreamExpression::SignalCall {
                     id: String::from("s"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
@@ -379,6 +382,7 @@ mod memorize {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
                         id: String::from("v"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -400,6 +404,7 @@ mod memorize {
             Constant::Integer(0),
             StreamExpression::SignalCall {
                 id: String::from("v"),
+                scope: Scope::Input,
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -419,12 +424,14 @@ mod memorize {
             inputs: vec![
                 StreamExpression::SignalCall {
                     id: String::from("s"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                 },
                 StreamExpression::SignalCall {
                     id: String::from("mem"),
+                    scope: Scope::Memory,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("mem"), 0)]),
@@ -452,6 +459,7 @@ mod memorize {
                     format!("x"),
                     StreamExpression::SignalCall {
                         id: String::from("s"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
@@ -461,6 +469,7 @@ mod memorize {
                     format!("y"),
                     StreamExpression::SignalCall {
                         id: String::from("x_1"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
@@ -493,6 +502,7 @@ mod memorize {
                     format!("x"),
                     StreamExpression::SignalCall {
                         id: String::from("s"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
@@ -502,6 +512,7 @@ mod memorize {
                     format!("y"),
                     StreamExpression::SignalCall {
                         id: String::from("x_1"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),

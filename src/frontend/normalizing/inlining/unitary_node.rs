@@ -113,6 +113,7 @@ mod instantiate_equations {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("j"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -135,6 +136,7 @@ mod instantiate_equations {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -157,6 +159,7 @@ mod instantiate_equations {
                 format!("i"),
                 StreamExpression::SignalCall {
                     id: String::from("o"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -176,6 +179,7 @@ mod instantiate_equations {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
                         id: String::from("j_1"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("j_1"), 0)]),
@@ -198,6 +202,7 @@ mod instantiate_equations {
                     },
                     inputs: vec![StreamExpression::SignalCall {
                         id: String::from("o"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -247,6 +252,7 @@ mod instantiate_equations {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
                             id: String::from("j"),
+                            scope: Scope::Local,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -269,6 +275,7 @@ mod instantiate_equations {
                         },
                         inputs: vec![StreamExpression::SignalCall {
                             id: String::from("i"),
+                            scope: Scope::Input,
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -291,6 +298,7 @@ mod instantiate_equations {
                 format!("i"),
                 StreamExpression::SignalCall {
                     id: String::from("o"),
+                    scope: Scope::Local,
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -310,6 +318,7 @@ mod instantiate_equations {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
                         id: String::from("j_1"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("j_1"), 0)]),
@@ -332,6 +341,7 @@ mod instantiate_equations {
                     },
                     inputs: vec![StreamExpression::SignalCall {
                         id: String::from("o"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("o"), 0)]),

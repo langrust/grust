@@ -135,6 +135,7 @@ mod from {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         id: String::from("i1"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
@@ -147,6 +148,7 @@ mod from {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -190,6 +192,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         id: String::from("i1"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
@@ -202,6 +205,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -237,6 +241,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         id: String::from("i1"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
@@ -249,6 +254,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -284,6 +290,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         id: String::from("i1"),
+                        scope: Scope::Input,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
@@ -296,6 +303,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         id: String::from("x"),
+                        scope: Scope::Local,
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
