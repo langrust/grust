@@ -28,7 +28,7 @@ impl StreamExpression {
     /// `a + b/2`.
     pub fn replace_by_context(
         &mut self,
-        context_map: &HashMap<String, Union<String, StreamExpression>>,
+        context_map: &HashMap<String, Union<Signal, StreamExpression>>,
     ) {
         match self {
             StreamExpression::Constant { .. } => (),
@@ -37,13 +37,12 @@ impl StreamExpression {
                 ref mut dependencies,
                 ..
             } => {
-                // todo: change scope according to context
                 if let Some(element) = context_map.get(&signal.id) {
                     match element {
-                        Union::I1(new_id) => {
-                            signal.id = new_id.clone();
+                        Union::I1(new_signal) => {
+                            *signal = new_signal.clone();
                             *dependencies =
-                                Dependencies::from(vec![(String::from(new_id.clone()), 0)]);
+                                Dependencies::from(vec![(String::from(new_signal.id.clone()), 0)]);
                         }
                         Union::I2(new_expression) => *self = new_expression.clone(),
                     }

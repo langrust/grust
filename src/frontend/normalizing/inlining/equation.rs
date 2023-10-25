@@ -22,13 +22,19 @@ impl Equation {
     pub fn add_necessary_renaming(
         &self,
         identifier_creator: &mut IdentifierCreator,
-        context_map: &mut HashMap<String, Union<String, StreamExpression>>,
+        context_map: &mut HashMap<String, Union<Signal, StreamExpression>>,
     ) {
         let new_id =
             identifier_creator.new_identifier(String::new(), self.id.clone(), String::new());
         if new_id.ne(&self.id) {
             assert!(context_map
-                .insert(self.id.clone(), Union::I1(new_id))
+                .insert(
+                    self.id.clone(),
+                    Union::I1(Signal {
+                        id: new_id,
+                        scope: self.scope.clone()
+                    })
+                )
                 .is_none());
         }
     }
@@ -48,16 +54,26 @@ impl Equation {
     /// with the equation `z = x + y` will return `c = a + b/2`.
     pub fn replace_by_context(
         &self,
-        context_map: &HashMap<String, Union<String, StreamExpression>>,
+        context_map: &HashMap<String, Union<Signal, StreamExpression>>,
     ) -> Equation {
         let mut new_equation = self.clone();
         if let Some(element) = context_map.get(&new_equation.id) {
             match element {
-                Union::I1(new_id)
+                Union::I1(Signal {
+                    id: new_id,
+                    scope: new_scope,
+                })
                 | Union::I2(StreamExpression::SignalCall {
-                    signal: Signal { id: new_id, .. },
+                    signal:
+                        Signal {
+                            id: new_id,
+                            scope: new_scope,
+                        },
                     ..
-                }) => new_equation.id = new_id.clone(),
+                }) => {
+                    new_equation.id = new_id.clone();
+                    new_equation.scope = new_scope.clone()
+                }
                 Union::I2(_) => unreachable!(),
             }
         }
@@ -138,7 +154,10 @@ impl Equation {
                     let mut retrieved_equations = called_unitary_node.instantiate_equations(
                         identifier_creator,
                         &inputs,
-                        Some(&self.id),
+                        Some(Signal {
+                            id: self.id.clone(),
+                            scope: self.scope.clone(),
+                        }),
                     );
 
                     retrieved_equations.iter_mut().for_each(|equation| {

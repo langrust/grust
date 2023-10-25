@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::hir::{
-    equation::Equation, identifier_creator::IdentifierCreator, stream_expression::StreamExpression,
-    unitary_node::UnitaryNode,
+    equation::Equation, identifier_creator::IdentifierCreator, signal::Signal,
+    stream_expression::StreamExpression, unitary_node::UnitaryNode,
 };
 
 use super::Union;
@@ -38,7 +38,7 @@ impl UnitaryNode {
         &self,
         identifier_creator: &mut IdentifierCreator,
         inputs: &Vec<(String, StreamExpression)>,
-        new_output_signal: Option<&String>,
+        new_output_signal: Option<Signal>,
     ) -> Vec<Equation> {
         // create the context with the given inputs
         let mut context_map = inputs
@@ -47,9 +47,12 @@ impl UnitaryNode {
             .collect::<HashMap<_, _>>();
 
         // add output to context
-        let same_output = new_output_signal.clone().map_or(false, |new_output_id| {
-            if &self.output_id != new_output_id {
-                context_map.insert(self.output_id.clone(), Union::I1(new_output_id.clone()));
+        let same_output = new_output_signal
+            .clone()
+            .map_or(false, |new_output_signal| {
+                if self.output_id != new_output_signal.id {
+                    context_map
+                        .insert(self.output_id.clone(), Union::I1(new_output_signal.clone()));
                 false
             } else {
                 true
