@@ -37,11 +37,10 @@ impl StreamExpression {
                 ref mut dependencies,
                 ..
             } => {
-                // todo: change scope according to context
                 if let Some(element) = context_map.get(&signal.id) {
                     match element {
-                        Union::I1(new_id) => {
-                            signal.id = new_id.clone();
+                        Union::I1(new_signal) => {
+                            *signal = new_signal.clone();
                             *dependencies =
                                 Dependencies::from(vec![(String::from(new_signal.id.clone()), 0)]);
                         }

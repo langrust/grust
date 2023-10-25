@@ -56,11 +56,21 @@ impl Equation {
         let mut new_equation = self.clone();
         if let Some(element) = context_map.get(&new_equation.id) {
             match element {
-                Union::I1(new_id)
+                Union::I1(Signal {
+                    id: new_id,
+                    scope: new_scope,
+                })
                 | Union::I2(StreamExpression::SignalCall {
-                    signal: Signal { id: new_id, .. },
+                    signal:
+                        Signal {
+                            id: new_id,
+                            scope: new_scope,
+                        },
                     ..
-                }) => new_equation.id = new_id.clone(),
+                }) => {
+                    new_equation.id = new_id.clone();
+                    new_equation.scope = new_scope.clone()
+                }
                 Union::I2(_) => unreachable!(),
             }
         }

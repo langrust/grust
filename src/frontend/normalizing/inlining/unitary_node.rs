@@ -53,11 +53,11 @@ impl UnitaryNode {
                 if self.output_id != new_output_signal.id {
                     context_map
                         .insert(self.output_id.clone(), Union::I1(new_output_signal.clone()));
-                    false
-                } else {
-                    true
-                }
-            });
+                false
+            } else {
+                true
+            }
+        });
 
         // add identifiers of the inlined equations to the context
         self.equations.iter().for_each(|equation| {
