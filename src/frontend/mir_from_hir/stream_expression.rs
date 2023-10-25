@@ -1,7 +1,7 @@
 use crate::{
     ast::pattern::Pattern,
     hir::{signal::Signal, stream_expression::StreamExpression},
-    mir::{block::Block, expression::Expression, statement::Statement},
+    mir::{block::Block, expression::Expression, statement::Statement}, common::scope::Scope,
 };
 
 use super::{
@@ -13,6 +13,14 @@ use super::{
 pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
     match stream_expression {
         StreamExpression::Constant { constant, .. } => Expression::Literal { literal: constant },
+        StreamExpression::SignalCall {
+            signal: Signal { id, scope: Scope::Input, .. },
+            ..
+        } => Expression::InputAccess { identifier: id },
+        StreamExpression::SignalCall {
+            signal: Signal { id, scope: Scope::Memory, .. },
+            ..
+        } => Expression::MemoryAccess { identifier: id },
         StreamExpression::SignalCall {
             signal: Signal { id, .. },
             ..
@@ -137,7 +145,6 @@ mod mir_from_hir {
 
     #[test]
     fn should_transform_hir_local_signal_call_into_mir_identifier() {
-        // todo : make memory, input, output signal access
         let expression = StreamExpression::SignalCall {
             signal: Signal {
                 id: format!("x"),
