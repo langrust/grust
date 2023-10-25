@@ -243,7 +243,13 @@ mod add_necessary_renaming {
             location: Location::default(),
         };
 
-        let mut context_map = HashMap::from([(String::from("x"), Union::I1(String::from("a")))]);
+        let mut context_map = HashMap::from([(
+            String::from("x"),
+            Union::I1(Signal {
+                id: String::from("a"),
+                scope: Scope::Local,
+            }),
+        )]);
         let mut identifier_creator = IdentifierCreator::from(vec![String::from("a")]);
 
         equation.add_necessary_renaming(&mut identifier_creator, &mut context_map);
@@ -254,10 +260,10 @@ mod add_necessary_renaming {
     }
 
     #[test]
-    fn should_add_the_equation_id_to_the_context_if_id_is_already_used() {
+    fn should_add_the_equation_signal_to_the_context_if_id_is_already_used() {
         let equation = Equation {
             id: String::from("a"),
-            scope: Scope::Local,
+            scope: Scope::Output,
             expression: StreamExpression::SignalCall {
                 signal: Signal {
                     id: String::from("x"),
@@ -271,14 +277,32 @@ mod add_necessary_renaming {
             location: Location::default(),
         };
 
-        let mut context_map = HashMap::from([(String::from("x"), Union::I1(String::from("a")))]);
+        let mut context_map = HashMap::from([(
+            String::from("x"),
+            Union::I1(Signal {
+                id: String::from("a"),
+                scope: Scope::Local,
+            }),
+        )]);
         let mut identifier_creator = IdentifierCreator::from(vec![String::from("a")]);
 
         equation.add_necessary_renaming(&mut identifier_creator, &mut context_map);
 
         let control = HashMap::from([
-            (String::from("x"), Union::I1(String::from("a"))),
-            (String::from("a"), Union::I1(String::from("a_1"))),
+            (
+                String::from("x"),
+                Union::I1(Signal {
+                    id: String::from("a"),
+                    scope: Scope::Local,
+                }),
+            ),
+            (
+                String::from("a"),
+                Union::I1(Signal {
+                    id: String::from("a_1"),
+                    scope: Scope::Output,
+                }),
+            ),
         ]);
         assert_eq!(context_map, control)
     }
@@ -342,7 +366,13 @@ mod replace_by_context {
         };
 
         let context_map = HashMap::from([
-            (String::from("x"), Union::I1(String::from("a"))),
+            (
+                String::from("x"),
+                Union::I1(Signal {
+                    id: String::from("a"),
+                    scope: Scope::Local,
+                }),
+            ),
             (
                 String::from("y"),
                 Union::I2(StreamExpression::MapApplication {
@@ -365,7 +395,13 @@ mod replace_by_context {
                     dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
                 }),
             ),
-            (String::from("z"), Union::I1(String::from("c"))),
+            (
+                String::from("z"),
+                Union::I1(Signal {
+                    id: String::from("c"),
+                    scope: Scope::Local,
+                }),
+            ),
         ]);
 
         let replaced_equation = equation.replace_by_context(&context_map);
@@ -2740,7 +2776,7 @@ mod inline_when_needed_reccursive {
                         },
                         StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("o_1"),
                                 scope: Scope::Local,
                             },
                             typing: Type::Integer,
