@@ -4,6 +4,7 @@ use once_cell::sync::OnceCell;
 
 use crate::ast::equation::Equation;
 use crate::ast::node::Node;
+use crate::common::scope::Scope;
 use crate::frontend::hir_from_ast::equation::hir_from_ast as equation_hir_from_ast;
 use crate::hir::node::Node as HIRNode;
 
@@ -20,6 +21,9 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
     let signals_context = equations
         .iter()
         .map(|(signal, Equation { scope, .. })| (signal.clone(), scope.clone()))
+        .chain(inputs
+            .iter()
+            .map(|(signal, _)| (signal.clone(), Scope::Input)))
         .collect();
 
     HIRNode {
