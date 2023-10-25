@@ -3,7 +3,7 @@ use crate::common::scope::Scope;
 use crate::common::{constant::Constant, location::Location, r#type::Type};
 use crate::hir::{
     dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-    memory::Memory,
+    memory::Memory, signal::Signal,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -22,10 +22,8 @@ pub enum StreamExpression {
     },
     /// Signal call stream expression.
     SignalCall {
-        /// Signal identifier.
-        id: String,
-        /// Signal scope.
-        scope: Scope,
+        /// The called signal.
+        signal: Signal,
         /// Stream Expression type.
         typing: Type,
         /// Stream expression location.
