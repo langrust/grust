@@ -57,7 +57,13 @@ mod replace_by_context {
             Dependencies::from(vec![(String::from("x"), 0), (String::from("y"), 0)]);
 
         let context_map = HashMap::from([
-            (String::from("x"), Union::I1(String::from("a"))),
+            (
+                String::from("x"),
+                Union::I1(Signal {
+                    id: String::from("a"),
+                    scope: Scope::Local,
+                }),
+            ),
             (
                 String::from("y"),
                 Union::I2(StreamExpression::MapApplication {
