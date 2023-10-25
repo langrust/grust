@@ -22,10 +22,8 @@ pub enum StreamExpression {
     },
     /// Signal call stream expression.
     SignalCall {
-        /// Signal identifier.
-        id: String,
-        /// Signal scope.
-        scope: Scope,
+        /// The called signal.
+        signal: Signal,
         /// Stream Expression type.
         typing: Type,
         /// Stream expression location.
