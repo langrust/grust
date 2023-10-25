@@ -55,7 +55,7 @@ impl StreamExpression {
 mod compute_structure_dependencies {
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::dependencies::Dependencies;
-    use crate::hir::stream_expression::StreamExpression;
+    use crate::hir::{signal::Signal, stream_expression::StreamExpression};
     use std::collections::HashMap;
 
     #[test]
@@ -71,8 +71,10 @@ mod compute_structure_dependencies {
                 (
                     String::from("x"),
                     StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -81,8 +83,10 @@ mod compute_structure_dependencies {
                 (
                     String::from("y"),
                     StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),

@@ -293,7 +293,7 @@ mod create_initialized_graph {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node,
+        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
         stream_expression::StreamExpression,
     };
 
@@ -311,8 +311,10 @@ mod create_initialized_graph {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("x"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -327,8 +329,10 @@ mod create_initialized_graph {
                         id: String::from("x"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -365,7 +369,7 @@ mod add_all_dependencies {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node,
+        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
         stream_expression::StreamExpression,
     };
 
@@ -385,8 +389,10 @@ mod add_all_dependencies {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("x"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -401,8 +407,10 @@ mod add_all_dependencies {
                         id: String::from("x"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -458,7 +466,7 @@ mod add_signal_dependencies {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node,
+        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
         stream_expression::StreamExpression,
     };
 
@@ -478,8 +486,10 @@ mod add_signal_dependencies {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("x"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -494,8 +504,10 @@ mod add_signal_dependencies {
                         id: String::from("x"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -552,7 +564,7 @@ mod add_signal_inputs_dependencies {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node,
+        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
         stream_expression::StreamExpression,
     };
 
@@ -572,8 +584,10 @@ mod add_signal_inputs_dependencies {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("x"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -588,8 +602,10 @@ mod add_signal_inputs_dependencies {
                         id: String::from("x"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),

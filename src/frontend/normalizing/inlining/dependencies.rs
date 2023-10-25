@@ -47,7 +47,9 @@ mod replace_by_context {
     use crate::ast::expression::Expression;
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::frontend::normalizing::inlining::Union;
-    use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
+    use crate::hir::{
+        dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression,
+    };
 
     #[test]
     fn should_replace_all_occurence_of_identifiers_by_context() {
@@ -65,8 +67,10 @@ mod replace_by_context {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        id: String::from("b"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("b"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("b"), 0)]),

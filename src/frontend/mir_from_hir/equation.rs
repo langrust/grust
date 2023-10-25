@@ -28,7 +28,8 @@ mod mir_from_hir {
         common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
         frontend::mir_from_hir::equation::mir_from_hir,
         hir::{
-            dependencies::Dependencies, equation::Equation, stream_expression::StreamExpression,
+            dependencies::Dependencies, equation::Equation, signal::Signal,
+            stream_expression::StreamExpression,
         },
         mir::{expression::Expression, statement::Statement},
     };
@@ -69,8 +70,10 @@ mod mir_from_hir {
                     (
                         format!("i"),
                         StreamExpression::SignalCall {
-                            id: format!("x"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: format!("x"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(format!("x"), 0)]),

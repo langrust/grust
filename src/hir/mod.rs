@@ -21,3 +21,6 @@ pub mod memory;
 
 /// HIR [Dependencies](crate::hir::dependencies::Dependencies) module.
 pub mod dependencies;
+
+/// HIR [Signal](crate::hir::signal::Signal) module.
+pub mod signal;

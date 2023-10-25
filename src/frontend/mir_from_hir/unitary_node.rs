@@ -226,7 +226,7 @@ mod get_imports {
         ast::expression::Expression,
         common::{location::Location, r#type::Type, scope::Scope},
         frontend::mir_from_hir::unitary_node::get_imports,
-        hir::{dependencies::Dependencies, stream_expression::StreamExpression},
+        hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
         mir::item::node_file::import::Import,
     };
 
@@ -239,8 +239,10 @@ mod get_imports {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::SignalCall {
-                id: format!("x"),
-                scope: Scope::Input,
+                signal: Signal {
+                    id: format!("x"),
+                    scope: Scope::Input,
+                },
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -262,8 +264,10 @@ mod get_imports {
             inputs: vec![(
                 format!("i"),
                 StreamExpression::SignalCall {
-                    id: format!("x"),
-                    scope: Scope::Input,
+                    signal: Signal {
+                        id: format!("x"),
+                        scope: Scope::Input,
+                    },
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -289,6 +293,7 @@ mod get_state_elements {
         hir::{
             dependencies::Dependencies,
             memory::{Buffer, CalledNode, Memory},
+            signal::Signal,
             stream_expression::StreamExpression,
         },
         mir::{
@@ -318,8 +323,10 @@ mod get_state_elements {
                         },
                         inputs: vec![
                             StreamExpression::SignalCall {
-                                id: format!("i"),
-                                scope: Scope::Local,
+                                signal: Signal {
+                                    id: format!("i"),
+                                    scope: Scope::Local,
+                                },
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(format!("i"), 0)]),
@@ -414,6 +421,7 @@ mod mir_from_hir {
             dependencies::Dependencies,
             equation::Equation,
             memory::{Buffer, CalledNode, Memory},
+            signal::Signal,
             stream_expression::StreamExpression,
             unitary_node::UnitaryNode,
         },
@@ -452,8 +460,10 @@ mod mir_from_hir {
                         },
                         inputs: vec![
                             StreamExpression::SignalCall {
-                                id: format!("i"),
-                                scope: Scope::Local,
+                                signal: Signal {
+                                    id: format!("i"),
+                                    scope: Scope::Local,
+                                },
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(format!("i"), 0)]),
@@ -489,8 +499,10 @@ mod mir_from_hir {
                     id: format!("i"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: format!("mem_i"),
-                        scope: Scope::Memory,
+                        signal: Signal {
+                            id: format!("i"),
+                            scope: Scope::Memory,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("i"), 1)]),
@@ -509,8 +521,10 @@ mod mir_from_hir {
                             (
                                 format!("a"),
                                 StreamExpression::SignalCall {
-                                    id: format!("x"),
-                                    scope: Scope::Input,
+                                    signal: Signal {
+                                        id: format!("x"),
+                                        scope: Scope::Input,
+                                    },
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -519,8 +533,10 @@ mod mir_from_hir {
                             (
                                 format!("b"),
                                 StreamExpression::SignalCall {
-                                    id: format!("i"),
-                                    scope: Scope::Local,
+                                    signal: Signal {
+                                        id: format!("i"),
+                                        scope: Scope::Local,
+                                    },
                                     typing: Type::Integer,
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(format!("i"), 0)]),

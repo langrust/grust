@@ -48,7 +48,7 @@ mod hir_from_ast {
     use crate::frontend::hir_from_ast::node::hir_from_ast;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation as HIREquation, node::Node as HIRNode,
-        stream_expression::StreamExpression as HIRStreamExpression,
+        signal::Signal, stream_expression::StreamExpression as HIRStreamExpression,
     };
 
     #[test]
@@ -103,8 +103,10 @@ mod hir_from_ast {
                             location: Location::default(),
                         },
                         inputs: vec![HIRStreamExpression::SignalCall {
-                            id: String::from("i"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),

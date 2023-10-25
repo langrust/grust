@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use crate::ast::stream_expression::StreamExpression;
 use crate::common::scope::Scope;
 use crate::hir::{
-    dependencies::Dependencies, stream_expression::StreamExpression as HIRStreamExpression,
+    dependencies::Dependencies, signal::Signal,
+    stream_expression::StreamExpression as HIRStreamExpression,
 };
 
 /// Transform AST stream expressions into HIR stream expressions.
@@ -26,13 +27,15 @@ pub fn hir_from_ast(
             id,
             typing,
             location,
-        } => {let scope = signals_context.get(&id).unwrap().clone();HIRStreamExpression::SignalCall {
-            id,
-            scope,
-            typing: typing.unwrap(),
-            location,
-            dependencies: Dependencies::new(),
-        }},
+        } => {
+            let scope = signals_context.get(&id).unwrap().clone();
+            HIRStreamExpression::SignalCall {
+                signal: Signal { id, scope },
+                typing: typing.unwrap(),
+                location,
+                dependencies: Dependencies::new(),
+            }
+        }
         StreamExpression::MapApplication {
             function_expression,
             inputs,
@@ -158,7 +161,8 @@ mod hir_from_ast {
     use crate::common::{location::Location, r#type::Type};
     use crate::frontend::hir_from_ast::stream_expression::hir_from_ast;
     use crate::hir::{
-        dependencies::Dependencies, stream_expression::StreamExpression as HIRStreamExpression,
+        dependencies::Dependencies, signal::Signal,
+        stream_expression::StreamExpression as HIRStreamExpression,
     };
 
     #[test]
@@ -172,8 +176,10 @@ mod hir_from_ast {
         let hir_stream_expression = hir_from_ast(ast_stream_expression, &signals_context);
 
         let control = HIRStreamExpression::SignalCall {
-            id: String::from("s"),
-            scope: Scope::Local,
+            signal: Signal {
+                id: String::from("s"),
+                scope: Scope::Local,
+            },
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::new(),

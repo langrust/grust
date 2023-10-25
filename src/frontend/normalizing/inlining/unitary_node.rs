@@ -81,7 +81,7 @@ mod instantiate_equations {
     use crate::hir::unitary_node::UnitaryNode;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        stream_expression::StreamExpression,
+        signal::Signal, stream_expression::StreamExpression,
     };
 
     #[test]
@@ -112,8 +112,10 @@ mod instantiate_equations {
                     expression: StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
-                            id: String::from("j"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("j"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -135,8 +137,10 @@ mod instantiate_equations {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -158,8 +162,10 @@ mod instantiate_equations {
             &vec![(
                 format!("i"),
                 StreamExpression::SignalCall {
-                    id: String::from("o"),
-                    scope: Scope::Local,
+                    signal: Signal {
+                        id: String::from("o"),
+                        scope: Scope::Local,
+                    },
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -178,8 +184,10 @@ mod instantiate_equations {
                 expression: StreamExpression::FollowedBy {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
-                        id: String::from("j_1"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("1"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("j_1"), 0)]),
@@ -201,8 +209,10 @@ mod instantiate_equations {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        id: String::from("o"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("o"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -251,8 +261,10 @@ mod instantiate_equations {
                     expression: StreamExpression::FollowedBy {
                         constant: Constant::Integer(0),
                         expression: Box::new(StreamExpression::SignalCall {
-                            id: String::from("j"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("j"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
@@ -274,8 +286,10 @@ mod instantiate_equations {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
@@ -297,8 +311,10 @@ mod instantiate_equations {
             &vec![(
                 format!("i"),
                 StreamExpression::SignalCall {
-                    id: String::from("o"),
-                    scope: Scope::Local,
+                    signal: Signal {
+                        id: String::from("o"),
+                        scope: Scope::Local,
+                    },
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
@@ -317,8 +333,10 @@ mod instantiate_equations {
                 expression: StreamExpression::FollowedBy {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
-                        id: String::from("j_1"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("1"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("j_1"), 0)]),
@@ -340,8 +358,10 @@ mod instantiate_equations {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        id: String::from("o"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("o"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
