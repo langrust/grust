@@ -234,6 +234,20 @@ mod lir_from_mir {
     }
 
     #[test]
+    fn should_create_lir_field_access_to_input_from_mir_input_access() {
+        let expression = Expression::InputAccess {
+            identifier: String::from("i"),
+        };
+        let control = LIRExpression::FieldAccess {
+            expression: Box::new(LIRExpression::Identifier {
+                identifier: String::from("input"),
+            }),
+            field: String::from("i"),
+        };
+        assert_eq!(lir_from_mir(expression), control)
+    }
+
+    #[test]
     fn should_create_lir_structure_from_mir_structure() {
         let expression = Expression::Structure {
             name: String::from("Point"),
