@@ -90,8 +90,10 @@ mod compute_when_dependencies {
         let stream_expression = StreamExpression::When {
             id: String::from("x"),
             option: Box::new(StreamExpression::SignalCall {
-                id: String::from("x"),
-                scope: Scope::Local,
+                signal: Signal {
+                    id: String::from("x"),
+                    scope: Scope::Local,
+                },
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -140,16 +142,20 @@ mod compute_when_dependencies {
         let stream_expression = StreamExpression::When {
             id: String::from("x"),
             option: Box::new(StreamExpression::SignalCall {
-                id: String::from("y"),
-                scope: Scope::Local,
+                signal: Signal {
+                    id: String::from("y"),
+                    scope: Scope::Local,
+                },
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),
             }),
             present_body: vec![],
             present: Box::new(StreamExpression::SignalCall {
-                id: String::from("x"),
-                scope: Scope::Local,
+                signal: Signal {
+                    id: String::from("x"),
+                    scope: Scope::Local,
+                },
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::new(),

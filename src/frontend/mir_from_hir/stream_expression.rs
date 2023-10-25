@@ -1,7 +1,7 @@
 use crate::{
     ast::pattern::Pattern,
     hir::{signal::Signal, stream_expression::StreamExpression},
-    mir::{block::Block, expression::Expression, statement::Statement}, common::scope::Scope,
+    mir::{block::Block, expression::Expression, statement::Statement},
 };
 
 use super::{
@@ -13,14 +13,6 @@ use super::{
 pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
     match stream_expression {
         StreamExpression::Constant { constant, .. } => Expression::Literal { literal: constant },
-        StreamExpression::SignalCall {
-            signal: Signal { id, scope: Scope::Input, .. },
-            ..
-        } => Expression::InputAccess { identifier: id },
-        StreamExpression::SignalCall {
-            signal: Signal { id, scope: Scope::Memory, .. },
-            ..
-        } => Expression::MemoryAccess { identifier: id },
         StreamExpression::SignalCall {
             signal: Signal { id, .. },
             ..
@@ -147,8 +139,10 @@ mod mir_from_hir {
     fn should_transform_hir_local_signal_call_into_mir_identifier() {
         // todo : make memory, input, output signal access
         let expression = StreamExpression::SignalCall {
-            id: format!("x"),
-            scope: Scope::Local,
+            signal: Signal {
+                id: format!("x"),
+                scope: Scope::Local,
+            },
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -223,8 +217,10 @@ mod mir_from_hir {
             },
             inputs: vec![
                 StreamExpression::SignalCall {
-                    id: format!("x"),
-                    scope: Scope::Local,
+                    signal: Signal {
+                        id: format!("x"),
+                        scope: Scope::Local,
+                    },
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -264,8 +260,10 @@ mod mir_from_hir {
                 (
                     format!("x"),
                     StreamExpression::SignalCall {
-                        id: format!("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: format!("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -309,8 +307,10 @@ mod mir_from_hir {
     fn should_transform_hir_array_into_mir_array() {
         let expression = StreamExpression::Array {
             elements: vec![StreamExpression::SignalCall {
-                id: format!("x"),
-                scope: Scope::Local,
+                signal: Signal {
+                    id: format!("x"),
+                    scope: Scope::Local,
+                },
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -331,8 +331,10 @@ mod mir_from_hir {
     fn should_transform_hir_match_into_mir_match() {
         let expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                id: format!("p"),
-                scope: Scope::Local,
+                signal: Signal {
+                    id: format!("p"),
+                    scope: Scope::Local,
+                },
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(format!("p"), 0)]),
@@ -362,8 +364,10 @@ mod mir_from_hir {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        id: format!("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: format!("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -437,8 +441,10 @@ mod mir_from_hir {
         let expression = StreamExpression::When {
             id: format!("x"),
             option: Box::new(StreamExpression::SignalCall {
-                id: format!("x"),
-                scope: Scope::Local,
+                signal: Signal {
+                    id: format!("x"),
+                    scope: Scope::Local,
+                },
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -455,8 +461,10 @@ mod mir_from_hir {
                 },
                 inputs: vec![
                     StreamExpression::SignalCall {
-                        id: format!("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: format!("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("x"), 0)]),
@@ -535,8 +543,10 @@ mod mir_from_hir {
                 (
                     format!("i"),
                     StreamExpression::SignalCall {
-                        id: format!("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: format!("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(format!("x"), 0)]),

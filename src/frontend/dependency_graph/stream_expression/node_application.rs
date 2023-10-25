@@ -129,8 +129,10 @@ mod compute_node_application_dependencies {
                         expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(0),
                             expression: Box::new(StreamExpression::SignalCall {
-                                id: String::from("z"),
-                                scope: Scope::Local,
+                                signal: Signal {
+                                    id: String::from("z"),
+                                    scope: Scope::Local,
+                                },
                                 typing: Type::Integer,
                                 location: Location::default(),
                                 dependencies: Dependencies::new(),
@@ -161,15 +163,19 @@ mod compute_node_application_dependencies {
                                 },
                                 inputs: vec![
                                     StreamExpression::SignalCall {
-                                        id: String::from("x"),
-                                        scope: Scope::Local,
+                                        signal: Signal {
+                                            id: String::from("x"),
+                                            scope: Scope::Local,
+                                        },
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::new(),
                                     },
                                     StreamExpression::SignalCall {
-                                        id: String::from("y"),
-                                        scope: Scope::Local,
+                                        signal: Signal {
+                                            id: String::from("y"),
+                                            scope: Scope::Local,
+                                        },
                                         typing: Type::Integer,
                                         location: Location::default(),
                                         dependencies: Dependencies::new(),
@@ -212,8 +218,10 @@ mod compute_node_application_dependencies {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
