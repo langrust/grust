@@ -24,6 +24,15 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                 field: identifier,
             }
         }
+        Expression::InputAccess { identifier } => {
+            let input_call = LIRExpression::Identifier {
+                identifier: String::from("input"),
+            };
+            LIRExpression::FieldAccess {
+                expression: Box::new(input_call),
+                field: identifier,
+            }
+        }
         Expression::Structure { name, fields } => {
             let fields = fields
                 .into_iter()
