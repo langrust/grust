@@ -53,11 +53,11 @@ impl UnitaryNode {
                 if self.output_id != new_output_signal.id {
                     context_map
                         .insert(self.output_id.clone(), Union::I1(new_output_signal.clone()));
-                false
-            } else {
-                true
-            }
-        });
+                    false
+                } else {
+                    true
+                }
+            });
 
         // add identifiers of the inlined equations to the context
         self.equations.iter().for_each(|equation| {
@@ -188,7 +188,7 @@ mod instantiate_equations {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("1"),
+                            id: String::from("j_1"),
                             scope: Scope::Local,
                         },
                         typing: Type::Integer,
@@ -340,7 +340,7 @@ mod instantiate_equations {
                     constant: Constant::Integer(0),
                     expression: Box::new(StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("1"),
+                            id: String::from("j_1"),
                             scope: Scope::Local,
                         },
                         typing: Type::Integer,
