@@ -58,7 +58,7 @@ mod schedule {
     use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory,
+        dependencies::Dependencies, equation::Equation, memory::Memory, signal::Signal,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
@@ -84,8 +84,10 @@ mod schedule {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("x"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -110,8 +112,10 @@ mod schedule {
             expression: StreamExpression::FollowedBy {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
-                    id: String::from("x"),
-                    scope: Scope::Local,
+                    signal: Signal {
+                        id: String::from("x"),
+                        scope: Scope::Local,
+                    },
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -147,8 +151,10 @@ mod schedule {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("v"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("v"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -158,8 +164,10 @@ mod schedule {
                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                     },
                     StreamExpression::SignalCall {
-                        id: String::from("o_1"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("1"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("o_1"), 0)]),
@@ -242,8 +250,10 @@ mod schedule {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("x"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -268,8 +278,10 @@ mod schedule {
             expression: StreamExpression::FollowedBy {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::SignalCall {
-                    id: String::from("x"),
-                    scope: Scope::Local,
+                    signal: Signal {
+                        id: String::from("x"),
+                        scope: Scope::Local,
+                    },
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -305,8 +317,10 @@ mod schedule {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("v"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("v"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
@@ -316,8 +330,10 @@ mod schedule {
                         dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
                     },
                     StreamExpression::SignalCall {
-                        id: String::from("o_1"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("1"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("o_1"), 0)]),

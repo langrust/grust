@@ -119,7 +119,8 @@ mod from {
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        memory::Memory, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        memory::Memory, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
 
     #[test]
@@ -134,8 +135,10 @@ mod from {
                     id: String::from("x"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: String::from("i1"),
-                        scope: Scope::Input,
+                        signal: Signal {
+                            id: String::from("1"),
+                            scope: Scope::Input,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
@@ -147,8 +150,10 @@ mod from {
                     id: String::from("o1"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -176,7 +181,8 @@ mod new_identifier {
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        memory::Memory, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        memory::Memory, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
 
     #[test]
@@ -191,8 +197,10 @@ mod new_identifier {
                     id: String::from("x"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: String::from("i1"),
-                        scope: Scope::Input,
+                        signal: Signal {
+                            id: String::from("1"),
+                            scope: Scope::Input,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
@@ -204,8 +212,10 @@ mod new_identifier {
                     id: String::from("o1"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -240,8 +250,10 @@ mod new_identifier {
                     id: String::from("x"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: String::from("i1"),
-                        scope: Scope::Input,
+                        signal: Signal {
+                            id: String::from("1"),
+                            scope: Scope::Input,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
@@ -253,8 +265,10 @@ mod new_identifier {
                     id: String::from("o1"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
@@ -289,8 +303,10 @@ mod new_identifier {
                     id: String::from("x"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: String::from("i1"),
-                        scope: Scope::Input,
+                        signal: Signal {
+                            id: String::from("1"),
+                            scope: Scope::Input,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
@@ -302,8 +318,10 @@ mod new_identifier {
                     id: String::from("o1"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
