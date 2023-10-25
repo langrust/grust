@@ -55,7 +55,9 @@ impl StreamExpression {
 mod compute_array_dependencies {
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
+    use crate::hir::{
+        dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression,
+    };
     use std::collections::HashMap;
 
     #[test]
@@ -68,8 +70,10 @@ mod compute_array_dependencies {
         let stream_expression = StreamExpression::Array {
             elements: vec![
                 StreamExpression::SignalCall {
-                    id: String::from("x"),
-                    scope: Scope::Local,
+                    signal: Signal {
+                        id: String::from("x"),
+                        scope: Scope::Local,
+                    },
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::new(),
@@ -81,8 +85,10 @@ mod compute_array_dependencies {
                         location: Location::default(),
                     },
                     inputs: vec![StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),

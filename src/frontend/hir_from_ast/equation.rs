@@ -61,7 +61,8 @@ mod hir_from_ast {
             expression: ast_expression,
             location: Location::default(),
         };
-        let signals_context = HashMap::from([(format!("i"), Scope::Input), (format!("o"), Scope::Output)]);
+        let signals_context =
+            HashMap::from([(format!("i"), Scope::Input), (format!("o"), Scope::Output)]);
         let hir_equation = hir_from_ast(ast_equation, &signals_context);
 
         let control = HIREquation {
@@ -75,8 +76,10 @@ mod hir_from_ast {
                     location: Location::default(),
                 },
                 inputs: vec![HIRStreamExpression::SignalCall {
-                    id: String::from("i"),
-                    scope: Scope::Input,
+                    signal: Signal {
+                        id: String::from("i"),
+                        scope: Scope::Input,
+                    },
                     typing: Type::Integer,
                     location: Location::default(),
                     dependencies: Dependencies::new(),
@@ -114,7 +117,8 @@ mod hir_from_ast {
             expression: ast_expression,
             location: Location::default(),
         };
-        let signals_context = HashMap::from([(format!("i"), Scope::Input), (format!("o"), Scope::Output)]);
+        let signals_context =
+            HashMap::from([(format!("i"), Scope::Input), (format!("o"), Scope::Output)]);
         let _ = hir_from_ast(ast_equation, &signals_context);
     }
 
@@ -129,7 +133,7 @@ mod hir_from_ast {
             },
             inputs: vec![StreamExpression::SignalCall {
                 id: String::from("i"),
-                typing:  Some(Type::Integer),
+                typing: Some(Type::Integer),
                 location: Location::default(),
             }],
             typing: Some(Type::Integer),
@@ -142,7 +146,8 @@ mod hir_from_ast {
             expression: ast_expression,
             location: Location::default(),
         };
-        let signals_context = HashMap::from([(format!("j"), Scope::Input), (format!("o"), Scope::Output)]);
+        let signals_context =
+            HashMap::from([(format!("j"), Scope::Input), (format!("o"), Scope::Output)]);
         let _ = hir_from_ast(ast_equation, &signals_context);
     }
 }

@@ -96,7 +96,9 @@ impl StreamExpression {
 mod compute_match_dependencies {
     use crate::ast::{expression::Expression, pattern::Pattern};
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
+    use crate::hir::{
+        dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression,
+    };
     use std::collections::HashMap;
 
     #[test]
@@ -108,8 +110,10 @@ mod compute_match_dependencies {
 
         let stream_expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                id: String::from("p"),
-                scope: Scope::Local,
+                signal: Signal {
+                    id: String::from("p"),
+                    scope: Scope::Local,
+                },
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -138,8 +142,10 @@ mod compute_match_dependencies {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        id: String::from("z"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("z"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -176,8 +182,10 @@ mod compute_match_dependencies {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("z"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("z"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -223,8 +231,10 @@ mod compute_match_dependencies {
 
         let stream_expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
-                id: String::from("p"),
-                scope: Scope::Local,
+                signal: Signal {
+                    id: String::from("p"),
+                    scope: Scope::Local,
+                },
                 typing: Type::Structure(String::from("Point")),
                 location: Location::default(),
                 dependencies: Dependencies::new(),
@@ -254,8 +264,10 @@ mod compute_match_dependencies {
                     None,
                     vec![],
                     StreamExpression::SignalCall {
-                        id: String::from("y"),
-                        scope: Scope::Local,
+                        signal: Signal {
+                            id: String::from("y"),
+                            scope: Scope::Local,
+                        },
                         typing: Type::Integer,
                         location: Location::default(),
                         dependencies: Dependencies::new(),
@@ -293,8 +305,10 @@ mod compute_match_dependencies {
                             location: Location::default(),
                         },
                         inputs: vec![StreamExpression::SignalCall {
-                            id: String::from("y"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("y"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),

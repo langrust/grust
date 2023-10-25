@@ -103,8 +103,10 @@ mod generate_dependency_graphs {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            scope: Scope::Local,
+                            signal: Signal {
+                                id: String::from("x"),
+                                scope: Scope::Local,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
@@ -119,8 +121,10 @@ mod generate_dependency_graphs {
                         id: String::from("x"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
-                            id: String::from("i"),
-                            scope: Scope::Input,
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
                             typing: Type::Integer,
                             location: Location::default(),
                             dependencies: Dependencies::new(),
