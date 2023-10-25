@@ -2767,7 +2767,7 @@ mod inline_when_needed_reccursive {
                         },
                         StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("o_1"),
                                 scope: Scope::Local,
                             },
                             typing: Type::Integer,
