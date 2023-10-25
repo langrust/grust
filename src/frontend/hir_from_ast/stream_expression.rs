@@ -27,13 +27,13 @@ pub fn hir_from_ast(
             id,
             typing,
             location,
-        } => HIRStreamExpression::SignalCall {
+        } => {let scope = signals_context.get(&id).unwrap().clone();HIRStreamExpression::SignalCall {
             id,
-            scope: todo!(),
+            scope,
             typing: typing.unwrap(),
             location,
             dependencies: Dependencies::new(),
-        },
+        }},
         StreamExpression::MapApplication {
             function_expression,
             inputs,
@@ -175,7 +175,7 @@ mod hir_from_ast {
 
         let control = HIRStreamExpression::SignalCall {
             id: String::from("s"),
-            scope: todo!(),
+            scope: Scope::Local,
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::new(),
