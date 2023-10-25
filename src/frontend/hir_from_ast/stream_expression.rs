@@ -1,10 +1,16 @@
+use std::collections::HashMap;
+
 use crate::ast::stream_expression::StreamExpression;
+use crate::common::scope::Scope;
 use crate::hir::{
     dependencies::Dependencies, stream_expression::StreamExpression as HIRStreamExpression,
 };
 
 /// Transform AST stream expressions into HIR stream expressions.
-pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression {
+pub fn hir_from_ast(
+    stream_expression: StreamExpression,
+    signals_context: &HashMap<String, Scope>,
+) -> HIRStreamExpression {
     match stream_expression {
         StreamExpression::Constant {
             constant,
@@ -20,13 +26,13 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             id,
             typing,
             location,
-        } => HIRStreamExpression::SignalCall {
+        } => {let scope = signals_context.get(&id).unwrap().clone();HIRStreamExpression::SignalCall {
             id,
-            scope: todo!(),
+            scope,
             typing: typing.unwrap(),
             location,
             dependencies: Dependencies::new(),
-        },
+        }},
         StreamExpression::MapApplication {
             function_expression,
             inputs,
@@ -36,7 +42,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             function_expression: function_expression,
             inputs: inputs
                 .into_iter()
-                .map(|input| hir_from_ast(input))
+                .map(|input| hir_from_ast(input, signals_context))
                 .collect(),
             typing: typing.unwrap(),
             location,
@@ -51,7 +57,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             name,
             fields: fields
                 .into_iter()
-                .map(|(field, expression)| (field, hir_from_ast(expression)))
+                .map(|(field, expression)| (field, hir_from_ast(expression, signals_context)))
                 .collect(),
             typing: typing.unwrap(),
             location,
@@ -64,7 +70,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
         } => HIRStreamExpression::Array {
             elements: elements
                 .into_iter()
-                .map(|expression| hir_from_ast(expression))
+                .map(|expression| hir_from_ast(expression, signals_context))
                 .collect(),
             typing: typing.unwrap(),
             location,
@@ -76,15 +82,16 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             typing,
             location,
         } => HIRStreamExpression::Match {
-            expression: Box::new(hir_from_ast(*expression)),
+            expression: Box::new(hir_from_ast(*expression, signals_context)),
             arms: arms
                 .into_iter()
                 .map(|(pattern, optional_expression, expression)| {
                     (
                         pattern,
-                        optional_expression.map(|expression| hir_from_ast(expression)),
+                        optional_expression
+                            .map(|expression| hir_from_ast(expression, signals_context)),
                         vec![],
-                        hir_from_ast(expression),
+                        hir_from_ast(expression, signals_context),
                     )
                 })
                 .collect(),
@@ -101,11 +108,11 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             location,
         } => HIRStreamExpression::When {
             id,
-            option: Box::new(hir_from_ast(*option)),
+            option: Box::new(hir_from_ast(*option, signals_context)),
             present_body: vec![],
-            present: Box::new(hir_from_ast(*present)),
+            present: Box::new(hir_from_ast(*present, signals_context)),
             default_body: vec![],
-            default: Box::new(hir_from_ast(*default)),
+            default: Box::new(hir_from_ast(*default, signals_context)),
             typing: typing.unwrap(),
             location,
             dependencies: Dependencies::new(),
@@ -117,7 +124,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             location,
         } => HIRStreamExpression::FollowedBy {
             constant,
-            expression: Box::new(hir_from_ast(*expression)),
+            expression: Box::new(hir_from_ast(*expression, signals_context)),
             typing: typing.unwrap(),
             location,
             dependencies: Dependencies::new(),
@@ -132,7 +139,7 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
             node,
             inputs: inputs
                 .into_iter()
-                .map(|input| hir_from_ast(input))
+                .map(|input| hir_from_ast(input, signals_context))
                 .collect(),
             signal,
             typing: typing.unwrap(),
@@ -144,7 +151,10 @@ pub fn hir_from_ast(stream_expression: StreamExpression) -> HIRStreamExpression 
 
 #[cfg(test)]
 mod hir_from_ast {
+    use std::collections::HashMap;
+
     use crate::ast::stream_expression::StreamExpression;
+    use crate::common::scope::Scope;
     use crate::common::{location::Location, r#type::Type};
     use crate::frontend::hir_from_ast::stream_expression::hir_from_ast;
     use crate::hir::{
@@ -158,11 +168,12 @@ mod hir_from_ast {
             typing: Some(Type::Integer),
             location: Location::default(),
         };
-        let hir_stream_expression = hir_from_ast(ast_stream_expression);
+        let signals_context = HashMap::from([(format!("s"), Scope::Local)]);
+        let hir_stream_expression = hir_from_ast(ast_stream_expression, &signals_context);
 
         let control = HIRStreamExpression::SignalCall {
             id: String::from("s"),
-            scope: todo!(),
+            scope: Scope::Local,
             typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::new(),
@@ -178,6 +189,19 @@ mod hir_from_ast {
             typing: None,
             location: Location::default(),
         };
-        let _ = hir_from_ast(ast_stream_expression);
+        let signals_context = HashMap::from([(format!("s"), Scope::Local)]);
+        let _ = hir_from_ast(ast_stream_expression, &signals_context);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_with_unknown_signal() {
+        let ast_stream_expression = StreamExpression::SignalCall {
+            id: String::from("s"),
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let signals_context = HashMap::from([(format!("x"), Scope::Local)]);
+        let _ = hir_from_ast(ast_stream_expression, &signals_context);
     }
 }
