@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use once_cell::sync::OnceCell;
 
+use crate::ast::equation::Equation;
 use crate::ast::node::Node;
 use crate::frontend::hir_from_ast::equation::hir_from_ast as equation_hir_from_ast;
 use crate::hir::node::Node as HIRNode;
@@ -16,13 +17,18 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
         location,
     } = node;
 
+    let signals_context = equations
+        .iter()
+        .map(|(signal, Equation { scope, .. })| (signal.clone(), scope.clone()))
+        .collect();
+
     HIRNode {
         id,
         is_component,
         inputs,
         unscheduled_equations: equations
             .into_iter()
-            .map(|(signal, equation)| (signal, equation_hir_from_ast(equation)))
+            .map(|(signal, equation)| (signal, equation_hir_from_ast(equation, &signals_context)))
             .collect(),
         unitary_nodes: HashMap::new(),
         location,
