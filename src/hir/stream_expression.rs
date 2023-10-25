@@ -7,7 +7,7 @@ use crate::hir::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-/// LanGRust stream expression AST.
+/// LanGRust stream expression HIR.
 pub enum StreamExpression {
     /// Constant stream expression.
     Constant {
