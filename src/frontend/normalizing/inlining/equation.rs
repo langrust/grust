@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    common::{
-        graph::{color::Color, Graph},
-        scope::Scope,
-    },
+    common::graph::{color::Color, Graph},
     hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
         node::Node, signal::Signal, stream_expression::StreamExpression,
@@ -159,12 +156,6 @@ impl Equation {
                             scope: self.scope.clone(),
                         }),
                     );
-
-                    retrieved_equations.iter_mut().for_each(|equation| {
-                        if equation.scope == Scope::Output {
-                            equation.scope = self.scope.clone()
-                        }
-                    });
 
                     new_equations.append(&mut retrieved_equations);
                 } else {
