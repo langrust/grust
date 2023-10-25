@@ -23,6 +23,11 @@ pub enum Expression {
         /// The identifier to the memory.
         identifier: String,
     },
+    /// An input access: `self.i_mem`.
+    InputAccess {
+        /// The identifier to the input.
+        identifier: String,
+    },
     /// A structure literal expression: `Point { x: 1, y: 1 }`.
     Structure {
         /// The name of the structure.
