@@ -204,7 +204,7 @@ mod normal_form {
                         },
                         StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("x_1"),
                                 scope: Scope::Local,
                             },
                             typing: Type::Integer,

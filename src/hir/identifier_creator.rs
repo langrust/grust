@@ -136,7 +136,7 @@ mod from {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("1"),
+                            id: String::from("x_1"),
                             scope: Scope::Input,
                         },
                         typing: Type::Integer,
@@ -198,7 +198,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("1"),
+                            id: String::from("x_1"),
                             scope: Scope::Input,
                         },
                         typing: Type::Integer,
@@ -251,7 +251,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("1"),
+                            id: String::from("x_1"),
                             scope: Scope::Input,
                         },
                         typing: Type::Integer,
@@ -304,7 +304,7 @@ mod new_identifier {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("1"),
+                            id: String::from("x_1"),
                             scope: Scope::Input,
                         },
                         typing: Type::Integer,
