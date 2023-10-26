@@ -352,7 +352,7 @@ mod normal_form {
                             StreamExpression::SignalCall {
                                 signal: Signal {
                                     id: String::from("x"),
-                                    scope: Scope::Input,
+                                    scope: Scope::Local,
                                 },
                                 typing: Type::Integer,
                                 location: Location::default(),

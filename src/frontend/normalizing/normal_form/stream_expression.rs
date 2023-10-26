@@ -419,7 +419,7 @@ mod normal_form {
                             format!("x"),
                             StreamExpression::SignalCall {
                                 signal: Signal {
-                                    id: String::from("v"),
+                                    id: String::from("s"),
                                     scope: Scope::Input,
                                 },
                                 typing: Type::Integer,
