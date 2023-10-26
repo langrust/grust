@@ -500,12 +500,12 @@ mod mir_from_hir {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         signal: Signal {
-                            id: format!("i"),
+                            id: format!("mem_i"),
                             scope: Scope::Memory,
                         },
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![(format!("i"), 1)]),
+                        dependencies: Dependencies::from(vec![(format!("mem_i"), 0)]),
                     },
                     location: Location::default(),
                 },
@@ -593,11 +593,11 @@ mod mir_from_hir {
                             identifiers: vec![format!("other_nodeoo"), format!("o")],
                             expression: Expression::NodeCall {
                                 node_identifier: format!("other_nodeoo"),
-                                input_name: format!("other_nodeInput"),
+                                input_name: format!("other_nodeoInput"),
                                 input_fields: vec![
                                     (
                                         format!("a"),
-                                        Expression::Identifier {
+                                        Expression::InputAccess {
                                             identifier: format!("x"),
                                         },
                                     ),
