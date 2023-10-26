@@ -65,9 +65,12 @@ impl Memory {
     /// ```rust
     /// use std::collections::HashMap;
     ///
-    /// use grustine::common::{constant::Constant, r#type::Type, location::Location};
+    /// use grustine::common::{
+    ///     constant::Constant, location::Location, scope::Scope, r#type::Type
+    /// };
     /// use grustine::hir::{
-    ///     dependencies::Dependencies, stream_expression::StreamExpression, memory::Memory
+    ///     dependencies::Dependencies, memory::Memory, signal::Signal,
+    ///     stream_expression::StreamExpression,
     /// };
     ///
     /// let mut memory = Memory::new();
@@ -76,7 +79,10 @@ impl Memory {
     ///     String::from("toto"),
     ///     Constant::Integer(0),
     ///     StreamExpression::SignalCall {
-    ///         id: String::from("x"),
+    ///         signal: Signal {
+    ///             id: String::from("x"),
+    ///             scope: Scope::Local,
+    ///         },
     ///         typing: Type::Integer,
     ///         location: Location::default(),
     ///         dependencies: Dependencies::new(),

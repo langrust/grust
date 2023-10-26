@@ -49,7 +49,7 @@ impl IdentifierCreator {
     /// use grustine::common::{location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
     ///     dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-    ///     memory::Memory, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    ///     memory::Memory, signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     /// };
     ///
     /// let unitary_node = UnitaryNode {
@@ -62,7 +62,10 @@ impl IdentifierCreator {
     ///             id: String::from("x"),
     ///             signal_type: Type::Integer,
     ///             expression: StreamExpression::SignalCall {
-    ///                 id: String::from("i1"),
+    ///                 signal: Signal {
+    ///                     id: String::from("i1"),
+    ///                     scope: Scope::Input,
+    ///                 },
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
     ///                 dependencies: Dependencies::new(),
@@ -74,7 +77,10 @@ impl IdentifierCreator {
     ///             id: String::from("o1"),
     ///             signal_type: Type::Integer,
     ///             expression: StreamExpression::SignalCall {
-    ///                 id: String::from("x"),
+    ///                 signal: Signal {
+    ///                     id: String::from("x"),
+    ///                     scope: Scope::Local,
+    ///                 },
     ///                 typing: Type::Integer,
     ///                 location: Location::default(),
     ///                 dependencies: Dependencies::new(),
