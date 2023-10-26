@@ -151,7 +151,7 @@ mod add_unitary_node {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("2"),
+                                id: String::from("x_2"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -169,7 +169,7 @@ mod add_unitary_node {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("x_1"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -225,7 +225,7 @@ mod add_unitary_node {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("1"),
+                            id: String::from("x_1"),
                             scope: Scope::Input,
                         },
                         typing: Type::Integer,
@@ -273,7 +273,7 @@ mod add_unitary_node {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("2"),
+                                id: String::from("x_2"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -291,7 +291,7 @@ mod add_unitary_node {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("x_1"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -379,7 +379,7 @@ mod generate_unitary_nodes {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("2"),
+                                id: String::from("x_2"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -397,7 +397,7 @@ mod generate_unitary_nodes {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("x_1"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -453,7 +453,7 @@ mod generate_unitary_nodes {
                     signal_type: Type::Integer,
                     expression: StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("1"),
+                            id: String::from("x_1"),
                             scope: Scope::Input,
                         },
                         typing: Type::Integer,
@@ -477,7 +477,7 @@ mod generate_unitary_nodes {
                 signal_type: Type::Integer,
                 expression: StreamExpression::SignalCall {
                     signal: Signal {
-                        id: String::from("2"),
+                        id: String::from("x_2"),
                         scope: Scope::Input,
                     },
                     typing: Type::Integer,
@@ -524,7 +524,7 @@ mod generate_unitary_nodes {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("2"),
+                                id: String::from("x_2"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -542,7 +542,7 @@ mod generate_unitary_nodes {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("x_1"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -614,7 +614,7 @@ mod generate_unitary_nodes {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("2"),
+                                id: String::from("x_2"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -632,7 +632,7 @@ mod generate_unitary_nodes {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("x_1"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -690,7 +690,7 @@ mod generate_unitary_nodes {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("x_1"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
@@ -708,7 +708,7 @@ mod generate_unitary_nodes {
                         signal_type: Type::Integer,
                         expression: StreamExpression::SignalCall {
                             signal: Signal {
-                                id: String::from("1"),
+                                id: String::from("x_1"),
                                 scope: Scope::Input,
                             },
                             typing: Type::Integer,
