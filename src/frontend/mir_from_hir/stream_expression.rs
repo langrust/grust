@@ -1,7 +1,8 @@
 use crate::{
     ast::pattern::Pattern,
+    common::scope::Scope,
     hir::{signal::Signal, stream_expression::StreamExpression},
-    mir::{block::Block, expression::Expression, statement::Statement}, common::scope::Scope,
+    mir::{block::Block, expression::Expression, statement::Statement},
 };
 
 use super::{
@@ -14,11 +15,21 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
     match stream_expression {
         StreamExpression::Constant { constant, .. } => Expression::Literal { literal: constant },
         StreamExpression::SignalCall {
-            signal: Signal { id, scope: Scope::Input, .. },
+            signal:
+                Signal {
+                    id,
+                    scope: Scope::Input,
+                    ..
+                },
             ..
         } => Expression::InputAccess { identifier: id },
         StreamExpression::SignalCall {
-            signal: Signal { id, scope: Scope::Memory, .. },
+            signal:
+                Signal {
+                    id,
+                    scope: Scope::Memory,
+                    ..
+                },
             ..
         } => Expression::MemoryAccess { identifier: id },
         StreamExpression::SignalCall {

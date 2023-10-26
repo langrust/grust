@@ -21,9 +21,11 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
     let signals_context = equations
         .iter()
         .map(|(signal, Equation { scope, .. })| (signal.clone(), scope.clone()))
-        .chain(inputs
-            .iter()
-            .map(|(signal, _)| (signal.clone(), Scope::Input)))
+        .chain(
+            inputs
+                .iter()
+                .map(|(signal, _)| (signal.clone(), Scope::Input)),
+        )
         .collect();
 
     HIRNode {
