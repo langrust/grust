@@ -87,6 +87,7 @@ impl Type {
     ///
     /// This function tries to apply the input type to the self type.
     /// If types are incompatible for application then an error is raised.
+    /// In case of a [Type::Choice], it reines the type according to the inputs.
     ///
     /// # Example
     /// ```rust
@@ -96,7 +97,7 @@ impl Type {
     ///
     /// let input_types = vec![Type::Integer];
     /// let output_type = Type::Boolean;
-    /// let abstraction_type =
+    /// let mut abstraction_type =
     ///     Type::Abstract(input_types.clone(), Box::new(output_type.clone()));
     ///
     /// let application_result = abstraction_type
@@ -106,7 +107,7 @@ impl Type {
     /// assert_eq!(application_result, output_type);
     /// ```
     pub fn apply(
-        self,
+        &mut self,
         input_types: Vec<Type>,
         location: Location,
         errors: &mut Vec<Error>,
@@ -125,7 +126,7 @@ impl Type {
                         .collect::<Vec<_>>()
                         .into_iter()
                         .collect::<Result<_, _>>()?;
-                    Ok(*output)
+                    Ok((**output).clone())
                 } else {
                     let error = Error::IncompatibleInputsNumber {
                         given_inputs_number: input_types.len(),
@@ -141,17 +142,18 @@ impl Type {
             Type::Choice(types) => {
                 let given_type = Type::Choice(types.clone());
 
-                let mut new_types = types
+                let mut types_apply = types
                     .into_iter()
                     .filter_map(|typing| {
                         let mut temp_errors = vec![];
                         typing
                             .apply(input_types.clone(), location.clone(), &mut temp_errors)
                             .ok()
+                            .map(|result| (typing.clone(), result))
                     })
-                    .collect::<Vec<Type>>();
+                    .collect::<Vec<_>>();
 
-                if new_types.is_empty() {
+                if types_apply.is_empty() {
                     let error = Error::ExpectAbstraction {
                         input_types,
                         given_type,
@@ -159,16 +161,20 @@ impl Type {
                     };
                     errors.push(error);
                     Err(())
-                } else if new_types.len() == 1 {
-                    Ok(new_types.pop().unwrap())
+                } else if types_apply.len() == 1 {
+                    let (typing, result) = types_apply.pop().unwrap();
+                    *self = typing;
+                    Ok(result)
                 } else {
-                    Ok(Type::Choice(new_types))
+                    let (types, result_types): (Vec<_>, Vec<_>) = types_apply.into_iter().unzip();
+                    *self = Type::Choice(types);
+                    Ok(Type::Choice(result_types))
                 }
             }
             _ => {
                 let error = Error::ExpectAbstraction {
                     input_types,
-                    given_type: self,
+                    given_type: self.clone(),
                     location,
                 };
                 errors.push(error);
@@ -296,7 +302,8 @@ mod apply {
 
         let input_types = vec![Type::Integer];
         let output_type = Type::Boolean;
-        let abstraction_type = Type::Abstract(input_types.clone(), Box::new(output_type.clone()));
+        let mut abstraction_type =
+            Type::Abstract(input_types.clone(), Box::new(output_type.clone()));
 
         let application_result = abstraction_type
             .apply(input_types, Location::default(), &mut errors)
@@ -311,7 +318,7 @@ mod apply {
 
         let input_types = vec![Type::Integer];
         let output_type = Type::Boolean;
-        let abstraction_type = Type::Abstract(input_types, Box::new(output_type));
+        let mut abstraction_type = Type::Abstract(input_types, Box::new(output_type));
 
         abstraction_type
             .apply(vec![Type::Float], Location::default(), &mut errors)
@@ -322,7 +329,7 @@ mod apply {
     fn should_apply_input_to_choice_type_when_compatible() {
         let mut errors = vec![];
 
-        let choice_type = Type::Choice(vec![
+        let mut choice_type = Type::Choice(vec![
             Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
             Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
             Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
@@ -341,7 +348,7 @@ mod apply {
     fn should_return_nonchoice_when_only_one_choice_left() {
         let mut errors = vec![];
 
-        let choice_type = Type::Choice(vec![
+        let mut choice_type = Type::Choice(vec![
             Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
             Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
         ]);
@@ -359,7 +366,7 @@ mod apply {
     fn should_raise_error_when_incompatible_choice_type() {
         let mut errors = vec![];
 
-        let choice_type = Type::Choice(vec![
+        let mut choice_type = Type::Choice(vec![
             Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
             Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
         ]);
@@ -367,6 +374,46 @@ mod apply {
         choice_type
             .apply(vec![Type::Boolean], Location::default(), &mut errors)
             .unwrap_err();
+    }
+
+    #[test]
+    fn should_modify_choice_type_to_compatible_types() {
+        let mut errors = vec![];
+
+        let mut choice_type = Type::Choice(vec![
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
+        ]);
+
+        let _ = choice_type
+            .apply(vec![Type::Integer], Location::default(), &mut errors)
+            .unwrap();
+
+        let control = Type::Choice(vec![
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+        ]);
+
+        assert_eq!(choice_type, control);
+    }
+
+    #[test]
+    fn should_modify_choice_type_to_nonchoice_when_only_one_choice_left() {
+        let mut errors = vec![];
+
+        let mut choice_type = Type::Choice(vec![
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
+            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
+        ]);
+
+        let _ = choice_type
+            .apply(vec![Type::Integer], Location::default(), &mut errors)
+            .unwrap();
+
+        let control = Type::Abstract(vec![Type::Integer], Box::new(Type::Integer));
+
+        assert_eq!(choice_type, control);
     }
 }
 
