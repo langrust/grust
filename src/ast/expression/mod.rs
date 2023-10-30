@@ -199,6 +199,35 @@ impl Expression {
         }
     }
 
+    /// Get the mutable reference to the expression's typing.
+    ///
+    ///
+    /// # Example
+    /// ```rust
+    /// use grustine::ast::expression::Expression;
+    /// use grustine::common::{constant::Constant, location::Location, r#type::Type};
+    ///
+    /// let mut expression = Expression::Constant {
+    ///     constant: Constant::Integer(0),
+    ///     typing: Some(Type::Integer),
+    ///     location: Location::default(),
+    /// };
+    /// let typing = expression.get_type_mut().unwrap();
+    /// ```
+    pub fn get_type_mut(&mut self) -> Option<&mut Type> {
+        match self {
+            Expression::Constant { typing, .. } => typing.as_mut(),
+            Expression::Call { typing, .. } => typing.as_mut(),
+            Expression::Application { typing, .. } => typing.as_mut(),
+            Expression::Abstraction { typing, .. } => typing.as_mut(),
+            Expression::TypedAbstraction { typing, .. } => typing.as_mut(),
+            Expression::Structure { typing, .. } => typing.as_mut(),
+            Expression::Array { typing, .. } => typing.as_mut(),
+            Expression::Match { typing, .. } => typing.as_mut(),
+            Expression::When { typing, .. } => typing.as_mut(),
+        }
+    }
+
     /// Get the expression's typing.
     ///
     ///

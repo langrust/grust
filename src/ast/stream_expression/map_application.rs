@@ -58,7 +58,7 @@ impl StreamExpression {
                     .iter()
                     .map(|input| input.get_type().unwrap().clone())
                     .collect();
-                let application_type = function_expression.get_type().unwrap().clone().apply(
+                let application_type = function_expression.get_type_mut().unwrap().apply(
                     input_types,
                     location.clone(),
                     errors,
