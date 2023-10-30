@@ -23,14 +23,14 @@ impl Expression {
                 location,
             } => {
                 // type all inputs
-                let test_typing_inputs = inputs
+                inputs
                     .into_iter()
                     .map(|input| {
                         input.typing(global_context, elements_context, user_types_context, errors)
                     })
                     .collect::<Vec<Result<(), ()>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>();
+                    .collect::<Result<(), ()>>()?;
 
                 let input_types = inputs
                     .iter()
@@ -59,16 +59,12 @@ impl Expression {
                 };
 
                 // type the function expression
-                let test_typing_function_expression = function_expression.typing(
+                function_expression.typing(
                     global_context,
                     elements_context,
                     user_types_context,
                     errors,
-                );
-
-                // test if there were some errors
-                test_typing_function_expression?;
-                test_typing_inputs?;
+                )?;
 
                 // compute the application type
                 let application_type = function_expression.get_type_mut().unwrap().apply(
