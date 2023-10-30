@@ -18,22 +18,13 @@ fn file_parser() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
-    let program_test_id = files.add(
-        "program_test.gr",
-        "
-        node counter(res: bool, tick: bool) {
-            out o: int = if res then 0 else (0 fby o) + inc;
-            inc: int = if tick then 1 else 0;
-        } 
-        component main() {
-            out y: int = counter(false fby (y > 35), half).o;
-            half: bool = true fby !half;
-        }
-        ",
+    let counter_id = files.add(
+        "counter.gr",
+        std::fs::read_to_string("tests/fixture/counter.gr").expect("unkown file"),
     );
 
     let mut file: File = langrust::fileParser::new()
-        .parse(program_test_id, &files.source(program_test_id).unwrap())
+        .parse(counter_id, &files.source(counter_id).unwrap())
         .unwrap();
 
     let control_parsed = File {
