@@ -7,7 +7,7 @@ use crate::error::Error;
 
 /// LanGrust type system.
 ///
-/// [Type] enumeration is used when [typing](crate::typing) a LanGRust program.
+/// [Type] enumeration is used when [typing](crate::ast::file::File) a LanGRust program.
 ///
 /// It reprensents all possible types a LanGRust expression can take:
 /// - [Type::Integer] are [i64] integers, if `n = 1` then `n: int`
@@ -21,21 +21,7 @@ use crate::error::Error;
 /// - [Type::Structure] is an user defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
 /// - [Type::NotDefinedYet] is not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
 /// - [Type::Abstract] are functions types, if `f = |x| x+1` then `f: int -> int`
-/// - [Type::Choice] is an inferable function type, if `add = |x, y| x+y` then `add: 't -> 't -> 't` with `t` in {`int`, `float`}
-///
-/// # Example
-/// ```rust
-/// use grustine::common::r#type::Type;
-///
-/// let number_types = vec![Type::Integer, Type::Float];
-/// let addition_type = {
-///     let v_t = number_types.into_iter()
-///         .map(|t| Type::Abstract(vec![t.clone(), t.clone()], Box::new(t)))
-///         .collect();
-///     Type::Choice(v_t)
-/// };
-/// ```
-///
+/// - [Type::Polymorphism] is an inferable function type, if `add = |x, y| x+y` then `add: 't -> 't -> 't` with `t` in {`int`, `float`}
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Type {
     /// [i64] integers, if `n = 1` then `n: int`
@@ -60,8 +46,8 @@ pub enum Type {
     NotDefinedYet(String),
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
     Abstract(Vec<Type>, Box<Type>),
-    /// Inferable function type, if `add = |x, y| x+y` then `add: 't -> 't -> 't` with `t` in {`int`, `float`}
-    Choice(Vec<Type>),
+    /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Type -> t -> 't -> 't`
+    Polymorphism(fn(Vec<Type>, Location, &mut Vec<Error>) -> Result<Type, ()>),
 }
 impl Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -77,7 +63,7 @@ impl Display for Type {
             Type::Structure(structure) => write!(f, "{structure}"),
             Type::NotDefinedYet(s) => write!(f, "{s}"),
             Type::Abstract(t1, t2) => write!(f, "{:#?} -> {}", t1, *t2),
-            Type::Choice(v_t) => write!(f, "{:#?}", v_t),
+            Type::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
         }
     }
 }
@@ -87,7 +73,7 @@ impl Type {
     ///
     /// This function tries to apply the input type to the self type.
     /// If types are incompatible for application then an error is raised.
-    /// In case of a [Type::Choice], it reines the type according to the inputs.
+    /// In case of a [Type::Polymorphism], it reines the type according to the inputs.
     ///
     /// # Example
     /// ```rust
@@ -137,39 +123,15 @@ impl Type {
                     return Err(());
                 }
             }
-            // if self is a choice type, it means that their are several options
-            // then perform application for each option and keep succeeding ones
-            Type::Choice(types) => {
-                let given_type = Type::Choice(types.clone());
+            // if self is a polymorphic type, apply the function returning the function_type
+            // with the input_types, then apply the function_type with the input_type
+            // just like any other type
+            Type::Polymorphism(fn_type) => {
+                let mut function_type = fn_type(input_types.clone(), location.clone(), errors)?;
+                let result = function_type.apply(input_types.clone(), location.clone(), errors)?;
 
-                let mut types_apply = types
-                    .into_iter()
-                    .filter_map(|typing| {
-                        let mut temp_errors = vec![];
-                        typing
-                            .apply(input_types.clone(), location.clone(), &mut temp_errors)
-                            .ok()
-                            .map(|result| (typing.clone(), result))
-                    })
-                    .collect::<Vec<_>>();
-
-                if types_apply.is_empty() {
-                    let error = Error::ExpectAbstraction {
-                        input_types,
-                        given_type,
-                        location,
-                    };
-                    errors.push(error);
-                    Err(())
-                } else if types_apply.len() == 1 {
-                    let (typing, result) = types_apply.pop().unwrap();
-                    *self = typing;
-                    Ok(result)
-                } else {
-                    let (types, result_types): (Vec<_>, Vec<_>) = types_apply.into_iter().unzip();
-                    *self = Type::Choice(types);
-                    Ok(Type::Choice(result_types))
-                }
+                *self = function_type;
+                Ok(result)
             }
             _ => {
                 let error = Error::ExpectAbstraction {
@@ -294,7 +256,43 @@ impl Type {
 
 #[cfg(test)]
 mod apply {
-    use crate::common::{location::Location, r#type::Type};
+    use crate::{
+        common::{location::Location, r#type::Type},
+        error::Error,
+    };
+
+    fn equality(
+        mut input_types: Vec<Type>,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<Type, ()> {
+        if input_types.len() == 2 {
+            let type_2 = input_types.pop().unwrap();
+            let type_1 = input_types.pop().unwrap();
+            if type_1 == type_2 {
+                Ok(Type::Abstract(
+                    vec![type_1, type_2],
+                    Box::new(Type::Boolean),
+                ))
+            } else {
+                let error = Error::IncompatibleType {
+                    given_type: type_2,
+                    expected_type: type_1,
+                    location,
+                };
+                errors.push(error);
+                Err(())
+            }
+        } else {
+            let error = Error::IncompatibleInputsNumber {
+                given_inputs_number: input_types.len(),
+                expected_inputs_number: 2,
+                location,
+            };
+            errors.push(error);
+            Err(())
+        }
+    }
 
     #[test]
     fn should_apply_input_to_abstraction_when_compatible() {
@@ -326,94 +324,56 @@ mod apply {
     }
 
     #[test]
-    fn should_apply_input_to_choice_type_when_compatible() {
+    fn should_return_nonpolymorphic() {
         let mut errors = vec![];
 
-        let mut choice_type = Type::Choice(vec![
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
-            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
-        ]);
+        let mut polymorphic_type = Type::Polymorphism(equality);
 
-        let application_result = choice_type
-            .apply(vec![Type::Integer], Location::default(), &mut errors)
+        let application_result = polymorphic_type
+            .apply(
+                vec![Type::Integer, Type::Integer],
+                Location::default(),
+                &mut errors,
+            )
             .unwrap();
 
-        let control = Type::Choice(vec![Type::Integer, Type::Float]);
+        let control = Type::Boolean;
 
         assert_eq!(application_result, control);
     }
 
     #[test]
-    fn should_return_nonchoice_when_only_one_choice_left() {
+    fn should_raise_error_when_incompatible_polymorphic_type() {
         let mut errors = vec![];
 
-        let mut choice_type = Type::Choice(vec![
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
-            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
-        ]);
+        let mut polymorphic_type = Type::Polymorphism(equality);
 
-        let application_result = choice_type
-            .apply(vec![Type::Integer], Location::default(), &mut errors)
-            .unwrap();
-
-        let control = Type::Integer;
-
-        assert_eq!(application_result, control);
-    }
-
-    #[test]
-    fn should_raise_error_when_incompatible_choice_type() {
-        let mut errors = vec![];
-
-        let mut choice_type = Type::Choice(vec![
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
-            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
-        ]);
-
-        choice_type
-            .apply(vec![Type::Boolean], Location::default(), &mut errors)
+        let _ = polymorphic_type
+            .apply(
+                vec![Type::Integer, Type::Float],
+                Location::default(),
+                &mut errors,
+            )
             .unwrap_err();
     }
 
     #[test]
-    fn should_modify_choice_type_to_compatible_types() {
+    fn should_modify_polymorphic_type_to_nonpolymorphic() {
         let mut errors = vec![];
 
-        let mut choice_type = Type::Choice(vec![
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
-            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
-        ]);
+        let mut polymorphic_type = Type::Polymorphism(equality);
 
-        let _ = choice_type
-            .apply(vec![Type::Integer], Location::default(), &mut errors)
+        let _ = polymorphic_type
+            .apply(
+                vec![Type::Integer, Type::Integer],
+                Location::default(),
+                &mut errors,
+            )
             .unwrap();
 
-        let control = Type::Choice(vec![
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
-        ]);
+        let control = Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Boolean));
 
-        assert_eq!(choice_type, control);
-    }
-
-    #[test]
-    fn should_modify_choice_type_to_nonchoice_when_only_one_choice_left() {
-        let mut errors = vec![];
-
-        let mut choice_type = Type::Choice(vec![
-            Type::Abstract(vec![Type::Integer], Box::new(Type::Integer)),
-            Type::Abstract(vec![Type::Float], Box::new(Type::Float)),
-        ]);
-
-        let _ = choice_type
-            .apply(vec![Type::Integer], Location::default(), &mut errors)
-            .unwrap();
-
-        let control = Type::Abstract(vec![Type::Integer], Box::new(Type::Integer));
-
-        assert_eq!(choice_type, control);
+        assert_eq!(polymorphic_type, control);
     }
 }
 
