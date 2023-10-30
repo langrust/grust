@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::ast::expression::Expression;
 use crate::ast::{
     node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
@@ -25,14 +26,6 @@ impl StreamExpression {
                 typing,
                 location,
             } => {
-                // type the function expression
-                let elements_context = global_context.clone();
-                let test_typing_function_expression = function_expression.typing(
-                    global_context,
-                    &elements_context,
-                    user_types_context,
-                    errors,
-                );
                 // type all inputs
                 let test_typing_inputs = inputs
                     .into_iter()
@@ -49,15 +42,46 @@ impl StreamExpression {
                     .into_iter()
                     .collect::<Result<(), ()>>();
 
+                let input_types = inputs
+                    .iter()
+                    .map(|input| input.get_type().unwrap().clone())
+                    .collect::<Vec<_>>();
+
+                if let Expression::Abstraction {
+                    inputs: abstraction_inputs,
+                    expression,
+                    typing,
+                    location,
+                } = function_expression
+                {
+                    // transform abstraction in typed abstraction
+                    let typed_inputs = abstraction_inputs
+                        .clone()
+                        .into_iter()
+                        .zip(input_types.clone())
+                        .collect::<Vec<_>>();
+                    *function_expression = Expression::TypedAbstraction {
+                        inputs: typed_inputs,
+                        expression: expression.clone(),
+                        typing: typing.clone(),
+                        location: location.clone(),
+                    };
+                };
+
+                // type the function expression
+                let elements_context = global_context.clone();
+                let test_typing_function_expression = function_expression.typing(
+                    global_context,
+                    &elements_context,
+                    user_types_context,
+                    errors,
+                );
+
                 // test if there were some errors
                 test_typing_function_expression?;
                 test_typing_inputs?;
 
                 // compute the application type
-                let input_types = inputs
-                    .iter()
-                    .map(|input| input.get_type().unwrap().clone())
-                    .collect();
                 let application_type = function_expression.get_type_mut().unwrap().apply(
                     input_types,
                     location.clone(),
