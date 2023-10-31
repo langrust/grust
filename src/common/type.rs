@@ -47,7 +47,7 @@ pub enum Type {
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
     Abstract(Vec<Type>, Box<Type>),
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Type -> t -> 't -> 't`
-    Polymorphism(fn(Vec<Type>, Location, Vec<Error>) -> Result<Type, ()>),
+    Polymorphism(fn(Vec<Type>, Location) -> Result<Type, Error>),
 }
 impl Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -127,7 +127,11 @@ impl Type {
             // with the input_types, then apply the function_type with the input_type
             // just like any other type
             Type::Polymorphism(fn_type) => {
-                let mut function_type = fn_type(input_types.clone(), location.clone(), vec![])?;
+                let mut function_type =
+                    fn_type(input_types.clone(), location.clone()).map_err(|error| {
+                        errors.push(error);
+                        ()
+                    })?;
                 let result = function_type.apply(input_types.clone(), location.clone(), errors)?;
 
                 *self = function_type;
@@ -261,11 +265,7 @@ mod apply {
         error::Error,
     };
 
-    fn equality(
-        mut input_types: Vec<Type>,
-        location: Location,
-        mut errors: Vec<Error>,
-    ) -> Result<Type, ()> {
+    fn equality(mut input_types: Vec<Type>, location: Location) -> Result<Type, Error> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
@@ -280,8 +280,7 @@ mod apply {
                     expected_type: type_1,
                     location,
                 };
-                errors.push(error);
-                Err(())
+                Err(error)
             }
         } else {
             let error = Error::IncompatibleInputsNumber {
@@ -289,8 +288,7 @@ mod apply {
                 expected_inputs_number: 2,
                 location,
             };
-            errors.push(error);
-            Err(())
+            Err(error)
         }
     }
 
