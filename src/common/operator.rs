@@ -69,7 +69,7 @@ impl BinaryOperator {
     fn numerical_operator(
         mut input_types: Vec<Type>,
         location: Location,
-        errors: &mut Vec<Error>,
+        mut errors: Vec<Error>,
     ) -> Result<Type, ()> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
@@ -109,7 +109,7 @@ impl BinaryOperator {
     fn numerical_comparison(
         mut input_types: Vec<Type>,
         location: Location,
-        errors: &mut Vec<Error>,
+        mut errors: Vec<Error>,
     ) -> Result<Type, ()> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
@@ -149,7 +149,7 @@ impl BinaryOperator {
     fn equality(
         mut input_types: Vec<Type>,
         location: Location,
-        errors: &mut Vec<Error>,
+        mut errors: Vec<Error>,
     ) -> Result<Type, ()> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
@@ -247,7 +247,7 @@ impl UnaryOperator {
     fn numerical_negation(
         mut input_types: Vec<Type>,
         location: Location,
-        errors: &mut Vec<Error>,
+        mut errors: Vec<Error>,
     ) -> Result<Type, ()> {
         if input_types.len() == 1 {
             let type_1 = input_types.pop().unwrap();
@@ -275,7 +275,7 @@ impl UnaryOperator {
     fn brackets(
         mut input_types: Vec<Type>,
         location: Location,
-        errors: &mut Vec<Error>,
+        mut errors: Vec<Error>,
     ) -> Result<Type, ()> {
         if input_types.len() == 1 {
             let type_1 = input_types.pop().unwrap();
@@ -339,7 +339,7 @@ impl OtherOperator {
     fn if_then_else(
         mut input_types: Vec<Type>,
         location: Location,
-        errors: &mut Vec<Error>,
+        mut errors: Vec<Error>,
     ) -> Result<Type, ()> {
         if input_types.len() == 3 {
             let type_3 = input_types.pop().unwrap();
