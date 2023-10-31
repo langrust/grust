@@ -3,7 +3,7 @@ use std::fmt::{self, Display};
 
 use crate::ast::typedef::Typedef;
 use crate::common::{context::Context, location::Location};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 /// LanGrust type system.
 ///
@@ -97,7 +97,7 @@ impl Type {
         input_types: Vec<Type>,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, ()> {
+    ) -> Result<Type, TerminationError> {
         match self {
             // if self is an abstraction, check if the input types are equal
             // and return the output type as the type of the application
@@ -107,7 +107,7 @@ impl Type {
                         .iter()
                         .zip(inputs)
                         .map(|(given_type, expected_type)| {
-                            given_type.eq_check(&expected_type, location.clone(), errors)
+                            given_type.eq_check(expected_type, location.clone(), errors)
                         })
                         .collect::<Vec<_>>()
                         .into_iter()
@@ -120,7 +120,7 @@ impl Type {
                         location: location.clone(),
                     };
                     errors.push(error);
-                    return Err(());
+                    Err(TerminationError)
                 }
             }
             // if self is a polymorphic type, apply the function returning the function_type
@@ -130,7 +130,7 @@ impl Type {
                 let mut function_type =
                     fn_type(input_types.clone(), location.clone()).map_err(|error| {
                         errors.push(error);
-                        ()
+                        TerminationError
                     })?;
                 let result = function_type.apply(input_types.clone(), location.clone(), errors)?;
 
@@ -144,7 +144,7 @@ impl Type {
                     location,
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
         }
     }
@@ -169,17 +169,17 @@ impl Type {
         expected_type: &Type,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         if self.eq(expected_type) {
             Ok(())
         } else {
             let error = Error::IncompatibleType {
                 given_type: self.clone(),
                 expected_type: expected_type.clone(),
-                location: location,
+                location,
             };
             errors.push(error);
-            Err(())
+            Err(TerminationError)
         }
     }
 
@@ -221,7 +221,7 @@ impl Type {
         location: Location,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             Type::NotDefinedYet(name) => {
                 let user_type =

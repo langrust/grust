@@ -42,7 +42,7 @@ pub fn hir_from_ast(
             typing,
             location,
         } => HIRStreamExpression::MapApplication {
-            function_expression: function_expression,
+            function_expression,
             inputs: inputs
                 .into_iter()
                 .map(|input| hir_from_ast(input, signals_context))

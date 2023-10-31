@@ -74,3 +74,8 @@ impl Dependencies {
         self.0.get()
     }
 }
+impl Default for Dependencies {
+    fn default() -> Self {
+        Self::new()
+    }
+}

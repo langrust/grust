@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
-use crate::ast::{expression::Expression, node_description::NodeDescription, typedef::Typedef};
-use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
-use crate::error::Error;
+use crate::ast::{
+    expression::Expression, node_description::NodeDescription, pattern::Pattern, typedef::Typedef,
+};
+use crate::common::{constant::Constant, location::Location, r#type::Type};
+use crate::error::{Error, TerminationError};
 
 mod array;
 mod constant;
@@ -147,7 +149,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             StreamExpression::Constant { .. } => self.typing_constant(),
             StreamExpression::SignalCall { .. } => self.typing_signal_call(signals_context, errors),

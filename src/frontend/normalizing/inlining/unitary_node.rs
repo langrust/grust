@@ -37,7 +37,7 @@ impl UnitaryNode {
     pub fn instantiate_equations(
         &self,
         identifier_creator: &mut IdentifierCreator,
-        inputs: &Vec<(String, StreamExpression)>,
+        inputs: &[(String, StreamExpression)],
         new_output_signal: Option<Signal>,
     ) -> Vec<Equation> {
         // create the context with the given inputs

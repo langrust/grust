@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::common::graph::{color::Color, Graph};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 mod array;
@@ -37,7 +37,7 @@ impl StreamExpression {
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             StreamExpression::Constant { .. } => self.compute_constant_dependencies(),
             StreamExpression::SignalCall { .. } => self.compute_signal_call_dependencies(),

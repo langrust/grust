@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::typedef::Typedef;
 use crate::common::{constant::Constant, context::Context, location::Location, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 use std::fmt::{self, Display};
 
@@ -142,7 +142,7 @@ impl Pattern {
         elements_context: &mut HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             Pattern::Identifier { name, location } => elements_context.insert_unique(
                 name.clone(),
@@ -160,7 +160,7 @@ impl Pattern {
                         location: location.clone(),
                     };
                     errors.push(error);
-                    Err(())
+                    Err(TerminationError)
                 }
             }
             Pattern::Structure {
@@ -193,7 +193,7 @@ impl Pattern {
                         location: location.clone(),
                     };
                     errors.push(error);
-                    Err(())
+                    Err(TerminationError)
                 }
             },
             Pattern::Some { pattern, location } => match expected_type {
@@ -210,7 +210,7 @@ impl Pattern {
                         location: location.clone(),
                     };
                     errors.push(error);
-                    Err(())
+                    Err(TerminationError)
                 }
             },
             Pattern::None { location } => match expected_type {
@@ -222,7 +222,7 @@ impl Pattern {
                         location: location.clone(),
                     };
                     errors.push(error);
-                    Err(())
+                    Err(TerminationError)
                 }
             },
             Pattern::Default { location: _ } => Ok(()),

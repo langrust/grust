@@ -3,7 +3,10 @@ mod normal_form;
 mod scheduling;
 mod unitary_node;
 
-use crate::{error::Error, hir::file::File};
+use crate::{
+    error::{Error, TerminationError},
+    hir::file::File,
+};
 
 impl File {
     /// Normalize HIR nodes in file.
@@ -151,7 +154,7 @@ impl File {
     ///     out z: int = 0 fby z;
     /// }
     /// ```
-    pub fn normalize(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn normalize(&mut self, errors: &mut Vec<Error>) -> Result<(), TerminationError> {
         self.generate_unitary_nodes(errors)?; // check that all signals are used
         self.inline_when_needed();
         self.schedule();
@@ -507,7 +510,7 @@ mod normalize {
             location: Location::default(),
         };
 
-        file.normalize(&mut errors).unwrap_err()
+        file.normalize(&mut errors).unwrap_err();
     }
 
     #[test]

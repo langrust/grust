@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::ast::expression::Expression;
 use crate::common::context::Context;
 use crate::common::r#type::Type;
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl Expression {
     /// Add a [Type] to the call expression.
@@ -11,7 +11,7 @@ impl Expression {
         &mut self,
         elements_context: &HashMap<String, Type>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // the type of a call expression in the type of the called element in the context
             Expression::Call {

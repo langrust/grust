@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::{context::Context, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl Expression {
     /// Add a [Type] to the abstraction expression.
@@ -11,7 +11,7 @@ impl Expression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // the type of a typed abstraction is computed by adding inputs to
             // the context and typing the function body expression
@@ -34,9 +34,9 @@ impl Expression {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), TerminationError>>()?;
 
                 // type the abstracted expression with the local context
                 expression.typing(global_context, &local_context, user_types_context, errors)?;
@@ -62,7 +62,7 @@ impl Expression {
                     location: location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
             _ => unreachable!(),
         }

@@ -12,10 +12,7 @@ pub mod color;
 
 use std::collections::HashMap;
 
-use crate::{
-    common::graph::{color::Color, vertex::Vertex},
-    error::Error,
-};
+use crate::common::graph::{color::Color, vertex::Vertex};
 
 use self::neighbor::Neighbor;
 
@@ -58,7 +55,7 @@ impl<T> Graph<T> {
 
     /// Set vertex's value.
     pub fn set_vertex_value(&mut self, id: &String, value: T) {
-        self.get_vertex_mut(&id).set_value(value)
+        self.get_vertex_mut(id).set_value(value)
     }
 
     /// Add edge between existing vertices to the graph.
@@ -78,7 +75,7 @@ impl<T> Graph<T> {
 
     /// Get vertices' ids.
     pub fn get_vertices(&self) -> Vec<String> {
-        self.vertices.keys().map(|id| id.clone()).collect()
+        self.vertices.keys().cloned().collect()
     }
 
     /// Get edges as pairs of ids.
@@ -130,12 +127,16 @@ impl<T> Graph<T> {
         subgraph
     }
 }
-
+impl<T> Default for Graph<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl Graph<Color> {
     /// Topological sorting of an oriented graph.
     ///
     /// Scans an oriented graph and returns a schedule visiting all vertices in order.
-    pub fn topological_sorting(&mut self, errors: &mut Vec<Error>) -> Result<Vec<String>, String> {
+    pub fn topological_sorting(&mut self) -> Result<Vec<String>, String> {
         // initialize schedule
         let mut schedule = vec![];
 
@@ -147,8 +148,7 @@ impl Graph<Color> {
         // process of vertices
         self.get_vertices()
             .iter()
-            .map(|id| self.topological_sorting_visit(&id, &mut schedule, errors))
-            .collect::<Result<(), String>>()?;
+            .try_for_each(|id| self.topological_sorting_visit(id, &mut schedule))?;
 
         Ok(schedule)
     }
@@ -157,7 +157,6 @@ impl Graph<Color> {
         &mut self,
         id: &String,
         schedule: &mut Vec<String>,
-        errors: &mut Vec<Error>,
     ) -> Result<(), String> {
         let vertex = self.get_vertex_mut(id);
 
@@ -170,8 +169,9 @@ impl Graph<Color> {
                 vertex
                     .get_neighbors()
                     .iter()
-                    .map(|Neighbor { id, .. }| self.topological_sorting_visit(id, schedule, errors))
-                    .collect::<Result<(), String>>()?;
+                    .try_for_each(|Neighbor { id, .. }| {
+                        self.topological_sorting_visit(id, schedule)
+                    })?;
 
                 // update vertex status: processed
                 let vertex = self.get_vertex_mut(id);
@@ -215,29 +215,26 @@ impl Graph<Color> {
 
         // visit vertex successors
         let vertex = self.get_vertex_mut(id);
-        match vertex.get_value() {
-            Color::White => {
-                // update vertex status: processing
-                vertex.set_value(Color::Grey);
+        if &Color::White == vertex.get_value() {
+            // update vertex status: processing
+            vertex.set_value(Color::Grey);
 
-                // processus propagation
-                vertex.get_neighbors().iter().for_each(
-                    |Neighbor {
-                         id: neighbor,
-                         weight,
-                     }| {
-                        // visit vertex successors
-                        self.subgraph_from_vertex_visit(neighbor, subgraph);
-                        // add edge
-                        subgraph.add_edge(id, neighbor.clone(), weight.clone())
-                    },
-                );
+            // processus propagation
+            vertex.get_neighbors().iter().for_each(
+                |Neighbor {
+                     id: neighbor,
+                     weight,
+                 }| {
+                    // visit vertex successors
+                    self.subgraph_from_vertex_visit(neighbor, subgraph);
+                    // add edge
+                    subgraph.add_edge(id, neighbor.clone(), *weight)
+                },
+            );
 
-                // update vertex status: processed
-                let vertex = self.get_vertex_mut(id);
-                vertex.set_value(Color::Black);
-            }
-            _ => (),
+            // update vertex status: processed
+            let vertex = self.get_vertex_mut(id);
+            vertex.set_value(Color::Black);
         }
     }
 
@@ -696,8 +693,6 @@ mod topological_sorting {
 
     #[test]
     fn should_return_a_schedule_of_the_graph_in_order() {
-        let mut errors = vec![];
-
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), Color::Black);
         graph.add_vertex(String::from("v2"), Color::Black);
@@ -708,7 +703,7 @@ mod topological_sorting {
         graph.add_edge(&String::from("v1"), String::from("v3"), 0);
         graph.add_edge(&String::from("v3"), String::from("v2"), 0);
 
-        let schedule = graph.topological_sorting(&mut errors).unwrap();
+        let schedule = graph.topological_sorting().unwrap();
 
         for (v1, v2, _) in graph.get_edges() {
             assert!(
@@ -720,8 +715,6 @@ mod topological_sorting {
 
     #[test]
     fn should_return_schedule_with_all_vertices() {
-        let mut errors = vec![];
-
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), Color::Black);
         graph.add_vertex(String::from("v2"), Color::Black);
@@ -732,7 +725,7 @@ mod topological_sorting {
         graph.add_edge(&String::from("v1"), String::from("v3"), 0);
         graph.add_edge(&String::from("v3"), String::from("v2"), 0);
 
-        let schedule = graph.topological_sorting(&mut errors).unwrap();
+        let schedule = graph.topological_sorting().unwrap();
 
         let vertices = graph.get_vertices();
 

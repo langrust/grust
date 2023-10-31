@@ -4,7 +4,7 @@ use crate::ast::{
     node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
 use crate::common::r#type::Type;
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl StreamExpression {
     /// Add a [Type] to the followed by stream expression.
@@ -15,7 +15,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // typing a followed by stream expression consist of getting the type
             // of the constant, typing the next expression and checking types are equal

@@ -36,7 +36,7 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
     let mut statements = step
         .body
         .into_iter()
-        .map(|statement| statement_lir_from_mir(statement))
+        .map(statement_lir_from_mir)
         .collect::<Vec<_>>();
 
     let fields = step

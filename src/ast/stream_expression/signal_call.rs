@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::stream_expression::StreamExpression;
 use crate::common::{context::Context, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl StreamExpression {
     /// Add a [Type] to the signal call stream expression.
@@ -10,7 +10,7 @@ impl StreamExpression {
         &mut self,
         signals_context: &HashMap<String, Type>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // the type of a signal call stream expression in the type of the called element in the context
             StreamExpression::SignalCall {

@@ -42,10 +42,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
             ..
         } => Expression::FunctionCall {
             function: Box::new(expression_mir_from_hir(function_expression)),
-            arguments: inputs
-                .into_iter()
-                .map(|expression| mir_from_hir(expression))
-                .collect(),
+            arguments: inputs.into_iter().map(mir_from_hir).collect(),
         },
         StreamExpression::Structure { name, fields, .. } => Expression::Structure {
             name,
@@ -55,10 +52,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
                 .collect(),
         },
         StreamExpression::Array { elements, .. } => Expression::Array {
-            elements: elements
-                .into_iter()
-                .map(|expression| mir_from_hir(expression))
-                .collect(),
+            elements: elements.into_iter().map(mir_from_hir).collect(),
         },
         StreamExpression::Match {
             expression, arms, ..
@@ -69,13 +63,13 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
                 .map(|(pattern, guard, body, expression)| {
                     (
                         pattern,
-                        guard.map(|expression| mir_from_hir(expression)),
+                        guard.map(mir_from_hir),
                         if body.is_empty() {
                             mir_from_hir(expression)
                         } else {
                             let mut statements = body
                                 .into_iter()
-                                .map(|equation| equation_mir_from_hir(equation))
+                                .map(equation_mir_from_hir)
                                 .collect::<Vec<_>>();
                             statements.push(Statement::ExpressionLast {
                                 expression: mir_from_hir(expression),

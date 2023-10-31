@@ -14,12 +14,9 @@ pub fn hir_from_ast(file: File) -> HIRFile {
 
     HIRFile {
         typedefs,
-        functions: functions,
-        nodes: nodes
-            .into_iter()
-            .map(|node| node_hir_from_ast(node))
-            .collect(),
-        component: component.map(|component| node_hir_from_ast(component)),
+        functions,
+        nodes: nodes.into_iter().map(node_hir_from_ast).collect(),
+        component: component.map(node_hir_from_ast),
         location,
     }
 }

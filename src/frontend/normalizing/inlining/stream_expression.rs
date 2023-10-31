@@ -41,8 +41,7 @@ impl StreamExpression {
                     match element {
                         Union::I1(new_signal) => {
                             *signal = new_signal.clone();
-                            *dependencies =
-                                Dependencies::from(vec![(String::from(new_signal.id.clone()), 0)]);
+                            *dependencies = Dependencies::from(vec![(new_signal.id.clone(), 0)]);
                         }
                         Union::I2(new_expression) => *self = new_expression.clone(),
                     }
@@ -149,7 +148,7 @@ impl StreamExpression {
                             .filter(|(key, _)| !local_signals.contains(key))
                             .collect();
 
-                        bound.as_mut().map(|expression| {
+                        if let Some(expression) = bound.as_mut() {
                             expression.replace_by_context(&context_map);
                             let mut bound_dependencies = expression
                                 .get_dependencies()
@@ -158,7 +157,7 @@ impl StreamExpression {
                                 .filter(|(signal, _)| !local_signals.contains(signal))
                                 .collect();
                             expression_dependencies.append(&mut bound_dependencies);
-                        });
+                        };
 
                         assert!(body.is_empty());
                         // body.iter_mut().for_each(|equation| {
@@ -319,10 +318,9 @@ impl StreamExpression {
             } => {
                 let new_equations = inputs
                     .iter_mut()
-                    .map(|expression| {
+                    .flat_map(|expression| {
                         expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
                     })
-                    .flatten()
                     .collect();
                 *dependencies = Dependencies::from(
                     inputs
@@ -340,10 +338,9 @@ impl StreamExpression {
             } => {
                 let new_equations = fields
                     .iter_mut()
-                    .map(|(_, expression)| {
+                    .flat_map(|(_, expression)| {
                         expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
                     })
-                    .flatten()
                     .collect();
                 *dependencies = Dependencies::from(
                     fields
@@ -360,10 +357,9 @@ impl StreamExpression {
             } => {
                 let new_equations = elements
                     .iter_mut()
-                    .map(|expression| {
+                    .flat_map(|expression| {
                         expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
                     })
-                    .flatten()
                     .collect();
                 *dependencies = Dependencies::from(
                     elements
@@ -384,7 +380,7 @@ impl StreamExpression {
 
                 let mut other_new_equations = arms
                     .iter_mut()
-                    .map(|(_, bound, body, expression)| {
+                    .flat_map(|(_, bound, body, expression)| {
                         assert!(body.is_empty());
                         let mut new_equations_bound = bound
                             .as_mut()
@@ -406,7 +402,6 @@ impl StreamExpression {
                         new_equations_bound.append(&mut new_equations_expression);
                         new_equations_bound
                     })
-                    .flatten()
                     .collect::<Vec<_>>();
 
                 new_equations.append(&mut other_new_equations);

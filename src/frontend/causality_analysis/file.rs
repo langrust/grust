@@ -1,4 +1,7 @@
-use crate::{error::Error, hir::file::File};
+use crate::{
+    error::{Error, TerminationError},
+    hir::file::File,
+};
 
 impl File {
     /// Check the causality of the file.
@@ -32,7 +35,7 @@ impl File {
     ///     x: int = 0 fby o;
     /// }
     /// ```
-    pub fn causality_analysis(&self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn causality_analysis(&self, errors: &mut Vec<Error>) -> Result<(), TerminationError> {
         // check causality for each node
         self.nodes
             .iter()

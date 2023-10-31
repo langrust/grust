@@ -15,10 +15,7 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
             ..
         } => MIRExpression::FunctionCall {
             function: Box::new(mir_from_hir(*function_expression)),
-            arguments: inputs
-                .into_iter()
-                .map(|expression| mir_from_hir(expression))
-                .collect(),
+            arguments: inputs.into_iter().map(mir_from_hir).collect(),
         },
         Expression::TypedAbstraction {
             inputs,
@@ -38,10 +35,7 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
                 .collect(),
         },
         Expression::Array { elements, .. } => MIRExpression::Array {
-            elements: elements
-                .into_iter()
-                .map(|expression| mir_from_hir(expression))
-                .collect(),
+            elements: elements.into_iter().map(mir_from_hir).collect(),
         },
         Expression::Match {
             expression, arms, ..
@@ -50,11 +44,7 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
             arms: arms
                 .into_iter()
                 .map(|(pattern, guard, expression)| {
-                    (
-                        pattern,
-                        guard.map(|expression| mir_from_hir(expression)),
-                        mir_from_hir(expression),
-                    )
+                    (pattern, guard.map(mir_from_hir), mir_from_hir(expression))
                 })
                 .collect(),
         },

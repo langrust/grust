@@ -139,3 +139,8 @@ impl Memory {
             .is_none())
     }
 }
+impl Default for Memory {
+    fn default() -> Self {
+        Self::new()
+    }
+}

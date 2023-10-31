@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::common::context::Context;
 use crate::common::{location::Location, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust user defined type AST.
@@ -73,7 +73,7 @@ impl Typedef {
                 array_type,
                 size,
                 location: _,
-            } => Type::Array(Box::new(array_type.clone()), size.clone()),
+            } => Type::Array(Box::new(array_type.clone()), *size),
         }
     }
 
@@ -109,10 +109,10 @@ impl Typedef {
     /// ```
     pub fn well_defined_structure<T>(
         &self,
-        fields: &Vec<(String, T)>,
-        mut well_defined_field: impl FnMut(&T, &Type, &mut Vec<Error>) -> Result<(), ()>,
+        fields: &[(String, T)],
+        mut well_defined_field: impl FnMut(&T, &Type, &mut Vec<Error>) -> Result<(), TerminationError>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             Typedef::Structure {
                 id: name,
@@ -127,7 +127,7 @@ impl Typedef {
 
                 // zip defined fields with the expected type
                 let zipped_fields = fields
-                    .into_iter()
+                    .iter()
                     .map(|(id, expression)| {
                         Ok((
                             expression,
@@ -139,17 +139,17 @@ impl Typedef {
                             )?,
                         ))
                     })
-                    .collect::<Vec<Result<_, ()>>>()
+                    .collect::<Vec<Result<_, TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<Vec<_>, ()>>()?;
+                    .collect::<Result<Vec<_>, TerminationError>>()?;
 
                 // check that every field is well-defined
                 zipped_fields
                     .into_iter()
                     .map(|(element, field_type)| well_defined_field(element, field_type, errors))
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), TerminationError>>()?;
 
                 // convert the fields into an HashMap defined_fields
                 let defined_fields = fields
@@ -159,8 +159,8 @@ impl Typedef {
 
                 // check that there are no missing fields
                 structure_fields
-                    .iter()
-                    .map(|(id, _)| {
+                    .keys()
+                    .map(|id| {
                         if defined_fields.contains(id) {
                             Ok(())
                         } else {
@@ -170,12 +170,12 @@ impl Typedef {
                                 location: location.clone(),
                             };
                             errors.push(error);
-                            Err(())
+                            Err(TerminationError)
                         }
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()
+                    .collect::<Result<(), TerminationError>>()
             }
             _ => unreachable!(),
         }
@@ -228,7 +228,7 @@ impl Typedef {
         &mut self,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             Typedef::Structure {
                 fields, location, ..
@@ -237,9 +237,9 @@ impl Typedef {
                 .map(|(_, field_type)| {
                     field_type.resolve_undefined(location.clone(), user_types_context, errors)
                 })
-                .collect::<Vec<Result<(), ()>>>()
+                .collect::<Vec<Result<(), TerminationError>>>()
                 .into_iter()
-                .collect::<Result<(), ()>>(),
+                .collect::<Result<(), TerminationError>>(),
             Typedef::Enumeration { .. } => Ok(()),
             Typedef::Array {
                 array_type,

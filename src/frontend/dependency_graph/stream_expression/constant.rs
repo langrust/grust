@@ -1,8 +1,8 @@
-use crate::hir::stream_expression::StreamExpression;
+use crate::{error::TerminationError, hir::stream_expression::StreamExpression};
 
 impl StreamExpression {
     /// Compute dependencies of a constant stream expression.
-    pub fn compute_constant_dependencies(&self) -> Result<(), ()> {
+    pub fn compute_constant_dependencies(&self) -> Result<(), TerminationError> {
         match self {
             // no dependencies for constant stream expression
             StreamExpression::Constant { dependencies, .. } => {

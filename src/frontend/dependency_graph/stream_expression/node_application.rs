@@ -4,7 +4,7 @@ use crate::common::{
     context::Context,
     graph::{color::Color, neighbor::Neighbor, Graph},
 };
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
@@ -15,7 +15,7 @@ impl StreamExpression {
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // dependencies of node application are reduced dependencies of
             // called signal in called node, mapped to inputs
@@ -78,12 +78,12 @@ impl StreamExpression {
                                         .map(|(id, depth)| (id, depth + weight))
                                         .collect())
                                 })
-                                .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                                .collect::<Result<Vec<Vec<(String, usize)>>, TerminationError>>()?
                                 .into_iter()
                                 .flatten()
                                 .collect::<Vec<(String, usize)>>())
                         })
-                        .collect::<Result<Vec<Vec<(String, usize)>>, ()>>()?
+                        .collect::<Result<Vec<Vec<(String, usize)>>, TerminationError>>()?
                         .into_iter()
                         .flatten()
                         .collect::<Vec<(String, usize)>>(),

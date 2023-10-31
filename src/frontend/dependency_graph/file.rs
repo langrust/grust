@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 use crate::hir::file::File;
 
 impl File {
     /// Generate dependency graph for every nodes/component.
-    pub fn generate_dependency_graphs(&self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn generate_dependency_graphs(
+        &self,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), TerminationError> {
         let File {
             nodes, component, ..
         } = self;
@@ -16,16 +19,16 @@ impl File {
 
         // initialize every nodes' graphs
         nodes
-            .into_iter()
+            .iter()
             .map(|node| {
                 let graph = node.create_initialized_graph();
                 nodes_graphs.insert(node.id.clone(), graph.clone());
                 nodes_reduced_graphs.insert(node.id.clone(), graph.clone());
                 Ok(())
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // optional component's graph initialization
         component.as_ref().map_or(Ok(()), |component| {
@@ -43,7 +46,7 @@ impl File {
 
         // every nodes complete their dependency graphs
         nodes
-            .into_iter()
+            .iter()
             .map(|node| {
                 node.add_all_dependencies(
                     &nodes_context,
@@ -52,9 +55,9 @@ impl File {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // optional component completes its dependency graph
         component.as_ref().map_or(Ok(()), |component| {

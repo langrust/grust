@@ -4,7 +4,7 @@ use crate::ast::{
     node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
 use crate::common::{location::Location, r#type::Type, scope::Scope};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust equation AST.
@@ -61,7 +61,7 @@ impl Equation {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Equation {
             signal_type,
             expression,
@@ -179,7 +179,7 @@ impl Equation {
         &mut self,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Equation {
             signal_type,
             location,

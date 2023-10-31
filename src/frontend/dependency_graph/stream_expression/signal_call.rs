@@ -1,8 +1,11 @@
-use crate::hir::{signal::Signal, stream_expression::StreamExpression};
+use crate::{
+    error::TerminationError,
+    hir::{signal::Signal, stream_expression::StreamExpression},
+};
 
 impl StreamExpression {
     /// Compute dependencies of a signal call.
-    pub fn compute_signal_call_dependencies(&self) -> Result<(), ()> {
+    pub fn compute_signal_call_dependencies(&self) -> Result<(), TerminationError> {
         match self {
             // signal call depends on called signal with depth of 0
             StreamExpression::SignalCall {

@@ -8,7 +8,7 @@ pub fn lir_from_mir(block: Block) -> LIRBlock {
     let statements = block
         .statements
         .into_iter()
-        .map(|statement| statement_lir_from_mir(statement))
+        .map(statement_lir_from_mir)
         .collect();
     LIRBlock { statements }
 }
