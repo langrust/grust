@@ -1,8 +1,8 @@
-use crate::ast::stream_expression::StreamExpression;
+use crate::{ast::stream_expression::StreamExpression, error::TerminationError};
 
 impl StreamExpression {
     /// Add a [Type] to the constant stream expression.
-    pub fn typing_constant(&mut self) -> Result<(), ()> {
+    pub fn typing_constant(&mut self) -> Result<(), TerminationError> {
         match self {
             // typing a constant stream expression consist of getting the type of the constant
             StreamExpression::Constant {

@@ -8,13 +8,12 @@ pub struct Location {
     /// range in which the element is located
     pub range: Range<usize>,
 }
-impl Location {
-    /// Construct and return the default location.
-    pub fn default() -> Self {
-        return Location {
+impl Default for Location {
+    fn default() -> Self {
+        Location {
             file_id: 0,
             range: 0..0,
-        };
+        }
     }
 }
 impl PartialEq for Location {

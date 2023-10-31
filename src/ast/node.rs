@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{equation::Equation, node_description::NodeDescription, typedef::Typedef};
 use crate::common::{context::Context, location::Location, r#type::Type, scope::Scope};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust node AST.
@@ -93,7 +93,7 @@ impl Node {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Node {
             id,
             equations,
@@ -121,9 +121,9 @@ impl Node {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
         signals_context.combine_unique(outputs.clone(), location.clone(), errors)?;
         signals_context.combine_unique(locals.clone(), location.clone(), errors)?;
 
@@ -139,9 +139,9 @@ impl Node {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()
+            .collect::<Result<(), TerminationError>>()
     }
 
     /// Create a [NodeDescription] from a [Node]
@@ -208,7 +208,10 @@ impl Node {
     ///
     /// assert_eq!(node_description, control);
     /// ```
-    pub fn into_node_description(&self, errors: &mut Vec<Error>) -> Result<NodeDescription, ()> {
+    pub fn into_node_description(
+        &self,
+        errors: &mut Vec<Error>,
+    ) -> Result<NodeDescription, TerminationError> {
         let Node {
             is_component,
             inputs,
@@ -236,9 +239,9 @@ impl Node {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // add signals defined by equations in contexts
         equations
@@ -269,12 +272,12 @@ impl Node {
                     )
                 },
             )
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         Ok(NodeDescription {
-            is_component: is_component.clone(),
+            is_component: *is_component,
             inputs: inputs.clone(),
             outputs,
             locals,
@@ -401,7 +404,7 @@ impl Node {
         &mut self,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Node {
             inputs,
             equations,
@@ -415,17 +418,17 @@ impl Node {
             .map(|(_, input_type)| {
                 input_type.resolve_undefined(location.clone(), user_types_context, errors)
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // determine equations types
         equations
             .iter_mut()
             .map(|(_, equation)| equation.resolve_undefined_types(user_types_context, errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()
+            .collect::<Result<(), TerminationError>>()
     }
 }
 

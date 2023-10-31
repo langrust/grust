@@ -44,7 +44,7 @@ impl<T> Vertex<T> {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     /// Tells if the neighbor is already known with any weight.
@@ -54,7 +54,7 @@ impl<T> Vertex<T> {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     /// Set a new value to the vertex.
@@ -69,10 +69,7 @@ impl<T> Vertex<T> {
 
     /// Get neighbors.
     pub fn get_neighbors(&self) -> Vec<Neighbor> {
-        self.neighbors
-            .iter()
-            .map(|neighbor| neighbor.clone())
-            .collect()
+        self.neighbors.to_vec()
     }
 
     /// Get weight of neighbor if exists

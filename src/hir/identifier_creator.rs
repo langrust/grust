@@ -20,8 +20,8 @@ impl IdentifierCreator {
     fn already_defined(&self, identifier: &String) -> bool {
         self.signals.contains(identifier)
     }
-    fn add_signal(&mut self, signal: &String) {
-        self.signals.insert(signal.clone());
+    fn add_signal(&mut self, signal: &str) {
+        self.signals.insert(signal.to_string());
     }
     /// Create new identifier from request.
     ///

@@ -133,10 +133,9 @@ impl Equation {
                 // inline potential node calls in the inputs
                 let mut new_equations = inputs
                     .iter_mut()
-                    .map(|(_, expression)| {
+                    .flat_map(|(_, expression)| {
                         expression.inline_when_needed(&self.id, identifier_creator, graph, nodes)
                     })
-                    .flatten()
                     .collect::<Vec<_>>();
 
                 // a loop in the graph induces that inputs depends on output

@@ -1,4 +1,7 @@
-use crate::{error::Error, hir::node::Node};
+use crate::{
+    error::{Error, TerminationError},
+    hir::node::Node,
+};
 
 impl Node {
     /// Check the causality of the node.
@@ -30,7 +33,7 @@ impl Node {
     ///     x: int = o;
     /// }
     /// ```
-    pub fn causal(&self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn causal(&self, errors: &mut Vec<Error>) -> Result<(), TerminationError> {
         // construct node's subgraph containing only 0-depth dependencies
         let mut subgraph = self
             .graph
@@ -39,13 +42,14 @@ impl Node {
             .subgraph_on_edges(|weight| weight == 0);
 
         // if a schedule exists, then the node is causal
-        let _ = subgraph.topological_sorting(errors).map_err(|signal| {
+        let _ = subgraph.topological_sorting().map_err(|signal| {
             let error = Error::NotCausal {
                 node: self.id.clone(),
-                signal: signal,
+                signal,
                 location: self.location.clone(),
             };
-            errors.push(error)
+            errors.push(error);
+            TerminationError
         })?;
 
         Ok(())

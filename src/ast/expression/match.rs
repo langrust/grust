@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::r#type::Type;
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl Expression {
     /// Add a [Type] to the match expression.
@@ -12,7 +12,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // the type of a match expression is the type of all branches expressions
             Expression::Match {
@@ -24,7 +24,7 @@ impl Expression {
                 expression.typing(global_context, elements_context, user_types_context, errors)?;
 
                 let expression_type = expression.get_type().unwrap();
-                arms.into_iter()
+                arms.iter_mut()
                     .map(|(pattern, optional_test_expression, arm_expression)| {
                         let mut local_context = elements_context.clone();
                         pattern.construct_context(
@@ -60,9 +60,9 @@ impl Expression {
                         optional_test_expression_typing_test?;
                         arm_expression_typing_test
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), TerminationError>>()?;
 
                 let first_type = arms[0].2.get_type().unwrap();
                 arms.iter()
@@ -70,9 +70,9 @@ impl Expression {
                         let arm_expression_type = arm_expression.get_type().unwrap();
                         arm_expression_type.eq_check(first_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), TerminationError>>()?;
 
                 // todo: patterns should be exhaustive
                 *typing = Some(first_type.clone());

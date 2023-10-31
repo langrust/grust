@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::common::graph::{color::Color, neighbor::Neighbor, Graph};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 use crate::hir::node::Node;
 
 impl Node {
@@ -26,7 +26,7 @@ impl Node {
         }
 
         // add other signals as vertices
-        for (signal, _) in unscheduled_equations {
+        for signal in unscheduled_equations.keys() {
             graph.add_vertex(signal.clone(), Color::White);
         }
 
@@ -50,7 +50,7 @@ impl Node {
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Node {
             inputs,
             unscheduled_equations,
@@ -70,9 +70,9 @@ impl Node {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // add input signals dependencies
         // (makes vertices colors "Black" => equal assertions in tests)
@@ -87,9 +87,9 @@ impl Node {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // set node's graph
         graph
@@ -116,7 +116,7 @@ impl Node {
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Node {
             id: node,
             unscheduled_equations,
@@ -179,7 +179,7 @@ impl Node {
                     location: location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
             // if processed: nothing to do
             Color::Black => Ok(()),
@@ -203,7 +203,7 @@ impl Node {
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Node {
             id: node, inputs, ..
         } = self;

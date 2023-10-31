@@ -2,6 +2,18 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 
 use crate::common::{location::Location, pattern::Pattern, r#type::Type};
 
+/// Termination of compilation error.
+#[derive(Debug)]
+pub struct TerminationError;
+
+impl std::fmt::Display for TerminationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Termination Error")
+    }
+}
+
+impl std::error::Error for TerminationError {}
+
 /// Compilation errors enumeration.
 ///
 /// [Error] enumeration is used during the compilation to alert
@@ -164,6 +176,7 @@ pub enum Error {
         location: Location,
     },
 }
+
 impl Error {
     /// Transform the error into a diagnostic.
     ///
@@ -386,3 +399,30 @@ impl Error {
         }
     }
 }
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::UnknownElement { .. } => write!(f, "Unknown Element"),
+            Error::UnknownSignal { .. } => write!(f, "Unknown Signal"),
+            Error::UnknownNode { .. } => write!(f, "Unknown Node"),
+            Error::UnknownType { .. } => write!(f, "Unknown Type"),
+            Error::UnknownField { .. } => write!(f, "Unknown Field"),
+            Error::MissingField { .. } => write!(f, "Missing Field"),
+            Error::ComponentCall { .. } => write!(f, "Component Call"),
+            Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
+            Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
+            Error::IncompatiblePattern { .. } => write!(f, "Incompatible Pattern"),
+            Error::IncompatibleInputsNumber { .. } => write!(f, "Incompatible Inputs Number"),
+            Error::ExpectNumber { .. } => write!(f, "Expect Number"),
+            Error::ExpectAbstraction { .. } => write!(f, "Expect Abstraction"),
+            Error::ExpectOption { .. } => write!(f, "Expect Option"),
+            Error::ExpectStructure { .. } => write!(f, "Expect Structure"),
+            Error::NoTypeInference { .. } => write!(f, "No Type Inference"),
+            Error::NotCausal { .. } => write!(f, "Not Causal"),
+            Error::UnusedSignal { .. } => write!(f, "Unused Signal"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}

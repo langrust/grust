@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::r#type::Type;
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl Expression {
     /// Add a [Type] to the application expression.
@@ -12,7 +12,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // an application expression type is the result of the application
             // of the inputs types to the abstraction/function type
@@ -24,13 +24,13 @@ impl Expression {
             } => {
                 // type all inputs
                 inputs
-                    .into_iter()
+                    .iter_mut()
                     .map(|input| {
                         input.typing(global_context, elements_context, user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), TerminationError>>()?;
 
                 let input_types = inputs
                     .iter()

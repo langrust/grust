@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, statement::Statement, typedef::Typedef};
 use crate::common::{context::Context, location::Location, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 #[derive(Debug, PartialEq)]
 /// LanGRust function AST.
@@ -70,7 +70,7 @@ impl Function {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Function {
             inputs,
             statements,
@@ -91,9 +91,9 @@ impl Function {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // type all statements
         statements
@@ -112,9 +112,9 @@ impl Function {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // type returned expression
         returned_expression.typing(
@@ -248,7 +248,7 @@ impl Function {
         &mut self,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Function {
             inputs,
             statements,
@@ -263,17 +263,17 @@ impl Function {
             .map(|(_, input_type)| {
                 input_type.resolve_undefined(location.clone(), user_types_context, errors)
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // determine statements types
         statements
             .iter_mut()
             .map(|statement| statement.resolve_undefined_types(user_types_context, errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // determine returned type
         returned_type.resolve_undefined(location.clone(), user_types_context, errors)

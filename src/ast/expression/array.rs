@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::r#type::Type;
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl Expression {
     /// Add a [Type] to the array expression.
@@ -12,7 +12,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // an array is composed of `n` elements of the same type `t` and
             // its type is `[t; n]`
@@ -22,13 +22,13 @@ impl Expression {
                 location,
             } => {
                 elements
-                    .into_iter()
+                    .iter_mut()
                     .map(|element| {
                         element.typing(global_context, elements_context, user_types_context, errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), TerminationError>>()?;
 
                 let first_type = elements[0].get_type().unwrap();
                 elements
@@ -37,9 +37,9 @@ impl Expression {
                         let element_type = element.get_type().unwrap();
                         element_type.eq_check(first_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), TerminationError>>()?;
 
                 let array_type = Type::Array(Box::new(first_type.clone()), elements.len());
 

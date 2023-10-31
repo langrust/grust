@@ -310,9 +310,9 @@ impl StreamExpression {
                 expression.memorize(identifier_creator, memory);
                 arms.iter_mut()
                     .for_each(|(_, bound_expression, equations, expression)| {
-                        bound_expression
-                            .as_mut()
-                            .map(|expression| expression.memorize(identifier_creator, memory));
+                        if let Some(expression) = bound_expression.as_mut() {
+                            expression.memorize(identifier_creator, memory)
+                        };
                         equations
                             .iter_mut()
                             .for_each(|equation| equation.memorize(identifier_creator, memory));

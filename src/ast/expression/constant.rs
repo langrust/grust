@@ -1,8 +1,8 @@
-use crate::ast::expression::Expression;
+use crate::{ast::expression::Expression, error::TerminationError};
 
 impl Expression {
     /// Add a [Type] to the constant expression.
-    pub fn typing_constant(&mut self) -> Result<(), ()> {
+    pub fn typing_constant(&mut self) -> Result<(), TerminationError> {
         match self {
             // typing a constant expression consist of getting the type of the constant
             Expression::Constant {

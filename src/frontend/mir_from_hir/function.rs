@@ -19,7 +19,7 @@ pub fn mir_from_hir(function: Function) -> MIRFunction {
 
     let mut statements = statements
         .into_iter()
-        .map(|statement| statement_mir_from_hir(statement))
+        .map(statement_mir_from_hir)
         .collect::<Vec<_>>();
     statements.push(Statement::ExpressionLast {
         expression: expression_mir_from_hir(last_expression),

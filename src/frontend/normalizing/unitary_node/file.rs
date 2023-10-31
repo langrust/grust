@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 use crate::hir::file::File;
 
 impl File {
@@ -40,40 +40,38 @@ impl File {
     ///     y: int = my_node(v).o2;
     /// }
     /// ```
-    pub fn generate_unitary_nodes(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn generate_unitary_nodes(
+        &mut self,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), TerminationError> {
         // unitary nodes computations, it induces unused signals tracking
         self.nodes
             .iter_mut()
             .map(|node| node.generate_unitary_nodes(errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // get, for each unitary node, initial node's inputs
         // that are used by the unitary node
-        let unitary_nodes_used_inputs = self
-            .nodes
-            .iter()
-            .map(|node| {
-                (
-                    node.id.clone(),
-                    node.unitary_nodes
-                        .iter()
-                        .map(|(output, unitary_node)| {
-                            (
-                                output.clone(),
-                                node.inputs
-                                    .iter()
-                                    .map(|input| {
-                                        (input.0.clone(), unitary_node.inputs.contains(input))
-                                    })
-                                    .collect::<Vec<_>>(),
-                            )
-                        })
-                        .collect::<HashMap<String, Vec<_>>>(),
-                )
-            })
-            .collect::<HashMap<String, HashMap<String, Vec<_>>>>();
+        let mut unitary_nodes_used_inputs = HashMap::new();
+        self.nodes.iter().for_each(|node| {
+            node.unitary_nodes
+                .iter()
+                .for_each(|(output, unitary_node)| {
+                    assert!(unitary_nodes_used_inputs
+                        .insert(
+                            (node.id.clone(), output.clone()),
+                            node.inputs
+                                .iter()
+                                .map(|input| {
+                                    (input.0.clone(), unitary_node.inputs.contains(input))
+                                })
+                                .collect::<Vec<_>>(),
+                        )
+                        .is_none());
+                })
+        });
 
         // change node application to unitary node application
         self.nodes.iter_mut().for_each(|node| {

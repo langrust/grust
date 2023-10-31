@@ -38,19 +38,14 @@ fn get_imports(expression: &StreamExpression) -> Vec<Import> {
             .iter()
             .flat_map(|(_, expression)| get_imports(expression))
             .collect(),
-        StreamExpression::Array { elements, .. } => elements
-            .iter()
-            .flat_map(|expression| get_imports(expression))
-            .collect(),
+        StreamExpression::Array { elements, .. } => elements.iter().flat_map(get_imports).collect(),
         StreamExpression::Match {
             expression, arms, ..
         } => {
             let mut arms_imports = arms
                 .iter()
                 .flat_map(|(_, guard, body, expression)| {
-                    let mut guard_imports = guard
-                        .as_ref()
-                        .map_or(vec![], |expression| get_imports(expression));
+                    let mut guard_imports = guard.as_ref().map_or(vec![], get_imports);
                     let mut body_imports = body
                         .iter()
                         .flat_map(|equation| get_imports(&equation.expression))
@@ -205,10 +200,7 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
             step: Step {
                 node_name: node_id.clone() + &output_id,
                 output_type,
-                body: equations
-                    .into_iter()
-                    .map(|equation| equation_mir_from_hir(equation))
-                    .collect(),
+                body: equations.into_iter().map(equation_mir_from_hir).collect(),
                 state_elements_step,
                 output_expression,
             },

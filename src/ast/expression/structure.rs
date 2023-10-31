@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::{context::Context, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl Expression {
     /// Add a [Type] to the structure expression.
@@ -12,7 +12,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // the type of the structure is the corresponding structure type
             // if fields match their expected types
@@ -30,7 +30,7 @@ impl Expression {
                     Typedef::Structure { .. } => {
                         // type each field
                         fields
-                            .into_iter()
+                            .iter_mut()
                             .map(|(_, expression)| {
                                 expression.typing(
                                     global_context,
@@ -39,9 +39,9 @@ impl Expression {
                                     errors,
                                 )
                             })
-                            .collect::<Vec<Result<(), ()>>>()
+                            .collect::<Vec<Result<(), TerminationError>>>()
                             .into_iter()
-                            .collect::<Result<(), ()>>()?;
+                            .collect::<Result<(), TerminationError>>()?;
 
                         // check that the structure is well defined
                         let well_defined_field =
@@ -62,7 +62,7 @@ impl Expression {
                             location: location.clone(),
                         };
                         errors.push(error);
-                        Err(())
+                        Err(TerminationError)
                     }
                 }
             }

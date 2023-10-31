@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::common::graph::{color::Color, Graph};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
@@ -12,7 +12,7 @@ impl StreamExpression {
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
         nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // dependencies of map application are dependencies of its inputs
             StreamExpression::MapApplication {
@@ -31,7 +31,7 @@ impl StreamExpression {
                             errors,
                         )
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
                     .collect::<Result<_, _>>()?;
 
@@ -39,8 +39,7 @@ impl StreamExpression {
                 dependencies.set(
                     inputs
                         .iter()
-                        .map(|input_expression| input_expression.get_dependencies().clone())
-                        .flatten()
+                        .flat_map(|input_expression| input_expression.get_dependencies().clone())
                         .collect(),
                 );
 

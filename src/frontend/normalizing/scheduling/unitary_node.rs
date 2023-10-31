@@ -31,9 +31,7 @@ impl UnitaryNode {
             .unwrap()
             .subgraph_on_edges(|weight| weight == 0);
 
-        let mut errors = vec![];
-        let schedule = subgraph.topological_sorting(&mut errors).unwrap();
-        assert!(errors.is_empty());
+        let schedule = subgraph.topological_sorting().unwrap();
 
         let scheduled_equations = schedule
             .into_iter()

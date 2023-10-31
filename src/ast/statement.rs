@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::{location::Location, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust statement AST.
@@ -56,7 +56,7 @@ impl Statement {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Statement {
             element_type,
             expression,
@@ -166,7 +166,7 @@ impl Statement {
         &mut self,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         let Statement {
             element_type,
             location,

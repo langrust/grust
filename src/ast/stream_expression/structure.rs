@@ -4,7 +4,7 @@ use crate::ast::{
     node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
 use crate::common::{context::Context, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl StreamExpression {
     /// Add a [Type] to the structure stream expression.
@@ -15,7 +15,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // the type of the structure is the corresponding structure type
             // if fields match their expected types
@@ -33,7 +33,7 @@ impl StreamExpression {
                     Typedef::Structure { .. } => {
                         // type each field
                         fields
-                            .into_iter()
+                            .iter_mut()
                             .map(|(_, stream_expression)| {
                                 stream_expression.typing(
                                     nodes_context,
@@ -43,9 +43,9 @@ impl StreamExpression {
                                     errors,
                                 )
                             })
-                            .collect::<Vec<Result<(), ()>>>()
+                            .collect::<Vec<Result<(), TerminationError>>>()
                             .into_iter()
-                            .collect::<Result<(), ()>>()?;
+                            .collect::<Result<(), TerminationError>>()?;
 
                         // check that the structure is well defined
                         let well_defined_field =
@@ -66,7 +66,7 @@ impl StreamExpression {
                             location: location.clone(),
                         };
                         errors.push(error);
-                        Err(())
+                        Err(TerminationError)
                     }
                 }
             }

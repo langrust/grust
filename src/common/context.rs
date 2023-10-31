@@ -1,5 +1,5 @@
 use crate::common::location::Location;
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 use std::collections::HashMap;
 
@@ -37,10 +37,10 @@ pub trait Context {
     /// ```
     fn get_element_or_error(
         &self,
-        name: &String,
+        name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()>;
+    ) -> Result<&Self::Item, TerminationError>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -68,10 +68,10 @@ pub trait Context {
     /// ```
     fn get_signal_or_error(
         &self,
-        name: &String,
+        name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()>;
+    ) -> Result<&Self::Item, TerminationError>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -99,10 +99,10 @@ pub trait Context {
     /// ```
     fn get_node_or_error(
         &self,
-        name: &String,
+        name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()>;
+    ) -> Result<&Self::Item, TerminationError>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -130,10 +130,10 @@ pub trait Context {
     /// ```
     fn get_user_type_or_error(
         &self,
-        name: &String,
+        name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()>;
+    ) -> Result<&Self::Item, TerminationError>;
 
     /// Returns a reference to the item corresponding to the name or raises an error.
     ///
@@ -162,11 +162,11 @@ pub trait Context {
     /// ```
     fn get_field_or_error(
         &self,
-        structure_name: &String,
-        field_name: &String,
+        structure_name: &str,
+        field_name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()>;
+    ) -> Result<&Self::Item, TerminationError>;
 
     /// Insert the item corresponding to the name or raises an error.
     ///
@@ -198,7 +198,7 @@ pub trait Context {
         item: Self::Item,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()>;
+    ) -> Result<(), TerminationError>;
 
     /// Combine contexts or raises an error.
     ///
@@ -233,7 +233,7 @@ pub trait Context {
         other: Self,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()>;
+    ) -> Result<(), TerminationError>;
 }
 
 impl<V> Context for HashMap<String, V> {
@@ -241,97 +241,97 @@ impl<V> Context for HashMap<String, V> {
 
     fn get_element_or_error(
         &self,
-        name: &String,
+        name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()> {
+    ) -> Result<&Self::Item, TerminationError> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownElement {
-                    name: name.clone(),
+                    name: name.to_string(),
                     location: location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
         }
     }
 
     fn get_signal_or_error(
         &self,
-        name: &String,
+        name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()> {
+    ) -> Result<&Self::Item, TerminationError> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownSignal {
-                    name: name.clone(),
+                    name: name.to_string(),
                     location: location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
         }
     }
 
     fn get_node_or_error(
         &self,
-        name: &String,
+        name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()> {
+    ) -> Result<&Self::Item, TerminationError> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownNode {
-                    name: name.clone(),
+                    name: name.to_string(),
                     location: location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
         }
     }
 
     fn get_user_type_or_error(
         &self,
-        name: &String,
+        name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()> {
+    ) -> Result<&Self::Item, TerminationError> {
         match self.get(name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownType {
-                    name: name.clone(),
+                    name: name.to_string(),
                     location: location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
         }
     }
 
     fn get_field_or_error(
         &self,
-        structure_name: &String,
-        field_name: &String,
+        structure_name: &str,
+        field_name: &str,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<&Self::Item, ()> {
+    ) -> Result<&Self::Item, TerminationError> {
         match self.get(field_name) {
             Some(item) => Ok(item),
             None => {
                 let error = Error::UnknownField {
-                    structure_name: structure_name.clone(),
-                    field_name: field_name.clone(),
+                    structure_name: structure_name.to_string(),
+                    field_name: field_name.to_string(),
                     location: location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
         }
     }
@@ -342,7 +342,7 @@ impl<V> Context for HashMap<String, V> {
         item: Self::Item,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self.get(&name) {
             Some(_) => {
                 let error = Error::AlreadyDefinedElement {
@@ -350,7 +350,7 @@ impl<V> Context for HashMap<String, V> {
                     location: location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             }
             None => {
                 self.insert(name, item);
@@ -364,13 +364,13 @@ impl<V> Context for HashMap<String, V> {
         other: Self,
         location: Location,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         other
             .into_iter()
             .map(|(name, item)| self.insert_unique(name, item, location.clone(), errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()
+            .collect::<Result<(), TerminationError>>()
     }
 }
 

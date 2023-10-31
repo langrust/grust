@@ -18,27 +18,20 @@ pub fn mir_from_hir(file: File) -> Project {
         ..
     } = file;
 
-    let mut typedefs = typedefs
-        .into_iter()
-        .map(|typedef| typedef_mir_from_hir(typedef))
-        .collect();
+    let mut typedefs = typedefs.into_iter().map(typedef_mir_from_hir).collect();
     let mut functions = functions
         .into_iter()
-        .map(|function| function_mir_from_hir(function))
-        .map(|mir_function| Item::Function(mir_function))
+        .map(function_mir_from_hir)
+        .map(Item::Function)
         .collect();
     let mut nodes = nodes
         .into_iter()
-        .flat_map(|node| {
-            node_mir_from_hir(node)
-                .into_iter()
-                .map(|mir_node_file| Item::NodeFile(mir_node_file))
-        })
+        .flat_map(|node| node_mir_from_hir(node).into_iter().map(Item::NodeFile))
         .collect();
     let mut component = component.map_or(vec![], |component| {
         node_mir_from_hir(component)
             .into_iter()
-            .map(|mir_node_file| Item::NodeFile(mir_node_file))
+            .map(Item::NodeFile)
             .collect()
     });
 

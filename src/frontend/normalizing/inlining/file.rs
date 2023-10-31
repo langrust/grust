@@ -31,10 +31,7 @@ impl File {
             .map(|node| {
                 (
                     node.id.clone(),
-                    node.unitary_nodes
-                        .keys()
-                        .map(|output_id| output_id.clone())
-                        .collect::<Vec<_>>(),
+                    node.unitary_nodes.keys().cloned().collect::<Vec<_>>(),
                 )
             })
             .collect::<Vec<_>>();
@@ -44,7 +41,7 @@ impl File {
             .for_each(|(node_id, output_ids)| {
                 output_ids
                     .iter()
-                    .for_each(|output_id| self.inline_when_needed_visit(&node_id, output_id));
+                    .for_each(|output_id| self.inline_when_needed_visit(node_id, output_id));
             });
     }
 

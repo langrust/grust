@@ -44,10 +44,7 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
             LIRExpression::Structure { name, fields }
         }
         Expression::Array { elements } => {
-            let elements = elements
-                .into_iter()
-                .map(|expression| lir_from_mir(expression))
-                .collect();
+            let elements = elements.into_iter().map(lir_from_mir).collect();
             LIRExpression::Array { elements }
         }
         Expression::Block { block } => LIRExpression::Block {
@@ -58,28 +55,23 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
             mut arguments,
         } => match function.as_ref() {
             Expression::Identifier { identifier } => {
-                if let Some(binary) = BinaryOperator::iter()
-                    .filter(|binary| binary.to_string() == *identifier)
-                    .next()
+                if let Some(binary) =
+                    BinaryOperator::iter().find(|binary| binary.to_string() == *identifier)
                 {
                     LIRExpression::Binary {
                         left: Box::new(lir_from_mir(arguments.remove(0))),
                         operator: binary,
                         right: Box::new(lir_from_mir(arguments.remove(0))),
                     }
-                } else if let Some(unary) = UnaryOperator::iter()
-                    .filter(|unary| unary.to_string() == *identifier)
-                    .next()
+                } else if let Some(unary) =
+                    UnaryOperator::iter().find(|unary| unary.to_string() == *identifier)
                 {
                     LIRExpression::Unary {
                         operator: unary,
                         expression: Box::new(lir_from_mir(arguments.remove(0))),
                     }
                 } else {
-                    let arguments = arguments
-                        .into_iter()
-                        .map(|expression| lir_from_mir(expression))
-                        .collect();
+                    let arguments = arguments.into_iter().map(lir_from_mir).collect();
                     LIRExpression::FunctionCall {
                         function: Box::new(lir_from_mir(*function)),
                         arguments,
@@ -87,10 +79,7 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                 }
             }
             _ => {
-                let arguments = arguments
-                    .into_iter()
-                    .map(|expression| lir_from_mir(expression))
-                    .collect();
+                let arguments = arguments.into_iter().map(lir_from_mir).collect();
                 LIRExpression::FunctionCall {
                     function: Box::new(lir_from_mir(*function)),
                     arguments,
@@ -167,7 +156,7 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                 .into_iter()
                 .map(|(pattern, guard, body)| Arm {
                     pattern: pattern_lir_from_mir(pattern),
-                    guard: guard.map(|expression| lir_from_mir(expression)),
+                    guard: guard.map(lir_from_mir),
                     body: lir_from_mir(body),
                 })
                 .collect();

@@ -32,10 +32,7 @@ pub fn lir_from_mir(r#type: Type) -> LIRType {
             arguments: vec![lir_from_mir(*element)],
         },
         Type::Abstract(arguments, output) => {
-            let arguments = arguments
-                .into_iter()
-                .map(|argument| lir_from_mir(argument))
-                .collect();
+            let arguments = arguments.into_iter().map(lir_from_mir).collect();
             LIRType::Closure {
                 arguments,
                 output: Box::new(lir_from_mir(*output)),

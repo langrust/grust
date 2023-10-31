@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::r#type::Type;
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl Expression {
     /// Add a [Type] to the when expression.
@@ -12,7 +12,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // the type of a when expression is the type of both the default and
             // the present expressions
@@ -57,7 +57,7 @@ impl Expression {
                             location: location.clone(),
                         };
                         errors.push(error);
-                        Err(())
+                        Err(TerminationError)
                     }
                 }
             }

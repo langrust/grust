@@ -4,7 +4,7 @@ use crate::ast::{
     node_description::NodeDescription, stream_expression::StreamExpression, typedef::Typedef,
 };
 use crate::common::{context::Context, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 impl StreamExpression {
     /// Add a [Type] to the node application stream expression.
@@ -15,7 +15,7 @@ impl StreamExpression {
         global_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             // a node application expression type is the called signal when
             // the inputs types matches the called node inputs types
@@ -41,7 +41,7 @@ impl StreamExpression {
                         location: location.clone(),
                     };
                     errors.push(error);
-                    return Err(());
+                    return Err(TerminationError);
                 }
 
                 // check inputs and node_inputs have the same length
@@ -52,12 +52,12 @@ impl StreamExpression {
                         location: location.clone(),
                     };
                     errors.push(error);
-                    return Err(());
+                    return Err(TerminationError);
                 }
 
                 // type all inputs and check their types
                 inputs
-                    .into_iter()
+                    .iter_mut()
                     .zip(node_inputs)
                     .map(|(input, (_, expected_type))| {
                         input.typing(
@@ -70,9 +70,9 @@ impl StreamExpression {
                         let input_type = input.get_type().unwrap();
                         input_type.eq_check(expected_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), ()>>>()
+                    .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
-                    .collect::<Result<(), ()>>()?;
+                    .collect::<Result<(), TerminationError>>()?;
 
                 // get the called signal type
                 let node_application_type =

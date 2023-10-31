@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::ast::typedef::Typedef;
-use crate::common::{constant::Constant, location::Location, pattern::Pattern, r#type::Type};
-use crate::error::Error;
+use crate::ast::{pattern::Pattern, typedef::Typedef};
+use crate::common::{constant::Constant, location::Location, r#type::Type};
+use crate::error::{Error, TerminationError};
 
 mod abstraction;
 mod application;
@@ -142,7 +142,7 @@ impl Expression {
         elements_context: &HashMap<String, Type>,
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), TerminationError> {
         match self {
             Expression::Constant { .. } => self.typing_constant(),
             Expression::Call { .. } => self.typing_call(elements_context, errors),

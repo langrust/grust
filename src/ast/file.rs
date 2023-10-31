@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::{function::Function, global_context, node::Node, typedef::Typedef};
 use crate::common::{context::Context, location::Location, r#type::Type};
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 
 #[derive(Debug, PartialEq)]
 /// A LanGRust [File] is composed of functions nodes,
@@ -143,7 +143,7 @@ impl File {
     ///
     /// file.typing(&mut errors).unwrap();
     /// ```
-    pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn typing(&mut self, errors: &mut Vec<Error>) -> Result<(), TerminationError> {
         let File {
             typedefs,
             functions,
@@ -166,17 +166,17 @@ impl File {
                     errors,
                 ),
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // resolve undefined types in typedefs
         typedefs
             .iter_mut()
             .map(|user_type| user_type.resolve_undefined_types(&user_types_context, errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // recreate a user_types_context with resolved types
         let mut user_types_context = HashMap::new();
@@ -192,30 +192,30 @@ impl File {
                     errors,
                 ),
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // resolve undefined types in nodes
         nodes
             .iter_mut()
             .map(|node| node.resolve_undefined_types(&user_types_context, errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // resolve undefined types in component
         component.as_mut().map_or(Ok(()), |component| {
-            Ok(component.resolve_undefined_types(&user_types_context, errors)?)
+            component.resolve_undefined_types(&user_types_context, errors)
         })?;
 
         // resolve undefined types in functions
         functions
             .iter_mut()
             .map(|function| function.resolve_undefined_types(&user_types_context, errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // create nodes_context
         let mut nodes_context = HashMap::new();
@@ -230,9 +230,9 @@ impl File {
                     errors,
                 )
             })
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // add component to context
         component.as_ref().map_or(Ok(()), |component| {
@@ -273,30 +273,30 @@ impl File {
                     )
                 },
             )
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // typing nodes
         nodes
             .iter_mut()
             .map(|node| node.typing(&nodes_context, &global_context, &user_types_context, errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()?;
+            .collect::<Result<(), TerminationError>>()?;
 
         // typing component
         component.as_mut().map_or(Ok(()), |component| {
-            Ok(component.typing(&nodes_context, &global_context, &user_types_context, errors)?)
+            component.typing(&nodes_context, &global_context, &user_types_context, errors)
         })?;
 
         // typing functions
         functions
             .iter_mut()
             .map(|function| function.typing(&global_context, &user_types_context, errors))
-            .collect::<Vec<Result<(), ()>>>()
+            .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), ()>>()
+            .collect::<Result<(), TerminationError>>()
     }
 }
 

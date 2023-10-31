@@ -113,8 +113,8 @@ impl StreamExpression {
                         id: fresh_id.clone(),
                         scope: Scope::Local,
                     },
-                    typing: typing,
-                    location: location,
+                    typing,
+                    location,
                     dependencies: Dependencies::from(vec![(fresh_id, 0)]),
                 };
 
@@ -269,8 +269,8 @@ impl StreamExpression {
                         id: fresh_id.clone(),
                         scope: Scope::Local,
                     },
-                    typing: typing,
-                    location: location,
+                    typing,
+                    location,
                     dependencies: Dependencies::from(vec![(fresh_id, 0)]),
                 };
 

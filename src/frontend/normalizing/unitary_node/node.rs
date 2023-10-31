@@ -4,7 +4,7 @@ use crate::common::{
     graph::{color::Color, Graph},
     scope::Scope,
 };
-use crate::error::Error;
+use crate::error::{Error, TerminationError};
 use crate::hir::{memory::Memory, node::Node, unitary_node::UnitaryNode};
 
 impl Node {
@@ -15,7 +15,10 @@ impl Node {
     /// all signals from which the output computation depends.
     ///
     /// It also detects unused signal definitions or inputs.
-    pub fn generate_unitary_nodes(&mut self, errors: &mut Vec<Error>) -> Result<(), ()> {
+    pub fn generate_unitary_nodes(
+        &mut self,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), TerminationError> {
         // get outputs identifiers
         let outputs = self
             .unscheduled_equations
@@ -41,7 +44,7 @@ impl Node {
                     location: self.location.clone(),
                 };
                 errors.push(error);
-                Err(())
+                Err(TerminationError)
             })
             .collect::<Vec<_>>()
             .into_iter()
@@ -66,7 +69,7 @@ impl Node {
 
         // get useful inputs (in application order)
         let unitary_node_inputs = inputs
-            .into_iter()
+            .iter_mut()
             .filter(|(id, _)| useful_signals.contains(id))
             .map(|input| input.clone())
             .collect::<Vec<_>>();
@@ -75,7 +78,7 @@ impl Node {
         let equations = useful_signals
             .into_iter()
             .filter_map(|signal| unscheduled_equations.get(&signal))
-            .map(|equation| equation.clone())
+            .cloned()
             .collect();
 
         // construct unitary node
@@ -734,6 +737,6 @@ mod generate_unitary_nodes {
 
         node.graph.set(graph).unwrap();
 
-        node.generate_unitary_nodes(&mut errors).unwrap_err()
+        node.generate_unitary_nodes(&mut errors).unwrap_err();
     }
 }
