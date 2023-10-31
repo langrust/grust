@@ -66,11 +66,7 @@ impl ToString for BinaryOperator {
     }
 }
 impl BinaryOperator {
-    fn numerical_operator(
-        mut input_types: Vec<Type>,
-        location: Location,
-        mut errors: Vec<Error>,
-    ) -> Result<Type, ()> {
+    fn numerical_operator(mut input_types: Vec<Type>, location: Location) -> Result<Type, Error> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
@@ -79,8 +75,7 @@ impl BinaryOperator {
                     given_type: type_1,
                     location,
                 };
-                errors.push(error);
-                return Err(());
+                return Err(error);
             };
             if type_1 != type_2 {
                 let error = Error::IncompatibleType {
@@ -88,8 +83,7 @@ impl BinaryOperator {
                     expected_type: type_1,
                     location,
                 };
-                errors.push(error);
-                return Err(());
+                return Err(error);
             };
             Ok(Type::Abstract(
                 vec![type_1.clone(), type_2],
@@ -101,16 +95,11 @@ impl BinaryOperator {
                 expected_inputs_number: 2,
                 location,
             };
-            errors.push(error);
-            Err(())
+            Err(error)
         }
     }
 
-    fn numerical_comparison(
-        mut input_types: Vec<Type>,
-        location: Location,
-        mut errors: Vec<Error>,
-    ) -> Result<Type, ()> {
+    fn numerical_comparison(mut input_types: Vec<Type>, location: Location) -> Result<Type, Error> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
@@ -119,8 +108,7 @@ impl BinaryOperator {
                     given_type: type_1,
                     location,
                 };
-                errors.push(error);
-                return Err(());
+                return Err(error);
             };
             if type_1 != type_2 {
                 let error = Error::IncompatibleType {
@@ -128,8 +116,7 @@ impl BinaryOperator {
                     expected_type: type_1,
                     location,
                 };
-                errors.push(error);
-                return Err(());
+                return Err(error);
             };
             Ok(Type::Abstract(
                 vec![type_1, type_2],
@@ -141,16 +128,11 @@ impl BinaryOperator {
                 expected_inputs_number: 2,
                 location,
             };
-            errors.push(error);
-            Err(())
+            Err(error)
         }
     }
 
-    fn equality(
-        mut input_types: Vec<Type>,
-        location: Location,
-        mut errors: Vec<Error>,
-    ) -> Result<Type, ()> {
+    fn equality(mut input_types: Vec<Type>, location: Location) -> Result<Type, Error> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
@@ -165,8 +147,7 @@ impl BinaryOperator {
                     expected_type: type_1,
                     location,
                 };
-                errors.push(error);
-                Err(())
+                Err(error)
             }
         } else {
             let error = Error::IncompatibleInputsNumber {
@@ -174,8 +155,7 @@ impl BinaryOperator {
                 expected_inputs_number: 2,
                 location,
             };
-            errors.push(error);
-            Err(())
+            Err(error)
         }
     }
 
@@ -244,11 +224,7 @@ impl ToString for UnaryOperator {
     }
 }
 impl UnaryOperator {
-    fn numerical_negation(
-        mut input_types: Vec<Type>,
-        location: Location,
-        mut errors: Vec<Error>,
-    ) -> Result<Type, ()> {
+    fn numerical_negation(mut input_types: Vec<Type>, location: Location) -> Result<Type, Error> {
         if input_types.len() == 1 {
             let type_1 = input_types.pop().unwrap();
             if type_1 == Type::Float || type_1 == Type::Integer {
@@ -258,8 +234,7 @@ impl UnaryOperator {
                     given_type: type_1,
                     location,
                 };
-                errors.push(error);
-                Err(())
+                Err(error)
             }
         } else {
             let error = Error::IncompatibleInputsNumber {
@@ -267,16 +242,11 @@ impl UnaryOperator {
                 expected_inputs_number: 2,
                 location,
             };
-            errors.push(error);
-            Err(())
+            Err(error)
         }
     }
 
-    fn brackets(
-        mut input_types: Vec<Type>,
-        location: Location,
-        mut errors: Vec<Error>,
-    ) -> Result<Type, ()> {
+    fn brackets(mut input_types: Vec<Type>, location: Location) -> Result<Type, Error> {
         if input_types.len() == 1 {
             let type_1 = input_types.pop().unwrap();
             Ok(Type::Abstract(vec![type_1.clone()], Box::new(type_1)))
@@ -286,8 +256,7 @@ impl UnaryOperator {
                 expected_inputs_number: 2,
                 location,
             };
-            errors.push(error);
-            Err(())
+            Err(error)
         }
     }
 
@@ -336,11 +305,7 @@ impl ToString for OtherOperator {
     }
 }
 impl OtherOperator {
-    fn if_then_else(
-        mut input_types: Vec<Type>,
-        location: Location,
-        mut errors: Vec<Error>,
-    ) -> Result<Type, ()> {
+    fn if_then_else(mut input_types: Vec<Type>, location: Location) -> Result<Type, Error> {
         if input_types.len() == 3 {
             let type_3 = input_types.pop().unwrap();
             let type_2 = input_types.pop().unwrap();
@@ -351,8 +316,7 @@ impl OtherOperator {
                     expected_type: Type::Boolean,
                     location,
                 };
-                errors.push(error);
-                return Err(());
+                return Err(error);
             };
             if type_2 != type_3 {
                 let error = Error::IncompatibleType {
@@ -360,8 +324,7 @@ impl OtherOperator {
                     expected_type: type_2,
                     location,
                 };
-                errors.push(error);
-                return Err(());
+                return Err(error);
             };
             Ok(Type::Abstract(
                 vec![type_1, type_2.clone(), type_3],
@@ -373,8 +336,7 @@ impl OtherOperator {
                 expected_inputs_number: 2,
                 location,
             };
-            errors.push(error);
-            Err(())
+            Err(error)
         }
     }
 
