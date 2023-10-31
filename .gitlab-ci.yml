@@ -114,12 +114,11 @@ test:cargo:
       allow_failure: true
   script:
     - rustc --version && cargo --version
-    - cargo test -- --format=json -Z unstable-options --report-time | junitify
-      --out $CI_PROJECT_DIR/tests/
+    - cargo nextest run --profile ci
   artifacts:
     when: always
     reports:
-      junit: $CI_PROJECT_DIR/tests/*.xml
+      junit: $CI_PROJECT_DIR/target/nextest/ci/*.xml
 
 build:cargo:
   needs: []
