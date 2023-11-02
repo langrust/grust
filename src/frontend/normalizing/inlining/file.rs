@@ -99,7 +99,6 @@ impl File {
 
 #[cfg(test)]
 mod inline_when_needed_visit {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::graph::color::Color;
@@ -107,7 +106,8 @@ mod inline_when_needed_visit {
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, file::File, memory::Memory, node::Node,
-        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
 
@@ -1030,7 +1030,6 @@ mod inline_when_needed_visit {
 
 #[cfg(test)]
 mod inline_when_needed {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::graph::color::Color;
@@ -1038,7 +1037,8 @@ mod inline_when_needed {
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, file::File, memory::Memory, node::Node,
-        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
 

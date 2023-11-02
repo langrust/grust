@@ -1,4 +1,4 @@
-use once_cell::sync::OnceCell;
+use super::once_cell::OnceCell;
 
 /// Dependencies structure.
 ///

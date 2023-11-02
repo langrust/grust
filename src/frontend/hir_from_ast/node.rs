@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 
-use once_cell::sync::OnceCell;
-
 use crate::ast::equation::Equation;
 use crate::ast::node::Node;
 use crate::common::scope::Scope;
 use crate::frontend::hir_from_ast::equation::hir_from_ast as equation_hir_from_ast;
-use crate::hir::node::Node as HIRNode;
+use crate::hir::{node::Node as HIRNode, once_cell::OnceCell};
 
 /// Transform AST nodes into HIR nodes.
 pub fn hir_from_ast(node: Node) -> HIRNode {
@@ -44,7 +42,7 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
 
 #[cfg(test)]
 mod hir_from_ast {
-    use once_cell::sync::OnceCell;
+
     use std::collections::HashMap;
 
     use crate::ast::{
@@ -54,7 +52,8 @@ mod hir_from_ast {
     use crate::frontend::hir_from_ast::node::hir_from_ast;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation as HIREquation, node::Node as HIRNode,
-        signal::Signal, stream_expression::StreamExpression as HIRStreamExpression,
+        once_cell::OnceCell, signal::Signal,
+        stream_expression::StreamExpression as HIRStreamExpression,
     };
 
     #[test]

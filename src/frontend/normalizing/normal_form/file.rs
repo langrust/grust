@@ -59,15 +59,14 @@ impl File {
 
 #[cfg(test)]
 mod normal_form {
-    use once_cell::sync::OnceCell;
-
     use crate::ast::{expression::Expression, function::Function, statement::Statement};
     use crate::common::graph::color::Color;
     use crate::common::graph::Graph;
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, file::File, memory::Memory, node::Node,
-        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
 

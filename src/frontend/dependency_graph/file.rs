@@ -75,7 +75,6 @@ impl File {
 
 #[cfg(test)]
 mod generate_dependency_graphs {
-    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::ast::{expression::Expression, function::Function, statement::Statement};
@@ -86,8 +85,8 @@ mod generate_dependency_graphs {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, file::File, node::Node, signal::Signal,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, file::File, node::Node,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
     };
 
     #[test]

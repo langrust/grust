@@ -1307,7 +1307,6 @@ mod replace_by_context {
 
 #[cfg(test)]
 mod inline_when_needed {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::graph::color::Color;
@@ -1315,8 +1314,9 @@ mod inline_when_needed {
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::identifier_creator::IdentifierCreator;
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
 

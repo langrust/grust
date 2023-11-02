@@ -403,8 +403,6 @@ mod get_state_elements {
 mod mir_from_hir {
     use std::collections::HashMap;
 
-    use once_cell::sync::OnceCell;
-
     use crate::{
         ast::expression::Expression as ASTExpression,
         common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
@@ -413,6 +411,7 @@ mod mir_from_hir {
             dependencies::Dependencies,
             equation::Equation,
             memory::{Buffer, CalledNode, Memory},
+            once_cell::OnceCell,
             signal::Signal,
             stream_expression::StreamExpression,
             unitary_node::UnitaryNode,

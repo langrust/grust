@@ -165,14 +165,14 @@ impl File {
 
 #[cfg(test)]
 mod normalize {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::graph::{color::Color, Graph};
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, file::File, memory::Memory, node::Node,
-        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
 

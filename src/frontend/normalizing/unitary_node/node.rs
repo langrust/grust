@@ -1,11 +1,9 @@
-use once_cell::sync::OnceCell;
-
 use crate::common::{
     graph::{color::Color, Graph},
     scope::Scope,
 };
 use crate::error::{Error, TerminationError};
-use crate::hir::{memory::Memory, node::Node, unitary_node::UnitaryNode};
+use crate::hir::{memory::Memory, node::Node, once_cell::OnceCell, unitary_node::UnitaryNode};
 
 impl Node {
     /// Generate unitary nodes from mother node.
@@ -101,11 +99,10 @@ impl Node {
 
 #[cfg(test)]
 mod add_unitary_node {
-    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::hir::{
-        equation::Equation, memory::Memory, node::Node, signal::Signal,
+        equation::Equation, memory::Memory, node::Node, once_cell::OnceCell, signal::Signal,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
     use crate::{
@@ -327,10 +324,9 @@ mod add_unitary_node {
 
 #[cfg(test)]
 mod generate_unitary_nodes {
-    use once_cell::sync::OnceCell;
 
     use crate::hir::{
-        equation::Equation, memory::Memory, node::Node, signal::Signal,
+        equation::Equation, memory::Memory, node::Node, once_cell::OnceCell, signal::Signal,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
     use crate::{

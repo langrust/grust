@@ -1,13 +1,11 @@
 use std::collections::HashMap;
 
-use once_cell::sync::OnceCell;
-
 use crate::common::{
     graph::{color::Color, Graph},
     location::Location,
     r#type::Type,
 };
-use crate::hir::{equation::Equation, unitary_node::UnitaryNode};
+use crate::hir::{equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust node HIR.
@@ -53,12 +51,11 @@ impl Node {
 mod eq_unscheduled {
     use std::collections::HashMap;
 
-    use once_cell::sync::OnceCell;
-
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
 
     #[test]

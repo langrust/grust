@@ -49,15 +49,13 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod schedule {
-    use once_cell::sync::OnceCell;
-
     use crate::ast::expression::Expression;
     use crate::common::graph::color::Color;
     use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
     #[test]

@@ -458,15 +458,13 @@ mod replace_by_context {
 
 #[cfg(test)]
 mod inline_when_needed {
-    use once_cell::sync::OnceCell;
-
     use crate::ast::expression::Expression;
     use crate::common::graph::color::Color;
     use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::identifier_creator::IdentifierCreator;
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node, signal::Signal,
+        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+        memory::Memory, node::Node, once_cell::OnceCell, signal::Signal,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;
@@ -1647,15 +1645,14 @@ mod inline_when_needed {
 
 #[cfg(test)]
 mod inline_when_needed_reccursive {
-    use once_cell::sync::OnceCell;
-
     use crate::ast::expression::Expression;
     use crate::common::graph::color::Color;
     use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::identifier_creator::IdentifierCreator;
+
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node, signal::Signal,
+        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+        memory::Memory, node::Node, once_cell::OnceCell, signal::Signal,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
     use std::collections::HashMap;

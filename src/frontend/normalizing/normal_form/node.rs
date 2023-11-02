@@ -49,14 +49,14 @@ impl Node {
 
 #[cfg(test)]
 mod normal_form {
-    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     };
 
     #[test]

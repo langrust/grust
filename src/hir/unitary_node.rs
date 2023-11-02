@@ -1,11 +1,11 @@
-use once_cell::sync::OnceCell;
-
 use crate::common::{
     graph::{color::Color, Graph},
     location::Location,
     r#type::Type,
 };
-use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory};
+use crate::hir::{
+    equation::Equation, identifier_creator::IdentifierCreator, memory::Memory, once_cell::OnceCell,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust unitary node HIR.
@@ -103,13 +103,12 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod get_signals {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
     #[test]
@@ -187,12 +186,11 @@ mod get_signals {
 
 #[cfg(test)]
 mod eq_unscheduled {
-    use once_cell::sync::OnceCell;
 
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
     #[test]
@@ -434,13 +432,12 @@ mod eq_unscheduled {
 
 #[cfg(test)]
 mod memorize {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
     #[test]

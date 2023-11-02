@@ -76,7 +76,6 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod instantiate_equations {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
@@ -84,7 +83,7 @@ mod instantiate_equations {
     use crate::hir::unitary_node::UnitaryNode;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        signal::Signal, stream_expression::StreamExpression,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
     };
 
     #[test]

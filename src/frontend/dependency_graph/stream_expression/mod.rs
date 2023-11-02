@@ -90,15 +90,14 @@ impl StreamExpression {
 
 #[cfg(test)]
 mod compute_dependencies {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::{
         constant::Constant, location::Location, pattern::Pattern, r#type::Type, scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression,
     };
     use std::collections::HashMap;
 
