@@ -55,32 +55,36 @@ impl serde::Serialize for Type {
         S: serde::Serializer,
     {
         match self {
-            Type::Integer => serializer.serialize_unit_struct("Integer"),
-            Type::Float => serializer.serialize_unit_struct("Float"),
-            Type::Boolean => serializer.serialize_unit_struct("Boolean"),
-            Type::String => serializer.serialize_unit_struct("String"),
-            Type::Unit => serializer.serialize_unit_struct("Unit"),
+            Type::Integer => serializer.serialize_unit_variant("Type", 0, "Integer"),
+            Type::Float => serializer.serialize_unit_variant("Type", 1, "Float"),
+            Type::Boolean => serializer.serialize_unit_variant("Type", 2, "Boolean"),
+            Type::String => serializer.serialize_unit_variant("Type", 3, "String"),
+            Type::Unit => serializer.serialize_unit_variant("Type", 4, "Unit"),
             Type::Array(element_type, size) => {
-                let mut s = serializer.serialize_tuple_struct("Array", 2)?;
-                serde::ser::SerializeTupleStruct::serialize_field(&mut s, element_type)?;
-                serde::ser::SerializeTupleStruct::serialize_field(&mut s, size)?;
-                serde::ser::SerializeTupleStruct::end(s)
+                let mut s = serializer.serialize_tuple_variant("Type", 5, "Array", 2)?;
+                serde::ser::SerializeTupleVariant::serialize_field(&mut s, element_type)?;
+                serde::ser::SerializeTupleVariant::serialize_field(&mut s, size)?;
+                serde::ser::SerializeTupleVariant::end(s)
             }
-            Type::Option(option_type) => serializer.serialize_newtype_struct("Option", option_type),
+            Type::Option(option_type) => {
+                serializer.serialize_newtype_variant("Type", 6, "Option", option_type)
+            }
             Type::Enumeration(enumeration_name) => {
-                serializer.serialize_newtype_struct("Enumeration", enumeration_name)
+                serializer.serialize_newtype_variant("Type", 7, "Enumeration", enumeration_name)
             }
             Type::Structure(structure_name) => {
-                serializer.serialize_newtype_struct("Structure", structure_name)
+                serializer.serialize_newtype_variant("Type", 8, "Structure", structure_name)
             }
-            Type::NotDefinedYet(name) => serializer.serialize_newtype_struct("NotDefinedYet", name),
+            Type::NotDefinedYet(name) => {
+                serializer.serialize_newtype_variant("Type", 9, "NotDefinedYet", name)
+            }
             Type::Abstract(inputs_types, returned_type) => {
-                let mut s = serializer.serialize_tuple_struct("Abstract", 2)?;
-                serde::ser::SerializeTupleStruct::serialize_field(&mut s, inputs_types)?;
-                serde::ser::SerializeTupleStruct::serialize_field(&mut s, returned_type)?;
-                serde::ser::SerializeTupleStruct::end(s)
+                let mut s = serializer.serialize_tuple_variant("Type", 10, "Abstract", 2)?;
+                serde::ser::SerializeTupleVariant::serialize_field(&mut s, inputs_types)?;
+                serde::ser::SerializeTupleVariant::serialize_field(&mut s, returned_type)?;
+                serde::ser::SerializeTupleVariant::end(s)
             }
-            Type::Polymorphism(_) => serializer.serialize_unit_struct("Polymorphism"),
+            Type::Polymorphism(_) => serializer.serialize_unit_variant("Type", 11, "Polymorphism"),
         }
     }
 }
