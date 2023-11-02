@@ -4,7 +4,7 @@ use crate::common::context::Context;
 use crate::common::{location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust user defined type AST.
 pub enum Typedef {
     /// Represents a structure definition.

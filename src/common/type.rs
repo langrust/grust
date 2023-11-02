@@ -49,6 +49,41 @@ pub enum Type {
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Type -> t -> 't -> 't`
     Polymorphism(fn(Vec<Type>, Location) -> Result<Type, Error>),
 }
+impl serde::Serialize for Type {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Type::Integer => serializer.serialize_unit_struct("Integer"),
+            Type::Float => serializer.serialize_unit_struct("Float"),
+            Type::Boolean => serializer.serialize_unit_struct("Boolean"),
+            Type::String => serializer.serialize_unit_struct("String"),
+            Type::Unit => serializer.serialize_unit_struct("Unit"),
+            Type::Array(element_type, size) => {
+                let mut s = serializer.serialize_tuple_struct("Array", 2)?;
+                serde::ser::SerializeTupleStruct::serialize_field(&mut s, element_type)?;
+                serde::ser::SerializeTupleStruct::serialize_field(&mut s, size)?;
+                serde::ser::SerializeTupleStruct::end(s)
+            }
+            Type::Option(option_type) => serializer.serialize_newtype_struct("Option", option_type),
+            Type::Enumeration(enumeration_name) => {
+                serializer.serialize_newtype_struct("Enumeration", enumeration_name)
+            }
+            Type::Structure(structure_name) => {
+                serializer.serialize_newtype_struct("Structure", structure_name)
+            }
+            Type::NotDefinedYet(name) => serializer.serialize_newtype_struct("NotDefinedYet", name),
+            Type::Abstract(inputs_types, returned_type) => {
+                let mut s = serializer.serialize_tuple_struct("Abstract", 2)?;
+                serde::ser::SerializeTupleStruct::serialize_field(&mut s, inputs_types)?;
+                serde::ser::SerializeTupleStruct::serialize_field(&mut s, returned_type)?;
+                serde::ser::SerializeTupleStruct::end(s)
+            }
+            Type::Polymorphism(_) => serializer.serialize_unit_struct("Polymorphism"),
+        }
+    }
+}
 impl Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

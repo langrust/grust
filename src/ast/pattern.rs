@@ -6,7 +6,7 @@ use crate::error::{Error, TerminationError};
 
 use std::fmt::{self, Display};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust matching pattern AST.
 pub enum Pattern {
     /// Identifier pattern, gives a name to the matching expression.

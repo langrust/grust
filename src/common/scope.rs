@@ -49,7 +49,7 @@ use std::fmt::{self, Display};
 /// mem some_signal: int = 0 fby x_0;
 /// ```
 /// as it represents the initialized memory of the normalized signal `x_0`.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub enum Scope {
     /// input of the node/component
     Input,

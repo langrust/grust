@@ -13,7 +13,7 @@ mod r#match;
 mod structure;
 mod when;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust expression AST.
 pub enum Expression {
     /// Constant expression.

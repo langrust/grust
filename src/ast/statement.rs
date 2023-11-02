@@ -4,7 +4,7 @@ use crate::ast::{expression::Expression, typedef::Typedef};
 use crate::common::{location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust statement AST.
 pub struct Statement {
     /// Identifier of the new element.
