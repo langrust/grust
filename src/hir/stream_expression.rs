@@ -6,7 +6,7 @@ use crate::hir::{
     memory::Memory, signal::Signal,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust stream expression HIR.
 pub enum StreamExpression {
     /// Constant stream expression.

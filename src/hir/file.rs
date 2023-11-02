@@ -3,7 +3,7 @@ use crate::ast::typedef::Typedef;
 use crate::common::location::Location;
 use crate::hir::node::Node;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 /// A LanGRust [File] is composed of functions nodes,
 /// types defined by the user and an optional component.
 pub struct File {

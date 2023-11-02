@@ -3,7 +3,7 @@ use crate::hir::{
     identifier_creator::IdentifierCreator, memory::Memory, stream_expression::StreamExpression,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust equation HIR.
 pub struct Equation {
     /// Signal's scope.

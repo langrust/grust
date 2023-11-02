@@ -17,7 +17,7 @@ use crate::common::graph::{color::Color, vertex::Vertex};
 use self::neighbor::Neighbor;
 
 /// Graph structure.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Graph<T> {
     /// Graph's vertices.
     vertices: HashMap<String, Vertex<T>>,
