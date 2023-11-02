@@ -45,11 +45,11 @@ impl IdentifierCreator {
     /// This example is tested in the following code.
     ///
     /// ```rust
-    /// use once_cell::sync::OnceCell;
     /// use grustine::common::{location::Location, scope::Scope, r#type::Type};
     /// use grustine::hir::{
     ///     dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-    ///     memory::Memory, signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    ///     memory::Memory, once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+    ///     unitary_node::UnitaryNode,
     /// };
     ///
     /// let unitary_node = UnitaryNode {
@@ -120,12 +120,10 @@ impl IdentifierCreator {
 mod from {
     use std::collections::HashSet;
 
-    use once_cell::sync::OnceCell;
-
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        memory::Memory, signal::Signal, stream_expression::StreamExpression,
+        memory::Memory, once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
     };
 
@@ -182,12 +180,10 @@ mod from {
 
 #[cfg(test)]
 mod new_identifier {
-    use once_cell::sync::OnceCell;
-
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        memory::Memory, signal::Signal, stream_expression::StreamExpression,
+        memory::Memory, once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
         unitary_node::UnitaryNode,
     };
 

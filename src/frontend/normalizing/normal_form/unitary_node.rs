@@ -39,13 +39,12 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod normal_form {
-    use once_cell::sync::OnceCell;
 
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
     #[test]

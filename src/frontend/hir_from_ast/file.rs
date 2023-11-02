@@ -23,7 +23,7 @@ pub fn hir_from_ast(file: File) -> HIRFile {
 
 #[cfg(test)]
 mod hir_from_ast {
-    use once_cell::sync::OnceCell;
+
     use std::collections::HashMap;
 
     use crate::ast::{
@@ -34,7 +34,7 @@ mod hir_from_ast {
     use crate::frontend::hir_from_ast::file::hir_from_ast;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation as HIREquation, file::File as HIRFile,
-        node::Node as HIRNode, signal::Signal,
+        node::Node as HIRNode, once_cell::OnceCell, signal::Signal,
         stream_expression::StreamExpression as HIRStreamExpression,
     };
 

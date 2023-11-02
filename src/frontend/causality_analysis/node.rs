@@ -58,7 +58,6 @@ impl Node {
 
 #[cfg(test)]
 mod causal {
-    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::common::{
@@ -69,8 +68,8 @@ mod causal {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression,
     };
 
     #[test]

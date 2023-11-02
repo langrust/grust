@@ -37,8 +37,6 @@ impl File {
 mod schedule {
     use std::collections::HashMap;
 
-    use once_cell::sync::OnceCell;
-
     use crate::ast::expression::Expression;
     use crate::common::graph::color::Color;
     use crate::common::graph::Graph;
@@ -46,8 +44,8 @@ mod schedule {
     use crate::hir::file::File;
     use crate::hir::node::Node;
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
 
     #[test]

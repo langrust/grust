@@ -283,7 +283,6 @@ impl Node {
 #[cfg(test)]
 mod create_initialized_graph {
 
-    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::common::{
@@ -293,8 +292,8 @@ mod create_initialized_graph {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression,
     };
 
     #[test]
@@ -359,7 +358,7 @@ mod create_initialized_graph {
 
 #[cfg(test)]
 mod add_all_dependencies {
-    use once_cell::sync::OnceCell;
+
     use std::collections::HashMap;
 
     use crate::common::{
@@ -369,8 +368,8 @@ mod add_all_dependencies {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression,
     };
 
     #[test]
@@ -456,7 +455,7 @@ mod add_all_dependencies {
 
 #[cfg(test)]
 mod add_signal_dependencies {
-    use once_cell::sync::OnceCell;
+
     use std::collections::HashMap;
 
     use crate::common::{
@@ -466,8 +465,8 @@ mod add_signal_dependencies {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression,
     };
 
     #[test]
@@ -554,7 +553,6 @@ mod add_signal_dependencies {
 #[cfg(test)]
 mod add_signal_inputs_dependencies {
 
-    use once_cell::sync::OnceCell;
     use std::collections::HashMap;
 
     use crate::common::{
@@ -564,8 +562,8 @@ mod add_signal_inputs_dependencies {
         scope::Scope,
     };
     use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, signal::Signal,
-        stream_expression::StreamExpression,
+        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression,
     };
 
     #[test]
