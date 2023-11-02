@@ -1,0 +1,354 @@
+---
+source: tests/typing.rs
+expression: file
+---
+typedefs: []
+functions: []
+nodes:
+  - id: counter
+    is_component: false
+    inputs:
+      - - res
+        - Boolean
+      - - tick
+        - Boolean
+    equations:
+      - - o
+        - scope: Output
+          id: o
+          signal_type: Integer
+          expression:
+            MapApplication:
+              function_expression:
+                Call:
+                  id: if_then_else
+                  typing:
+                    Abstract:
+                      - - Boolean
+                        - Integer
+                        - Integer
+                      - Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 55
+                      end: 89
+              inputs:
+                - SignalCall:
+                    id: res
+                    typing: Boolean
+                    location:
+                      file_id: 0
+                      range:
+                        start: 58
+                        end: 61
+                - Constant:
+                    constant:
+                      Integer: 0
+                    typing: Integer
+                    location:
+                      file_id: 0
+                      range:
+                        start: 67
+                        end: 68
+                - MapApplication:
+                    function_expression:
+                      Call:
+                        id: " + "
+                        typing:
+                          Abstract:
+                            - - Integer
+                              - Integer
+                            - Integer
+                        location:
+                          file_id: 0
+                          range:
+                            start: 84
+                            end: 85
+                    inputs:
+                      - MapApplication:
+                          function_expression:
+                            Call:
+                              id: (_)
+                              typing:
+                                Abstract:
+                                  - - Integer
+                                  - Integer
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 74
+                                  end: 83
+                          inputs:
+                            - FollowedBy:
+                                constant:
+                                  Integer: 0
+                                expression:
+                                  SignalCall:
+                                    id: o
+                                    typing: Integer
+                                    location:
+                                      file_id: 0
+                                      range:
+                                        start: 81
+                                        end: 82
+                                typing: Integer
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 75
+                                    end: 82
+                          typing: Integer
+                          location:
+                            file_id: 0
+                            range:
+                              start: 74
+                              end: 83
+                      - SignalCall:
+                          id: inc
+                          typing: Integer
+                          location:
+                            file_id: 0
+                            range:
+                              start: 86
+                              end: 89
+                    typing: Integer
+                    location:
+                      file_id: 0
+                      range:
+                        start: 74
+                        end: 89
+              typing: Integer
+              location:
+                file_id: 0
+                range:
+                  start: 55
+                  end: 89
+          location:
+            file_id: 0
+            range:
+              start: 42
+              end: 90
+      - - inc
+        - scope: Local
+          id: inc
+          signal_type: Integer
+          expression:
+            MapApplication:
+              function_expression:
+                Call:
+                  id: if_then_else
+                  typing:
+                    Abstract:
+                      - - Boolean
+                        - Integer
+                        - Integer
+                      - Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 106
+                      end: 127
+              inputs:
+                - SignalCall:
+                    id: tick
+                    typing: Boolean
+                    location:
+                      file_id: 0
+                      range:
+                        start: 109
+                        end: 113
+                - Constant:
+                    constant:
+                      Integer: 1
+                    typing: Integer
+                    location:
+                      file_id: 0
+                      range:
+                        start: 119
+                        end: 120
+                - Constant:
+                    constant:
+                      Integer: 0
+                    typing: Integer
+                    location:
+                      file_id: 0
+                      range:
+                        start: 126
+                        end: 127
+              typing: Integer
+              location:
+                file_id: 0
+                range:
+                  start: 106
+                  end: 127
+          location:
+            file_id: 0
+            range:
+              start: 95
+              end: 128
+    location:
+      file_id: 0
+      range:
+        start: 0
+        end: 130
+component:
+  id: main
+  is_component: true
+  inputs: []
+  equations:
+    - - y
+      - scope: Output
+        id: y
+        signal_type: Integer
+        expression:
+          NodeApplication:
+            node: counter
+            inputs:
+              - FollowedBy:
+                  constant:
+                    Boolean: false
+                  expression:
+                    MapApplication:
+                      function_expression:
+                        Call:
+                          id: (_)
+                          typing:
+                            Abstract:
+                              - - Boolean
+                              - Boolean
+                          location:
+                            file_id: 0
+                            range:
+                              start: 186
+                              end: 194
+                      inputs:
+                        - MapApplication:
+                            function_expression:
+                              Call:
+                                id: " > "
+                                typing:
+                                  Abstract:
+                                    - - Integer
+                                      - Integer
+                                    - Boolean
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 189
+                                    end: 190
+                            inputs:
+                              - SignalCall:
+                                  id: y
+                                  typing: Integer
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 187
+                                      end: 188
+                              - Constant:
+                                  constant:
+                                    Integer: 35
+                                  typing: Integer
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 191
+                                      end: 193
+                            typing: Boolean
+                            location:
+                              file_id: 0
+                              range:
+                                start: 187
+                                end: 193
+                      typing: Boolean
+                      location:
+                        file_id: 0
+                        range:
+                          start: 186
+                          end: 194
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 176
+                      end: 194
+              - SignalCall:
+                  id: half
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 196
+                      end: 200
+            signal: o
+            typing: Integer
+            location:
+              file_id: 0
+              range:
+                start: 168
+                end: 203
+        location:
+          file_id: 0
+          range:
+            start: 155
+            end: 204
+    - - half
+      - scope: Local
+        id: half
+        signal_type: Boolean
+        expression:
+          FollowedBy:
+            constant:
+              Boolean: true
+            expression:
+              MapApplication:
+                function_expression:
+                  Call:
+                    id: "!"
+                    typing:
+                      Abstract:
+                        - - Boolean
+                        - Boolean
+                    location:
+                      file_id: 0
+                      range:
+                        start: 231
+                        end: 232
+                inputs:
+                  - SignalCall:
+                      id: half
+                      typing: Boolean
+                      location:
+                        file_id: 0
+                        range:
+                          start: 232
+                          end: 236
+                typing: Boolean
+                location:
+                  file_id: 0
+                  range:
+                    start: 231
+                    end: 236
+            typing: Boolean
+            location:
+              file_id: 0
+              range:
+                start: 222
+                end: 236
+        location:
+          file_id: 0
+          range:
+            start: 209
+            end: 237
+  location:
+    file_id: 0
+    range:
+      start: 132
+      end: 239
+location:
+  file_id: 0
+  range:
+    start: 0
+    end: 239
+
