@@ -64,3 +64,8 @@ where
         self.get().serialize(serializer)
     }
 }
+impl<T> Default for OnceCell<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
