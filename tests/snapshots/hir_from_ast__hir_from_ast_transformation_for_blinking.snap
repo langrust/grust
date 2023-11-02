@@ -13,6 +13,70 @@ nodes:
       - - tick
         - Boolean
     unscheduled_equations:
+      inc:
+        scope: Local
+        id: inc
+        signal_type: Integer
+        expression:
+          MapApplication:
+            function_expression:
+              Call:
+                id: if_then_else
+                typing:
+                  Abstract:
+                    - - Boolean
+                      - Integer
+                      - Integer
+                    - Integer
+                location:
+                  file_id: 0
+                  range:
+                    start: 106
+                    end: 127
+            inputs:
+              - SignalCall:
+                  signal:
+                    id: tick
+                    scope: Input
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 109
+                      end: 113
+                  dependencies: ~
+              - Constant:
+                  constant:
+                    Integer: 1
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 119
+                      end: 120
+                  dependencies: ~
+              - Constant:
+                  constant:
+                    Integer: 0
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 126
+                      end: 127
+                  dependencies: ~
+            typing: Integer
+            location:
+              file_id: 0
+              range:
+                start: 106
+                end: 127
+            dependencies: ~
+        location:
+          file_id: 0
+          range:
+            start: 95
+            end: 128
       o:
         scope: Output
         id: o
@@ -143,70 +207,6 @@ nodes:
           range:
             start: 42
             end: 90
-      inc:
-        scope: Local
-        id: inc
-        signal_type: Integer
-        expression:
-          MapApplication:
-            function_expression:
-              Call:
-                id: if_then_else
-                typing:
-                  Abstract:
-                    - - Boolean
-                      - Integer
-                      - Integer
-                    - Integer
-                location:
-                  file_id: 0
-                  range:
-                    start: 106
-                    end: 127
-            inputs:
-              - SignalCall:
-                  signal:
-                    id: tick
-                    scope: Input
-                  typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 109
-                      end: 113
-                  dependencies: ~
-              - Constant:
-                  constant:
-                    Integer: 1
-                  typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 119
-                      end: 120
-                  dependencies: ~
-              - Constant:
-                  constant:
-                    Integer: 0
-                  typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 126
-                      end: 127
-                  dependencies: ~
-            typing: Integer
-            location:
-              file_id: 0
-              range:
-                start: 106
-                end: 127
-            dependencies: ~
-        location:
-          file_id: 0
-          range:
-            start: 95
-            end: 128
     unitary_nodes: {}
     location:
       file_id: 0
@@ -262,103 +262,6 @@ nodes:
           range:
             start: 227
             end: 263
-      status:
-        scope: Output
-        id: status
-        signal_type: Integer
-        expression:
-          MapApplication:
-            function_expression:
-              Call:
-                id: if_then_else
-                typing:
-                  Abstract:
-                    - - Boolean
-                      - Integer
-                      - Integer
-                    - Integer
-                location:
-                  file_id: 0
-                  range:
-                    start: 188
-                    end: 221
-            inputs:
-              - SignalCall:
-                  signal:
-                    id: on_off
-                    scope: Local
-                  typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 191
-                      end: 197
-                  dependencies: ~
-              - MapApplication:
-                  function_expression:
-                    Call:
-                      id: " + "
-                      typing:
-                        Abstract:
-                          - - Integer
-                            - Integer
-                          - Integer
-                      location:
-                        file_id: 0
-                        range:
-                          start: 211
-                          end: 212
-                  inputs:
-                    - SignalCall:
-                        signal:
-                          id: counter
-                          scope: Local
-                        typing: Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 203
-                            end: 210
-                        dependencies: ~
-                    - Constant:
-                        constant:
-                          Integer: 1
-                        typing: Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 213
-                            end: 214
-                        dependencies: ~
-                  typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 203
-                      end: 214
-                  dependencies: ~
-              - Constant:
-                  constant:
-                    Integer: 0
-                  typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 220
-                      end: 221
-                  dependencies: ~
-            typing: Integer
-            location:
-              file_id: 0
-              range:
-                start: 188
-                end: 221
-            dependencies: ~
-        location:
-          file_id: 0
-          range:
-            start: 170
-            end: 222
       on_off:
         scope: Local
         id: on_off
@@ -613,6 +516,103 @@ nodes:
           range:
             start: 268
             end: 318
+      status:
+        scope: Output
+        id: status
+        signal_type: Integer
+        expression:
+          MapApplication:
+            function_expression:
+              Call:
+                id: if_then_else
+                typing:
+                  Abstract:
+                    - - Boolean
+                      - Integer
+                      - Integer
+                    - Integer
+                location:
+                  file_id: 0
+                  range:
+                    start: 188
+                    end: 221
+            inputs:
+              - SignalCall:
+                  signal:
+                    id: on_off
+                    scope: Local
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 191
+                      end: 197
+                  dependencies: ~
+              - MapApplication:
+                  function_expression:
+                    Call:
+                      id: " + "
+                      typing:
+                        Abstract:
+                          - - Integer
+                            - Integer
+                          - Integer
+                      location:
+                        file_id: 0
+                        range:
+                          start: 211
+                          end: 212
+                  inputs:
+                    - SignalCall:
+                        signal:
+                          id: counter
+                          scope: Local
+                        typing: Integer
+                        location:
+                          file_id: 0
+                          range:
+                            start: 203
+                            end: 210
+                        dependencies: ~
+                    - Constant:
+                        constant:
+                          Integer: 1
+                        typing: Integer
+                        location:
+                          file_id: 0
+                          range:
+                            start: 213
+                            end: 214
+                        dependencies: ~
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 203
+                      end: 214
+                  dependencies: ~
+              - Constant:
+                  constant:
+                    Integer: 0
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 220
+                      end: 221
+                  dependencies: ~
+            typing: Integer
+            location:
+              file_id: 0
+              range:
+                start: 188
+                end: 221
+            dependencies: ~
+        location:
+          file_id: 0
+          range:
+            start: 170
+            end: 222
     unitary_nodes: {}
     location:
       file_id: 0

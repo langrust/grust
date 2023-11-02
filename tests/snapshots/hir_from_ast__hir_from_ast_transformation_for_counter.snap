@@ -1,6 +1,5 @@
 ---
 source: tests/hir_from_ast.rs
-assertion_line: 24
 expression: file
 ---
 typedefs: []
@@ -220,6 +219,59 @@ component:
   is_component: true
   inputs: []
   unscheduled_equations:
+    half:
+      scope: Local
+      id: half
+      signal_type: Boolean
+      expression:
+        FollowedBy:
+          constant:
+            Boolean: true
+          expression:
+            MapApplication:
+              function_expression:
+                Call:
+                  id: "!"
+                  typing:
+                    Abstract:
+                      - - Boolean
+                      - Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 231
+                      end: 232
+              inputs:
+                - SignalCall:
+                    signal:
+                      id: half
+                      scope: Local
+                    typing: Boolean
+                    location:
+                      file_id: 0
+                      range:
+                        start: 232
+                        end: 236
+                    dependencies: ~
+              typing: Boolean
+              location:
+                file_id: 0
+                range:
+                  start: 231
+                  end: 236
+              dependencies: ~
+          typing: Boolean
+          location:
+            file_id: 0
+            range:
+              start: 222
+              end: 236
+          dependencies: ~
+      location:
+        file_id: 0
+        range:
+          start: 209
+          end: 237
     y:
       scope: Output
       id: y
@@ -327,59 +379,6 @@ component:
         range:
           start: 155
           end: 204
-    half:
-      scope: Local
-      id: half
-      signal_type: Boolean
-      expression:
-        FollowedBy:
-          constant:
-            Boolean: true
-          expression:
-            MapApplication:
-              function_expression:
-                Call:
-                  id: "!"
-                  typing:
-                    Abstract:
-                      - - Boolean
-                      - Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 231
-                      end: 232
-              inputs:
-                - SignalCall:
-                    signal:
-                      id: half
-                      scope: Local
-                    typing: Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 232
-                        end: 236
-                    dependencies: ~
-              typing: Boolean
-              location:
-                file_id: 0
-                range:
-                  start: 231
-                  end: 236
-              dependencies: ~
-          typing: Boolean
-          location:
-            file_id: 0
-            range:
-              start: 222
-              end: 236
-          dependencies: ~
-      location:
-        file_id: 0
-        range:
-          start: 209
-          end: 237
   unitary_nodes: {}
   location:
     file_id: 0

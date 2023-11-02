@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::common::{constant::Constant, r#type::Type};
+use crate::common::{constant::Constant, r#type::Type, serialize::ordered_map};
 
 use crate::hir::stream_expression::StreamExpression;
 
@@ -11,8 +11,10 @@ use crate::hir::stream_expression::StreamExpression;
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Memory {
     /// Initialized buffers.
+    #[serde(serialize_with = "ordered_map")]
     pub buffers: HashMap<String, Buffer>,
     /// Called unitary nodes' names.
+    #[serde(serialize_with = "ordered_map")]
     pub called_nodes: HashMap<String, CalledNode>,
 }
 
