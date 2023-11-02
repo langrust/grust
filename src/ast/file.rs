@@ -4,7 +4,7 @@ use crate::ast::{function::Function, global_context, node::Node, typedef::Typede
 use crate::common::{context::Context, location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 /// A LanGRust [File] is composed of functions nodes,
 /// types defined by the user and an optional component.
 pub struct File {

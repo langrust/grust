@@ -16,7 +16,7 @@ mod signal_call;
 mod structure;
 mod when;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust stream expression AST.
 pub enum StreamExpression {
     /// Constant stream expression.

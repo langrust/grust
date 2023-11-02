@@ -6,7 +6,7 @@ use crate::ast::{
 use crate::common::{location::Location, r#type::Type, scope::Scope};
 use crate::error::{Error, TerminationError};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust equation AST.
 pub struct Equation {
     /// Signal's scope.

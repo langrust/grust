@@ -4,7 +4,7 @@ use crate::ast::{equation::Equation, node_description::NodeDescription, typedef:
 use crate::common::{context::Context, location::Location, r#type::Type, scope::Scope};
 use crate::error::{Error, TerminationError};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust node AST.
 pub struct Node {
     /// Node identifier.
