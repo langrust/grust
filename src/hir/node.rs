@@ -4,6 +4,7 @@ use crate::common::{
     graph::{color::Color, Graph},
     location::Location,
     r#type::Type,
+    serialize::ordered_map,
 };
 use crate::hir::{equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
 
@@ -16,9 +17,11 @@ pub struct Node {
     pub is_component: bool,
     /// Node's inputs identifiers and their types.
     pub inputs: Vec<(String, Type)>,
-    /// Node's unscheduled equations.
+    /// Node's unscheduled equations.    
+    #[serde(serialize_with = "ordered_map")]
     pub unscheduled_equations: HashMap<String, Equation>,
     /// Unitary output nodes generated from this node.
+    #[serde(serialize_with = "ordered_map")]
     pub unitary_nodes: HashMap<String, UnitaryNode>,
     /// Node location.
     pub location: Location,

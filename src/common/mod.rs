@@ -21,3 +21,6 @@ pub mod operator;
 
 /// Scope module.
 pub mod scope;
+
+/// Serialization module.
+pub mod serialize;

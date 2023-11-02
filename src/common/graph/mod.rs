@@ -12,18 +12,28 @@ pub mod color;
 
 use std::collections::HashMap;
 
-use crate::common::graph::{color::Color, vertex::Vertex};
+use crate::common::{
+    graph::{color::Color, vertex::Vertex},
+    serialize::ordered_map,
+};
 
 use self::neighbor::Neighbor;
 
 /// Graph structure.
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-pub struct Graph<T> {
+pub struct Graph<T>
+where
+    T: serde::Serialize,
+{
     /// Graph's vertices.
+    #[serde(serialize_with = "ordered_map")]
     vertices: HashMap<String, Vertex<T>>,
 }
 
-impl<T> Graph<T> {
+impl<T> Graph<T>
+where
+    T: serde::Serialize,
+{
     /// Creates a new graph with no vertices.
     pub fn new() -> Self {
         Graph {
@@ -127,7 +137,10 @@ impl<T> Graph<T> {
         subgraph
     }
 }
-impl<T> Default for Graph<T> {
+impl<T> Default for Graph<T>
+where
+    T: serde::Serialize,
+{
     fn default() -> Self {
         Self::new()
     }
