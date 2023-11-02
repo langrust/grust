@@ -1,18 +1,6 @@
 use codespan_reporting::files::{Files, SimpleFiles};
 
-use grustine::ast::pattern::Pattern;
-use grustine::ast::typedef::Typedef;
-use grustine::ast::{
-    equation::Equation, expression::Expression, file::File, node::Node,
-    stream_expression::StreamExpression,
-};
-use grustine::common::{
-    constant::Constant,
-    location::Location,
-    operator::{BinaryOperator, OtherOperator, UnaryOperator},
-    r#type::Type,
-    scope::Scope,
-};
+use grustine::ast::file::File;
 use grustine::parser::langrust;
 
 #[test]
