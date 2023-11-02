@@ -1,6 +1,5 @@
 ---
 source: tests/dependency_graph.rs
-assertion_line: 46
 expression: file
 ---
 typedefs: []
