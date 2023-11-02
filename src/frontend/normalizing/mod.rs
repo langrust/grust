@@ -1,4 +1,5 @@
 mod inlining;
+mod memorize;
 mod normal_form;
 mod scheduling;
 mod unitary_node;
@@ -16,6 +17,7 @@ impl File {
     /// - inlining unitary node calls when needed (shifted causality loops)
     /// - scheduling unitary nodes
     /// - normalizing unitary node application
+    /// - memorize node calls and followed by
     ///
     /// # Example
     ///
@@ -159,6 +161,7 @@ impl File {
         self.inline_when_needed();
         self.schedule();
         self.normal_form();
+        self.memorize();
         Ok(())
     }
 }
