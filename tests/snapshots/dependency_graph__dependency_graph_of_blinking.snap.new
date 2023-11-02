@@ -1,0 +1,760 @@
+---
+source: tests/dependency_graph.rs
+assertion_line: 46
+expression: file
+---
+typedefs: []
+functions: []
+nodes:
+  - id: counter
+    is_component: false
+    inputs:
+      - - res
+        - Boolean
+      - - tick
+        - Boolean
+    unscheduled_equations:
+      inc:
+        scope: Local
+        id: inc
+        signal_type: Integer
+        expression:
+          MapApplication:
+            function_expression:
+              Call:
+                id: if_then_else
+                typing:
+                  Abstract:
+                    - - Boolean
+                      - Integer
+                      - Integer
+                    - Integer
+                location:
+                  file_id: 0
+                  range:
+                    start: 106
+                    end: 127
+            inputs:
+              - SignalCall:
+                  signal:
+                    id: tick
+                    scope: Input
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 109
+                      end: 113
+                  dependencies:
+                    - - tick
+                      - 0
+              - Constant:
+                  constant:
+                    Integer: 1
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 119
+                      end: 120
+                  dependencies: []
+              - Constant:
+                  constant:
+                    Integer: 0
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 126
+                      end: 127
+                  dependencies: []
+            typing: Integer
+            location:
+              file_id: 0
+              range:
+                start: 106
+                end: 127
+            dependencies:
+              - - tick
+                - 0
+        location:
+          file_id: 0
+          range:
+            start: 95
+            end: 128
+      o:
+        scope: Output
+        id: o
+        signal_type: Integer
+        expression:
+          MapApplication:
+            function_expression:
+              Call:
+                id: if_then_else
+                typing:
+                  Abstract:
+                    - - Boolean
+                      - Integer
+                      - Integer
+                    - Integer
+                location:
+                  file_id: 0
+                  range:
+                    start: 55
+                    end: 89
+            inputs:
+              - SignalCall:
+                  signal:
+                    id: res
+                    scope: Input
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 58
+                      end: 61
+                  dependencies:
+                    - - res
+                      - 0
+              - Constant:
+                  constant:
+                    Integer: 0
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 67
+                      end: 68
+                  dependencies: []
+              - MapApplication:
+                  function_expression:
+                    Call:
+                      id: " + "
+                      typing:
+                        Abstract:
+                          - - Integer
+                            - Integer
+                          - Integer
+                      location:
+                        file_id: 0
+                        range:
+                          start: 84
+                          end: 85
+                  inputs:
+                    - MapApplication:
+                        function_expression:
+                          Call:
+                            id: (_)
+                            typing:
+                              Abstract:
+                                - - Integer
+                                - Integer
+                            location:
+                              file_id: 0
+                              range:
+                                start: 74
+                                end: 83
+                        inputs:
+                          - FollowedBy:
+                              constant:
+                                Integer: 0
+                              expression:
+                                SignalCall:
+                                  signal:
+                                    id: o
+                                    scope: Output
+                                  typing: Integer
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 81
+                                      end: 82
+                                  dependencies:
+                                    - - o
+                                      - 0
+                              typing: Integer
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 75
+                                  end: 82
+                              dependencies:
+                                - - o
+                                  - 1
+                        typing: Integer
+                        location:
+                          file_id: 0
+                          range:
+                            start: 74
+                            end: 83
+                        dependencies:
+                          - - o
+                            - 1
+                    - SignalCall:
+                        signal:
+                          id: inc
+                          scope: Local
+                        typing: Integer
+                        location:
+                          file_id: 0
+                          range:
+                            start: 86
+                            end: 89
+                        dependencies:
+                          - - inc
+                            - 0
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 74
+                      end: 89
+                  dependencies:
+                    - - o
+                      - 1
+                    - - inc
+                      - 0
+            typing: Integer
+            location:
+              file_id: 0
+              range:
+                start: 55
+                end: 89
+            dependencies:
+              - - res
+                - 0
+              - - o
+                - 1
+              - - inc
+                - 0
+        location:
+          file_id: 0
+          range:
+            start: 42
+            end: 90
+    unitary_nodes: {}
+    location:
+      file_id: 0
+      range:
+        start: 0
+        end: 130
+    graph:
+      vertices:
+        inc:
+          id: inc
+          value: Black
+          neighbors:
+            - id: tick
+              weight: 0
+        o:
+          id: o
+          value: Black
+          neighbors:
+            - id: res
+              weight: 0
+            - id: o
+              weight: 1
+            - id: inc
+              weight: 0
+        res:
+          id: res
+          value: Black
+          neighbors: []
+        tick:
+          id: tick
+          value: Black
+          neighbors: []
+  - id: blinking
+    is_component: false
+    inputs:
+      - - tick_number
+        - Integer
+    unscheduled_equations:
+      counter:
+        scope: Local
+        id: counter
+        signal_type: Integer
+        expression:
+          NodeApplication:
+            node: counter
+            inputs:
+              - SignalCall:
+                  signal:
+                    id: res
+                    scope: Local
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 250
+                      end: 253
+                  dependencies:
+                    - - res
+                      - 0
+              - Constant:
+                  constant:
+                    Boolean: true
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 255
+                      end: 259
+                  dependencies: []
+            signal: o
+            typing: Integer
+            location:
+              file_id: 0
+              range:
+                start: 242
+                end: 262
+            dependencies:
+              - - res
+                - 0
+              - - res
+                - 1
+        location:
+          file_id: 0
+          range:
+            start: 227
+            end: 263
+      on_off:
+        scope: Local
+        id: on_off
+        signal_type: Boolean
+        expression:
+          MapApplication:
+            function_expression:
+              TypedAbstraction:
+                inputs:
+                  - - t
+                    - Boolean
+                  - - b
+                    - Boolean
+                expression:
+                  Application:
+                    function_expression:
+                      Call:
+                        id: if_then_else
+                        typing:
+                          Abstract:
+                            - - Boolean
+                              - Boolean
+                              - Boolean
+                            - Boolean
+                        location:
+                          file_id: 0
+                          range:
+                            start: 372
+                            end: 391
+                    inputs:
+                      - Call:
+                          id: t
+                          typing: Boolean
+                          location:
+                            file_id: 0
+                            range:
+                              start: 375
+                              end: 376
+                      - Application:
+                          function_expression:
+                            Call:
+                              id: "!"
+                              typing:
+                                Abstract:
+                                  - - Boolean
+                                  - Boolean
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 382
+                                  end: 383
+                          inputs:
+                            - Call:
+                                id: b
+                                typing: Boolean
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 383
+                                    end: 384
+                          typing: Boolean
+                          location:
+                            file_id: 0
+                            range:
+                              start: 382
+                              end: 384
+                      - Call:
+                          id: b
+                          typing: Boolean
+                          location:
+                            file_id: 0
+                            range:
+                              start: 390
+                              end: 391
+                    typing: Boolean
+                    location:
+                      file_id: 0
+                      range:
+                        start: 372
+                        end: 391
+                typing:
+                  Abstract:
+                    - - Boolean
+                      - Boolean
+                    - Boolean
+                location:
+                  file_id: 0
+                  range:
+                    start: 365
+                    end: 391
+            inputs:
+              - SignalCall:
+                  signal:
+                    id: res
+                    scope: Local
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 339
+                      end: 342
+                  dependencies:
+                    - - res
+                      - 0
+              - FollowedBy:
+                  constant:
+                    Boolean: true
+                  expression:
+                    SignalCall:
+                      signal:
+                        id: on_off
+                        scope: Local
+                      typing: Boolean
+                      location:
+                        file_id: 0
+                        range:
+                          start: 353
+                          end: 359
+                      dependencies:
+                        - - on_off
+                          - 0
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 344
+                      end: 359
+                  dependencies:
+                    - - on_off
+                      - 1
+            typing: Boolean
+            location:
+              file_id: 0
+              range:
+                start: 338
+                end: 392
+            dependencies:
+              - - res
+                - 0
+              - - on_off
+                - 1
+        location:
+          file_id: 0
+          range:
+            start: 323
+            end: 393
+      res:
+        scope: Local
+        id: res
+        signal_type: Boolean
+        expression:
+          FollowedBy:
+            constant:
+              Boolean: true
+            expression:
+              MapApplication:
+                function_expression:
+                  Call:
+                    id: (_)
+                    typing:
+                      Abstract:
+                        - - Boolean
+                        - Boolean
+                    location:
+                      file_id: 0
+                      range:
+                        start: 289
+                        end: 317
+                inputs:
+                  - MapApplication:
+                      function_expression:
+                        Call:
+                          id: " == "
+                          typing:
+                            Abstract:
+                              - - Integer
+                                - Integer
+                              - Boolean
+                          location:
+                            file_id: 0
+                            range:
+                              start: 302
+                              end: 304
+                      inputs:
+                        - MapApplication:
+                            function_expression:
+                              Call:
+                                id: " + "
+                                typing:
+                                  Abstract:
+                                    - - Integer
+                                      - Integer
+                                    - Integer
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 298
+                                    end: 299
+                            inputs:
+                              - SignalCall:
+                                  signal:
+                                    id: counter
+                                    scope: Local
+                                  typing: Integer
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 290
+                                      end: 297
+                                  dependencies:
+                                    - - counter
+                                      - 0
+                              - Constant:
+                                  constant:
+                                    Integer: 1
+                                  typing: Integer
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 300
+                                      end: 301
+                                  dependencies: []
+                            typing: Integer
+                            location:
+                              file_id: 0
+                              range:
+                                start: 290
+                                end: 301
+                            dependencies:
+                              - - counter
+                                - 0
+                        - SignalCall:
+                            signal:
+                              id: tick_number
+                              scope: Input
+                            typing: Integer
+                            location:
+                              file_id: 0
+                              range:
+                                start: 305
+                                end: 316
+                            dependencies:
+                              - - tick_number
+                                - 0
+                      typing: Boolean
+                      location:
+                        file_id: 0
+                        range:
+                          start: 290
+                          end: 316
+                      dependencies:
+                        - - counter
+                          - 0
+                        - - tick_number
+                          - 0
+                typing: Boolean
+                location:
+                  file_id: 0
+                  range:
+                    start: 289
+                    end: 317
+                dependencies:
+                  - - counter
+                    - 0
+                  - - tick_number
+                    - 0
+            typing: Boolean
+            location:
+              file_id: 0
+              range:
+                start: 280
+                end: 317
+            dependencies:
+              - - counter
+                - 1
+              - - tick_number
+                - 1
+        location:
+          file_id: 0
+          range:
+            start: 268
+            end: 318
+      status:
+        scope: Output
+        id: status
+        signal_type: Integer
+        expression:
+          MapApplication:
+            function_expression:
+              Call:
+                id: if_then_else
+                typing:
+                  Abstract:
+                    - - Boolean
+                      - Integer
+                      - Integer
+                    - Integer
+                location:
+                  file_id: 0
+                  range:
+                    start: 188
+                    end: 221
+            inputs:
+              - SignalCall:
+                  signal:
+                    id: on_off
+                    scope: Local
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 191
+                      end: 197
+                  dependencies:
+                    - - on_off
+                      - 0
+              - MapApplication:
+                  function_expression:
+                    Call:
+                      id: " + "
+                      typing:
+                        Abstract:
+                          - - Integer
+                            - Integer
+                          - Integer
+                      location:
+                        file_id: 0
+                        range:
+                          start: 211
+                          end: 212
+                  inputs:
+                    - SignalCall:
+                        signal:
+                          id: counter
+                          scope: Local
+                        typing: Integer
+                        location:
+                          file_id: 0
+                          range:
+                            start: 203
+                            end: 210
+                        dependencies:
+                          - - counter
+                            - 0
+                    - Constant:
+                        constant:
+                          Integer: 1
+                        typing: Integer
+                        location:
+                          file_id: 0
+                          range:
+                            start: 213
+                            end: 214
+                        dependencies: []
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 203
+                      end: 214
+                  dependencies:
+                    - - counter
+                      - 0
+              - Constant:
+                  constant:
+                    Integer: 0
+                  typing: Integer
+                  location:
+                    file_id: 0
+                    range:
+                      start: 220
+                      end: 221
+                  dependencies: []
+            typing: Integer
+            location:
+              file_id: 0
+              range:
+                start: 188
+                end: 221
+            dependencies:
+              - - on_off
+                - 0
+              - - counter
+                - 0
+        location:
+          file_id: 0
+          range:
+            start: 170
+            end: 222
+    unitary_nodes: {}
+    location:
+      file_id: 0
+      range:
+        start: 132
+        end: 395
+    graph:
+      vertices:
+        counter:
+          id: counter
+          value: Black
+          neighbors:
+            - id: res
+              weight: 0
+            - id: res
+              weight: 1
+        on_off:
+          id: on_off
+          value: Black
+          neighbors:
+            - id: res
+              weight: 0
+            - id: on_off
+              weight: 1
+        res:
+          id: res
+          value: Black
+          neighbors:
+            - id: counter
+              weight: 1
+            - id: tick_number
+              weight: 1
+        status:
+          id: status
+          value: Black
+          neighbors:
+            - id: on_off
+              weight: 0
+            - id: counter
+              weight: 0
+        tick_number:
+          id: tick_number
+          value: Black
+          neighbors: []
+component: ~
+location:
+  file_id: 0
+  range:
+    start: 0
+    end: 395
+
