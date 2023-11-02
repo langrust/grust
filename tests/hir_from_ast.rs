@@ -23,3 +23,23 @@ fn hir_from_ast_transformation_for_counter() {
 
     insta::assert_yaml_snapshot!(file);
 }
+
+#[test]
+fn hir_from_ast_transformation_for_blinking() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let blinking_id = files.add(
+        "blinking.gr",
+        std::fs::read_to_string("tests/fixture/blinking.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(blinking_id, &files.source(blinking_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+
+    let file = hir_from_ast(file);
+
+    insta::assert_yaml_snapshot!(file);
+}
