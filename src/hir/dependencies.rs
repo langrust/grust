@@ -5,7 +5,7 @@ use super::once_cell::OnceCell;
 /// Dependencies are stored in a OnceCell.
 /// This allows to set dependencies after creating the the structure.
 /// After setting the value, the dependencies are immutable.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Dependencies(OnceCell<Vec<(String, usize)>>);
 impl Dependencies {
     /// Create unset dependencies.

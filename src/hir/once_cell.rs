@@ -53,3 +53,14 @@ impl<T> OnceCell<T> {
     }
 }
 
+impl<T> serde::Serialize for OnceCell<T>
+where
+    T: serde::Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.get().serialize(serializer)
+    }
+}

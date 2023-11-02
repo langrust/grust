@@ -8,7 +8,7 @@ use crate::hir::stream_expression::StreamExpression;
 ///
 /// Memory structure for unitary node.
 /// It stores initial_valuezed buffers and called unitary nodes' names.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Memory {
     /// Initialized buffers.
     pub buffers: HashMap<String, Buffer>,
@@ -19,7 +19,7 @@ pub struct Memory {
 /// Initialized buffer.
 ///
 /// Buffer initial_valueized by a constant.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Buffer {
     /// Buffer type.
     pub typing: Type,
@@ -33,7 +33,7 @@ pub struct Buffer {
 ///
 /// Unitary node's name is composed of the name of the mother
 /// node and the name of the called output signal.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct CalledNode {
     /// Node name.
     pub node_id: String,

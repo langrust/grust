@@ -7,7 +7,7 @@ use crate::common::{
 };
 use crate::hir::{equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust node HIR.
 pub struct Node {
     /// Node identifier.

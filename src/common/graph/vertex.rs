@@ -1,7 +1,7 @@
 use crate::common::graph::neighbor::Neighbor;
 
 /// Vertex structure for graph.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Vertex<T> {
     /// Name fo the vertex.
     pub id: String,

@@ -1,5 +1,5 @@
 /// Structure of a vertex Neighbor.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Neighbor {
     /// The id of the neighbor.
     pub id: String,
