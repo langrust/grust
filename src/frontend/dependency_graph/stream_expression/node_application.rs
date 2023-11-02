@@ -60,17 +60,16 @@ impl StreamExpression {
                         .iter()
                         .zip(&node.inputs)
                         .map(|(input_expression, (input_id, _))| {
+                            input_expression.compute_dependencies(
+                                nodes_context,
+                                nodes_graphs,
+                                nodes_reduced_graphs,
+                                errors,
+                            )?;
                             Ok(local_reduced_graph
                                 .get_weights(signal, input_id)
                                 .iter()
                                 .map(|weight| {
-                                    input_expression.compute_dependencies(
-                                        nodes_context,
-                                        nodes_graphs,
-                                        nodes_reduced_graphs,
-                                        errors,
-                                    )?;
-
                                     Ok(input_expression
                                         .get_dependencies()
                                         .clone()
