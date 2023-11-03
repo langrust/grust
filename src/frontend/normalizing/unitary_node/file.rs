@@ -429,8 +429,6 @@ mod generate_unitary_nodes {
             location: Location::default(),
         };
 
-        println!("{:?}", file.nodes[0]);
-        println!("{:?}", control.nodes[0]);
         assert!(file.nodes[0].eq_unscheduled(&control.nodes[0]));
     }
 

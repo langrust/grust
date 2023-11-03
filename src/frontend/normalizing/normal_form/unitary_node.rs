@@ -58,7 +58,6 @@ impl UnitaryNode {
                 }
             },
         );
-        println!("node {}_{}, graph {graph:?}", self.node_id, self.output_id);
         self.graph.set(graph).unwrap();
     }
 }
