@@ -36,7 +36,10 @@ impl File {
     ///
     /// This example is tested in source.
     pub fn memorize(&mut self) {
-        self.nodes.iter_mut().for_each(|node| node.memorize())
+        self.nodes.iter_mut().for_each(|node| node.memorize());
+        self.component
+            .as_mut()
+            .map_or((), |component| component.memorize())
     }
 }
 
