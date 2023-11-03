@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, node::Node};
+use crate::hir::node::Node;
 
 impl Node {
     /// Inline node application when it is needed.
@@ -22,24 +22,8 @@ impl Node {
     /// We need to inline the code, the output `fib` is defined before the input `fib`,
     /// which can not be computed by a function call.
     pub fn inline_when_needed(&mut self, nodes: &HashMap<String, Node>) {
-        let mut graph = self.graph.get().unwrap().clone();
-        self.unitary_nodes.values_mut().for_each(|unitary_node| {
-            // create identifier creator containing the signals
-            let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
-
-            // compute new equations for the unitary node
-            let mut new_equations: Vec<Equation> = vec![];
-            unitary_node.equations.iter().for_each(|equation| {
-                let mut retrieved_equations = equation.inline_when_needed_reccursive(
-                    &mut identifier_creator,
-                    &mut graph,
-                    &nodes,
-                );
-                new_equations.append(&mut retrieved_equations)
-            });
-
-            // update node's unitary node
-            unitary_node.update_equations(&new_equations)
-        })
+        self.unitary_nodes
+            .values_mut()
+            .for_each(|unitary_node| unitary_node.inline_when_needed(nodes))
     }
 }

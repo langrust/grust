@@ -3,14 +3,49 @@ use std::collections::HashMap;
 use crate::{
     common::graph::{color::Color, Graph},
     hir::{
-        equation::Equation, identifier_creator::IdentifierCreator, signal::Signal,
-        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        equation::Equation, identifier_creator::IdentifierCreator, node::Node, once_cell::OnceCell,
+        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
     },
 };
 
 use super::Union;
 
 impl UnitaryNode {
+    /// Inline node application when it is needed.
+    ///
+    /// Inlining needed for "shifted causality loop".
+    ///
+    /// # Example:
+    /// ```GR
+    /// node semi_fib(i: int) {
+    ///     out o: int = 0 fby (i + 1 fby i);
+    /// }
+    /// node fib_call() {
+    ///    out fib: int = semi_fib(fib).o;
+    /// }
+    /// ```
+    /// In this example, `fib_call` calls `semi_fib` with the same input and output signal.
+    /// There is no causality loop, `o` depends on the memory of `i`.
+    ///
+    /// We need to inline the code, the output `fib` is defined before the input `fib`,
+    /// which can not be computed by a function call.
+    pub fn inline_when_needed(&mut self, nodes: &HashMap<String, Node>) {
+        // create identifier creator containing the signals
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals());
+        // get graph
+        let graph = self.graph.get_mut().unwrap();
+        // compute new equations for the unitary node
+        let mut new_equations: Vec<Equation> = vec![];
+        self.equations.iter().for_each(|equation| {
+            let mut retrieved_equations =
+                equation.inline_when_needed_reccursive(&mut identifier_creator, graph, &nodes);
+            new_equations.append(&mut retrieved_equations)
+        });
+
+        // update node's unitary node
+        self.update_equations(&new_equations)
+    }
+
     /// Instantiate unitary node's equations with inputs.
     ///
     /// It will return new equations where the input signals are instanciated by
@@ -93,7 +128,7 @@ impl UnitaryNode {
                 }
             },
         );
-        self.graph.set(graph).unwrap();
+        self.graph = OnceCell::from(graph);
     }
 }
 
