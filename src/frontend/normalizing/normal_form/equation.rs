@@ -1,6 +1,11 @@
-use crate::hir::{
-    dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-    stream_expression::StreamExpression,
+use std::collections::HashMap;
+
+use crate::{
+    common::graph::{color::Color, Graph},
+    hir::{
+        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+        stream_expression::StreamExpression,
+    },
 };
 
 impl Equation {
@@ -23,7 +28,11 @@ impl Equation {
     /// x_2: int = my_node(s, x_1).o;
     /// x: int = 1 + x_2;
     /// ```
-    pub fn normal_form(self, identifier_creator: &mut IdentifierCreator) -> Vec<Equation> {
+    pub fn normal_form(
+        self,
+        nodes_reduced_graphs: &HashMap<String, Graph<Color>>,
+        identifier_creator: &mut IdentifierCreator,
+    ) -> Vec<Equation> {
         let Equation {
             scope,
             id,
@@ -44,7 +53,9 @@ impl Equation {
             } => {
                 let new_equations = inputs
                     .iter_mut()
-                    .flat_map(|(_, expression)| expression.into_signal_call(identifier_creator))
+                    .flat_map(|(_, expression)| {
+                        expression.into_signal_call(nodes_reduced_graphs, identifier_creator)
+                    })
                     .collect::<Vec<_>>();
 
                 // set the identifier to the node state
@@ -55,16 +66,30 @@ impl Equation {
                 ));
 
                 // change dependencies to be the sum of inputs dependencies
+                let reduced_graph = nodes_reduced_graphs.get(node).unwrap();
                 *dependencies = Dependencies::from(
                     inputs
                         .iter()
-                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                        .flat_map(|(input_id, expression)| {
+                            reduced_graph
+                                .get_weights(signal, input_id)
+                                .iter()
+                                .flat_map(|weight| {
+                                    expression
+                                        .get_dependencies()
+                                        .clone()
+                                        .into_iter()
+                                        .map(|(id, depth)| (id, depth + weight))
+                                        .collect::<Vec<_>>()
+                                })
+                                .collect::<Vec<_>>()
+                        })
                         .collect(),
                 );
 
                 new_equations
             }
-            _ => expression.normal_form(identifier_creator),
+            _ => expression.normal_form(nodes_reduced_graphs, identifier_creator),
         };
 
         // recreate the new equation with modified expression
@@ -86,7 +111,11 @@ impl Equation {
 
 #[cfg(test)]
 mod normal_form {
+    use std::collections::HashMap;
+
     use crate::ast::expression::Expression;
+    use crate::common::graph::color::Color;
+    use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
@@ -95,6 +124,14 @@ mod normal_form {
 
     #[test]
     fn should_change_node_applications_to_be_root_expressions() {
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("y"), Color::White);
+        graph.add_vertex(format!("o"), Color::White);
+        graph.add_edge(&format!("o"), format!("x"), 0);
+        graph.add_edge(&format!("o"), format!("y"), 0);
+        let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
+
         // out x: int = 1 + my_node(s, v).o;
         let equation = Equation {
             scope: Scope::Output,
@@ -168,7 +205,7 @@ mod normal_form {
             String::from("s"),
             String::from("x"),
         ]);
-        let equations = equation.normal_form(&mut identifier_creator);
+        let equations = equation.normal_form(&nodes_reduced_graphs, &mut identifier_creator);
 
         // x_1: int = my_node(s, v).o;
         // out x: int = 1 + x_1;
@@ -258,6 +295,14 @@ mod normal_form {
 
     #[test]
     fn should_change_inputs_expressions_to_be_signal_calls() {
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("y"), Color::White);
+        graph.add_vertex(format!("o"), Color::White);
+        graph.add_edge(&format!("o"), format!("x"), 0);
+        graph.add_edge(&format!("o"), format!("y"), 0);
+        let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
+
         // out y: int = other_node(g-1, v).o;
         let equation = Equation {
             scope: Scope::Output,
@@ -320,7 +365,7 @@ mod normal_form {
             String::from("g"),
             String::from("y"),
         ]);
-        let equations = equation.normal_form(&mut identifier_creator);
+        let equations = equation.normal_form(&nodes_reduced_graphs, &mut identifier_creator);
 
         // x: int = g-1;
         // out y: int = other_node(x, v).o;
@@ -399,6 +444,14 @@ mod normal_form {
 
     #[test]
     fn should_set_identifier_to_node_state_in_unitary_node_application() {
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("y"), Color::White);
+        graph.add_vertex(format!("o"), Color::White);
+        graph.add_edge(&format!("o"), format!("x"), 0);
+        graph.add_edge(&format!("o"), format!("y"), 0);
+        let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
+
         // out y: int = other_node(g-1, v).o;
         let equation = Equation {
             scope: Scope::Output,
@@ -461,7 +514,7 @@ mod normal_form {
             String::from("g"),
             String::from("y"),
         ]);
-        let equations = equation.normal_form(&mut identifier_creator);
+        let equations = equation.normal_form(&nodes_reduced_graphs, &mut identifier_creator);
 
         for Equation { expression, .. } in equations {
             if let StreamExpression::UnitaryNodeApplication { id, .. } = expression {

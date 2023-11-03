@@ -1,4 +1,9 @@
-use crate::hir::node::Node;
+use std::collections::HashMap;
+
+use crate::{
+    common::graph::{color::Color, Graph},
+    hir::node::Node,
+};
 
 impl Node {
     /// Change HIR node into a normal form.
@@ -40,10 +45,10 @@ impl Node {
     ///     out y: int = other_node(x_1, v).o;
     /// }
     /// ```
-    pub fn normal_form(&mut self) {
+    pub fn normal_form(&mut self, nodes_reduced_graphs: &HashMap<String, Graph<Color>>) {
         self.unitary_nodes
             .values_mut()
-            .for_each(|unitary_node| unitary_node.normal_form())
+            .for_each(|unitary_node| unitary_node.normal_form(nodes_reduced_graphs))
     }
 }
 
@@ -52,6 +57,8 @@ mod normal_form {
     use std::collections::HashMap;
 
     use crate::ast::expression::Expression;
+    use crate::common::graph::color::Color;
+    use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, memory::Memory, node::Node,
@@ -61,6 +68,14 @@ mod normal_form {
 
     #[test]
     fn should_change_node_applications_to_be_root_expressions() {
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("y"), Color::White);
+        graph.add_vertex(format!("o"), Color::White);
+        graph.add_edge(&format!("o"), format!("x"), 0);
+        graph.add_edge(&format!("o"), format!("y"), 0);
+        let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
+
         // node test(s: int, v: int) {
         //     out x: int = 1 + my_node(s, v).o;
         // }
@@ -155,12 +170,20 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        node.normal_form();
+        node.normal_form(&nodes_reduced_graphs);
 
         // node test(s: int, v: int) {
         //     x_1: int = my_node(s, v).o;
         //     out x: int = 1 + x_1;
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x_1"), Color::White);
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("s"), Color::White);
+        graph.add_vertex(format!("v"), Color::White);
+        graph.add_edge(&format!("x_1"), format!("s"), 0);
+        graph.add_edge(&format!("x_1"), format!("v"), 0);
+        graph.add_edge(&format!("x"), format!("x_1"), 0);
         let equations = vec![
             Equation {
                 scope: Scope::Local,
@@ -252,7 +275,7 @@ mod normal_form {
             equations: equations,
             memory: Memory::new(),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph),
         };
         let control = Node {
             id: String::from("test"),
@@ -271,6 +294,14 @@ mod normal_form {
 
     #[test]
     fn should_change_inputs_expressions_to_be_signal_calls() {
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("y"), Color::White);
+        graph.add_vertex(format!("o"), Color::White);
+        graph.add_edge(&format!("o"), format!("x"), 0);
+        graph.add_edge(&format!("o"), format!("y"), 0);
+        let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
+
         // node test(v: int, g: int) {
         //     out y: int = other_node(g-1, v).o;
         // }
@@ -354,12 +385,20 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        node.normal_form();
+        node.normal_form(&nodes_reduced_graphs);
 
         // node test(v: int, g: int) {
         //     x: int = g-1;
         //     out y: int = other_node(x, v).o;
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("y"), Color::White);
+        graph.add_vertex(format!("g"), Color::White);
+        graph.add_vertex(format!("v"), Color::White);
+        graph.add_edge(&format!("y"), format!("x"), 0);
+        graph.add_edge(&format!("y"), format!("v"), 0);
+        graph.add_edge(&format!("x"), format!("g"), 0);
         let equations = vec![
             Equation {
                 scope: Scope::Local,
@@ -440,7 +479,7 @@ mod normal_form {
             equations: equations,
             memory: Memory::new(),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph),
         };
         let control = Node {
             id: String::from("test"),
@@ -459,6 +498,14 @@ mod normal_form {
 
     #[test]
     fn should_set_identifier_to_node_state_in_unitary_node_application() {
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("y"), Color::White);
+        graph.add_vertex(format!("o"), Color::White);
+        graph.add_edge(&format!("o"), format!("x"), 0);
+        graph.add_edge(&format!("o"), format!("y"), 0);
+        let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
+
         // node test(v: int, g: int) {
         //     out y: int = other_node(g-1, v).o;
         // }
@@ -542,7 +589,7 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        node.normal_form();
+        node.normal_form(&nodes_reduced_graphs);
 
         for Equation { expression, .. } in node
             .unitary_nodes

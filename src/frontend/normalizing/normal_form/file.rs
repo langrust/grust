@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::hir::file::File;
 
 impl File {
@@ -53,10 +55,26 @@ impl File {
     ///
     /// This example is tested in source.
     pub fn normal_form(&mut self) {
-        self.nodes.iter_mut().for_each(|node| node.normal_form());
+        let mut nodes_reduced_graphs = HashMap::new();
+        // get every nodes' graphs
+        self.nodes.iter().for_each(|node| {
+            assert!(nodes_reduced_graphs
+                .insert(node.id.clone(), node.graph.get().unwrap().clone())
+                .is_none())
+        });
+        // get optional component's graph
+        self.component.as_ref().map_or((), |component| {
+            assert!(nodes_reduced_graphs
+                .insert(component.id.clone(), component.graph.get().unwrap().clone())
+                .is_none())
+        });
+
+        self.nodes
+            .iter_mut()
+            .for_each(|node| node.normal_form(&nodes_reduced_graphs));
         self.component
             .as_mut()
-            .map_or((), |component| component.normal_form())
+            .map_or((), |component| component.normal_form(&nodes_reduced_graphs))
     }
 }
 
@@ -189,26 +207,22 @@ mod normal_form {
                     }],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::from(my_node_graph.clone()),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
             graph: OnceCell::from(my_node_graph.clone()),
         };
 
-        // node test(x: int, y: int) {
+        // node test(s: int, v: int) {
         //     out x: int = 1 + my_node(s, v*2).o
         // }
         let mut node_graph = Graph::new();
         node_graph.add_vertex(String::from("s"), Color::Black);
         node_graph.add_vertex(String::from("v"), Color::Black);
-        node_graph.add_vertex(String::from("g"), Color::Black);
         node_graph.add_vertex(String::from("x"), Color::Black);
-        node_graph.add_vertex(String::from("y"), Color::Black);
         node_graph.add_edge(&String::from("x"), String::from("s"), 0);
         node_graph.add_edge(&String::from("x"), String::from("v"), 0);
-        node_graph.add_edge(&String::from("y"), String::from("g"), 0);
-        node_graph.add_edge(&String::from("y"), String::from("v"), 0);
         let node = Node {
             id: String::from("test"),
             is_component: false,
@@ -379,7 +393,7 @@ mod normal_form {
                     }],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::from(node_graph.clone()),
+                    graph: OnceCell::new(),
                 },
             )]),
             location: Location::default(),
@@ -532,11 +546,21 @@ mod normal_form {
             graph: OnceCell::from(my_node_graph),
         };
 
-        // node test(x: int, y: int) {
+        // node test(s: int, v: int) {
         //     x_1: int = v*2
         //     x_2: int = my_node(s, x_1).o
         //     out x: int = 1 + x_2
         // }
+        let mut unitary_node_graph = Graph::new();
+        unitary_node_graph.add_vertex(String::from("s"), Color::Black);
+        unitary_node_graph.add_vertex(String::from("v"), Color::Black);
+        unitary_node_graph.add_vertex(String::from("x_1"), Color::Black);
+        unitary_node_graph.add_vertex(String::from("x_2"), Color::Black);
+        unitary_node_graph.add_vertex(String::from("x"), Color::Black);
+        unitary_node_graph.add_edge(&String::from("x"), String::from("x_2"), 0);
+        unitary_node_graph.add_edge(&String::from("x_1"), String::from("v"), 0);
+        unitary_node_graph.add_edge(&String::from("x_2"), String::from("s"), 0);
+        unitary_node_graph.add_edge(&String::from("x_2"), String::from("x_1"), 0);
         let equations = vec![
             Equation {
                 scope: Scope::Local,
@@ -645,7 +669,7 @@ mod normal_form {
             equations: equations,
             memory: Memory::new(),
             location: Location::default(),
-            graph: OnceCell::from(node_graph.clone()),
+            graph: OnceCell::from(unitary_node_graph.clone()),
         };
         let node = Node {
             id: String::from("test"),
