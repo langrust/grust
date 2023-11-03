@@ -57,7 +57,7 @@ impl File {
         let unitary_node = node.unitary_nodes.get(output_id).unwrap();
 
         // create identifier creator containing the signals
-        let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals().clone());
+        let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
 
         // compute new equations for the unitary node
         let mut new_equations: Vec<Equation> = vec![];

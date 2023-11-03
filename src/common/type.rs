@@ -156,7 +156,7 @@ impl Type {
                     let error = Error::IncompatibleInputsNumber {
                         given_inputs_number: input_types.len(),
                         expected_inputs_number: inputs.len(),
-                        location: location.clone(),
+                        location,
                     };
                     errors.push(error);
                     Err(TerminationError)
@@ -171,7 +171,7 @@ impl Type {
                         errors.push(error);
                         TerminationError
                     })?;
-                let result = function_type.apply(input_types.clone(), location.clone(), errors)?;
+                let result = function_type.apply(input_types.clone(), location, errors)?;
 
                 *self = function_type;
                 Ok(result)
