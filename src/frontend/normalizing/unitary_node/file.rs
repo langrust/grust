@@ -51,39 +51,26 @@ impl File {
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
+        self.component
+            .as_mut()
+            .map_or(Ok(()), |component| component.generate_unitary_nodes(errors))?;
 
         // get, for each unitary node, initial node's inputs
         // that are used by the unitary node
-        let mut unitary_nodes_used_inputs = HashMap::new();
-        self.nodes.iter().for_each(|node| {
-            node.unitary_nodes
-                .iter()
-                .for_each(|(output, unitary_node)| {
-                    assert!(unitary_nodes_used_inputs
-                        .insert(
-                            (node.id.clone(), output.clone()),
-                            node.inputs
-                                .iter()
-                                .map(|input| {
-                                    (input.0.clone(), unitary_node.inputs.contains(input))
-                                })
-                                .collect::<Vec<_>>(),
-                        )
-                        .is_none());
-                })
-        });
+        let mut used_inputs = HashMap::new();
+        self.nodes
+            .iter()
+            .for_each(|node| node.add_used_inputs(&mut used_inputs));
+        self.component
+            .as_ref()
+            .map_or((), |component| component.add_used_inputs(&mut used_inputs));
 
         // change node application to unitary node application
         self.nodes.iter_mut().for_each(|node| {
-            node.unitary_nodes.values_mut().for_each(|unitary_node| {
-                unitary_node.equations.iter_mut().for_each(|equation| {
-                    equation
-                        .expression
-                        .change_node_application_into_unitary_node_application(
-                            &unitary_nodes_used_inputs,
-                        )
-                })
-            })
+            node.change_node_application_into_unitary_node_application(&used_inputs)
+        });
+        self.component.as_mut().map_or((), |component| {
+            component.change_node_application_into_unitary_node_application(&used_inputs)
         });
 
         Ok(())

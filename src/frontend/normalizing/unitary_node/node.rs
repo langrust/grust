@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::common::{
     graph::{color::Color, Graph},
     scope::Scope,
@@ -5,7 +7,56 @@ use crate::common::{
 use crate::error::{Error, TerminationError};
 use crate::hir::{memory::Memory, node::Node, once_cell::OnceCell, unitary_node::UnitaryNode};
 
+pub type UsedInputs = Vec<(String, bool)>;
+
 impl Node {
+    /// Add inputs that are used by the unitary node.
+    pub fn add_used_inputs(&self, used_inputs: &mut HashMap<(String, String), UsedInputs>) {
+        self.unitary_nodes
+            .iter()
+            .for_each(|(output, unitary_node)| {
+                assert!(used_inputs
+                    .insert(
+                        (self.id.clone(), output.clone()),
+                        self.inputs
+                            .iter()
+                            .map(|input| { (input.0.clone(), unitary_node.inputs.contains(input)) })
+                            .collect::<Vec<_>>(),
+                    )
+                    .is_none());
+            })
+    }
+
+    /// Change every node application into unitary node application.
+    ///
+    /// It removes unused inputs from unitary node application.
+    ///
+    /// # Example
+    ///
+    /// Let be a node `my_node` as follows:
+    ///
+    /// ```GR
+    /// node my_node(x: int, y: int) {
+    ///     out o1: int = x+y;
+    ///     out o2: int = 2*y;
+    /// }
+    /// ```
+    ///
+    /// The application of the node `my_node(g-1, v).o2` is changed
+    /// to the application of the unitary node `my_node(v).o2`
+    pub fn change_node_application_into_unitary_node_application(
+        &mut self,
+        used_inputs: &HashMap<(String, String), UsedInputs>,
+    ) {
+        self.unitary_nodes.values_mut().for_each(|unitary_node| {
+            unitary_node.equations.iter_mut().for_each(|equation| {
+                equation
+                    .expression
+                    .change_node_application_into_unitary_node_application(&used_inputs)
+            })
+        })
+    }
+
     /// Generate unitary nodes from mother node.
     ///
     /// Generate and add unitary nodes to mother node.
