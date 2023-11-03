@@ -117,6 +117,10 @@ impl UnitaryNode {
         self.get_signals()
             .iter()
             .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
+        self.memory
+            .buffers
+            .keys()
+            .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
         self.equations.iter().for_each(
             |Equation {
                  id: from,
