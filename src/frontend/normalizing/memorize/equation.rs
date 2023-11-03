@@ -143,7 +143,7 @@ mod memorize {
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![
                     (String::from("s"), 0),
-                    (String::from("v"), 1),
+                    (String::from("memx"), 0),
                 ]),
             },
             location: Location::default(),
