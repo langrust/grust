@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::hir::stream_expression::StreamExpression;
 
-type UsedInputs = Vec<(String, bool)>;
+use super::node::UsedInputs;
 
 impl StreamExpression {
     /// Change node application expressions into unitary node application.
@@ -24,16 +24,15 @@ impl StreamExpression {
     /// to the application of the unitary node `my_node(v).o2`
     pub fn change_node_application_into_unitary_node_application(
         &mut self,
-        unitary_nodes_used_inputs: &HashMap<(String, String), UsedInputs>,
+        used_inputs: &HashMap<(String, String), UsedInputs>,
     ) {
         match self {
-            StreamExpression::FollowedBy { expression, .. } => expression
-                .change_node_application_into_unitary_node_application(unitary_nodes_used_inputs),
+            StreamExpression::FollowedBy { expression, .. } => {
+                expression.change_node_application_into_unitary_node_application(used_inputs)
+            }
             StreamExpression::MapApplication { inputs, .. } => {
                 inputs.iter_mut().for_each(|expression| {
-                    expression.change_node_application_into_unitary_node_application(
-                        unitary_nodes_used_inputs,
-                    )
+                    expression.change_node_application_into_unitary_node_application(used_inputs)
                 })
             }
             StreamExpression::NodeApplication {
@@ -44,9 +43,7 @@ impl StreamExpression {
                 location,
                 dependencies,
             } => {
-                let used_inputs = unitary_nodes_used_inputs
-                    .get(&(node.clone(), signal.clone()))
-                    .unwrap();
+                let used_inputs = used_inputs.get(&(node.clone(), signal.clone())).unwrap();
 
                 let inputs = inputs
                     .iter_mut()
@@ -73,16 +70,12 @@ impl StreamExpression {
             StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
             StreamExpression::Structure { fields, .. } => {
                 fields.iter_mut().for_each(|(_, expression)| {
-                    expression.change_node_application_into_unitary_node_application(
-                        unitary_nodes_used_inputs,
-                    )
+                    expression.change_node_application_into_unitary_node_application(used_inputs)
                 })
             }
             StreamExpression::Array { elements, .. } => {
                 elements.iter_mut().for_each(|expression| {
-                    expression.change_node_application_into_unitary_node_application(
-                        unitary_nodes_used_inputs,
-                    )
+                    expression.change_node_application_into_unitary_node_application(used_inputs)
                 })
             }
             StreamExpression::Match {
@@ -91,17 +84,12 @@ impl StreamExpression {
                 arms.iter_mut().for_each(|(_, bound, body, expression)| {
                     assert!(body.is_empty());
                     if let Some(expression) = bound.as_mut() {
-                        expression.change_node_application_into_unitary_node_application(
-                            unitary_nodes_used_inputs,
-                        )
+                        expression
+                            .change_node_application_into_unitary_node_application(used_inputs)
                     };
-                    expression.change_node_application_into_unitary_node_application(
-                        unitary_nodes_used_inputs,
-                    )
+                    expression.change_node_application_into_unitary_node_application(used_inputs)
                 });
-                expression.change_node_application_into_unitary_node_application(
-                    unitary_nodes_used_inputs,
-                )
+                expression.change_node_application_into_unitary_node_application(used_inputs)
             }
             StreamExpression::When {
                 option,
@@ -112,15 +100,9 @@ impl StreamExpression {
                 ..
             } => {
                 assert!(present_body.is_empty() && default_body.is_empty());
-                option.change_node_application_into_unitary_node_application(
-                    unitary_nodes_used_inputs,
-                );
-                present.change_node_application_into_unitary_node_application(
-                    unitary_nodes_used_inputs,
-                );
-                default.change_node_application_into_unitary_node_application(
-                    unitary_nodes_used_inputs,
-                )
+                option.change_node_application_into_unitary_node_application(used_inputs);
+                present.change_node_application_into_unitary_node_application(used_inputs);
+                default.change_node_application_into_unitary_node_application(used_inputs)
             }
             _ => (),
         }
@@ -140,7 +122,7 @@ mod change_node_application_into_unitary_node_application {
     #[test]
     fn should_change_node_application_to_unitary_node_application() {
         // my_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
-        let unitary_nodes_used_inputs = HashMap::from([
+        let used_inputs = HashMap::from([
             (
                 (format!("my_node"), format!("o1")),
                 vec![(format!("x"), true), (format!("y"), true)],
@@ -189,8 +171,7 @@ mod change_node_application_into_unitary_node_application {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("g"), 0), (String::from("v"), 0)]),
         };
-        expression
-            .change_node_application_into_unitary_node_application(&unitary_nodes_used_inputs);
+        expression.change_node_application_into_unitary_node_application(&used_inputs);
 
         // control = my_node(g-1, v).o1
         let control = StreamExpression::UnitaryNodeApplication {
@@ -246,7 +227,7 @@ mod change_node_application_into_unitary_node_application {
     #[test]
     fn should_remove_unused_inputs_from_to_unitary_node_application() {
         // my_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
-        let unitary_nodes_used_inputs = HashMap::from([
+        let used_inputs = HashMap::from([
             (
                 (format!("my_node"), format!("o1")),
                 vec![(format!("x"), true), (format!("y"), true)],
@@ -295,8 +276,7 @@ mod change_node_application_into_unitary_node_application {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
         };
-        expression
-            .change_node_application_into_unitary_node_application(&unitary_nodes_used_inputs);
+        expression.change_node_application_into_unitary_node_application(&used_inputs);
 
         // control = my_node(v).o2
         let control = StreamExpression::UnitaryNodeApplication {
@@ -325,7 +305,7 @@ mod change_node_application_into_unitary_node_application {
     #[test]
     fn should_add_input_identifiers_in_unitary_node_application_inputs() {
         // my_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
-        let unitary_nodes_used_inputs = HashMap::from([
+        let used_inputs = HashMap::from([
             (
                 (format!("my_node"), format!("o1")),
                 vec![(format!("x"), true), (format!("y"), true)],
@@ -374,8 +354,7 @@ mod change_node_application_into_unitary_node_application {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
         };
-        expression
-            .change_node_application_into_unitary_node_application(&unitary_nodes_used_inputs);
+        expression.change_node_application_into_unitary_node_application(&used_inputs);
 
         // control = my_node(v).o2
         let control = StreamExpression::UnitaryNodeApplication {
