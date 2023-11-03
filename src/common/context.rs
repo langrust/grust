@@ -250,7 +250,7 @@ impl<V> Context for HashMap<String, V> {
             None => {
                 let error = Error::UnknownElement {
                     name: name.to_string(),
-                    location: location.clone(),
+                    location,
                 };
                 errors.push(error);
                 Err(TerminationError)
@@ -269,7 +269,7 @@ impl<V> Context for HashMap<String, V> {
             None => {
                 let error = Error::UnknownSignal {
                     name: name.to_string(),
-                    location: location.clone(),
+                    location,
                 };
                 errors.push(error);
                 Err(TerminationError)
@@ -288,7 +288,7 @@ impl<V> Context for HashMap<String, V> {
             None => {
                 let error = Error::UnknownNode {
                     name: name.to_string(),
-                    location: location.clone(),
+                    location,
                 };
                 errors.push(error);
                 Err(TerminationError)
@@ -307,7 +307,7 @@ impl<V> Context for HashMap<String, V> {
             None => {
                 let error = Error::UnknownType {
                     name: name.to_string(),
-                    location: location.clone(),
+                    location,
                 };
                 errors.push(error);
                 Err(TerminationError)
@@ -328,7 +328,7 @@ impl<V> Context for HashMap<String, V> {
                 let error = Error::UnknownField {
                     structure_name: structure_name.to_string(),
                     field_name: field_name.to_string(),
-                    location: location.clone(),
+                    location,
                 };
                 errors.push(error);
                 Err(TerminationError)
@@ -347,7 +347,7 @@ impl<V> Context for HashMap<String, V> {
             Some(_) => {
                 let error = Error::AlreadyDefinedElement {
                     name: name.clone(),
-                    location: location.clone(),
+                    location,
                 };
                 errors.push(error);
                 Err(TerminationError)

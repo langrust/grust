@@ -113,8 +113,8 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
             inputs,
             ..
         } => Expression::NodeCall {
-            node_identifier: id.clone().unwrap(),
-            input_name: node.clone() + &signal + "Input",
+            node_identifier: id.unwrap(),
+            input_name: node + &signal + "Input",
             input_fields: inputs
                 .into_iter()
                 .map(|(id, expression)| (id, mir_from_hir(expression)))

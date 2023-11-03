@@ -48,11 +48,10 @@ impl UnitaryNode {
 
         // add output to context
         let same_output = new_output_signal
-            .clone()
             .map_or(false, |new_output_signal| {
                 if self.output_id != new_output_signal.id {
                     context_map
-                        .insert(self.output_id.clone(), Union::I1(new_output_signal.clone()));
+                        .insert(self.output_id.clone(), Union::I1(new_output_signal));
                     false
                 } else {
                     true

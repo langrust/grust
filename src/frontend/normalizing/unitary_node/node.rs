@@ -91,7 +91,7 @@ impl Node {
         };
 
         // insert it in node's storage
-        unitary_nodes.insert(output.clone(), unitary_node);
+        unitary_nodes.insert(output, unitary_node);
 
         subgraph
     }

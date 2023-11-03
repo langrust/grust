@@ -23,7 +23,7 @@ impl File {
             .map(|node| {
                 let graph = node.create_initialized_graph();
                 nodes_graphs.insert(node.id.clone(), graph.clone());
-                nodes_reduced_graphs.insert(node.id.clone(), graph.clone());
+                nodes_reduced_graphs.insert(node.id.clone(), graph);
                 Ok(())
             })
             .collect::<Vec<Result<(), TerminationError>>>()
@@ -34,7 +34,7 @@ impl File {
         component.as_ref().map_or(Ok(()), |component| {
             let graph = component.create_initialized_graph();
             nodes_graphs.insert(component.id.clone(), graph.clone());
-            nodes_reduced_graphs.insert(component.id.clone(), graph.clone());
+            nodes_reduced_graphs.insert(component.id.clone(), graph);
             Ok(())
         })?;
 
