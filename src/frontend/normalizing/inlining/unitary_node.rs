@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
-use crate::hir::{
-    equation::Equation, identifier_creator::IdentifierCreator, signal::Signal,
-    stream_expression::StreamExpression, unitary_node::UnitaryNode,
+use crate::{
+    common::graph::{color::Color, Graph},
+    hir::{
+        equation::Equation, identifier_creator::IdentifierCreator, signal::Signal,
+        stream_expression::StreamExpression, unitary_node::UnitaryNode,
+    },
 };
 
 use super::Union;
@@ -68,6 +71,29 @@ impl UnitaryNode {
             .iter()
             .map(|equation| equation.replace_by_context(&context_map))
             .collect()
+    }
+
+    /// Update unitary node equations and add the corresponding dependency graph.
+    pub fn update_equations(&mut self, new_equations: &Vec<Equation>) {
+        // put new equations in unitary node
+        self.equations = new_equations.clone();
+        // add a dependency graph to the unitary node
+        let mut graph = Graph::new();
+        self.get_signals()
+            .iter()
+            .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
+        self.equations.iter().for_each(
+            |Equation {
+                 id: from,
+                 expression,
+                 ..
+             }| {
+                for (to, weight) in expression.get_dependencies() {
+                    graph.add_edge(from, to.clone(), *weight)
+                }
+            },
+        );
+        self.graph.set(graph).unwrap();
     }
 }
 

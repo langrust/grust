@@ -230,7 +230,7 @@ impl StreamExpression {
         signal_id: &String,
         identifier_creator: &mut IdentifierCreator,
         graph: &mut Graph<Color>,
-        nodes: &HashMap<String, &Node>,
+        nodes: &HashMap<String, Node>,
     ) -> Vec<Equation> {
         match self {
             StreamExpression::UnitaryNodeApplication {
@@ -1408,7 +1408,7 @@ mod inline_when_needed {
         graph.add_edge(&String::from("o"), String::from("i"), 0);
         graph.add_edge(&String::from("o"), String::from("j"), 1);
         my_node.graph.set(graph).unwrap();
-        nodes.insert(String::from("my_node"), &my_node);
+        nodes.insert(String::from("my_node"), my_node);
 
         // node other_node(i: int) {
         //     out o: int = 0 fby i;
@@ -1462,7 +1462,7 @@ mod inline_when_needed {
         graph.add_vertex(String::from("i"), Color::Black);
         graph.add_edge(&String::from("o"), String::from("i"), 1);
         other_node.graph.set(graph).unwrap();
-        nodes.insert(String::from("other_node"), &other_node);
+        nodes.insert(String::from("other_node"), other_node);
 
         // x: int = 1 + my_node(v*2, x).o
         let mut expression_1 = StreamExpression::MapApplication {
@@ -1610,7 +1610,7 @@ mod inline_when_needed {
         graph.add_edge(&String::from("x"), String::from("x"), 1);
         graph.add_edge(&String::from("y"), String::from("x"), 1);
         node.graph.set(graph.clone()).unwrap();
-        nodes.insert(String::from("test"), &node);
+        nodes.insert(String::from("test"), node.clone());
 
         let mut identifier_creator = IdentifierCreator::from(
             node.unitary_nodes
