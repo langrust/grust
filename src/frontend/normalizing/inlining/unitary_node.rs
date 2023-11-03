@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use crate::{
     common::graph::{color::Color, Graph},
     hir::{
-        equation::Equation, identifier_creator::IdentifierCreator, node::Node, once_cell::OnceCell,
-        signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        equation::Equation, identifier_creator::IdentifierCreator, memory::Memory, node::Node,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
     },
 };
 
@@ -37,8 +38,12 @@ impl UnitaryNode {
         // compute new equations for the unitary node
         let mut new_equations: Vec<Equation> = vec![];
         self.equations.iter().for_each(|equation| {
-            let mut retrieved_equations =
-                equation.inline_when_needed_reccursive(&mut identifier_creator, graph, &nodes);
+            let mut retrieved_equations = equation.inline_when_needed_reccursive(
+                &mut self.memory,
+                &mut identifier_creator,
+                graph,
+                &nodes,
+            );
             new_equations.append(&mut retrieved_equations)
         });
 
@@ -72,12 +77,12 @@ impl UnitaryNode {
     /// o: int = 0 fby j_1;
     /// j_1: int = o + 1;
     /// ```
-    pub fn instantiate_equations(
+    pub fn instantiate_equations_and_memory(
         &self,
         identifier_creator: &mut IdentifierCreator,
         inputs: &[(String, StreamExpression)],
         new_output_signal: Option<Signal>,
-    ) -> Vec<Equation> {
+    ) -> (Vec<Equation>, Memory) {
         // create the context with the given inputs
         let mut context_map = inputs
             .iter()
@@ -100,12 +105,21 @@ impl UnitaryNode {
                 equation.add_necessary_renaming(identifier_creator, &mut context_map)
             }
         });
+        // add identifiers of the inlined memory to the context
+        self.memory
+            .add_necessary_renaming(identifier_creator, &mut context_map);
 
         // reduce equations according to the context
-        self.equations
+        let equations = self
+            .equations
             .iter()
             .map(|equation| equation.replace_by_context(&context_map))
-            .collect()
+            .collect();
+
+        // reduce memory according to the context
+        let memory = self.memory.replace_by_context(&context_map);
+
+        (equations, memory)
     }
 
     /// Update unitary node equations and add the corresponding dependency graph.
@@ -137,7 +151,7 @@ impl UnitaryNode {
 }
 
 #[cfg(test)]
-mod instantiate_equations {
+mod instantiate_equations_and_memory {
 
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
@@ -221,7 +235,7 @@ mod instantiate_equations {
             graph: OnceCell::new(),
         };
 
-        let equations = unitary_node.instantiate_equations(
+        let (equations, _) = unitary_node.instantiate_equations_and_memory(
             &mut identifier_creator,
             &vec![(
                 format!("i"),
@@ -370,7 +384,7 @@ mod instantiate_equations {
             graph: OnceCell::new(),
         };
 
-        let equations = unitary_node.instantiate_equations(
+        let (equations, _) = unitary_node.instantiate_equations_and_memory(
             &mut identifier_creator,
             &vec![(
                 format!("i"),
@@ -447,5 +461,228 @@ mod instantiate_equations {
                 .iter()
                 .any(|control_equation| &equation == control_equation))
         }
+    }
+
+    #[test]
+    fn should_instantiate_nodes_memory_with_the_given_inputs_without_output_infos() {
+        // node calling_node(i: int) {
+        //     o: int = to_be_inlined(o);
+        //     out j: int = i * o;
+        // }
+        let mut identifier_creator = IdentifierCreator::from(vec![
+            String::from("i"),
+            String::from("j"),
+            String::from("o"),
+        ]);
+
+        // node to_be_inlined(i: int) {
+        //     out o: int = mem_o;
+        // }
+        // memory { mem_o: i + 1}
+        let mut memory = Memory::new();
+        memory.add_buffer(
+            format!("mem_o"),
+            Constant::Integer(0),
+            StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+1"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+                inputs: vec![StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("i"),
+                        scope: Scope::Input,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                }],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+            },
+        );
+        let unitary_node = UnitaryNode {
+            node_id: String::from("to_be_inlined"),
+            output_id: String::from("o"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![Equation {
+                scope: Scope::Output,
+                id: String::from("o"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("mem_o"),
+                        scope: Scope::Input,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("mem_o"), 0)]),
+                },
+                location: Location::default(),
+            }],
+            memory,
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let (_, memory) = unitary_node.instantiate_equations_and_memory(
+            &mut identifier_creator,
+            &vec![(
+                format!("i"),
+                StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("o"),
+                        scope: Scope::Local,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+                },
+            )],
+            None,
+        );
+
+        // memory { mem_o: o + 1}
+        let mut control = Memory::new();
+        control.add_buffer(
+            format!("mem_o"),
+            Constant::Integer(0),
+            StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+1"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+                inputs: vec![StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("o"),
+                        scope: Scope::Local,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+                }],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+            },
+        );
+
+        assert_eq!(memory, control)
+    }
+
+    #[test]
+    fn should_instantiate_nodes_memory_with_the_given_inputs_with_output_infos() {
+        // node calling_node(i: int) {
+        //     o: int = to_be_inlined(o);
+        //     out j: int = i * o;
+        // }
+        let mut identifier_creator = IdentifierCreator::from(vec![
+            String::from("i"),
+            String::from("j"),
+            String::from("o"),
+        ]);
+
+        // node to_be_inlined(i: int) {
+        //     out o: int = mem_o;
+        // }
+        // memory { mem_o: i + 1}
+        let mut memory = Memory::new();
+        memory.add_buffer(
+            format!("mem_o"),
+            Constant::Integer(0),
+            StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+1"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+                inputs: vec![StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("i"),
+                        scope: Scope::Input,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+                }],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
+            },
+        );
+        let unitary_node = UnitaryNode {
+            node_id: String::from("to_be_inlined"),
+            output_id: String::from("o"),
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![Equation {
+                scope: Scope::Output,
+                id: String::from("o"),
+                signal_type: Type::Integer,
+                expression: StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("mem_o"),
+                        scope: Scope::Input,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("mem_o"), 0)]),
+                },
+                location: Location::default(),
+            }],
+            memory,
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let (_, memory) = unitary_node.instantiate_equations_and_memory(
+            &mut identifier_creator,
+            &vec![(
+                format!("i"),
+                StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("o"),
+                        scope: Scope::Local,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+                },
+            )],
+            Some(Signal {
+                id: String::from("o"),
+                scope: Scope::Local,
+            }),
+        );
+
+        // memory { mem_o: o + 1}
+        let mut control = Memory::new();
+        control.add_buffer(
+            format!("mem_o"),
+            Constant::Integer(0),
+            StreamExpression::MapApplication {
+                function_expression: Expression::Call {
+                    id: String::from("+1"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+                inputs: vec![StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("o"),
+                        scope: Scope::Local,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+                }],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
+            },
+        );
+
+        assert_eq!(memory, control)
     }
 }
