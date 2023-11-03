@@ -49,27 +49,77 @@ impl StreamExpression {
                     dependencies: Dependencies::from(vec![(memory_id, 0)]),
                 }
             }
-            StreamExpression::MapApplication { inputs, .. } => {
+            StreamExpression::MapApplication {
+                inputs,
+                dependencies,
+                ..
+            } => {
                 inputs.iter_mut().for_each(|expression| {
                     expression.memorize(signal_name, identifier_creator, memory)
-                })
+                });
+
+                *dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .collect(),
+                );
             }
             StreamExpression::NodeApplication { .. } => unreachable!(),
             StreamExpression::UnitaryNodeApplication {
-                id, node, signal, ..
-            } => memory.add_called_node(id.clone().unwrap(), node.clone(), signal.clone()),
-            StreamExpression::Structure { fields, .. } => {
+                id,
+                inputs,
+                dependencies,
+                node,
+                signal,
+                ..
+            } => {
+                memory.add_called_node(id.clone().unwrap(), node.clone(), signal.clone());
+
+                *dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                        .collect(),
+                );
+            }
+            StreamExpression::Structure {
+                fields,
+                dependencies,
+                ..
+            } => {
                 fields.iter_mut().for_each(|(_, expression)| {
                     expression.memorize(signal_name, identifier_creator, memory)
-                })
+                });
+
+                *dependencies = Dependencies::from(
+                    fields
+                        .iter()
+                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                        .collect(),
+                );
             }
-            StreamExpression::Array { elements, .. } => {
+            StreamExpression::Array {
+                elements,
+                dependencies,
+                ..
+            } => {
                 elements.iter_mut().for_each(|expression| {
                     expression.memorize(signal_name, identifier_creator, memory)
-                })
+                });
+
+                *dependencies = Dependencies::from(
+                    elements
+                        .iter()
+                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .collect(),
+                );
             }
             StreamExpression::Match {
-                expression, arms, ..
+                expression,
+                arms,
+                dependencies,
+                ..
             } => {
                 expression.memorize(signal_name, identifier_creator, memory);
                 arms.iter_mut()
@@ -81,7 +131,21 @@ impl StreamExpression {
                             .iter_mut()
                             .for_each(|equation| equation.memorize(identifier_creator, memory));
                         expression.memorize(signal_name, identifier_creator, memory)
-                    })
+                    });
+
+                *dependencies = Dependencies::from(
+                    arms.iter()
+                        .flat_map(|(_, bound, _, matched_expression)| {
+                            let mut bound_dependencies = bound
+                                .as_ref()
+                                .map_or(vec![], |expression| expression.get_dependencies().clone());
+                            let mut matched_expression_dependencies =
+                                matched_expression.get_dependencies().clone();
+                            matched_expression_dependencies.append(&mut bound_dependencies);
+                            matched_expression_dependencies
+                        })
+                        .collect(),
+                );
             }
             StreamExpression::When {
                 option,
@@ -89,6 +153,7 @@ impl StreamExpression {
                 present,
                 default_body,
                 default,
+                dependencies,
                 ..
             } => {
                 option.memorize(signal_name, identifier_creator, memory);
@@ -99,7 +164,15 @@ impl StreamExpression {
                 default_body
                     .iter_mut()
                     .for_each(|equation| equation.memorize(identifier_creator, memory));
-                default.memorize(signal_name, identifier_creator, memory)
+                default.memorize(signal_name, identifier_creator, memory);
+
+                let mut option_dependencies = option.get_dependencies().clone();
+                let mut present_dependencies = present.get_dependencies().clone();
+                let mut default_dependencies = default.get_dependencies().clone();
+                option_dependencies.append(&mut present_dependencies);
+                option_dependencies.append(&mut default_dependencies);
+
+                *dependencies = Dependencies::from(option_dependencies);
             }
             _ => (),
         }
@@ -213,7 +286,10 @@ mod memorize {
             ],
             typing: Type::Integer,
             location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 1)]),
+            dependencies: Dependencies::from(vec![
+                (String::from("s"), 0),
+                (String::from("memx"), 0),
+            ]),
         };
         assert_eq!(expression, control);
     }

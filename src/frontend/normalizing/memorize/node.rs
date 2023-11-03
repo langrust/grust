@@ -48,6 +48,8 @@ mod memorize {
     use std::collections::HashMap;
 
     use crate::ast::expression::Expression;
+    use crate::common::graph::color::Color;
+    use crate::common::graph::Graph;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, memory::Memory, node::Node,
@@ -57,6 +59,7 @@ mod memorize {
 
     #[test]
     fn should_memorize_followed_by() {
+        // out x: int = s + 0 fby v
         let equation = Equation {
             scope: Scope::Output,
             id: String::from("x"),
@@ -105,6 +108,9 @@ mod memorize {
             },
             location: Location::default(),
         };
+        // node test(s: int, v: int) {
+        //      out x: int = s + 0 fby v
+        // }
         let unitary_node = UnitaryNode {
             node_id: String::from("test"),
             output_id: String::from("x"),
@@ -131,6 +137,7 @@ mod memorize {
         };
         node.memorize();
 
+        // out x: int = s + memx
         let new_equation = Equation {
             scope: Scope::Output,
             id: String::from("x"),
@@ -168,11 +175,14 @@ mod memorize {
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![
                     (String::from("s"), 0),
-                    (String::from("v"), 1),
+                    (String::from("memx"), 0),
                 ]),
             },
             location: Location::default(),
         };
+        // node test(s: int, v: int) {
+        //      out x: int = s + memx
+        // }
         let mut memory = Memory::new();
         memory.add_buffer(
             String::from("memx"),
@@ -187,6 +197,13 @@ mod memorize {
                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
             },
         );
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_vertex(format!("s"), Color::White);
+        graph.add_vertex(format!("v"), Color::White);
+        graph.add_vertex(format!("memx"), Color::White);
+        graph.add_edge(&format!("x"), format!("s"), 0);
+        graph.add_edge(&format!("x"), format!("memx"), 0);
         let control = Node {
             id: String::from("test"),
             is_component: false,
@@ -207,7 +224,7 @@ mod memorize {
                     equations: vec![new_equation],
                     memory,
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph),
                 },
             )]),
             location: Location::default(),
@@ -218,6 +235,9 @@ mod memorize {
 
     #[test]
     fn should_memorize_node_expression() {
+        // x_1: int = v*2
+        // x_2: int = my_node(s, x_1).o
+        // out x: int = x_2 + 1
         let equations = vec![
             Equation {
                 scope: Scope::Local,
@@ -324,6 +344,11 @@ mod memorize {
                 location: Location::default(),
             },
         ];
+        // node test(s: int, v: int) {
+        //      x_1: int = v*2
+        //      x_2: int = my_node(s, x_1).o
+        //      out x: int = x_2 + 1
+        // }
         let unitary_node = UnitaryNode {
             node_id: String::from("test"),
             output_id: String::from("x"),
@@ -360,6 +385,16 @@ mod memorize {
             String::from("my_node"),
             String::from("o"),
         );
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("x_1"), Color::White);
+        graph.add_vertex(format!("x_2"), Color::White);
+        graph.add_vertex(format!("s"), Color::White);
+        graph.add_vertex(format!("v"), Color::White);
+        graph.add_vertex(format!("x"), Color::White);
+        graph.add_edge(&format!("x"), format!("x_2"), 0);
+        graph.add_edge(&format!("x_2"), format!("s"), 0);
+        graph.add_edge(&format!("x_2"), format!("x_1"), 0);
+        graph.add_edge(&format!("x_1"), format!("v"), 0);
         let control = Node {
             id: String::from("test"),
             is_component: false,
@@ -384,7 +419,7 @@ mod memorize {
                     equations: equations,
                     memory,
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph),
                 },
             )]),
             location: Location::default(),
