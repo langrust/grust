@@ -71,7 +71,7 @@ where
     /// Add edge between existing vertices to the graph.
     pub fn add_edge(&mut self, from: &String, to: String, weight: usize) {
         if !(self.has_vertex(from) && self.has_vertex(&to)) {
-            panic!("vertices do not exist")
+            panic!("vertices '{from}' or '{to}' do not exist")
         }
         if !self.has_edge(from, &to, &weight) {
             self.get_vertex_mut(from).add_neighbor(to, weight)

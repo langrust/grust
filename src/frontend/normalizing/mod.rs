@@ -1055,12 +1055,13 @@ mod normalize {
         };
 
         // node mem(i: int) {
-        //     out o: int = 0 fby i;
+        //     out o: int = memo;
         // }
         let mut mem_graph = Graph::new();
         mem_graph.add_vertex(String::from("i"), Color::Black);
         mem_graph.add_vertex(String::from("o"), Color::Black);
-        mem_graph.add_edge(&String::from("o"), String::from("i"), 1);
+        mem_graph.add_vertex(String::from("memo"), Color::Black);
+        mem_graph.add_edge(&String::from("o"), String::from("memo"), 0);
         let mut memory = Memory::new();
         memory.add_buffer(
             format!("memo"),
@@ -1096,8 +1097,12 @@ mod normalize {
             }],
             memory,
             location: Location::default(),
-            graph: OnceCell::from(mem_graph.clone()),
+            graph: OnceCell::from(mem_graph),
         };
+        let mut mem_graph = Graph::new();
+        mem_graph.add_vertex(String::from("i"), Color::Black);
+        mem_graph.add_vertex(String::from("o"), Color::Black);
+        mem_graph.add_edge(&String::from("o"), String::from("i"), 1);
         let mem = Node {
             id: String::from("mem"),
             is_component: false,
@@ -1295,14 +1300,15 @@ mod normalize {
             graph: OnceCell::from(other_node_x_graph),
         };
         // node other_node().z {
-        //     out z: int = 0 fby z;
+        //     out z: int = memo;
         // }
         let mut other_node_z_graph = Graph::new();
         other_node_z_graph.add_vertex(String::from("z"), Color::Black);
-        other_node_z_graph.add_edge(&String::from("z"), String::from("z"), 1);
+        other_node_z_graph.add_vertex(String::from("memo"), Color::Black);
+        other_node_z_graph.add_edge(&String::from("z"), String::from("memo"), 0);
         let mut memory = Memory::new();
         memory.add_buffer(
-            format!("memz"),
+            format!("memo"),
             Constant::Integer(0),
             StreamExpression::SignalCall {
                 signal: Signal {
@@ -1324,12 +1330,12 @@ mod normalize {
                 signal_type: Type::Integer,
                 expression: StreamExpression::SignalCall {
                     signal: Signal {
-                        id: String::from("memz"),
+                        id: String::from("memo"),
                         scope: Scope::Memory,
                     },
                     typing: Type::Integer,
                     location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("memz"), 0)]),
+                    dependencies: Dependencies::from(vec![(String::from("memo"), 0)]),
                 },
                 location: Location::default(),
             }],

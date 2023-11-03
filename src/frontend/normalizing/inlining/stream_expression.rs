@@ -7,7 +7,7 @@ use crate::{
     },
     hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        node::Node, signal::Signal, stream_expression::StreamExpression,
+        memory::Memory, node::Node, signal::Signal, stream_expression::StreamExpression,
     },
 };
 
@@ -79,10 +79,27 @@ impl StreamExpression {
                 );
             }
             StreamExpression::UnitaryNodeApplication {
+                id,
                 inputs,
                 ref mut dependencies,
                 ..
             } => {
+                // replace the id of the called node
+                id.as_mut().map(|id| {
+                    if let Some(element) = context_map.get(id) {
+                        match element {
+                            Union::I1(Signal { id: new_id, .. })
+                            | Union::I2(StreamExpression::SignalCall {
+                                signal: Signal { id: new_id, .. },
+                                ..
+                            }) => {
+                                *id = new_id.clone();
+                            }
+                            Union::I2(_) => unreachable!(),
+                        }
+                    }
+                });
+
                 inputs
                     .iter_mut()
                     .for_each(|(_, expression)| expression.replace_by_context(context_map));
@@ -228,12 +245,14 @@ impl StreamExpression {
     pub fn inline_when_needed(
         &mut self,
         signal_id: &String,
+        memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         graph: &mut Graph<Color>,
         nodes: &HashMap<String, Node>,
     ) -> Vec<Equation> {
         match self {
             StreamExpression::UnitaryNodeApplication {
+                id,
                 node,
                 inputs,
                 signal,
@@ -246,7 +265,13 @@ impl StreamExpression {
                 let mut new_equations = inputs
                     .iter_mut()
                     .flat_map(|(_, expression)| {
-                        expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                        expression.inline_when_needed(
+                            signal_id,
+                            memory,
+                            identifier_creator,
+                            graph,
+                            nodes,
+                        )
                     })
                     .collect::<Vec<_>>();
 
@@ -258,9 +283,12 @@ impl StreamExpression {
                     let called_node = nodes.get(node).unwrap();
                     let called_unitary_node = called_node.unitary_nodes.get(signal).unwrap();
 
-                    // get equations from called node, with corresponding inputs
-                    let mut retrieved_equations =
-                        called_unitary_node.instantiate_equations(identifier_creator, inputs, None);
+                    // get equations and memory from called node, with corresponding inputs
+                    let (mut retrieved_equations, retrieved_memory) = called_unitary_node
+                        .instantiate_equations_and_memory(identifier_creator, inputs, None);
+
+                    // remove called node from memory
+                    memory.remove_called_node(id.as_ref().unwrap());
 
                     // change the expression to a signal call to the output signal
                     let typing = typing.clone();
@@ -281,6 +309,7 @@ impl StreamExpression {
                     });
 
                     new_equations.append(&mut retrieved_equations);
+                    memory.combine(retrieved_memory);
                 } else {
                     // change dependencies to be the sum of inputs dependencies
                     *dependencies = Dependencies::from(
@@ -300,8 +329,13 @@ impl StreamExpression {
                 ref mut dependencies,
                 ..
             } => {
-                let new_equations =
-                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                let new_equations = expression.inline_when_needed(
+                    signal_id,
+                    memory,
+                    identifier_creator,
+                    graph,
+                    nodes,
+                );
                 *dependencies = Dependencies::from(
                     expression
                         .get_dependencies()
@@ -319,7 +353,13 @@ impl StreamExpression {
                 let new_equations = inputs
                     .iter_mut()
                     .flat_map(|expression| {
-                        expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                        expression.inline_when_needed(
+                            signal_id,
+                            memory,
+                            identifier_creator,
+                            graph,
+                            nodes,
+                        )
                     })
                     .collect();
                 *dependencies = Dependencies::from(
@@ -339,7 +379,13 @@ impl StreamExpression {
                 let new_equations = fields
                     .iter_mut()
                     .flat_map(|(_, expression)| {
-                        expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                        expression.inline_when_needed(
+                            signal_id,
+                            memory,
+                            identifier_creator,
+                            graph,
+                            nodes,
+                        )
                     })
                     .collect();
                 *dependencies = Dependencies::from(
@@ -358,7 +404,13 @@ impl StreamExpression {
                 let new_equations = elements
                     .iter_mut()
                     .flat_map(|expression| {
-                        expression.inline_when_needed(signal_id, identifier_creator, graph, nodes)
+                        expression.inline_when_needed(
+                            signal_id,
+                            memory,
+                            identifier_creator,
+                            graph,
+                            nodes,
+                        )
                     })
                     .collect();
                 *dependencies = Dependencies::from(
@@ -375,8 +427,13 @@ impl StreamExpression {
                 ref mut dependencies,
                 ..
             } => {
-                let mut new_equations =
-                    expression.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                let mut new_equations = expression.inline_when_needed(
+                    signal_id,
+                    memory,
+                    identifier_creator,
+                    graph,
+                    nodes,
+                );
 
                 let mut other_new_equations = arms
                     .iter_mut()
@@ -387,6 +444,7 @@ impl StreamExpression {
                             .map(|expression| {
                                 expression.inline_when_needed(
                                     signal_id,
+                                    memory,
                                     identifier_creator,
                                     graph,
                                     nodes,
@@ -395,6 +453,7 @@ impl StreamExpression {
                             .unwrap_or_default();
                         let mut new_equations_expression = expression.inline_when_needed(
                             signal_id,
+                            memory,
                             identifier_creator,
                             graph,
                             nodes,
@@ -462,11 +521,11 @@ impl StreamExpression {
                 assert!(default_body.is_empty());
 
                 let mut new_equations_option =
-                    option.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                    option.inline_when_needed(signal_id, memory, identifier_creator, graph, nodes);
                 let mut new_equations_present =
-                    present.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                    present.inline_when_needed(signal_id, memory, identifier_creator, graph, nodes);
                 let mut new_equations_default =
-                    default.inline_when_needed(signal_id, identifier_creator, graph, nodes);
+                    default.inline_when_needed(signal_id, memory, identifier_creator, graph, nodes);
                 new_equations_option.append(&mut new_equations_present);
                 new_equations_option.append(&mut new_equations_default);
 
@@ -1161,7 +1220,7 @@ mod replace_by_context {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: None,
+                id: Some(format!("my_nodeox")),
                 node: String::from("my_node"),
                 signal: String::from("o"),
                 inputs: vec![
@@ -1247,7 +1306,170 @@ mod replace_by_context {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: None,
+                id: Some(format!("my_nodeox")),
+                node: String::from("my_node"),
+                signal: String::from("o"),
+                inputs: vec![
+                    (
+                        format!("i"),
+                        StreamExpression::SignalCall {
+                            signal: Signal {
+                                id: String::from("a"),
+                                scope: Scope::Local,
+                            },
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
+                        },
+                    ),
+                    (
+                        format!("j"),
+                        StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: String::from("/2"),
+                                typing: Some(Type::Abstract(
+                                    vec![Type::Integer],
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::SignalCall {
+                                signal: Signal {
+                                    id: String::from("b"),
+                                    scope: Scope::Local,
+                                },
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                            }],
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                        },
+                    ),
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("a"), 0),
+                    (String::from("b"), 0),
+                ]),
+            }],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]),
+        };
+
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_replace_the_id_of_called_node_when_already_used() {
+        // 1 + my_node(x, y).o
+        let mut expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("1+"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::UnitaryNodeApplication {
+                id: Some(format!("my_nodeox")),
+                node: String::from("my_node"),
+                signal: String::from("o"),
+                inputs: vec![
+                    (
+                        format!("i"),
+                        StreamExpression::SignalCall {
+                            signal: Signal {
+                                id: String::from("x"),
+                                scope: Scope::Local,
+                            },
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+                        },
+                    ),
+                    (
+                        format!("j"),
+                        StreamExpression::SignalCall {
+                            signal: Signal {
+                                id: String::from("y"),
+                                scope: Scope::Local,
+                            },
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+                        },
+                    ),
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("x"), 1),
+                    (String::from("y"), 0),
+                ]),
+            }],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(String::from("x"), 1), (String::from("y"), 0)]),
+        };
+
+        let context_map = HashMap::from([
+            (
+                String::from("x"),
+                Union::I1(Signal {
+                    id: String::from("a"),
+                    scope: Scope::Local,
+                }),
+            ),
+            (
+                String::from("y"),
+                Union::I2(StreamExpression::MapApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("/2"),
+                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        signal: Signal {
+                            id: String::from("b"),
+                            scope: Scope::Local,
+                        },
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                    }],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
+                }),
+            ),
+            (
+                format!("my_nodeox"),
+                Union::I1(Signal {
+                    id: String::from("my_nodeox1"),
+                    scope: Scope::Memory,
+                }),
+            ),
+        ]);
+
+        expression.replace_by_context(&context_map);
+
+        // 1 + my_node(a, b/2).o
+        let control = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: String::from("1+"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::UnitaryNodeApplication {
+                id: Some(format!("my_nodeox1")),
                 node: String::from("my_node"),
                 signal: String::from("o"),
                 inputs: vec![
@@ -1475,7 +1697,7 @@ mod inline_when_needed {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: None,
+                id: Some(format!("my_nodeox")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -1541,7 +1763,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: None,
+                id: Some(format!("other_nodeoy")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -1579,7 +1801,10 @@ mod inline_when_needed {
         //     x: int = my_node(v*2, x).o
         //     out y: int = other_node(x-1).o
         // }
-        let node = Node {
+        let mut memory = Memory::new();
+        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        let mut node = Node {
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -1594,7 +1819,7 @@ mod inline_when_needed {
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
                     equations: vec![equation_1.clone(), equation_2.clone()],
-                    memory: Memory::new(),
+                    memory,
                     location: Location::default(),
                     graph: OnceCell::new(),
                 },
@@ -1620,6 +1845,11 @@ mod inline_when_needed {
         );
         let new_equations = expression_1.inline_when_needed(
             &String::from("x"),
+            &mut node
+                .unitary_nodes
+                .get_mut(&String::from("y"))
+                .unwrap()
+                .memory,
             &mut identifier_creator,
             &mut graph,
             &nodes,
