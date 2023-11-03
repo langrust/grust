@@ -19,7 +19,12 @@ impl StreamExpression {
     /// node call `memmy_nodeo: (my_node, o);` and is unchanged.
     ///
     /// Examples are tested in source.
-    pub fn memorize(&mut self, identifier_creator: &mut IdentifierCreator, memory: &mut Memory) {
+    pub fn memorize(
+        &mut self,
+        signal_name: &String,
+        identifier_creator: &mut IdentifierCreator,
+        memory: &mut Memory,
+    ) {
         match self {
             StreamExpression::FollowedBy {
                 constant,
@@ -30,7 +35,7 @@ impl StreamExpression {
             } => {
                 let memory_id = identifier_creator.new_identifier(
                     String::from("mem"),
-                    String::from(""),
+                    signal_name.clone(),
                     String::from(""),
                 );
                 memory.add_buffer(memory_id.clone(), constant.clone(), *expression.clone());
@@ -44,32 +49,38 @@ impl StreamExpression {
                     dependencies: Dependencies::from(vec![(memory_id, 0)]),
                 }
             }
-            StreamExpression::MapApplication { inputs, .. } => inputs
-                .iter_mut()
-                .for_each(|expression| expression.memorize(identifier_creator, memory)),
+            StreamExpression::MapApplication { inputs, .. } => {
+                inputs.iter_mut().for_each(|expression| {
+                    expression.memorize(signal_name, identifier_creator, memory)
+                })
+            }
             StreamExpression::NodeApplication { .. } => unreachable!(),
             StreamExpression::UnitaryNodeApplication {
                 id, node, signal, ..
             } => memory.add_called_node(id.clone().unwrap(), node.clone(), signal.clone()),
-            StreamExpression::Structure { fields, .. } => fields
-                .iter_mut()
-                .for_each(|(_, expression)| expression.memorize(identifier_creator, memory)),
-            StreamExpression::Array { elements, .. } => elements
-                .iter_mut()
-                .for_each(|expression| expression.memorize(identifier_creator, memory)),
+            StreamExpression::Structure { fields, .. } => {
+                fields.iter_mut().for_each(|(_, expression)| {
+                    expression.memorize(signal_name, identifier_creator, memory)
+                })
+            }
+            StreamExpression::Array { elements, .. } => {
+                elements.iter_mut().for_each(|expression| {
+                    expression.memorize(signal_name, identifier_creator, memory)
+                })
+            }
             StreamExpression::Match {
                 expression, arms, ..
             } => {
-                expression.memorize(identifier_creator, memory);
+                expression.memorize(signal_name, identifier_creator, memory);
                 arms.iter_mut()
                     .for_each(|(_, bound_expression, equations, expression)| {
                         if let Some(expression) = bound_expression.as_mut() {
-                            expression.memorize(identifier_creator, memory)
+                            expression.memorize(signal_name, identifier_creator, memory)
                         };
                         equations
                             .iter_mut()
                             .for_each(|equation| equation.memorize(identifier_creator, memory));
-                        expression.memorize(identifier_creator, memory)
+                        expression.memorize(signal_name, identifier_creator, memory)
                     })
             }
             StreamExpression::When {
@@ -80,15 +91,15 @@ impl StreamExpression {
                 default,
                 ..
             } => {
-                option.memorize(identifier_creator, memory);
+                option.memorize(signal_name, identifier_creator, memory);
                 present_body
                     .iter_mut()
                     .for_each(|equation| equation.memorize(identifier_creator, memory));
-                present.memorize(identifier_creator, memory);
+                present.memorize(signal_name, identifier_creator, memory);
                 default_body
                     .iter_mut()
                     .for_each(|equation| equation.memorize(identifier_creator, memory));
-                default.memorize(identifier_creator, memory)
+                default.memorize(signal_name, identifier_creator, memory)
             }
             _ => (),
         }
@@ -153,11 +164,11 @@ mod memorize {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 1)]),
         };
-        expression.memorize(&mut identifier_creator, &mut memory);
+        expression.memorize(&String::from("x"), &mut identifier_creator, &mut memory);
 
         let mut control = Memory::new();
         control.add_buffer(
-            String::from("mem"),
+            String::from("memx"),
             Constant::Integer(0),
             StreamExpression::SignalCall {
                 signal: Signal {
@@ -251,7 +262,7 @@ mod memorize {
                 (String::from("x_1"), 0),
             ]),
         };
-        expression.memorize(&mut identifier_creator, &mut memory);
+        expression.memorize(&String::from("y"), &mut identifier_creator, &mut memory);
 
         let mut control = Memory::new();
         control.add_called_node(

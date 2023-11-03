@@ -16,7 +16,9 @@ impl Equation {
     ///
     /// Examples are tested in source.
     pub fn memorize(&mut self, identifier_creator: &mut IdentifierCreator, memory: &mut Memory) {
-        self.expression.memorize(identifier_creator, memory)
+        let signal_name = self.id.clone();
+        self.expression
+            .memorize(&signal_name, identifier_creator, memory)
     }
 }
 
