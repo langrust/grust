@@ -158,9 +158,9 @@ impl File {
     /// ```
     pub fn normalize(&mut self, errors: &mut Vec<Error>) -> Result<(), TerminationError> {
         self.generate_unitary_nodes(errors)?; // check that all signals are used
+        self.normal_form();
         self.inline_when_needed();
         self.schedule();
-        self.normal_form();
         self.memorize();
         Ok(())
     }
@@ -1140,10 +1140,14 @@ mod normalize {
         let mut other_node_x_graph = Graph::new();
         other_node_x_graph.add_vertex(String::from("v"), Color::Black);
         other_node_x_graph.add_vertex(String::from("y"), Color::Black);
+        other_node_x_graph.add_vertex(String::from("x_1"), Color::Black);
+        other_node_x_graph.add_vertex(String::from("x_2"), Color::Black);
         other_node_x_graph.add_vertex(String::from("x"), Color::Black);
-        other_node_x_graph.add_edge(&String::from("y"), String::from("v"), 0);
         other_node_x_graph.add_edge(&String::from("x"), String::from("y"), 0);
         other_node_x_graph.add_edge(&String::from("x"), String::from("v"), 0);
+        other_node_x_graph.add_edge(&String::from("y"), String::from("x_2"), 0);
+        other_node_x_graph.add_edge(&String::from("x_2"), String::from("x_1"), 0);
+        other_node_x_graph.add_edge(&String::from("x_1"), String::from("v"), 0);
         let mut memory = Memory::new();
         memory.add_called_node(
             format!("my_nodeo2x_2"),
