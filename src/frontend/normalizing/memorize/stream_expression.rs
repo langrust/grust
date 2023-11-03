@@ -203,12 +203,12 @@ mod memorize {
                 },
                 StreamExpression::SignalCall {
                     signal: Signal {
-                        id: String::from("mem"),
+                        id: String::from("memx"),
                         scope: Scope::Memory,
                     },
                     typing: Type::Integer,
                     location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("mem"), 0)]),
+                    dependencies: Dependencies::from(vec![(String::from("memx"), 0)]),
                 },
             ],
             typing: Type::Integer,
