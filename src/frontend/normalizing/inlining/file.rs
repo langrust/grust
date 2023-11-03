@@ -55,6 +55,12 @@ mod inline_when_needed {
         // node my_node(i: int, j: int) {
         //     out o: int = i + (0 fby j);
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_vertex(String::from("j"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 0);
+        graph.add_edge(&String::from("o"), String::from("j"), 1);
         let my_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -123,23 +129,20 @@ mod inline_when_needed {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_vertex(String::from("j"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("j"), 1);
-        my_node.graph.set(graph).unwrap();
 
         // node other_node(i: int) {
         //     out o: int = 0 fby i;
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 1);
         let other_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -178,17 +181,12 @@ mod inline_when_needed {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 1);
-        other_node.graph.set(graph).unwrap();
 
         // x: int = my_node(v*2, x).o
         let equation_1 = Equation {
@@ -291,6 +289,13 @@ mod inline_when_needed {
         //     x: int = my_node(v*2, x).o
         //     out y: int = other_node(x-1).o
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
             id: String::from("test"),
             is_component: false,
@@ -308,20 +313,12 @@ mod inline_when_needed {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
-        node.graph.set(graph).unwrap();
 
         let mut file = File {
             typedefs: vec![],
@@ -470,16 +467,9 @@ mod inline_when_needed {
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+
+            graph: OnceCell::from(graph),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
-        control.graph.set(graph).unwrap();
 
         assert_eq!(node, &control)
     }
@@ -489,6 +479,12 @@ mod inline_when_needed {
         // node my_node(i: int, j: int) {
         //     out o: int = i + (0 fby j);
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("i"), Color::White);
+        graph.add_vertex(format!("j"), Color::White);
+        graph.add_vertex(format!("o"), Color::White);
+        graph.add_edge(&format!("o"), format!("i"), 0);
+        graph.add_edge(&format!("o"), format!("j"), 1);
         let my_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -557,23 +553,20 @@ mod inline_when_needed {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_vertex(String::from("j"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("j"), 1);
-        my_node.graph.set(graph).unwrap();
 
         // node other_node(i: int) {
         //     out o: int = 0 fby i;
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(format!("i"), Color::White);
+        graph.add_vertex(format!("o"), Color::White);
+        graph.add_edge(&format!("o"), format!("i"), 1);
         let other_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -612,17 +605,12 @@ mod inline_when_needed {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 1);
-        other_node.graph.set(graph).unwrap();
 
         // x: int = 1 + my_node(v*2, x).o
         let equation_1 = Equation {
@@ -741,6 +729,13 @@ mod inline_when_needed {
         //     x: int = 1 + my_node(v*2, x).o
         //     out y: int = other_node(x-1).o
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
             id: String::from("test"),
             is_component: false,
@@ -758,20 +753,12 @@ mod inline_when_needed {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
-        node.graph.set(graph).unwrap();
 
         let mut file = File {
             typedefs: vec![],
@@ -952,18 +939,10 @@ mod inline_when_needed {
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
-        control.graph.set(graph).unwrap();
 
-        assert_eq!(node, &control)
+        assert_eq!(node.unitary_nodes, control.unitary_nodes)
     }
 
     #[test]
@@ -971,6 +950,12 @@ mod inline_when_needed {
         // node my_node(i: int, j: int) {
         //     out o: int = i + other_node(j).o;
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_vertex(String::from("j"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 0);
+        graph.add_edge(&String::from("o"), String::from("j"), 1);
         let my_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -1044,23 +1029,20 @@ mod inline_when_needed {
                     equations: vec![my_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_vertex(String::from("j"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("j"), 1);
-        my_node.graph.set(graph).unwrap();
 
         // node other_node(i: int) {
         //     out o: int = 0 fby i;
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("o"), Color::Black);
+        graph.add_vertex(String::from("i"), Color::Black);
+        graph.add_edge(&String::from("o"), String::from("i"), 1);
         let other_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -1099,17 +1081,12 @@ mod inline_when_needed {
                     equations: vec![other_node_equation],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 1);
-        other_node.graph.set(graph).unwrap();
 
         // x: int = my_node(v*2, x).o
         let equation_1 = Equation {
@@ -1212,6 +1189,13 @@ mod inline_when_needed {
         //     x: int = my_node(v*2, x).o
         //     out y: int = other_node(x-1).o
         // }
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v"), Color::Black);
+        graph.add_vertex(String::from("x"), Color::Black);
+        graph.add_vertex(String::from("y"), Color::Black);
+        graph.add_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
             id: String::from("test"),
             is_component: false,
@@ -1229,20 +1213,12 @@ mod inline_when_needed {
                     equations: vec![equation_1.clone(), equation_2.clone()],
                     memory: Memory::new(),
                     location: Location::default(),
-                    graph: OnceCell::new(),
+                    graph: OnceCell::from(graph.clone()),
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
-        node.graph.set(graph).unwrap();
 
         let mut file = File {
             typedefs: vec![],
@@ -1410,16 +1386,8 @@ mod inline_when_needed {
                 },
             )]),
             location: Location::default(),
-            graph: OnceCell::new(),
+            graph: OnceCell::from(graph.clone()),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
-        control.graph.set(graph).unwrap();
 
         assert_eq!(node, &control)
     }
