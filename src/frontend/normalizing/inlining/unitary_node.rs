@@ -47,16 +47,14 @@ impl UnitaryNode {
             .collect::<HashMap<_, _>>();
 
         // add output to context
-        let same_output = new_output_signal
-            .map_or(false, |new_output_signal| {
-                if self.output_id != new_output_signal.id {
-                    context_map
-                        .insert(self.output_id.clone(), Union::I1(new_output_signal));
-                    false
-                } else {
-                    true
-                }
-            });
+        let same_output = new_output_signal.map_or(false, |new_output_signal| {
+            if self.output_id != new_output_signal.id {
+                context_map.insert(self.output_id.clone(), Union::I1(new_output_signal));
+                false
+            } else {
+                true
+            }
+        });
 
         // add identifiers of the inlined equations to the context
         self.equations.iter().for_each(|equation| {
