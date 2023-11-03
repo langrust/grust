@@ -53,7 +53,10 @@ impl File {
     ///
     /// This example is tested in source.
     pub fn normal_form(&mut self) {
-        self.nodes.iter_mut().for_each(|node| node.normal_form())
+        self.nodes.iter_mut().for_each(|node| node.normal_form());
+        self.component
+            .as_mut()
+            .map_or((), |component| component.normal_form())
     }
 }
 
