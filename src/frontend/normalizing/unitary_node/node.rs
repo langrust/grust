@@ -52,7 +52,7 @@ impl Node {
             unitary_node.equations.iter_mut().for_each(|equation| {
                 equation
                     .expression
-                    .change_node_application_into_unitary_node_application(&used_inputs)
+                    .change_node_application_into_unitary_node_application(used_inputs)
             })
         })
     }
