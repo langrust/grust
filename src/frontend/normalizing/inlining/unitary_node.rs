@@ -42,7 +42,7 @@ impl UnitaryNode {
                 &mut self.memory,
                 &mut identifier_creator,
                 graph,
-                &nodes,
+                nodes,
             );
             new_equations.append(&mut retrieved_equations)
         });
@@ -123,9 +123,9 @@ impl UnitaryNode {
     }
 
     /// Update unitary node equations and add the corresponding dependency graph.
-    pub fn update_equations(&mut self, new_equations: &Vec<Equation>) {
+    pub fn update_equations(&mut self, new_equations: &[Equation]) {
         // put new equations in unitary node
-        self.equations = new_equations.clone();
+        self.equations = new_equations.to_vec();
         // add a dependency graph to the unitary node
         let mut graph = Graph::new();
         self.get_signals()

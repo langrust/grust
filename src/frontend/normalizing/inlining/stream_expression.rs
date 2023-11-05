@@ -85,7 +85,7 @@ impl StreamExpression {
                 ..
             } => {
                 // replace the id of the called node
-                id.as_mut().map(|id| {
+                if let Some(id) = id.as_mut() {
                     if let Some(element) = context_map.get(id) {
                         match element {
                             Union::I1(Signal { id: new_id, .. })
@@ -98,7 +98,7 @@ impl StreamExpression {
                             Union::I2(_) => unreachable!(),
                         }
                     }
-                });
+                };
 
                 inputs
                     .iter_mut()
