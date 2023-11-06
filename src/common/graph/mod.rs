@@ -83,9 +83,11 @@ where
         self.has_vertex(from) && self.get_vertex(from).has_neighbor_weight(to, weight)
     }
 
-    /// Get vertices' ids.
+    /// Get vertices' ids sorted by key.
     pub fn get_vertices(&self) -> Vec<String> {
-        self.vertices.keys().cloned().collect()
+        let mut vertices = self.vertices.keys().cloned().collect::<Vec<_>>();
+        vertices.sort();
+        vertices
     }
 
     /// Get edges as pairs of ids.
@@ -542,6 +544,22 @@ mod get_vertices {
         control.sort_unstable();
 
         assert_eq!(vertices, control)
+    }
+
+    #[test]
+    fn should_get_ids_in_key_order() {
+        let mut graph = Graph::new();
+        graph.add_vertex(String::from("v1"), 1);
+        graph.add_vertex(String::from("v2"), 2);
+        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+
+        let vertices = graph.get_vertices();
+
+        for (i, vertex) in vertices.iter().enumerate() {
+            if i > 0 {
+                assert!(vertices.get(i-1).unwrap() < vertex)
+            }
+        }
     }
 }
 

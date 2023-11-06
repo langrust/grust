@@ -725,28 +725,6 @@ component:
       inputs: []
       equations:
         - scope: Local
-          id: x
-          signal_type: Boolean
-          expression:
-            SignalCall:
-              signal:
-                id: memx
-                scope: Memory
-              typing: Boolean
-              location:
-                file_id: 0
-                range:
-                  start: 176
-                  end: 194
-              dependencies:
-                - - memx
-                  - 0
-          location:
-            file_id: 0
-            range:
-              start: 176
-              end: 194
-        - scope: Local
           id: half
           signal_type: Boolean
           expression:
@@ -768,6 +746,28 @@ component:
             range:
               start: 209
               end: 237
+        - scope: Local
+          id: x
+          signal_type: Boolean
+          expression:
+            SignalCall:
+              signal:
+                id: memx
+                scope: Memory
+              typing: Boolean
+              location:
+                file_id: 0
+                range:
+                  start: 176
+                  end: 194
+              dependencies:
+                - - memx
+                  - 0
+          location:
+            file_id: 0
+            range:
+              start: 176
+              end: 194
         - scope: Output
           id: y
           signal_type: Integer
