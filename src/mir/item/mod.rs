@@ -15,7 +15,7 @@ pub mod node_file;
 pub mod structure;
 
 /// An item of the project.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum Item {
     /// A node file.
     NodeFile(NodeFile),

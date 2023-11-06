@@ -1,5 +1,5 @@
 /// A node's import.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum Import {
     /// Import of another node.
     NodeFile(String),

@@ -8,7 +8,7 @@ pub mod input;
 pub mod state;
 
 /// A node-file structure.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct NodeFile {
     /// The node's name.
     pub name: String,
