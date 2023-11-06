@@ -1,8 +1,8 @@
 use crate::{
-    ast::pattern::Pattern,
-    common::scope::Scope,
+    ast::{expression::Expression, pattern::Pattern},
+    common::{operator::OtherOperator, scope::Scope},
     hir::{signal::Signal, stream_expression::StreamExpression},
-    mir::{block::Block, expression::Expression, statement::Statement},
+    mir::{block::Block, expression::Expression as MIRExpression, statement::Statement},
 };
 
 use super::{
@@ -11,9 +11,9 @@ use super::{
 };
 
 /// Transform HIR stream expression into MIR expression.
-pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
+pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
     match stream_expression {
-        StreamExpression::Constant { constant, .. } => Expression::Literal { literal: constant },
+        StreamExpression::Constant { constant, .. } => MIRExpression::Literal { literal: constant },
         StreamExpression::SignalCall {
             signal:
                 Signal {
@@ -22,7 +22,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
                     ..
                 },
             ..
-        } => Expression::InputAccess { identifier: id },
+        } => MIRExpression::InputAccess { identifier: id },
         StreamExpression::SignalCall {
             signal:
                 Signal {
@@ -31,32 +31,56 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
                     ..
                 },
             ..
-        } => Expression::MemoryAccess { identifier: id },
+        } => MIRExpression::MemoryAccess { identifier: id },
         StreamExpression::SignalCall {
             signal: Signal { id, .. },
             ..
-        } => Expression::Identifier { identifier: id },
+        } => MIRExpression::Identifier { identifier: id },
         StreamExpression::MapApplication {
             function_expression,
-            inputs,
+            mut inputs,
             ..
-        } => Expression::FunctionCall {
-            function: Box::new(expression_mir_from_hir(function_expression)),
-            arguments: inputs.into_iter().map(mir_from_hir).collect(),
+        } => match function_expression {
+            Expression::Call { id, .. } if OtherOperator::IfThenElse.to_string() == id => {
+                assert!(inputs.len() == 3);
+                let else_branch = mir_from_hir(inputs.pop().unwrap());
+                let then_branch = mir_from_hir(inputs.pop().unwrap());
+                let condition = mir_from_hir(inputs.pop().unwrap());
+                MIRExpression::IfThenElse {
+                    condition: Box::new(condition),
+                    then_branch: Block {
+                        statements: vec![Statement::ExpressionLast {
+                            expression: then_branch,
+                        }],
+                    },
+                    else_branch: Block {
+                        statements: vec![Statement::ExpressionLast {
+                            expression: else_branch,
+                        }],
+                    },
+                }
+            }
+            _ => {
+                let arguments = inputs.into_iter().map(mir_from_hir).collect();
+                MIRExpression::FunctionCall {
+                    function: Box::new(expression_mir_from_hir(function_expression)),
+                    arguments,
+                }
+            }
         },
-        StreamExpression::Structure { name, fields, .. } => Expression::Structure {
+        StreamExpression::Structure { name, fields, .. } => MIRExpression::Structure {
             name,
             fields: fields
                 .into_iter()
                 .map(|(id, expression)| (id, mir_from_hir(expression)))
                 .collect(),
         },
-        StreamExpression::Array { elements, .. } => Expression::Array {
+        StreamExpression::Array { elements, .. } => MIRExpression::Array {
             elements: elements.into_iter().map(mir_from_hir).collect(),
         },
         StreamExpression::Match {
             expression, arms, ..
-        } => Expression::Match {
+        } => MIRExpression::Match {
             matched: Box::new(mir_from_hir(*expression)),
             arms: arms
                 .into_iter()
@@ -74,7 +98,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
                             statements.push(Statement::ExpressionLast {
                                 expression: mir_from_hir(expression),
                             });
-                            Expression::Block {
+                            MIRExpression::Block {
                                 block: Block { statements },
                             }
                         },
@@ -89,7 +113,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
             default,
             location,
             ..
-        } => Expression::Match {
+        } => MIRExpression::Match {
             matched: Box::new(mir_from_hir(*option)),
             arms: vec![
                 (
@@ -112,7 +136,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
             signal,
             inputs,
             ..
-        } => Expression::NodeCall {
+        } => MIRExpression::NodeCall {
             node_identifier: id.unwrap(),
             input_name: node + &signal + "Input",
             input_fields: inputs
@@ -128,10 +152,13 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> Expression {
 mod mir_from_hir {
     use crate::{
         ast::{expression::Expression as ASTExpression, pattern::Pattern},
-        common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
+        common::{
+            constant::Constant, location::Location, operator::OtherOperator, r#type::Type,
+            scope::Scope,
+        },
         frontend::mir_from_hir::stream_expression::mir_from_hir,
         hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
-        mir::expression::Expression,
+        mir::{block::Block, expression::Expression, statement::Statement},
     };
 
     #[test]
@@ -260,6 +287,69 @@ mod mir_from_hir {
                     literal: Constant::Integer(1),
                 },
             ],
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_hir_map_application_of_if_then_else_into_mir_if_then_else() {
+        let expression = StreamExpression::MapApplication {
+            function_expression: ASTExpression::Call {
+                id: OtherOperator::IfThenElse.to_string(),
+                typing: Some(Type::Abstract(
+                    vec![Type::Boolean, Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            inputs: vec![
+                StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: format!("test"),
+                        scope: Scope::Local,
+                    },
+                    typing: Type::Boolean,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(format!("test"), 0)]),
+                },
+                StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: format!("x"),
+                        scope: Scope::Local,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                },
+                StreamExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::new(),
+                },
+            ],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("test"), 0), (format!("x"), 0)]),
+        };
+        let control = Expression::IfThenElse {
+            condition: Box::new(Expression::Identifier {
+                identifier: format!("test"),
+            }),
+            then_branch: Block {
+                statements: vec![Statement::ExpressionLast {
+                    expression: Expression::Identifier {
+                        identifier: format!("x"),
+                    },
+                }],
+            },
+            else_branch: Block {
+                statements: vec![Statement::ExpressionLast {
+                    expression: Expression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                }],
+            },
         };
         assert_eq!(mir_from_hir(expression), control)
     }

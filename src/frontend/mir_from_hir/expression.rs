@@ -1,7 +1,7 @@
 use crate::{
     ast::{expression::Expression, pattern::Pattern},
-    common::r#type::Type,
-    mir::expression::Expression as MIRExpression,
+    common::{operator::OtherOperator, r#type::Type},
+    mir::{block::Block, expression::Expression as MIRExpression, statement::Statement},
 };
 
 /// Transform HIR expression into MIR expression.
@@ -11,11 +11,35 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
         Expression::Call { id, .. } => MIRExpression::Identifier { identifier: id },
         Expression::Application {
             function_expression,
-            inputs,
+            mut inputs,
             ..
-        } => MIRExpression::FunctionCall {
-            function: Box::new(mir_from_hir(*function_expression)),
-            arguments: inputs.into_iter().map(mir_from_hir).collect(),
+        } => match *function_expression {
+            Expression::Call { id, .. } if OtherOperator::IfThenElse.to_string() == id => {
+                assert!(inputs.len() == 3);
+                let else_branch = mir_from_hir(inputs.pop().unwrap());
+                let then_branch = mir_from_hir(inputs.pop().unwrap());
+                let condition = mir_from_hir(inputs.pop().unwrap());
+                MIRExpression::IfThenElse {
+                    condition: Box::new(condition),
+                    then_branch: Block {
+                        statements: vec![Statement::ExpressionLast {
+                            expression: then_branch,
+                        }],
+                    },
+                    else_branch: Block {
+                        statements: vec![Statement::ExpressionLast {
+                            expression: else_branch,
+                        }],
+                    },
+                }
+            }
+            _ => {
+                let arguments = inputs.into_iter().map(mir_from_hir).collect();
+                MIRExpression::FunctionCall {
+                    function: Box::new(mir_from_hir(*function_expression)),
+                    arguments,
+                }
+            }
         },
         Expression::TypedAbstraction {
             inputs,
@@ -80,9 +104,9 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
 mod mir_from_hir {
     use crate::{
         ast::{expression::Expression as ASTExpression, pattern::Pattern},
-        common::{constant::Constant, location::Location, r#type::Type},
+        common::{constant::Constant, location::Location, operator::OtherOperator, r#type::Type},
         frontend::mir_from_hir::expression::mir_from_hir,
-        mir::expression::Expression,
+        mir::{block::Block, expression::Expression, statement::Statement},
     };
 
     #[test]
@@ -149,6 +173,59 @@ mod mir_from_hir {
                     literal: Constant::Integer(1),
                 },
             ],
+        };
+        assert_eq!(mir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_ast_application_of_if_then_else_into_mir_if_then_else() {
+        let expression = ASTExpression::Application {
+            function_expression: Box::new(ASTExpression::Call {
+                id: OtherOperator::IfThenElse.to_string(),
+                typing: Some(Type::Abstract(
+                    vec![Type::Boolean, Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            }),
+            inputs: vec![
+                ASTExpression::Call {
+                    id: format!("test"),
+                    typing: Some(Type::Boolean),
+                    location: Location::default(),
+                },
+                ASTExpression::Call {
+                    id: format!("x"),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+                ASTExpression::Constant {
+                    constant: Constant::Integer(1),
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                },
+            ],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let control = Expression::IfThenElse {
+            condition: Box::new(Expression::Identifier {
+                identifier: format!("test"),
+            }),
+            then_branch: Block {
+                statements: vec![Statement::ExpressionLast {
+                    expression: Expression::Identifier {
+                        identifier: format!("x"),
+                    },
+                }],
+            },
+            else_branch: Block {
+                statements: vec![Statement::ExpressionLast {
+                    expression: Expression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                }],
+            },
         };
         assert_eq!(mir_from_hir(expression), control)
     }
