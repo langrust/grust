@@ -26,7 +26,7 @@ impl Memory {
         let (mut elements, mut inits, mut steps) = (vec![], vec![], vec![]);
         buffers
             .into_iter()
-            .sorted_by_key(|(x, _)| x.clone())
+            .sorted_by_key(|(id, _)| id.clone())
             .for_each(
                 |(
                     id,
@@ -52,7 +52,7 @@ impl Memory {
             );
         called_nodes
             .into_iter()
-            .sorted_by_key(|(x, _)| x.clone())
+            .sorted_by_key(|(id, _)| id.clone())
             .for_each(|(id, CalledNode { node_id, signal_id })| {
                 elements.push(StateElement::CalledNode {
                     identifier: id.clone(),
