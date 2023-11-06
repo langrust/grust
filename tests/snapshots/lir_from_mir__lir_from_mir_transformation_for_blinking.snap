@@ -1,6 +1,5 @@
 ---
 source: tests/lir_from_mir.rs
-assertion_line: 54
 expression: project
 ---
 files:
