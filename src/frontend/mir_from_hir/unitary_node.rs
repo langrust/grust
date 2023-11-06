@@ -4,6 +4,7 @@ use strum::IntoEnumIterator;
 use crate::{
     ast::expression::Expression,
     common::{
+        constant::Constant,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         scope::Scope,
     },
@@ -59,16 +60,28 @@ fn get_imports(expression: &StreamExpression) -> Vec<Import> {
         StreamExpression::UnitaryNodeApplication {
             node: node_id,
             signal: signal_id,
+            inputs,
             ..
         } => {
+            let mut imports = inputs
+                .iter()
+                .flat_map(|(_, expression)| get_imports(expression))
+                .collect::<Vec<_>>();
             let node_name = node_id.clone() + &signal_id;
-            vec![Import::NodeFile(node_name)]
+            imports.push(Import::NodeFile(node_name));
+            imports.into_iter().unique().collect()
         }
-        StreamExpression::Structure { fields, .. } => fields
-            .iter()
-            .flat_map(|(_, expression)| get_imports(expression))
-            .collect(),
-        StreamExpression::Array { elements, .. } => elements.iter().flat_map(get_imports).collect(),
+        StreamExpression::Structure { name, fields, .. } => {
+            let mut imports = fields
+                .iter()
+                .flat_map(|(_, expression)| get_imports(expression))
+                .collect::<Vec<_>>();
+            imports.push(Import::Structure(name.clone()));
+            imports.into_iter().unique().collect()
+        }
+        StreamExpression::Array { elements, .. } => {
+            elements.iter().flat_map(get_imports).unique().collect()
+        }
         StreamExpression::Match {
             expression, arms, ..
         } => {
@@ -94,7 +107,7 @@ fn get_imports(expression: &StreamExpression) -> Vec<Import> {
             let mut imports = vec![];
             imports.append(&mut arms_imports);
             imports.append(&mut expression_imports);
-            imports
+            imports.into_iter().unique().collect()
         }
         StreamExpression::When {
             option,
@@ -122,9 +135,15 @@ fn get_imports(expression: &StreamExpression) -> Vec<Import> {
             imports.append(&mut present_imports);
             imports.append(&mut default_body_imports);
             imports.append(&mut default_imports);
-            imports
+            imports.into_iter().unique().collect()
         }
         StreamExpression::NodeApplication { .. } => unreachable!(),
+        StreamExpression::Constant {
+            constant: Constant::Enumeration(name, _),
+            ..
+        } => {
+            vec![Import::Enumeration(name.clone())]
+        }
         _ => vec![],
     }
 }
@@ -214,6 +233,7 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
     let imports = equations
         .iter()
         .flat_map(|equation| get_imports(&equation.expression))
+        .unique()
         .collect();
 
     let (elements, state_elements_init, state_elements_step) = get_state_elements(memory);
@@ -329,6 +349,72 @@ mod get_imports {
             dependencies: Dependencies::from(vec![(format!("x"), 0)]),
         };
         let control = vec![Import::NodeFile(format!("my_nodeo"))];
+        assert_eq!(get_imports(&expression), control)
+    }
+
+    #[test]
+    fn should_not_duplicate_imports() {
+        let expression = StreamExpression::UnitaryNodeApplication {
+            id: Some(format!("my_nodeox")),
+            node: format!("my_node"),
+            signal: format!("o"),
+            inputs: vec![(
+                format!("i"),
+                StreamExpression::UnitaryNodeApplication {
+                    id: Some(format!("my_nodeox")),
+                    node: format!("my_node"),
+                    signal: format!("o"),
+                    inputs: vec![(
+                        format!("i"),
+                        StreamExpression::MapApplication {
+                            function_expression: Expression::Call {
+                                id: format!("my_function"),
+                                typing: Some(Type::Abstract(
+                                    vec![Type::Integer],
+                                    Box::new(Type::Integer),
+                                )),
+                                location: Location::default(),
+                            },
+                            inputs: vec![StreamExpression::MapApplication {
+                                function_expression: Expression::Call {
+                                    id: format!("my_function"),
+                                    typing: Some(Type::Abstract(
+                                        vec![Type::Integer],
+                                        Box::new(Type::Integer),
+                                    )),
+                                    location: Location::default(),
+                                },
+                                inputs: vec![StreamExpression::SignalCall {
+                                    signal: Signal {
+                                        id: format!("x"),
+                                        scope: Scope::Input,
+                                    },
+                                    typing: Type::Integer,
+                                    location: Location::default(),
+                                    dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                                }],
+                                typing: Type::Integer,
+                                location: Location::default(),
+                                dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                            }],
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                        },
+                    )],
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+                },
+            )],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+        };
+        let control = vec![
+            Import::Function(format!("my_function")),
+            Import::NodeFile(format!("my_nodeo")),
+        ];
         assert_eq!(get_imports(&expression), control)
     }
 }

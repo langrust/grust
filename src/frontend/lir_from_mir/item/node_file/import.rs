@@ -18,6 +18,27 @@ pub fn lir_from_mir(import: Import) -> LIRImport {
                 tree: Box::new(PathTree::Name { name, alias: None }),
             },
         },
+        Import::Enumeration(name) => LIRImport::Use {
+            public_visibility: false,
+            tree: PathTree::Path {
+                module_name: String::from("typedefs"),
+                tree: Box::new(PathTree::Name { name, alias: None }),
+            },
+        },
+        Import::Structure(name) => LIRImport::Use {
+            public_visibility: false,
+            tree: PathTree::Path {
+                module_name: String::from("typedefs"),
+                tree: Box::new(PathTree::Name { name, alias: None }),
+            },
+        },
+        Import::ArrayAlias(name) => LIRImport::Use {
+            public_visibility: false,
+            tree: PathTree::Path {
+                module_name: String::from("typedefs"),
+                tree: Box::new(PathTree::Name { name, alias: None }),
+            },
+        },
     }
 }
 
