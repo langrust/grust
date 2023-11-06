@@ -24,3 +24,12 @@ pub mod unitary_node;
 
 /// MIR item construction from HIR typedef.
 pub mod typedef;
+
+/// MIR memory construction from HIR typedef.
+pub mod memory;
+
+/// MIR constant construction from HIR typedef.
+pub mod constant;
+
+/// MIR pattern construction from HIR typedef.
+pub mod pattern;
