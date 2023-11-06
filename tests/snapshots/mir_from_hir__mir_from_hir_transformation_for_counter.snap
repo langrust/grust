@@ -1,0 +1,190 @@
+---
+source: tests/mir_from_hir.rs
+expression: project
+---
+items:
+  - NodeFile:
+      name: countero
+      imports: []
+      input:
+        node_name: countero
+        elements:
+          - identifier: res
+            type: Boolean
+          - identifier: tick
+            type: Boolean
+      state:
+        node_name: countero
+        elements:
+          - Buffer:
+              identifier: memo
+              type: Integer
+        step:
+          node_name: countero
+          output_type: Integer
+          body:
+            - Let:
+                identifier: inc
+                expression:
+                  IfThenElse:
+                    condition:
+                      InputAccess:
+                        identifier: tick
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 1
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 0
+            - Let:
+                identifier: o
+                expression:
+                  IfThenElse:
+                    condition:
+                      InputAccess:
+                        identifier: res
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 0
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " + "
+                                arguments:
+                                  - FunctionCall:
+                                      function:
+                                        Identifier:
+                                          identifier: (_)
+                                      arguments:
+                                        - MemoryAccess:
+                                            identifier: memo
+                                  - Identifier:
+                                      identifier: inc
+          state_elements_step:
+            - identifier: memo
+              expression:
+                Identifier:
+                  identifier: o
+          output_expression:
+            Identifier:
+              identifier: o
+        init:
+          node_name: countero
+          state_elements_init:
+            - BufferInit:
+                identifier: memo
+                initial_value:
+                  Integer: 0
+  - NodeFile:
+      name: mainy
+      imports:
+        - NodeFile: counter
+      input:
+        node_name: mainy
+        elements: []
+      state:
+        node_name: mainy
+        elements:
+          - Buffer:
+              identifier: memhalf
+              type: Boolean
+          - Buffer:
+              identifier: memx
+              type: Boolean
+          - CalledNode:
+              identifier: counteroy
+              node_name: countero
+        step:
+          node_name: mainy
+          output_type: Integer
+          body:
+            - Let:
+                identifier: half
+                expression:
+                  MemoryAccess:
+                    identifier: memhalf
+            - Let:
+                identifier: x
+                expression:
+                  MemoryAccess:
+                    identifier: memx
+            - LetTuple:
+                identifiers:
+                  - counteroy
+                  - y
+                expression:
+                  NodeCall:
+                    node_identifier: counteroy
+                    input_name: counteroInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: x
+                      - - tick
+                        - Identifier:
+                            identifier: half
+          state_elements_step:
+            - identifier: memhalf
+              expression:
+                FunctionCall:
+                  function:
+                    Identifier:
+                      identifier: "!"
+                  arguments:
+                    - Identifier:
+                        identifier: half
+            - identifier: memx
+              expression:
+                FunctionCall:
+                  function:
+                    Identifier:
+                      identifier: (_)
+                  arguments:
+                    - FunctionCall:
+                        function:
+                          Identifier:
+                            identifier: " > "
+                        arguments:
+                          - Identifier:
+                              identifier: y
+                          - Literal:
+                              literal:
+                                Integer: 35
+            - identifier: counteroy
+              expression:
+                Identifier:
+                  identifier: counteroy
+          output_expression:
+            Identifier:
+              identifier: y
+        init:
+          node_name: mainy
+          state_elements_init:
+            - BufferInit:
+                identifier: memhalf
+                initial_value:
+                  Boolean: true
+            - BufferInit:
+                identifier: memx
+                initial_value:
+                  Boolean: false
+            - CalledNodeInit:
+                identifier: counteroy
+                node_name: countero
+
