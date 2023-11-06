@@ -94,7 +94,7 @@ items:
   - NodeFile:
       name: mainy
       imports:
-        - NodeFile: counter
+        - NodeFile: countero
       input:
         node_name: mainy
         elements: []
