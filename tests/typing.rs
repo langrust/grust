@@ -1,4 +1,10 @@
-use codespan_reporting::files::{Files, SimpleFiles};
+use codespan_reporting::{
+    files::{Files, SimpleFiles},
+    term::{
+        self,
+        termcolor::{ColorChoice, StandardStream},
+    },
+};
 
 use grustine::ast::file::File;
 use grustine::parser::langrust;
@@ -55,4 +61,30 @@ fn typing_button_management() {
     file.typing(&mut errors).unwrap();
 
     insta::assert_yaml_snapshot!(file);
+}
+
+#[test]
+fn error_when_typing_counter_not_well_typed() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let counter_not_well_typed_id = files.add(
+        "counter_not_well_typed.gr",
+        std::fs::read_to_string("tests/fixture/counter_not_well_typed.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            counter_not_well_typed_id,
+            &files.source(counter_not_well_typed_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
 }
