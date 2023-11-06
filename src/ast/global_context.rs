@@ -8,8 +8,7 @@ use crate::common::{
 
 /// Generate the global context.
 ///
-/// The global context is the [HashMap] storing all functions types, user
-/// defined  or builtin functions.
+/// The global context is the [HashMap] storing all builtin functions types.
 pub fn generate() -> HashMap<String, Type> {
     let mut elements_context_global = HashMap::new();
     add_binary_operators_to_global_context(&mut elements_context_global);
