@@ -1,0 +1,332 @@
+---
+source: tests/lir_from_mir.rs
+expression: project
+---
+files:
+  - path: countero
+    items:
+      - Structure:
+          public_visibility: true
+          name: counteroInput
+          fields:
+            - public_visibility: true
+              name: res
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: true
+              name: tick
+              type:
+                Identifier:
+                  identifier: bool
+      - Structure:
+          public_visibility: false
+          name: counteroState
+          fields:
+            - public_visibility: false
+              name: memo
+              type:
+                Identifier:
+                  identifier: i64
+      - Implementation:
+          trait_name: ~
+          type_name: counteroState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: counteroState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: counteroState
+                          fields:
+                            - name: memo
+                              expression:
+                                Literal:
+                                  literal:
+                                    Integer: 0
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: counteroInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: counteroState
+                        - Identifier:
+                            identifier: i64
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: inc
+                        expression:
+                          IfThenElse:
+                            condition:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: tick
+                            then_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Literal:
+                                      literal:
+                                        Integer: 1
+                            else_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Literal:
+                                      literal:
+                                        Integer: 0
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: o
+                        expression:
+                          IfThenElse:
+                            condition:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: res
+                            then_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Literal:
+                                      literal:
+                                        Integer: 0
+                            else_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Binary:
+                                      left:
+                                        Unary:
+                                          operator: Brackets
+                                          expression:
+                                            FieldAccess:
+                                              expression:
+                                                Identifier:
+                                                  identifier: self
+                                              field: memo
+                                      operator: Add
+                                      right:
+                                        Identifier:
+                                          identifier: inc
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: counteroState
+                                fields:
+                                  - name: memo
+                                    expression:
+                                      Identifier:
+                                        identifier: o
+                            - Identifier:
+                                identifier: o
+  - path: mainy
+    items:
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: countero
+                tree: Star
+      - Structure:
+          public_visibility: true
+          name: mainyInput
+          fields: []
+      - Structure:
+          public_visibility: false
+          name: mainyState
+          fields:
+            - public_visibility: false
+              name: memhalf
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: false
+              name: memx
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: false
+              name: counteroy
+              type:
+                Identifier:
+                  identifier: counteroState
+      - Implementation:
+          trait_name: ~
+          type_name: mainyState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: mainyState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: mainyState
+                          fields:
+                            - name: memhalf
+                              expression:
+                                Literal:
+                                  literal:
+                                    Boolean: true
+                            - name: memx
+                              expression:
+                                Literal:
+                                  literal:
+                                    Boolean: false
+                            - name: counteroy
+                              expression:
+                                FunctionCall:
+                                  function:
+                                    Identifier:
+                                      identifier: "counteroState::init"
+                                  arguments: []
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: mainyInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: mainyState
+                        - Identifier:
+                            identifier: i64
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: half
+                        expression:
+                          FieldAccess:
+                            expression:
+                              Identifier:
+                                identifier: self
+                            field: memhalf
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: x
+                        expression:
+                          FieldAccess:
+                            expression:
+                              Identifier:
+                                identifier: self
+                            field: memx
+                    - Let:
+                        pattern:
+                          Tuple:
+                            elements:
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: counteroy
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: y
+                        expression:
+                          MethodCall:
+                            receiver:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: self
+                                field: counteroy
+                            method: step
+                            arguments:
+                              - Structure:
+                                  name: counteroInput
+                                  fields:
+                                    - name: res
+                                      expression:
+                                        Identifier:
+                                          identifier: x
+                                    - name: tick
+                                      expression:
+                                        Identifier:
+                                          identifier: half
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: mainyState
+                                fields:
+                                  - name: memhalf
+                                    expression:
+                                      Unary:
+                                        operator: Not
+                                        expression:
+                                          Identifier:
+                                            identifier: half
+                                  - name: memx
+                                    expression:
+                                      Unary:
+                                        operator: Brackets
+                                        expression:
+                                          Binary:
+                                            left:
+                                              Identifier:
+                                                identifier: y
+                                            operator: Grt
+                                            right:
+                                              Literal:
+                                                literal:
+                                                  Integer: 35
+                                  - name: counteroy
+                                    expression:
+                                      Identifier:
+                                        identifier: counteroy
+                            - Identifier:
+                                identifier: y
+  - path: functions.rs
+    items: []
+  - path: typedefs.rs
+    items: []
+
