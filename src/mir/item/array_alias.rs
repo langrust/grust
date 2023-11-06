@@ -1,7 +1,7 @@
 use crate::common::r#type::Type;
 
 /// An array alias definition.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct ArrayAlias {
     /// The array's name.
     pub name: String,

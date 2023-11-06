@@ -1,7 +1,7 @@
 use crate::common::r#type::Type;
 
 /// A structure definition.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct Structure {
     /// The structure's name.
     pub name: String,

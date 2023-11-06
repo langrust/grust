@@ -1,7 +1,7 @@
 use crate::{common::r#type::Type, mir::block::Block};
 
 /// A function definition.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct Function {
     /// The function's name.
     pub name: String,

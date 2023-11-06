@@ -1,5 +1,5 @@
 /// An enumeration definition.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct Enumeration {
     /// The enumeration's name.
     pub name: String,

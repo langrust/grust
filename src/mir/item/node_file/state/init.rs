@@ -1,7 +1,7 @@
 use crate::common::constant::Constant;
 
 /// A init function.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct Init {
     /// The node's name.
     pub node_name: String,
@@ -10,7 +10,7 @@ pub struct Init {
 }
 
 /// A state element structure for the initialization.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum StateElementInit {
     /// A buffer initialization.
     BufferInit {

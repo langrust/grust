@@ -1,7 +1,7 @@
 use crate::common::r#type::Type;
 
 /// A node input structure.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct Input {
     /// The node's name.
     pub node_name: String,
@@ -10,7 +10,7 @@ pub struct Input {
 }
 
 /// An input element structure.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct InputElement {
     /// The name of the input.
     pub identifier: String,
