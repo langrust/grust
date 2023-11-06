@@ -1,6 +1,11 @@
+use strum::IntoEnumIterator;
+
 use crate::{
     ast::expression::Expression,
-    common::scope::Scope,
+    common::{
+        operator::{BinaryOperator, OtherOperator, UnaryOperator},
+        scope::Scope,
+    },
     frontend::mir_from_hir::stream_expression::mir_from_hir as stream_expression_mir_from_hir,
     hir::{
         memory::{Buffer, CalledNode, Memory},
@@ -30,7 +35,26 @@ fn get_imports(expression: &StreamExpression) -> Vec<Import> {
         StreamExpression::MapApplication {
             function_expression: Expression::Call { id, .. },
             ..
-        } => vec![Import::Function(id.clone())],
+        } => {
+            if BinaryOperator::iter()
+                .find(|binary| &binary.to_string() == id)
+                .is_some()
+            {
+                vec![]
+            } else if UnaryOperator::iter()
+                .find(|unary| &unary.to_string() == id)
+                .is_some()
+            {
+                vec![]
+            } else if OtherOperator::iter()
+                .find(|other| &other.to_string() == id)
+                .is_some()
+            {
+                vec![]
+            } else {
+                vec![Import::Function(id.clone())]
+            }
+        }
         StreamExpression::UnitaryNodeApplication { node, .. } => {
             vec![Import::NodeFile(node.clone())]
         }
@@ -216,7 +240,7 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
 mod get_imports {
     use crate::{
         ast::expression::Expression,
-        common::{location::Location, r#type::Type, scope::Scope},
+        common::{location::Location, r#type::Type, scope::Scope, operator::UnaryOperator},
         frontend::mir_from_hir::unitary_node::get_imports,
         hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
         mir::item::node_file::import::Import,
@@ -244,6 +268,31 @@ mod get_imports {
             dependencies: Dependencies::from(vec![(format!("x"), 0)]),
         };
         let control = vec![Import::Function(format!("my_function"))];
+        assert_eq!(get_imports(&expression), control)
+    }
+
+    #[test]
+    fn should_not_import_builtin_functions() {
+        let expression = StreamExpression::MapApplication {
+            function_expression: Expression::Call {
+                id: UnaryOperator::Neg.to_string(),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::SignalCall {
+                signal: Signal {
+                    id: format!("x"),
+                    scope: Scope::Input,
+                },
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+            }],
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("x"), 0)]),
+        };
+        let control = vec![];
         assert_eq!(get_imports(&expression), control)
     }
 
