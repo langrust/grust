@@ -20,7 +20,7 @@ use super::location::Location;
 /// - [BinaryOperator::Leq], "lower or equal" `<=`
 /// - [BinaryOperator::Grt], "greater" `>`
 /// - [BinaryOperator::Low], "lower" `<`
-#[derive(EnumIter, Debug, PartialEq)]
+#[derive(EnumIter, Debug, PartialEq, serde::Serialize)]
 pub enum BinaryOperator {
     /// Multiplication, `x * y`.
     Mul,
@@ -205,7 +205,7 @@ impl BinaryOperator {
 /// - [UnaryOperator::Neg] is the numerical negation `-`
 /// - [UnaryOperator::Not], the logical negation `!`
 /// - [UnaryOperator::Brackets], is the use of brackets `(_)`
-#[derive(EnumIter, Debug, PartialEq)]
+#[derive(EnumIter, Debug, PartialEq, serde::Serialize)]
 pub enum UnaryOperator {
     /// Numerical negation, `-x`.
     Neg,

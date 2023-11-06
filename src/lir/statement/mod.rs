@@ -4,7 +4,7 @@ use crate::lir::{expression::Expression, item::Item, statement::r#let::Let};
 pub mod r#let;
 
 /// Rust statement.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum Statement {
     /// A `let` binding.
     Let(Let),

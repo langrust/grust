@@ -39,6 +39,6 @@ pub fn lir_from_mir(project: Project) -> LIRProject {
     });
     lir_project.add_file(function_file);
     lir_project.add_file(typedefs_file);
-    
+
     lir_project
 }

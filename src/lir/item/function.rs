@@ -1,5 +1,6 @@
 use crate::lir::{block::Block, item::signature::Signature};
-#[derive(Debug, PartialEq)]
+
+#[derive(Debug, PartialEq, serde::Serialize)]
 
 /// A function definition in Rust.
 pub struct Function {
