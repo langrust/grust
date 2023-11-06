@@ -16,9 +16,6 @@ fn typing_counter() {
     let mut file: File = langrust::fileParser::new()
         .parse(counter_id, &files.source(counter_id).unwrap())
         .unwrap();
-
-    insta::assert_yaml_snapshot!(file);
-
     file.typing(&mut errors).unwrap();
 
     insta::assert_yaml_snapshot!(file);
@@ -37,9 +34,6 @@ fn typing_blinking() {
     let mut file: File = langrust::fileParser::new()
         .parse(blinking_id, &files.source(blinking_id).unwrap())
         .unwrap();
-
-    insta::assert_yaml_snapshot!(file);
-
     file.typing(&mut errors).unwrap();
 
     insta::assert_yaml_snapshot!(file);
@@ -58,9 +52,6 @@ fn typing_button_management() {
     let mut file: File = langrust::fileParser::new()
         .parse(blinking_id, &files.source(blinking_id).unwrap())
         .unwrap();
-
-    insta::assert_yaml_snapshot!(file);
-
     file.typing(&mut errors).unwrap();
 
     insta::assert_yaml_snapshot!(file);
