@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -141,7 +142,10 @@ fn get_state_elements(
     } = memory;
 
     let (mut elements, mut inits, mut steps) = (vec![], vec![], vec![]);
-    buffers.into_iter().for_each(
+    buffers
+        .into_iter()
+        .sorted_by_key(|(x, _)| x.clone())
+        .for_each(
             |(
                 id,
                 Buffer {
@@ -166,6 +170,7 @@ fn get_state_elements(
         );
     called_nodes
         .into_iter()
+        .sorted_by_key(|(x, _)| x.clone())
         .for_each(|(id, CalledNode { node_id, signal_id })| {
             elements.push(StateElement::CalledNode {
                 identifier: id.clone(),
