@@ -63,11 +63,11 @@ impl File {
                 .is_none())
         });
         // get optional component's graph
-        self.component.as_ref().map_or((), |component| {
+        if let Some(component) = self.component.as_ref() {
             assert!(nodes_reduced_graphs
                 .insert(component.id.clone(), component.graph.get().unwrap().clone())
                 .is_none())
-        });
+        };
 
         self.nodes
             .iter_mut()

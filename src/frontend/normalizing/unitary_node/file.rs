@@ -61,17 +61,17 @@ impl File {
         self.nodes
             .iter()
             .for_each(|node| node.add_used_inputs(&mut used_inputs));
-        self.component
-            .as_ref()
-            .map_or((), |component| component.add_used_inputs(&mut used_inputs));
+        if let Some(component) = self.component.as_ref() {
+            component.add_used_inputs(&mut used_inputs)
+        };
 
         // change node application to unitary node application
         self.nodes.iter_mut().for_each(|node| {
             node.change_node_application_into_unitary_node_application(&used_inputs)
         });
-        self.component.as_mut().map_or((), |component| {
+        if let Some(component) = self.component.as_mut() {
             component.change_node_application_into_unitary_node_application(&used_inputs)
-        });
+        };
 
         Ok(())
     }
