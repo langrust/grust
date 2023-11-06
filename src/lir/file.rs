@@ -8,6 +8,19 @@ pub struct File {
     pub items: Vec<Item>,
 }
 impl File {
+    /// Create a new file.
+    pub fn new(path: String) -> Self {
+        File {
+            path,
+            items: vec![],
+        }
+    }
+
+    /// Add item.
+    pub fn add_item(&mut self, item: Item) {
+        self.items.push(item)
+    }
+
     /// Generate the file at its location path.
     pub fn generate(&self) {
         let file_str = self.to_string();
