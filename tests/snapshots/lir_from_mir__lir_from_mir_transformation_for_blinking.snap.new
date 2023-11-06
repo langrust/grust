@@ -1,0 +1,430 @@
+---
+source: tests/lir_from_mir.rs
+assertion_line: 54
+expression: project
+---
+files:
+  - path: countero
+    items:
+      - Structure:
+          public_visibility: true
+          name: counteroInput
+          fields:
+            - public_visibility: true
+              name: res
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: true
+              name: tick
+              type:
+                Identifier:
+                  identifier: bool
+      - Structure:
+          public_visibility: false
+          name: counteroState
+          fields:
+            - public_visibility: false
+              name: memo
+              type:
+                Identifier:
+                  identifier: i64
+      - Implementation:
+          trait_name: ~
+          type_name: counteroState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: counteroState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: counteroState
+                          fields:
+                            - name: memo
+                              expression:
+                                Literal:
+                                  literal:
+                                    Integer: 0
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: counteroInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: counteroState
+                        - Identifier:
+                            identifier: i64
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: inc
+                        expression:
+                          IfThenElse:
+                            condition:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: tick
+                            then_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Literal:
+                                      literal:
+                                        Integer: 1
+                            else_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Literal:
+                                      literal:
+                                        Integer: 0
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: o
+                        expression:
+                          IfThenElse:
+                            condition:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: res
+                            then_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Literal:
+                                      literal:
+                                        Integer: 0
+                            else_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Binary:
+                                      left:
+                                        Unary:
+                                          operator: Brackets
+                                          expression:
+                                            FieldAccess:
+                                              expression:
+                                                Identifier:
+                                                  identifier: self
+                                              field: memo
+                                      operator: Add
+                                      right:
+                                        Identifier:
+                                          identifier: inc
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: counteroState
+                                fields:
+                                  - name: memo
+                                    expression:
+                                      Identifier:
+                                        identifier: o
+                            - Identifier:
+                                identifier: o
+  - path: blinkingstatus
+    items:
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: countero
+                tree: Star
+      - Structure:
+          public_visibility: true
+          name: blinkingstatusInput
+          fields:
+            - public_visibility: true
+              name: tick_number
+              type:
+                Identifier:
+                  identifier: i64
+      - Structure:
+          public_visibility: false
+          name: blinkingstatusState
+          fields:
+            - public_visibility: false
+              name: memon_off
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: false
+              name: memres
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: false
+              name: counterocounter
+              type:
+                Identifier:
+                  identifier: counteroState
+      - Implementation:
+          trait_name: ~
+          type_name: blinkingstatusState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: blinkingstatusState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: blinkingstatusState
+                          fields:
+                            - name: memon_off
+                              expression:
+                                Literal:
+                                  literal:
+                                    Boolean: true
+                            - name: memres
+                              expression:
+                                Literal:
+                                  literal:
+                                    Boolean: true
+                            - name: counterocounter
+                              expression:
+                                FunctionCall:
+                                  function:
+                                    Identifier:
+                                      identifier: "counteroState::init"
+                                  arguments: []
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: blinkingstatusInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: blinkingstatusState
+                        - Identifier:
+                            identifier: i64
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: res
+                        expression:
+                          FieldAccess:
+                            expression:
+                              Identifier:
+                                identifier: self
+                            field: memres
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: x
+                        expression:
+                          Literal:
+                            literal:
+                              Boolean: true
+                    - Let:
+                        pattern:
+                          Tuple:
+                            elements:
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: counterocounter
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: counter
+                        expression:
+                          MethodCall:
+                            receiver:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: self
+                                field: counterocounter
+                            method: step
+                            arguments:
+                              - Structure:
+                                  name: counteroInput
+                                  fields:
+                                    - name: res
+                                      expression:
+                                        Identifier:
+                                          identifier: res
+                                    - name: tick
+                                      expression:
+                                        Identifier:
+                                          identifier: x
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: on_off
+                        expression:
+                          FunctionCall:
+                            function:
+                              Closure:
+                                move: false
+                                inputs:
+                                  - Typed:
+                                      pattern:
+                                        Identifier:
+                                          reference: false
+                                          mutable: false
+                                          identifier: t
+                                      type:
+                                        Identifier:
+                                          identifier: bool
+                                  - Typed:
+                                      pattern:
+                                        Identifier:
+                                          reference: false
+                                          mutable: false
+                                          identifier: b
+                                      type:
+                                        Identifier:
+                                          identifier: bool
+                                output:
+                                  Identifier:
+                                    identifier: bool
+                                body:
+                                  IfThenElse:
+                                    condition:
+                                      Identifier:
+                                        identifier: t
+                                    then_branch:
+                                      statements:
+                                        - ExpressionLast:
+                                            Unary:
+                                              operator: Not
+                                              expression:
+                                                Identifier:
+                                                  identifier: b
+                                    else_branch:
+                                      statements:
+                                        - ExpressionLast:
+                                            Identifier:
+                                              identifier: b
+                            arguments:
+                              - Identifier:
+                                  identifier: res
+                              - FieldAccess:
+                                  expression:
+                                    Identifier:
+                                      identifier: self
+                                  field: memon_off
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: status
+                        expression:
+                          IfThenElse:
+                            condition:
+                              Identifier:
+                                identifier: on_off
+                            then_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Binary:
+                                      left:
+                                        Identifier:
+                                          identifier: counter
+                                      operator: Add
+                                      right:
+                                        Literal:
+                                          literal:
+                                            Integer: 1
+                            else_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Literal:
+                                      literal:
+                                        Integer: 0
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: blinkingstatusState
+                                fields:
+                                  - name: memon_off
+                                    expression:
+                                      Identifier:
+                                        identifier: on_off
+                                  - name: memres
+                                    expression:
+                                      Unary:
+                                        operator: Brackets
+                                        expression:
+                                          Binary:
+                                            left:
+                                              Binary:
+                                                left:
+                                                  Identifier:
+                                                    identifier: counter
+                                                operator: Add
+                                                right:
+                                                  Literal:
+                                                    literal:
+                                                      Integer: 1
+                                            operator: Eq
+                                            right:
+                                              FieldAccess:
+                                                expression:
+                                                  Identifier:
+                                                    identifier: input
+                                                field: tick_number
+                                  - name: counterocounter
+                                    expression:
+                                      Identifier:
+                                        identifier: counterocounter
+                            - Identifier:
+                                identifier: status
+  - path: functions.rs
+    items: []
+  - path: typedefs.rs
+    items: []
+
