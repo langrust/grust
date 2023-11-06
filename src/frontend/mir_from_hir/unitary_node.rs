@@ -240,7 +240,7 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
 mod get_imports {
     use crate::{
         ast::expression::Expression,
-        common::{location::Location, r#type::Type, scope::Scope, operator::UnaryOperator},
+        common::{location::Location, operator::UnaryOperator, r#type::Type, scope::Scope},
         frontend::mir_from_hir::unitary_node::get_imports,
         hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
         mir::item::node_file::import::Import,
