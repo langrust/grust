@@ -1,7 +1,16 @@
+use itertools::Itertools;
+use strum::IntoEnumIterator;
+
 use crate::{
     ast::{expression::Expression, pattern::Pattern},
-    common::{operator::OtherOperator, r#type::Type},
-    mir::{block::Block, expression::Expression as MIRExpression, statement::Statement},
+    common::{
+        operator::{BinaryOperator, OtherOperator, UnaryOperator},
+        r#type::Type,
+    },
+    mir::{
+        block::Block, expression::Expression as MIRExpression, item::node_file::import::Import,
+        statement::Statement,
+    },
 };
 
 /// Transform HIR expression into MIR expression.
@@ -97,6 +106,102 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
             ],
         },
         _ => unreachable!(),
+    }
+}
+
+impl Expression {
+    /// Get imports induced by expression.
+    pub fn get_imports(&self) -> Vec<Import> {
+        match self {
+            Expression::Call { .. } => vec![],
+            Expression::Constant { constant, .. } => constant.get_imports(),
+            Expression::Application {
+                function_expression,
+                inputs,
+                ..
+            } => {
+                let mut imports = inputs
+                    .iter()
+                    .flat_map(Expression::get_imports)
+                    .collect::<Vec<_>>();
+                let mut function_import = match function_expression.as_ref() {
+                    Expression::Call { id, .. }
+                        if BinaryOperator::iter()
+                            .find(|binary| &binary.to_string() == id)
+                            .is_none()
+                            && UnaryOperator::iter()
+                                .find(|unary| &unary.to_string() == id)
+                                .is_none()
+                            && OtherOperator::iter()
+                                .find(|other| &other.to_string() == id)
+                                .is_none() =>
+                    {
+                        vec![Import::Function(id.clone())]
+                    }
+                    _ => {
+                        vec![]
+                    }
+                };
+                imports.append(&mut function_import);
+                imports.into_iter().unique().collect()
+            }
+            Expression::Structure { name, fields, .. } => {
+                let mut imports = fields
+                    .iter()
+                    .flat_map(|(_, expression)| expression.get_imports())
+                    .collect::<Vec<_>>();
+                imports.push(Import::Structure(name.clone()));
+                imports.into_iter().unique().collect()
+            }
+            Expression::Array { elements, .. } => elements
+                .iter()
+                .flat_map(Expression::get_imports)
+                .unique()
+                .collect(),
+            Expression::Match {
+                expression, arms, ..
+            } => {
+                let mut arms_imports = arms
+                    .iter()
+                    .flat_map(|(pattern, guard, expression)| {
+                        let mut pattern_imports = pattern.get_imports();
+                        let mut guard_imports =
+                            guard.as_ref().map_or(vec![], Expression::get_imports);
+                        let mut expression_imports = expression.get_imports();
+
+                        let mut imports = vec![];
+                        imports.append(&mut pattern_imports);
+                        imports.append(&mut guard_imports);
+                        imports.append(&mut expression_imports);
+                        imports
+                    })
+                    .collect();
+                let mut expression_imports = expression.get_imports();
+
+                let mut imports = vec![];
+                imports.append(&mut arms_imports);
+                imports.append(&mut expression_imports);
+                imports.into_iter().unique().collect()
+            }
+            Expression::When {
+                option,
+                present,
+                default,
+                ..
+            } => {
+                let mut option_imports = option.get_imports();
+                let mut present_imports = present.get_imports();
+                let mut default_imports = default.get_imports();
+
+                let mut imports = vec![];
+                imports.append(&mut option_imports);
+                imports.append(&mut present_imports);
+                imports.append(&mut default_imports);
+                imports.into_iter().unique().collect()
+            }
+            Expression::TypedAbstraction { expression, .. } => expression.get_imports(),
+            Expression::Abstraction { .. } => unreachable!(),
+        }
     }
 }
 
@@ -523,5 +628,85 @@ mod mir_from_hir {
             }),
         };
         assert_eq!(mir_from_hir(expression), control)
+    }
+}
+
+#[cfg(test)]
+mod get_imports {
+    use crate::{
+        ast::expression::Expression,
+        common::{location::Location, operator::UnaryOperator, r#type::Type},
+        mir::item::node_file::import::Import,
+    };
+
+    #[test]
+    fn should_get_function_import_from_function_call_expression() {
+        let expression = Expression::Application {
+            function_expression: Box::new(Expression::Call {
+                id: format!("my_function"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                location: Location::default(),
+            }),
+            inputs: vec![Expression::Call {
+                id: format!("x"),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let control = vec![Import::Function(format!("my_function"))];
+        assert_eq!(expression.get_imports(), control)
+    }
+
+    #[test]
+    fn should_not_import_builtin_functions() {
+        let expression = Expression::Application {
+            function_expression: Box::new(Expression::Call {
+                id: UnaryOperator::Neg.to_string(),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                location: Location::default(),
+            }),
+            inputs: vec![Expression::Call {
+                id: format!("x"),
+
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let control = vec![];
+        assert_eq!(expression.get_imports(), control)
+    }
+
+    #[test]
+    fn should_not_duplicate_imports() {
+        let expression = Expression::Application {
+            function_expression: Box::new(Expression::Call {
+                id: format!("my_function"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                location: Location::default(),
+            }),
+            inputs: vec![Expression::Application {
+                function_expression: Box::new(Expression::Call {
+                    id: format!("my_function"),
+                    typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                    location: Location::default(),
+                }),
+                inputs: vec![Expression::Call {
+                    id: format!("x"),
+
+                    typing: Some(Type::Integer),
+                    location: Location::default(),
+                }],
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let control = vec![Import::Function(format!("my_function"))];
+        assert_eq!(expression.get_imports(), control)
     }
 }
