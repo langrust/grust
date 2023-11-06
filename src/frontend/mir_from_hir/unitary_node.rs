@@ -55,8 +55,13 @@ fn get_imports(expression: &StreamExpression) -> Vec<Import> {
                 vec![Import::Function(id.clone())]
             }
         }
-        StreamExpression::UnitaryNodeApplication { node, .. } => {
-            vec![Import::NodeFile(node.clone())]
+        StreamExpression::UnitaryNodeApplication {
+            node: node_id,
+            signal: signal_id,
+            ..
+        } => {
+            let node_name = node_id.clone() + &signal_id;
+            vec![Import::NodeFile(node_name)]
         }
         StreamExpression::Structure { fields, .. } => fields
             .iter()
@@ -137,28 +142,28 @@ fn get_state_elements(
 
     let (mut elements, mut inits, mut steps) = (vec![], vec![], vec![]);
     buffers.into_iter().for_each(
-        |(
-            id,
-            Buffer {
-                typing,
-                initial_value,
-                expression,
+            |(
+                id,
+                Buffer {
+                    typing,
+                    initial_value,
+                    expression,
+                },
+            )| {
+                elements.push(StateElement::Buffer {
+                    identifier: id.clone(),
+                    r#type: typing,
+                });
+                inits.push(StateElementInit::BufferInit {
+                    identifier: id.clone(),
+                    initial_value,
+                });
+                steps.push(StateElementStep {
+                    identifier: id,
+                    expression: stream_expression_mir_from_hir(expression),
+                });
             },
-        )| {
-            elements.push(StateElement::Buffer {
-                identifier: id.clone(),
-                r#type: typing,
-            });
-            inits.push(StateElementInit::BufferInit {
-                identifier: id.clone(),
-                initial_value,
-            });
-            steps.push(StateElementStep {
-                identifier: id,
-                expression: stream_expression_mir_from_hir(expression),
-            });
-        },
-    );
+        );
     called_nodes
         .into_iter()
         .for_each(|(id, CalledNode { node_id, signal_id })| {
@@ -318,7 +323,7 @@ mod get_imports {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(format!("x"), 0)]),
         };
-        let control = vec![Import::NodeFile(format!("my_node"))];
+        let control = vec![Import::NodeFile(format!("my_nodeo"))];
         assert_eq!(get_imports(&expression), control)
     }
 }
@@ -599,7 +604,7 @@ mod mir_from_hir {
         };
         let control = NodeFile {
             name: format!("my_nodeo"),
-            imports: vec![Import::NodeFile(format!("other_node"))],
+            imports: vec![Import::NodeFile(format!("other_nodeo"))],
             input: Input {
                 node_name: format!("my_nodeo"),
                 elements: vec![InputElement {
