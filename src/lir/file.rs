@@ -1,5 +1,6 @@
 use super::item::Item;
 
+#[derive(serde::Serialize)]
 /// HIR of a Rust source code file.
 pub struct File {
     /// File's path.

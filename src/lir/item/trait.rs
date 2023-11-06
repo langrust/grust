@@ -1,7 +1,7 @@
 use crate::lir::{block::Block, item::signature::Signature, r#type::Type};
 
 /// Rust trait definition.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct Trait {
     /// Visibility: `true` is public, `false` is private.
     pub public_visibility: bool,
@@ -25,7 +25,7 @@ impl std::fmt::Display for Trait {
 }
 
 /// Items that can be defined in a trait.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum TraitAssociatedItem {
     /// Trait associated type definition.
     TraitAssociatedType {

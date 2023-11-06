@@ -1,5 +1,5 @@
 /// A Rust enumeration.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct Enumeration {
     /// Visibility: `true` is public, `false` is private.
     pub public_visibility: bool,

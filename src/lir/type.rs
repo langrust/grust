@@ -1,5 +1,5 @@
 /// The four different kind of type in Rust.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum Type {
     /// Simple type.
     Identifier {

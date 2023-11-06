@@ -3,7 +3,7 @@ use crate::common::constant::Constant;
 use super::r#type::Type;
 
 /// Rust patterns used in match expression, closure, etc.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum Pattern {
     /// An identifier pattern: `ref x`.
     Identifier {
@@ -107,7 +107,7 @@ impl std::fmt::Display for Pattern {
 }
 
 /// A structure's field filled with a pattern.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub struct FieldPattern {
     /// Name of the field.
     pub name: String,

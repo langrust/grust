@@ -1,5 +1,5 @@
 /// An import declaration.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum Import {
     /// A module import: `mod my_submodule`.
     Module {
@@ -39,7 +39,7 @@ impl std::fmt::Display for Import {
 }
 
 /// A path of an `use` import.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum PathTree {
     /// Path prefix of import: `std::sync::...`
     Path {
