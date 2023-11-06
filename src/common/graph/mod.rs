@@ -557,7 +557,7 @@ mod get_vertices {
 
         for (i, vertex) in vertices.iter().enumerate() {
             if i > 0 {
-                assert!(vertices.get(i-1).unwrap() < vertex)
+                assert!(vertices.get(i - 1).unwrap() < vertex)
             }
         }
     }
