@@ -1,0 +1,424 @@
+---
+source: tests/mir_from_hir.rs
+expression: project
+---
+items:
+  - Enumeration:
+      name: Button
+      elements:
+        - Released
+        - Pressed
+  - Enumeration:
+      name: ResetState
+      elements:
+        - InProgress
+        - Confirmed
+  - NodeFile:
+      name: countero
+      imports: []
+      input:
+        node_name: countero
+        elements:
+          - identifier: res
+            type: Boolean
+          - identifier: inc
+            type: Integer
+      state:
+        node_name: countero
+        elements:
+          - Buffer:
+              identifier: memo
+              type: Integer
+        step:
+          node_name: countero
+          output_type: Integer
+          body:
+            - Let:
+                identifier: o
+                expression:
+                  IfThenElse:
+                    condition:
+                      InputAccess:
+                        identifier: res
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 0
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " + "
+                                arguments:
+                                  - FunctionCall:
+                                      function:
+                                        Identifier:
+                                          identifier: (_)
+                                      arguments:
+                                        - MemoryAccess:
+                                            identifier: memo
+                                  - InputAccess:
+                                      identifier: inc
+          state_elements_step:
+            - identifier: memo
+              expression:
+                Identifier:
+                  identifier: o
+          output_expression:
+            Identifier:
+              identifier: o
+        init:
+          node_name: countero
+          state_elements_init:
+            - BufferInit:
+                identifier: memo
+                initial_value:
+                  Integer: 0
+  - NodeFile:
+      name: reset_buttonuser_reset_request_state
+      imports:
+        - Enumeration: Button
+        - NodeFile: countero
+        - Enumeration: ResetState
+      input:
+        node_name: reset_buttonuser_reset_request_state
+        elements:
+          - identifier: button_state
+            type:
+              Enumeration: Button
+          - identifier: period
+            type: Integer
+          - identifier: reset_limit_1
+            type: Integer
+      state:
+        node_name: reset_buttonuser_reset_request_state
+        elements:
+          - Buffer:
+              identifier: memres
+              type: Boolean
+          - CalledNode:
+              identifier: counterocounter
+              node_name: countero
+        step:
+          node_name: reset_buttonuser_reset_request_state
+          output_type:
+            Enumeration: ResetState
+          body:
+            - Let:
+                identifier: res
+                expression:
+                  FunctionCall:
+                    function:
+                      Identifier:
+                        identifier: " && "
+                    arguments:
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " == "
+                                arguments:
+                                  - InputAccess:
+                                      identifier: button_state
+                                  - Literal:
+                                      literal:
+                                        Enumeration:
+                                          - Button
+                                          - Pressed
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - MemoryAccess:
+                                identifier: memres
+            - LetTuple:
+                identifiers:
+                  - counterocounter
+                  - counter
+                expression:
+                  NodeCall:
+                    node_identifier: counterocounter
+                    input_name: counteroInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: res
+                      - - inc
+                        - InputAccess:
+                            identifier: period
+            - Let:
+                identifier: user_reset_request_state
+                expression:
+                  Match:
+                    matched:
+                      InputAccess:
+                        identifier: button_state
+                    arms:
+                      - - Constant:
+                            constant:
+                              Enumeration:
+                                - Button
+                                - Released
+                            location:
+                              file_id: 0
+                              range:
+                                start: 362
+                                end: 377
+                        - ~
+                        - Literal:
+                            literal:
+                              Enumeration:
+                                - ResetState
+                                - Confirmed
+                      - - Constant:
+                            constant:
+                              Enumeration:
+                                - Button
+                                - Pressed
+                            location:
+                              file_id: 0
+                              range:
+                                start: 411
+                                end: 425
+                        - ~
+                        - IfThenElse:
+                            condition:
+                              FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " >= "
+                                arguments:
+                                  - Identifier:
+                                      identifier: counter
+                                  - InputAccess:
+                                      identifier: reset_limit_1
+                            then_branch:
+                              statements:
+                                - ExpressionLast:
+                                    expression:
+                                      Literal:
+                                        literal:
+                                          Enumeration:
+                                            - ResetState
+                                            - InProgress
+                            else_branch:
+                              statements:
+                                - ExpressionLast:
+                                    expression:
+                                      Literal:
+                                        literal:
+                                          Enumeration:
+                                            - ResetState
+                                            - Confirmed
+          state_elements_step:
+            - identifier: memres
+              expression:
+                FunctionCall:
+                  function:
+                    Identifier:
+                      identifier: " == "
+                  arguments:
+                    - InputAccess:
+                        identifier: button_state
+                    - Literal:
+                        literal:
+                          Enumeration:
+                            - Button
+                            - Released
+            - identifier: counterocounter
+              expression:
+                Identifier:
+                  identifier: counterocounter
+          output_expression:
+            Identifier:
+              identifier: user_reset_request_state
+        init:
+          node_name: reset_buttonuser_reset_request_state
+          state_elements_init:
+            - BufferInit:
+                identifier: memres
+                initial_value:
+                  Boolean: true
+            - CalledNodeInit:
+                identifier: counterocounter
+                node_name: countero
+  - NodeFile:
+      name: reset_buttonuser_reset_request
+      imports:
+        - Enumeration: Button
+        - NodeFile: countero
+      input:
+        node_name: reset_buttonuser_reset_request
+        elements:
+          - identifier: button_state
+            type:
+              Enumeration: Button
+          - identifier: period
+            type: Integer
+          - identifier: reset_limit_1
+            type: Integer
+          - identifier: reset_limit_2
+            type: Integer
+      state:
+        node_name: reset_buttonuser_reset_request
+        elements:
+          - Buffer:
+              identifier: memres
+              type: Boolean
+          - Buffer:
+              identifier: memuser_reset_request
+              type: Boolean
+          - CalledNode:
+              identifier: counterocounter
+              node_name: countero
+        step:
+          node_name: reset_buttonuser_reset_request
+          output_type: Boolean
+          body:
+            - Let:
+                identifier: res
+                expression:
+                  FunctionCall:
+                    function:
+                      Identifier:
+                        identifier: " && "
+                    arguments:
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " == "
+                                arguments:
+                                  - InputAccess:
+                                      identifier: button_state
+                                  - Literal:
+                                      literal:
+                                        Enumeration:
+                                          - Button
+                                          - Pressed
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - MemoryAccess:
+                                identifier: memres
+            - LetTuple:
+                identifiers:
+                  - counterocounter
+                  - counter
+                expression:
+                  NodeCall:
+                    node_identifier: counterocounter
+                    input_name: counteroInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: res
+                      - - inc
+                        - InputAccess:
+                            identifier: period
+            - Let:
+                identifier: user_reset_request
+                expression:
+                  Match:
+                    matched:
+                      InputAccess:
+                        identifier: button_state
+                    arms:
+                      - - Constant:
+                            constant:
+                              Enumeration:
+                                - Button
+                                - Released
+                            location:
+                              file_id: 0
+                              range:
+                                start: 636
+                                end: 651
+                        - ~
+                        - MemoryAccess:
+                            identifier: memuser_reset_request
+                      - - Constant:
+                            constant:
+                              Enumeration:
+                                - Button
+                                - Pressed
+                            location:
+                              file_id: 0
+                              range:
+                                start: 693
+                                end: 707
+                        - ~
+                        - FunctionCall:
+                            function:
+                              Identifier:
+                                identifier: " >= "
+                            arguments:
+                              - Identifier:
+                                  identifier: counter
+                              - FunctionCall:
+                                  function:
+                                    Identifier:
+                                      identifier: " + "
+                                  arguments:
+                                    - InputAccess:
+                                        identifier: reset_limit_1
+                                    - InputAccess:
+                                        identifier: reset_limit_2
+          state_elements_step:
+            - identifier: memres
+              expression:
+                FunctionCall:
+                  function:
+                    Identifier:
+                      identifier: " == "
+                  arguments:
+                    - InputAccess:
+                        identifier: button_state
+                    - Literal:
+                        literal:
+                          Enumeration:
+                            - Button
+                            - Released
+            - identifier: memuser_reset_request
+              expression:
+                Identifier:
+                  identifier: user_reset_request
+            - identifier: counterocounter
+              expression:
+                Identifier:
+                  identifier: counterocounter
+          output_expression:
+            Identifier:
+              identifier: user_reset_request
+        init:
+          node_name: reset_buttonuser_reset_request
+          state_elements_init:
+            - BufferInit:
+                identifier: memres
+                initial_value:
+                  Boolean: true
+            - BufferInit:
+                identifier: memuser_reset_request
+                initial_value:
+                  Boolean: false
+            - CalledNodeInit:
+                identifier: counterocounter
+                node_name: countero
+
