@@ -42,7 +42,12 @@ nodes:
               function_expression:
                 Call:
                   id: if_then_else
-                  typing: ~
+                  typing:
+                    Abstract:
+                      - - Boolean
+                        - Integer
+                        - Integer
+                      - Integer
                   location:
                     file_id: 0
                     range:
@@ -51,7 +56,7 @@ nodes:
               inputs:
                 - SignalCall:
                     id: res
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
@@ -60,7 +65,7 @@ nodes:
                 - Constant:
                     constant:
                       Integer: 0
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
@@ -70,7 +75,11 @@ nodes:
                     function_expression:
                       Call:
                         id: " + "
-                        typing: ~
+                        typing:
+                          Abstract:
+                            - - Integer
+                              - Integer
+                            - Integer
                         location:
                           file_id: 0
                           range:
@@ -81,7 +90,10 @@ nodes:
                           function_expression:
                             Call:
                               id: (_)
-                              typing: ~
+                              typing:
+                                Abstract:
+                                  - - Integer
+                                  - Integer
                               location:
                                 file_id: 0
                                 range:
@@ -94,19 +106,19 @@ nodes:
                                 expression:
                                   SignalCall:
                                     id: o
-                                    typing: ~
+                                    typing: Integer
                                     location:
                                       file_id: 0
                                       range:
                                         start: 175
                                         end: 176
-                                typing: ~
+                                typing: Integer
                                 location:
                                   file_id: 0
                                   range:
                                     start: 169
                                     end: 176
-                          typing: ~
+                          typing: Integer
                           location:
                             file_id: 0
                             range:
@@ -114,19 +126,19 @@ nodes:
                               end: 177
                       - SignalCall:
                           id: inc
-                          typing: ~
+                          typing: Integer
                           location:
                             file_id: 0
                             range:
                               start: 180
                               end: 183
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
                         start: 168
                         end: 183
-              typing: ~
+              typing: Integer
               location:
                 file_id: 0
                 range:
@@ -146,7 +158,7 @@ nodes:
     is_component: false
     inputs:
       - - button_state
-        - NotDefinedYet: Button
+        - Enumeration: Button
       - - period
         - Integer
       - - reset_limit_1
@@ -158,13 +170,14 @@ nodes:
         - scope: Output
           id: user_reset_request_state
           signal_type:
-            NotDefinedYet: ResetState
+            Enumeration: ResetState
           expression:
             Match:
               expression:
                 SignalCall:
                   id: button_state
-                  typing: ~
+                  typing:
+                    Enumeration: Button
                   location:
                     file_id: 0
                     range:
@@ -187,7 +200,8 @@ nodes:
                         Enumeration:
                           - ResetState
                           - Confirmed
-                      typing: ~
+                      typing:
+                        Enumeration: ResetState
                       location:
                         file_id: 0
                         range:
@@ -208,7 +222,12 @@ nodes:
                       function_expression:
                         Call:
                           id: if_then_else
-                          typing: ~
+                          typing:
+                            Abstract:
+                              - - Boolean
+                                - Enumeration: ResetState
+                                - Enumeration: ResetState
+                              - Enumeration: ResetState
                           location:
                             file_id: 0
                             range:
@@ -219,7 +238,11 @@ nodes:
                             function_expression:
                               Call:
                                 id: " >= "
-                                typing: ~
+                                typing:
+                                  Abstract:
+                                    - - Integer
+                                      - Integer
+                                    - Boolean
                                 location:
                                   file_id: 0
                                   range:
@@ -228,7 +251,7 @@ nodes:
                             inputs:
                               - SignalCall:
                                   id: counter
-                                  typing: ~
+                                  typing: Integer
                                   location:
                                     file_id: 0
                                     range:
@@ -236,13 +259,13 @@ nodes:
                                       end: 439
                               - SignalCall:
                                   id: reset_limit_1
-                                  typing: ~
+                                  typing: Integer
                                   location:
                                     file_id: 0
                                     range:
                                       start: 443
                                       end: 456
-                            typing: ~
+                            typing: Boolean
                             location:
                               file_id: 0
                               range:
@@ -253,7 +276,8 @@ nodes:
                               Enumeration:
                                 - ResetState
                                 - InProgress
-                            typing: ~
+                            typing:
+                              Enumeration: ResetState
                             location:
                               file_id: 0
                               range:
@@ -264,19 +288,22 @@ nodes:
                               Enumeration:
                                 - ResetState
                                 - Confirmed
-                            typing: ~
+                            typing:
+                              Enumeration: ResetState
                             location:
                               file_id: 0
                               range:
                                 start: 541
                                 end: 561
-                      typing: ~
+                      typing:
+                        Enumeration: ResetState
                       location:
                         file_id: 0
                         range:
                           start: 429
                           end: 561
-              typing: ~
+              typing:
+                Enumeration: ResetState
               location:
                 file_id: 0
                 range:
@@ -296,7 +323,8 @@ nodes:
               expression:
                 SignalCall:
                   id: button_state
-                  typing: ~
+                  typing:
+                    Enumeration: Button
                   location:
                     file_id: 0
                     range:
@@ -320,13 +348,13 @@ nodes:
                       expression:
                         SignalCall:
                           id: user_reset_request
-                          typing: ~
+                          typing: Boolean
                           location:
                             file_id: 0
                             range:
                               start: 665
                               end: 683
-                      typing: ~
+                      typing: Boolean
                       location:
                         file_id: 0
                         range:
@@ -347,7 +375,11 @@ nodes:
                       function_expression:
                         Call:
                           id: " >= "
-                          typing: ~
+                          typing:
+                            Abstract:
+                              - - Integer
+                                - Integer
+                              - Boolean
                           location:
                             file_id: 0
                             range:
@@ -356,7 +388,7 @@ nodes:
                       inputs:
                         - SignalCall:
                             id: counter
-                            typing: ~
+                            typing: Integer
                             location:
                               file_id: 0
                               range:
@@ -366,7 +398,11 @@ nodes:
                             function_expression:
                               Call:
                                 id: " + "
-                                typing: ~
+                                typing:
+                                  Abstract:
+                                    - - Integer
+                                      - Integer
+                                    - Integer
                                 location:
                                   file_id: 0
                                   range:
@@ -375,7 +411,7 @@ nodes:
                             inputs:
                               - SignalCall:
                                   id: reset_limit_1
-                                  typing: ~
+                                  typing: Integer
                                   location:
                                     file_id: 0
                                     range:
@@ -383,25 +419,25 @@ nodes:
                                       end: 735
                               - SignalCall:
                                   id: reset_limit_2
-                                  typing: ~
+                                  typing: Integer
                                   location:
                                     file_id: 0
                                     range:
                                       start: 738
                                       end: 751
-                            typing: ~
+                            typing: Integer
                             location:
                               file_id: 0
                               range:
                                 start: 722
                                 end: 751
-                      typing: ~
+                      typing: Boolean
                       location:
                         file_id: 0
                         range:
                           start: 711
                           end: 751
-              typing: ~
+              typing: Boolean
               location:
                 file_id: 0
                 range:
@@ -422,7 +458,7 @@ nodes:
               inputs:
                 - SignalCall:
                     id: res
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
@@ -430,14 +466,14 @@ nodes:
                         end: 790
                 - SignalCall:
                     id: period
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
                         start: 792
                         end: 798
               signal: o
-              typing: ~
+              typing: Integer
               location:
                 file_id: 0
                 range:
@@ -457,7 +493,11 @@ nodes:
               function_expression:
                 Call:
                   id: " && "
-                  typing: ~
+                  typing:
+                    Abstract:
+                      - - Boolean
+                        - Boolean
+                      - Boolean
                   location:
                     file_id: 0
                     range:
@@ -468,7 +508,10 @@ nodes:
                     function_expression:
                       Call:
                         id: (_)
-                        typing: ~
+                        typing:
+                          Abstract:
+                            - - Boolean
+                            - Boolean
                         location:
                           file_id: 0
                           range:
@@ -479,7 +522,11 @@ nodes:
                           function_expression:
                             Call:
                               id: " == "
-                              typing: ~
+                              typing:
+                                Abstract:
+                                  - - Enumeration: Button
+                                    - Enumeration: Button
+                                  - Boolean
                               location:
                                 file_id: 0
                                 range:
@@ -488,7 +535,8 @@ nodes:
                           inputs:
                             - SignalCall:
                                 id: button_state
-                                typing: ~
+                                typing:
+                                  Enumeration: Button
                                 location:
                                   file_id: 0
                                   range:
@@ -499,19 +547,20 @@ nodes:
                                   Enumeration:
                                     - Button
                                     - Pressed
-                                typing: ~
+                                typing:
+                                  Enumeration: Button
                                 location:
                                   file_id: 0
                                   range:
                                     start: 836
                                     end: 850
-                          typing: ~
+                          typing: Boolean
                           location:
                             file_id: 0
                             range:
                               start: 820
                               end: 850
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
@@ -521,7 +570,10 @@ nodes:
                     function_expression:
                       Call:
                         id: (_)
-                        typing: ~
+                        typing:
+                          Abstract:
+                            - - Boolean
+                            - Boolean
                         location:
                           file_id: 0
                           range:
@@ -536,7 +588,11 @@ nodes:
                               function_expression:
                                 Call:
                                   id: " == "
-                                  typing: ~
+                                  typing:
+                                    Abstract:
+                                      - - Enumeration: Button
+                                        - Enumeration: Button
+                                      - Boolean
                                   location:
                                     file_id: 0
                                     range:
@@ -545,7 +601,8 @@ nodes:
                               inputs:
                                 - SignalCall:
                                     id: button_state
-                                    typing: ~
+                                    typing:
+                                      Enumeration: Button
                                     location:
                                       file_id: 0
                                       range:
@@ -556,31 +613,32 @@ nodes:
                                       Enumeration:
                                         - Button
                                         - Released
-                                    typing: ~
+                                    typing:
+                                      Enumeration: Button
                                     location:
                                       file_id: 0
                                       range:
                                         start: 881
                                         end: 896
-                              typing: ~
+                              typing: Boolean
                               location:
                                 file_id: 0
                                 range:
                                   start: 865
                                   end: 896
-                          typing: ~
+                          typing: Boolean
                           location:
                             file_id: 0
                             range:
                               start: 856
                               end: 896
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
                         start: 855
                         end: 897
-              typing: ~
+              typing: Boolean
               location:
                 file_id: 0
                 range:

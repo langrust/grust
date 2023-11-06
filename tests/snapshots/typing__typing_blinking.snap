@@ -22,7 +22,12 @@ nodes:
               function_expression:
                 Call:
                   id: if_then_else
-                  typing: ~
+                  typing:
+                    Abstract:
+                      - - Boolean
+                        - Integer
+                        - Integer
+                      - Integer
                   location:
                     file_id: 0
                     range:
@@ -31,7 +36,7 @@ nodes:
               inputs:
                 - SignalCall:
                     id: res
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
@@ -40,7 +45,7 @@ nodes:
                 - Constant:
                     constant:
                       Integer: 0
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
@@ -50,7 +55,11 @@ nodes:
                     function_expression:
                       Call:
                         id: " + "
-                        typing: ~
+                        typing:
+                          Abstract:
+                            - - Integer
+                              - Integer
+                            - Integer
                         location:
                           file_id: 0
                           range:
@@ -61,7 +70,10 @@ nodes:
                           function_expression:
                             Call:
                               id: (_)
-                              typing: ~
+                              typing:
+                                Abstract:
+                                  - - Integer
+                                  - Integer
                               location:
                                 file_id: 0
                                 range:
@@ -74,19 +86,19 @@ nodes:
                                 expression:
                                   SignalCall:
                                     id: o
-                                    typing: ~
+                                    typing: Integer
                                     location:
                                       file_id: 0
                                       range:
                                         start: 81
                                         end: 82
-                                typing: ~
+                                typing: Integer
                                 location:
                                   file_id: 0
                                   range:
                                     start: 75
                                     end: 82
-                          typing: ~
+                          typing: Integer
                           location:
                             file_id: 0
                             range:
@@ -94,19 +106,19 @@ nodes:
                               end: 83
                       - SignalCall:
                           id: inc
-                          typing: ~
+                          typing: Integer
                           location:
                             file_id: 0
                             range:
                               start: 86
                               end: 89
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
                         start: 74
                         end: 89
-              typing: ~
+              typing: Integer
               location:
                 file_id: 0
                 range:
@@ -126,7 +138,12 @@ nodes:
               function_expression:
                 Call:
                   id: if_then_else
-                  typing: ~
+                  typing:
+                    Abstract:
+                      - - Boolean
+                        - Integer
+                        - Integer
+                      - Integer
                   location:
                     file_id: 0
                     range:
@@ -135,7 +152,7 @@ nodes:
               inputs:
                 - SignalCall:
                     id: tick
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
@@ -144,7 +161,7 @@ nodes:
                 - Constant:
                     constant:
                       Integer: 1
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
@@ -153,13 +170,13 @@ nodes:
                 - Constant:
                     constant:
                       Integer: 0
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
                         start: 126
                         end: 127
-              typing: ~
+              typing: Integer
               location:
                 file_id: 0
                 range:
@@ -190,7 +207,12 @@ nodes:
               function_expression:
                 Call:
                   id: if_then_else
-                  typing: ~
+                  typing:
+                    Abstract:
+                      - - Boolean
+                        - Integer
+                        - Integer
+                      - Integer
                   location:
                     file_id: 0
                     range:
@@ -199,7 +221,7 @@ nodes:
               inputs:
                 - SignalCall:
                     id: on_off
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
@@ -209,7 +231,11 @@ nodes:
                     function_expression:
                       Call:
                         id: " + "
-                        typing: ~
+                        typing:
+                          Abstract:
+                            - - Integer
+                              - Integer
+                            - Integer
                         location:
                           file_id: 0
                           range:
@@ -218,7 +244,7 @@ nodes:
                     inputs:
                       - SignalCall:
                           id: counter
-                          typing: ~
+                          typing: Integer
                           location:
                             file_id: 0
                             range:
@@ -227,13 +253,13 @@ nodes:
                       - Constant:
                           constant:
                             Integer: 1
-                          typing: ~
+                          typing: Integer
                           location:
                             file_id: 0
                             range:
                               start: 213
                               end: 214
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
@@ -242,13 +268,13 @@ nodes:
                 - Constant:
                     constant:
                       Integer: 0
-                    typing: ~
+                    typing: Integer
                     location:
                       file_id: 0
                       range:
                         start: 220
                         end: 221
-              typing: ~
+              typing: Integer
               location:
                 file_id: 0
                 range:
@@ -269,7 +295,7 @@ nodes:
               inputs:
                 - SignalCall:
                     id: res
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
@@ -278,14 +304,14 @@ nodes:
                 - Constant:
                     constant:
                       Boolean: true
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
                         start: 255
                         end: 259
               signal: o
-              typing: ~
+              typing: Integer
               location:
                 file_id: 0
                 range:
@@ -309,7 +335,10 @@ nodes:
                   function_expression:
                     Call:
                       id: (_)
-                      typing: ~
+                      typing:
+                        Abstract:
+                          - - Boolean
+                          - Boolean
                       location:
                         file_id: 0
                         range:
@@ -320,7 +349,11 @@ nodes:
                         function_expression:
                           Call:
                             id: " == "
-                            typing: ~
+                            typing:
+                              Abstract:
+                                - - Integer
+                                  - Integer
+                                - Boolean
                             location:
                               file_id: 0
                               range:
@@ -331,7 +364,11 @@ nodes:
                               function_expression:
                                 Call:
                                   id: " + "
-                                  typing: ~
+                                  typing:
+                                    Abstract:
+                                      - - Integer
+                                        - Integer
+                                      - Integer
                                   location:
                                     file_id: 0
                                     range:
@@ -340,7 +377,7 @@ nodes:
                               inputs:
                                 - SignalCall:
                                     id: counter
-                                    typing: ~
+                                    typing: Integer
                                     location:
                                       file_id: 0
                                       range:
@@ -349,13 +386,13 @@ nodes:
                                 - Constant:
                                     constant:
                                       Integer: 1
-                                    typing: ~
+                                    typing: Integer
                                     location:
                                       file_id: 0
                                       range:
                                         start: 300
                                         end: 301
-                              typing: ~
+                              typing: Integer
                               location:
                                 file_id: 0
                                 range:
@@ -363,25 +400,25 @@ nodes:
                                   end: 301
                           - SignalCall:
                               id: tick_number
-                              typing: ~
+                              typing: Integer
                               location:
                                 file_id: 0
                                 range:
                                   start: 305
                                   end: 316
-                        typing: ~
+                        typing: Boolean
                         location:
                           file_id: 0
                           range:
                             start: 290
                             end: 316
-                  typing: ~
+                  typing: Boolean
                   location:
                     file_id: 0
                     range:
                       start: 289
                       end: 317
-              typing: ~
+              typing: Boolean
               location:
                 file_id: 0
                 range:
@@ -399,16 +436,23 @@ nodes:
           expression:
             MapApplication:
               function_expression:
-                Abstraction:
+                TypedAbstraction:
                   inputs:
-                    - t
-                    - b
+                    - - t
+                      - Boolean
+                    - - b
+                      - Boolean
                   expression:
                     Application:
                       function_expression:
                         Call:
                           id: if_then_else
-                          typing: ~
+                          typing:
+                            Abstract:
+                              - - Boolean
+                                - Boolean
+                                - Boolean
+                              - Boolean
                           location:
                             file_id: 0
                             range:
@@ -417,7 +461,7 @@ nodes:
                       inputs:
                         - Call:
                             id: t
-                            typing: ~
+                            typing: Boolean
                             location:
                               file_id: 0
                               range:
@@ -427,7 +471,10 @@ nodes:
                             function_expression:
                               Call:
                                 id: "!"
-                                typing: ~
+                                typing:
+                                  Abstract:
+                                    - - Boolean
+                                    - Boolean
                                 location:
                                   file_id: 0
                                   range:
@@ -436,13 +483,13 @@ nodes:
                             inputs:
                               - Call:
                                   id: b
-                                  typing: ~
+                                  typing: Boolean
                                   location:
                                     file_id: 0
                                     range:
                                       start: 383
                                       end: 384
-                            typing: ~
+                            typing: Boolean
                             location:
                               file_id: 0
                               range:
@@ -450,19 +497,23 @@ nodes:
                                 end: 384
                         - Call:
                             id: b
-                            typing: ~
+                            typing: Boolean
                             location:
                               file_id: 0
                               range:
                                 start: 390
                                 end: 391
-                      typing: ~
+                      typing: Boolean
                       location:
                         file_id: 0
                         range:
                           start: 372
                           end: 391
-                  typing: ~
+                  typing:
+                    Abstract:
+                      - - Boolean
+                        - Boolean
+                      - Boolean
                   location:
                     file_id: 0
                     range:
@@ -471,7 +522,7 @@ nodes:
               inputs:
                 - SignalCall:
                     id: res
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
@@ -483,19 +534,19 @@ nodes:
                     expression:
                       SignalCall:
                         id: on_off
-                        typing: ~
+                        typing: Boolean
                         location:
                           file_id: 0
                           range:
                             start: 353
                             end: 359
-                    typing: ~
+                    typing: Boolean
                     location:
                       file_id: 0
                       range:
                         start: 344
                         end: 359
-              typing: ~
+              typing: Boolean
               location:
                 file_id: 0
                 range:
