@@ -217,18 +217,14 @@ fn error_when_typing_button_management_unknown_type() {
 
     let button_management_unknown_type_id = files.add(
         "button_management_unknown_type.gr",
-        std::fs::read_to_string(
-            "tests/fixture/button_management_unknown_type.gr",
-        )
-        .expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/button_management_unknown_type.gr")
+            .expect("unkown file"),
     );
 
     let mut file: File = langrust::fileParser::new()
         .parse(
             button_management_unknown_type_id,
-            &files
-                .source(button_management_unknown_type_id)
-                .unwrap(),
+            &files.source(button_management_unknown_type_id).unwrap(),
         )
         .unwrap();
     file.typing(&mut errors).unwrap_err();
