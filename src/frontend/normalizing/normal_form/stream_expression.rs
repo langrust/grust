@@ -202,13 +202,22 @@ impl StreamExpression {
                 let mut expression_dependencies = expression.get_dependencies().clone();
 
                 arms.iter_mut()
-                    .for_each(|(_, bound, body, matched_expression)| {
+                    .for_each(|(pattern, bound, body, matched_expression)| {
+                        // get local signals defined in pattern
+                        let local_signals = pattern.local_identifiers();
+
+                        // remove identifiers created by the pattern from the dependencies
                         let (mut bound_equations, mut bound_dependencies) =
                             bound.as_mut().map_or((vec![], vec![]), |expression| {
                                 (
                                     expression
                                         .normal_form(nodes_reduced_graphs, identifier_creator),
-                                    expression.get_dependencies().clone(),
+                                    expression
+                                        .get_dependencies()
+                                        .clone()
+                                        .into_iter()
+                                        .filter(|(signal, _)| !local_signals.contains(signal))
+                                        .collect(),
                                 )
                             });
                         equations.append(&mut bound_equations);
@@ -216,8 +225,12 @@ impl StreamExpression {
 
                         let mut matched_expression_equations = matched_expression
                             .normal_form(nodes_reduced_graphs, identifier_creator);
-                        let mut matched_expression_dependencies =
-                            matched_expression.get_dependencies().clone();
+                        let mut matched_expression_dependencies = matched_expression
+                            .get_dependencies()
+                            .clone()
+                            .into_iter()
+                            .filter(|(signal, _)| !local_signals.contains(signal))
+                            .collect();
                         body.append(&mut matched_expression_equations);
                         expression_dependencies.append(&mut matched_expression_dependencies)
                     });

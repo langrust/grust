@@ -115,3 +115,25 @@ fn normalize_button_management_using_function() {
     file.normalize(&mut errors).unwrap();
     insta::assert_yaml_snapshot!(file);
 }
+
+#[test]
+fn normalize_pid() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_id = files.add(
+        "pid.gr",
+        std::fs::read_to_string("tests/fixture/pid.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(pid_id, &files.source(pid_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+
+    file.normalize(&mut errors).unwrap();
+    insta::assert_yaml_snapshot!(file);
+}

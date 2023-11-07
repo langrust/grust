@@ -135,12 +135,26 @@ impl StreamExpression {
 
                 *dependencies = Dependencies::from(
                     arms.iter()
-                        .flat_map(|(_, bound, _, matched_expression)| {
-                            let mut bound_dependencies = bound
-                                .as_ref()
-                                .map_or(vec![], |expression| expression.get_dependencies().clone());
-                            let mut matched_expression_dependencies =
-                                matched_expression.get_dependencies().clone();
+                        .flat_map(|(pattern, bound, _, matched_expression)| {
+                            // get local signals defined in pattern
+                            let local_signals = pattern.local_identifiers();
+
+                            // remove identifiers created by the pattern from the dependencies
+                            let mut bound_dependencies =
+                                bound.as_ref().map_or(vec![], |expression| {
+                                    expression
+                                        .get_dependencies()
+                                        .clone()
+                                        .into_iter()
+                                        .filter(|(signal, _)| !local_signals.contains(signal))
+                                        .collect()
+                                });
+                            let mut matched_expression_dependencies = matched_expression
+                                .get_dependencies()
+                                .clone()
+                                .into_iter()
+                                .filter(|(signal, _)| !local_signals.contains(signal))
+                                .collect::<Vec<_>>();
                             matched_expression_dependencies.append(&mut bound_dependencies);
                             matched_expression_dependencies
                         })

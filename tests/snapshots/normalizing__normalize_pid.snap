@@ -1,0 +1,2256 @@
+---
+source: tests/normalizing.rs
+expression: file
+---
+typedefs:
+  - Structure:
+      id: GainPID
+      fields:
+        - - k_p
+          - Float
+        - - k_i
+          - Float
+        - - k_d
+          - Float
+      location:
+        file_id: 0
+        range:
+          start: 0
+          end: 66
+functions:
+  - id: min
+    inputs:
+      - - a
+        - Float
+      - - b
+        - Float
+    statements:
+      - id: test
+        element_type: Boolean
+        expression:
+          Application:
+            function_expression:
+              Call:
+                id: " > "
+                typing:
+                  Abstract:
+                    - - Float
+                      - Float
+                    - Boolean
+                location:
+                  file_id: 0
+                  range:
+                    start: 304
+                    end: 305
+            inputs:
+              - Call:
+                  id: a
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 302
+                      end: 303
+              - Call:
+                  id: b
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 306
+                      end: 307
+            typing: Boolean
+            location:
+              file_id: 0
+              range:
+                start: 302
+                end: 307
+        location:
+          file_id: 0
+          range:
+            start: 285
+            end: 308
+      - id: result
+        element_type: Float
+        expression:
+          Application:
+            function_expression:
+              Call:
+                id: if_then_else
+                typing:
+                  Abstract:
+                    - - Boolean
+                      - Float
+                      - Float
+                    - Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 333
+                    end: 354
+            inputs:
+              - Call:
+                  id: test
+                  typing: Boolean
+                  location:
+                    file_id: 0
+                    range:
+                      start: 336
+                      end: 340
+              - Call:
+                  id: b
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 346
+                      end: 347
+              - Call:
+                  id: a
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 353
+                      end: 354
+            typing: Float
+            location:
+              file_id: 0
+              range:
+                start: 333
+                end: 354
+        location:
+          file_id: 0
+          range:
+            start: 313
+            end: 355
+    returned:
+      - Float
+      - Call:
+          id: result
+          typing: Float
+          location:
+            file_id: 0
+            range:
+              start: 367
+              end: 373
+    location:
+      file_id: 0
+      range:
+        start: 237
+        end: 376
+nodes:
+  - id: integrate
+    is_component: false
+    inputs:
+      - - x
+        - Float
+      - - dt
+        - Float
+    unscheduled_equations:
+      MAX_INTEGRALE:
+        scope: Local
+        id: MAX_INTEGRALE
+        signal_type: Float
+        expression:
+          Constant:
+            constant:
+              Float: 1000
+            typing: Float
+            location:
+              file_id: 0
+              range:
+                start: 226
+                end: 232
+            dependencies: []
+        location:
+          file_id: 0
+          range:
+            start: 203
+            end: 233
+      i:
+        scope: Output
+        id: i
+        signal_type: Float
+        expression:
+          MapApplication:
+            function_expression:
+              Call:
+                id: min
+                typing:
+                  Abstract:
+                    - - Float
+                      - Float
+                    - Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 193
+                    end: 196
+            inputs:
+              - MapApplication:
+                  function_expression:
+                    Call:
+                      id: " + "
+                      typing:
+                        Abstract:
+                          - - Float
+                            - Float
+                          - Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 164
+                          end: 165
+                  inputs:
+                    - SignalCall:
+                        signal:
+                          id: prev_i
+                          scope: Local
+                        typing: Float
+                        location:
+                          file_id: 0
+                          range:
+                            start: 157
+                            end: 163
+                        dependencies:
+                          - - prev_i
+                            - 0
+                    - MapApplication:
+                        function_expression:
+                          Call:
+                            id: " * "
+                            typing:
+                              Abstract:
+                                - - Float
+                                  - Float
+                                - Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 168
+                                end: 169
+                        inputs:
+                          - SignalCall:
+                              signal:
+                                id: x
+                                scope: Input
+                              typing: Float
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 166
+                                  end: 167
+                              dependencies:
+                                - - x
+                                  - 0
+                          - SignalCall:
+                              signal:
+                                id: dt
+                                scope: Input
+                              typing: Float
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 170
+                                  end: 172
+                              dependencies:
+                                - - dt
+                                  - 0
+                        typing: Float
+                        location:
+                          file_id: 0
+                          range:
+                            start: 166
+                            end: 172
+                        dependencies:
+                          - - x
+                            - 0
+                          - - dt
+                            - 0
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 157
+                      end: 172
+                  dependencies:
+                    - - prev_i
+                      - 0
+                    - - x
+                      - 0
+                    - - dt
+                      - 0
+              - SignalCall:
+                  signal:
+                    id: MAX_INTEGRALE
+                    scope: Local
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 174
+                      end: 187
+                  dependencies:
+                    - - MAX_INTEGRALE
+                      - 0
+            typing: Float
+            location:
+              file_id: 0
+              range:
+                start: 156
+                end: 197
+            dependencies:
+              - - prev_i
+                - 0
+              - - x
+                - 0
+              - - dt
+                - 0
+              - - MAX_INTEGRALE
+                - 0
+        location:
+          file_id: 0
+          range:
+            start: 141
+            end: 198
+      prev_i:
+        scope: Local
+        id: prev_i
+        signal_type: Float
+        expression:
+          FollowedBy:
+            constant:
+              Float: 0
+            expression:
+              SignalCall:
+                signal:
+                  id: i
+                  scope: Output
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 134
+                    end: 135
+                dependencies:
+                  - - i
+                    - 0
+            typing: Float
+            location:
+              file_id: 0
+              range:
+                start: 126
+                end: 135
+            dependencies:
+              - - i
+                - 1
+        location:
+          file_id: 0
+          range:
+            start: 110
+            end: 136
+    unitary_nodes:
+      i:
+        node_id: integrate
+        output_id: i
+        inputs:
+          - - x
+            - Float
+          - - dt
+            - Float
+        equations:
+          - scope: Local
+            id: MAX_INTEGRALE
+            signal_type: Float
+            expression:
+              Constant:
+                constant:
+                  Float: 1000
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 226
+                    end: 232
+                dependencies: []
+            location:
+              file_id: 0
+              range:
+                start: 203
+                end: 233
+          - scope: Local
+            id: prev_i
+            signal_type: Float
+            expression:
+              SignalCall:
+                signal:
+                  id: memprev_i
+                  scope: Memory
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 126
+                    end: 135
+                dependencies:
+                  - - memprev_i
+                    - 0
+            location:
+              file_id: 0
+              range:
+                start: 110
+                end: 136
+          - scope: Output
+            id: i
+            signal_type: Float
+            expression:
+              MapApplication:
+                function_expression:
+                  Call:
+                    id: min
+                    typing:
+                      Abstract:
+                        - - Float
+                          - Float
+                        - Float
+                    location:
+                      file_id: 0
+                      range:
+                        start: 193
+                        end: 196
+                inputs:
+                  - MapApplication:
+                      function_expression:
+                        Call:
+                          id: " + "
+                          typing:
+                            Abstract:
+                              - - Float
+                                - Float
+                              - Float
+                          location:
+                            file_id: 0
+                            range:
+                              start: 164
+                              end: 165
+                      inputs:
+                        - SignalCall:
+                            signal:
+                              id: prev_i
+                              scope: Local
+                            typing: Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 157
+                                end: 163
+                            dependencies:
+                              - - prev_i
+                                - 0
+                        - MapApplication:
+                            function_expression:
+                              Call:
+                                id: " * "
+                                typing:
+                                  Abstract:
+                                    - - Float
+                                      - Float
+                                    - Float
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 168
+                                    end: 169
+                            inputs:
+                              - SignalCall:
+                                  signal:
+                                    id: x
+                                    scope: Input
+                                  typing: Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 166
+                                      end: 167
+                                  dependencies:
+                                    - - x
+                                      - 0
+                              - SignalCall:
+                                  signal:
+                                    id: dt
+                                    scope: Input
+                                  typing: Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 170
+                                      end: 172
+                                  dependencies:
+                                    - - dt
+                                      - 0
+                            typing: Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 166
+                                end: 172
+                            dependencies:
+                              - - x
+                                - 0
+                              - - dt
+                                - 0
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 157
+                          end: 172
+                      dependencies:
+                        - - prev_i
+                          - 0
+                        - - x
+                          - 0
+                        - - dt
+                          - 0
+                  - SignalCall:
+                      signal:
+                        id: MAX_INTEGRALE
+                        scope: Local
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 174
+                          end: 187
+                      dependencies:
+                        - - MAX_INTEGRALE
+                          - 0
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 156
+                    end: 197
+                dependencies:
+                  - - prev_i
+                    - 0
+                  - - x
+                    - 0
+                  - - dt
+                    - 0
+                  - - MAX_INTEGRALE
+                    - 0
+            location:
+              file_id: 0
+              range:
+                start: 141
+                end: 198
+        memory:
+          buffers:
+            memprev_i:
+              typing: Float
+              initial_value:
+                Float: 0
+              expression:
+                SignalCall:
+                  signal:
+                    id: i
+                    scope: Output
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 134
+                      end: 135
+                  dependencies:
+                    - - i
+                      - 0
+          called_nodes: {}
+        location:
+          file_id: 0
+          range:
+            start: 68
+            end: 235
+        graph:
+          vertices:
+            MAX_INTEGRALE:
+              id: MAX_INTEGRALE
+              value: White
+              neighbors: []
+            dt:
+              id: dt
+              value: White
+              neighbors: []
+            i:
+              id: i
+              value: White
+              neighbors:
+                - id: prev_i
+                  weight: 0
+                - id: x
+                  weight: 0
+                - id: dt
+                  weight: 0
+                - id: MAX_INTEGRALE
+                  weight: 0
+            memprev_i:
+              id: memprev_i
+              value: White
+              neighbors: []
+            prev_i:
+              id: prev_i
+              value: White
+              neighbors:
+                - id: memprev_i
+                  weight: 0
+            x:
+              id: x
+              value: White
+              neighbors: []
+    location:
+      file_id: 0
+      range:
+        start: 68
+        end: 235
+    graph:
+      vertices:
+        MAX_INTEGRALE:
+          id: MAX_INTEGRALE
+          value: Black
+          neighbors: []
+        dt:
+          id: dt
+          value: Black
+          neighbors: []
+        i:
+          id: i
+          value: Black
+          neighbors:
+            - id: prev_i
+              weight: 0
+            - id: x
+              weight: 0
+            - id: dt
+              weight: 0
+            - id: MAX_INTEGRALE
+              weight: 0
+        prev_i:
+          id: prev_i
+          value: Black
+          neighbors:
+            - id: i
+              weight: 1
+        x:
+          id: x
+          value: Black
+          neighbors: []
+  - id: derive
+    is_component: false
+    inputs:
+      - - x
+        - Float
+      - - dt
+        - Float
+    unscheduled_equations:
+      d:
+        scope: Output
+        id: d
+        signal_type: Float
+        expression:
+          MapApplication:
+            function_expression:
+              Call:
+                id: " / "
+                typing:
+                  Abstract:
+                    - - Float
+                      - Float
+                    - Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 444
+                    end: 445
+            inputs:
+              - MapApplication:
+                  function_expression:
+                    Call:
+                      id: (_)
+                      typing:
+                        Abstract:
+                          - - Float
+                          - Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 432
+                          end: 444
+                  inputs:
+                    - MapApplication:
+                        function_expression:
+                          Call:
+                            id: " - "
+                            typing:
+                              Abstract:
+                                - - Float
+                                  - Float
+                                - Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 435
+                                end: 436
+                        inputs:
+                          - SignalCall:
+                              signal:
+                                id: x
+                                scope: Input
+                              typing: Float
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 433
+                                  end: 434
+                              dependencies:
+                                - - x
+                                  - 0
+                          - SignalCall:
+                              signal:
+                                id: prev_x
+                                scope: Local
+                              typing: Float
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 437
+                                  end: 443
+                              dependencies:
+                                - - prev_x
+                                  - 0
+                        typing: Float
+                        location:
+                          file_id: 0
+                          range:
+                            start: 433
+                            end: 443
+                        dependencies:
+                          - - x
+                            - 0
+                          - - prev_x
+                            - 0
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 432
+                      end: 444
+                  dependencies:
+                    - - x
+                      - 0
+                    - - prev_x
+                      - 0
+              - SignalCall:
+                  signal:
+                    id: dt
+                    scope: Input
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 445
+                      end: 447
+                  dependencies:
+                    - - dt
+                      - 0
+            typing: Float
+            location:
+              file_id: 0
+              range:
+                start: 432
+                end: 447
+            dependencies:
+              - - x
+                - 0
+              - - prev_x
+                - 0
+              - - dt
+                - 0
+        location:
+          file_id: 0
+          range:
+            start: 417
+            end: 448
+      prev_x:
+        scope: Local
+        id: prev_x
+        signal_type: Float
+        expression:
+          FollowedBy:
+            constant:
+              Float: 0
+            expression:
+              SignalCall:
+                signal:
+                  id: x
+                  scope: Input
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 477
+                    end: 478
+                dependencies:
+                  - - x
+                    - 0
+            typing: Float
+            location:
+              file_id: 0
+              range:
+                start: 469
+                end: 478
+            dependencies:
+              - - x
+                - 1
+        location:
+          file_id: 0
+          range:
+            start: 453
+            end: 479
+    unitary_nodes:
+      d:
+        node_id: derive
+        output_id: d
+        inputs:
+          - - x
+            - Float
+          - - dt
+            - Float
+        equations:
+          - scope: Local
+            id: prev_x
+            signal_type: Float
+            expression:
+              SignalCall:
+                signal:
+                  id: memprev_x
+                  scope: Memory
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 469
+                    end: 478
+                dependencies:
+                  - - memprev_x
+                    - 0
+            location:
+              file_id: 0
+              range:
+                start: 453
+                end: 479
+          - scope: Output
+            id: d
+            signal_type: Float
+            expression:
+              MapApplication:
+                function_expression:
+                  Call:
+                    id: " / "
+                    typing:
+                      Abstract:
+                        - - Float
+                          - Float
+                        - Float
+                    location:
+                      file_id: 0
+                      range:
+                        start: 444
+                        end: 445
+                inputs:
+                  - MapApplication:
+                      function_expression:
+                        Call:
+                          id: (_)
+                          typing:
+                            Abstract:
+                              - - Float
+                              - Float
+                          location:
+                            file_id: 0
+                            range:
+                              start: 432
+                              end: 444
+                      inputs:
+                        - MapApplication:
+                            function_expression:
+                              Call:
+                                id: " - "
+                                typing:
+                                  Abstract:
+                                    - - Float
+                                      - Float
+                                    - Float
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 435
+                                    end: 436
+                            inputs:
+                              - SignalCall:
+                                  signal:
+                                    id: x
+                                    scope: Input
+                                  typing: Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 433
+                                      end: 434
+                                  dependencies:
+                                    - - x
+                                      - 0
+                              - SignalCall:
+                                  signal:
+                                    id: prev_x
+                                    scope: Local
+                                  typing: Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 437
+                                      end: 443
+                                  dependencies:
+                                    - - prev_x
+                                      - 0
+                            typing: Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 433
+                                end: 443
+                            dependencies:
+                              - - x
+                                - 0
+                              - - prev_x
+                                - 0
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 432
+                          end: 444
+                      dependencies:
+                        - - x
+                          - 0
+                        - - prev_x
+                          - 0
+                  - SignalCall:
+                      signal:
+                        id: dt
+                        scope: Input
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 445
+                          end: 447
+                      dependencies:
+                        - - dt
+                          - 0
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 432
+                    end: 447
+                dependencies:
+                  - - x
+                    - 0
+                  - - prev_x
+                    - 0
+                  - - dt
+                    - 0
+            location:
+              file_id: 0
+              range:
+                start: 417
+                end: 448
+        memory:
+          buffers:
+            memprev_x:
+              typing: Float
+              initial_value:
+                Float: 0
+              expression:
+                SignalCall:
+                  signal:
+                    id: x
+                    scope: Input
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 477
+                      end: 478
+                  dependencies:
+                    - - x
+                      - 0
+          called_nodes: {}
+        location:
+          file_id: 0
+          range:
+            start: 378
+            end: 481
+        graph:
+          vertices:
+            d:
+              id: d
+              value: White
+              neighbors:
+                - id: x
+                  weight: 0
+                - id: prev_x
+                  weight: 0
+                - id: dt
+                  weight: 0
+            dt:
+              id: dt
+              value: White
+              neighbors: []
+            memprev_x:
+              id: memprev_x
+              value: White
+              neighbors: []
+            prev_x:
+              id: prev_x
+              value: White
+              neighbors:
+                - id: memprev_x
+                  weight: 0
+            x:
+              id: x
+              value: White
+              neighbors: []
+    location:
+      file_id: 0
+      range:
+        start: 378
+        end: 481
+    graph:
+      vertices:
+        d:
+          id: d
+          value: Black
+          neighbors:
+            - id: x
+              weight: 0
+            - id: prev_x
+              weight: 0
+            - id: dt
+              weight: 0
+        dt:
+          id: dt
+          value: Black
+          neighbors: []
+        prev_x:
+          id: prev_x
+          value: Black
+          neighbors:
+            - id: x
+              weight: 1
+        x:
+          id: x
+          value: Black
+          neighbors: []
+component:
+  id: pid
+  is_component: true
+  inputs:
+    - - v_c
+      - Float
+    - - v
+      - Float
+    - - dt
+      - Float
+  unscheduled_equations:
+    e:
+      scope: Local
+      id: e
+      signal_type: Float
+      expression:
+        MapApplication:
+          function_expression:
+            Call:
+              id: " - "
+              typing:
+                Abstract:
+                  - - Float
+                    - Float
+                  - Float
+              location:
+                file_id: 0
+                range:
+                  start: 768
+                  end: 769
+          inputs:
+            - SignalCall:
+                signal:
+                  id: v_c
+                  scope: Input
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 764
+                    end: 767
+                dependencies:
+                  - - v_c
+                    - 0
+            - SignalCall:
+                signal:
+                  id: v
+                  scope: Input
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 770
+                    end: 771
+                dependencies:
+                  - - v
+                    - 0
+          typing: Float
+          location:
+            file_id: 0
+            range:
+              start: 764
+              end: 771
+          dependencies:
+            - - v_c
+              - 0
+            - - v
+              - 0
+      location:
+        file_id: 0
+        range:
+          start: 753
+          end: 772
+    e_d:
+      scope: Local
+      id: e_d
+      signal_type: Float
+      expression:
+        NodeApplication:
+          node: derive
+          inputs:
+            - SignalCall:
+                signal:
+                  id: e
+                  scope: Local
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 834
+                    end: 835
+                dependencies:
+                  - - e
+                    - 0
+            - SignalCall:
+                signal:
+                  id: dt
+                  scope: Input
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 837
+                    end: 839
+                dependencies:
+                  - - dt
+                    - 0
+          signal: d
+          typing: Float
+          location:
+            file_id: 0
+            range:
+              start: 827
+              end: 842
+          dependencies:
+            - - e
+              - 0
+            - - e
+              - 1
+            - - dt
+              - 0
+      location:
+        file_id: 0
+        range:
+          start: 814
+          end: 843
+    e_i:
+      scope: Local
+      id: e_i
+      signal_type: Float
+      expression:
+        NodeApplication:
+          node: integrate
+          inputs:
+            - SignalCall:
+                signal:
+                  id: e
+                  scope: Local
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 800
+                    end: 801
+                dependencies:
+                  - - e
+                    - 0
+            - SignalCall:
+                signal:
+                  id: dt
+                  scope: Input
+                typing: Float
+                location:
+                  file_id: 0
+                  range:
+                    start: 803
+                    end: 805
+                dependencies:
+                  - - dt
+                    - 0
+          signal: i
+          typing: Float
+          location:
+            file_id: 0
+            range:
+              start: 790
+              end: 808
+          dependencies:
+            - - e
+              - 0
+            - - dt
+              - 0
+      location:
+        file_id: 0
+        range:
+          start: 777
+          end: 809
+    gain:
+      scope: Local
+      id: gain
+      signal_type:
+        Structure: GainPID
+      expression:
+        Structure:
+          name: GainPID
+          fields:
+            - - k_p
+              - Constant:
+                  constant:
+                    Float: 0.2
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 575
+                      end: 578
+                  dependencies: []
+            - - k_i
+              - Constant:
+                  constant:
+                    Float: 1.5
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 593
+                      end: 596
+                  dependencies: []
+            - - k_d
+              - Constant:
+                  constant:
+                    Float: 6
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 611
+                      end: 614
+                  dependencies: []
+          typing:
+            Structure: GainPID
+          location:
+            file_id: 0
+            range:
+              start: 552
+              end: 621
+          dependencies: []
+      location:
+        file_id: 0
+        range:
+          start: 536
+          end: 622
+    u:
+      scope: Output
+      id: u
+      signal_type: Float
+      expression:
+        Match:
+          expression:
+            SignalCall:
+              signal:
+                id: gain
+                scope: Local
+              typing:
+                Structure: GainPID
+              location:
+                file_id: 0
+                range:
+                  start: 649
+                  end: 653
+              dependencies:
+                - - gain
+                  - 0
+          arms:
+            - - Structure:
+                  name: GainPID
+                  fields:
+                    - - k_p
+                      - Identifier:
+                          name: k_p
+                          location:
+                            file_id: 0
+                            range:
+                              start: 680
+                              end: 683
+                    - - k_i
+                      - Identifier:
+                          name: k_i
+                          location:
+                            file_id: 0
+                            range:
+                              start: 690
+                              end: 693
+                    - - k_d
+                      - Identifier:
+                          name: k_d
+                          location:
+                            file_id: 0
+                            range:
+                              start: 700
+                              end: 703
+                  location:
+                    file_id: 0
+                    range:
+                      start: 665
+                      end: 705
+              - ~
+              - []
+              - MapApplication:
+                  function_expression:
+                    Call:
+                      id: " + "
+                      typing:
+                        Abstract:
+                          - - Float
+                            - Float
+                          - Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 729
+                          end: 730
+                  inputs:
+                    - MapApplication:
+                        function_expression:
+                          Call:
+                            id: " + "
+                            typing:
+                              Abstract:
+                                - - Float
+                                  - Float
+                                - Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 717
+                                end: 718
+                        inputs:
+                          - MapApplication:
+                              function_expression:
+                                Call:
+                                  id: " * "
+                                  typing:
+                                    Abstract:
+                                      - - Float
+                                        - Float
+                                      - Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 713
+                                      end: 714
+                              inputs:
+                                - SignalCall:
+                                    signal:
+                                      id: k_p
+                                      scope: Local
+                                    typing: Float
+                                    location:
+                                      file_id: 0
+                                      range:
+                                        start: 709
+                                        end: 712
+                                    dependencies:
+                                      - - k_p
+                                        - 0
+                                - SignalCall:
+                                    signal:
+                                      id: e
+                                      scope: Local
+                                    typing: Float
+                                    location:
+                                      file_id: 0
+                                      range:
+                                        start: 715
+                                        end: 716
+                                    dependencies:
+                                      - - e
+                                        - 0
+                              typing: Float
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 709
+                                  end: 716
+                              dependencies:
+                                - - k_p
+                                  - 0
+                                - - e
+                                  - 0
+                          - MapApplication:
+                              function_expression:
+                                Call:
+                                  id: " * "
+                                  typing:
+                                    Abstract:
+                                      - - Float
+                                        - Float
+                                      - Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 723
+                                      end: 724
+                              inputs:
+                                - SignalCall:
+                                    signal:
+                                      id: k_i
+                                      scope: Local
+                                    typing: Float
+                                    location:
+                                      file_id: 0
+                                      range:
+                                        start: 719
+                                        end: 722
+                                    dependencies:
+                                      - - k_i
+                                        - 0
+                                - SignalCall:
+                                    signal:
+                                      id: e_i
+                                      scope: Local
+                                    typing: Float
+                                    location:
+                                      file_id: 0
+                                      range:
+                                        start: 725
+                                        end: 728
+                                    dependencies:
+                                      - - e_i
+                                        - 0
+                              typing: Float
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 719
+                                  end: 728
+                              dependencies:
+                                - - k_i
+                                  - 0
+                                - - e_i
+                                  - 0
+                        typing: Float
+                        location:
+                          file_id: 0
+                          range:
+                            start: 709
+                            end: 728
+                        dependencies:
+                          - - k_p
+                            - 0
+                          - - e
+                            - 0
+                          - - k_i
+                            - 0
+                          - - e_i
+                            - 0
+                    - MapApplication:
+                        function_expression:
+                          Call:
+                            id: " * "
+                            typing:
+                              Abstract:
+                                - - Float
+                                  - Float
+                                - Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 735
+                                end: 736
+                        inputs:
+                          - SignalCall:
+                              signal:
+                                id: k_d
+                                scope: Local
+                              typing: Float
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 731
+                                  end: 734
+                              dependencies:
+                                - - k_d
+                                  - 0
+                          - SignalCall:
+                              signal:
+                                id: e_d
+                                scope: Local
+                              typing: Float
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 737
+                                  end: 740
+                              dependencies:
+                                - - e_d
+                                  - 0
+                        typing: Float
+                        location:
+                          file_id: 0
+                          range:
+                            start: 731
+                            end: 740
+                        dependencies:
+                          - - k_d
+                            - 0
+                          - - e_d
+                            - 0
+                  typing: Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 709
+                      end: 740
+                  dependencies:
+                    - - k_p
+                      - 0
+                    - - e
+                      - 0
+                    - - k_i
+                      - 0
+                    - - e_i
+                      - 0
+                    - - k_d
+                      - 0
+                    - - e_d
+                      - 0
+          typing: Float
+          location:
+            file_id: 0
+            range:
+              start: 642
+              end: 747
+          dependencies:
+            - - e
+              - 0
+            - - e_i
+              - 0
+            - - e_d
+              - 0
+            - - gain
+              - 0
+      location:
+        file_id: 0
+        range:
+          start: 627
+          end: 748
+  unitary_nodes:
+    u:
+      node_id: pid
+      output_id: u
+      inputs:
+        - - v_c
+          - Float
+        - - v
+          - Float
+        - - dt
+          - Float
+      equations:
+        - scope: Local
+          id: e
+          signal_type: Float
+          expression:
+            MapApplication:
+              function_expression:
+                Call:
+                  id: " - "
+                  typing:
+                    Abstract:
+                      - - Float
+                        - Float
+                      - Float
+                  location:
+                    file_id: 0
+                    range:
+                      start: 768
+                      end: 769
+              inputs:
+                - SignalCall:
+                    signal:
+                      id: v_c
+                      scope: Input
+                    typing: Float
+                    location:
+                      file_id: 0
+                      range:
+                        start: 764
+                        end: 767
+                    dependencies:
+                      - - v_c
+                        - 0
+                - SignalCall:
+                    signal:
+                      id: v
+                      scope: Input
+                    typing: Float
+                    location:
+                      file_id: 0
+                      range:
+                        start: 770
+                        end: 771
+                    dependencies:
+                      - - v
+                        - 0
+              typing: Float
+              location:
+                file_id: 0
+                range:
+                  start: 764
+                  end: 771
+              dependencies:
+                - - v_c
+                  - 0
+                - - v
+                  - 0
+          location:
+            file_id: 0
+            range:
+              start: 753
+              end: 772
+        - scope: Local
+          id: e_d
+          signal_type: Float
+          expression:
+            UnitaryNodeApplication:
+              id: derivede_d
+              node: derive
+              signal: d
+              inputs:
+                - - x
+                  - SignalCall:
+                      signal:
+                        id: e
+                        scope: Local
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 834
+                          end: 835
+                      dependencies:
+                        - - e
+                          - 0
+                - - dt
+                  - SignalCall:
+                      signal:
+                        id: dt
+                        scope: Input
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 837
+                          end: 839
+                      dependencies:
+                        - - dt
+                          - 0
+              typing: Float
+              location:
+                file_id: 0
+                range:
+                  start: 827
+                  end: 842
+              dependencies:
+                - - e
+                  - 0
+                - - dt
+                  - 0
+          location:
+            file_id: 0
+            range:
+              start: 814
+              end: 843
+        - scope: Local
+          id: e_i
+          signal_type: Float
+          expression:
+            UnitaryNodeApplication:
+              id: integrateie_i
+              node: integrate
+              signal: i
+              inputs:
+                - - x
+                  - SignalCall:
+                      signal:
+                        id: e
+                        scope: Local
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 800
+                          end: 801
+                      dependencies:
+                        - - e
+                          - 0
+                - - dt
+                  - SignalCall:
+                      signal:
+                        id: dt
+                        scope: Input
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 803
+                          end: 805
+                      dependencies:
+                        - - dt
+                          - 0
+              typing: Float
+              location:
+                file_id: 0
+                range:
+                  start: 790
+                  end: 808
+              dependencies:
+                - - e
+                  - 0
+                - - dt
+                  - 0
+          location:
+            file_id: 0
+            range:
+              start: 777
+              end: 809
+        - scope: Local
+          id: gain
+          signal_type:
+            Structure: GainPID
+          expression:
+            Structure:
+              name: GainPID
+              fields:
+                - - k_p
+                  - Constant:
+                      constant:
+                        Float: 0.2
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 575
+                          end: 578
+                      dependencies: []
+                - - k_i
+                  - Constant:
+                      constant:
+                        Float: 1.5
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 593
+                          end: 596
+                      dependencies: []
+                - - k_d
+                  - Constant:
+                      constant:
+                        Float: 6
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 611
+                          end: 614
+                      dependencies: []
+              typing:
+                Structure: GainPID
+              location:
+                file_id: 0
+                range:
+                  start: 552
+                  end: 621
+              dependencies: []
+          location:
+            file_id: 0
+            range:
+              start: 536
+              end: 622
+        - scope: Output
+          id: u
+          signal_type: Float
+          expression:
+            Match:
+              expression:
+                SignalCall:
+                  signal:
+                    id: gain
+                    scope: Local
+                  typing:
+                    Structure: GainPID
+                  location:
+                    file_id: 0
+                    range:
+                      start: 649
+                      end: 653
+                  dependencies:
+                    - - gain
+                      - 0
+              arms:
+                - - Structure:
+                      name: GainPID
+                      fields:
+                        - - k_p
+                          - Identifier:
+                              name: k_p
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 680
+                                  end: 683
+                        - - k_i
+                          - Identifier:
+                              name: k_i
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 690
+                                  end: 693
+                        - - k_d
+                          - Identifier:
+                              name: k_d
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 700
+                                  end: 703
+                      location:
+                        file_id: 0
+                        range:
+                          start: 665
+                          end: 705
+                  - ~
+                  - []
+                  - MapApplication:
+                      function_expression:
+                        Call:
+                          id: " + "
+                          typing:
+                            Abstract:
+                              - - Float
+                                - Float
+                              - Float
+                          location:
+                            file_id: 0
+                            range:
+                              start: 729
+                              end: 730
+                      inputs:
+                        - MapApplication:
+                            function_expression:
+                              Call:
+                                id: " + "
+                                typing:
+                                  Abstract:
+                                    - - Float
+                                      - Float
+                                    - Float
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 717
+                                    end: 718
+                            inputs:
+                              - MapApplication:
+                                  function_expression:
+                                    Call:
+                                      id: " * "
+                                      typing:
+                                        Abstract:
+                                          - - Float
+                                            - Float
+                                          - Float
+                                      location:
+                                        file_id: 0
+                                        range:
+                                          start: 713
+                                          end: 714
+                                  inputs:
+                                    - SignalCall:
+                                        signal:
+                                          id: k_p
+                                          scope: Local
+                                        typing: Float
+                                        location:
+                                          file_id: 0
+                                          range:
+                                            start: 709
+                                            end: 712
+                                        dependencies:
+                                          - - k_p
+                                            - 0
+                                    - SignalCall:
+                                        signal:
+                                          id: e
+                                          scope: Local
+                                        typing: Float
+                                        location:
+                                          file_id: 0
+                                          range:
+                                            start: 715
+                                            end: 716
+                                        dependencies:
+                                          - - e
+                                            - 0
+                                  typing: Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 709
+                                      end: 716
+                                  dependencies:
+                                    - - k_p
+                                      - 0
+                                    - - e
+                                      - 0
+                              - MapApplication:
+                                  function_expression:
+                                    Call:
+                                      id: " * "
+                                      typing:
+                                        Abstract:
+                                          - - Float
+                                            - Float
+                                          - Float
+                                      location:
+                                        file_id: 0
+                                        range:
+                                          start: 723
+                                          end: 724
+                                  inputs:
+                                    - SignalCall:
+                                        signal:
+                                          id: k_i
+                                          scope: Local
+                                        typing: Float
+                                        location:
+                                          file_id: 0
+                                          range:
+                                            start: 719
+                                            end: 722
+                                        dependencies:
+                                          - - k_i
+                                            - 0
+                                    - SignalCall:
+                                        signal:
+                                          id: e_i
+                                          scope: Local
+                                        typing: Float
+                                        location:
+                                          file_id: 0
+                                          range:
+                                            start: 725
+                                            end: 728
+                                        dependencies:
+                                          - - e_i
+                                            - 0
+                                  typing: Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 719
+                                      end: 728
+                                  dependencies:
+                                    - - k_i
+                                      - 0
+                                    - - e_i
+                                      - 0
+                            typing: Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 709
+                                end: 728
+                            dependencies:
+                              - - k_p
+                                - 0
+                              - - e
+                                - 0
+                              - - k_i
+                                - 0
+                              - - e_i
+                                - 0
+                        - MapApplication:
+                            function_expression:
+                              Call:
+                                id: " * "
+                                typing:
+                                  Abstract:
+                                    - - Float
+                                      - Float
+                                    - Float
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 735
+                                    end: 736
+                            inputs:
+                              - SignalCall:
+                                  signal:
+                                    id: k_d
+                                    scope: Local
+                                  typing: Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 731
+                                      end: 734
+                                  dependencies:
+                                    - - k_d
+                                      - 0
+                              - SignalCall:
+                                  signal:
+                                    id: e_d
+                                    scope: Local
+                                  typing: Float
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 737
+                                      end: 740
+                                  dependencies:
+                                    - - e_d
+                                      - 0
+                            typing: Float
+                            location:
+                              file_id: 0
+                              range:
+                                start: 731
+                                end: 740
+                            dependencies:
+                              - - k_d
+                                - 0
+                              - - e_d
+                                - 0
+                      typing: Float
+                      location:
+                        file_id: 0
+                        range:
+                          start: 709
+                          end: 740
+                      dependencies:
+                        - - k_p
+                          - 0
+                        - - e
+                          - 0
+                        - - k_i
+                          - 0
+                        - - e_i
+                          - 0
+                        - - k_d
+                          - 0
+                        - - e_d
+                          - 0
+              typing: Float
+              location:
+                file_id: 0
+                range:
+                  start: 642
+                  end: 747
+              dependencies:
+                - - e
+                  - 0
+                - - e_i
+                  - 0
+                - - e_d
+                  - 0
+                - - gain
+                  - 0
+          location:
+            file_id: 0
+            range:
+              start: 627
+              end: 748
+      memory:
+        buffers: {}
+        called_nodes:
+          derivede_d:
+            node_id: derive
+            signal_id: d
+          integrateie_i:
+            node_id: integrate
+            signal_id: i
+      location:
+        file_id: 0
+        range:
+          start: 483
+          end: 845
+      graph:
+        vertices:
+          dt:
+            id: dt
+            value: White
+            neighbors: []
+          e:
+            id: e
+            value: White
+            neighbors:
+              - id: v_c
+                weight: 0
+              - id: v
+                weight: 0
+          e_d:
+            id: e_d
+            value: White
+            neighbors:
+              - id: e
+                weight: 0
+              - id: dt
+                weight: 0
+          e_i:
+            id: e_i
+            value: White
+            neighbors:
+              - id: e
+                weight: 0
+              - id: dt
+                weight: 0
+          gain:
+            id: gain
+            value: White
+            neighbors: []
+          u:
+            id: u
+            value: White
+            neighbors:
+              - id: e
+                weight: 0
+              - id: e_i
+                weight: 0
+              - id: e_d
+                weight: 0
+              - id: gain
+                weight: 0
+          v:
+            id: v
+            value: White
+            neighbors: []
+          v_c:
+            id: v_c
+            value: White
+            neighbors: []
+  location:
+    file_id: 0
+    range:
+      start: 483
+      end: 845
+  graph:
+    vertices:
+      dt:
+        id: dt
+        value: Black
+        neighbors: []
+      e:
+        id: e
+        value: Black
+        neighbors:
+          - id: v_c
+            weight: 0
+          - id: v
+            weight: 0
+      e_d:
+        id: e_d
+        value: Black
+        neighbors:
+          - id: e
+            weight: 0
+          - id: e
+            weight: 1
+          - id: dt
+            weight: 0
+      e_i:
+        id: e_i
+        value: Black
+        neighbors:
+          - id: e
+            weight: 0
+          - id: dt
+            weight: 0
+      gain:
+        id: gain
+        value: Black
+        neighbors: []
+      u:
+        id: u
+        value: Black
+        neighbors:
+          - id: e
+            weight: 0
+          - id: e_i
+            weight: 0
+          - id: e_d
+            weight: 0
+          - id: gain
+            weight: 0
+      v:
+        id: v
+        value: Black
+        neighbors: []
+      v_c:
+        id: v_c
+        value: Black
+        neighbors: []
+location:
+  file_id: 0
+  range:
+    start: 0
+    end: 845
+
