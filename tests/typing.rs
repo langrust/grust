@@ -126,3 +126,29 @@ fn error_when_typing_counter_not_well_typed() {
         let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
     }
 }
+
+#[test]
+fn error_when_typing_counter_unknown_signal() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let counter_unknown_signal_id = files.add(
+        "counter_unknown_signal.gr",
+        std::fs::read_to_string("tests/fixture/counter_unknown_signal.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            counter_unknown_signal_id,
+            &files.source(counter_unknown_signal_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
+}
