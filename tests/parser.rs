@@ -2282,3 +2282,20 @@ fn parse_button_management_using_function() {
 
     insta::assert_yaml_snapshot!(file);
 }
+
+#[test]
+fn parse_pid() {
+    let mut files = SimpleFiles::new();
+
+    let pid_id = files.add(
+        "pid.gr",
+        std::fs::read_to_string("tests/fixture/pid.gr")
+            .expect("unkown file"),
+    );
+
+    let file: File = langrust::fileParser::new()
+        .parse(pid_id, &files.source(pid_id).unwrap())
+        .unwrap();
+
+    insta::assert_yaml_snapshot!(file);
+}
