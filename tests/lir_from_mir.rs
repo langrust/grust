@@ -85,7 +85,8 @@ fn lir_from_mir_transformation_for_button_management_condition_match() {
 
     let blinking_id = files.add(
         "button_management_condition_match.gr",
-        std::fs::read_to_string("tests/fixture/button_management_condition_match.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/button_management_condition_match.gr")
+            .expect("unkown file"),
     );
 
     let mut file: File = langrust::fileParser::new()
@@ -109,7 +110,8 @@ fn lir_from_mir_transformation_for_button_management_using_function() {
 
     let blinking_id = files.add(
         "button_management_using_function.gr",
-        std::fs::read_to_string("tests/fixture/button_management_using_function.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/button_management_using_function.gr")
+            .expect("unkown file"),
     );
 
     let mut file: File = langrust::fileParser::new()
