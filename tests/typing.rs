@@ -254,3 +254,29 @@ fn error_when_typing_button_management_unknown_type() {
         let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
     }
 }
+
+#[test]
+fn error_when_typing_pid_unknown_field() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_unknown_field_id = files.add(
+        "pid_unknown_field.gr",
+        std::fs::read_to_string("tests/fixture/pid_unknown_field.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            pid_unknown_field_id,
+            &files.source(pid_unknown_field_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
+}
