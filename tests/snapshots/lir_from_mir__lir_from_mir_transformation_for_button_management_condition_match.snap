@@ -1,0 +1,694 @@
+---
+source: tests/lir_from_mir.rs
+expression: project
+---
+files:
+  - path: countero
+    items:
+      - Structure:
+          public_visibility: true
+          name: counteroInput
+          fields:
+            - public_visibility: true
+              name: res
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: true
+              name: inc
+              type:
+                Identifier:
+                  identifier: i64
+      - Structure:
+          public_visibility: false
+          name: counteroState
+          fields:
+            - public_visibility: false
+              name: memo
+              type:
+                Identifier:
+                  identifier: i64
+      - Implementation:
+          trait_name: ~
+          type_name: counteroState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: counteroState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: counteroState
+                          fields:
+                            - name: memo
+                              expression:
+                                Literal:
+                                  literal:
+                                    Integer: 0
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: counteroInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: counteroState
+                        - Identifier:
+                            identifier: i64
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: o
+                        expression:
+                          IfThenElse:
+                            condition:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: res
+                            then_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Literal:
+                                      literal:
+                                        Integer: 0
+                            else_branch:
+                              statements:
+                                - ExpressionLast:
+                                    Binary:
+                                      left:
+                                        Unary:
+                                          operator: Brackets
+                                          expression:
+                                            FieldAccess:
+                                              expression:
+                                                Identifier:
+                                                  identifier: self
+                                              field: memo
+                                      operator: Add
+                                      right:
+                                        FieldAccess:
+                                          expression:
+                                            Identifier:
+                                              identifier: input
+                                          field: inc
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: counteroState
+                                fields:
+                                  - name: memo
+                                    expression:
+                                      Identifier:
+                                        identifier: o
+                            - Identifier:
+                                identifier: o
+  - path: reset_buttonuser_reset_request
+    items:
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: typedefs
+                tree:
+                  Name:
+                    name: Button
+                    alias: ~
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: countero
+                tree: Star
+      - Structure:
+          public_visibility: true
+          name: reset_buttonuser_reset_requestInput
+          fields:
+            - public_visibility: true
+              name: button_state
+              type:
+                Identifier:
+                  identifier: Button
+            - public_visibility: true
+              name: period
+              type:
+                Identifier:
+                  identifier: i64
+            - public_visibility: true
+              name: reset_limit_1
+              type:
+                Identifier:
+                  identifier: i64
+            - public_visibility: true
+              name: reset_limit_2
+              type:
+                Identifier:
+                  identifier: i64
+      - Structure:
+          public_visibility: false
+          name: reset_buttonuser_reset_requestState
+          fields:
+            - public_visibility: false
+              name: memres
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: false
+              name: memuser_reset_request
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: false
+              name: counterocounter
+              type:
+                Identifier:
+                  identifier: counteroState
+      - Implementation:
+          trait_name: ~
+          type_name: reset_buttonuser_reset_requestState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: reset_buttonuser_reset_requestState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: reset_buttonuser_reset_requestState
+                          fields:
+                            - name: memres
+                              expression:
+                                Literal:
+                                  literal:
+                                    Boolean: true
+                            - name: memuser_reset_request
+                              expression:
+                                Literal:
+                                  literal:
+                                    Boolean: false
+                            - name: counterocounter
+                              expression:
+                                FunctionCall:
+                                  function:
+                                    Identifier:
+                                      identifier: "counteroState::init"
+                                  arguments: []
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: reset_buttonuser_reset_requestInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: reset_buttonuser_reset_requestState
+                        - Identifier:
+                            identifier: bool
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: res
+                        expression:
+                          Binary:
+                            left:
+                              Unary:
+                                operator: Brackets
+                                expression:
+                                  Binary:
+                                    left:
+                                      FieldAccess:
+                                        expression:
+                                          Identifier:
+                                            identifier: input
+                                        field: button_state
+                                    operator: Eq
+                                    right:
+                                      Literal:
+                                        literal:
+                                          Enumeration:
+                                            - Button
+                                            - Pressed
+                            operator: And
+                            right:
+                              Unary:
+                                operator: Brackets
+                                expression:
+                                  FieldAccess:
+                                    expression:
+                                      Identifier:
+                                        identifier: self
+                                    field: memres
+                    - Let:
+                        pattern:
+                          Tuple:
+                            elements:
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: counterocounter
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: counter
+                        expression:
+                          MethodCall:
+                            receiver:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: self
+                                field: counterocounter
+                            method: step
+                            arguments:
+                              - Structure:
+                                  name: counteroInput
+                                  fields:
+                                    - name: res
+                                      expression:
+                                        Identifier:
+                                          identifier: res
+                                    - name: inc
+                                      expression:
+                                        FieldAccess:
+                                          expression:
+                                            Identifier:
+                                              identifier: input
+                                          field: period
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: user_reset_request
+                        expression:
+                          Match:
+                            matched:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: button_state
+                            arms:
+                              - pattern:
+                                  Literal:
+                                    literal:
+                                      Enumeration:
+                                        - Button
+                                        - Released
+                                guard: ~
+                                body:
+                                  FieldAccess:
+                                    expression:
+                                      Identifier:
+                                        identifier: self
+                                    field: memuser_reset_request
+                              - pattern:
+                                  Literal:
+                                    literal:
+                                      Enumeration:
+                                        - Button
+                                        - Pressed
+                                guard: ~
+                                body:
+                                  Binary:
+                                    left:
+                                      Identifier:
+                                        identifier: counter
+                                    operator: Geq
+                                    right:
+                                      Binary:
+                                        left:
+                                          FieldAccess:
+                                            expression:
+                                              Identifier:
+                                                identifier: input
+                                            field: reset_limit_1
+                                        operator: Add
+                                        right:
+                                          FieldAccess:
+                                            expression:
+                                              Identifier:
+                                                identifier: input
+                                            field: reset_limit_2
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: reset_buttonuser_reset_requestState
+                                fields:
+                                  - name: memres
+                                    expression:
+                                      Binary:
+                                        left:
+                                          FieldAccess:
+                                            expression:
+                                              Identifier:
+                                                identifier: input
+                                            field: button_state
+                                        operator: Eq
+                                        right:
+                                          Literal:
+                                            literal:
+                                              Enumeration:
+                                                - Button
+                                                - Released
+                                  - name: memuser_reset_request
+                                    expression:
+                                      Identifier:
+                                        identifier: user_reset_request
+                                  - name: counterocounter
+                                    expression:
+                                      Identifier:
+                                        identifier: counterocounter
+                            - Identifier:
+                                identifier: user_reset_request
+  - path: reset_buttonuser_reset_request_state
+    items:
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: typedefs
+                tree:
+                  Name:
+                    name: Button
+                    alias: ~
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: countero
+                tree: Star
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: typedefs
+                tree:
+                  Name:
+                    name: ResetState
+                    alias: ~
+      - Structure:
+          public_visibility: true
+          name: reset_buttonuser_reset_request_stateInput
+          fields:
+            - public_visibility: true
+              name: button_state
+              type:
+                Identifier:
+                  identifier: Button
+            - public_visibility: true
+              name: period
+              type:
+                Identifier:
+                  identifier: i64
+            - public_visibility: true
+              name: reset_limit_1
+              type:
+                Identifier:
+                  identifier: i64
+      - Structure:
+          public_visibility: false
+          name: reset_buttonuser_reset_request_stateState
+          fields:
+            - public_visibility: false
+              name: memres
+              type:
+                Identifier:
+                  identifier: bool
+            - public_visibility: false
+              name: counterocounter
+              type:
+                Identifier:
+                  identifier: counteroState
+      - Implementation:
+          trait_name: ~
+          type_name: reset_buttonuser_reset_request_stateState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: reset_buttonuser_reset_request_stateState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: reset_buttonuser_reset_request_stateState
+                          fields:
+                            - name: memres
+                              expression:
+                                Literal:
+                                  literal:
+                                    Boolean: true
+                            - name: counterocounter
+                              expression:
+                                FunctionCall:
+                                  function:
+                                    Identifier:
+                                      identifier: "counteroState::init"
+                                  arguments: []
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: reset_buttonuser_reset_request_stateInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: reset_buttonuser_reset_request_stateState
+                        - Identifier:
+                            identifier: ResetState
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: res
+                        expression:
+                          Binary:
+                            left:
+                              Unary:
+                                operator: Brackets
+                                expression:
+                                  Binary:
+                                    left:
+                                      FieldAccess:
+                                        expression:
+                                          Identifier:
+                                            identifier: input
+                                        field: button_state
+                                    operator: Eq
+                                    right:
+                                      Literal:
+                                        literal:
+                                          Enumeration:
+                                            - Button
+                                            - Pressed
+                            operator: And
+                            right:
+                              Unary:
+                                operator: Brackets
+                                expression:
+                                  FieldAccess:
+                                    expression:
+                                      Identifier:
+                                        identifier: self
+                                    field: memres
+                    - Let:
+                        pattern:
+                          Tuple:
+                            elements:
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: counterocounter
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: counter
+                        expression:
+                          MethodCall:
+                            receiver:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: self
+                                field: counterocounter
+                            method: step
+                            arguments:
+                              - Structure:
+                                  name: counteroInput
+                                  fields:
+                                    - name: res
+                                      expression:
+                                        Identifier:
+                                          identifier: res
+                                    - name: inc
+                                      expression:
+                                        FieldAccess:
+                                          expression:
+                                            Identifier:
+                                              identifier: input
+                                          field: period
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: user_reset_request_state
+                        expression:
+                          Match:
+                            matched:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: button_state
+                            arms:
+                              - pattern:
+                                  Literal:
+                                    literal:
+                                      Enumeration:
+                                        - Button
+                                        - Released
+                                guard: ~
+                                body:
+                                  Literal:
+                                    literal:
+                                      Enumeration:
+                                        - ResetState
+                                        - Confirmed
+                              - pattern:
+                                  Literal:
+                                    literal:
+                                      Enumeration:
+                                        - Button
+                                        - Pressed
+                                guard:
+                                  Binary:
+                                    left:
+                                      Identifier:
+                                        identifier: counter
+                                    operator: Geq
+                                    right:
+                                      FieldAccess:
+                                        expression:
+                                          Identifier:
+                                            identifier: input
+                                        field: reset_limit_1
+                                body:
+                                  Literal:
+                                    literal:
+                                      Enumeration:
+                                        - ResetState
+                                        - InProgress
+                              - pattern: Default
+                                guard: ~
+                                body:
+                                  Literal:
+                                    literal:
+                                      Enumeration:
+                                        - ResetState
+                                        - Confirmed
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: reset_buttonuser_reset_request_stateState
+                                fields:
+                                  - name: memres
+                                    expression:
+                                      Binary:
+                                        left:
+                                          FieldAccess:
+                                            expression:
+                                              Identifier:
+                                                identifier: input
+                                            field: button_state
+                                        operator: Eq
+                                        right:
+                                          Literal:
+                                            literal:
+                                              Enumeration:
+                                                - Button
+                                                - Released
+                                  - name: counterocounter
+                                    expression:
+                                      Identifier:
+                                        identifier: counterocounter
+                            - Identifier:
+                                identifier: user_reset_request_state
+  - path: functions.rs
+    items: []
+  - path: typedefs.rs
+    items:
+      - Enumeration:
+          public_visibility: true
+          name: Button
+          elements:
+            - Released
+            - Pressed
+      - Enumeration:
+          public_visibility: true
+          name: ResetState
+          elements:
+            - InProgress
+            - Confirmed
+

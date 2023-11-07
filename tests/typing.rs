@@ -64,6 +64,24 @@ fn typing_button_management() {
 }
 
 #[test]
+fn typing_button_management_condition_match() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let blinking_id = files.add(
+        "button_management_condition_match.gr",
+        std::fs::read_to_string("tests/fixture/button_management_condition_match.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(blinking_id, &files.source(blinking_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+
+    insta::assert_yaml_snapshot!(file);
+}
+
+#[test]
 fn error_when_typing_counter_not_well_typed() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];

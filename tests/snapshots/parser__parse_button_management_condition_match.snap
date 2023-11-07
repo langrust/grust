@@ -1,0 +1,594 @@
+---
+source: tests/parser.rs
+expression: file
+---
+typedefs:
+  - Enumeration:
+      id: Button
+      elements:
+        - Released
+        - Pressed
+      location:
+        file_id: 0
+        range:
+          start: 0
+          end: 42
+  - Enumeration:
+      id: ResetState
+      elements:
+        - InProgress
+        - Confirmed
+      location:
+        file_id: 0
+        range:
+          start: 44
+          end: 94
+functions: []
+nodes:
+  - id: counter
+    is_component: false
+    inputs:
+      - - res
+        - Boolean
+      - - inc
+        - Integer
+    equations:
+      - - o
+        - scope: Output
+          id: o
+          signal_type: Integer
+          expression:
+            MapApplication:
+              function_expression:
+                Call:
+                  id: if_then_else
+                  typing: ~
+                  location:
+                    file_id: 0
+                    range:
+                      start: 149
+                      end: 183
+              inputs:
+                - SignalCall:
+                    id: res
+                    typing: ~
+                    location:
+                      file_id: 0
+                      range:
+                        start: 152
+                        end: 155
+                - Constant:
+                    constant:
+                      Integer: 0
+                    typing: ~
+                    location:
+                      file_id: 0
+                      range:
+                        start: 161
+                        end: 162
+                - MapApplication:
+                    function_expression:
+                      Call:
+                        id: " + "
+                        typing: ~
+                        location:
+                          file_id: 0
+                          range:
+                            start: 178
+                            end: 179
+                    inputs:
+                      - MapApplication:
+                          function_expression:
+                            Call:
+                              id: (_)
+                              typing: ~
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 168
+                                  end: 177
+                          inputs:
+                            - FollowedBy:
+                                constant:
+                                  Integer: 0
+                                expression:
+                                  SignalCall:
+                                    id: o
+                                    typing: ~
+                                    location:
+                                      file_id: 0
+                                      range:
+                                        start: 175
+                                        end: 176
+                                typing: ~
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 169
+                                    end: 176
+                          typing: ~
+                          location:
+                            file_id: 0
+                            range:
+                              start: 168
+                              end: 177
+                      - SignalCall:
+                          id: inc
+                          typing: ~
+                          location:
+                            file_id: 0
+                            range:
+                              start: 180
+                              end: 183
+                    typing: ~
+                    location:
+                      file_id: 0
+                      range:
+                        start: 168
+                        end: 183
+              typing: ~
+              location:
+                file_id: 0
+                range:
+                  start: 149
+                  end: 183
+          location:
+            file_id: 0
+            range:
+              start: 136
+              end: 184
+    location:
+      file_id: 0
+      range:
+        start: 96
+        end: 186
+  - id: reset_button
+    is_component: false
+    inputs:
+      - - button_state
+        - NotDefinedYet: Button
+      - - period
+        - Integer
+      - - reset_limit_1
+        - Integer
+      - - reset_limit_2
+        - Integer
+    equations:
+      - - user_reset_request_state
+        - scope: Output
+          id: user_reset_request_state
+          signal_type:
+            NotDefinedYet: ResetState
+          expression:
+            Match:
+              expression:
+                SignalCall:
+                  id: button_state
+                  typing: ~
+                  location:
+                    file_id: 0
+                    range:
+                      start: 338
+                      end: 350
+              arms:
+                - - Constant:
+                      constant:
+                        Enumeration:
+                          - Button
+                          - Released
+                      location:
+                        file_id: 0
+                        range:
+                          start: 362
+                          end: 377
+                  - ~
+                  - Constant:
+                      constant:
+                        Enumeration:
+                          - ResetState
+                          - Confirmed
+                      typing: ~
+                      location:
+                        file_id: 0
+                        range:
+                          start: 381
+                          end: 401
+                - - Constant:
+                      constant:
+                        Enumeration:
+                          - Button
+                          - Pressed
+                      location:
+                        file_id: 0
+                        range:
+                          start: 411
+                          end: 425
+                  - MapApplication:
+                      function_expression:
+                        Call:
+                          id: " >= "
+                          typing: ~
+                          location:
+                            file_id: 0
+                            range:
+                              start: 437
+                              end: 439
+                      inputs:
+                        - SignalCall:
+                            id: counter
+                            typing: ~
+                            location:
+                              file_id: 0
+                              range:
+                                start: 429
+                                end: 436
+                        - SignalCall:
+                            id: reset_limit_1
+                            typing: ~
+                            location:
+                              file_id: 0
+                              range:
+                                start: 440
+                                end: 453
+                      typing: ~
+                      location:
+                        file_id: 0
+                        range:
+                          start: 429
+                          end: 453
+                  - Constant:
+                      constant:
+                        Enumeration:
+                          - ResetState
+                          - InProgress
+                      typing: ~
+                      location:
+                        file_id: 0
+                        range:
+                          start: 457
+                          end: 478
+                - - Default:
+                      location:
+                        file_id: 0
+                        range:
+                          start: 488
+                          end: 489
+                  - ~
+                  - Constant:
+                      constant:
+                        Enumeration:
+                          - ResetState
+                          - Confirmed
+                      typing: ~
+                      location:
+                        file_id: 0
+                        range:
+                          start: 493
+                          end: 513
+              typing: ~
+              location:
+                file_id: 0
+                range:
+                  start: 331
+                  end: 520
+          location:
+            file_id: 0
+            range:
+              start: 287
+              end: 521
+      - - user_reset_request
+        - scope: Output
+          id: user_reset_request
+          signal_type: Boolean
+          expression:
+            Match:
+              expression:
+                SignalCall:
+                  id: button_state
+                  typing: ~
+                  location:
+                    file_id: 0
+                    range:
+                      start: 564
+                      end: 576
+              arms:
+                - - Constant:
+                      constant:
+                        Enumeration:
+                          - Button
+                          - Released
+                      location:
+                        file_id: 0
+                        range:
+                          start: 588
+                          end: 603
+                  - ~
+                  - FollowedBy:
+                      constant:
+                        Boolean: false
+                      expression:
+                        SignalCall:
+                          id: user_reset_request
+                          typing: ~
+                          location:
+                            file_id: 0
+                            range:
+                              start: 617
+                              end: 635
+                      typing: ~
+                      location:
+                        file_id: 0
+                        range:
+                          start: 607
+                          end: 635
+                - - Constant:
+                      constant:
+                        Enumeration:
+                          - Button
+                          - Pressed
+                      location:
+                        file_id: 0
+                        range:
+                          start: 645
+                          end: 659
+                  - ~
+                  - MapApplication:
+                      function_expression:
+                        Call:
+                          id: " >= "
+                          typing: ~
+                          location:
+                            file_id: 0
+                            range:
+                              start: 671
+                              end: 673
+                      inputs:
+                        - SignalCall:
+                            id: counter
+                            typing: ~
+                            location:
+                              file_id: 0
+                              range:
+                                start: 663
+                                end: 670
+                        - MapApplication:
+                            function_expression:
+                              Call:
+                                id: " + "
+                                typing: ~
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 688
+                                    end: 689
+                            inputs:
+                              - SignalCall:
+                                  id: reset_limit_1
+                                  typing: ~
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 674
+                                      end: 687
+                              - SignalCall:
+                                  id: reset_limit_2
+                                  typing: ~
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 690
+                                      end: 703
+                            typing: ~
+                            location:
+                              file_id: 0
+                              range:
+                                start: 674
+                                end: 703
+                      typing: ~
+                      location:
+                        file_id: 0
+                        range:
+                          start: 663
+                          end: 703
+              typing: ~
+              location:
+                file_id: 0
+                range:
+                  start: 557
+                  end: 710
+          location:
+            file_id: 0
+            range:
+              start: 526
+              end: 711
+      - - counter
+        - scope: Local
+          id: counter
+          signal_type: Integer
+          expression:
+            NodeApplication:
+              node: counter
+              inputs:
+                - SignalCall:
+                    id: res
+                    typing: ~
+                    location:
+                      file_id: 0
+                      range:
+                        start: 739
+                        end: 742
+                - SignalCall:
+                    id: period
+                    typing: ~
+                    location:
+                      file_id: 0
+                      range:
+                        start: 744
+                        end: 750
+              signal: o
+              typing: ~
+              location:
+                file_id: 0
+                range:
+                  start: 731
+                  end: 753
+          location:
+            file_id: 0
+            range:
+              start: 716
+              end: 754
+      - - res
+        - scope: Local
+          id: res
+          signal_type: Boolean
+          expression:
+            MapApplication:
+              function_expression:
+                Call:
+                  id: " && "
+                  typing: ~
+                  location:
+                    file_id: 0
+                    range:
+                      start: 804
+                      end: 806
+              inputs:
+                - MapApplication:
+                    function_expression:
+                      Call:
+                        id: (_)
+                        typing: ~
+                        location:
+                          file_id: 0
+                          range:
+                            start: 771
+                            end: 803
+                    inputs:
+                      - MapApplication:
+                          function_expression:
+                            Call:
+                              id: " == "
+                              typing: ~
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 785
+                                  end: 787
+                          inputs:
+                            - SignalCall:
+                                id: button_state
+                                typing: ~
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 772
+                                    end: 784
+                            - Constant:
+                                constant:
+                                  Enumeration:
+                                    - Button
+                                    - Pressed
+                                typing: ~
+                                location:
+                                  file_id: 0
+                                  range:
+                                    start: 788
+                                    end: 802
+                          typing: ~
+                          location:
+                            file_id: 0
+                            range:
+                              start: 772
+                              end: 802
+                    typing: ~
+                    location:
+                      file_id: 0
+                      range:
+                        start: 771
+                        end: 803
+                - MapApplication:
+                    function_expression:
+                      Call:
+                        id: (_)
+                        typing: ~
+                        location:
+                          file_id: 0
+                          range:
+                            start: 807
+                            end: 849
+                    inputs:
+                      - FollowedBy:
+                          constant:
+                            Boolean: true
+                          expression:
+                            MapApplication:
+                              function_expression:
+                                Call:
+                                  id: " == "
+                                  typing: ~
+                                  location:
+                                    file_id: 0
+                                    range:
+                                      start: 830
+                                      end: 832
+                              inputs:
+                                - SignalCall:
+                                    id: button_state
+                                    typing: ~
+                                    location:
+                                      file_id: 0
+                                      range:
+                                        start: 817
+                                        end: 829
+                                - Constant:
+                                    constant:
+                                      Enumeration:
+                                        - Button
+                                        - Released
+                                    typing: ~
+                                    location:
+                                      file_id: 0
+                                      range:
+                                        start: 833
+                                        end: 848
+                              typing: ~
+                              location:
+                                file_id: 0
+                                range:
+                                  start: 817
+                                  end: 848
+                          typing: ~
+                          location:
+                            file_id: 0
+                            range:
+                              start: 808
+                              end: 848
+                    typing: ~
+                    location:
+                      file_id: 0
+                      range:
+                        start: 807
+                        end: 849
+              typing: ~
+              location:
+                file_id: 0
+                range:
+                  start: 771
+                  end: 849
+          location:
+            file_id: 0
+            range:
+              start: 759
+              end: 850
+    location:
+      file_id: 0
+      range:
+        start: 188
+        end: 852
+component: ~
+location:
+  file_id: 0
+  range:
+    start: 0
+    end: 852
+

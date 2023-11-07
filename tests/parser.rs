@@ -2248,3 +2248,20 @@ fn parse_button_management() {
 
     insta::assert_yaml_snapshot!(file);
 }
+
+
+#[test]
+fn parse_button_management_condition_match() {
+    let mut files = SimpleFiles::new();
+
+    let blinking_id = files.add(
+        "button_management_condition_match.gr",
+        std::fs::read_to_string("tests/fixture/button_management_condition_match.gr").expect("unkown file"),
+    );
+
+    let file: File = langrust::fileParser::new()
+        .parse(blinking_id, &files.source(blinking_id).unwrap())
+        .unwrap();
+
+    insta::assert_yaml_snapshot!(file);
+}
