@@ -102,6 +102,25 @@ fn typing_button_management_using_function() {
 }
 
 #[test]
+fn typing_pid() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_id = files.add(
+        "pid.gr",
+        std::fs::read_to_string("tests/fixture/pid.gr")
+            .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(pid_id, &files.source(pid_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+
+    insta::assert_yaml_snapshot!(file);
+}
+
+#[test]
 fn error_when_typing_counter_not_well_typed() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
