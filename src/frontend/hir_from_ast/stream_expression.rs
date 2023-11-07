@@ -89,12 +89,16 @@ pub fn hir_from_ast(
             arms: arms
                 .into_iter()
                 .map(|(pattern, optional_expression, expression)| {
+                    let mut local_context = signals_context.clone();
+                    pattern.fill_context(
+                        &mut local_context,
+                    );
                     (
                         pattern,
                         optional_expression
-                            .map(|expression| hir_from_ast(expression, signals_context)),
+                            .map(|expression| hir_from_ast(expression, &local_context)),
                         vec![],
-                        hir_from_ast(expression, signals_context),
+                        hir_from_ast(expression, &local_context),
                     )
                 })
                 .collect(),

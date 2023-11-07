@@ -6,3 +6,5 @@ pub mod file;
 pub mod node;
 /// HIR StreamExpression construction from AST StreamExpression
 pub mod stream_expression;
+/// HIR Pattern construction from AST Pattern
+pub mod pattern;

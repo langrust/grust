@@ -105,3 +105,24 @@ fn hir_from_ast_transformation_for_button_management_using_function() {
 
     insta::assert_yaml_snapshot!(file);
 }
+
+#[test]
+fn hir_from_ast_transformation_for_pid() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_id = files.add(
+        "pid.gr",
+        std::fs::read_to_string("tests/fixture/pid.gr")
+            .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(pid_id, &files.source(pid_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+
+    let file = hir_from_ast(file);
+
+    insta::assert_yaml_snapshot!(file);
+}
