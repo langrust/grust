@@ -186,13 +186,18 @@ fn error_when_typing_button_management_using_function_unknown_element() {
 
     let button_management_using_function_unknown_element_id = files.add(
         "button_management_using_function_unknown_element.gr",
-        std::fs::read_to_string("tests/fixture/button_management_using_function_unknown_element.gr").expect("unkown file"),
+        std::fs::read_to_string(
+            "tests/fixture/button_management_using_function_unknown_element.gr",
+        )
+        .expect("unkown file"),
     );
 
     let mut file: File = langrust::fileParser::new()
         .parse(
             button_management_using_function_unknown_element_id,
-            &files.source(button_management_using_function_unknown_element_id).unwrap(),
+            &files
+                .source(button_management_using_function_unknown_element_id)
+                .unwrap(),
         )
         .unwrap();
     file.typing(&mut errors).unwrap_err();
