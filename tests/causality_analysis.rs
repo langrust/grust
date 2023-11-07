@@ -113,6 +113,26 @@ fn causality_analysis_of_button_management_using_function() {
 }
 
 #[test]
+fn causality_analysis_of_pid() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_id = files.add(
+        "pid.gr",
+        std::fs::read_to_string("tests/fixture/pid.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(pid_id, &files.source(pid_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+
+    file.causality_analysis(&mut errors).unwrap();
+}
+
+#[test]
 fn error_when_typing_counter_not_causal() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
