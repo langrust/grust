@@ -1,0 +1,673 @@
+---
+source: tests/lir_from_mir.rs
+expression: project
+---
+files:
+  - path: integratei
+    items:
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: functions
+                tree:
+                  Name:
+                    name: min
+                    alias: ~
+      - Structure:
+          public_visibility: true
+          name: integrateiInput
+          fields:
+            - public_visibility: true
+              name: x
+              type:
+                Identifier:
+                  identifier: f64
+            - public_visibility: true
+              name: dt
+              type:
+                Identifier:
+                  identifier: f64
+      - Structure:
+          public_visibility: false
+          name: integrateiState
+          fields:
+            - public_visibility: false
+              name: memprev_i
+              type:
+                Identifier:
+                  identifier: f64
+      - Implementation:
+          trait_name: ~
+          type_name: integrateiState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: integrateiState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: integrateiState
+                          fields:
+                            - name: memprev_i
+                              expression:
+                                Literal:
+                                  literal:
+                                    Float: 0
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: integrateiInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: integrateiState
+                        - Identifier:
+                            identifier: f64
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: MAX_INTEGRALE
+                        expression:
+                          Literal:
+                            literal:
+                              Float: 1000
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: prev_i
+                        expression:
+                          FieldAccess:
+                            expression:
+                              Identifier:
+                                identifier: self
+                            field: memprev_i
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: i
+                        expression:
+                          FunctionCall:
+                            function:
+                              Identifier:
+                                identifier: min
+                            arguments:
+                              - Binary:
+                                  left:
+                                    Identifier:
+                                      identifier: prev_i
+                                  operator: Add
+                                  right:
+                                    Binary:
+                                      left:
+                                        FieldAccess:
+                                          expression:
+                                            Identifier:
+                                              identifier: input
+                                          field: x
+                                      operator: Mul
+                                      right:
+                                        FieldAccess:
+                                          expression:
+                                            Identifier:
+                                              identifier: input
+                                          field: dt
+                              - Identifier:
+                                  identifier: MAX_INTEGRALE
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: integrateiState
+                                fields:
+                                  - name: memprev_i
+                                    expression:
+                                      Identifier:
+                                        identifier: i
+                            - Identifier:
+                                identifier: i
+  - path: derived
+    items:
+      - Structure:
+          public_visibility: true
+          name: derivedInput
+          fields:
+            - public_visibility: true
+              name: x
+              type:
+                Identifier:
+                  identifier: f64
+            - public_visibility: true
+              name: dt
+              type:
+                Identifier:
+                  identifier: f64
+      - Structure:
+          public_visibility: false
+          name: derivedState
+          fields:
+            - public_visibility: false
+              name: memprev_x
+              type:
+                Identifier:
+                  identifier: f64
+      - Implementation:
+          trait_name: ~
+          type_name: derivedState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: derivedState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: derivedState
+                          fields:
+                            - name: memprev_x
+                              expression:
+                                Literal:
+                                  literal:
+                                    Float: 0
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: derivedInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: derivedState
+                        - Identifier:
+                            identifier: f64
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: prev_x
+                        expression:
+                          FieldAccess:
+                            expression:
+                              Identifier:
+                                identifier: self
+                            field: memprev_x
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: d
+                        expression:
+                          Binary:
+                            left:
+                              Unary:
+                                operator: Brackets
+                                expression:
+                                  Binary:
+                                    left:
+                                      FieldAccess:
+                                        expression:
+                                          Identifier:
+                                            identifier: input
+                                        field: x
+                                    operator: Sub
+                                    right:
+                                      Identifier:
+                                        identifier: prev_x
+                            operator: Div
+                            right:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: dt
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: derivedState
+                                fields:
+                                  - name: memprev_x
+                                    expression:
+                                      FieldAccess:
+                                        expression:
+                                          Identifier:
+                                            identifier: input
+                                        field: x
+                            - Identifier:
+                                identifier: d
+  - path: pidu
+    items:
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: derived
+                tree: Star
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: integratei
+                tree: Star
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: typedefs
+                tree:
+                  Name:
+                    name: GainPID
+                    alias: ~
+      - Structure:
+          public_visibility: true
+          name: piduInput
+          fields:
+            - public_visibility: true
+              name: v_c
+              type:
+                Identifier:
+                  identifier: f64
+            - public_visibility: true
+              name: v
+              type:
+                Identifier:
+                  identifier: f64
+            - public_visibility: true
+              name: dt
+              type:
+                Identifier:
+                  identifier: f64
+      - Structure:
+          public_visibility: false
+          name: piduState
+          fields:
+            - public_visibility: false
+              name: derivede_d
+              type:
+                Identifier:
+                  identifier: derivedState
+            - public_visibility: false
+              name: integrateie_i
+              type:
+                Identifier:
+                  identifier: integrateiState
+      - Implementation:
+          trait_name: ~
+          type_name: piduState
+          items:
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: init
+                  receiver: ~
+                  inputs: []
+                  output:
+                    Identifier:
+                      identifier: piduState
+                body:
+                  statements:
+                    - ExpressionLast:
+                        Structure:
+                          name: piduState
+                          fields:
+                            - name: derivede_d
+                              expression:
+                                FunctionCall:
+                                  function:
+                                    Identifier:
+                                      identifier: "derivedState::init"
+                                  arguments: []
+                            - name: integrateie_i
+                              expression:
+                                FunctionCall:
+                                  function:
+                                    Identifier:
+                                      identifier: "integrateiState::init"
+                                  arguments: []
+            - AssociatedMethod:
+                signature:
+                  public_visibility: true
+                  name: step
+                  receiver:
+                    reference: false
+                    mutable: false
+                  inputs:
+                    - - input
+                      - Identifier:
+                          identifier: piduInput
+                  output:
+                    Tuple:
+                      elements:
+                        - Identifier:
+                            identifier: piduState
+                        - Identifier:
+                            identifier: f64
+                body:
+                  statements:
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: e
+                        expression:
+                          Binary:
+                            left:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: v_c
+                            operator: Sub
+                            right:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: input
+                                field: v
+                    - Let:
+                        pattern:
+                          Tuple:
+                            elements:
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: derivede_d
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: e_d
+                        expression:
+                          MethodCall:
+                            receiver:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: self
+                                field: derivede_d
+                            method: step
+                            arguments:
+                              - Structure:
+                                  name: derivedInput
+                                  fields:
+                                    - name: x
+                                      expression:
+                                        Identifier:
+                                          identifier: e
+                                    - name: dt
+                                      expression:
+                                        FieldAccess:
+                                          expression:
+                                            Identifier:
+                                              identifier: input
+                                          field: dt
+                    - Let:
+                        pattern:
+                          Tuple:
+                            elements:
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: integrateie_i
+                              - Identifier:
+                                  reference: false
+                                  mutable: false
+                                  identifier: e_i
+                        expression:
+                          MethodCall:
+                            receiver:
+                              FieldAccess:
+                                expression:
+                                  Identifier:
+                                    identifier: self
+                                field: integrateie_i
+                            method: step
+                            arguments:
+                              - Structure:
+                                  name: integrateiInput
+                                  fields:
+                                    - name: x
+                                      expression:
+                                        Identifier:
+                                          identifier: e
+                                    - name: dt
+                                      expression:
+                                        FieldAccess:
+                                          expression:
+                                            Identifier:
+                                              identifier: input
+                                          field: dt
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: gain
+                        expression:
+                          Structure:
+                            name: GainPID
+                            fields:
+                              - name: k_p
+                                expression:
+                                  Literal:
+                                    literal:
+                                      Float: 0.2
+                              - name: k_i
+                                expression:
+                                  Literal:
+                                    literal:
+                                      Float: 1.5
+                              - name: k_d
+                                expression:
+                                  Literal:
+                                    literal:
+                                      Float: 6
+                    - Let:
+                        pattern:
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: u
+                        expression:
+                          Match:
+                            matched:
+                              Identifier:
+                                identifier: gain
+                            arms:
+                              - pattern:
+                                  Structure:
+                                    name: GainPID
+                                    fields:
+                                      - name: k_p
+                                        pattern:
+                                          Identifier:
+                                            reference: false
+                                            mutable: false
+                                            identifier: k_p
+                                      - name: k_i
+                                        pattern:
+                                          Identifier:
+                                            reference: false
+                                            mutable: false
+                                            identifier: k_i
+                                      - name: k_d
+                                        pattern:
+                                          Identifier:
+                                            reference: false
+                                            mutable: false
+                                            identifier: k_d
+                                    dots: false
+                                guard: ~
+                                body:
+                                  Binary:
+                                    left:
+                                      Binary:
+                                        left:
+                                          Binary:
+                                            left:
+                                              Identifier:
+                                                identifier: k_p
+                                            operator: Mul
+                                            right:
+                                              Identifier:
+                                                identifier: e
+                                        operator: Add
+                                        right:
+                                          Binary:
+                                            left:
+                                              Identifier:
+                                                identifier: k_i
+                                            operator: Mul
+                                            right:
+                                              Identifier:
+                                                identifier: e_i
+                                    operator: Add
+                                    right:
+                                      Binary:
+                                        left:
+                                          Identifier:
+                                            identifier: k_d
+                                        operator: Mul
+                                        right:
+                                          Identifier:
+                                            identifier: e_d
+                    - ExpressionLast:
+                        Tuple:
+                          elements:
+                            - Structure:
+                                name: piduState
+                                fields:
+                                  - name: derivede_d
+                                    expression:
+                                      Identifier:
+                                        identifier: derivede_d
+                                  - name: integrateie_i
+                                    expression:
+                                      Identifier:
+                                        identifier: integrateie_i
+                            - Identifier:
+                                identifier: u
+  - path: functions.rs
+    items:
+      - Function:
+          signature:
+            public_visibility: true
+            name: min
+            receiver: ~
+            inputs:
+              - - a
+                - Identifier:
+                    identifier: f64
+              - - b
+                - Identifier:
+                    identifier: f64
+            output:
+              Identifier:
+                identifier: f64
+          body:
+            statements:
+              - Let:
+                  pattern:
+                    Identifier:
+                      reference: false
+                      mutable: false
+                      identifier: test
+                  expression:
+                    Binary:
+                      left:
+                        Identifier:
+                          identifier: a
+                      operator: Grt
+                      right:
+                        Identifier:
+                          identifier: b
+              - Let:
+                  pattern:
+                    Identifier:
+                      reference: false
+                      mutable: false
+                      identifier: result
+                  expression:
+                    IfThenElse:
+                      condition:
+                        Identifier:
+                          identifier: test
+                      then_branch:
+                        statements:
+                          - ExpressionLast:
+                              Identifier:
+                                identifier: b
+                      else_branch:
+                        statements:
+                          - ExpressionLast:
+                              Identifier:
+                                identifier: a
+              - ExpressionLast:
+                  Identifier:
+                    identifier: result
+  - path: typedefs.rs
+    items:
+      - Structure:
+          public_visibility: true
+          name: GainPID
+          fields:
+            - public_visibility: true
+              name: k_p
+              type:
+                Identifier:
+                  identifier: f64
+            - public_visibility: true
+              name: k_i
+              type:
+                Identifier:
+                  identifier: f64
+            - public_visibility: true
+              name: k_d
+              type:
+                Identifier:
+                  identifier: f64
+
