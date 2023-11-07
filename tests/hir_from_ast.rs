@@ -113,8 +113,7 @@ fn hir_from_ast_transformation_for_pid() {
 
     let pid_id = files.add(
         "pid.gr",
-        std::fs::read_to_string("tests/fixture/pid.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/pid.gr").expect("unkown file"),
     );
 
     let mut file: File = langrust::fileParser::new()

@@ -2289,8 +2289,7 @@ fn parse_pid() {
 
     let pid_id = files.add(
         "pid.gr",
-        std::fs::read_to_string("tests/fixture/pid.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/pid.gr").expect("unkown file"),
     );
 
     let file: File = langrust::fileParser::new()

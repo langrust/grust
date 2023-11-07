@@ -90,9 +90,7 @@ pub fn hir_from_ast(
                 .into_iter()
                 .map(|(pattern, optional_expression, expression)| {
                     let mut local_context = signals_context.clone();
-                    pattern.fill_context(
-                        &mut local_context,
-                    );
+                    pattern.fill_context(&mut local_context);
                     (
                         pattern,
                         optional_expression
