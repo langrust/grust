@@ -16,7 +16,7 @@ pub fn rust_ast_from_mir(block: Block) -> RustASTBlock {
 #[cfg(test)]
 mod rust_ast_from_mir {
     use crate::common::constant::Constant;
-    use crate::frontend::rust_ast_from_mir::block::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::block::rust_ast_from_mir;
     use crate::rust_ast::block::Block as RustASTBlock;
     use crate::rust_ast::expression::Expression as RustASTExpression;
     use crate::rust_ast::pattern::Pattern as RustASTPattern;

@@ -175,7 +175,7 @@ mod rust_ast_from_mir {
     use crate::common::location::Location;
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_mir::expression::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::expression::rust_ast_from_mir;
     use crate::rust_ast::block::Block as RustASTBlock;
     use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::pattern::Pattern as RustASTPattern;

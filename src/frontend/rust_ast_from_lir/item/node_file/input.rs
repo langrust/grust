@@ -1,4 +1,4 @@
-use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
+use crate::frontend::rust_ast_from_lir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
 use crate::rust_ast::item::structure::{Field, Structure};
 use crate::lir::item::node_file::input::{Input, InputElement};
 
@@ -23,7 +23,7 @@ pub fn rust_ast_from_mir(input: Input) -> Structure {
 #[cfg(test)]
 mod rust_ast_from_mir {
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_mir::item::node_file::input::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::item::node_file::input::rust_ast_from_mir;
     use crate::rust_ast::item::structure::{Field, Structure};
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::lir::item::node_file::input::{Input, InputElement};

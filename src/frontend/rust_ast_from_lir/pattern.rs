@@ -38,7 +38,7 @@ mod rust_ast_from_mir {
     use crate::ast::pattern::Pattern;
     use crate::common::constant::Constant;
     use crate::common::location::Location;
-    use crate::frontend::rust_ast_from_mir::pattern::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::pattern::rust_ast_from_mir;
     use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
 
     #[test]
