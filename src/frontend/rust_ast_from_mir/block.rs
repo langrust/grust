@@ -1,5 +1,5 @@
 use crate::rust_ast::block::Block as RustASTBlock;
-use crate::mir::block::Block;
+use crate::lir::block::Block;
 
 use super::statement::rust_ast_from_mir as statement_rust_ast_from_mir;
 
@@ -22,9 +22,9 @@ mod rust_ast_from_mir {
     use crate::rust_ast::pattern::Pattern as RustASTPattern;
     use crate::rust_ast::statement::r#let::Let;
     use crate::rust_ast::statement::Statement as RustASTStatement;
-    use crate::mir::block::Block;
-    use crate::mir::expression::Expression;
-    use crate::mir::statement::Statement;
+    use crate::lir::block::Block;
+    use crate::lir::expression::Expression;
+    use crate::lir::statement::Statement;
 
     #[test]
     fn should_create_rust_ast_block_from_mir_block() {

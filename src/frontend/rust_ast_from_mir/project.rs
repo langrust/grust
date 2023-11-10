@@ -7,7 +7,7 @@ use crate::{
         structure::rust_ast_from_mir as structure_rust_ast_from_mir,
     },
     rust_ast::{file::File, item::Item as RustASTItem, project::Project as RustASTProject},
-    mir::{item::Item, project::Project},
+    lir::{item::Item, project::Project},
 };
 
 /// Transform MIR item into RustAST item.

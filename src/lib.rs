@@ -104,6 +104,6 @@ pub mod hir;
 /// LanGRust LIR module.
 pub mod rust_ast;
 /// LanGRust MIR module.
-pub mod mir;
+pub mod lir;
 /// LanGRust parser module.
 pub mod parser;

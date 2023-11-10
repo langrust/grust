@@ -1,7 +1,7 @@
 use crate::common::operator::{BinaryOperator, UnaryOperator};
 use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
 use crate::rust_ast::pattern::Pattern;
-use crate::mir::expression::Expression;
+use crate::lir::expression::Expression;
 
 use super::{
     block::rust_ast_from_mir as block_rust_ast_from_mir, pattern::rust_ast_from_mir as pattern_rust_ast_from_mir,
@@ -182,9 +182,9 @@ mod rust_ast_from_mir {
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::r#let::Let;
     use crate::rust_ast::statement::Statement as RustASTStatement;
-    use crate::mir::block::Block;
-    use crate::mir::expression::Expression;
-    use crate::mir::statement::Statement;
+    use crate::lir::block::Block;
+    use crate::lir::expression::Expression;
+    use crate::lir::statement::Statement;
 
     #[test]
     fn should_create_rust_ast_literal_from_mir_literal() {

@@ -4,7 +4,7 @@ use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_a
 use crate::rust_ast::item::implementation::Implementation;
 use crate::rust_ast::item::structure::{Field, Structure};
 use crate::rust_ast::r#type::Type as RustASTType;
-use crate::mir::item::node_file::state::{State, StateElement};
+use crate::lir::item::node_file::state::{State, StateElement};
 
 /// RustAST init method construction from MIR init.
 pub mod init;

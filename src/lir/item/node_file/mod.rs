@@ -1,4 +1,4 @@
-use crate::mir::item::node_file::{import::Import, input::Input, state::State};
+use crate::lir::item::node_file::{import::Import, input::Input, state::State};
 
 /// MIR [Import](crate::mir::item::node_file::import::Import) module.
 pub mod import;

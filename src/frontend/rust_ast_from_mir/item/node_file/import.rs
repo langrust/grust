@@ -1,5 +1,5 @@
 use crate::rust_ast::item::import::{Import as RustASTImport, PathTree};
-use crate::mir::item::node_file::import::Import;
+use crate::lir::item::node_file::import::Import;
 
 /// Transform MIR import into RustAST import.
 pub fn rust_ast_from_mir(import: Import) -> RustASTImport {
@@ -46,7 +46,7 @@ pub fn rust_ast_from_mir(import: Import) -> RustASTImport {
 mod rust_ast_from_mir {
     use crate::frontend::rust_ast_from_mir::item::node_file::import::rust_ast_from_mir;
     use crate::rust_ast::item::import::{Import as RustASTImport, PathTree};
-    use crate::mir::item::node_file::import::Import;
+    use crate::lir::item::node_file::import::Import;
 
     #[test]
     fn should_create_rust_ast_import_from_mir_function_import() {

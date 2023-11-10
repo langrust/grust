@@ -7,7 +7,7 @@ use crate::{
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         r#type::Type,
     },
-    mir::{
+    lir::{
         block::Block, expression::Expression as MIRExpression, item::node_file::import::Import,
         statement::Statement,
     },
@@ -211,7 +211,7 @@ mod mir_from_hir {
         ast::{expression::Expression as ASTExpression, pattern::Pattern},
         common::{constant::Constant, location::Location, operator::OtherOperator, r#type::Type},
         frontend::mir_from_hir::expression::mir_from_hir,
-        mir::{block::Block, expression::Expression, statement::Statement},
+        lir::{block::Block, expression::Expression, statement::Statement},
     };
 
     #[test]
@@ -636,7 +636,7 @@ mod get_imports {
     use crate::{
         ast::expression::Expression,
         common::{location::Location, operator::UnaryOperator, r#type::Type},
-        mir::item::node_file::import::Import,
+        lir::item::node_file::import::Import,
     };
 
     #[test]

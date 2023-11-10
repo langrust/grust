@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::{
     frontend::mir_from_hir::stream_expression::mir_from_hir as stream_expression_mir_from_hir,
     hir::memory::{Buffer, CalledNode, Memory},
-    mir::{
+    lir::{
         expression::Expression as MIRExpression,
         item::node_file::state::{init::StateElementInit, step::StateElementStep, StateElement},
     },
@@ -85,7 +85,7 @@ mod get_state_elements {
             signal::Signal,
             stream_expression::StreamExpression,
         },
-        mir::{
+        lir::{
             expression::Expression,
             item::node_file::state::{
                 init::StateElementInit, step::StateElementStep, StateElement,

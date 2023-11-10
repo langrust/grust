@@ -1,4 +1,4 @@
-use crate::{ast::statement::Statement, mir::statement::Statement as MIRStatement};
+use crate::{ast::statement::Statement, lir::statement::Statement as MIRStatement};
 
 use super::expression::mir_from_hir as expression_mir_from_hir;
 
@@ -17,7 +17,7 @@ mod mir_from_hir {
         ast::{expression::Expression as ASTExpression, statement::Statement as ASTStatement},
         common::{constant::Constant, location::Location, r#type::Type},
         frontend::mir_from_hir::statement::mir_from_hir,
-        mir::{expression::Expression, statement::Statement},
+        lir::{expression::Expression, statement::Statement},
     };
 
     #[test]

@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::{ast::pattern::Pattern, mir::item::node_file::import::Import};
+use crate::{ast::pattern::Pattern, lir::item::node_file::import::Import};
 
 impl Pattern {
     /// Get imports induced by pattern.
@@ -26,7 +26,7 @@ mod get_imports {
     use crate::{
         ast::pattern::Pattern,
         common::{constant::Constant, location::Location},
-        mir::item::node_file::import::Import,
+        lir::item::node_file::import::Import,
     };
 
     #[test]

@@ -1,6 +1,6 @@
 use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
 use crate::rust_ast::item::structure::{Field, Structure};
-use crate::mir::item::node_file::input::{Input, InputElement};
+use crate::lir::item::node_file::input::{Input, InputElement};
 
 /// Transform MIR input into RustAST structure.
 pub fn rust_ast_from_mir(input: Input) -> Structure {
@@ -26,7 +26,7 @@ mod rust_ast_from_mir {
     use crate::frontend::rust_ast_from_mir::item::node_file::input::rust_ast_from_mir;
     use crate::rust_ast::item::structure::{Field, Structure};
     use crate::rust_ast::r#type::Type as RustASTType;
-    use crate::mir::item::node_file::input::{Input, InputElement};
+    use crate::lir::item::node_file::input::{Input, InputElement};
 
     #[test]
     fn should_create_rust_ast_structure_from_mir_node_input() {

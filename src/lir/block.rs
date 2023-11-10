@@ -1,4 +1,4 @@
-use crate::mir::statement::Statement;
+use crate::lir::statement::Statement;
 
 /// A block declaration.
 #[derive(Debug, PartialEq, serde::Serialize)]

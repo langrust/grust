@@ -2,7 +2,7 @@ use crate::frontend::rust_ast_from_mir::{
     block::rust_ast_from_mir as block_rust_ast_from_mir, r#type::rust_ast_from_mir as type_rust_ast_from_mir,
 };
 use crate::rust_ast::item::{function::Function as RustASTFunction, signature::Signature};
-use crate::mir::item::function::Function;
+use crate::lir::item::function::Function;
 
 /// Transform MIR function into RustAST function.
 pub fn rust_ast_from_mir(function: Function) -> RustASTFunction {
@@ -35,10 +35,10 @@ mod rust_ast_from_mir {
     use crate::rust_ast::item::signature::Signature;
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::Statement as RustASTStatement;
-    use crate::mir::block::Block;
-    use crate::mir::expression::Expression;
-    use crate::mir::item::function::Function;
-    use crate::mir::statement::Statement;
+    use crate::lir::block::Block;
+    use crate::lir::expression::Expression;
+    use crate::lir::item::function::Function;
+    use crate::lir::statement::Statement;
 
     #[test]
     fn should_create_rust_ast_function_from_mir_function() {

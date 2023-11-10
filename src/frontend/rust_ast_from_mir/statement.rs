@@ -1,7 +1,7 @@
 use crate::rust_ast::pattern::Pattern;
 use crate::rust_ast::statement::r#let::Let;
 use crate::rust_ast::statement::Statement as RustASTStatement;
-use crate::mir::statement::Statement;
+use crate::lir::statement::Statement;
 
 use super::expression::rust_ast_from_mir as expression_rust_ast_from_mir;
 
@@ -50,8 +50,8 @@ mod rust_ast_from_mir {
     use crate::rust_ast::pattern::Pattern;
     use crate::rust_ast::statement::r#let::Let;
     use crate::rust_ast::statement::Statement as RustASTStatement;
-    use crate::mir::expression::Expression;
-    use crate::mir::statement::Statement;
+    use crate::lir::expression::Expression;
+    use crate::lir::statement::Statement;
 
     #[test]
     fn should_create_rust_ast_let_statement_from_mir_let_statement() {

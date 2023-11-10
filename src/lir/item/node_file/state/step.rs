@@ -1,6 +1,6 @@
 use crate::{
     common::r#type::Type,
-    mir::{expression::Expression, statement::Statement},
+    lir::{expression::Expression, statement::Statement},
 };
 
 /// A step function.

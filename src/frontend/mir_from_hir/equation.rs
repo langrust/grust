@@ -1,6 +1,6 @@
 use crate::{
     hir::{equation::Equation, stream_expression::StreamExpression},
-    mir::statement::Statement,
+    lir::statement::Statement,
 };
 
 use super::stream_expression::mir_from_hir as stream_expression_mir_from_hir;
@@ -31,7 +31,7 @@ mod mir_from_hir {
             dependencies::Dependencies, equation::Equation, signal::Signal,
             stream_expression::StreamExpression,
         },
-        mir::{expression::Expression, statement::Statement},
+        lir::{expression::Expression, statement::Statement},
     };
 
     #[test]
