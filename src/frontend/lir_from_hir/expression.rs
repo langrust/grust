@@ -210,7 +210,7 @@ mod mir_from_hir {
     use crate::{
         ast::{expression::Expression as ASTExpression, pattern::Pattern},
         common::{constant::Constant, location::Location, operator::OtherOperator, r#type::Type},
-        frontend::mir_from_hir::expression::mir_from_hir,
+        frontend::lir_from_hir::expression::mir_from_hir,
         lir::{block::Block, expression::Expression, statement::Statement},
     };
 
