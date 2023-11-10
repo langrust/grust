@@ -42,7 +42,7 @@ mod rust_ast_from_mir {
     use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
 
     #[test]
-    fn should_create_a_lir_default_pattern_from_a_mir_default_pattern() {
+    fn should_create_a_rust_ast_default_pattern_from_a_mir_default_pattern() {
         let pattern = Pattern::Default {
             location: Location::default(),
         };
@@ -51,7 +51,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_a_lir_default_pattern_from_a_mir_none_pattern() {
+    fn should_create_a_rust_ast_default_pattern_from_a_mir_none_pattern() {
         let pattern = Pattern::None {
             location: Location::default(),
         };
@@ -60,7 +60,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_a_lir_tuple_structure_pattern_from_a_mir_some_pattern() {
+    fn should_create_a_rust_ast_tuple_structure_pattern_from_a_mir_some_pattern() {
         let pattern = Pattern::Some {
             pattern: Box::new(Pattern::Default {
                 location: Location::default(),
@@ -75,7 +75,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_a_lir_literal_pattern_from_a_mir_constant_pattern() {
+    fn should_create_a_rust_ast_literal_pattern_from_a_mir_constant_pattern() {
         let pattern = Pattern::Constant {
             constant: Constant::Integer(1),
             location: Location::default(),
@@ -87,7 +87,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_a_lir_identifier_pattern_owned_and_immutable_from_a_mir_identifier_pattern() {
+    fn should_create_a_rust_ast_identifier_pattern_owned_and_immutable_from_a_mir_identifier_pattern() {
         let pattern = Pattern::Identifier {
             name: String::from("x"),
             location: Location::default(),
@@ -101,7 +101,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_a_lir_structure_pattern_from_a_mir_structure_pattern() {
+    fn should_create_a_rust_ast_structure_pattern_from_a_mir_structure_pattern() {
         let pattern = Pattern::Structure {
             name: String::from("Point"),
             fields: vec![

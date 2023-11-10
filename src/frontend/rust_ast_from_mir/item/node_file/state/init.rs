@@ -67,7 +67,7 @@ mod rust_ast_from_mir {
     use crate::mir::item::node_file::state::init::{Init, StateElementInit};
 
     #[test]
-    fn should_create_lir_associated_method_from_mir_node_init() {
+    fn should_create_rust_ast_associated_method_from_mir_node_init() {
         let init = Init {
             node_name: format!("Node"),
             state_elements_init: vec![

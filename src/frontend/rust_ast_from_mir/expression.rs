@@ -187,7 +187,7 @@ mod rust_ast_from_mir {
     use crate::mir::statement::Statement;
 
     #[test]
-    fn should_create_lir_literal_from_mir_literal() {
+    fn should_create_rust_ast_literal_from_mir_literal() {
         let expression = Expression::Literal {
             literal: Constant::Integer(1),
         };
@@ -198,7 +198,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_identifier_from_mir_identifier() {
+    fn should_create_rust_ast_identifier_from_mir_identifier() {
         let expression = Expression::Identifier {
             identifier: String::from("x"),
         };
@@ -209,7 +209,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_field_access_to_self_from_mir_memory_access() {
+    fn should_create_rust_ast_field_access_to_self_from_mir_memory_access() {
         let expression = Expression::MemoryAccess {
             identifier: String::from("mem_x"),
         };
@@ -223,7 +223,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_field_access_to_input_from_mir_input_access() {
+    fn should_create_rust_ast_field_access_to_input_from_mir_input_access() {
         let expression = Expression::InputAccess {
             identifier: String::from("i"),
         };
@@ -237,7 +237,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_structure_from_mir_structure() {
+    fn should_create_rust_ast_structure_from_mir_structure() {
         let expression = Expression::Structure {
             name: String::from("Point"),
             fields: vec![
@@ -276,7 +276,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_array_from_mir_array() {
+    fn should_create_rust_ast_array_from_mir_array() {
         let expression = Expression::Array {
             elements: vec![
                 Expression::Literal {
@@ -301,7 +301,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_block_from_mir_block() {
+    fn should_create_rust_ast_block_from_mir_block() {
         let expression = Expression::Block {
             block: Block {
                 statements: vec![
@@ -342,7 +342,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_function_call_from_mir_function_call() {
+    fn should_create_rust_ast_function_call_from_mir_function_call() {
         let expression = Expression::FunctionCall {
             function: Box::new(Expression::Identifier {
                 identifier: String::from("foo"),
@@ -373,7 +373,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_binary_from_mir_function_call() {
+    fn should_create_rust_ast_binary_from_mir_function_call() {
         let expression = Expression::FunctionCall {
             function: Box::new(Expression::Identifier {
                 identifier: String::from(" + "),
@@ -400,7 +400,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_method_call_from_mir_node_call() {
+    fn should_create_rust_ast_method_call_from_mir_node_call() {
         let expression = Expression::NodeCall {
             node_identifier: String::from("node_state"),
             input_name: String::from("NodeInput"),
@@ -433,7 +433,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_field_access_from_mir_field_access() {
+    fn should_create_rust_ast_field_access_from_mir_field_access() {
         let expression = Expression::FieldAccess {
             expression: Box::new(Expression::Identifier {
                 identifier: String::from("my_point"),
@@ -450,7 +450,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_closure_from_mir_lambda() {
+    fn should_create_rust_ast_closure_from_mir_lambda() {
         let expression = Expression::Lambda {
             inputs: vec![(String::from("x"), Type::Integer)],
             output: Type::Integer,
@@ -511,7 +511,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_ifthenelse_from_mir_ifthenelse() {
+    fn should_create_rust_ast_ifthenelse_from_mir_ifthenelse() {
         let expression = Expression::IfThenElse {
             condition: Box::new(Expression::Identifier {
                 identifier: String::from("test"),
@@ -550,7 +550,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_match_from_mir_match() {
+    fn should_create_rust_ast_match_from_mir_match() {
         let expression = Expression::Match {
             matched: Box::new(Expression::Identifier {
                 identifier: String::from("my_color"),

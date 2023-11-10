@@ -29,7 +29,7 @@ mod rust_ast_from_mir {
     use crate::mir::item::node_file::input::{Input, InputElement};
 
     #[test]
-    fn should_create_lir_structure_from_mir_node_input() {
+    fn should_create_rust_ast_structure_from_mir_node_input() {
         let input = Input {
             node_name: format!("Node"),
             elements: vec![InputElement {
