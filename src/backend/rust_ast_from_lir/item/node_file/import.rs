@@ -44,7 +44,7 @@ pub fn rust_ast_from_lir(import: Import) -> RustASTImport {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::frontend::rust_ast_from_lir::item::node_file::import::rust_ast_from_lir;
+    use crate::backend::rust_ast_from_lir::item::node_file::import::rust_ast_from_lir;
     use crate::rust_ast::item::import::{Import as RustASTImport, PathTree};
     use crate::lir::item::node_file::import::Import;
 
