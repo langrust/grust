@@ -1,6 +1,6 @@
-use crate::frontend::rust_ast_from_mir::item::node_file::state::init::lir_from_mir as init_lir_from_mir;
-use crate::frontend::rust_ast_from_mir::item::node_file::state::step::lir_from_mir as step_lir_from_mir;
-use crate::frontend::rust_ast_from_mir::r#type::lir_from_mir as type_lir_from_mir;
+use crate::frontend::rust_ast_from_mir::item::node_file::state::init::rust_ast_from_mir as init_rust_ast_from_mir;
+use crate::frontend::rust_ast_from_mir::item::node_file::state::step::rust_ast_from_mir as step_rust_ast_from_mir;
+use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
 use crate::rust_ast::item::implementation::Implementation;
 use crate::rust_ast::item::structure::{Field, Structure};
 use crate::rust_ast::r#type::Type as RustASTType;
@@ -12,7 +12,7 @@ pub mod init;
 pub mod step;
 
 /// Transform MIR state into RustAST structure and implementation.
-pub fn lir_from_mir(state: State) -> (Structure, Implementation) {
+pub fn rust_ast_from_mir(state: State) -> (Structure, Implementation) {
     let fields = state
         .elements
         .into_iter()
@@ -20,7 +20,7 @@ pub fn lir_from_mir(state: State) -> (Structure, Implementation) {
             StateElement::Buffer { identifier, r#type } => Field {
                 public_visibility: false,
                 name: identifier,
-                r#type: type_lir_from_mir(r#type),
+                r#type: type_rust_ast_from_mir(r#type),
             },
             StateElement::CalledNode {
                 identifier,
@@ -43,7 +43,7 @@ pub fn lir_from_mir(state: State) -> (Structure, Implementation) {
     let implementation = Implementation {
         trait_name: None,
         type_name: state.node_name + "State",
-        items: vec![init_lir_from_mir(state.init), step_lir_from_mir(state.step)],
+        items: vec![init_rust_ast_from_mir(state.init), step_rust_ast_from_mir(state.step)],
     };
 
     (structure, implementation)

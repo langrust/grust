@@ -1,34 +1,34 @@
 use crate::frontend::rust_ast_from_mir::{
-    block::lir_from_mir as block_lir_from_mir, r#type::lir_from_mir as type_lir_from_mir,
+    block::rust_ast_from_mir as block_rust_ast_from_mir, r#type::rust_ast_from_mir as type_rust_ast_from_mir,
 };
 use crate::rust_ast::item::{function::Function as RustASTFunction, signature::Signature};
 use crate::mir::item::function::Function;
 
 /// Transform MIR function into RustAST function.
-pub fn lir_from_mir(function: Function) -> RustASTFunction {
+pub fn rust_ast_from_mir(function: Function) -> RustASTFunction {
     let inputs = function
         .inputs
         .into_iter()
-        .map(|(name, r#type)| (name, type_lir_from_mir(r#type)))
+        .map(|(name, r#type)| (name, type_rust_ast_from_mir(r#type)))
         .collect();
     let signature = Signature {
         public_visibility: true,
         name: function.name,
         receiver: None,
         inputs,
-        output: type_lir_from_mir(function.output),
+        output: type_rust_ast_from_mir(function.output),
     };
     RustASTFunction {
         signature,
-        body: block_lir_from_mir(function.body),
+        body: block_rust_ast_from_mir(function.body),
     }
 }
 
 #[cfg(test)]
-mod lir_from_mir {
+mod rust_ast_from_mir {
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_mir::item::function::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::function::rust_ast_from_mir;
     use crate::rust_ast::block::Block as RustASTBlock;
     use crate::rust_ast::expression::Expression as RustASTExpression;
     use crate::rust_ast::item::function::Function as RustASTFunction;
@@ -102,6 +102,6 @@ mod lir_from_mir {
                 })],
             },
         };
-        assert_eq!(lir_from_mir(function), control)
+        assert_eq!(rust_ast_from_mir(function), control)
     }
 }

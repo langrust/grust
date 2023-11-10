@@ -7,7 +7,7 @@ use crate::rust_ast::statement::Statement;
 use crate::mir::item::node_file::state::init::{Init, StateElementInit};
 
 /// Transform MIR init into RustAST implementation method.
-pub fn lir_from_mir(init: Init) -> AssociatedItem {
+pub fn rust_ast_from_mir(init: Init) -> AssociatedItem {
     let signature = Signature {
         public_visibility: true,
         name: String::from("init"),
@@ -55,9 +55,9 @@ pub fn lir_from_mir(init: Init) -> AssociatedItem {
 }
 
 #[cfg(test)]
-mod lir_from_mir {
+mod rust_ast_from_mir {
     use crate::common::constant::Constant;
-    use crate::frontend::rust_ast_from_mir::item::node_file::state::init::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::node_file::state::init::rust_ast_from_mir;
     use crate::rust_ast::block::Block;
     use crate::rust_ast::expression::{Expression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;
@@ -114,6 +114,6 @@ mod lir_from_mir {
                 })],
             },
         };
-        assert_eq!(lir_from_mir(init), control)
+        assert_eq!(rust_ast_from_mir(init), control)
     }
 }

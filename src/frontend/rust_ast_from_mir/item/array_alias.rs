@@ -1,24 +1,24 @@
-use crate::frontend::rust_ast_from_mir::r#type::lir_from_mir as type_lir_from_mir;
+use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
 use crate::rust_ast::item::type_alias::TypeAlias;
 use crate::rust_ast::r#type::Type as RustASTType;
 use crate::mir::item::array_alias::ArrayAlias;
 
 /// Transform MIR array alias into RustAST type alias.
-pub fn lir_from_mir(array_alias: ArrayAlias) -> TypeAlias {
+pub fn rust_ast_from_mir(array_alias: ArrayAlias) -> TypeAlias {
     TypeAlias {
         public_visibility: true,
         name: array_alias.name,
         r#type: RustASTType::Array {
-            element: Box::new(type_lir_from_mir(array_alias.array_type)),
+            element: Box::new(type_rust_ast_from_mir(array_alias.array_type)),
             size: array_alias.size,
         },
     }
 }
 
 #[cfg(test)]
-mod lir_from_mir {
+mod rust_ast_from_mir {
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_mir::item::array_alias::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::array_alias::rust_ast_from_mir;
     use crate::rust_ast::item::type_alias::TypeAlias;
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::mir::item::array_alias::ArrayAlias;
@@ -43,6 +43,6 @@ mod lir_from_mir {
                 size: 5,
             },
         };
-        assert_eq!(lir_from_mir(array_alias), control)
+        assert_eq!(rust_ast_from_mir(array_alias), control)
     }
 }

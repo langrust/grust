@@ -3,10 +3,10 @@ use crate::rust_ast::statement::r#let::Let;
 use crate::rust_ast::statement::Statement as RustASTStatement;
 use crate::mir::statement::Statement;
 
-use super::expression::lir_from_mir as expression_lir_from_mir;
+use super::expression::rust_ast_from_mir as expression_rust_ast_from_mir;
 
 /// Transform MIR statement into RustAST statement.
-pub fn lir_from_mir(statement: Statement) -> RustASTStatement {
+pub fn rust_ast_from_mir(statement: Statement) -> RustASTStatement {
     match statement {
         Statement::Let {
             identifier,
@@ -17,7 +17,7 @@ pub fn lir_from_mir(statement: Statement) -> RustASTStatement {
                 mutable: false,
                 identifier,
             },
-            expression: expression_lir_from_mir(expression),
+            expression: expression_rust_ast_from_mir(expression),
         }),
         Statement::LetTuple {
             identifiers,
@@ -33,19 +33,19 @@ pub fn lir_from_mir(statement: Statement) -> RustASTStatement {
                 .collect();
             RustASTStatement::Let(Let {
                 pattern: Pattern::Tuple { elements },
-                expression: expression_lir_from_mir(expression),
+                expression: expression_rust_ast_from_mir(expression),
             })
         }
         Statement::ExpressionLast { expression } => {
-            RustASTStatement::ExpressionLast(expression_lir_from_mir(expression))
+            RustASTStatement::ExpressionLast(expression_rust_ast_from_mir(expression))
         }
     }
 }
 
 #[cfg(test)]
-mod lir_from_mir {
+mod rust_ast_from_mir {
     use crate::common::constant::Constant;
-    use crate::frontend::rust_ast_from_mir::statement::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::statement::rust_ast_from_mir;
     use crate::rust_ast::expression::{Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::pattern::Pattern;
     use crate::rust_ast::statement::r#let::Let;
@@ -71,7 +71,7 @@ mod lir_from_mir {
                 literal: Constant::Integer(1),
             },
         });
-        assert_eq!(lir_from_mir(statement), control)
+        assert_eq!(rust_ast_from_mir(statement), control)
     }
 
     #[test]
@@ -123,7 +123,7 @@ mod lir_from_mir {
                 }],
             },
         });
-        assert_eq!(lir_from_mir(statement), control)
+        assert_eq!(rust_ast_from_mir(statement), control)
     }
 
     #[test]
@@ -136,6 +136,6 @@ mod lir_from_mir {
         let control = RustASTStatement::ExpressionLast(RustASTExpression::Literal {
             literal: Constant::Integer(1),
         });
-        assert_eq!(lir_from_mir(statement), control)
+        assert_eq!(rust_ast_from_mir(statement), control)
     }
 }
