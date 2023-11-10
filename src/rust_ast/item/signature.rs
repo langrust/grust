@@ -1,4 +1,4 @@
-use crate::lir::r#type::Type;
+use crate::rust_ast::r#type::Type;
 
 /// Function or method signature.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -63,7 +63,7 @@ impl std::fmt::Display for Receiver {
 
 #[cfg(test)]
 mod fmt {
-    use crate::lir::{
+    use crate::rust_ast::{
         item::signature::{Receiver, Signature},
         r#type::Type,
     };

@@ -1,9 +1,9 @@
-use crate::lir::block::Block;
-use crate::lir::expression::{Expression, FieldExpression};
-use crate::lir::item::implementation::AssociatedItem;
-use crate::lir::item::signature::Signature;
-use crate::lir::r#type::Type as LIRType;
-use crate::lir::statement::Statement;
+use crate::rust_ast::block::Block;
+use crate::rust_ast::expression::{Expression, FieldExpression};
+use crate::rust_ast::item::implementation::AssociatedItem;
+use crate::rust_ast::item::signature::Signature;
+use crate::rust_ast::r#type::Type as LIRType;
+use crate::rust_ast::statement::Statement;
 use crate::mir::item::node_file::state::init::{Init, StateElementInit};
 
 /// Transform MIR init into LIR implementation method.
@@ -58,12 +58,12 @@ pub fn lir_from_mir(init: Init) -> AssociatedItem {
 mod lir_from_mir {
     use crate::common::constant::Constant;
     use crate::frontend::lir_from_mir::item::node_file::state::init::lir_from_mir;
-    use crate::lir::block::Block;
-    use crate::lir::expression::{Expression, FieldExpression};
-    use crate::lir::item::implementation::AssociatedItem;
-    use crate::lir::item::signature::Signature;
-    use crate::lir::r#type::Type as LIRType;
-    use crate::lir::statement::Statement;
+    use crate::rust_ast::block::Block;
+    use crate::rust_ast::expression::{Expression, FieldExpression};
+    use crate::rust_ast::item::implementation::AssociatedItem;
+    use crate::rust_ast::item::signature::Signature;
+    use crate::rust_ast::r#type::Type as LIRType;
+    use crate::rust_ast::statement::Statement;
     use crate::mir::item::node_file::state::init::{Init, StateElementInit};
 
     #[test]

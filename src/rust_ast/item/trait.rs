@@ -1,4 +1,4 @@
-use crate::lir::{block::Block, item::signature::Signature, r#type::Type};
+use crate::rust_ast::{block::Block, item::signature::Signature, r#type::Type};
 
 /// Rust trait definition.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -68,7 +68,7 @@ impl std::fmt::Display for TraitAssociatedItem {
 
 #[cfg(test)]
 mod fmt {
-    use crate::lir::{
+    use crate::rust_ast::{
         item::signature::{Receiver, Signature},
         r#type::Type,
     };

@@ -1,7 +1,7 @@
 use crate::frontend::lir_from_mir::{
     block::lir_from_mir as block_lir_from_mir, r#type::lir_from_mir as type_lir_from_mir,
 };
-use crate::lir::item::{function::Function as LIRFunction, signature::Signature};
+use crate::rust_ast::item::{function::Function as LIRFunction, signature::Signature};
 use crate::mir::item::function::Function;
 
 /// Transform MIR function into LIR function.
@@ -29,12 +29,12 @@ mod lir_from_mir {
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::item::function::lir_from_mir;
-    use crate::lir::block::Block as LIRBlock;
-    use crate::lir::expression::Expression as LIRExpression;
-    use crate::lir::item::function::Function as LIRFunction;
-    use crate::lir::item::signature::Signature;
-    use crate::lir::r#type::Type as LIRType;
-    use crate::lir::statement::Statement as LIRStatement;
+    use crate::rust_ast::block::Block as LIRBlock;
+    use crate::rust_ast::expression::Expression as LIRExpression;
+    use crate::rust_ast::item::function::Function as LIRFunction;
+    use crate::rust_ast::item::signature::Signature;
+    use crate::rust_ast::r#type::Type as LIRType;
+    use crate::rust_ast::statement::Statement as LIRStatement;
     use crate::mir::block::Block;
     use crate::mir::expression::Expression;
     use crate::mir::item::function::Function;

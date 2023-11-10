@@ -1,6 +1,6 @@
 use crate::common::operator::{BinaryOperator, UnaryOperator};
-use crate::lir::expression::{Arm, Expression as LIRExpression, FieldExpression};
-use crate::lir::pattern::Pattern;
+use crate::rust_ast::expression::{Arm, Expression as LIRExpression, FieldExpression};
+use crate::rust_ast::pattern::Pattern;
 use crate::mir::expression::Expression;
 
 use super::{
@@ -176,12 +176,12 @@ mod lir_from_mir {
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::expression::lir_from_mir;
-    use crate::lir::block::Block as LIRBlock;
-    use crate::lir::expression::{Arm, Expression as LIRExpression, FieldExpression};
-    use crate::lir::pattern::Pattern as LIRPattern;
-    use crate::lir::r#type::Type as LIRType;
-    use crate::lir::statement::r#let::Let;
-    use crate::lir::statement::Statement as LIRStatement;
+    use crate::rust_ast::block::Block as LIRBlock;
+    use crate::rust_ast::expression::{Arm, Expression as LIRExpression, FieldExpression};
+    use crate::rust_ast::pattern::Pattern as LIRPattern;
+    use crate::rust_ast::r#type::Type as LIRType;
+    use crate::rust_ast::statement::r#let::Let;
+    use crate::rust_ast::statement::Statement as LIRStatement;
     use crate::mir::block::Block;
     use crate::mir::expression::Expression;
     use crate::mir::statement::Statement;

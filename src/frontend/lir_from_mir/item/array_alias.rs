@@ -1,6 +1,6 @@
 use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
-use crate::lir::item::type_alias::TypeAlias;
-use crate::lir::r#type::Type as LIRType;
+use crate::rust_ast::item::type_alias::TypeAlias;
+use crate::rust_ast::r#type::Type as LIRType;
 use crate::mir::item::array_alias::ArrayAlias;
 
 /// Transform MIR array alias into LIR type alias.
@@ -19,8 +19,8 @@ pub fn lir_from_mir(array_alias: ArrayAlias) -> TypeAlias {
 mod lir_from_mir {
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::item::array_alias::lir_from_mir;
-    use crate::lir::item::type_alias::TypeAlias;
-    use crate::lir::r#type::Type as LIRType;
+    use crate::rust_ast::item::type_alias::TypeAlias;
+    use crate::rust_ast::r#type::Type as LIRType;
     use crate::mir::item::array_alias::ArrayAlias;
 
     #[test]

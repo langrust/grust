@@ -319,7 +319,7 @@ mod fmt {
             constant::Constant,
             operator::{BinaryOperator, UnaryOperator},
         },
-        lir::{
+        rust_ast::{
             block::Block,
             expression::{Arm, FieldExpression},
             pattern::Pattern,

@@ -1,4 +1,4 @@
-use crate::lir::r#type::Type;
+use crate::rust_ast::r#type::Type;
 
 /// Type alias in Rust.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -20,7 +20,7 @@ impl std::fmt::Display for TypeAlias {
 
 #[cfg(test)]
 mod fmt {
-    use crate::lir::{item::type_alias::TypeAlias, r#type::Type};
+    use crate::rust_ast::{item::type_alias::TypeAlias, r#type::Type};
 
     #[test]
     fn should_format_type_alias_definition() {

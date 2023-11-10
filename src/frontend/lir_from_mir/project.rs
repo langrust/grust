@@ -6,7 +6,7 @@ use crate::{
         node_file::lir_from_mir as node_file_lir_from_mir,
         structure::lir_from_mir as structure_lir_from_mir,
     },
-    lir::{file::File, item::Item as LIRItem, project::Project as LIRProject},
+    rust_ast::{file::File, item::Item as LIRItem, project::Project as LIRProject},
     mir::{item::Item, project::Project},
 };
 

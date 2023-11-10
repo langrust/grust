@@ -1,5 +1,5 @@
 use crate::common::r#type::Type;
-use crate::lir::r#type::Type as LIRType;
+use crate::rust_ast::r#type::Type as LIRType;
 
 /// Transform MIR type into LIR type.
 pub fn lir_from_mir(r#type: Type) -> LIRType {
@@ -46,7 +46,7 @@ pub fn lir_from_mir(r#type: Type) -> LIRType {
 mod lir_from_mir {
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::r#type::lir_from_mir;
-    use crate::lir::r#type::Type as LIRType;
+    use crate::rust_ast::r#type::Type as LIRType;
 
     #[test]
     fn should_create_lir_owned_i64_from_mir_integer() {
