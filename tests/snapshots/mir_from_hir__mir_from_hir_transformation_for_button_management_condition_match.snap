@@ -173,11 +173,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Released
-                            location:
-                              file_id: 0
-                              range:
-                                start: 588
-                                end: 603
+                            location: ~
                         - ~
                         - MemoryAccess:
                             identifier: memuser_reset_request
@@ -186,11 +182,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Pressed
-                            location:
-                              file_id: 0
-                              range:
-                                start: 645
-                                end: 659
+                            location: ~
                         - ~
                         - FunctionCall:
                             function:
@@ -338,11 +330,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Released
-                            location:
-                              file_id: 0
-                              range:
-                                start: 362
-                                end: 377
+                            location: ~
                         - ~
                         - Literal:
                             literal:
@@ -354,11 +342,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Pressed
-                            location:
-                              file_id: 0
-                              range:
-                                start: 411
-                                end: 425
+                            location: ~
                         - FunctionCall:
                             function:
                               Identifier:
@@ -374,11 +358,7 @@ items:
                                 - ResetState
                                 - InProgress
                       - - Default:
-                            location:
-                              file_id: 0
-                              range:
-                                start: 488
-                                end: 489
+                            location: ~
                         - ~
                         - Literal:
                             literal:

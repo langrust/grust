@@ -8,21 +8,13 @@ typedefs:
       elements:
         - Released
         - Pressed
-      location:
-        file_id: 0
-        range:
-          start: 0
-          end: 42
+      location: ~
   - Enumeration:
       id: ResetState
       elements:
         - InProgress
         - Confirmed
-      location:
-        file_id: 0
-        range:
-          start: 44
-          end: 94
+      location: ~
 functions: []
 nodes:
   - id: counter
@@ -48,22 +40,14 @@ nodes:
                       - Integer
                       - Integer
                     - Integer
-                location:
-                  file_id: 0
-                  range:
-                    start: 149
-                    end: 183
+                location: ~
             inputs:
               - SignalCall:
                   signal:
                     id: res
                     scope: Input
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 152
-                      end: 155
+                  location: ~
                   dependencies:
                     - - res
                       - 0
@@ -71,11 +55,7 @@ nodes:
                   constant:
                     Integer: 0
                   typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 161
-                      end: 162
+                  location: ~
                   dependencies: []
               - MapApplication:
                   function_expression:
@@ -86,11 +66,7 @@ nodes:
                           - - Integer
                             - Integer
                           - Integer
-                      location:
-                        file_id: 0
-                        range:
-                          start: 178
-                          end: 179
+                      location: ~
                   inputs:
                     - MapApplication:
                         function_expression:
@@ -100,11 +76,7 @@ nodes:
                               Abstract:
                                 - - Integer
                                 - Integer
-                            location:
-                              file_id: 0
-                              range:
-                                start: 168
-                                end: 177
+                            location: ~
                         inputs:
                           - FollowedBy:
                               constant:
@@ -115,29 +87,17 @@ nodes:
                                     id: o
                                     scope: Output
                                   typing: Integer
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 175
-                                      end: 176
+                                  location: ~
                                   dependencies:
                                     - - o
                                       - 0
                               typing: Integer
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 169
-                                  end: 176
+                              location: ~
                               dependencies:
                                 - - o
                                   - 1
                         typing: Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 168
-                            end: 177
+                        location: ~
                         dependencies:
                           - - o
                             - 1
@@ -146,31 +106,19 @@ nodes:
                           id: inc
                           scope: Input
                         typing: Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 180
-                            end: 183
+                        location: ~
                         dependencies:
                           - - inc
                             - 0
                   typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 168
-                      end: 183
+                  location: ~
                   dependencies:
                     - - o
                       - 1
                     - - inc
                       - 0
             typing: Integer
-            location:
-              file_id: 0
-              range:
-                start: 149
-                end: 183
+            location: ~
             dependencies:
               - - res
                 - 0
@@ -178,11 +126,7 @@ nodes:
                 - 1
               - - inc
                 - 0
-        location:
-          file_id: 0
-          range:
-            start: 136
-            end: 184
+        location: ~
     unitary_nodes:
       o:
         node_id: counter
@@ -207,22 +151,14 @@ nodes:
                           - Integer
                           - Integer
                         - Integer
-                    location:
-                      file_id: 0
-                      range:
-                        start: 149
-                        end: 183
+                    location: ~
                 inputs:
                   - SignalCall:
                       signal:
                         id: res
                         scope: Input
                       typing: Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 152
-                          end: 155
+                      location: ~
                       dependencies:
                         - - res
                           - 0
@@ -230,11 +166,7 @@ nodes:
                       constant:
                         Integer: 0
                       typing: Integer
-                      location:
-                        file_id: 0
-                        range:
-                          start: 161
-                          end: 162
+                      location: ~
                       dependencies: []
                   - MapApplication:
                       function_expression:
@@ -245,11 +177,7 @@ nodes:
                               - - Integer
                                 - Integer
                               - Integer
-                          location:
-                            file_id: 0
-                            range:
-                              start: 178
-                              end: 179
+                          location: ~
                       inputs:
                         - MapApplication:
                             function_expression:
@@ -259,31 +187,19 @@ nodes:
                                   Abstract:
                                     - - Integer
                                     - Integer
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 168
-                                    end: 177
+                                location: ~
                             inputs:
                               - SignalCall:
                                   signal:
                                     id: memo
                                     scope: Memory
                                   typing: Integer
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 169
-                                      end: 176
+                                  location: ~
                                   dependencies:
                                     - - memo
                                       - 0
                             typing: Integer
-                            location:
-                              file_id: 0
-                              range:
-                                start: 168
-                                end: 177
+                            location: ~
                             dependencies:
                               - - memo
                                 - 0
@@ -292,31 +208,19 @@ nodes:
                               id: inc
                               scope: Input
                             typing: Integer
-                            location:
-                              file_id: 0
-                              range:
-                                start: 180
-                                end: 183
+                            location: ~
                             dependencies:
                               - - inc
                                 - 0
                       typing: Integer
-                      location:
-                        file_id: 0
-                        range:
-                          start: 168
-                          end: 183
+                      location: ~
                       dependencies:
                         - - memo
                           - 0
                         - - inc
                           - 0
                 typing: Integer
-                location:
-                  file_id: 0
-                  range:
-                    start: 149
-                    end: 183
+                location: ~
                 dependencies:
                   - - res
                     - 0
@@ -324,11 +228,7 @@ nodes:
                     - 0
                   - - inc
                     - 0
-            location:
-              file_id: 0
-              range:
-                start: 136
-                end: 184
+            location: ~
         memory:
           buffers:
             memo:
@@ -341,20 +241,12 @@ nodes:
                     id: o
                     scope: Output
                   typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 175
-                      end: 176
+                  location: ~
                   dependencies:
                     - - o
                       - 0
           called_nodes: {}
-        location:
-          file_id: 0
-          range:
-            start: 96
-            end: 186
+        location: ~
         graph:
           vertices:
             inc:
@@ -379,11 +271,7 @@ nodes:
               id: res
               value: White
               neighbors: []
-    location:
-      file_id: 0
-      range:
-        start: 96
-        end: 186
+    location: ~
     graph:
       vertices:
         inc:
@@ -429,11 +317,7 @@ nodes:
                     id: res
                     scope: Local
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 787
-                      end: 790
+                  location: ~
                   dependencies:
                     - - res
                       - 0
@@ -442,21 +326,13 @@ nodes:
                     id: period
                     scope: Input
                   typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 792
-                      end: 798
+                  location: ~
                   dependencies:
                     - - period
                       - 0
             signal: o
             typing: Integer
-            location:
-              file_id: 0
-              range:
-                start: 779
-                end: 801
+            location: ~
             dependencies:
               - - res
                 - 0
@@ -464,11 +340,7 @@ nodes:
                 - 1
               - - period
                 - 0
-        location:
-          file_id: 0
-          range:
-            start: 764
-            end: 802
+        location: ~
       res:
         scope: Local
         id: res
@@ -483,11 +355,7 @@ nodes:
                     - - Boolean
                       - Boolean
                     - Boolean
-                location:
-                  file_id: 0
-                  range:
-                    start: 852
-                    end: 854
+                location: ~
             inputs:
               - MapApplication:
                   function_expression:
@@ -497,11 +365,7 @@ nodes:
                         Abstract:
                           - - Boolean
                           - Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 819
-                          end: 851
+                      location: ~
                   inputs:
                     - MapApplication:
                         function_expression:
@@ -512,11 +376,7 @@ nodes:
                                 - - Enumeration: Button
                                   - Enumeration: Button
                                 - Boolean
-                            location:
-                              file_id: 0
-                              range:
-                                start: 833
-                                end: 835
+                            location: ~
                         inputs:
                           - SignalCall:
                               signal:
@@ -524,11 +384,7 @@ nodes:
                                 scope: Input
                               typing:
                                 Enumeration: Button
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 820
-                                  end: 832
+                              location: ~
                               dependencies:
                                 - - button_state
                                   - 0
@@ -539,27 +395,15 @@ nodes:
                                   - Pressed
                               typing:
                                 Enumeration: Button
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 836
-                                  end: 850
+                              location: ~
                               dependencies: []
                         typing: Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 820
-                            end: 850
+                        location: ~
                         dependencies:
                           - - button_state
                             - 0
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 819
-                      end: 851
+                  location: ~
                   dependencies:
                     - - button_state
                       - 0
@@ -571,11 +415,7 @@ nodes:
                         Abstract:
                           - - Boolean
                           - Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 855
-                          end: 897
+                      location: ~
                   inputs:
                     - FollowedBy:
                         constant:
@@ -590,11 +430,7 @@ nodes:
                                     - - Enumeration: Button
                                       - Enumeration: Button
                                     - Boolean
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 878
-                                    end: 880
+                                location: ~
                             inputs:
                               - SignalCall:
                                   signal:
@@ -602,11 +438,7 @@ nodes:
                                     scope: Input
                                   typing:
                                     Enumeration: Button
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 865
-                                      end: 877
+                                  location: ~
                                   dependencies:
                                     - - button_state
                                       - 0
@@ -617,55 +449,31 @@ nodes:
                                       - Released
                                   typing:
                                     Enumeration: Button
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 881
-                                      end: 896
+                                  location: ~
                                   dependencies: []
                             typing: Boolean
-                            location:
-                              file_id: 0
-                              range:
-                                start: 865
-                                end: 896
+                            location: ~
                             dependencies:
                               - - button_state
                                 - 0
                         typing: Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 856
-                            end: 896
+                        location: ~
                         dependencies:
                           - - button_state
                             - 1
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 855
-                      end: 897
+                  location: ~
                   dependencies:
                     - - button_state
                       - 1
             typing: Boolean
-            location:
-              file_id: 0
-              range:
-                start: 819
-                end: 897
+            location: ~
             dependencies:
               - - button_state
                 - 0
               - - button_state
                 - 1
-        location:
-          file_id: 0
-          range:
-            start: 807
-            end: 898
+        location: ~
       user_reset_request:
         scope: Output
         id: user_reset_request
@@ -679,11 +487,7 @@ nodes:
                   scope: Input
                 typing:
                   Enumeration: Button
-                location:
-                  file_id: 0
-                  range:
-                    start: 612
-                    end: 624
+                location: ~
                 dependencies:
                   - - button_state
                     - 0
@@ -693,11 +497,7 @@ nodes:
                       Enumeration:
                         - Button
                         - Released
-                    location:
-                      file_id: 0
-                      range:
-                        start: 636
-                        end: 651
+                    location: ~
                 - ~
                 - []
                 - FollowedBy:
@@ -709,20 +509,12 @@ nodes:
                           id: user_reset_request
                           scope: Output
                         typing: Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 665
-                            end: 683
+                        location: ~
                         dependencies:
                           - - user_reset_request
                             - 0
                     typing: Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 655
-                        end: 683
+                    location: ~
                     dependencies:
                       - - user_reset_request
                         - 1
@@ -731,11 +523,7 @@ nodes:
                       Enumeration:
                         - Button
                         - Pressed
-                    location:
-                      file_id: 0
-                      range:
-                        start: 693
-                        end: 707
+                    location: ~
                 - ~
                 - []
                 - MapApplication:
@@ -747,22 +535,14 @@ nodes:
                             - - Integer
                               - Integer
                             - Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 719
-                            end: 721
+                        location: ~
                     inputs:
                       - SignalCall:
                           signal:
                             id: counter
                             scope: Local
                           typing: Integer
-                          location:
-                            file_id: 0
-                            range:
-                              start: 711
-                              end: 718
+                          location: ~
                           dependencies:
                             - - counter
                               - 0
@@ -775,22 +555,14 @@ nodes:
                                   - - Integer
                                     - Integer
                                   - Integer
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 736
-                                  end: 737
+                              location: ~
                           inputs:
                             - SignalCall:
                                 signal:
                                   id: reset_limit_1
                                   scope: Input
                                 typing: Integer
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 722
-                                    end: 735
+                                location: ~
                                 dependencies:
                                   - - reset_limit_1
                                     - 0
@@ -799,31 +571,19 @@ nodes:
                                   id: reset_limit_2
                                   scope: Input
                                 typing: Integer
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 738
-                                    end: 751
+                                location: ~
                                 dependencies:
                                   - - reset_limit_2
                                     - 0
                           typing: Integer
-                          location:
-                            file_id: 0
-                            range:
-                              start: 722
-                              end: 751
+                          location: ~
                           dependencies:
                             - - reset_limit_1
                               - 0
                             - - reset_limit_2
                               - 0
                     typing: Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 711
-                        end: 751
+                    location: ~
                     dependencies:
                       - - counter
                         - 0
@@ -832,11 +592,7 @@ nodes:
                       - - reset_limit_2
                         - 0
             typing: Boolean
-            location:
-              file_id: 0
-              range:
-                start: 605
-                end: 758
+            location: ~
             dependencies:
               - - user_reset_request
                 - 1
@@ -848,11 +604,7 @@ nodes:
                 - 0
               - - button_state
                 - 0
-        location:
-          file_id: 0
-          range:
-            start: 574
-            end: 759
+        location: ~
       user_reset_request_state:
         scope: Output
         id: user_reset_request_state
@@ -867,11 +619,7 @@ nodes:
                   scope: Input
                 typing:
                   Enumeration: Button
-                location:
-                  file_id: 0
-                  range:
-                    start: 338
-                    end: 350
+                location: ~
                 dependencies:
                   - - button_state
                     - 0
@@ -881,11 +629,7 @@ nodes:
                       Enumeration:
                         - Button
                         - Released
-                    location:
-                      file_id: 0
-                      range:
-                        start: 362
-                        end: 377
+                    location: ~
                 - ~
                 - []
                 - Constant:
@@ -895,22 +639,14 @@ nodes:
                         - Confirmed
                     typing:
                       Enumeration: ResetState
-                    location:
-                      file_id: 0
-                      range:
-                        start: 381
-                        end: 401
+                    location: ~
                     dependencies: []
               - - Constant:
                     constant:
                       Enumeration:
                         - Button
                         - Pressed
-                    location:
-                      file_id: 0
-                      range:
-                        start: 411
-                        end: 425
+                    location: ~
                 - ~
                 - []
                 - MapApplication:
@@ -923,11 +659,7 @@ nodes:
                               - Enumeration: ResetState
                               - Enumeration: ResetState
                             - Enumeration: ResetState
-                        location:
-                          file_id: 0
-                          range:
-                            start: 429
-                            end: 561
+                        location: ~
                     inputs:
                       - MapApplication:
                           function_expression:
@@ -938,22 +670,14 @@ nodes:
                                   - - Integer
                                     - Integer
                                   - Boolean
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 440
-                                  end: 442
+                              location: ~
                           inputs:
                             - SignalCall:
                                 signal:
                                   id: counter
                                   scope: Local
                                 typing: Integer
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 432
-                                    end: 439
+                                location: ~
                                 dependencies:
                                   - - counter
                                     - 0
@@ -962,20 +686,12 @@ nodes:
                                   id: reset_limit_1
                                   scope: Input
                                 typing: Integer
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 443
-                                    end: 456
+                                location: ~
                                 dependencies:
                                   - - reset_limit_1
                                     - 0
                           typing: Boolean
-                          location:
-                            file_id: 0
-                            range:
-                              start: 432
-                              end: 456
+                          location: ~
                           dependencies:
                             - - counter
                               - 0
@@ -988,11 +704,7 @@ nodes:
                               - InProgress
                           typing:
                             Enumeration: ResetState
-                          location:
-                            file_id: 0
-                            range:
-                              start: 488
-                              end: 509
+                          location: ~
                           dependencies: []
                       - Constant:
                           constant:
@@ -1001,19 +713,11 @@ nodes:
                               - Confirmed
                           typing:
                             Enumeration: ResetState
-                          location:
-                            file_id: 0
-                            range:
-                              start: 541
-                              end: 561
+                          location: ~
                           dependencies: []
                     typing:
                       Enumeration: ResetState
-                    location:
-                      file_id: 0
-                      range:
-                        start: 429
-                        end: 561
+                    location: ~
                     dependencies:
                       - - counter
                         - 0
@@ -1021,11 +725,7 @@ nodes:
                         - 0
             typing:
               Enumeration: ResetState
-            location:
-              file_id: 0
-              range:
-                start: 331
-                end: 568
+            location: ~
             dependencies:
               - - counter
                 - 0
@@ -1033,11 +733,7 @@ nodes:
                 - 0
               - - button_state
                 - 0
-        location:
-          file_id: 0
-          range:
-            start: 287
-            end: 569
+        location: ~
     unitary_nodes:
       user_reset_request:
         node_id: reset_button
@@ -1065,11 +761,7 @@ nodes:
                         - - Boolean
                           - Boolean
                         - Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 852
-                        end: 854
+                    location: ~
                 inputs:
                   - MapApplication:
                       function_expression:
@@ -1079,11 +771,7 @@ nodes:
                             Abstract:
                               - - Boolean
                               - Boolean
-                          location:
-                            file_id: 0
-                            range:
-                              start: 819
-                              end: 851
+                          location: ~
                       inputs:
                         - MapApplication:
                             function_expression:
@@ -1094,11 +782,7 @@ nodes:
                                     - - Enumeration: Button
                                       - Enumeration: Button
                                     - Boolean
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 833
-                                    end: 835
+                                location: ~
                             inputs:
                               - SignalCall:
                                   signal:
@@ -1106,11 +790,7 @@ nodes:
                                     scope: Input
                                   typing:
                                     Enumeration: Button
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 820
-                                      end: 832
+                                  location: ~
                                   dependencies:
                                     - - button_state
                                       - 0
@@ -1121,27 +801,15 @@ nodes:
                                       - Pressed
                                   typing:
                                     Enumeration: Button
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 836
-                                      end: 850
+                                  location: ~
                                   dependencies: []
                             typing: Boolean
-                            location:
-                              file_id: 0
-                              range:
-                                start: 820
-                                end: 850
+                            location: ~
                             dependencies:
                               - - button_state
                                 - 0
                       typing: Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 819
-                          end: 851
+                      location: ~
                       dependencies:
                         - - button_state
                           - 0
@@ -1153,50 +821,30 @@ nodes:
                             Abstract:
                               - - Boolean
                               - Boolean
-                          location:
-                            file_id: 0
-                            range:
-                              start: 855
-                              end: 897
+                          location: ~
                       inputs:
                         - SignalCall:
                             signal:
                               id: memres
                               scope: Memory
                             typing: Boolean
-                            location:
-                              file_id: 0
-                              range:
-                                start: 856
-                                end: 896
+                            location: ~
                             dependencies:
                               - - memres
                                 - 0
                       typing: Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 855
-                          end: 897
+                      location: ~
                       dependencies:
                         - - memres
                           - 0
                 typing: Boolean
-                location:
-                  file_id: 0
-                  range:
-                    start: 819
-                    end: 897
+                location: ~
                 dependencies:
                   - - button_state
                     - 0
                   - - memres
                     - 0
-            location:
-              file_id: 0
-              range:
-                start: 807
-                end: 898
+            location: ~
           - scope: Local
             id: counter
             signal_type: Integer
@@ -1212,11 +860,7 @@ nodes:
                           id: res
                           scope: Local
                         typing: Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 787
-                            end: 790
+                        location: ~
                         dependencies:
                           - - res
                             - 0
@@ -1226,30 +870,18 @@ nodes:
                           id: period
                           scope: Input
                         typing: Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 792
-                            end: 798
+                        location: ~
                         dependencies:
                           - - period
                             - 0
                 typing: Integer
-                location:
-                  file_id: 0
-                  range:
-                    start: 779
-                    end: 801
+                location: ~
                 dependencies:
                   - - res
                     - 0
                   - - period
                     - 0
-            location:
-              file_id: 0
-              range:
-                start: 764
-                end: 802
+            location: ~
           - scope: Output
             id: user_reset_request
             signal_type: Boolean
@@ -1262,11 +894,7 @@ nodes:
                       scope: Input
                     typing:
                       Enumeration: Button
-                    location:
-                      file_id: 0
-                      range:
-                        start: 612
-                        end: 624
+                    location: ~
                     dependencies:
                       - - button_state
                         - 0
@@ -1276,11 +904,7 @@ nodes:
                           Enumeration:
                             - Button
                             - Released
-                        location:
-                          file_id: 0
-                          range:
-                            start: 636
-                            end: 651
+                        location: ~
                     - ~
                     - []
                     - SignalCall:
@@ -1288,11 +912,7 @@ nodes:
                           id: memuser_reset_request
                           scope: Memory
                         typing: Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 655
-                            end: 683
+                        location: ~
                         dependencies:
                           - - memuser_reset_request
                             - 0
@@ -1301,11 +921,7 @@ nodes:
                           Enumeration:
                             - Button
                             - Pressed
-                        location:
-                          file_id: 0
-                          range:
-                            start: 693
-                            end: 707
+                        location: ~
                     - ~
                     - []
                     - MapApplication:
@@ -1317,22 +933,14 @@ nodes:
                                 - - Integer
                                   - Integer
                                 - Boolean
-                            location:
-                              file_id: 0
-                              range:
-                                start: 719
-                                end: 721
+                            location: ~
                         inputs:
                           - SignalCall:
                               signal:
                                 id: counter
                                 scope: Local
                               typing: Integer
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 711
-                                  end: 718
+                              location: ~
                               dependencies:
                                 - - counter
                                   - 0
@@ -1345,22 +953,14 @@ nodes:
                                       - - Integer
                                         - Integer
                                       - Integer
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 736
-                                      end: 737
+                                  location: ~
                               inputs:
                                 - SignalCall:
                                     signal:
                                       id: reset_limit_1
                                       scope: Input
                                     typing: Integer
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 722
-                                        end: 735
+                                    location: ~
                                     dependencies:
                                       - - reset_limit_1
                                         - 0
@@ -1369,31 +969,19 @@ nodes:
                                       id: reset_limit_2
                                       scope: Input
                                     typing: Integer
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 738
-                                        end: 751
+                                    location: ~
                                     dependencies:
                                       - - reset_limit_2
                                         - 0
                               typing: Integer
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 722
-                                  end: 751
+                              location: ~
                               dependencies:
                                 - - reset_limit_1
                                   - 0
                                 - - reset_limit_2
                                   - 0
                         typing: Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 711
-                            end: 751
+                        location: ~
                         dependencies:
                           - - counter
                             - 0
@@ -1402,11 +990,7 @@ nodes:
                           - - reset_limit_2
                             - 0
                 typing: Boolean
-                location:
-                  file_id: 0
-                  range:
-                    start: 605
-                    end: 758
+                location: ~
                 dependencies:
                   - - memuser_reset_request
                     - 0
@@ -1418,11 +1002,7 @@ nodes:
                     - 0
                   - - button_state
                     - 0
-            location:
-              file_id: 0
-              range:
-                start: 574
-                end: 759
+            location: ~
         memory:
           buffers:
             memres:
@@ -1439,11 +1019,7 @@ nodes:
                           - - Enumeration: Button
                             - Enumeration: Button
                           - Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 878
-                          end: 880
+                      location: ~
                   inputs:
                     - SignalCall:
                         signal:
@@ -1451,11 +1027,7 @@ nodes:
                           scope: Input
                         typing:
                           Enumeration: Button
-                        location:
-                          file_id: 0
-                          range:
-                            start: 865
-                            end: 877
+                        location: ~
                         dependencies:
                           - - button_state
                             - 0
@@ -1466,18 +1038,10 @@ nodes:
                             - Released
                         typing:
                           Enumeration: Button
-                        location:
-                          file_id: 0
-                          range:
-                            start: 881
-                            end: 896
+                        location: ~
                         dependencies: []
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 865
-                      end: 896
+                  location: ~
                   dependencies:
                     - - button_state
                       - 0
@@ -1491,11 +1055,7 @@ nodes:
                     id: user_reset_request
                     scope: Output
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 665
-                      end: 683
+                  location: ~
                   dependencies:
                     - - user_reset_request
                       - 0
@@ -1503,11 +1063,7 @@ nodes:
             counterocounter:
               node_id: counter
               signal_id: o
-        location:
-          file_id: 0
-          range:
-            start: 188
-            end: 900
+        location: ~
         graph:
           vertices:
             button_state:
@@ -1588,11 +1144,7 @@ nodes:
                         - - Boolean
                           - Boolean
                         - Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 852
-                        end: 854
+                    location: ~
                 inputs:
                   - MapApplication:
                       function_expression:
@@ -1602,11 +1154,7 @@ nodes:
                             Abstract:
                               - - Boolean
                               - Boolean
-                          location:
-                            file_id: 0
-                            range:
-                              start: 819
-                              end: 851
+                          location: ~
                       inputs:
                         - MapApplication:
                             function_expression:
@@ -1617,11 +1165,7 @@ nodes:
                                     - - Enumeration: Button
                                       - Enumeration: Button
                                     - Boolean
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 833
-                                    end: 835
+                                location: ~
                             inputs:
                               - SignalCall:
                                   signal:
@@ -1629,11 +1173,7 @@ nodes:
                                     scope: Input
                                   typing:
                                     Enumeration: Button
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 820
-                                      end: 832
+                                  location: ~
                                   dependencies:
                                     - - button_state
                                       - 0
@@ -1644,27 +1184,15 @@ nodes:
                                       - Pressed
                                   typing:
                                     Enumeration: Button
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 836
-                                      end: 850
+                                  location: ~
                                   dependencies: []
                             typing: Boolean
-                            location:
-                              file_id: 0
-                              range:
-                                start: 820
-                                end: 850
+                            location: ~
                             dependencies:
                               - - button_state
                                 - 0
                       typing: Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 819
-                          end: 851
+                      location: ~
                       dependencies:
                         - - button_state
                           - 0
@@ -1676,50 +1204,30 @@ nodes:
                             Abstract:
                               - - Boolean
                               - Boolean
-                          location:
-                            file_id: 0
-                            range:
-                              start: 855
-                              end: 897
+                          location: ~
                       inputs:
                         - SignalCall:
                             signal:
                               id: memres
                               scope: Memory
                             typing: Boolean
-                            location:
-                              file_id: 0
-                              range:
-                                start: 856
-                                end: 896
+                            location: ~
                             dependencies:
                               - - memres
                                 - 0
                       typing: Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 855
-                          end: 897
+                      location: ~
                       dependencies:
                         - - memres
                           - 0
                 typing: Boolean
-                location:
-                  file_id: 0
-                  range:
-                    start: 819
-                    end: 897
+                location: ~
                 dependencies:
                   - - button_state
                     - 0
                   - - memres
                     - 0
-            location:
-              file_id: 0
-              range:
-                start: 807
-                end: 898
+            location: ~
           - scope: Local
             id: counter
             signal_type: Integer
@@ -1735,11 +1243,7 @@ nodes:
                           id: res
                           scope: Local
                         typing: Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 787
-                            end: 790
+                        location: ~
                         dependencies:
                           - - res
                             - 0
@@ -1749,30 +1253,18 @@ nodes:
                           id: period
                           scope: Input
                         typing: Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 792
-                            end: 798
+                        location: ~
                         dependencies:
                           - - period
                             - 0
                 typing: Integer
-                location:
-                  file_id: 0
-                  range:
-                    start: 779
-                    end: 801
+                location: ~
                 dependencies:
                   - - res
                     - 0
                   - - period
                     - 0
-            location:
-              file_id: 0
-              range:
-                start: 764
-                end: 802
+            location: ~
           - scope: Output
             id: user_reset_request_state
             signal_type:
@@ -1786,11 +1278,7 @@ nodes:
                       scope: Input
                     typing:
                       Enumeration: Button
-                    location:
-                      file_id: 0
-                      range:
-                        start: 338
-                        end: 350
+                    location: ~
                     dependencies:
                       - - button_state
                         - 0
@@ -1800,11 +1288,7 @@ nodes:
                           Enumeration:
                             - Button
                             - Released
-                        location:
-                          file_id: 0
-                          range:
-                            start: 362
-                            end: 377
+                        location: ~
                     - ~
                     - []
                     - Constant:
@@ -1814,22 +1298,14 @@ nodes:
                             - Confirmed
                         typing:
                           Enumeration: ResetState
-                        location:
-                          file_id: 0
-                          range:
-                            start: 381
-                            end: 401
+                        location: ~
                         dependencies: []
                   - - Constant:
                         constant:
                           Enumeration:
                             - Button
                             - Pressed
-                        location:
-                          file_id: 0
-                          range:
-                            start: 411
-                            end: 425
+                        location: ~
                     - ~
                     - []
                     - MapApplication:
@@ -1842,11 +1318,7 @@ nodes:
                                   - Enumeration: ResetState
                                   - Enumeration: ResetState
                                 - Enumeration: ResetState
-                            location:
-                              file_id: 0
-                              range:
-                                start: 429
-                                end: 561
+                            location: ~
                         inputs:
                           - MapApplication:
                               function_expression:
@@ -1857,22 +1329,14 @@ nodes:
                                       - - Integer
                                         - Integer
                                       - Boolean
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 440
-                                      end: 442
+                                  location: ~
                               inputs:
                                 - SignalCall:
                                     signal:
                                       id: counter
                                       scope: Local
                                     typing: Integer
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 432
-                                        end: 439
+                                    location: ~
                                     dependencies:
                                       - - counter
                                         - 0
@@ -1881,20 +1345,12 @@ nodes:
                                       id: reset_limit_1
                                       scope: Input
                                     typing: Integer
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 443
-                                        end: 456
+                                    location: ~
                                     dependencies:
                                       - - reset_limit_1
                                         - 0
                               typing: Boolean
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 432
-                                  end: 456
+                              location: ~
                               dependencies:
                                 - - counter
                                   - 0
@@ -1907,11 +1363,7 @@ nodes:
                                   - InProgress
                               typing:
                                 Enumeration: ResetState
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 488
-                                  end: 509
+                              location: ~
                               dependencies: []
                           - Constant:
                               constant:
@@ -1920,19 +1372,11 @@ nodes:
                                   - Confirmed
                               typing:
                                 Enumeration: ResetState
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 541
-                                  end: 561
+                              location: ~
                               dependencies: []
                         typing:
                           Enumeration: ResetState
-                        location:
-                          file_id: 0
-                          range:
-                            start: 429
-                            end: 561
+                        location: ~
                         dependencies:
                           - - counter
                             - 0
@@ -1940,11 +1384,7 @@ nodes:
                             - 0
                 typing:
                   Enumeration: ResetState
-                location:
-                  file_id: 0
-                  range:
-                    start: 331
-                    end: 568
+                location: ~
                 dependencies:
                   - - counter
                     - 0
@@ -1952,11 +1392,7 @@ nodes:
                     - 0
                   - - button_state
                     - 0
-            location:
-              file_id: 0
-              range:
-                start: 287
-                end: 569
+            location: ~
         memory:
           buffers:
             memres:
@@ -1973,11 +1409,7 @@ nodes:
                           - - Enumeration: Button
                             - Enumeration: Button
                           - Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 878
-                          end: 880
+                      location: ~
                   inputs:
                     - SignalCall:
                         signal:
@@ -1985,11 +1417,7 @@ nodes:
                           scope: Input
                         typing:
                           Enumeration: Button
-                        location:
-                          file_id: 0
-                          range:
-                            start: 865
-                            end: 877
+                        location: ~
                         dependencies:
                           - - button_state
                             - 0
@@ -2000,18 +1428,10 @@ nodes:
                             - Released
                         typing:
                           Enumeration: Button
-                        location:
-                          file_id: 0
-                          range:
-                            start: 881
-                            end: 896
+                        location: ~
                         dependencies: []
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 865
-                      end: 896
+                  location: ~
                   dependencies:
                     - - button_state
                       - 0
@@ -2019,11 +1439,7 @@ nodes:
             counterocounter:
               node_id: counter
               signal_id: o
-        location:
-          file_id: 0
-          range:
-            start: 188
-            end: 900
+        location: ~
         graph:
           vertices:
             button_state:
@@ -2068,11 +1484,7 @@ nodes:
                   weight: 0
                 - id: button_state
                   weight: 0
-    location:
-      file_id: 0
-      range:
-        start: 188
-        end: 900
+    location: ~
     graph:
       vertices:
         button_state:
@@ -2134,9 +1546,5 @@ nodes:
             - id: button_state
               weight: 0
 component: ~
-location:
-  file_id: 0
-  range:
-    start: 0
-    end: 900
+location: ~
 

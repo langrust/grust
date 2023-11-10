@@ -12,11 +12,7 @@ typedefs:
           - Float
         - - k_d
           - Float
-      location:
-        file_id: 0
-        range:
-          start: 0
-          end: 66
+      location: ~
 functions:
   - id: min
     inputs:
@@ -37,39 +33,19 @@ functions:
                     - - Float
                       - Float
                     - Boolean
-                location:
-                  file_id: 0
-                  range:
-                    start: 304
-                    end: 305
+                location: ~
             inputs:
               - Call:
                   id: a
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 302
-                      end: 303
+                  location: ~
               - Call:
                   id: b
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 306
-                      end: 307
+                  location: ~
             typing: Boolean
-            location:
-              file_id: 0
-              range:
-                start: 302
-                end: 307
-        location:
-          file_id: 0
-          range:
-            start: 285
-            end: 308
+            location: ~
+        location: ~
       - id: result
         element_type: Float
         expression:
@@ -83,62 +59,30 @@ functions:
                       - Float
                       - Float
                     - Float
-                location:
-                  file_id: 0
-                  range:
-                    start: 333
-                    end: 354
+                location: ~
             inputs:
               - Call:
                   id: test
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 336
-                      end: 340
+                  location: ~
               - Call:
                   id: b
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 346
-                      end: 347
+                  location: ~
               - Call:
                   id: a
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 353
-                      end: 354
+                  location: ~
             typing: Float
-            location:
-              file_id: 0
-              range:
-                start: 333
-                end: 354
-        location:
-          file_id: 0
-          range:
-            start: 313
-            end: 355
+            location: ~
+        location: ~
     returned:
       - Float
       - Call:
           id: result
           typing: Float
-          location:
-            file_id: 0
-            range:
-              start: 367
-              end: 373
-    location:
-      file_id: 0
-      range:
-        start: 237
-        end: 376
+          location: ~
+    location: ~
 nodes:
   - id: integrate
     is_component: false
@@ -160,22 +104,10 @@ nodes:
                 SignalCall:
                   id: i
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 134
-                      end: 135
+                  location: ~
               typing: Float
-              location:
-                file_id: 0
-                range:
-                  start: 126
-                  end: 135
-          location:
-            file_id: 0
-            range:
-              start: 110
-              end: 136
+              location: ~
+          location: ~
       - - i
         - scope: Output
           id: i
@@ -190,11 +122,7 @@ nodes:
                       - - Float
                         - Float
                       - Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 193
-                      end: 196
+                  location: ~
               inputs:
                 - MapApplication:
                     function_expression:
@@ -205,20 +133,12 @@ nodes:
                             - - Float
                               - Float
                             - Float
-                        location:
-                          file_id: 0
-                          range:
-                            start: 164
-                            end: 165
+                        location: ~
                     inputs:
                       - SignalCall:
                           id: prev_i
                           typing: Float
-                          location:
-                            file_id: 0
-                            range:
-                              start: 157
-                              end: 163
+                          location: ~
                       - MapApplication:
                           function_expression:
                             Call:
@@ -228,59 +148,27 @@ nodes:
                                   - - Float
                                     - Float
                                   - Float
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 168
-                                  end: 169
+                              location: ~
                           inputs:
                             - SignalCall:
                                 id: x
                                 typing: Float
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 166
-                                    end: 167
+                                location: ~
                             - SignalCall:
                                 id: dt
                                 typing: Float
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 170
-                                    end: 172
+                                location: ~
                           typing: Float
-                          location:
-                            file_id: 0
-                            range:
-                              start: 166
-                              end: 172
+                          location: ~
                     typing: Float
-                    location:
-                      file_id: 0
-                      range:
-                        start: 157
-                        end: 172
+                    location: ~
                 - SignalCall:
                     id: MAX_INTEGRALE
                     typing: Float
-                    location:
-                      file_id: 0
-                      range:
-                        start: 174
-                        end: 187
+                    location: ~
               typing: Float
-              location:
-                file_id: 0
-                range:
-                  start: 156
-                  end: 197
-          location:
-            file_id: 0
-            range:
-              start: 141
-              end: 198
+              location: ~
+          location: ~
       - - MAX_INTEGRALE
         - scope: Local
           id: MAX_INTEGRALE
@@ -290,21 +178,9 @@ nodes:
               constant:
                 Float: 1000
               typing: Float
-              location:
-                file_id: 0
-                range:
-                  start: 226
-                  end: 232
-          location:
-            file_id: 0
-            range:
-              start: 203
-              end: 233
-    location:
-      file_id: 0
-      range:
-        start: 68
-        end: 235
+              location: ~
+          location: ~
+    location: ~
   - id: derive
     is_component: false
     inputs:
@@ -327,11 +203,7 @@ nodes:
                       - - Float
                         - Float
                       - Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 444
-                      end: 445
+                  location: ~
               inputs:
                 - MapApplication:
                     function_expression:
@@ -341,11 +213,7 @@ nodes:
                           Abstract:
                             - - Float
                             - Float
-                        location:
-                          file_id: 0
-                          range:
-                            start: 432
-                            end: 444
+                        location: ~
                     inputs:
                       - MapApplication:
                           function_expression:
@@ -356,59 +224,27 @@ nodes:
                                   - - Float
                                     - Float
                                   - Float
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 435
-                                  end: 436
+                              location: ~
                           inputs:
                             - SignalCall:
                                 id: x
                                 typing: Float
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 433
-                                    end: 434
+                                location: ~
                             - SignalCall:
                                 id: prev_x
                                 typing: Float
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 437
-                                    end: 443
+                                location: ~
                           typing: Float
-                          location:
-                            file_id: 0
-                            range:
-                              start: 433
-                              end: 443
+                          location: ~
                     typing: Float
-                    location:
-                      file_id: 0
-                      range:
-                        start: 432
-                        end: 444
+                    location: ~
                 - SignalCall:
                     id: dt
                     typing: Float
-                    location:
-                      file_id: 0
-                      range:
-                        start: 445
-                        end: 447
+                    location: ~
               typing: Float
-              location:
-                file_id: 0
-                range:
-                  start: 432
-                  end: 447
-          location:
-            file_id: 0
-            range:
-              start: 417
-              end: 448
+              location: ~
+          location: ~
       - - prev_x
         - scope: Local
           id: prev_x
@@ -421,27 +257,11 @@ nodes:
                 SignalCall:
                   id: x
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 477
-                      end: 478
+                  location: ~
               typing: Float
-              location:
-                file_id: 0
-                range:
-                  start: 469
-                  end: 478
-          location:
-            file_id: 0
-            range:
-              start: 453
-              end: 479
-    location:
-      file_id: 0
-      range:
-        start: 378
-        end: 481
+              location: ~
+          location: ~
+    location: ~
 component:
   id: pid
   is_component: true
@@ -467,43 +287,23 @@ component:
                     constant:
                       Float: 0.2
                     typing: Float
-                    location:
-                      file_id: 0
-                      range:
-                        start: 575
-                        end: 578
+                    location: ~
               - - k_i
                 - Constant:
                     constant:
                       Float: 1.5
                     typing: Float
-                    location:
-                      file_id: 0
-                      range:
-                        start: 593
-                        end: 596
+                    location: ~
               - - k_d
                 - Constant:
                     constant:
                       Float: 6
                     typing: Float
-                    location:
-                      file_id: 0
-                      range:
-                        start: 611
-                        end: 614
+                    location: ~
             typing:
               Structure: GainPID
-            location:
-              file_id: 0
-              range:
-                start: 552
-                end: 621
-        location:
-          file_id: 0
-          range:
-            start: 536
-            end: 622
+            location: ~
+        location: ~
     - - u
       - scope: Output
         id: u
@@ -515,11 +315,7 @@ component:
                 id: gain
                 typing:
                   Structure: GainPID
-                location:
-                  file_id: 0
-                  range:
-                    start: 649
-                    end: 653
+                location: ~
             arms:
               - - Structure:
                     name: GainPID
@@ -527,32 +323,16 @@ component:
                       - - k_p
                         - Identifier:
                             name: k_p
-                            location:
-                              file_id: 0
-                              range:
-                                start: 680
-                                end: 683
+                            location: ~
                       - - k_i
                         - Identifier:
                             name: k_i
-                            location:
-                              file_id: 0
-                              range:
-                                start: 690
-                                end: 693
+                            location: ~
                       - - k_d
                         - Identifier:
                             name: k_d
-                            location:
-                              file_id: 0
-                              range:
-                                start: 700
-                                end: 703
-                    location:
-                      file_id: 0
-                      range:
-                        start: 665
-                        end: 705
+                            location: ~
+                    location: ~
                 - ~
                 - MapApplication:
                     function_expression:
@@ -563,11 +343,7 @@ component:
                             - - Float
                               - Float
                             - Float
-                        location:
-                          file_id: 0
-                          range:
-                            start: 729
-                            end: 730
+                        location: ~
                     inputs:
                       - MapApplication:
                           function_expression:
@@ -578,11 +354,7 @@ component:
                                   - - Float
                                     - Float
                                   - Float
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 717
-                                  end: 718
+                              location: ~
                           inputs:
                             - MapApplication:
                                 function_expression:
@@ -593,34 +365,18 @@ component:
                                         - - Float
                                           - Float
                                         - Float
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 713
-                                        end: 714
+                                    location: ~
                                 inputs:
                                   - SignalCall:
                                       id: k_p
                                       typing: Float
-                                      location:
-                                        file_id: 0
-                                        range:
-                                          start: 709
-                                          end: 712
+                                      location: ~
                                   - SignalCall:
                                       id: e
                                       typing: Float
-                                      location:
-                                        file_id: 0
-                                        range:
-                                          start: 715
-                                          end: 716
+                                      location: ~
                                 typing: Float
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 709
-                                    end: 716
+                                location: ~
                             - MapApplication:
                                 function_expression:
                                   Call:
@@ -630,40 +386,20 @@ component:
                                         - - Float
                                           - Float
                                         - Float
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 723
-                                        end: 724
+                                    location: ~
                                 inputs:
                                   - SignalCall:
                                       id: k_i
                                       typing: Float
-                                      location:
-                                        file_id: 0
-                                        range:
-                                          start: 719
-                                          end: 722
+                                      location: ~
                                   - SignalCall:
                                       id: e_i
                                       typing: Float
-                                      location:
-                                        file_id: 0
-                                        range:
-                                          start: 725
-                                          end: 728
+                                      location: ~
                                 typing: Float
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 719
-                                    end: 728
+                                location: ~
                           typing: Float
-                          location:
-                            file_id: 0
-                            range:
-                              start: 709
-                              end: 728
+                          location: ~
                       - MapApplication:
                           function_expression:
                             Call:
@@ -673,51 +409,23 @@ component:
                                   - - Float
                                     - Float
                                   - Float
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 735
-                                  end: 736
+                              location: ~
                           inputs:
                             - SignalCall:
                                 id: k_d
                                 typing: Float
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 731
-                                    end: 734
+                                location: ~
                             - SignalCall:
                                 id: e_d
                                 typing: Float
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 737
-                                    end: 740
+                                location: ~
                           typing: Float
-                          location:
-                            file_id: 0
-                            range:
-                              start: 731
-                              end: 740
+                          location: ~
                     typing: Float
-                    location:
-                      file_id: 0
-                      range:
-                        start: 709
-                        end: 740
+                    location: ~
             typing: Float
-            location:
-              file_id: 0
-              range:
-                start: 642
-                end: 747
-        location:
-          file_id: 0
-          range:
-            start: 627
-            end: 748
+            location: ~
+        location: ~
     - - e
       - scope: Local
         id: e
@@ -732,39 +440,19 @@ component:
                     - - Float
                       - Float
                     - Float
-                location:
-                  file_id: 0
-                  range:
-                    start: 768
-                    end: 769
+                location: ~
             inputs:
               - SignalCall:
                   id: v_c
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 764
-                      end: 767
+                  location: ~
               - SignalCall:
                   id: v
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 770
-                      end: 771
+                  location: ~
             typing: Float
-            location:
-              file_id: 0
-              range:
-                start: 764
-                end: 771
-        location:
-          file_id: 0
-          range:
-            start: 753
-            end: 772
+            location: ~
+        location: ~
     - - e_i
       - scope: Local
         id: e_i
@@ -776,31 +464,15 @@ component:
               - SignalCall:
                   id: e
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 800
-                      end: 801
+                  location: ~
               - SignalCall:
                   id: dt
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 803
-                      end: 805
+                  location: ~
             signal: i
             typing: Float
-            location:
-              file_id: 0
-              range:
-                start: 790
-                end: 808
-        location:
-          file_id: 0
-          range:
-            start: 777
-            end: 809
+            location: ~
+        location: ~
     - - e_d
       - scope: Local
         id: e_d
@@ -812,39 +484,15 @@ component:
               - SignalCall:
                   id: e
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 834
-                      end: 835
+                  location: ~
               - SignalCall:
                   id: dt
                   typing: Float
-                  location:
-                    file_id: 0
-                    range:
-                      start: 837
-                      end: 839
+                  location: ~
             signal: d
             typing: Float
-            location:
-              file_id: 0
-              range:
-                start: 827
-                end: 842
-        location:
-          file_id: 0
-          range:
-            start: 814
-            end: 843
-  location:
-    file_id: 0
-    range:
-      start: 483
-      end: 845
-location:
-  file_id: 0
-  range:
-    start: 0
-    end: 845
+            location: ~
+        location: ~
+  location: ~
+location: ~
 
