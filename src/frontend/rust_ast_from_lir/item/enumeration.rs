@@ -2,7 +2,7 @@ use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
 use crate::lir::item::enumeration::Enumeration;
 
 /// Transform LIR enumeration into RustAST enumeration.
-pub fn rust_ast_from_mir(enumeration: Enumeration) -> RustASTEnumeration {
+pub fn rust_ast_from_lir(enumeration: Enumeration) -> RustASTEnumeration {
     RustASTEnumeration {
         public_visibility: true,
         name: enumeration.name,
@@ -11,8 +11,8 @@ pub fn rust_ast_from_mir(enumeration: Enumeration) -> RustASTEnumeration {
 }
 
 #[cfg(test)]
-mod rust_ast_from_mir {
-    use crate::frontend::rust_ast_from_lir::item::enumeration::rust_ast_from_mir;
+mod rust_ast_from_lir {
+    use crate::frontend::rust_ast_from_lir::item::enumeration::rust_ast_from_lir;
     use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
     use crate::lir::item::enumeration::Enumeration;
 
@@ -35,6 +35,6 @@ mod rust_ast_from_mir {
                 String::from("Green"),
             ],
         };
-        assert_eq!(rust_ast_from_mir(enumeration), control)
+        assert_eq!(rust_ast_from_lir(enumeration), control)
     }
 }

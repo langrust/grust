@@ -2,7 +2,7 @@ use crate::rust_ast::item::import::{Import as RustASTImport, PathTree};
 use crate::lir::item::node_file::import::Import;
 
 /// Transform LIR import into RustAST import.
-pub fn rust_ast_from_mir(import: Import) -> RustASTImport {
+pub fn rust_ast_from_lir(import: Import) -> RustASTImport {
     match import {
         Import::NodeFile(module_name) => RustASTImport::Use {
             public_visibility: false,
@@ -43,8 +43,8 @@ pub fn rust_ast_from_mir(import: Import) -> RustASTImport {
 }
 
 #[cfg(test)]
-mod rust_ast_from_mir {
-    use crate::frontend::rust_ast_from_lir::item::node_file::import::rust_ast_from_mir;
+mod rust_ast_from_lir {
+    use crate::frontend::rust_ast_from_lir::item::node_file::import::rust_ast_from_lir;
     use crate::rust_ast::item::import::{Import as RustASTImport, PathTree};
     use crate::lir::item::node_file::import::Import;
 
@@ -61,7 +61,7 @@ mod rust_ast_from_mir {
                 }),
             },
         };
-        assert_eq!(rust_ast_from_mir(import), control)
+        assert_eq!(rust_ast_from_lir(import), control)
     }
 
     #[test]
@@ -74,6 +74,6 @@ mod rust_ast_from_mir {
                 tree: Box::new(PathTree::Star),
             },
         };
-        assert_eq!(rust_ast_from_mir(import), control)
+        assert_eq!(rust_ast_from_lir(import), control)
     }
 }

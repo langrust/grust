@@ -2,12 +2,12 @@ use codespan_reporting::files::{Files, SimpleFiles};
 
 use grustine::ast::file::File;
 use grustine::frontend::hir_from_ast::file::hir_from_ast;
-use grustine::frontend::rust_ast_from_lir::project::rust_ast_from_mir;
+use grustine::frontend::rust_ast_from_lir::project::rust_ast_from_lir;
 use grustine::frontend::lir_from_hir::file::lir_from_hir;
 use grustine::parser::langrust;
 
 #[test]
-fn rust_ast_from_mir_transformation_for_counter() {
+fn rust_ast_from_lir_transformation_for_counter() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -26,12 +26,12 @@ fn rust_ast_from_mir_transformation_for_counter() {
     file.normalize(&mut errors).unwrap();
     let project = lir_from_hir(file);
 
-    let project = rust_ast_from_mir(project);
+    let project = rust_ast_from_lir(project);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn rust_ast_from_mir_transformation_for_blinking() {
+fn rust_ast_from_lir_transformation_for_blinking() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -50,12 +50,12 @@ fn rust_ast_from_mir_transformation_for_blinking() {
     file.normalize(&mut errors).unwrap();
     let project = lir_from_hir(file);
 
-    let project = rust_ast_from_mir(project);
+    let project = rust_ast_from_lir(project);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn rust_ast_from_mir_transformation_for_button_management() {
+fn rust_ast_from_lir_transformation_for_button_management() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -74,12 +74,12 @@ fn rust_ast_from_mir_transformation_for_button_management() {
     file.normalize(&mut errors).unwrap();
     let project = lir_from_hir(file);
 
-    let project = rust_ast_from_mir(project);
+    let project = rust_ast_from_lir(project);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn rust_ast_from_mir_transformation_for_button_management_condition_match() {
+fn rust_ast_from_lir_transformation_for_button_management_condition_match() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -99,12 +99,12 @@ fn rust_ast_from_mir_transformation_for_button_management_condition_match() {
     file.normalize(&mut errors).unwrap();
     let project = lir_from_hir(file);
 
-    let project = rust_ast_from_mir(project);
+    let project = rust_ast_from_lir(project);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn rust_ast_from_mir_transformation_for_button_management_using_function() {
+fn rust_ast_from_lir_transformation_for_button_management_using_function() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -124,12 +124,12 @@ fn rust_ast_from_mir_transformation_for_button_management_using_function() {
     file.normalize(&mut errors).unwrap();
     let project = lir_from_hir(file);
 
-    let project = rust_ast_from_mir(project);
+    let project = rust_ast_from_lir(project);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn rust_ast_from_mir_transformation_for_pid() {
+fn rust_ast_from_lir_transformation_for_pid() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -148,6 +148,6 @@ fn rust_ast_from_mir_transformation_for_pid() {
     file.normalize(&mut errors).unwrap();
     let project = lir_from_hir(file);
 
-    let project = rust_ast_from_mir(project);
+    let project = rust_ast_from_lir(project);
     insta::assert_yaml_snapshot!(project);
 }
