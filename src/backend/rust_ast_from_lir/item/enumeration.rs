@@ -1,5 +1,5 @@
-use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
 use crate::lir::item::enumeration::Enumeration;
+use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
 
 /// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> RustASTEnumeration {
@@ -13,8 +13,8 @@ pub fn rust_ast_from_lir(enumeration: Enumeration) -> RustASTEnumeration {
 #[cfg(test)]
 mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::item::enumeration::rust_ast_from_lir;
-    use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
     use crate::lir::item::enumeration::Enumeration;
+    use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
 
     #[test]
     fn should_create_rust_ast_enumeration_from_lir_enumeration() {

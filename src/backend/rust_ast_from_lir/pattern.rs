@@ -36,9 +36,9 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> RustASTPattern {
 #[cfg(test)]
 mod rust_ast_from_lir {
     use crate::ast::pattern::Pattern;
+    use crate::backend::rust_ast_from_lir::pattern::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::common::location::Location;
-    use crate::backend::rust_ast_from_lir::pattern::rust_ast_from_lir;
     use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
 
     #[test]
@@ -87,7 +87,8 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_a_rust_ast_identifier_pattern_owned_and_immutable_from_a_lir_identifier_pattern() {
+    fn should_create_a_rust_ast_identifier_pattern_owned_and_immutable_from_a_lir_identifier_pattern(
+    ) {
         let pattern = Pattern::Identifier {
             name: String::from("x"),
             location: Location::default(),

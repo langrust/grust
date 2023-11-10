@@ -1,10 +1,10 @@
 use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir as init_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir as step_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
+use crate::lir::item::node_file::state::{State, StateElement};
 use crate::rust_ast::item::implementation::Implementation;
 use crate::rust_ast::item::structure::{Field, Structure};
 use crate::rust_ast::r#type::Type as RustASTType;
-use crate::lir::item::node_file::state::{State, StateElement};
 
 /// RustAST init method construction from LIR init.
 pub mod init;
@@ -43,7 +43,10 @@ pub fn rust_ast_from_lir(state: State) -> (Structure, Implementation) {
     let implementation = Implementation {
         trait_name: None,
         type_name: state.node_name + "State",
-        items: vec![init_rust_ast_from_lir(state.init), step_rust_ast_from_lir(state.step)],
+        items: vec![
+            init_rust_ast_from_lir(state.init),
+            step_rust_ast_from_lir(state.step),
+        ],
     };
 
     (structure, implementation)

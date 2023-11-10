@@ -44,8 +44,8 @@ pub fn rust_ast_from_lir(r#type: Type) -> RustASTType {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::common::r#type::Type;
     use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir;
+    use crate::common::r#type::Type;
     use crate::rust_ast::r#type::Type as RustASTType;
 
     #[test]

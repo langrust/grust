@@ -93,19 +93,19 @@ extern crate strum;
 
 /// LanGRust AST module.
 pub mod ast;
+/// LanGRust backend transformations.
+pub mod backend;
 /// LanGRust common domain or application module.
 pub mod common;
 /// LanGRust error handler module.
 pub mod error;
 /// LanGRust frontend transformations.
 pub mod frontend;
-/// LanGRust backend transformations.
-pub mod backend;
 /// LanGRust HIR module.
 pub mod hir;
-/// LanGRust LIR module.
-pub mod rust_ast;
 /// LanGRust LIR module.
 pub mod lir;
 /// LanGRust parser module.
 pub mod parser;
+/// LanGRust LIR module.
+pub mod rust_ast;

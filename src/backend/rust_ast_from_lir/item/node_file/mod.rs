@@ -1,6 +1,6 @@
+use crate::lir::item::node_file::NodeFile;
 use crate::rust_ast::file::File;
 use crate::rust_ast::item::Item;
-use crate::lir::item::node_file::NodeFile;
 
 use self::import::rust_ast_from_lir as import_rust_ast_from_lir;
 use self::input::rust_ast_from_lir as input_rust_ast_from_lir;

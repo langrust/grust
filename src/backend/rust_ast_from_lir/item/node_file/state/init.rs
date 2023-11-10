@@ -1,10 +1,10 @@
+use crate::lir::item::node_file::state::init::{Init, StateElementInit};
 use crate::rust_ast::block::Block;
 use crate::rust_ast::expression::{Expression, FieldExpression};
 use crate::rust_ast::item::implementation::AssociatedItem;
 use crate::rust_ast::item::signature::Signature;
 use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
-use crate::lir::item::node_file::state::init::{Init, StateElementInit};
 
 /// Transform LIR init into RustAST implementation method.
 pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
@@ -56,15 +56,15 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::common::constant::Constant;
     use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir;
+    use crate::common::constant::Constant;
+    use crate::lir::item::node_file::state::init::{Init, StateElementInit};
     use crate::rust_ast::block::Block;
     use crate::rust_ast::expression::{Expression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;
     use crate::rust_ast::item::signature::Signature;
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::Statement;
-    use crate::lir::item::node_file::state::init::{Init, StateElementInit};
 
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {

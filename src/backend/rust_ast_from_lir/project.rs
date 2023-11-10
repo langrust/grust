@@ -6,8 +6,8 @@ use crate::{
         node_file::rust_ast_from_lir as node_file_rust_ast_from_lir,
         structure::rust_ast_from_lir as structure_rust_ast_from_lir,
     },
-    rust_ast::{file::File, item::Item as RustASTItem, project::Project as RustASTProject},
     lir::{item::Item, project::Project},
+    rust_ast::{file::File, item::Item as RustASTItem, project::Project as RustASTProject},
 };
 
 /// Transform LIR item into RustAST item.

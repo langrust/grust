@@ -1,10 +1,11 @@
 use crate::common::operator::{BinaryOperator, UnaryOperator};
+use crate::lir::expression::Expression;
 use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
 use crate::rust_ast::pattern::Pattern;
-use crate::lir::expression::Expression;
 
 use super::{
-    block::rust_ast_from_lir as block_rust_ast_from_lir, pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
+    block::rust_ast_from_lir as block_rust_ast_from_lir,
+    pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
     r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
 
@@ -171,20 +172,20 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
 #[cfg(test)]
 mod rust_ast_from_lir {
     use crate::ast::pattern::Pattern;
+    use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::common::location::Location;
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir;
+    use crate::lir::block::Block;
+    use crate::lir::expression::Expression;
+    use crate::lir::statement::Statement;
     use crate::rust_ast::block::Block as RustASTBlock;
     use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::pattern::Pattern as RustASTPattern;
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::r#let::Let;
     use crate::rust_ast::statement::Statement as RustASTStatement;
-    use crate::lir::block::Block;
-    use crate::lir::expression::Expression;
-    use crate::lir::statement::Statement;
 
     #[test]
     fn should_create_rust_ast_literal_from_lir_literal() {
@@ -536,14 +537,18 @@ mod rust_ast_from_lir {
                 identifier: String::from("test"),
             }),
             then_branch: RustASTBlock {
-                statements: vec![RustASTStatement::ExpressionLast(RustASTExpression::Literal {
-                    literal: Constant::Integer(1),
-                })],
+                statements: vec![RustASTStatement::ExpressionLast(
+                    RustASTExpression::Literal {
+                        literal: Constant::Integer(1),
+                    },
+                )],
             },
             else_branch: Some(RustASTBlock {
-                statements: vec![RustASTStatement::ExpressionLast(RustASTExpression::Literal {
-                    literal: Constant::Integer(0),
-                })],
+                statements: vec![RustASTStatement::ExpressionLast(
+                    RustASTExpression::Literal {
+                        literal: Constant::Integer(0),
+                    },
+                )],
             }),
         };
         assert_eq!(rust_ast_from_lir(expression), control)

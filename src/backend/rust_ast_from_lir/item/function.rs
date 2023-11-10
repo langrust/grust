@@ -1,8 +1,9 @@
 use crate::backend::rust_ast_from_lir::{
-    block::rust_ast_from_lir as block_rust_ast_from_lir, r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    block::rust_ast_from_lir as block_rust_ast_from_lir,
+    r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
-use crate::rust_ast::item::{function::Function as RustASTFunction, signature::Signature};
 use crate::lir::item::function::Function;
+use crate::rust_ast::item::{function::Function as RustASTFunction, signature::Signature};
 
 /// Transform LIR function into RustAST function.
 pub fn rust_ast_from_lir(function: Function) -> RustASTFunction {
@@ -26,19 +27,19 @@ pub fn rust_ast_from_lir(function: Function) -> RustASTFunction {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
+    use crate::backend::rust_ast_from_lir::item::function::rust_ast_from_lir;
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::backend::rust_ast_from_lir::item::function::rust_ast_from_lir;
+    use crate::lir::block::Block;
+    use crate::lir::expression::Expression;
+    use crate::lir::item::function::Function;
+    use crate::lir::statement::Statement;
     use crate::rust_ast::block::Block as RustASTBlock;
     use crate::rust_ast::expression::Expression as RustASTExpression;
     use crate::rust_ast::item::function::Function as RustASTFunction;
     use crate::rust_ast::item::signature::Signature;
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::Statement as RustASTStatement;
-    use crate::lir::block::Block;
-    use crate::lir::expression::Expression;
-    use crate::lir::item::function::Function;
-    use crate::lir::statement::Statement;
 
     #[test]
     fn should_create_rust_ast_function_from_lir_function() {
@@ -91,15 +92,17 @@ mod rust_ast_from_lir {
                 },
             },
             body: RustASTBlock {
-                statements: vec![RustASTStatement::ExpressionLast(RustASTExpression::Binary {
-                    left: Box::new(RustASTExpression::Identifier {
-                        identifier: String::from("a"),
-                    }),
-                    operator: BinaryOperator::Add,
-                    right: Box::new(RustASTExpression::Identifier {
-                        identifier: String::from("b"),
-                    }),
-                })],
+                statements: vec![RustASTStatement::ExpressionLast(
+                    RustASTExpression::Binary {
+                        left: Box::new(RustASTExpression::Identifier {
+                            identifier: String::from("a"),
+                        }),
+                        operator: BinaryOperator::Add,
+                        right: Box::new(RustASTExpression::Identifier {
+                            identifier: String::from("b"),
+                        }),
+                    },
+                )],
             },
         };
         assert_eq!(rust_ast_from_lir(function), control)
