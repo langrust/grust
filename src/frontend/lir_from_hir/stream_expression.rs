@@ -15,12 +15,12 @@ use crate::{
 };
 
 use super::{
-    equation::mir_from_hir as equation_mir_from_hir,
-    expression::mir_from_hir as expression_mir_from_hir,
+    equation::lir_from_hir as equation_lir_from_hir,
+    expression::lir_from_hir as expression_lir_from_hir,
 };
 
 /// Transform HIR stream expression into LIR expression.
-pub fn mir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
+pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
     match stream_expression {
         StreamExpression::Constant { constant, .. } => LIRExpression::Literal { literal: constant },
         StreamExpression::SignalCall {
@@ -52,9 +52,9 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
         } => match function_expression {
             Expression::Call { id, .. } if OtherOperator::IfThenElse.to_string() == id => {
                 assert!(inputs.len() == 3);
-                let else_branch = mir_from_hir(inputs.pop().unwrap());
-                let then_branch = mir_from_hir(inputs.pop().unwrap());
-                let condition = mir_from_hir(inputs.pop().unwrap());
+                let else_branch = lir_from_hir(inputs.pop().unwrap());
+                let then_branch = lir_from_hir(inputs.pop().unwrap());
+                let condition = lir_from_hir(inputs.pop().unwrap());
                 LIRExpression::IfThenElse {
                     condition: Box::new(condition),
                     then_branch: Block {
@@ -70,9 +70,9 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
                 }
             }
             _ => {
-                let arguments = inputs.into_iter().map(mir_from_hir).collect();
+                let arguments = inputs.into_iter().map(lir_from_hir).collect();
                 LIRExpression::FunctionCall {
-                    function: Box::new(expression_mir_from_hir(function_expression)),
+                    function: Box::new(expression_lir_from_hir(function_expression)),
                     arguments,
                 }
             }
@@ -81,31 +81,31 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             name,
             fields: fields
                 .into_iter()
-                .map(|(id, expression)| (id, mir_from_hir(expression)))
+                .map(|(id, expression)| (id, lir_from_hir(expression)))
                 .collect(),
         },
         StreamExpression::Array { elements, .. } => LIRExpression::Array {
-            elements: elements.into_iter().map(mir_from_hir).collect(),
+            elements: elements.into_iter().map(lir_from_hir).collect(),
         },
         StreamExpression::Match {
             expression, arms, ..
         } => LIRExpression::Match {
-            matched: Box::new(mir_from_hir(*expression)),
+            matched: Box::new(lir_from_hir(*expression)),
             arms: arms
                 .into_iter()
                 .map(|(pattern, guard, body, expression)| {
                     (
                         pattern,
-                        guard.map(mir_from_hir),
+                        guard.map(lir_from_hir),
                         if body.is_empty() {
-                            mir_from_hir(expression)
+                            lir_from_hir(expression)
                         } else {
                             let mut statements = body
                                 .into_iter()
-                                .map(equation_mir_from_hir)
+                                .map(equation_lir_from_hir)
                                 .collect::<Vec<_>>();
                             statements.push(Statement::ExpressionLast {
-                                expression: mir_from_hir(expression),
+                                expression: lir_from_hir(expression),
                             });
                             LIRExpression::Block {
                                 block: Block { statements },
@@ -123,7 +123,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             location,
             ..
         } => LIRExpression::Match {
-            matched: Box::new(mir_from_hir(*option)),
+            matched: Box::new(lir_from_hir(*option)),
             arms: vec![
                 (
                     Pattern::Some {
@@ -134,9 +134,9 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
                         location: location.clone(),
                     },
                     None,
-                    mir_from_hir(*present),
+                    lir_from_hir(*present),
                 ),
-                (Pattern::None { location }, None, mir_from_hir(*default)),
+                (Pattern::None { location }, None, lir_from_hir(*default)),
             ],
         },
         StreamExpression::UnitaryNodeApplication {
@@ -150,7 +150,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             input_name: node + &signal + "Input",
             input_fields: inputs
                 .into_iter()
-                .map(|(id, expression)| (id, mir_from_hir(expression)))
+                .map(|(id, expression)| (id, lir_from_hir(expression)))
                 .collect(),
         },
         _ => unreachable!(),
@@ -292,14 +292,14 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod mir_from_hir {
+mod lir_from_hir {
     use crate::{
         ast::{expression::Expression as ASTExpression, pattern::Pattern},
         common::{
             constant::Constant, location::Location, operator::OtherOperator, r#type::Type,
             scope::Scope,
         },
-        frontend::lir_from_hir::stream_expression::mir_from_hir,
+        frontend::lir_from_hir::stream_expression::lir_from_hir,
         hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
         lir::{block::Block, expression::Expression, statement::Statement},
     };
@@ -315,7 +315,7 @@ mod mir_from_hir {
         let control = Expression::Literal {
             literal: Constant::Integer(1),
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -332,7 +332,7 @@ mod mir_from_hir {
         let control = Expression::Identifier {
             identifier: format!("x"),
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -349,7 +349,7 @@ mod mir_from_hir {
         let control = Expression::Identifier {
             identifier: format!("o"),
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -366,7 +366,7 @@ mod mir_from_hir {
         let control = Expression::InputAccess {
             identifier: format!("i"),
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -383,7 +383,7 @@ mod mir_from_hir {
         let control = Expression::MemoryAccess {
             identifier: format!("mem_i"),
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -431,7 +431,7 @@ mod mir_from_hir {
                 },
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -494,7 +494,7 @@ mod mir_from_hir {
                 }],
             },
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -545,7 +545,7 @@ mod mir_from_hir {
                 ),
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -569,7 +569,7 @@ mod mir_from_hir {
                 identifier: format!("x"),
             }],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -678,7 +678,7 @@ mod mir_from_hir {
                 ),
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -775,7 +775,7 @@ mod mir_from_hir {
                 ),
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -829,7 +829,7 @@ mod mir_from_hir {
                 ),
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 }
 

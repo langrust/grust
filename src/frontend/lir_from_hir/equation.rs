@@ -3,30 +3,30 @@ use crate::{
     lir::statement::Statement,
 };
 
-use super::stream_expression::mir_from_hir as stream_expression_mir_from_hir;
+use super::stream_expression::lir_from_hir as stream_expression_lir_from_hir;
 
 /// Transform HIR equation into LIR statement.
-pub fn mir_from_hir(equation: Equation) -> Statement {
+pub fn lir_from_hir(equation: Equation) -> Statement {
     let Equation { id, expression, .. } = equation;
     match &expression {
         StreamExpression::UnitaryNodeApplication {
             id: node_state_id, ..
         } => Statement::LetTuple {
             identifiers: vec![node_state_id.clone().unwrap(), id],
-            expression: stream_expression_mir_from_hir(expression),
+            expression: stream_expression_lir_from_hir(expression),
         },
         _ => Statement::Let {
             identifier: id,
-            expression: stream_expression_mir_from_hir(expression),
+            expression: stream_expression_lir_from_hir(expression),
         },
     }
 }
 
 #[cfg(test)]
-mod mir_from_hir {
+mod lir_from_hir {
     use crate::{
         common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
-        frontend::lir_from_hir::equation::mir_from_hir,
+        frontend::lir_from_hir::equation::lir_from_hir,
         hir::{
             dependencies::Dependencies, equation::Equation, signal::Signal,
             stream_expression::StreamExpression,
@@ -54,7 +54,7 @@ mod mir_from_hir {
                 literal: Constant::Integer(1),
             },
         };
-        assert_eq!(mir_from_hir(equation), control)
+        assert_eq!(lir_from_hir(equation), control)
     }
 
     #[test]
@@ -117,6 +117,6 @@ mod mir_from_hir {
                 ],
             },
         };
-        assert_eq!(mir_from_hir(equation), control)
+        assert_eq!(lir_from_hir(equation), control)
     }
 }

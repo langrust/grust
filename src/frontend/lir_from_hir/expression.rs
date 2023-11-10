@@ -14,7 +14,7 @@ use crate::{
 };
 
 /// Transform HIR expression into LIR expression.
-pub fn mir_from_hir(expression: Expression) -> LIRExpression {
+pub fn lir_from_hir(expression: Expression) -> LIRExpression {
     match expression {
         Expression::Constant { constant, .. } => LIRExpression::Literal { literal: constant },
         Expression::Call { id, .. } => LIRExpression::Identifier { identifier: id },
@@ -25,9 +25,9 @@ pub fn mir_from_hir(expression: Expression) -> LIRExpression {
         } => match *function_expression {
             Expression::Call { id, .. } if OtherOperator::IfThenElse.to_string() == id => {
                 assert!(inputs.len() == 3);
-                let else_branch = mir_from_hir(inputs.pop().unwrap());
-                let then_branch = mir_from_hir(inputs.pop().unwrap());
-                let condition = mir_from_hir(inputs.pop().unwrap());
+                let else_branch = lir_from_hir(inputs.pop().unwrap());
+                let then_branch = lir_from_hir(inputs.pop().unwrap());
+                let condition = lir_from_hir(inputs.pop().unwrap());
                 LIRExpression::IfThenElse {
                     condition: Box::new(condition),
                     then_branch: Block {
@@ -43,9 +43,9 @@ pub fn mir_from_hir(expression: Expression) -> LIRExpression {
                 }
             }
             _ => {
-                let arguments = inputs.into_iter().map(mir_from_hir).collect();
+                let arguments = inputs.into_iter().map(lir_from_hir).collect();
                 LIRExpression::FunctionCall {
-                    function: Box::new(mir_from_hir(*function_expression)),
+                    function: Box::new(lir_from_hir(*function_expression)),
                     arguments,
                 }
             }
@@ -58,26 +58,26 @@ pub fn mir_from_hir(expression: Expression) -> LIRExpression {
         } => LIRExpression::Lambda {
             inputs,
             output: *output_type,
-            body: Box::new(mir_from_hir(*expression)),
+            body: Box::new(lir_from_hir(*expression)),
         },
         Expression::Structure { name, fields, .. } => LIRExpression::Structure {
             name,
             fields: fields
                 .into_iter()
-                .map(|(id, expression)| (id, mir_from_hir(expression)))
+                .map(|(id, expression)| (id, lir_from_hir(expression)))
                 .collect(),
         },
         Expression::Array { elements, .. } => LIRExpression::Array {
-            elements: elements.into_iter().map(mir_from_hir).collect(),
+            elements: elements.into_iter().map(lir_from_hir).collect(),
         },
         Expression::Match {
             expression, arms, ..
         } => LIRExpression::Match {
-            matched: Box::new(mir_from_hir(*expression)),
+            matched: Box::new(lir_from_hir(*expression)),
             arms: arms
                 .into_iter()
                 .map(|(pattern, guard, expression)| {
-                    (pattern, guard.map(mir_from_hir), mir_from_hir(expression))
+                    (pattern, guard.map(lir_from_hir), lir_from_hir(expression))
                 })
                 .collect(),
         },
@@ -89,7 +89,7 @@ pub fn mir_from_hir(expression: Expression) -> LIRExpression {
             location,
             ..
         } => LIRExpression::Match {
-            matched: Box::new(mir_from_hir(*option)),
+            matched: Box::new(lir_from_hir(*option)),
             arms: vec![
                 (
                     Pattern::Some {
@@ -100,9 +100,9 @@ pub fn mir_from_hir(expression: Expression) -> LIRExpression {
                         location: location.clone(),
                     },
                     None,
-                    mir_from_hir(*present),
+                    lir_from_hir(*present),
                 ),
-                (Pattern::None { location }, None, mir_from_hir(*default)),
+                (Pattern::None { location }, None, lir_from_hir(*default)),
             ],
         },
         _ => unreachable!(),
@@ -206,11 +206,11 @@ impl Expression {
 }
 
 #[cfg(test)]
-mod mir_from_hir {
+mod lir_from_hir {
     use crate::{
         ast::{expression::Expression as ASTExpression, pattern::Pattern},
         common::{constant::Constant, location::Location, operator::OtherOperator, r#type::Type},
-        frontend::lir_from_hir::expression::mir_from_hir,
+        frontend::lir_from_hir::expression::lir_from_hir,
         lir::{block::Block, expression::Expression, statement::Statement},
     };
 
@@ -224,7 +224,7 @@ mod mir_from_hir {
         let control = Expression::Literal {
             literal: Constant::Integer(1),
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -237,7 +237,7 @@ mod mir_from_hir {
         let control = Expression::Identifier {
             identifier: format!("x"),
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -279,7 +279,7 @@ mod mir_from_hir {
                 },
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -332,7 +332,7 @@ mod mir_from_hir {
                 }],
             },
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -377,7 +377,7 @@ mod mir_from_hir {
                 ),
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -396,7 +396,7 @@ mod mir_from_hir {
                 identifier: format!("x"),
             }],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -493,7 +493,7 @@ mod mir_from_hir {
                 ),
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -576,7 +576,7 @@ mod mir_from_hir {
                 ),
             ],
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 
     #[test]
@@ -627,7 +627,7 @@ mod mir_from_hir {
                 ],
             }),
         };
-        assert_eq!(mir_from_hir(expression), control)
+        assert_eq!(lir_from_hir(expression), control)
     }
 }
 

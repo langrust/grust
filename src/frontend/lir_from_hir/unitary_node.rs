@@ -13,10 +13,10 @@ use crate::{
     },
 };
 
-use super::equation::mir_from_hir as equation_mir_from_hir;
+use super::equation::lir_from_hir as equation_lir_from_hir;
 
 /// Transform HIR unitary node into LIR node file.
-pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
+pub fn lir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
     let UnitaryNode {
         node_id,
         output_id,
@@ -61,7 +61,7 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
             step: Step {
                 node_name: node_id.clone() + &output_id,
                 output_type,
-                body: equations.into_iter().map(equation_mir_from_hir).collect(),
+                body: equations.into_iter().map(equation_lir_from_hir).collect(),
                 state_elements_step,
                 output_expression,
             },
@@ -74,13 +74,13 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
 }
 
 #[cfg(test)]
-mod mir_from_hir {
+mod lir_from_hir {
     use std::collections::HashMap;
 
     use crate::{
         ast::expression::Expression as ASTExpression,
         common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
-        frontend::lir_from_hir::unitary_node::mir_from_hir,
+        frontend::lir_from_hir::unitary_node::lir_from_hir,
         hir::{
             dependencies::Dependencies,
             equation::Equation,
@@ -319,6 +319,6 @@ mod mir_from_hir {
                 },
             },
         };
-        assert_eq!(mir_from_hir(unitary_node), control)
+        assert_eq!(lir_from_hir(unitary_node), control)
     }
 }

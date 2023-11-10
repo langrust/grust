@@ -4,7 +4,7 @@ use crate::{
 };
 
 /// Transform HIR typedef into LIR item.
-pub fn mir_from_hir(typedef: Typedef) -> Item {
+pub fn lir_from_hir(typedef: Typedef) -> Item {
     match typedef {
         Typedef::Structure { id, fields, .. } => Item::Structure(Structure { name: id, fields }),
         Typedef::Enumeration { id, elements, .. } => {
@@ -24,11 +24,11 @@ pub fn mir_from_hir(typedef: Typedef) -> Item {
 }
 
 #[cfg(test)]
-mod mir_from_hir {
+mod lir_from_hir {
     use crate::{
         ast::typedef::Typedef,
         common::{location::Location, r#type::Type},
-        frontend::lir_from_hir::typedef::mir_from_hir,
+        frontend::lir_from_hir::typedef::lir_from_hir,
         lir::item::{
             array_alias::ArrayAlias, enumeration::Enumeration, structure::Structure, Item,
         },
@@ -45,7 +45,7 @@ mod mir_from_hir {
             name: format!("Point"),
             fields: vec![(format!("x"), Type::Integer), (format!("y"), Type::Integer)],
         });
-        assert_eq!(mir_from_hir(structure), control)
+        assert_eq!(lir_from_hir(structure), control)
     }
 
     #[test]
@@ -59,7 +59,7 @@ mod mir_from_hir {
             name: format!("Color"),
             elements: vec![format!("Red"), format!("Bleu"), format!("Green")],
         });
-        assert_eq!(mir_from_hir(enumeration), control)
+        assert_eq!(lir_from_hir(enumeration), control)
     }
 
     #[test]
@@ -75,6 +75,6 @@ mod mir_from_hir {
             array_type: Type::Array(Box::new(Type::Integer), 5),
             size: 5,
         });
-        assert_eq!(mir_from_hir(array), control)
+        assert_eq!(lir_from_hir(array), control)
     }
 }
