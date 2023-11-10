@@ -87,7 +87,7 @@ mod rust_ast_from_lir {
     use crate::lir::statement::Statement;
 
     #[test]
-    fn should_create_rust_ast_associated_method_from_mir_node_init() {
+    fn should_create_rust_ast_associated_method_from_lir_node_init() {
         let init = Step {
             node_name: format!("Node"),
             output_type: Type::Integer,

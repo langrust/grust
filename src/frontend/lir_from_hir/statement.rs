@@ -21,7 +21,7 @@ mod lir_from_hir {
     };
 
     #[test]
-    fn should_transform_ast_statement_of_constant_into_mir_let_statement() {
+    fn should_transform_ast_statement_of_constant_into_lir_let_statement() {
         let statement = ASTStatement {
             id: format!("y"),
             expression: ASTExpression::Constant {

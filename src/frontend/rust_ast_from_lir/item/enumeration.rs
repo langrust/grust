@@ -17,7 +17,7 @@ mod rust_ast_from_lir {
     use crate::lir::item::enumeration::Enumeration;
 
     #[test]
-    fn should_create_rust_ast_enumeration_from_mir_enumeration() {
+    fn should_create_rust_ast_enumeration_from_lir_enumeration() {
         let enumeration = Enumeration {
             name: String::from("Color"),
             elements: vec![

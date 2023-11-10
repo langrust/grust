@@ -305,7 +305,7 @@ mod lir_from_hir {
     };
 
     #[test]
-    fn should_transform_hir_constant_into_mir_literal() {
+    fn should_transform_hir_constant_into_lir_literal() {
         let expression = StreamExpression::Constant {
             constant: Constant::Integer(1),
             typing: Type::Integer,
@@ -319,7 +319,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_local_signal_call_into_mir_identifier() {
+    fn should_transform_hir_local_signal_call_into_lir_identifier() {
         let expression = StreamExpression::SignalCall {
             signal: Signal {
                 id: format!("x"),
@@ -336,7 +336,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_output_signal_call_into_mir_identifier() {
+    fn should_transform_hir_output_signal_call_into_lir_identifier() {
         let expression = StreamExpression::SignalCall {
             signal: Signal {
                 id: format!("o"),
@@ -353,7 +353,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_input_signal_call_into_mir_input_access() {
+    fn should_transform_hir_input_signal_call_into_lir_input_access() {
         let expression = StreamExpression::SignalCall {
             signal: Signal {
                 id: format!("i"),
@@ -370,7 +370,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_memory_signal_call_into_mir_memory_access() {
+    fn should_transform_hir_memory_signal_call_into_lir_memory_access() {
         let expression = StreamExpression::SignalCall {
             signal: Signal {
                 id: format!("mem_i"),
@@ -387,7 +387,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_map_application_into_mir_function_call() {
+    fn should_transform_hir_map_application_into_lir_function_call() {
         let expression = StreamExpression::MapApplication {
             function_expression: ASTExpression::Call {
                 id: format!(" + "),
@@ -435,7 +435,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_map_application_of_if_then_else_into_mir_if_then_else() {
+    fn should_transform_hir_map_application_of_if_then_else_into_lir_if_then_else() {
         let expression = StreamExpression::MapApplication {
             function_expression: ASTExpression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
@@ -498,7 +498,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_structure_into_mir_structure() {
+    fn should_transform_hir_structure_into_lir_structure() {
         let expression = StreamExpression::Structure {
             name: format!("Point"),
             fields: vec![
@@ -549,7 +549,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_array_into_mir_array() {
+    fn should_transform_hir_array_into_lir_array() {
         let expression = StreamExpression::Array {
             elements: vec![StreamExpression::SignalCall {
                 signal: Signal {
@@ -573,7 +573,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_match_into_mir_match() {
+    fn should_transform_hir_match_into_lir_match() {
         let expression = StreamExpression::Match {
             expression: Box::new(StreamExpression::SignalCall {
                 signal: Signal {
@@ -682,7 +682,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_when_into_mir_match() {
+    fn should_transform_hir_when_into_lir_match() {
         let expression = StreamExpression::When {
             id: format!("x"),
             option: Box::new(StreamExpression::SignalCall {
@@ -779,7 +779,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_unitary_node_application_into_mir_node_call() {
+    fn should_transform_hir_unitary_node_application_into_lir_node_call() {
         let expression = StreamExpression::UnitaryNodeApplication {
             id: Some(format!("my_nodeox")),
             node: format!("my_node"),

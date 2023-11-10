@@ -49,7 +49,7 @@ mod rust_ast_from_lir {
     use crate::rust_ast::r#type::Type as RustASTType;
 
     #[test]
-    fn should_create_rust_ast_owned_i64_from_mir_integer() {
+    fn should_create_rust_ast_owned_i64_from_lir_integer() {
         let r#type = Type::Integer;
         let control = RustASTType::Identifier {
             identifier: String::from("i64"),
@@ -58,7 +58,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_f64_from_mir_float() {
+    fn should_create_rust_ast_owned_f64_from_lir_float() {
         let r#type = Type::Float;
         let control = RustASTType::Identifier {
             identifier: String::from("f64"),
@@ -67,7 +67,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_bool_from_mir_boolean() {
+    fn should_create_rust_ast_owned_bool_from_lir_boolean() {
         let r#type = Type::Boolean;
         let control = RustASTType::Identifier {
             identifier: String::from("bool"),
@@ -76,7 +76,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_string_from_mir_string() {
+    fn should_create_rust_ast_owned_string_from_lir_string() {
         let r#type = Type::String;
         let control = RustASTType::Identifier {
             identifier: String::from("String"),
@@ -85,7 +85,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_unit_from_mir_unit() {
+    fn should_create_rust_ast_owned_unit_from_lir_unit() {
         let r#type = Type::Unit;
         let control = RustASTType::Identifier {
             identifier: String::from("()"),
@@ -94,7 +94,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_structure_from_mir_structure() {
+    fn should_create_rust_ast_owned_structure_from_lir_structure() {
         let r#type = Type::Structure(String::from("Point"));
         let control = RustASTType::Identifier {
             identifier: String::from("Point"),
@@ -103,7 +103,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_enumeration_from_mir_enumeration() {
+    fn should_create_rust_ast_owned_enumeration_from_lir_enumeration() {
         let r#type = Type::Enumeration(String::from("Color"));
         let control = RustASTType::Identifier {
             identifier: String::from("Color"),
@@ -112,7 +112,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_array_from_mir_array() {
+    fn should_create_rust_ast_owned_array_from_lir_array() {
         let r#type = Type::Array(Box::new(Type::Float), 5);
         let control = RustASTType::Array {
             element: Box::new(RustASTType::Identifier {
@@ -124,7 +124,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_generic_from_mir_option() {
+    fn should_create_rust_ast_owned_generic_from_lir_option() {
         let r#type = Type::Option(Box::new(Type::Float));
         let control = RustASTType::Generic {
             generic: Box::new(RustASTType::Identifier {
@@ -138,7 +138,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_closure_from_mir_abstract() {
+    fn should_create_rust_ast_owned_closure_from_lir_abstract() {
         let r#type = Type::Abstract(vec![Type::Integer], Box::new(Type::Float));
         let control = RustASTType::Closure {
             arguments: vec![RustASTType::Identifier {

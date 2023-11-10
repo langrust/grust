@@ -107,7 +107,7 @@ mod lir_from_hir {
     };
 
     #[test]
-    fn should_transform_hir_unitary_node_definition_into_mir_node_file() {
+    fn should_transform_hir_unitary_node_definition_into_lir_node_file() {
         let memory = Memory {
             buffers: HashMap::from([(
                 format!("mem_i"),

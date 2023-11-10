@@ -3,15 +3,15 @@ use self::{
     structure::Structure,
 };
 
-/// LIR [ArrayAlias](crate::mir::item::array_alias::ArrayAlias) module.
+/// LIR [ArrayAlias](crate::lir::item::array_alias::ArrayAlias) module.
 pub mod array_alias;
-/// LIR [Enumeration](crate::mir::item::enumeration::Enumeration) module.
+/// LIR [Enumeration](crate::lir::item::enumeration::Enumeration) module.
 pub mod enumeration;
-/// LIR [Function](crate::mir::item::function::Function) module.
+/// LIR [Function](crate::lir::item::function::Function) module.
 pub mod function;
-/// LIR [NodeFile](crate::mir::item::node_file::NodeFile) module.
+/// LIR [NodeFile](crate::lir::item::node_file::NodeFile) module.
 pub mod node_file;
-/// LIR [Structure](crate::mir::item::structure::Structure) module.
+/// LIR [Structure](crate::lir::item::structure::Structure) module.
 pub mod structure;
 
 /// An item of the project.

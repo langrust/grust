@@ -35,7 +35,7 @@ mod lir_from_hir {
     };
 
     #[test]
-    fn should_transform_hir_structure_type_definition_into_mir_structure_item() {
+    fn should_transform_hir_structure_type_definition_into_lir_structure_item() {
         let structure = Typedef::Structure {
             id: format!("Point"),
             fields: vec![(format!("x"), Type::Integer), (format!("y"), Type::Integer)],
@@ -49,7 +49,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_enumeration_type_definition_into_mir_enumeration_item() {
+    fn should_transform_hir_enumeration_type_definition_into_lir_enumeration_item() {
         let enumeration = Typedef::Enumeration {
             id: format!("Color"),
             elements: vec![format!("Red"), format!("Bleu"), format!("Green")],
@@ -63,7 +63,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_array_type_definition_into_mir_array_alias_item() {
+    fn should_transform_hir_array_type_definition_into_lir_array_alias_item() {
         let array = Typedef::Array {
             id: format!("M5x5"),
             array_type: Type::Array(Box::new(Type::Integer), 5),
