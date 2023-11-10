@@ -8,16 +8,16 @@ use crate::{
         r#type::Type,
     },
     lir::{
-        block::Block, expression::Expression as MIRExpression, item::node_file::import::Import,
+        block::Block, expression::Expression as LIRExpression, item::node_file::import::Import,
         statement::Statement,
     },
 };
 
-/// Transform HIR expression into MIR expression.
-pub fn mir_from_hir(expression: Expression) -> MIRExpression {
+/// Transform HIR expression into LIR expression.
+pub fn mir_from_hir(expression: Expression) -> LIRExpression {
     match expression {
-        Expression::Constant { constant, .. } => MIRExpression::Literal { literal: constant },
-        Expression::Call { id, .. } => MIRExpression::Identifier { identifier: id },
+        Expression::Constant { constant, .. } => LIRExpression::Literal { literal: constant },
+        Expression::Call { id, .. } => LIRExpression::Identifier { identifier: id },
         Expression::Application {
             function_expression,
             mut inputs,
@@ -28,7 +28,7 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
                 let else_branch = mir_from_hir(inputs.pop().unwrap());
                 let then_branch = mir_from_hir(inputs.pop().unwrap());
                 let condition = mir_from_hir(inputs.pop().unwrap());
-                MIRExpression::IfThenElse {
+                LIRExpression::IfThenElse {
                     condition: Box::new(condition),
                     then_branch: Block {
                         statements: vec![Statement::ExpressionLast {
@@ -44,7 +44,7 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
             }
             _ => {
                 let arguments = inputs.into_iter().map(mir_from_hir).collect();
-                MIRExpression::FunctionCall {
+                LIRExpression::FunctionCall {
                     function: Box::new(mir_from_hir(*function_expression)),
                     arguments,
                 }
@@ -55,24 +55,24 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
             expression,
             typing: Some(Type::Abstract(_, output_type)),
             ..
-        } => MIRExpression::Lambda {
+        } => LIRExpression::Lambda {
             inputs,
             output: *output_type,
             body: Box::new(mir_from_hir(*expression)),
         },
-        Expression::Structure { name, fields, .. } => MIRExpression::Structure {
+        Expression::Structure { name, fields, .. } => LIRExpression::Structure {
             name,
             fields: fields
                 .into_iter()
                 .map(|(id, expression)| (id, mir_from_hir(expression)))
                 .collect(),
         },
-        Expression::Array { elements, .. } => MIRExpression::Array {
+        Expression::Array { elements, .. } => LIRExpression::Array {
             elements: elements.into_iter().map(mir_from_hir).collect(),
         },
         Expression::Match {
             expression, arms, ..
-        } => MIRExpression::Match {
+        } => LIRExpression::Match {
             matched: Box::new(mir_from_hir(*expression)),
             arms: arms
                 .into_iter()
@@ -88,7 +88,7 @@ pub fn mir_from_hir(expression: Expression) -> MIRExpression {
             default,
             location,
             ..
-        } => MIRExpression::Match {
+        } => LIRExpression::Match {
             matched: Box::new(mir_from_hir(*option)),
             arms: vec![
                 (

@@ -1,7 +1,7 @@
 use crate::rust_ast::item::import::{Import as RustASTImport, PathTree};
 use crate::lir::item::node_file::import::Import;
 
-/// Transform MIR import into RustAST import.
+/// Transform LIR import into RustAST import.
 pub fn rust_ast_from_mir(import: Import) -> RustASTImport {
     match import {
         Import::NodeFile(module_name) => RustASTImport::Use {

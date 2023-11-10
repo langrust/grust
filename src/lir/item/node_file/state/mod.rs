@@ -3,9 +3,9 @@ use crate::{
     lir::item::node_file::state::{init::Init, step::Step},
 };
 
-/// MIR [Init](crate::mir::item::node_file::state::init::Init) module.
+/// LIR [Init](crate::mir::item::node_file::state::init::Init) module.
 pub mod init;
-/// MIR [Step](crate::mir::item::node_file::state::step::Step) module.
+/// LIR [Step](crate::mir::item::node_file::state::step::Step) module.
 pub mod step;
 
 /// A node state structure.

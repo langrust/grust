@@ -1,10 +1,10 @@
-/// MIR [Block](crate::mir::block::Block) module.
+/// LIR [Block](crate::mir::block::Block) module.
 pub mod block;
-/// MIR [Expression](crate::mir::expression::Expression) module.
+/// LIR [Expression](crate::mir::expression::Expression) module.
 pub mod expression;
-/// MIR [Item](crate::mir::item::Item) module.
+/// LIR [Item](crate::mir::item::Item) module.
 pub mod item;
-/// MIR [Project](crate::mir::project::Project) module.
+/// LIR [Project](crate::mir::project::Project) module.
 pub mod project;
-/// MIR [Statement](crate::mir::statement::Statement) module.
+/// LIR [Statement](crate::mir::statement::Statement) module.
 pub mod statement;

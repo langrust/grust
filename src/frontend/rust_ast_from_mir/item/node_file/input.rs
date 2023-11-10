@@ -2,7 +2,7 @@ use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_a
 use crate::rust_ast::item::structure::{Field, Structure};
 use crate::lir::item::node_file::input::{Input, InputElement};
 
-/// Transform MIR input into RustAST structure.
+/// Transform LIR input into RustAST structure.
 pub fn rust_ast_from_mir(input: Input) -> Structure {
     let fields = input
         .elements

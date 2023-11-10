@@ -1,7 +1,7 @@
 use crate::common::r#type::Type;
 use crate::rust_ast::r#type::Type as RustASTType;
 
-/// Transform MIR type into RustAST type.
+/// Transform LIR type into RustAST type.
 pub fn rust_ast_from_mir(r#type: Type) -> RustASTType {
     match r#type {
         Type::Integer => RustASTType::Identifier {

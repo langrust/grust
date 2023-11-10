@@ -3,7 +3,7 @@ use crate::lir::block::Block;
 
 use super::statement::rust_ast_from_mir as statement_rust_ast_from_mir;
 
-/// Transform MIR block into RustAST block.
+/// Transform LIR block into RustAST block.
 pub fn rust_ast_from_mir(block: Block) -> RustASTBlock {
     let statements = block
         .statements

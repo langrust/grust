@@ -3,7 +3,7 @@ use crate::{
     lir::item::{array_alias::ArrayAlias, enumeration::Enumeration, structure::Structure, Item},
 };
 
-/// Transform HIR typedef into MIR item.
+/// Transform HIR typedef into LIR item.
 pub fn mir_from_hir(typedef: Typedef) -> Item {
     match typedef {
         Typedef::Structure { id, fields, .. } => Item::Structure(Structure { name: id, fields }),

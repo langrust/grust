@@ -10,7 +10,7 @@ use crate::{
     lir::{item::Item, project::Project},
 };
 
-/// Transform MIR item into RustAST item.
+/// Transform LIR item into RustAST item.
 pub fn rust_ast_from_mir(project: Project) -> RustASTProject {
     let mut function_file = File::new(format!("functions.rs"));
     let mut typedefs_file = File::new(format!("typedefs.rs"));

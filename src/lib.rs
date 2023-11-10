@@ -103,7 +103,7 @@ pub mod frontend;
 pub mod hir;
 /// LanGRust LIR module.
 pub mod rust_ast;
-/// LanGRust MIR module.
+/// LanGRust LIR module.
 pub mod lir;
 /// LanGRust parser module.
 pub mod parser;

@@ -4,7 +4,7 @@ use crate::{
     common::scope::Scope,
     hir::unitary_node::UnitaryNode,
     lir::{
-        expression::Expression as MIRExpression,
+        expression::Expression as LIRExpression,
         item::node_file::{
             input::{Input, InputElement},
             state::{init::Init, step::Step, State},
@@ -15,7 +15,7 @@ use crate::{
 
 use super::equation::mir_from_hir as equation_mir_from_hir;
 
-/// Transform HIR unitary node into MIR node file.
+/// Transform HIR unitary node into LIR node file.
 pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
     let UnitaryNode {
         node_id,
@@ -33,7 +33,7 @@ pub fn mir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
         .next()
         .unwrap();
 
-    let output_expression = MIRExpression::Identifier {
+    let output_expression = LIRExpression::Identifier {
         identifier: output_id.clone(),
     };
 

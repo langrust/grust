@@ -5,7 +5,7 @@ use crate::{
 
 use super::stream_expression::mir_from_hir as stream_expression_mir_from_hir;
 
-/// Transform HIR equation into MIR statement.
+/// Transform HIR equation into LIR statement.
 pub fn mir_from_hir(equation: Equation) -> Statement {
     let Equation { id, expression, .. } = equation;
     match &expression {
