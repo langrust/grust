@@ -1,6 +1,6 @@
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::rust_ast::item::structure::{Field, Structure as RustASTStructure};
 use crate::lir::item::structure::Structure;
+use crate::rust_ast::item::structure::{Field, Structure as RustASTStructure};
 
 /// Transform LIR structure into RustAST structure.
 pub fn rust_ast_from_lir(structure: Structure) -> RustASTStructure {
@@ -22,11 +22,11 @@ pub fn rust_ast_from_lir(structure: Structure) -> RustASTStructure {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::common::r#type::Type;
     use crate::backend::rust_ast_from_lir::item::structure::rust_ast_from_lir;
+    use crate::common::r#type::Type;
+    use crate::lir::item::structure::Structure;
     use crate::rust_ast::item::structure::{Field, Structure as RustASTStructure};
     use crate::rust_ast::r#type::Type as RustASTType;
-    use crate::lir::item::structure::Structure;
 
     #[test]
     fn should_create_rust_ast_structure_from_lir_structure() {

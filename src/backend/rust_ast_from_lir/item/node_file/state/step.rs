@@ -1,13 +1,13 @@
 use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
+use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 use crate::rust_ast::block::Block;
 use crate::rust_ast::expression::{Expression, FieldExpression};
 use crate::rust_ast::item::implementation::AssociatedItem;
 use crate::rust_ast::item::signature::{Receiver, Signature};
 use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
-use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 
 /// Transform LIR step into RustAST implementation method.
 pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
@@ -70,10 +70,13 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
+    use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir;
+    use crate::lir::expression::Expression;
+    use crate::lir::item::node_file::state::step::{StateElementStep, Step};
+    use crate::lir::statement::Statement;
     use crate::rust_ast::block::Block;
     use crate::rust_ast::expression::{Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;
@@ -82,9 +85,6 @@ mod rust_ast_from_lir {
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::r#let::Let;
     use crate::rust_ast::statement::Statement as RustASTStatement;
-    use crate::lir::expression::Expression;
-    use crate::lir::item::node_file::state::step::{StateElementStep, Step};
-    use crate::lir::statement::Statement;
 
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {

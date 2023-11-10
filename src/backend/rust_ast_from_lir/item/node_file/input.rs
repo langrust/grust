@@ -1,6 +1,6 @@
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::rust_ast::item::structure::{Field, Structure};
 use crate::lir::item::node_file::input::{Input, InputElement};
+use crate::rust_ast::item::structure::{Field, Structure};
 
 /// Transform LIR input into RustAST structure.
 pub fn rust_ast_from_lir(input: Input) -> Structure {
@@ -22,11 +22,11 @@ pub fn rust_ast_from_lir(input: Input) -> Structure {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::common::r#type::Type;
     use crate::backend::rust_ast_from_lir::item::node_file::input::rust_ast_from_lir;
+    use crate::common::r#type::Type;
+    use crate::lir::item::node_file::input::{Input, InputElement};
     use crate::rust_ast::item::structure::{Field, Structure};
     use crate::rust_ast::r#type::Type as RustASTType;
-    use crate::lir::item::node_file::input::{Input, InputElement};
 
     #[test]
     fn should_create_rust_ast_structure_from_lir_node_input() {
