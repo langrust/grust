@@ -28,55 +28,31 @@ nodes:
                       - Integer
                       - Integer
                     - Integer
-                location:
-                  file_id: 0
-                  range:
-                    start: 106
-                    end: 127
+                location: ~
             inputs:
               - SignalCall:
                   signal:
                     id: tick
                     scope: Input
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 109
-                      end: 113
+                  location: ~
                   dependencies: ~
               - Constant:
                   constant:
                     Integer: 1
                   typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 119
-                      end: 120
+                  location: ~
                   dependencies: ~
               - Constant:
                   constant:
                     Integer: 0
                   typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 126
-                      end: 127
+                  location: ~
                   dependencies: ~
             typing: Integer
-            location:
-              file_id: 0
-              range:
-                start: 106
-                end: 127
+            location: ~
             dependencies: ~
-        location:
-          file_id: 0
-          range:
-            start: 95
-            end: 128
+        location: ~
       o:
         scope: Output
         id: o
@@ -92,32 +68,20 @@ nodes:
                       - Integer
                       - Integer
                     - Integer
-                location:
-                  file_id: 0
-                  range:
-                    start: 55
-                    end: 89
+                location: ~
             inputs:
               - SignalCall:
                   signal:
                     id: res
                     scope: Input
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 58
-                      end: 61
+                  location: ~
                   dependencies: ~
               - Constant:
                   constant:
                     Integer: 0
                   typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 67
-                      end: 68
+                  location: ~
                   dependencies: ~
               - MapApplication:
                   function_expression:
@@ -128,11 +92,7 @@ nodes:
                           - - Integer
                             - Integer
                           - Integer
-                      location:
-                        file_id: 0
-                        range:
-                          start: 84
-                          end: 85
+                      location: ~
                   inputs:
                     - MapApplication:
                         function_expression:
@@ -142,11 +102,7 @@ nodes:
                               Abstract:
                                 - - Integer
                                 - Integer
-                            location:
-                              file_id: 0
-                              range:
-                                start: 74
-                                end: 83
+                            location: ~
                         inputs:
                           - FollowedBy:
                               constant:
@@ -157,62 +113,30 @@ nodes:
                                     id: o
                                     scope: Output
                                   typing: Integer
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 81
-                                      end: 82
+                                  location: ~
                                   dependencies: ~
                               typing: Integer
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 75
-                                  end: 82
+                              location: ~
                               dependencies: ~
                         typing: Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 74
-                            end: 83
+                        location: ~
                         dependencies: ~
                     - SignalCall:
                         signal:
                           id: inc
                           scope: Local
                         typing: Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 86
-                            end: 89
+                        location: ~
                         dependencies: ~
                   typing: Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 74
-                      end: 89
+                  location: ~
                   dependencies: ~
             typing: Integer
-            location:
-              file_id: 0
-              range:
-                start: 55
-                end: 89
+            location: ~
             dependencies: ~
-        location:
-          file_id: 0
-          range:
-            start: 42
-            end: 90
+        location: ~
     unitary_nodes: {}
-    location:
-      file_id: 0
-      range:
-        start: 0
-        end: 130
+    location: ~
     graph: ~
 component:
   id: main
@@ -236,42 +160,22 @@ component:
                     Abstract:
                       - - Boolean
                       - Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 231
-                      end: 232
+                  location: ~
               inputs:
                 - SignalCall:
                     signal:
                       id: half
                       scope: Local
                     typing: Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 232
-                        end: 236
+                    location: ~
                     dependencies: ~
               typing: Boolean
-              location:
-                file_id: 0
-                range:
-                  start: 231
-                  end: 236
+              location: ~
               dependencies: ~
           typing: Boolean
-          location:
-            file_id: 0
-            range:
-              start: 222
-              end: 236
+          location: ~
           dependencies: ~
-      location:
-        file_id: 0
-        range:
-          start: 209
-          end: 237
+      location: ~
     y:
       scope: Output
       id: y
@@ -292,11 +196,7 @@ component:
                           Abstract:
                             - - Boolean
                             - Boolean
-                        location:
-                          file_id: 0
-                          range:
-                            start: 186
-                            end: 194
+                        location: ~
                     inputs:
                       - MapApplication:
                           function_expression:
@@ -307,88 +207,44 @@ component:
                                   - - Integer
                                     - Integer
                                   - Boolean
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 189
-                                  end: 190
+                              location: ~
                           inputs:
                             - SignalCall:
                                 signal:
                                   id: y
                                   scope: Output
                                 typing: Integer
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 187
-                                    end: 188
+                                location: ~
                                 dependencies: ~
                             - Constant:
                                 constant:
                                   Integer: 35
                                 typing: Integer
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 191
-                                    end: 193
+                                location: ~
                                 dependencies: ~
                           typing: Boolean
-                          location:
-                            file_id: 0
-                            range:
-                              start: 187
-                              end: 193
+                          location: ~
                           dependencies: ~
                     typing: Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 186
-                        end: 194
+                    location: ~
                     dependencies: ~
                 typing: Boolean
-                location:
-                  file_id: 0
-                  range:
-                    start: 176
-                    end: 194
+                location: ~
                 dependencies: ~
             - SignalCall:
                 signal:
                   id: half
                   scope: Local
                 typing: Boolean
-                location:
-                  file_id: 0
-                  range:
-                    start: 196
-                    end: 200
+                location: ~
                 dependencies: ~
           signal: o
           typing: Integer
-          location:
-            file_id: 0
-            range:
-              start: 168
-              end: 203
+          location: ~
           dependencies: ~
-      location:
-        file_id: 0
-        range:
-          start: 155
-          end: 204
+      location: ~
   unitary_nodes: {}
-  location:
-    file_id: 0
-    range:
-      start: 132
-      end: 239
+  location: ~
   graph: ~
-location:
-  file_id: 0
-  range:
-    start: 0
-    end: 239
+location: ~
 

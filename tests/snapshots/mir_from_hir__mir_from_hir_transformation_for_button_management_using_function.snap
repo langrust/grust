@@ -39,11 +39,7 @@ items:
                             Enumeration:
                               - Button
                               - Released
-                          location:
-                            file_id: 0
-                            range:
-                              start: 260
-                              end: 275
+                          location: ~
                       - ~
                       - Literal:
                           literal:
@@ -55,11 +51,7 @@ items:
                             Enumeration:
                               - Button
                               - Pressed
-                          location:
-                            file_id: 0
-                            range:
-                              start: 309
-                              end: 323
+                          location: ~
                       - FunctionCall:
                           function:
                             Identifier:
@@ -75,11 +67,7 @@ items:
                               - ResetState
                               - InProgress
                     - - Default:
-                          location:
-                            file_id: 0
-                            range:
-                              start: 386
-                              end: 387
+                          location: ~
                       - ~
                       - Literal:
                           literal:
@@ -250,11 +238,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Released
-                            location:
-                              file_id: 0
-                              range:
-                                start: 811
-                                end: 826
+                            location: ~
                         - ~
                         - MemoryAccess:
                             identifier: memuser_reset_request
@@ -263,11 +247,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Pressed
-                            location:
-                              file_id: 0
-                              range:
-                                start: 868
-                                end: 882
+                            location: ~
                         - ~
                         - FunctionCall:
                             function:

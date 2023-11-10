@@ -173,11 +173,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Released
-                            location:
-                              file_id: 0
-                              range:
-                                start: 636
-                                end: 651
+                            location: ~
                         - ~
                         - MemoryAccess:
                             identifier: memuser_reset_request
@@ -186,11 +182,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Pressed
-                            location:
-                              file_id: 0
-                              range:
-                                start: 693
-                                end: 707
+                            location: ~
                         - ~
                         - FunctionCall:
                             function:
@@ -338,11 +330,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Released
-                            location:
-                              file_id: 0
-                              range:
-                                start: 362
-                                end: 377
+                            location: ~
                         - ~
                         - Literal:
                             literal:
@@ -354,11 +342,7 @@ items:
                               Enumeration:
                                 - Button
                                 - Pressed
-                            location:
-                              file_id: 0
-                              range:
-                                start: 411
-                                end: 425
+                            location: ~
                         - ~
                         - IfThenElse:
                             condition:

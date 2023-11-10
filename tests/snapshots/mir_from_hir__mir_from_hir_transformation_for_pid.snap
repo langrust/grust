@@ -296,32 +296,16 @@ items:
                               - - k_p
                                 - Identifier:
                                     name: k_p
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 680
-                                        end: 683
+                                    location: ~
                               - - k_i
                                 - Identifier:
                                     name: k_i
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 690
-                                        end: 693
+                                    location: ~
                               - - k_d
                                 - Identifier:
                                     name: k_d
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 700
-                                        end: 703
-                            location:
-                              file_id: 0
-                              range:
-                                start: 665
-                                end: 705
+                                    location: ~
+                            location: ~
                         - ~
                         - FunctionCall:
                             function:

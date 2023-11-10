@@ -28,29 +28,17 @@ nodes:
                         - Integer
                         - Integer
                       - Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 55
-                      end: 89
+                  location: ~
               inputs:
                 - SignalCall:
                     id: res
                     typing: Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 58
-                        end: 61
+                    location: ~
                 - Constant:
                     constant:
                       Integer: 0
                     typing: Integer
-                    location:
-                      file_id: 0
-                      range:
-                        start: 67
-                        end: 68
+                    location: ~
                 - MapApplication:
                     function_expression:
                       Call:
@@ -60,11 +48,7 @@ nodes:
                             - - Integer
                               - Integer
                             - Integer
-                        location:
-                          file_id: 0
-                          range:
-                            start: 84
-                            end: 85
+                        location: ~
                     inputs:
                       - MapApplication:
                           function_expression:
@@ -74,11 +58,7 @@ nodes:
                                 Abstract:
                                   - - Integer
                                   - Integer
-                              location:
-                                file_id: 0
-                                range:
-                                  start: 74
-                                  end: 83
+                              location: ~
                           inputs:
                             - FollowedBy:
                                 constant:
@@ -87,48 +67,20 @@ nodes:
                                   SignalCall:
                                     id: o
                                     typing: Integer
-                                    location:
-                                      file_id: 0
-                                      range:
-                                        start: 81
-                                        end: 82
+                                    location: ~
                                 typing: Integer
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 75
-                                    end: 82
+                                location: ~
                           typing: Integer
-                          location:
-                            file_id: 0
-                            range:
-                              start: 74
-                              end: 83
+                          location: ~
                       - SignalCall:
                           id: inc
                           typing: Integer
-                          location:
-                            file_id: 0
-                            range:
-                              start: 86
-                              end: 89
+                          location: ~
                     typing: Integer
-                    location:
-                      file_id: 0
-                      range:
-                        start: 74
-                        end: 89
+                    location: ~
               typing: Integer
-              location:
-                file_id: 0
-                range:
-                  start: 55
-                  end: 89
-          location:
-            file_id: 0
-            range:
-              start: 42
-              end: 90
+              location: ~
+          location: ~
       - - inc
         - scope: Local
           id: inc
@@ -144,54 +96,26 @@ nodes:
                         - Integer
                         - Integer
                       - Integer
-                  location:
-                    file_id: 0
-                    range:
-                      start: 106
-                      end: 127
+                  location: ~
               inputs:
                 - SignalCall:
                     id: tick
                     typing: Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 109
-                        end: 113
+                    location: ~
                 - Constant:
                     constant:
                       Integer: 1
                     typing: Integer
-                    location:
-                      file_id: 0
-                      range:
-                        start: 119
-                        end: 120
+                    location: ~
                 - Constant:
                     constant:
                       Integer: 0
                     typing: Integer
-                    location:
-                      file_id: 0
-                      range:
-                        start: 126
-                        end: 127
+                    location: ~
               typing: Integer
-              location:
-                file_id: 0
-                range:
-                  start: 106
-                  end: 127
-          location:
-            file_id: 0
-            range:
-              start: 95
-              end: 128
-    location:
-      file_id: 0
-      range:
-        start: 0
-        end: 130
+              location: ~
+          location: ~
+    location: ~
 component:
   id: main
   is_component: true
@@ -217,11 +141,7 @@ component:
                             Abstract:
                               - - Boolean
                               - Boolean
-                          location:
-                            file_id: 0
-                            range:
-                              start: 186
-                              end: 194
+                          location: ~
                       inputs:
                         - MapApplication:
                             function_expression:
@@ -232,67 +152,31 @@ component:
                                     - - Integer
                                       - Integer
                                     - Boolean
-                                location:
-                                  file_id: 0
-                                  range:
-                                    start: 189
-                                    end: 190
+                                location: ~
                             inputs:
                               - SignalCall:
                                   id: y
                                   typing: Integer
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 187
-                                      end: 188
+                                  location: ~
                               - Constant:
                                   constant:
                                     Integer: 35
                                   typing: Integer
-                                  location:
-                                    file_id: 0
-                                    range:
-                                      start: 191
-                                      end: 193
+                                  location: ~
                             typing: Boolean
-                            location:
-                              file_id: 0
-                              range:
-                                start: 187
-                                end: 193
+                            location: ~
                       typing: Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 186
-                          end: 194
+                      location: ~
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 176
-                      end: 194
+                  location: ~
               - SignalCall:
                   id: half
                   typing: Boolean
-                  location:
-                    file_id: 0
-                    range:
-                      start: 196
-                      end: 200
+                  location: ~
             signal: o
             typing: Integer
-            location:
-              file_id: 0
-              range:
-                start: 168
-                end: 203
-        location:
-          file_id: 0
-          range:
-            start: 155
-            end: 204
+            location: ~
+        location: ~
     - - half
       - scope: Local
         id: half
@@ -310,45 +194,17 @@ component:
                       Abstract:
                         - - Boolean
                         - Boolean
-                    location:
-                      file_id: 0
-                      range:
-                        start: 231
-                        end: 232
+                    location: ~
                 inputs:
                   - SignalCall:
                       id: half
                       typing: Boolean
-                      location:
-                        file_id: 0
-                        range:
-                          start: 232
-                          end: 236
+                      location: ~
                 typing: Boolean
-                location:
-                  file_id: 0
-                  range:
-                    start: 231
-                    end: 236
+                location: ~
             typing: Boolean
-            location:
-              file_id: 0
-              range:
-                start: 222
-                end: 236
-        location:
-          file_id: 0
-          range:
-            start: 209
-            end: 237
-  location:
-    file_id: 0
-    range:
-      start: 132
-      end: 239
-location:
-  file_id: 0
-  range:
-    start: 0
-    end: 239
+            location: ~
+        location: ~
+  location: ~
+location: ~
 
