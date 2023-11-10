@@ -2,7 +2,7 @@ use crate::common::r#type::Type;
 use crate::rust_ast::r#type::Type as RustASTType;
 
 /// Transform LIR type into RustAST type.
-pub fn rust_ast_from_mir(r#type: Type) -> RustASTType {
+pub fn rust_ast_from_lir(r#type: Type) -> RustASTType {
     match r#type {
         Type::Integer => RustASTType::Identifier {
             identifier: String::from("i64"),
@@ -22,20 +22,20 @@ pub fn rust_ast_from_mir(r#type: Type) -> RustASTType {
         Type::Enumeration(identifier) => RustASTType::Identifier { identifier },
         Type::Structure(identifier) => RustASTType::Identifier { identifier },
         Type::Array(element, size) => RustASTType::Array {
-            element: Box::new(rust_ast_from_mir(*element)),
+            element: Box::new(rust_ast_from_lir(*element)),
             size,
         },
         Type::Option(element) => RustASTType::Generic {
             generic: Box::new(RustASTType::Identifier {
                 identifier: String::from("Option"),
             }),
-            arguments: vec![rust_ast_from_mir(*element)],
+            arguments: vec![rust_ast_from_lir(*element)],
         },
         Type::Abstract(arguments, output) => {
-            let arguments = arguments.into_iter().map(rust_ast_from_mir).collect();
+            let arguments = arguments.into_iter().map(rust_ast_from_lir).collect();
             RustASTType::Closure {
                 arguments,
-                output: Box::new(rust_ast_from_mir(*output)),
+                output: Box::new(rust_ast_from_lir(*output)),
             }
         }
         _ => unreachable!(),
@@ -43,9 +43,9 @@ pub fn rust_ast_from_mir(r#type: Type) -> RustASTType {
 }
 
 #[cfg(test)]
-mod rust_ast_from_mir {
+mod rust_ast_from_lir {
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_lir::r#type::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::r#type::rust_ast_from_lir;
     use crate::rust_ast::r#type::Type as RustASTType;
 
     #[test]
@@ -54,7 +54,7 @@ mod rust_ast_from_mir {
         let control = RustASTType::Identifier {
             identifier: String::from("i64"),
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -63,7 +63,7 @@ mod rust_ast_from_mir {
         let control = RustASTType::Identifier {
             identifier: String::from("f64"),
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -72,7 +72,7 @@ mod rust_ast_from_mir {
         let control = RustASTType::Identifier {
             identifier: String::from("bool"),
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -81,7 +81,7 @@ mod rust_ast_from_mir {
         let control = RustASTType::Identifier {
             identifier: String::from("String"),
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -90,7 +90,7 @@ mod rust_ast_from_mir {
         let control = RustASTType::Identifier {
             identifier: String::from("()"),
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -99,7 +99,7 @@ mod rust_ast_from_mir {
         let control = RustASTType::Identifier {
             identifier: String::from("Point"),
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -108,7 +108,7 @@ mod rust_ast_from_mir {
         let control = RustASTType::Identifier {
             identifier: String::from("Color"),
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -120,7 +120,7 @@ mod rust_ast_from_mir {
             }),
             size: 5,
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -134,7 +134,7 @@ mod rust_ast_from_mir {
                 identifier: String::from("f64"),
             }],
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
@@ -148,6 +148,6 @@ mod rust_ast_from_mir {
                 identifier: String::from("f64"),
             }),
         };
-        assert_eq!(rust_ast_from_mir(r#type), control)
+        assert_eq!(rust_ast_from_lir(r#type), control)
     }
 }

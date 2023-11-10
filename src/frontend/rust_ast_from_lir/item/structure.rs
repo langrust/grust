@@ -1,16 +1,16 @@
-use crate::frontend::rust_ast_from_lir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
+use crate::frontend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::rust_ast::item::structure::{Field, Structure as RustASTStructure};
 use crate::lir::item::structure::Structure;
 
 /// Transform LIR structure into RustAST structure.
-pub fn rust_ast_from_mir(structure: Structure) -> RustASTStructure {
+pub fn rust_ast_from_lir(structure: Structure) -> RustASTStructure {
     let fields = structure
         .fields
         .into_iter()
         .map(|(name, r#type)| Field {
             public_visibility: true,
             name,
-            r#type: type_rust_ast_from_mir(r#type),
+            r#type: type_rust_ast_from_lir(r#type),
         })
         .collect();
     RustASTStructure {
@@ -21,9 +21,9 @@ pub fn rust_ast_from_mir(structure: Structure) -> RustASTStructure {
 }
 
 #[cfg(test)]
-mod rust_ast_from_mir {
+mod rust_ast_from_lir {
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_lir::item::structure::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::item::structure::rust_ast_from_lir;
     use crate::rust_ast::item::structure::{Field, Structure as RustASTStructure};
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::lir::item::structure::Structure;
@@ -57,6 +57,6 @@ mod rust_ast_from_mir {
                 },
             ],
         };
-        assert_eq!(rust_ast_from_mir(structure), control)
+        assert_eq!(rust_ast_from_lir(structure), control)
     }
 }

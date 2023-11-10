@@ -2,7 +2,7 @@ use crate::ast::pattern::Pattern;
 use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
 
 /// Transform LIR pattern into RustAST pattern.
-pub fn rust_ast_from_mir(pattern: Pattern) -> RustASTPattern {
+pub fn rust_ast_from_lir(pattern: Pattern) -> RustASTPattern {
     match pattern {
         Pattern::Identifier { name, .. } => RustASTPattern::Identifier {
             reference: false,
@@ -15,7 +15,7 @@ pub fn rust_ast_from_mir(pattern: Pattern) -> RustASTPattern {
                 .into_iter()
                 .map(|(name, pattern)| FieldPattern {
                     name,
-                    pattern: rust_ast_from_mir(pattern),
+                    pattern: rust_ast_from_lir(pattern),
                 })
                 .collect();
             RustASTPattern::Structure {
@@ -26,7 +26,7 @@ pub fn rust_ast_from_mir(pattern: Pattern) -> RustASTPattern {
         }
         Pattern::Some { pattern, .. } => RustASTPattern::TupleStructure {
             name: String::from("Some"),
-            elements: vec![rust_ast_from_mir(*pattern)],
+            elements: vec![rust_ast_from_lir(*pattern)],
         },
         Pattern::None { .. } => RustASTPattern::Default,
         Pattern::Default { .. } => RustASTPattern::Default,
@@ -34,11 +34,11 @@ pub fn rust_ast_from_mir(pattern: Pattern) -> RustASTPattern {
 }
 
 #[cfg(test)]
-mod rust_ast_from_mir {
+mod rust_ast_from_lir {
     use crate::ast::pattern::Pattern;
     use crate::common::constant::Constant;
     use crate::common::location::Location;
-    use crate::frontend::rust_ast_from_lir::pattern::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::pattern::rust_ast_from_lir;
     use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
 
     #[test]
@@ -47,7 +47,7 @@ mod rust_ast_from_mir {
             location: Location::default(),
         };
         let control = RustASTPattern::Default;
-        assert_eq!(rust_ast_from_mir(pattern), control)
+        assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
     #[test]
@@ -56,7 +56,7 @@ mod rust_ast_from_mir {
             location: Location::default(),
         };
         let control = RustASTPattern::Default;
-        assert_eq!(rust_ast_from_mir(pattern), control)
+        assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
     #[test]
@@ -71,7 +71,7 @@ mod rust_ast_from_mir {
             name: String::from("Some"),
             elements: vec![RustASTPattern::Default],
         };
-        assert_eq!(rust_ast_from_mir(pattern), control)
+        assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
     #[test]
@@ -83,7 +83,7 @@ mod rust_ast_from_mir {
         let control = RustASTPattern::Literal {
             literal: Constant::Integer(1),
         };
-        assert_eq!(rust_ast_from_mir(pattern), control)
+        assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
     #[test]
@@ -97,7 +97,7 @@ mod rust_ast_from_mir {
             mutable: false,
             identifier: String::from("x"),
         };
-        assert_eq!(rust_ast_from_mir(pattern), control)
+        assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
     #[test]
@@ -139,6 +139,6 @@ mod rust_ast_from_mir {
             ],
             dots: false,
         };
-        assert_eq!(rust_ast_from_mir(pattern), control)
+        assert_eq!(rust_ast_from_lir(pattern), control)
     }
 }

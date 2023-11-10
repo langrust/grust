@@ -1,5 +1,5 @@
 ---
-source: tests/rust_ast_from_mir.rs
+source: tests/rust_ast_from_lir.rs
 expression: project
 ---
 files:
