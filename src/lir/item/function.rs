@@ -1,4 +1,4 @@
-use crate::{common::r#type::Type, mir::block::Block};
+use crate::{common::r#type::Type, lir::block::Block};
 
 /// A function definition.
 #[derive(Debug, PartialEq, serde::Serialize)]

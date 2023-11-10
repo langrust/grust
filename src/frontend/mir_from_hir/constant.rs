@@ -1,4 +1,4 @@
-use crate::{common::constant::Constant, mir::item::node_file::import::Import};
+use crate::{common::constant::Constant, lir::item::node_file::import::Import};
 
 impl Constant {
     /// Get imports induced by constant.
@@ -14,7 +14,7 @@ impl Constant {
 
 #[cfg(test)]
 mod get_imports {
-    use crate::{common::constant::Constant, mir::item::node_file::import::Import};
+    use crate::{common::constant::Constant, lir::item::node_file::import::Import};
 
     #[test]
     fn should_get_enumeration_import_from_constant_enumeration() {

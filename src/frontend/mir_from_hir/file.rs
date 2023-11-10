@@ -1,6 +1,6 @@
 use crate::{
     hir::file::File,
-    mir::{item::Item, project::Project},
+    lir::{item::Item, project::Project},
 };
 
 use super::{

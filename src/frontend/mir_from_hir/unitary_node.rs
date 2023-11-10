@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::{
     common::scope::Scope,
     hir::unitary_node::UnitaryNode,
-    mir::{
+    lir::{
         expression::Expression as MIRExpression,
         item::node_file::{
             input::{Input, InputElement},
@@ -90,7 +90,7 @@ mod mir_from_hir {
             stream_expression::StreamExpression,
             unitary_node::UnitaryNode,
         },
-        mir::{
+        lir::{
             expression::Expression,
             item::node_file::{
                 import::Import,

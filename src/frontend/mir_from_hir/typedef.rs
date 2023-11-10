@@ -1,6 +1,6 @@
 use crate::{
     ast::typedef::Typedef,
-    mir::item::{array_alias::ArrayAlias, enumeration::Enumeration, structure::Structure, Item},
+    lir::item::{array_alias::ArrayAlias, enumeration::Enumeration, structure::Structure, Item},
 };
 
 /// Transform HIR typedef into MIR item.
@@ -29,7 +29,7 @@ mod mir_from_hir {
         ast::typedef::Typedef,
         common::{location::Location, r#type::Type},
         frontend::mir_from_hir::typedef::mir_from_hir,
-        mir::item::{
+        lir::item::{
             array_alias::ArrayAlias, enumeration::Enumeration, structure::Structure, Item,
         },
     };

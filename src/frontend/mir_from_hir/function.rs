@@ -1,6 +1,6 @@
 use crate::{
     ast::function::Function,
-    mir::{block::Block, item::function::Function as MIRFunction, statement::Statement},
+    lir::{block::Block, item::function::Function as MIRFunction, statement::Statement},
 };
 
 use super::{
@@ -42,7 +42,7 @@ mod mir_from_hir {
         },
         common::{location::Location, r#type::Type},
         frontend::mir_from_hir::function::mir_from_hir,
-        mir::{
+        lir::{
             block::Block, expression::Expression, item::function::Function, statement::Statement,
         },
     };

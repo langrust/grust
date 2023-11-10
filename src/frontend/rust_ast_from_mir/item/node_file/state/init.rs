@@ -4,7 +4,7 @@ use crate::rust_ast::item::implementation::AssociatedItem;
 use crate::rust_ast::item::signature::Signature;
 use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
-use crate::mir::item::node_file::state::init::{Init, StateElementInit};
+use crate::lir::item::node_file::state::init::{Init, StateElementInit};
 
 /// Transform MIR init into RustAST implementation method.
 pub fn rust_ast_from_mir(init: Init) -> AssociatedItem {
@@ -64,7 +64,7 @@ mod rust_ast_from_mir {
     use crate::rust_ast::item::signature::Signature;
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::Statement;
-    use crate::mir::item::node_file::state::init::{Init, StateElementInit};
+    use crate::lir::item::node_file::state::init::{Init, StateElementInit};
 
     #[test]
     fn should_create_rust_ast_associated_method_from_mir_node_init() {

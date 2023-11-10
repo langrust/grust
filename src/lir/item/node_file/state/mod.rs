@@ -1,6 +1,6 @@
 use crate::{
     common::r#type::Type,
-    mir::item::node_file::state::{init::Init, step::Step},
+    lir::item::node_file::state::{init::Init, step::Step},
 };
 
 /// MIR [Init](crate::mir::item::node_file::state::init::Init) module.

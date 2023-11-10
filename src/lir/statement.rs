@@ -1,4 +1,4 @@
-use crate::mir::expression::Expression;
+use crate::lir::expression::Expression;
 
 /// A statement declaration.
 #[derive(Debug, PartialEq, serde::Serialize)]

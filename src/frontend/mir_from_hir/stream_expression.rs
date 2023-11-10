@@ -8,7 +8,7 @@ use crate::{
         scope::Scope,
     },
     hir::{signal::Signal, stream_expression::StreamExpression},
-    mir::{
+    lir::{
         block::Block, expression::Expression as MIRExpression, item::node_file::import::Import,
         statement::Statement,
     },
@@ -301,7 +301,7 @@ mod mir_from_hir {
         },
         frontend::mir_from_hir::stream_expression::mir_from_hir,
         hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
-        mir::{block::Block, expression::Expression, statement::Statement},
+        lir::{block::Block, expression::Expression, statement::Statement},
     };
 
     #[test]
@@ -839,7 +839,7 @@ mod get_imports {
         ast::expression::Expression,
         common::{location::Location, operator::UnaryOperator, r#type::Type, scope::Scope},
         hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
-        mir::item::node_file::import::Import,
+        lir::item::node_file::import::Import,
     };
 
     #[test]
