@@ -49,7 +49,7 @@ mod rust_ast_from_mir {
     use crate::mir::item::node_file::import::Import;
 
     #[test]
-    fn should_create_lir_import_from_mir_function_import() {
+    fn should_create_rust_ast_import_from_mir_function_import() {
         let import = Import::Function(String::from("foo"));
         let control = RustASTImport::Use {
             public_visibility: false,
@@ -65,7 +65,7 @@ mod rust_ast_from_mir {
     }
 
     #[test]
-    fn should_create_lir_import_from_mir_node_import() {
+    fn should_create_rust_ast_import_from_mir_node_import() {
         let import = Import::NodeFile(String::from("my_node"));
         let control = RustASTImport::Use {
             public_visibility: false,

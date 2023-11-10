@@ -41,7 +41,7 @@ mod rust_ast_from_mir {
     use crate::mir::statement::Statement;
 
     #[test]
-    fn should_create_lir_function_from_mir_function() {
+    fn should_create_rust_ast_function_from_mir_function() {
         let function = Function {
             name: String::from("foo"),
             inputs: vec![
