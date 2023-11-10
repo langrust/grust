@@ -1,4 +1,4 @@
-use crate::lir::{block::Block, item::signature::Signature};
+use crate::rust_ast::{block::Block, item::signature::Signature};
 
 #[derive(Debug, PartialEq, serde::Serialize)]
 
@@ -20,7 +20,7 @@ impl std::fmt::Display for Function {
 mod fmt {
     use crate::{
         common::{constant::Constant, operator::BinaryOperator},
-        lir::{
+        rust_ast::{
             block::Block,
             expression::Expression,
             item::{function::Function, signature::Signature},

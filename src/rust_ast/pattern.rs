@@ -129,7 +129,7 @@ impl std::fmt::Display for FieldPattern {
 mod fmt {
     use crate::{
         common::constant::Constant,
-        lir::{pattern::FieldPattern, r#type::Type},
+        rust_ast::{pattern::FieldPattern, r#type::Type},
     };
 
     use super::Pattern;

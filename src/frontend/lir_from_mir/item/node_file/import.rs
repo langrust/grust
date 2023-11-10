@@ -1,4 +1,4 @@
-use crate::lir::item::import::{Import as LIRImport, PathTree};
+use crate::rust_ast::item::import::{Import as LIRImport, PathTree};
 use crate::mir::item::node_file::import::Import;
 
 /// Transform MIR import into LIR import.
@@ -45,7 +45,7 @@ pub fn lir_from_mir(import: Import) -> LIRImport {
 #[cfg(test)]
 mod lir_from_mir {
     use crate::frontend::lir_from_mir::item::node_file::import::lir_from_mir;
-    use crate::lir::item::import::{Import as LIRImport, PathTree};
+    use crate::rust_ast::item::import::{Import as LIRImport, PathTree};
     use crate::mir::item::node_file::import::Import;
 
     #[test]

@@ -1,5 +1,5 @@
-use crate::lir::file::File;
-use crate::lir::item::Item;
+use crate::rust_ast::file::File;
+use crate::rust_ast::item::Item;
 use crate::mir::item::node_file::NodeFile;
 
 use self::import::lir_from_mir as import_lir_from_mir;

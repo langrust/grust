@@ -1,4 +1,4 @@
-use crate::lir::block::Block as LIRBlock;
+use crate::rust_ast::block::Block as LIRBlock;
 use crate::mir::block::Block;
 
 use super::statement::lir_from_mir as statement_lir_from_mir;
@@ -17,11 +17,11 @@ pub fn lir_from_mir(block: Block) -> LIRBlock {
 mod lir_from_mir {
     use crate::common::constant::Constant;
     use crate::frontend::lir_from_mir::block::lir_from_mir;
-    use crate::lir::block::Block as LIRBlock;
-    use crate::lir::expression::Expression as LIRExpression;
-    use crate::lir::pattern::Pattern as LIRPattern;
-    use crate::lir::statement::r#let::Let;
-    use crate::lir::statement::Statement as LIRStatement;
+    use crate::rust_ast::block::Block as LIRBlock;
+    use crate::rust_ast::expression::Expression as LIRExpression;
+    use crate::rust_ast::pattern::Pattern as LIRPattern;
+    use crate::rust_ast::statement::r#let::Let;
+    use crate::rust_ast::statement::Statement as LIRStatement;
     use crate::mir::block::Block;
     use crate::mir::expression::Expression;
     use crate::mir::statement::Statement;

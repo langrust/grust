@@ -1,4 +1,4 @@
-use crate::lir::r#type::Type;
+use crate::rust_ast::r#type::Type;
 
 /// A Rust structure.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -44,7 +44,7 @@ impl std::fmt::Display for Field {
 
 #[cfg(test)]
 mod fmt {
-    use crate::lir::{
+    use crate::rust_ast::{
         item::structure::{Field, Structure},
         r#type::Type,
     };

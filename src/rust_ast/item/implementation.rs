@@ -1,4 +1,4 @@
-use crate::lir::{block::Block, item::signature::Signature, r#type::Type};
+use crate::rust_ast::{block::Block, item::signature::Signature, r#type::Type};
 
 /// Rust trait or type implementation.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -64,7 +64,7 @@ impl std::fmt::Display for AssociatedItem {
 mod fmt {
     use crate::{
         common::constant::Constant,
-        lir::{
+        rust_ast::{
             block::Block,
             expression::Expression,
             item::{

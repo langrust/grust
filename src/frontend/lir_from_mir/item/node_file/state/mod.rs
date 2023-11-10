@@ -1,9 +1,9 @@
 use crate::frontend::lir_from_mir::item::node_file::state::init::lir_from_mir as init_lir_from_mir;
 use crate::frontend::lir_from_mir::item::node_file::state::step::lir_from_mir as step_lir_from_mir;
 use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
-use crate::lir::item::implementation::Implementation;
-use crate::lir::item::structure::{Field, Structure};
-use crate::lir::r#type::Type as LIRType;
+use crate::rust_ast::item::implementation::Implementation;
+use crate::rust_ast::item::structure::{Field, Structure};
+use crate::rust_ast::r#type::Type as LIRType;
 use crate::mir::item::node_file::state::{State, StateElement};
 
 /// LIR init method construction from MIR init.

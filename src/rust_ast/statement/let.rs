@@ -1,4 +1,4 @@
-use crate::lir::{expression::Expression, pattern::Pattern};
+use crate::rust_ast::{expression::Expression, pattern::Pattern};
 
 /// A `let` binding: `let x: u64 = 5`.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -19,7 +19,7 @@ impl std::fmt::Display for Let {
 mod fmt {
     use crate::{
         common::constant::Constant,
-        lir::{pattern::Pattern, statement::r#let::Let},
+        rust_ast::{pattern::Pattern, statement::r#let::Let},
     };
 
     use super::Expression;

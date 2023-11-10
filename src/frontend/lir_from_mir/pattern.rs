@@ -1,5 +1,5 @@
 use crate::ast::pattern::Pattern;
-use crate::lir::pattern::{FieldPattern, Pattern as LIRPattern};
+use crate::rust_ast::pattern::{FieldPattern, Pattern as LIRPattern};
 
 /// Transform MIR pattern into LIR pattern.
 pub fn lir_from_mir(pattern: Pattern) -> LIRPattern {
@@ -39,7 +39,7 @@ mod lir_from_mir {
     use crate::common::constant::Constant;
     use crate::common::location::Location;
     use crate::frontend::lir_from_mir::pattern::lir_from_mir;
-    use crate::lir::pattern::{FieldPattern, Pattern as LIRPattern};
+    use crate::rust_ast::pattern::{FieldPattern, Pattern as LIRPattern};
 
     #[test]
     fn should_create_a_lir_default_pattern_from_a_mir_default_pattern() {

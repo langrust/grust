@@ -1,4 +1,4 @@
-use crate::lir::item::enumeration::Enumeration as LIREnumeration;
+use crate::rust_ast::item::enumeration::Enumeration as LIREnumeration;
 use crate::mir::item::enumeration::Enumeration;
 
 /// Transform MIR enumeration into LIR enumeration.
@@ -13,7 +13,7 @@ pub fn lir_from_mir(enumeration: Enumeration) -> LIREnumeration {
 #[cfg(test)]
 mod lir_from_mir {
     use crate::frontend::lir_from_mir::item::enumeration::lir_from_mir;
-    use crate::lir::item::enumeration::Enumeration as LIREnumeration;
+    use crate::rust_ast::item::enumeration::Enumeration as LIREnumeration;
     use crate::mir::item::enumeration::Enumeration;
 
     #[test]

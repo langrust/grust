@@ -1,5 +1,5 @@
 use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
-use crate::lir::item::structure::{Field, Structure as LIRStructure};
+use crate::rust_ast::item::structure::{Field, Structure as LIRStructure};
 use crate::mir::item::structure::Structure;
 
 /// Transform MIR structure into LIR structure.
@@ -24,8 +24,8 @@ pub fn lir_from_mir(structure: Structure) -> LIRStructure {
 mod lir_from_mir {
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::item::structure::lir_from_mir;
-    use crate::lir::item::structure::{Field, Structure as LIRStructure};
-    use crate::lir::r#type::Type as LIRType;
+    use crate::rust_ast::item::structure::{Field, Structure as LIRStructure};
+    use crate::rust_ast::r#type::Type as LIRType;
     use crate::mir::item::structure::Structure;
 
     #[test]

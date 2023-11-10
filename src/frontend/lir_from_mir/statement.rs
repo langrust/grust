@@ -1,6 +1,6 @@
-use crate::lir::pattern::Pattern;
-use crate::lir::statement::r#let::Let;
-use crate::lir::statement::Statement as LIRStatement;
+use crate::rust_ast::pattern::Pattern;
+use crate::rust_ast::statement::r#let::Let;
+use crate::rust_ast::statement::Statement as LIRStatement;
 use crate::mir::statement::Statement;
 
 use super::expression::lir_from_mir as expression_lir_from_mir;
@@ -46,10 +46,10 @@ pub fn lir_from_mir(statement: Statement) -> LIRStatement {
 mod lir_from_mir {
     use crate::common::constant::Constant;
     use crate::frontend::lir_from_mir::statement::lir_from_mir;
-    use crate::lir::expression::{Expression as LIRExpression, FieldExpression};
-    use crate::lir::pattern::Pattern;
-    use crate::lir::statement::r#let::Let;
-    use crate::lir::statement::Statement as LIRStatement;
+    use crate::rust_ast::expression::{Expression as LIRExpression, FieldExpression};
+    use crate::rust_ast::pattern::Pattern;
+    use crate::rust_ast::statement::r#let::Let;
+    use crate::rust_ast::statement::Statement as LIRStatement;
     use crate::mir::expression::Expression;
     use crate::mir::statement::Statement;
 

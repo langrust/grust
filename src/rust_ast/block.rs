@@ -1,4 +1,4 @@
-use crate::lir::statement::Statement;
+use crate::rust_ast::statement::Statement;
 
 /// A block of statements.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -23,7 +23,7 @@ impl std::fmt::Display for Block {
 mod fmt {
     use crate::{
         common::{constant::Constant, operator::BinaryOperator},
-        lir::{
+        rust_ast::{
             block::Block,
             expression::Expression,
             pattern::Pattern,

@@ -91,7 +91,7 @@ impl std::fmt::Display for PathTree {
 
 #[cfg(test)]
 mod fmt {
-    use crate::lir::item::import::{Import, PathTree};
+    use crate::rust_ast::item::import::{Import, PathTree};
 
     #[test]
     fn should_format_use_import_definition_with_name_path() {

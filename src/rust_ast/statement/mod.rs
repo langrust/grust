@@ -1,54 +1,28 @@
-use self::{
-    enumeration::Enumeration, function::Function, implementation::Implementation, import::Import,
-    r#trait::Trait, structure::Structure, type_alias::TypeAlias,
-};
+use crate::rust_ast::{expression::Expression, item::Item, statement::r#let::Let};
 
-/// LIR [Enumeration](crate::lir::item::enumeration::Enumeration) module.
-pub mod enumeration;
-/// LIR [Function](crate::lir::item::function::Function) module.
-pub mod function;
-/// LIR [Implementation](crate::lir::item::implementation::Implementation) module.
-pub mod implementation;
-/// LIR [Import](crate::lir::item::import::Import) module.
-pub mod import;
-/// LIR [Signature](crate::lir::item::signature::Signature) module.
-pub mod signature;
-/// LIR [Structure](crate::lir::item::structure::Structure) module.
-pub mod structure;
-/// LIR [Trait](crate::lir::item::r#trait::Trait) module.
-pub mod r#trait;
-/// LIR [TypeAlias](crate::lir::item::type_alias::TypeAlias) module.
-pub mod type_alias;
+/// LIR [Let](crate::lir::statement::r#let::Let) module.
+pub mod r#let;
 
-/// All items that can be defined in a module or a scope.
+/// Rust statement.
 #[derive(Debug, PartialEq, serde::Serialize)]
-pub enum Item {
-    /// An enumeration definition: `enum Color { Blue, Yellow }`.
-    Enumeration(Enumeration),
-    /// An function definition: `pub fn compute(n: i64) { ... }`.
-    Function(Function),
-    /// An implementation definition: `impl Clone for Point { ... }`.
-    Implementation(Implementation),
-    /// An import definition: `use std::sync::Mutex;`.
-    Import(Import),
-    /// A structure definition: `struct Point { x: i64, y: i64 }`.
-    Structure(Structure),
-    /// An trait definition: `trait Clone { ... }`.
-    Trait(Trait),
-    /// A type alias definition: `type MyPoint = Point;`.
-    TypeAlias(TypeAlias),
+pub enum Statement {
+    /// A `let` binding.
+    Let(Let),
+    /// An item definition.
+    Item(Item),
+    /// An internal expression, endding with a semicolon.
+    ExpressionIntern(Expression),
+    /// The last expression, no semicolon.
+    ExpressionLast(Expression),
 }
 
-impl std::fmt::Display for Item {
+impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Item::Enumeration(enumeration) => write!(f, "{enumeration}"),
-            Item::Function(function) => write!(f, "{function}"),
-            Item::Implementation(implementation) => write!(f, "{implementation}"),
-            Item::Import(import) => write!(f, "{import}"),
-            Item::Structure(structure) => write!(f, "{structure}"),
-            Item::Trait(r#trait) => write!(f, "{}", r#trait),
-            Item::TypeAlias(type_alias) => write!(f, "{type_alias}"),
+            Statement::Let(r#let) => write!(f, "{}", r#let),
+            Statement::Item(item) => write!(f, "{item}"),
+            Statement::ExpressionIntern(expression) => write!(f, "{expression};"),
+            Statement::ExpressionLast(expression) => write!(f, "{expression}"),
         }
     }
 }
@@ -57,7 +31,7 @@ impl std::fmt::Display for Item {
 mod fmt {
     use crate::{
         common::{constant::Constant, operator::BinaryOperator},
-        lir::{
+        rust_ast::{
             block::Block,
             expression::Expression,
             item::Item,
@@ -78,8 +52,53 @@ mod fmt {
     };
 
     #[test]
+    fn should_format_let_binding() {
+        let let_binding = Let {
+            pattern: Pattern::Identifier {
+                reference: false,
+                mutable: true,
+                identifier: String::from("x"),
+            },
+            expression: Expression::Literal {
+                literal: Constant::Integer(1),
+            },
+        };
+        let control = String::from("let mut x = 1i64;");
+        assert_eq!(format!("{}", let_binding), control)
+    }
+
+    #[test]
+    fn should_format_last_expression_statement() {
+        let statement = Statement::ExpressionLast(Expression::Identifier {
+            identifier: String::from("x"),
+        });
+        let control = String::from("x");
+        assert_eq!(format!("{}", statement), control)
+    }
+
+    #[test]
+    fn should_format_intern_expression_statement() {
+        let statement = Statement::ExpressionIntern(Expression::Assignement {
+            left: Box::new(Expression::Identifier {
+                identifier: String::from("x"),
+            }),
+            right: Box::new(Expression::Binary {
+                left: Box::new(Expression::Identifier {
+                    identifier: String::from("x"),
+                }),
+                operator: BinaryOperator::Add,
+                right: Box::new(Expression::Literal {
+                    literal: Constant::Integer(1),
+                }),
+            }),
+        });
+        let control = String::from("x = x + 1i64;");
+        assert_eq!(format!("{}", statement), control)
+    }
+
+    #[test]
     fn should_format_enumeration_definition() {
-        let item = Item::Enumeration(Enumeration {
+        let item = Statement::Item(Item::Enumeration(Enumeration {
             public_visibility: true,
             name: String::from("Color"),
             elements: vec![
@@ -89,14 +108,14 @@ mod fmt {
                 String::from("Green"),
                 String::from("Purple"),
             ],
-        });
+        }));
         let control = String::from("pub enum Color { Blue, Red, Yellow, Green, Purple }");
         assert_eq!(format!("{}", item), control)
     }
 
     #[test]
     fn should_format_function_definition() {
-        let function = Item::Function(Function {
+        let function = Statement::Item(Item::Function(Function {
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),
@@ -156,7 +175,7 @@ mod fmt {
                     }),
                 ],
             },
-        });
+        }));
         let control = String::from(
             "pub fn foo(x: i64, y: i64) -> i64 { let mut z = x + y; z = z + 1i64; z }",
         );
@@ -165,7 +184,7 @@ mod fmt {
 
     #[test]
     fn should_format_trait_implementation() {
-        let r#trait = Item::Implementation(Implementation {
+        let r#trait = Statement::Item(Item::Implementation(Implementation {
             trait_name: Some(String::from("Display")),
             type_name: String::from("Point"),
             items: vec![
@@ -223,7 +242,7 @@ mod fmt {
                     },
                 },
             ],
-        });
+        }));
         let control = String::from("impl Display for Point { type MyString = String; ")
             + "fn fmt(&self, f: &mut String) { write!(f, \"({}, {})\", self.x, self.y); } }";
         assert_eq!(format!("{}", r#trait), control)
@@ -231,7 +250,7 @@ mod fmt {
 
     #[test]
     fn should_format_use_import_definition_with_name_path() {
-        let use_import = Item::Import(Import::Use {
+        let use_import = Statement::Item(Item::Import(Import::Use {
             public_visibility: true,
             tree: PathTree::Path {
                 module_name: String::from("std"),
@@ -243,14 +262,14 @@ mod fmt {
                     }),
                 }),
             },
-        });
+        }));
         let control = String::from("pub use std::fmt::Debug;");
         assert_eq!(format!("{}", use_import), control)
     }
 
     #[test]
     fn should_format_use_import_definition_with_alias_name_path() {
-        let use_import = Item::Import(Import::Use {
+        let use_import = Statement::Item(Item::Import(Import::Use {
             public_visibility: true,
             tree: PathTree::Path {
                 module_name: String::from("std"),
@@ -262,14 +281,14 @@ mod fmt {
                     }),
                 }),
             },
-        });
+        }));
         let control = String::from("pub use std::future::Future as AliasFuture;");
         assert_eq!(format!("{}", use_import), control)
     }
 
     #[test]
     fn should_format_use_import_definition_with_star_path() {
-        let use_import = Item::Import(Import::Use {
+        let use_import = Statement::Item(Item::Import(Import::Use {
             public_visibility: true,
             tree: PathTree::Path {
                 module_name: String::from("std"),
@@ -278,14 +297,14 @@ mod fmt {
                     tree: Box::new(PathTree::Star),
                 }),
             },
-        });
+        }));
         let control = String::from("pub use std::sync::*;");
         assert_eq!(format!("{}", use_import), control)
     }
 
     #[test]
     fn should_format_use_import_definition_with_group_path() {
-        let use_import = Item::Import(Import::Use {
+        let use_import = Statement::Item(Item::Import(Import::Use {
             public_visibility: true,
             tree: PathTree::Path {
                 module_name: String::from("std"),
@@ -312,7 +331,7 @@ mod fmt {
                     ],
                 }),
             },
-        });
+        }));
         let control =
             String::from("pub use std::{ sync::*, fmt::Debug, future::Future as AliasFuture };");
         assert_eq!(format!("{}", use_import), control)
@@ -320,17 +339,17 @@ mod fmt {
 
     #[test]
     fn should_format_module_import_definition() {
-        let mod_import = Item::Import(Import::Module {
+        let mod_import = Statement::Item(Item::Import(Import::Module {
             public_visibility: true,
             name: String::from("my_module"),
-        });
+        }));
         let control = String::from("pub mod my_module;");
         assert_eq!(format!("{}", mod_import), control)
     }
 
     #[test]
     fn should_format_structure_definition() {
-        let structure = Item::Structure(Structure {
+        let structure = Statement::Item(Item::Structure(Structure {
             public_visibility: true,
             name: String::from("Point"),
             fields: vec![
@@ -356,14 +375,14 @@ mod fmt {
                     },
                 },
             ],
-        });
+        }));
         let control = String::from("pub struct Point { pub x: i64, pub y: i64, z: i64 }");
         assert_eq!(format!("{}", structure), control)
     }
 
     #[test]
     fn should_format_trait_definition() {
-        let r#trait = Item::Trait(Trait {
+        let r#trait = Statement::Item(Item::Trait(Trait {
             public_visibility: true,
             trait_name: String::from("Display"),
             items: vec![
@@ -395,7 +414,7 @@ mod fmt {
                     default: None,
                 },
             ],
-        });
+        }));
         let control =
             String::from("pub trait Display { type MyString; fn fmt(&self, f: &mut String); }");
         assert_eq!(format!("{}", r#trait), control)
@@ -403,13 +422,13 @@ mod fmt {
 
     #[test]
     fn should_format_type_alias_definition() {
-        let alias = Item::TypeAlias(TypeAlias {
+        let alias = Statement::Item(Item::TypeAlias(TypeAlias {
             public_visibility: true,
             name: String::from("Integer"),
             r#type: Type::Identifier {
                 identifier: String::from("i64"),
             },
-        });
+        }));
         let control = String::from("pub type Integer = i64;");
         assert_eq!(format!("{}", alias), control)
     }
