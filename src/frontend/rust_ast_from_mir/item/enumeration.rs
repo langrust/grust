@@ -12,7 +12,7 @@ pub fn lir_from_mir(enumeration: Enumeration) -> RustASTEnumeration {
 
 #[cfg(test)]
 mod lir_from_mir {
-    use crate::frontend::lir_from_mir::item::enumeration::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::enumeration::lir_from_mir;
     use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
     use crate::mir::item::enumeration::Enumeration;
 

@@ -14,4 +14,4 @@ pub mod normalizing;
 pub mod mir_from_hir;
 
 /// RustAST construction from MIR.
-pub mod lir_from_mir;
+pub mod rust_ast_from_mir;

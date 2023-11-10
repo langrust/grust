@@ -1,5 +1,5 @@
 use crate::{
-    frontend::lir_from_mir::item::{
+    frontend::rust_ast_from_mir::item::{
         array_alias::lir_from_mir as array_alias_lir_from_mir,
         enumeration::lir_from_mir as enumeration_lir_from_mir,
         function::lir_from_mir as function_lir_from_mir,

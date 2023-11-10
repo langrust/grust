@@ -1,6 +1,6 @@
-use crate::frontend::lir_from_mir::expression::lir_from_mir as expression_lir_from_mir;
-use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
-use crate::frontend::lir_from_mir::statement::lir_from_mir as statement_lir_from_mir;
+use crate::frontend::rust_ast_from_mir::expression::lir_from_mir as expression_lir_from_mir;
+use crate::frontend::rust_ast_from_mir::r#type::lir_from_mir as type_lir_from_mir;
+use crate::frontend::rust_ast_from_mir::statement::lir_from_mir as statement_lir_from_mir;
 use crate::rust_ast::block::Block;
 use crate::rust_ast::expression::{Expression, FieldExpression};
 use crate::rust_ast::item::implementation::AssociatedItem;
@@ -73,7 +73,7 @@ mod lir_from_mir {
     use crate::common::constant::Constant;
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::frontend::lir_from_mir::item::node_file::state::step::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::node_file::state::step::lir_from_mir;
     use crate::rust_ast::block::Block;
     use crate::rust_ast::expression::{Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;

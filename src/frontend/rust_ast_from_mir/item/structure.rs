@@ -1,4 +1,4 @@
-use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
+use crate::frontend::rust_ast_from_mir::r#type::lir_from_mir as type_lir_from_mir;
 use crate::rust_ast::item::structure::{Field, Structure as RustASTStructure};
 use crate::mir::item::structure::Structure;
 
@@ -23,7 +23,7 @@ pub fn lir_from_mir(structure: Structure) -> RustASTStructure {
 #[cfg(test)]
 mod lir_from_mir {
     use crate::common::r#type::Type;
-    use crate::frontend::lir_from_mir::item::structure::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::structure::lir_from_mir;
     use crate::rust_ast::item::structure::{Field, Structure as RustASTStructure};
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::mir::item::structure::Structure;
