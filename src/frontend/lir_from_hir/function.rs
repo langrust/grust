@@ -48,7 +48,7 @@ mod lir_from_hir {
     };
 
     #[test]
-    fn should_transform_ast_function_definition_into_mir_function_definition() {
+    fn should_transform_ast_function_definition_into_lir_function_definition() {
         let function = ASTFunction {
             id: format!("add"),
             inputs: vec![(format!("x"), Type::Integer), (format!("y"), Type::Integer)],

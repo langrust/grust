@@ -215,7 +215,7 @@ mod lir_from_hir {
     };
 
     #[test]
-    fn should_transform_ast_constant_into_mir_literal() {
+    fn should_transform_ast_constant_into_lir_literal() {
         let expression = ASTExpression::Constant {
             constant: Constant::Integer(1),
             typing: Some(Type::Integer),
@@ -228,7 +228,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_ast_call_into_mir_identifier() {
+    fn should_transform_ast_call_into_lir_identifier() {
         let expression = ASTExpression::Call {
             id: format!("x"),
             typing: Some(Type::Integer),
@@ -241,7 +241,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_ast_application_into_mir_function_call() {
+    fn should_transform_ast_application_into_lir_function_call() {
         let expression = ASTExpression::Application {
             function_expression: Box::new(ASTExpression::Call {
                 id: format!(" + "),
@@ -283,7 +283,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_ast_application_of_if_then_else_into_mir_if_then_else() {
+    fn should_transform_ast_application_of_if_then_else_into_lir_if_then_else() {
         let expression = ASTExpression::Application {
             function_expression: Box::new(ASTExpression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
@@ -336,7 +336,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_ast_structure_into_mir_structure() {
+    fn should_transform_ast_structure_into_lir_structure() {
         let expression = ASTExpression::Structure {
             name: format!("Point"),
             fields: vec![
@@ -381,7 +381,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_ast_array_into_mir_array() {
+    fn should_transform_ast_array_into_lir_array() {
         let expression = ASTExpression::Array {
             elements: vec![ASTExpression::Call {
                 id: format!("x"),
@@ -400,7 +400,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_ast_match_into_mir_match() {
+    fn should_transform_ast_match_into_lir_match() {
         let expression = ASTExpression::Match {
             expression: Box::new(ASTExpression::Call {
                 id: format!("p"),
@@ -497,7 +497,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_ast_when_into_mir_match() {
+    fn should_transform_ast_when_into_lir_match() {
         let expression = ASTExpression::When {
             id: format!("x"),
             option: Box::new(ASTExpression::Call {
@@ -580,7 +580,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_ast_abstraction_into_mir_node_call() {
+    fn should_transform_ast_abstraction_into_lir_node_call() {
         let expression = ASTExpression::TypedAbstraction {
             inputs: vec![(format!("x"), Type::Integer)],
             expression: Box::new(ASTExpression::Application {

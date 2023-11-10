@@ -54,7 +54,7 @@ mod rust_ast_from_lir {
     use crate::lir::statement::Statement;
 
     #[test]
-    fn should_create_rust_ast_let_statement_from_mir_let_statement() {
+    fn should_create_rust_ast_let_statement_from_lir_let_statement() {
         let statement = Statement::Let {
             identifier: String::from("x"),
             expression: Expression::Literal {
@@ -75,7 +75,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_let_tuple_statement_from_mir_let_tuple_statement() {
+    fn should_create_rust_ast_let_tuple_statement_from_lir_let_tuple_statement() {
         let statement = Statement::LetTuple {
             identifiers: vec![String::from("o"), String::from("new_node_state")],
             expression: Expression::NodeCall {
@@ -127,7 +127,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_last_expression_from_mir_last_expression() {
+    fn should_create_rust_ast_last_expression_from_lir_last_expression() {
         let statement = Statement::ExpressionLast {
             expression: Expression::Literal {
                 literal: Constant::Integer(1),

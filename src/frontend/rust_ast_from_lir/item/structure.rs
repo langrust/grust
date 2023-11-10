@@ -29,7 +29,7 @@ mod rust_ast_from_lir {
     use crate::lir::item::structure::Structure;
 
     #[test]
-    fn should_create_rust_ast_structure_from_mir_structure() {
+    fn should_create_rust_ast_structure_from_lir_structure() {
         let structure = Structure {
             name: String::from("Point"),
             fields: vec![

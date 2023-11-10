@@ -24,7 +24,7 @@ mod rust_ast_from_lir {
     use crate::lir::item::array_alias::ArrayAlias;
 
     #[test]
-    fn should_create_rust_ast_type_alias_from_mir_array_alias() {
+    fn should_create_rust_ast_type_alias_from_lir_array_alias() {
         let array_alias = ArrayAlias {
             name: String::from("Matrix5x5"),
             array_type: Type::Array(Box::new(Type::Integer), 5),

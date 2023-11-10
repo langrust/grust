@@ -27,7 +27,7 @@ mod rust_ast_from_lir {
     use crate::lir::statement::Statement;
 
     #[test]
-    fn should_create_rust_ast_block_from_mir_block() {
+    fn should_create_rust_ast_block_from_lir_block() {
         let block = Block {
             statements: vec![
                 Statement::Let {

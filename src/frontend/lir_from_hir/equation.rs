@@ -35,7 +35,7 @@ mod lir_from_hir {
     };
 
     #[test]
-    fn should_transform_hir_equation_of_constant_into_mir_let_statement() {
+    fn should_transform_hir_equation_of_constant_into_lir_let_statement() {
         let equation = Equation {
             scope: Scope::Local,
             id: format!("y"),
@@ -58,7 +58,7 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_equation_of_unitary_node_application_into_mir_tuple_statement() {
+    fn should_transform_hir_equation_of_unitary_node_application_into_lir_tuple_statement() {
         let equation = Equation {
             scope: Scope::Local,
             id: format!("y"),
