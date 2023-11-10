@@ -1,16 +1,16 @@
-use crate::frontend::rust_ast_from_mir::r#type::lir_from_mir as type_lir_from_mir;
+use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
 use crate::rust_ast::item::structure::{Field, Structure};
 use crate::mir::item::node_file::input::{Input, InputElement};
 
 /// Transform MIR input into RustAST structure.
-pub fn lir_from_mir(input: Input) -> Structure {
+pub fn rust_ast_from_mir(input: Input) -> Structure {
     let fields = input
         .elements
         .into_iter()
         .map(|InputElement { identifier, r#type }| Field {
             public_visibility: true,
             name: identifier,
-            r#type: type_lir_from_mir(r#type),
+            r#type: type_rust_ast_from_mir(r#type),
         })
         .collect();
     Structure {
@@ -21,9 +21,9 @@ pub fn lir_from_mir(input: Input) -> Structure {
 }
 
 #[cfg(test)]
-mod lir_from_mir {
+mod rust_ast_from_mir {
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_mir::item::node_file::input::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::node_file::input::rust_ast_from_mir;
     use crate::rust_ast::item::structure::{Field, Structure};
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::mir::item::node_file::input::{Input, InputElement};
@@ -48,6 +48,6 @@ mod lir_from_mir {
                 },
             }],
         };
-        assert_eq!(lir_from_mir(input), control)
+        assert_eq!(rust_ast_from_mir(input), control)
     }
 }

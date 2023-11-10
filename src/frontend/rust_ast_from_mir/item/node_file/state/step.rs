@@ -1,6 +1,6 @@
-use crate::frontend::rust_ast_from_mir::expression::lir_from_mir as expression_lir_from_mir;
-use crate::frontend::rust_ast_from_mir::r#type::lir_from_mir as type_lir_from_mir;
-use crate::frontend::rust_ast_from_mir::statement::lir_from_mir as statement_lir_from_mir;
+use crate::frontend::rust_ast_from_mir::expression::rust_ast_from_mir as expression_rust_ast_from_mir;
+use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
+use crate::frontend::rust_ast_from_mir::statement::rust_ast_from_mir as statement_rust_ast_from_mir;
 use crate::rust_ast::block::Block;
 use crate::rust_ast::expression::{Expression, FieldExpression};
 use crate::rust_ast::item::implementation::AssociatedItem;
@@ -10,7 +10,7 @@ use crate::rust_ast::statement::Statement;
 use crate::mir::item::node_file::state::step::{StateElementStep, Step};
 
 /// Transform MIR step into RustAST implementation method.
-pub fn lir_from_mir(step: Step) -> AssociatedItem {
+pub fn rust_ast_from_mir(step: Step) -> AssociatedItem {
     let signature = Signature {
         public_visibility: true,
         name: String::from("step"),
@@ -29,14 +29,14 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
                 RustASTType::Identifier {
                     identifier: step.node_name.clone() + "State",
                 },
-                type_lir_from_mir(step.output_type),
+                type_rust_ast_from_mir(step.output_type),
             ],
         },
     };
     let mut statements = step
         .body
         .into_iter()
-        .map(statement_lir_from_mir)
+        .map(statement_rust_ast_from_mir)
         .collect::<Vec<_>>();
 
     let fields = step
@@ -48,7 +48,7 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
                  expression,
              }| FieldExpression {
                 name: identifier,
-                expression: expression_lir_from_mir(expression),
+                expression: expression_rust_ast_from_mir(expression),
             },
         )
         .collect();
@@ -58,7 +58,7 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
                 name: step.node_name + "State",
                 fields,
             },
-            expression_lir_from_mir(step.output_expression),
+            expression_rust_ast_from_mir(step.output_expression),
         ],
     });
 
@@ -69,11 +69,11 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
 }
 
 #[cfg(test)]
-mod lir_from_mir {
+mod rust_ast_from_mir {
     use crate::common::constant::Constant;
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_mir::item::node_file::state::step::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::node_file::state::step::rust_ast_from_mir;
     use crate::rust_ast::block::Block;
     use crate::rust_ast::expression::{Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;
@@ -256,6 +256,6 @@ mod lir_from_mir {
                 ],
             },
         };
-        assert_eq!(lir_from_mir(init), control)
+        assert_eq!(rust_ast_from_mir(init), control)
     }
 }

@@ -1,22 +1,22 @@
 use crate::rust_ast::block::Block as RustASTBlock;
 use crate::mir::block::Block;
 
-use super::statement::lir_from_mir as statement_lir_from_mir;
+use super::statement::rust_ast_from_mir as statement_rust_ast_from_mir;
 
 /// Transform MIR block into RustAST block.
-pub fn lir_from_mir(block: Block) -> RustASTBlock {
+pub fn rust_ast_from_mir(block: Block) -> RustASTBlock {
     let statements = block
         .statements
         .into_iter()
-        .map(statement_lir_from_mir)
+        .map(statement_rust_ast_from_mir)
         .collect();
     RustASTBlock { statements }
 }
 
 #[cfg(test)]
-mod lir_from_mir {
+mod rust_ast_from_mir {
     use crate::common::constant::Constant;
-    use crate::frontend::rust_ast_from_mir::block::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::block::rust_ast_from_mir;
     use crate::rust_ast::block::Block as RustASTBlock;
     use crate::rust_ast::expression::Expression as RustASTExpression;
     use crate::rust_ast::pattern::Pattern as RustASTPattern;
@@ -60,6 +60,6 @@ mod lir_from_mir {
                 }),
             ],
         };
-        assert_eq!(lir_from_mir(block), control)
+        assert_eq!(rust_ast_from_mir(block), control)
     }
 }

@@ -4,14 +4,14 @@ use crate::rust_ast::pattern::Pattern;
 use crate::mir::expression::Expression;
 
 use super::{
-    block::lir_from_mir as block_lir_from_mir, pattern::lir_from_mir as pattern_lir_from_mir,
-    r#type::lir_from_mir as type_lir_from_mir,
+    block::rust_ast_from_mir as block_rust_ast_from_mir, pattern::rust_ast_from_mir as pattern_rust_ast_from_mir,
+    r#type::rust_ast_from_mir as type_rust_ast_from_mir,
 };
 
 use strum::IntoEnumIterator;
 
 /// Transform MIR expression into RustAST expression.
-pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
+pub fn rust_ast_from_mir(expression: Expression) -> RustASTExpression {
     match expression {
         Expression::Literal { literal } => RustASTExpression::Literal { literal },
         Expression::Identifier { identifier } => RustASTExpression::Identifier { identifier },
@@ -38,17 +38,17 @@ pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
                 .into_iter()
                 .map(|(name, expression)| FieldExpression {
                     name,
-                    expression: lir_from_mir(expression),
+                    expression: rust_ast_from_mir(expression),
                 })
                 .collect();
             RustASTExpression::Structure { name, fields }
         }
         Expression::Array { elements } => {
-            let elements = elements.into_iter().map(lir_from_mir).collect();
+            let elements = elements.into_iter().map(rust_ast_from_mir).collect();
             RustASTExpression::Array { elements }
         }
         Expression::Block { block } => RustASTExpression::Block {
-            block: block_lir_from_mir(block),
+            block: block_rust_ast_from_mir(block),
         },
         Expression::FunctionCall {
             function,
@@ -59,29 +59,29 @@ pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
                     BinaryOperator::iter().find(|binary| binary.to_string() == *identifier)
                 {
                     RustASTExpression::Binary {
-                        left: Box::new(lir_from_mir(arguments.remove(0))),
+                        left: Box::new(rust_ast_from_mir(arguments.remove(0))),
                         operator: binary,
-                        right: Box::new(lir_from_mir(arguments.remove(0))),
+                        right: Box::new(rust_ast_from_mir(arguments.remove(0))),
                     }
                 } else if let Some(unary) =
                     UnaryOperator::iter().find(|unary| unary.to_string() == *identifier)
                 {
                     RustASTExpression::Unary {
                         operator: unary,
-                        expression: Box::new(lir_from_mir(arguments.remove(0))),
+                        expression: Box::new(rust_ast_from_mir(arguments.remove(0))),
                     }
                 } else {
-                    let arguments = arguments.into_iter().map(lir_from_mir).collect();
+                    let arguments = arguments.into_iter().map(rust_ast_from_mir).collect();
                     RustASTExpression::FunctionCall {
-                        function: Box::new(lir_from_mir(*function)),
+                        function: Box::new(rust_ast_from_mir(*function)),
                         arguments,
                     }
                 }
             }
             _ => {
-                let arguments = arguments.into_iter().map(lir_from_mir).collect();
+                let arguments = arguments.into_iter().map(rust_ast_from_mir).collect();
                 RustASTExpression::FunctionCall {
-                    function: Box::new(lir_from_mir(*function)),
+                    function: Box::new(rust_ast_from_mir(*function)),
                     arguments,
                 }
             }
@@ -102,7 +102,7 @@ pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
                 .into_iter()
                 .map(|(name, expression)| FieldExpression {
                     name,
-                    expression: lir_from_mir(expression),
+                    expression: rust_ast_from_mir(expression),
                 })
                 .collect();
             let argument = RustASTExpression::Structure {
@@ -116,7 +116,7 @@ pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
             }
         }
         Expression::FieldAccess { expression, field } => RustASTExpression::FieldAccess {
-            expression: Box::new(lir_from_mir(*expression)),
+            expression: Box::new(rust_ast_from_mir(*expression)),
             field,
         },
         Expression::Lambda {
@@ -132,14 +132,14 @@ pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
                         mutable: false,
                         identifier,
                     }),
-                    r#type: type_lir_from_mir(r#type),
+                    r#type: type_rust_ast_from_mir(r#type),
                 })
                 .collect();
             RustASTExpression::Closure {
                 r#move: false,
                 inputs,
-                output: Some(type_lir_from_mir(output)),
-                body: Box::new(lir_from_mir(*body)),
+                output: Some(type_rust_ast_from_mir(output)),
+                body: Box::new(rust_ast_from_mir(*body)),
             }
         }
         Expression::IfThenElse {
@@ -147,21 +147,21 @@ pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
             then_branch,
             else_branch,
         } => RustASTExpression::IfThenElse {
-            condition: Box::new(lir_from_mir(*condition)),
-            then_branch: block_lir_from_mir(then_branch),
-            else_branch: Some(block_lir_from_mir(else_branch)),
+            condition: Box::new(rust_ast_from_mir(*condition)),
+            then_branch: block_rust_ast_from_mir(then_branch),
+            else_branch: Some(block_rust_ast_from_mir(else_branch)),
         },
         Expression::Match { matched, arms } => {
             let arms = arms
                 .into_iter()
                 .map(|(pattern, guard, body)| Arm {
-                    pattern: pattern_lir_from_mir(pattern),
-                    guard: guard.map(lir_from_mir),
-                    body: lir_from_mir(body),
+                    pattern: pattern_rust_ast_from_mir(pattern),
+                    guard: guard.map(rust_ast_from_mir),
+                    body: rust_ast_from_mir(body),
                 })
                 .collect();
             RustASTExpression::Match {
-                matched: Box::new(lir_from_mir(*matched)),
+                matched: Box::new(rust_ast_from_mir(*matched)),
                 arms,
             }
         }
@@ -169,13 +169,13 @@ pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
 }
 
 #[cfg(test)]
-mod lir_from_mir {
+mod rust_ast_from_mir {
     use crate::ast::pattern::Pattern;
     use crate::common::constant::Constant;
     use crate::common::location::Location;
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_mir::expression::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::expression::rust_ast_from_mir;
     use crate::rust_ast::block::Block as RustASTBlock;
     use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::pattern::Pattern as RustASTPattern;
@@ -194,7 +194,7 @@ mod lir_from_mir {
         let control = RustASTExpression::Literal {
             literal: Constant::Integer(1),
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -205,7 +205,7 @@ mod lir_from_mir {
         let control = RustASTExpression::Identifier {
             identifier: String::from("x"),
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -219,7 +219,7 @@ mod lir_from_mir {
             }),
             field: String::from("mem_x"),
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -233,7 +233,7 @@ mod lir_from_mir {
             }),
             field: String::from("i"),
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -272,7 +272,7 @@ mod lir_from_mir {
                 },
             ],
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -297,7 +297,7 @@ mod lir_from_mir {
                 },
             ],
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -338,7 +338,7 @@ mod lir_from_mir {
                 ],
             },
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -369,7 +369,7 @@ mod lir_from_mir {
                 },
             ],
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -396,7 +396,7 @@ mod lir_from_mir {
                 identifier: String::from("b"),
             }),
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -429,7 +429,7 @@ mod lir_from_mir {
                 }],
             }],
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -446,7 +446,7 @@ mod lir_from_mir {
             }),
             field: String::from("x"),
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -507,7 +507,7 @@ mod lir_from_mir {
                 },
             }),
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -546,7 +546,7 @@ mod lir_from_mir {
                 })],
             }),
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 
     #[test]
@@ -603,6 +603,6 @@ mod lir_from_mir {
                 },
             ],
         };
-        assert_eq!(lir_from_mir(expression), control)
+        assert_eq!(rust_ast_from_mir(expression), control)
     }
 }
