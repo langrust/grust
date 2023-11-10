@@ -9,7 +9,7 @@ use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 
-/// Transform MIR step into RustAST implementation method.
+/// Transform LIR step into RustAST implementation method.
 pub fn rust_ast_from_mir(step: Step) -> AssociatedItem {
     let signature = Signature {
         public_visibility: true,

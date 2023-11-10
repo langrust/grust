@@ -4,7 +4,7 @@ use crate::{
     frontend::mir_from_hir::stream_expression::mir_from_hir as stream_expression_mir_from_hir,
     hir::memory::{Buffer, CalledNode, Memory},
     lir::{
-        expression::Expression as MIRExpression,
+        expression::Expression as LIRExpression,
         item::node_file::state::{init::StateElementInit, step::StateElementStep, StateElement},
     },
 };
@@ -64,7 +64,7 @@ impl Memory {
                 });
                 steps.push(StateElementStep {
                     identifier: id.clone(),
-                    expression: MIRExpression::Identifier { identifier: id },
+                    expression: LIRExpression::Identifier { identifier: id },
                 });
             });
 

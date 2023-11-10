@@ -1,11 +1,11 @@
-use crate::{ast::statement::Statement, lir::statement::Statement as MIRStatement};
+use crate::{ast::statement::Statement, lir::statement::Statement as LIRStatement};
 
 use super::expression::mir_from_hir as expression_mir_from_hir;
 
-/// Transform HIR statement into MIR statement.
-pub fn mir_from_hir(statement: Statement) -> MIRStatement {
+/// Transform HIR statement into LIR statement.
+pub fn mir_from_hir(statement: Statement) -> LIRStatement {
     let Statement { id, expression, .. } = statement;
-    MIRStatement::Let {
+    LIRStatement::Let {
         identifier: id,
         expression: expression_mir_from_hir(expression),
     }

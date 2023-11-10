@@ -10,7 +10,7 @@ use super::{
 
 use strum::IntoEnumIterator;
 
-/// Transform MIR expression into RustAST expression.
+/// Transform LIR expression into RustAST expression.
 pub fn rust_ast_from_mir(expression: Expression) -> RustASTExpression {
     match expression {
         Expression::Literal { literal } => RustASTExpression::Literal { literal },

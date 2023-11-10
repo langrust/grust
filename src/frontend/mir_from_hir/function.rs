@@ -1,14 +1,14 @@
 use crate::{
     ast::function::Function,
-    lir::{block::Block, item::function::Function as MIRFunction, statement::Statement},
+    lir::{block::Block, item::function::Function as LIRFunction, statement::Statement},
 };
 
 use super::{
     expression::mir_from_hir as expression_mir_from_hir,
     statement::mir_from_hir as statement_mir_from_hir,
 };
-/// Transform HIR function into MIR function.
-pub fn mir_from_hir(function: Function) -> MIRFunction {
+/// Transform HIR function into LIR function.
+pub fn mir_from_hir(function: Function) -> LIRFunction {
     let Function {
         id,
         inputs,
@@ -25,7 +25,7 @@ pub fn mir_from_hir(function: Function) -> MIRFunction {
         expression: expression_mir_from_hir(last_expression),
     });
 
-    MIRFunction {
+    LIRFunction {
         name: id,
         inputs,
         output,

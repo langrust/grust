@@ -9,7 +9,7 @@ use crate::{
     },
     hir::{signal::Signal, stream_expression::StreamExpression},
     lir::{
-        block::Block, expression::Expression as MIRExpression, item::node_file::import::Import,
+        block::Block, expression::Expression as LIRExpression, item::node_file::import::Import,
         statement::Statement,
     },
 };
@@ -19,10 +19,10 @@ use super::{
     expression::mir_from_hir as expression_mir_from_hir,
 };
 
-/// Transform HIR stream expression into MIR expression.
-pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
+/// Transform HIR stream expression into LIR expression.
+pub fn mir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
     match stream_expression {
-        StreamExpression::Constant { constant, .. } => MIRExpression::Literal { literal: constant },
+        StreamExpression::Constant { constant, .. } => LIRExpression::Literal { literal: constant },
         StreamExpression::SignalCall {
             signal:
                 Signal {
@@ -31,7 +31,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
                     ..
                 },
             ..
-        } => MIRExpression::InputAccess { identifier: id },
+        } => LIRExpression::InputAccess { identifier: id },
         StreamExpression::SignalCall {
             signal:
                 Signal {
@@ -40,11 +40,11 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
                     ..
                 },
             ..
-        } => MIRExpression::MemoryAccess { identifier: id },
+        } => LIRExpression::MemoryAccess { identifier: id },
         StreamExpression::SignalCall {
             signal: Signal { id, .. },
             ..
-        } => MIRExpression::Identifier { identifier: id },
+        } => LIRExpression::Identifier { identifier: id },
         StreamExpression::MapApplication {
             function_expression,
             mut inputs,
@@ -55,7 +55,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
                 let else_branch = mir_from_hir(inputs.pop().unwrap());
                 let then_branch = mir_from_hir(inputs.pop().unwrap());
                 let condition = mir_from_hir(inputs.pop().unwrap());
-                MIRExpression::IfThenElse {
+                LIRExpression::IfThenElse {
                     condition: Box::new(condition),
                     then_branch: Block {
                         statements: vec![Statement::ExpressionLast {
@@ -71,25 +71,25 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
             }
             _ => {
                 let arguments = inputs.into_iter().map(mir_from_hir).collect();
-                MIRExpression::FunctionCall {
+                LIRExpression::FunctionCall {
                     function: Box::new(expression_mir_from_hir(function_expression)),
                     arguments,
                 }
             }
         },
-        StreamExpression::Structure { name, fields, .. } => MIRExpression::Structure {
+        StreamExpression::Structure { name, fields, .. } => LIRExpression::Structure {
             name,
             fields: fields
                 .into_iter()
                 .map(|(id, expression)| (id, mir_from_hir(expression)))
                 .collect(),
         },
-        StreamExpression::Array { elements, .. } => MIRExpression::Array {
+        StreamExpression::Array { elements, .. } => LIRExpression::Array {
             elements: elements.into_iter().map(mir_from_hir).collect(),
         },
         StreamExpression::Match {
             expression, arms, ..
-        } => MIRExpression::Match {
+        } => LIRExpression::Match {
             matched: Box::new(mir_from_hir(*expression)),
             arms: arms
                 .into_iter()
@@ -107,7 +107,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
                             statements.push(Statement::ExpressionLast {
                                 expression: mir_from_hir(expression),
                             });
-                            MIRExpression::Block {
+                            LIRExpression::Block {
                                 block: Block { statements },
                             }
                         },
@@ -122,7 +122,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
             default,
             location,
             ..
-        } => MIRExpression::Match {
+        } => LIRExpression::Match {
             matched: Box::new(mir_from_hir(*option)),
             arms: vec![
                 (
@@ -145,7 +145,7 @@ pub fn mir_from_hir(stream_expression: StreamExpression) -> MIRExpression {
             signal,
             inputs,
             ..
-        } => MIRExpression::NodeCall {
+        } => LIRExpression::NodeCall {
             node_identifier: id.unwrap(),
             input_name: node + &signal + "Input",
             input_fields: inputs

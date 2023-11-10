@@ -1,7 +1,7 @@
 use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
 use crate::lir::item::enumeration::Enumeration;
 
-/// Transform MIR enumeration into RustAST enumeration.
+/// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_mir(enumeration: Enumeration) -> RustASTEnumeration {
     RustASTEnumeration {
         public_visibility: true,

@@ -1,7 +1,7 @@
 use crate::ast::pattern::Pattern;
 use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
 
-/// Transform MIR pattern into RustAST pattern.
+/// Transform LIR pattern into RustAST pattern.
 pub fn rust_ast_from_mir(pattern: Pattern) -> RustASTPattern {
     match pattern {
         Pattern::Identifier { name, .. } => RustASTPattern::Identifier {

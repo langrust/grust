@@ -5,7 +5,7 @@ use crate::lir::statement::Statement;
 
 use super::expression::rust_ast_from_mir as expression_rust_ast_from_mir;
 
-/// Transform MIR statement into RustAST statement.
+/// Transform LIR statement into RustAST statement.
 pub fn rust_ast_from_mir(statement: Statement) -> RustASTStatement {
     match statement {
         Statement::Let {

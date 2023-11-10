@@ -6,12 +6,12 @@ use crate::rust_ast::item::structure::{Field, Structure};
 use crate::rust_ast::r#type::Type as RustASTType;
 use crate::lir::item::node_file::state::{State, StateElement};
 
-/// RustAST init method construction from MIR init.
+/// RustAST init method construction from LIR init.
 pub mod init;
-/// RustAST step method construction from MIR step.
+/// RustAST step method construction from LIR step.
 pub mod step;
 
-/// Transform MIR state into RustAST structure and implementation.
+/// Transform LIR state into RustAST structure and implementation.
 pub fn rust_ast_from_mir(state: State) -> (Structure, Implementation) {
     let fields = state
         .elements

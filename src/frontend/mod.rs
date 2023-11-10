@@ -10,8 +10,8 @@ pub mod causality_analysis;
 /// Normalization module.
 pub mod normalizing;
 
-/// MIR construction from HIR.
+/// LIR construction from HIR.
 pub mod mir_from_hir;
 
-/// RustAST construction from MIR.
+/// RustAST construction from LIR.
 pub mod rust_ast_from_mir;

@@ -4,7 +4,7 @@ use crate::frontend::rust_ast_from_mir::{
 use crate::rust_ast::item::{function::Function as RustASTFunction, signature::Signature};
 use crate::lir::item::function::Function;
 
-/// Transform MIR function into RustAST function.
+/// Transform LIR function into RustAST function.
 pub fn rust_ast_from_mir(function: Function) -> RustASTFunction {
     let inputs = function
         .inputs

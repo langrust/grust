@@ -3,7 +3,7 @@ use crate::rust_ast::item::type_alias::TypeAlias;
 use crate::rust_ast::r#type::Type as RustASTType;
 use crate::lir::item::array_alias::ArrayAlias;
 
-/// Transform MIR array alias into RustAST type alias.
+/// Transform LIR array alias into RustAST type alias.
 pub fn rust_ast_from_mir(array_alias: ArrayAlias) -> TypeAlias {
     TypeAlias {
         public_visibility: true,

@@ -6,7 +6,7 @@ use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
 use crate::lir::item::node_file::state::init::{Init, StateElementInit};
 
-/// Transform MIR init into RustAST implementation method.
+/// Transform LIR init into RustAST implementation method.
 pub fn rust_ast_from_mir(init: Init) -> AssociatedItem {
     let signature = Signature {
         public_visibility: true,

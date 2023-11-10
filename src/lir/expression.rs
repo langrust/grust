@@ -5,7 +5,7 @@ use crate::{
 
 use super::block::Block;
 
-/// MIR expressions.
+/// LIR expressions.
 #[derive(Debug, PartialEq, serde::Serialize)]
 pub enum Expression {
     /// A literal expression: `1` or `"hello world"`.

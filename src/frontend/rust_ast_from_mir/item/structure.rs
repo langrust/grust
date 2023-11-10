@@ -2,7 +2,7 @@ use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_a
 use crate::rust_ast::item::structure::{Field, Structure as RustASTStructure};
 use crate::lir::item::structure::Structure;
 
-/// Transform MIR structure into RustAST structure.
+/// Transform LIR structure into RustAST structure.
 pub fn rust_ast_from_mir(structure: Structure) -> RustASTStructure {
     let fields = structure
         .fields

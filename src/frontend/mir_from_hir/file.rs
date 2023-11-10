@@ -8,7 +8,7 @@ use super::{
     typedef::mir_from_hir as typedef_mir_from_hir,
 };
 
-/// Transform HIR file into MIR project.
+/// Transform HIR file into LIR project.
 pub fn mir_from_hir(file: File) -> Project {
     let File {
         typedefs,

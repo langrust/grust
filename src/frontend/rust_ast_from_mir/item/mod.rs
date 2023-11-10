@@ -1,10 +1,10 @@
-/// RustAST array alias construction from MIR array alias.
+/// RustAST array alias construction from LIR array alias.
 pub mod array_alias;
-/// RustAST enumeration construction from MIR enumeration.
+/// RustAST enumeration construction from LIR enumeration.
 pub mod enumeration;
-/// RustAST function construction from MIR function.
+/// RustAST function construction from LIR function.
 pub mod function;
-/// RustAST file for node construction from MIR node_file.
+/// RustAST file for node construction from LIR node_file.
 pub mod node_file;
-/// RustAST structure construction from MIR structure.
+/// RustAST structure construction from LIR structure.
 pub mod structure;
