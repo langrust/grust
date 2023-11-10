@@ -41,7 +41,7 @@ mod mir_from_hir {
             statement::Statement as ASTStatement,
         },
         common::{location::Location, r#type::Type},
-        frontend::mir_from_hir::function::mir_from_hir,
+        frontend::lir_from_hir::function::mir_from_hir,
         lir::{
             block::Block, expression::Expression, item::function::Function, statement::Statement,
         },

@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    frontend::mir_from_hir::stream_expression::mir_from_hir as stream_expression_mir_from_hir,
+    frontend::lir_from_hir::stream_expression::mir_from_hir as stream_expression_mir_from_hir,
     hir::memory::{Buffer, CalledNode, Memory},
     lir::{
         expression::Expression as LIRExpression,

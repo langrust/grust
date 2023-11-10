@@ -28,7 +28,7 @@ mod mir_from_hir {
     use crate::{
         ast::typedef::Typedef,
         common::{location::Location, r#type::Type},
-        frontend::mir_from_hir::typedef::mir_from_hir,
+        frontend::lir_from_hir::typedef::mir_from_hir,
         lir::item::{
             array_alias::ArrayAlias, enumeration::Enumeration, structure::Structure, Item,
         },

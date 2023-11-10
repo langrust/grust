@@ -299,7 +299,7 @@ mod mir_from_hir {
             constant::Constant, location::Location, operator::OtherOperator, r#type::Type,
             scope::Scope,
         },
-        frontend::mir_from_hir::stream_expression::mir_from_hir,
+        frontend::lir_from_hir::stream_expression::mir_from_hir,
         hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
         lir::{block::Block, expression::Expression, statement::Statement},
     };

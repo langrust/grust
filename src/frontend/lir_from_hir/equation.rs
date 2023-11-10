@@ -26,7 +26,7 @@ pub fn mir_from_hir(equation: Equation) -> Statement {
 mod mir_from_hir {
     use crate::{
         common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
-        frontend::mir_from_hir::equation::mir_from_hir,
+        frontend::lir_from_hir::equation::mir_from_hir,
         hir::{
             dependencies::Dependencies, equation::Equation, signal::Signal,
             stream_expression::StreamExpression,

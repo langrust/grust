@@ -80,7 +80,7 @@ mod mir_from_hir {
     use crate::{
         ast::expression::Expression as ASTExpression,
         common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
-        frontend::mir_from_hir::unitary_node::mir_from_hir,
+        frontend::lir_from_hir::unitary_node::mir_from_hir,
         hir::{
             dependencies::Dependencies,
             equation::Equation,
