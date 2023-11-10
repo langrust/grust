@@ -1,6 +1,6 @@
-use crate::frontend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir as init_rust_ast_from_lir;
-use crate::frontend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir as step_rust_ast_from_lir;
-use crate::frontend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
+use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir as init_rust_ast_from_lir;
+use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir as step_rust_ast_from_lir;
+use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::rust_ast::item::implementation::Implementation;
 use crate::rust_ast::item::structure::{Field, Structure};
 use crate::rust_ast::r#type::Type as RustASTType;

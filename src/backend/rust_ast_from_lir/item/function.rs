@@ -1,4 +1,4 @@
-use crate::frontend::rust_ast_from_lir::{
+use crate::backend::rust_ast_from_lir::{
     block::rust_ast_from_lir as block_rust_ast_from_lir, r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
 use crate::rust_ast::item::{function::Function as RustASTFunction, signature::Signature};
@@ -28,7 +28,7 @@ pub fn rust_ast_from_lir(function: Function) -> RustASTFunction {
 mod rust_ast_from_lir {
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_lir::item::function::rust_ast_from_lir;
+    use crate::backend::rust_ast_from_lir::item::function::rust_ast_from_lir;
     use crate::rust_ast::block::Block as RustASTBlock;
     use crate::rust_ast::expression::Expression as RustASTExpression;
     use crate::rust_ast::item::function::Function as RustASTFunction;

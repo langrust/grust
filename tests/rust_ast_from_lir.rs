@@ -2,7 +2,7 @@ use codespan_reporting::files::{Files, SimpleFiles};
 
 use grustine::ast::file::File;
 use grustine::frontend::hir_from_ast::file::hir_from_ast;
-use grustine::frontend::rust_ast_from_lir::project::rust_ast_from_lir;
+use grustine::backend::rust_ast_from_lir::project::rust_ast_from_lir;
 use grustine::frontend::lir_from_hir::file::lir_from_hir;
 use grustine::parser::langrust;
 
