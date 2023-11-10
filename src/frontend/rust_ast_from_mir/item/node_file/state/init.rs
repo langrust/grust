@@ -57,7 +57,7 @@ pub fn lir_from_mir(init: Init) -> AssociatedItem {
 #[cfg(test)]
 mod lir_from_mir {
     use crate::common::constant::Constant;
-    use crate::frontend::lir_from_mir::item::node_file::state::init::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::item::node_file::state::init::lir_from_mir;
     use crate::rust_ast::block::Block;
     use crate::rust_ast::expression::{Expression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;

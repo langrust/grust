@@ -45,7 +45,7 @@ pub fn lir_from_mir(statement: Statement) -> RustASTStatement {
 #[cfg(test)]
 mod lir_from_mir {
     use crate::common::constant::Constant;
-    use crate::frontend::lir_from_mir::statement::lir_from_mir;
+    use crate::frontend::rust_ast_from_mir::statement::lir_from_mir;
     use crate::rust_ast::expression::{Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::pattern::Pattern;
     use crate::rust_ast::statement::r#let::Let;
