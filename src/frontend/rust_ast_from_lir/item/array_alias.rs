@@ -1,4 +1,4 @@
-use crate::frontend::rust_ast_from_mir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
+use crate::frontend::rust_ast_from_lir::r#type::rust_ast_from_mir as type_rust_ast_from_mir;
 use crate::rust_ast::item::type_alias::TypeAlias;
 use crate::rust_ast::r#type::Type as RustASTType;
 use crate::lir::item::array_alias::ArrayAlias;
@@ -18,7 +18,7 @@ pub fn rust_ast_from_mir(array_alias: ArrayAlias) -> TypeAlias {
 #[cfg(test)]
 mod rust_ast_from_mir {
     use crate::common::r#type::Type;
-    use crate::frontend::rust_ast_from_mir::item::array_alias::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::item::array_alias::rust_ast_from_mir;
     use crate::rust_ast::item::type_alias::TypeAlias;
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::lir::item::array_alias::ArrayAlias;

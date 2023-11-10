@@ -57,7 +57,7 @@ pub fn rust_ast_from_mir(init: Init) -> AssociatedItem {
 #[cfg(test)]
 mod rust_ast_from_mir {
     use crate::common::constant::Constant;
-    use crate::frontend::rust_ast_from_mir::item::node_file::state::init::rust_ast_from_mir;
+    use crate::frontend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_mir;
     use crate::rust_ast::block::Block;
     use crate::rust_ast::expression::{Expression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;
