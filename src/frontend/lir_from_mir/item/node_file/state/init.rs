@@ -2,18 +2,18 @@ use crate::rust_ast::block::Block;
 use crate::rust_ast::expression::{Expression, FieldExpression};
 use crate::rust_ast::item::implementation::AssociatedItem;
 use crate::rust_ast::item::signature::Signature;
-use crate::rust_ast::r#type::Type as LIRType;
+use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
 use crate::mir::item::node_file::state::init::{Init, StateElementInit};
 
-/// Transform MIR init into LIR implementation method.
+/// Transform MIR init into RustAST implementation method.
 pub fn lir_from_mir(init: Init) -> AssociatedItem {
     let signature = Signature {
         public_visibility: true,
         name: String::from("init"),
         receiver: None,
         inputs: vec![],
-        output: LIRType::Identifier {
+        output: RustASTType::Identifier {
             identifier: init.node_name.clone() + "State",
         },
     };
@@ -62,7 +62,7 @@ mod lir_from_mir {
     use crate::rust_ast::expression::{Expression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;
     use crate::rust_ast::item::signature::Signature;
-    use crate::rust_ast::r#type::Type as LIRType;
+    use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::Statement;
     use crate::mir::item::node_file::state::init::{Init, StateElementInit};
 
@@ -87,7 +87,7 @@ mod lir_from_mir {
                 name: format!("init"),
                 receiver: None,
                 inputs: vec![],
-                output: LIRType::Identifier {
+                output: RustASTType::Identifier {
                     identifier: format!("NodeState"),
                 },
             },

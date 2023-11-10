@@ -1,6 +1,6 @@
 use crate::rust_ast::{expression::Expression, item::Item, statement::r#let::Let};
 
-/// LIR [Let](crate::lir::statement::r#let::Let) module.
+/// RustAST [Let](crate::lir::statement::r#let::Let) module.
 pub mod r#let;
 
 /// Rust statement.

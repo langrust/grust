@@ -1,9 +1,9 @@
-use crate::rust_ast::item::enumeration::Enumeration as LIREnumeration;
+use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
 use crate::mir::item::enumeration::Enumeration;
 
-/// Transform MIR enumeration into LIR enumeration.
-pub fn lir_from_mir(enumeration: Enumeration) -> LIREnumeration {
-    LIREnumeration {
+/// Transform MIR enumeration into RustAST enumeration.
+pub fn lir_from_mir(enumeration: Enumeration) -> RustASTEnumeration {
+    RustASTEnumeration {
         public_visibility: true,
         name: enumeration.name,
         elements: enumeration.elements,
@@ -13,7 +13,7 @@ pub fn lir_from_mir(enumeration: Enumeration) -> LIREnumeration {
 #[cfg(test)]
 mod lir_from_mir {
     use crate::frontend::lir_from_mir::item::enumeration::lir_from_mir;
-    use crate::rust_ast::item::enumeration::Enumeration as LIREnumeration;
+    use crate::rust_ast::item::enumeration::Enumeration as RustASTEnumeration;
     use crate::mir::item::enumeration::Enumeration;
 
     #[test]
@@ -26,7 +26,7 @@ mod lir_from_mir {
                 String::from("Green"),
             ],
         };
-        let control = LIREnumeration {
+        let control = RustASTEnumeration {
             public_visibility: true,
             name: String::from("Color"),
             elements: vec![

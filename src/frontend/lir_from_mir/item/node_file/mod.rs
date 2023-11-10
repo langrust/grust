@@ -6,14 +6,14 @@ use self::import::lir_from_mir as import_lir_from_mir;
 use self::input::lir_from_mir as input_lir_from_mir;
 use self::state::lir_from_mir as state_lir_from_mir;
 
-/// LIR node and function import construction from MIR import.
+/// RustAST node and function import construction from MIR import.
 pub mod import;
-/// LIR input structure construction from MIR input.
+/// RustAST input structure construction from MIR input.
 pub mod input;
-/// LIR state structure and implementation construction from MIR state.
+/// RustAST state structure and implementation construction from MIR state.
 pub mod state;
 
-/// Transform MIR node_file into LIR file.
+/// Transform MIR node_file into RustAST file.
 pub fn lir_from_mir(node_file: NodeFile) -> File {
     let mut items = node_file
         .imports
