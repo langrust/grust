@@ -1,27 +1,27 @@
-use crate::rust_ast::block::Block as LIRBlock;
+use crate::rust_ast::block::Block as RustASTBlock;
 use crate::mir::block::Block;
 
 use super::statement::lir_from_mir as statement_lir_from_mir;
 
-/// Transform MIR block into LIR block.
-pub fn lir_from_mir(block: Block) -> LIRBlock {
+/// Transform MIR block into RustAST block.
+pub fn lir_from_mir(block: Block) -> RustASTBlock {
     let statements = block
         .statements
         .into_iter()
         .map(statement_lir_from_mir)
         .collect();
-    LIRBlock { statements }
+    RustASTBlock { statements }
 }
 
 #[cfg(test)]
 mod lir_from_mir {
     use crate::common::constant::Constant;
     use crate::frontend::lir_from_mir::block::lir_from_mir;
-    use crate::rust_ast::block::Block as LIRBlock;
-    use crate::rust_ast::expression::Expression as LIRExpression;
-    use crate::rust_ast::pattern::Pattern as LIRPattern;
+    use crate::rust_ast::block::Block as RustASTBlock;
+    use crate::rust_ast::expression::Expression as RustASTExpression;
+    use crate::rust_ast::pattern::Pattern as RustASTPattern;
     use crate::rust_ast::statement::r#let::Let;
-    use crate::rust_ast::statement::Statement as LIRStatement;
+    use crate::rust_ast::statement::Statement as RustASTStatement;
     use crate::mir::block::Block;
     use crate::mir::expression::Expression;
     use crate::mir::statement::Statement;
@@ -43,19 +43,19 @@ mod lir_from_mir {
                 },
             ],
         };
-        let control = LIRBlock {
+        let control = RustASTBlock {
             statements: vec![
-                LIRStatement::Let(Let {
-                    pattern: LIRPattern::Identifier {
+                RustASTStatement::Let(Let {
+                    pattern: RustASTPattern::Identifier {
                         reference: false,
                         mutable: false,
                         identifier: String::from("x"),
                     },
-                    expression: LIRExpression::Literal {
+                    expression: RustASTExpression::Literal {
                         literal: Constant::Integer(1),
                     },
                 }),
-                LIRStatement::ExpressionLast(LIRExpression::Identifier {
+                RustASTStatement::ExpressionLast(RustASTExpression::Identifier {
                     identifier: String::from("x"),
                 }),
             ],

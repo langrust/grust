@@ -1,38 +1,38 @@
-use crate::rust_ast::item::import::{Import as LIRImport, PathTree};
+use crate::rust_ast::item::import::{Import as RustASTImport, PathTree};
 use crate::mir::item::node_file::import::Import;
 
-/// Transform MIR import into LIR import.
-pub fn lir_from_mir(import: Import) -> LIRImport {
+/// Transform MIR import into RustAST import.
+pub fn lir_from_mir(import: Import) -> RustASTImport {
     match import {
-        Import::NodeFile(module_name) => LIRImport::Use {
+        Import::NodeFile(module_name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
                 module_name,
                 tree: Box::new(PathTree::Star),
             },
         },
-        Import::Function(name) => LIRImport::Use {
+        Import::Function(name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
                 module_name: String::from("functions"),
                 tree: Box::new(PathTree::Name { name, alias: None }),
             },
         },
-        Import::Enumeration(name) => LIRImport::Use {
+        Import::Enumeration(name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
                 module_name: String::from("typedefs"),
                 tree: Box::new(PathTree::Name { name, alias: None }),
             },
         },
-        Import::Structure(name) => LIRImport::Use {
+        Import::Structure(name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
                 module_name: String::from("typedefs"),
                 tree: Box::new(PathTree::Name { name, alias: None }),
             },
         },
-        Import::ArrayAlias(name) => LIRImport::Use {
+        Import::ArrayAlias(name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
                 module_name: String::from("typedefs"),
@@ -45,13 +45,13 @@ pub fn lir_from_mir(import: Import) -> LIRImport {
 #[cfg(test)]
 mod lir_from_mir {
     use crate::frontend::lir_from_mir::item::node_file::import::lir_from_mir;
-    use crate::rust_ast::item::import::{Import as LIRImport, PathTree};
+    use crate::rust_ast::item::import::{Import as RustASTImport, PathTree};
     use crate::mir::item::node_file::import::Import;
 
     #[test]
     fn should_create_lir_import_from_mir_function_import() {
         let import = Import::Function(String::from("foo"));
-        let control = LIRImport::Use {
+        let control = RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
                 module_name: String::from("functions"),
@@ -67,7 +67,7 @@ mod lir_from_mir {
     #[test]
     fn should_create_lir_import_from_mir_node_import() {
         let import = Import::NodeFile(String::from("my_node"));
-        let control = LIRImport::Use {
+        let control = RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
                 module_name: String::from("my_node"),

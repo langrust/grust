@@ -5,11 +5,11 @@ use crate::rust_ast::block::Block;
 use crate::rust_ast::expression::{Expression, FieldExpression};
 use crate::rust_ast::item::implementation::AssociatedItem;
 use crate::rust_ast::item::signature::{Receiver, Signature};
-use crate::rust_ast::r#type::Type as LIRType;
+use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
 use crate::mir::item::node_file::state::step::{StateElementStep, Step};
 
-/// Transform MIR step into LIR implementation method.
+/// Transform MIR step into RustAST implementation method.
 pub fn lir_from_mir(step: Step) -> AssociatedItem {
     let signature = Signature {
         public_visibility: true,
@@ -20,13 +20,13 @@ pub fn lir_from_mir(step: Step) -> AssociatedItem {
         }),
         inputs: vec![(
             String::from("input"),
-            LIRType::Identifier {
+            RustASTType::Identifier {
                 identifier: step.node_name.clone() + "Input",
             },
         )],
-        output: LIRType::Tuple {
+        output: RustASTType::Tuple {
             elements: vec![
-                LIRType::Identifier {
+                RustASTType::Identifier {
                     identifier: step.node_name.clone() + "State",
                 },
                 type_lir_from_mir(step.output_type),
@@ -75,13 +75,13 @@ mod lir_from_mir {
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::item::node_file::state::step::lir_from_mir;
     use crate::rust_ast::block::Block;
-    use crate::rust_ast::expression::{Expression as LIRExpression, FieldExpression};
+    use crate::rust_ast::expression::{Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::item::implementation::AssociatedItem;
     use crate::rust_ast::item::signature::{Receiver, Signature};
     use crate::rust_ast::pattern::Pattern;
-    use crate::rust_ast::r#type::Type as LIRType;
+    use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::r#let::Let;
-    use crate::rust_ast::statement::Statement as LIRStatement;
+    use crate::rust_ast::statement::Statement as RustASTStatement;
     use crate::mir::expression::Expression;
     use crate::mir::item::node_file::state::step::{StateElementStep, Step};
     use crate::mir::statement::Statement;
@@ -158,16 +158,16 @@ mod lir_from_mir {
                 }),
                 inputs: vec![(
                     format!("input"),
-                    LIRType::Identifier {
+                    RustASTType::Identifier {
                         identifier: format!("NodeInput"),
                     },
                 )],
-                output: LIRType::Tuple {
+                output: RustASTType::Tuple {
                     elements: vec![
-                        LIRType::Identifier {
+                        RustASTType::Identifier {
                             identifier: format!("NodeState"),
                         },
-                        LIRType::Identifier {
+                        RustASTType::Identifier {
                             identifier: format!("i64"),
                         },
                     ],
@@ -175,20 +175,20 @@ mod lir_from_mir {
             },
             body: Block {
                 statements: vec![
-                    LIRStatement::Let(Let {
+                    RustASTStatement::Let(Let {
                         pattern: Pattern::Identifier {
                             reference: false,
                             mutable: false,
                             identifier: format!("o"),
                         },
-                        expression: LIRExpression::FieldAccess {
-                            expression: Box::new(LIRExpression::Identifier {
+                        expression: RustASTExpression::FieldAccess {
+                            expression: Box::new(RustASTExpression::Identifier {
                                 identifier: format!("self"),
                             }),
                             field: format!("mem_i"),
                         },
                     }),
-                    LIRStatement::Let(Let {
+                    RustASTStatement::Let(Let {
                         pattern: Pattern::Tuple {
                             elements: vec![
                                 Pattern::Identifier {
@@ -203,51 +203,51 @@ mod lir_from_mir {
                                 },
                             ],
                         },
-                        expression: LIRExpression::MethodCall {
-                            receiver: Box::new(LIRExpression::FieldAccess {
-                                expression: Box::new(LIRExpression::Identifier {
+                        expression: RustASTExpression::MethodCall {
+                            receiver: Box::new(RustASTExpression::FieldAccess {
+                                expression: Box::new(RustASTExpression::Identifier {
                                     identifier: format!("self"),
                                 }),
                                 field: format!("called_node_state"),
                             }),
                             method: format!("step"),
-                            arguments: vec![LIRExpression::Structure {
+                            arguments: vec![RustASTExpression::Structure {
                                 name: format!("CalledNodeInput"),
                                 fields: vec![],
                             }],
                         },
                     }),
-                    LIRStatement::ExpressionLast(LIRExpression::Tuple {
+                    RustASTStatement::ExpressionLast(RustASTExpression::Tuple {
                         elements: vec![
-                            LIRExpression::Structure {
+                            RustASTExpression::Structure {
                                 name: format!("NodeState"),
                                 fields: vec![
                                     FieldExpression {
                                         name: format!("mem_i"),
-                                        expression: LIRExpression::Binary {
-                                            left: Box::new(LIRExpression::Identifier {
+                                        expression: RustASTExpression::Binary {
+                                            left: Box::new(RustASTExpression::Identifier {
                                                 identifier: format!("o"),
                                             }),
                                             operator: BinaryOperator::Add,
-                                            right: Box::new(LIRExpression::Literal {
+                                            right: Box::new(RustASTExpression::Literal {
                                                 literal: Constant::Integer(1),
                                             }),
                                         },
                                     },
                                     FieldExpression {
                                         name: format!("called_node_state"),
-                                        expression: LIRExpression::Identifier {
+                                        expression: RustASTExpression::Identifier {
                                             identifier: format!("new_called_node_state"),
                                         },
                                     },
                                 ],
                             },
-                            LIRExpression::Binary {
-                                left: Box::new(LIRExpression::Identifier {
+                            RustASTExpression::Binary {
+                                left: Box::new(RustASTExpression::Identifier {
                                     identifier: format!("o"),
                                 }),
                                 operator: BinaryOperator::Add,
-                                right: Box::new(LIRExpression::Identifier {
+                                right: Box::new(RustASTExpression::Identifier {
                                     identifier: format!("y"),
                                 }),
                             },

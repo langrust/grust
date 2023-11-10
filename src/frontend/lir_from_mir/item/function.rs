@@ -1,11 +1,11 @@
 use crate::frontend::lir_from_mir::{
     block::lir_from_mir as block_lir_from_mir, r#type::lir_from_mir as type_lir_from_mir,
 };
-use crate::rust_ast::item::{function::Function as LIRFunction, signature::Signature};
+use crate::rust_ast::item::{function::Function as RustASTFunction, signature::Signature};
 use crate::mir::item::function::Function;
 
-/// Transform MIR function into LIR function.
-pub fn lir_from_mir(function: Function) -> LIRFunction {
+/// Transform MIR function into RustAST function.
+pub fn lir_from_mir(function: Function) -> RustASTFunction {
     let inputs = function
         .inputs
         .into_iter()
@@ -18,7 +18,7 @@ pub fn lir_from_mir(function: Function) -> LIRFunction {
         inputs,
         output: type_lir_from_mir(function.output),
     };
-    LIRFunction {
+    RustASTFunction {
         signature,
         body: block_lir_from_mir(function.body),
     }
@@ -29,12 +29,12 @@ mod lir_from_mir {
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::item::function::lir_from_mir;
-    use crate::rust_ast::block::Block as LIRBlock;
-    use crate::rust_ast::expression::Expression as LIRExpression;
-    use crate::rust_ast::item::function::Function as LIRFunction;
+    use crate::rust_ast::block::Block as RustASTBlock;
+    use crate::rust_ast::expression::Expression as RustASTExpression;
+    use crate::rust_ast::item::function::Function as RustASTFunction;
     use crate::rust_ast::item::signature::Signature;
-    use crate::rust_ast::r#type::Type as LIRType;
-    use crate::rust_ast::statement::Statement as LIRStatement;
+    use crate::rust_ast::r#type::Type as RustASTType;
+    use crate::rust_ast::statement::Statement as RustASTStatement;
     use crate::mir::block::Block;
     use crate::mir::expression::Expression;
     use crate::mir::item::function::Function;
@@ -67,7 +67,7 @@ mod lir_from_mir {
                 }],
             },
         };
-        let control = LIRFunction {
+        let control = RustASTFunction {
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),
@@ -75,28 +75,28 @@ mod lir_from_mir {
                 inputs: vec![
                     (
                         String::from("a"),
-                        LIRType::Identifier {
+                        RustASTType::Identifier {
                             identifier: String::from("i64"),
                         },
                     ),
                     (
                         String::from("b"),
-                        LIRType::Identifier {
+                        RustASTType::Identifier {
                             identifier: String::from("i64"),
                         },
                     ),
                 ],
-                output: LIRType::Identifier {
+                output: RustASTType::Identifier {
                     identifier: String::from("i64"),
                 },
             },
-            body: LIRBlock {
-                statements: vec![LIRStatement::ExpressionLast(LIRExpression::Binary {
-                    left: Box::new(LIRExpression::Identifier {
+            body: RustASTBlock {
+                statements: vec![RustASTStatement::ExpressionLast(RustASTExpression::Binary {
+                    left: Box::new(RustASTExpression::Identifier {
                         identifier: String::from("a"),
                     }),
                     operator: BinaryOperator::Add,
-                    right: Box::new(LIRExpression::Identifier {
+                    right: Box::new(RustASTExpression::Identifier {
                         identifier: String::from("b"),
                     }),
                 })],

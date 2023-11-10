@@ -3,21 +3,21 @@ use self::{
     r#trait::Trait, structure::Structure, type_alias::TypeAlias,
 };
 
-/// LIR [Enumeration](crate::lir::item::enumeration::Enumeration) module.
+/// RustAST [Enumeration](crate::lir::item::enumeration::Enumeration) module.
 pub mod enumeration;
-/// LIR [Function](crate::lir::item::function::Function) module.
+/// RustAST [Function](crate::lir::item::function::Function) module.
 pub mod function;
-/// LIR [Implementation](crate::lir::item::implementation::Implementation) module.
+/// RustAST [Implementation](crate::lir::item::implementation::Implementation) module.
 pub mod implementation;
-/// LIR [Import](crate::lir::item::import::Import) module.
+/// RustAST [Import](crate::lir::item::import::Import) module.
 pub mod import;
-/// LIR [Signature](crate::lir::item::signature::Signature) module.
+/// RustAST [Signature](crate::lir::item::signature::Signature) module.
 pub mod signature;
-/// LIR [Structure](crate::lir::item::structure::Structure) module.
+/// RustAST [Structure](crate::lir::item::structure::Structure) module.
 pub mod structure;
-/// LIR [Trait](crate::lir::item::r#trait::Trait) module.
+/// RustAST [Trait](crate::lir::item::r#trait::Trait) module.
 pub mod r#trait;
-/// LIR [TypeAlias](crate::lir::item::type_alias::TypeAlias) module.
+/// RustAST [TypeAlias](crate::lir::item::type_alias::TypeAlias) module.
 pub mod type_alias;
 
 /// All items that can be defined in a module or a scope.

@@ -3,15 +3,15 @@ use crate::frontend::lir_from_mir::item::node_file::state::step::lir_from_mir as
 use crate::frontend::lir_from_mir::r#type::lir_from_mir as type_lir_from_mir;
 use crate::rust_ast::item::implementation::Implementation;
 use crate::rust_ast::item::structure::{Field, Structure};
-use crate::rust_ast::r#type::Type as LIRType;
+use crate::rust_ast::r#type::Type as RustASTType;
 use crate::mir::item::node_file::state::{State, StateElement};
 
-/// LIR init method construction from MIR init.
+/// RustAST init method construction from MIR init.
 pub mod init;
-/// LIR step method construction from MIR step.
+/// RustAST step method construction from MIR step.
 pub mod step;
 
-/// Transform MIR state into LIR structure and implementation.
+/// Transform MIR state into RustAST structure and implementation.
 pub fn lir_from_mir(state: State) -> (Structure, Implementation) {
     let fields = state
         .elements
@@ -28,7 +28,7 @@ pub fn lir_from_mir(state: State) -> (Structure, Implementation) {
             } => Field {
                 public_visibility: false,
                 name: identifier,
-                r#type: LIRType::Identifier {
+                r#type: RustASTType::Identifier {
                     identifier: node_name + "State",
                 },
             },

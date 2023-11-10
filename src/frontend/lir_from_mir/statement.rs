@@ -1,17 +1,17 @@
 use crate::rust_ast::pattern::Pattern;
 use crate::rust_ast::statement::r#let::Let;
-use crate::rust_ast::statement::Statement as LIRStatement;
+use crate::rust_ast::statement::Statement as RustASTStatement;
 use crate::mir::statement::Statement;
 
 use super::expression::lir_from_mir as expression_lir_from_mir;
 
-/// Transform MIR statement into LIR statement.
-pub fn lir_from_mir(statement: Statement) -> LIRStatement {
+/// Transform MIR statement into RustAST statement.
+pub fn lir_from_mir(statement: Statement) -> RustASTStatement {
     match statement {
         Statement::Let {
             identifier,
             expression,
-        } => LIRStatement::Let(Let {
+        } => RustASTStatement::Let(Let {
             pattern: Pattern::Identifier {
                 reference: false,
                 mutable: false,
@@ -31,13 +31,13 @@ pub fn lir_from_mir(statement: Statement) -> LIRStatement {
                     identifier,
                 })
                 .collect();
-            LIRStatement::Let(Let {
+            RustASTStatement::Let(Let {
                 pattern: Pattern::Tuple { elements },
                 expression: expression_lir_from_mir(expression),
             })
         }
         Statement::ExpressionLast { expression } => {
-            LIRStatement::ExpressionLast(expression_lir_from_mir(expression))
+            RustASTStatement::ExpressionLast(expression_lir_from_mir(expression))
         }
     }
 }
@@ -46,10 +46,10 @@ pub fn lir_from_mir(statement: Statement) -> LIRStatement {
 mod lir_from_mir {
     use crate::common::constant::Constant;
     use crate::frontend::lir_from_mir::statement::lir_from_mir;
-    use crate::rust_ast::expression::{Expression as LIRExpression, FieldExpression};
+    use crate::rust_ast::expression::{Expression as RustASTExpression, FieldExpression};
     use crate::rust_ast::pattern::Pattern;
     use crate::rust_ast::statement::r#let::Let;
-    use crate::rust_ast::statement::Statement as LIRStatement;
+    use crate::rust_ast::statement::Statement as RustASTStatement;
     use crate::mir::expression::Expression;
     use crate::mir::statement::Statement;
 
@@ -61,13 +61,13 @@ mod lir_from_mir {
                 literal: Constant::Integer(1),
             },
         };
-        let control = LIRStatement::Let(Let {
+        let control = RustASTStatement::Let(Let {
             pattern: Pattern::Identifier {
                 reference: false,
                 mutable: false,
                 identifier: String::from("x"),
             },
-            expression: LIRExpression::Literal {
+            expression: RustASTExpression::Literal {
                 literal: Constant::Integer(1),
             },
         });
@@ -89,7 +89,7 @@ mod lir_from_mir {
                 )],
             },
         };
-        let control = LIRStatement::Let(Let {
+        let control = RustASTStatement::Let(Let {
             pattern: Pattern::Tuple {
                 elements: vec![
                     Pattern::Identifier {
@@ -104,19 +104,19 @@ mod lir_from_mir {
                     },
                 ],
             },
-            expression: LIRExpression::MethodCall {
-                receiver: Box::new(LIRExpression::FieldAccess {
-                    expression: Box::new(LIRExpression::Identifier {
+            expression: RustASTExpression::MethodCall {
+                receiver: Box::new(RustASTExpression::FieldAccess {
+                    expression: Box::new(RustASTExpression::Identifier {
                         identifier: String::from("self"),
                     }),
                     field: String::from("node_state"),
                 }),
                 method: String::from("step"),
-                arguments: vec![LIRExpression::Structure {
+                arguments: vec![RustASTExpression::Structure {
                     name: String::from("NodeInput"),
                     fields: vec![FieldExpression {
                         name: String::from("i"),
-                        expression: LIRExpression::Literal {
+                        expression: RustASTExpression::Literal {
                             literal: Constant::Integer(1),
                         },
                     }],
@@ -133,7 +133,7 @@ mod lir_from_mir {
                 literal: Constant::Integer(1),
             },
         };
-        let control = LIRStatement::ExpressionLast(LIRExpression::Literal {
+        let control = RustASTStatement::ExpressionLast(RustASTExpression::Literal {
             literal: Constant::Integer(1),
         });
         assert_eq!(lir_from_mir(statement), control)

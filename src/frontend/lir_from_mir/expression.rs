@@ -1,5 +1,5 @@
 use crate::common::operator::{BinaryOperator, UnaryOperator};
-use crate::rust_ast::expression::{Arm, Expression as LIRExpression, FieldExpression};
+use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
 use crate::rust_ast::pattern::Pattern;
 use crate::mir::expression::Expression;
 
@@ -10,25 +10,25 @@ use super::{
 
 use strum::IntoEnumIterator;
 
-/// Transform MIR expression into LIR expression.
-pub fn lir_from_mir(expression: Expression) -> LIRExpression {
+/// Transform MIR expression into RustAST expression.
+pub fn lir_from_mir(expression: Expression) -> RustASTExpression {
     match expression {
-        Expression::Literal { literal } => LIRExpression::Literal { literal },
-        Expression::Identifier { identifier } => LIRExpression::Identifier { identifier },
+        Expression::Literal { literal } => RustASTExpression::Literal { literal },
+        Expression::Identifier { identifier } => RustASTExpression::Identifier { identifier },
         Expression::MemoryAccess { identifier } => {
-            let self_call = LIRExpression::Identifier {
+            let self_call = RustASTExpression::Identifier {
                 identifier: String::from("self"),
             };
-            LIRExpression::FieldAccess {
+            RustASTExpression::FieldAccess {
                 expression: Box::new(self_call),
                 field: identifier,
             }
         }
         Expression::InputAccess { identifier } => {
-            let input_call = LIRExpression::Identifier {
+            let input_call = RustASTExpression::Identifier {
                 identifier: String::from("input"),
             };
-            LIRExpression::FieldAccess {
+            RustASTExpression::FieldAccess {
                 expression: Box::new(input_call),
                 field: identifier,
             }
@@ -41,13 +41,13 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                     expression: lir_from_mir(expression),
                 })
                 .collect();
-            LIRExpression::Structure { name, fields }
+            RustASTExpression::Structure { name, fields }
         }
         Expression::Array { elements } => {
             let elements = elements.into_iter().map(lir_from_mir).collect();
-            LIRExpression::Array { elements }
+            RustASTExpression::Array { elements }
         }
-        Expression::Block { block } => LIRExpression::Block {
+        Expression::Block { block } => RustASTExpression::Block {
             block: block_lir_from_mir(block),
         },
         Expression::FunctionCall {
@@ -58,7 +58,7 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                 if let Some(binary) =
                     BinaryOperator::iter().find(|binary| binary.to_string() == *identifier)
                 {
-                    LIRExpression::Binary {
+                    RustASTExpression::Binary {
                         left: Box::new(lir_from_mir(arguments.remove(0))),
                         operator: binary,
                         right: Box::new(lir_from_mir(arguments.remove(0))),
@@ -66,13 +66,13 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                 } else if let Some(unary) =
                     UnaryOperator::iter().find(|unary| unary.to_string() == *identifier)
                 {
-                    LIRExpression::Unary {
+                    RustASTExpression::Unary {
                         operator: unary,
                         expression: Box::new(lir_from_mir(arguments.remove(0))),
                     }
                 } else {
                     let arguments = arguments.into_iter().map(lir_from_mir).collect();
-                    LIRExpression::FunctionCall {
+                    RustASTExpression::FunctionCall {
                         function: Box::new(lir_from_mir(*function)),
                         arguments,
                     }
@@ -80,7 +80,7 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
             }
             _ => {
                 let arguments = arguments.into_iter().map(lir_from_mir).collect();
-                LIRExpression::FunctionCall {
+                RustASTExpression::FunctionCall {
                     function: Box::new(lir_from_mir(*function)),
                     arguments,
                 }
@@ -91,10 +91,10 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
             input_name,
             input_fields,
         } => {
-            let self_call = LIRExpression::Identifier {
+            let self_call = RustASTExpression::Identifier {
                 identifier: String::from("self"),
             };
-            let receiver = LIRExpression::FieldAccess {
+            let receiver = RustASTExpression::FieldAccess {
                 expression: Box::new(self_call),
                 field: node_identifier,
             };
@@ -105,17 +105,17 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                     expression: lir_from_mir(expression),
                 })
                 .collect();
-            let argument = LIRExpression::Structure {
+            let argument = RustASTExpression::Structure {
                 name: input_name,
                 fields: input_fields,
             };
-            LIRExpression::MethodCall {
+            RustASTExpression::MethodCall {
                 receiver: Box::new(receiver),
                 method: String::from("step"),
                 arguments: vec![argument],
             }
         }
-        Expression::FieldAccess { expression, field } => LIRExpression::FieldAccess {
+        Expression::FieldAccess { expression, field } => RustASTExpression::FieldAccess {
             expression: Box::new(lir_from_mir(*expression)),
             field,
         },
@@ -135,7 +135,7 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                     r#type: type_lir_from_mir(r#type),
                 })
                 .collect();
-            LIRExpression::Closure {
+            RustASTExpression::Closure {
                 r#move: false,
                 inputs,
                 output: Some(type_lir_from_mir(output)),
@@ -146,7 +146,7 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
             condition,
             then_branch,
             else_branch,
-        } => LIRExpression::IfThenElse {
+        } => RustASTExpression::IfThenElse {
             condition: Box::new(lir_from_mir(*condition)),
             then_branch: block_lir_from_mir(then_branch),
             else_branch: Some(block_lir_from_mir(else_branch)),
@@ -160,7 +160,7 @@ pub fn lir_from_mir(expression: Expression) -> LIRExpression {
                     body: lir_from_mir(body),
                 })
                 .collect();
-            LIRExpression::Match {
+            RustASTExpression::Match {
                 matched: Box::new(lir_from_mir(*matched)),
                 arms,
             }
@@ -176,12 +176,12 @@ mod lir_from_mir {
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
     use crate::frontend::lir_from_mir::expression::lir_from_mir;
-    use crate::rust_ast::block::Block as LIRBlock;
-    use crate::rust_ast::expression::{Arm, Expression as LIRExpression, FieldExpression};
-    use crate::rust_ast::pattern::Pattern as LIRPattern;
-    use crate::rust_ast::r#type::Type as LIRType;
+    use crate::rust_ast::block::Block as RustASTBlock;
+    use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
+    use crate::rust_ast::pattern::Pattern as RustASTPattern;
+    use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::r#let::Let;
-    use crate::rust_ast::statement::Statement as LIRStatement;
+    use crate::rust_ast::statement::Statement as RustASTStatement;
     use crate::mir::block::Block;
     use crate::mir::expression::Expression;
     use crate::mir::statement::Statement;
@@ -191,7 +191,7 @@ mod lir_from_mir {
         let expression = Expression::Literal {
             literal: Constant::Integer(1),
         };
-        let control = LIRExpression::Literal {
+        let control = RustASTExpression::Literal {
             literal: Constant::Integer(1),
         };
         assert_eq!(lir_from_mir(expression), control)
@@ -202,7 +202,7 @@ mod lir_from_mir {
         let expression = Expression::Identifier {
             identifier: String::from("x"),
         };
-        let control = LIRExpression::Identifier {
+        let control = RustASTExpression::Identifier {
             identifier: String::from("x"),
         };
         assert_eq!(lir_from_mir(expression), control)
@@ -213,8 +213,8 @@ mod lir_from_mir {
         let expression = Expression::MemoryAccess {
             identifier: String::from("mem_x"),
         };
-        let control = LIRExpression::FieldAccess {
-            expression: Box::new(LIRExpression::Identifier {
+        let control = RustASTExpression::FieldAccess {
+            expression: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("self"),
             }),
             field: String::from("mem_x"),
@@ -227,8 +227,8 @@ mod lir_from_mir {
         let expression = Expression::InputAccess {
             identifier: String::from("i"),
         };
-        let control = LIRExpression::FieldAccess {
-            expression: Box::new(LIRExpression::Identifier {
+        let control = RustASTExpression::FieldAccess {
+            expression: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("input"),
             }),
             field: String::from("i"),
@@ -255,18 +255,18 @@ mod lir_from_mir {
                 ),
             ],
         };
-        let control = LIRExpression::Structure {
+        let control = RustASTExpression::Structure {
             name: String::from("Point"),
             fields: vec![
                 FieldExpression {
                     name: String::from("x"),
-                    expression: LIRExpression::Literal {
+                    expression: RustASTExpression::Literal {
                         literal: Constant::Integer(1),
                     },
                 },
                 FieldExpression {
                     name: String::from("y"),
-                    expression: LIRExpression::Literal {
+                    expression: RustASTExpression::Literal {
                         literal: Constant::Integer(2),
                     },
                 },
@@ -287,12 +287,12 @@ mod lir_from_mir {
                 },
             ],
         };
-        let control = LIRExpression::Array {
+        let control = RustASTExpression::Array {
             elements: vec![
-                LIRExpression::Literal {
+                RustASTExpression::Literal {
                     literal: Constant::Integer(1),
                 },
-                LIRExpression::Literal {
+                RustASTExpression::Literal {
                     literal: Constant::Integer(2),
                 },
             ],
@@ -319,20 +319,20 @@ mod lir_from_mir {
                 ],
             },
         };
-        let control = LIRExpression::Block {
-            block: LIRBlock {
+        let control = RustASTExpression::Block {
+            block: RustASTBlock {
                 statements: vec![
-                    LIRStatement::Let(Let {
-                        pattern: LIRPattern::Identifier {
+                    RustASTStatement::Let(Let {
+                        pattern: RustASTPattern::Identifier {
                             reference: false,
                             mutable: false,
                             identifier: String::from("x"),
                         },
-                        expression: LIRExpression::Literal {
+                        expression: RustASTExpression::Literal {
                             literal: Constant::Integer(1),
                         },
                     }),
-                    LIRStatement::ExpressionLast(LIRExpression::Identifier {
+                    RustASTStatement::ExpressionLast(RustASTExpression::Identifier {
                         identifier: String::from("x"),
                     }),
                 ],
@@ -356,15 +356,15 @@ mod lir_from_mir {
                 },
             ],
         };
-        let control = LIRExpression::FunctionCall {
-            function: Box::new(LIRExpression::Identifier {
+        let control = RustASTExpression::FunctionCall {
+            function: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("foo"),
             }),
             arguments: vec![
-                LIRExpression::Identifier {
+                RustASTExpression::Identifier {
                     identifier: String::from("a"),
                 },
-                LIRExpression::Identifier {
+                RustASTExpression::Identifier {
                     identifier: String::from("b"),
                 },
             ],
@@ -387,12 +387,12 @@ mod lir_from_mir {
                 },
             ],
         };
-        let control = LIRExpression::Binary {
-            left: Box::new(LIRExpression::Identifier {
+        let control = RustASTExpression::Binary {
+            left: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("a"),
             }),
             operator: BinaryOperator::Add,
-            right: Box::new(LIRExpression::Identifier {
+            right: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("b"),
             }),
         };
@@ -411,19 +411,19 @@ mod lir_from_mir {
                 },
             )],
         };
-        let control = LIRExpression::MethodCall {
-            receiver: Box::new(LIRExpression::FieldAccess {
-                expression: Box::new(LIRExpression::Identifier {
+        let control = RustASTExpression::MethodCall {
+            receiver: Box::new(RustASTExpression::FieldAccess {
+                expression: Box::new(RustASTExpression::Identifier {
                     identifier: String::from("self"),
                 }),
                 field: String::from("node_state"),
             }),
             method: String::from("step"),
-            arguments: vec![LIRExpression::Structure {
+            arguments: vec![RustASTExpression::Structure {
                 name: String::from("NodeInput"),
                 fields: vec![FieldExpression {
                     name: String::from("i"),
-                    expression: LIRExpression::Literal {
+                    expression: RustASTExpression::Literal {
                         literal: Constant::Integer(1),
                     },
                 }],
@@ -440,8 +440,8 @@ mod lir_from_mir {
             }),
             field: String::from("x"),
         };
-        let control = LIRExpression::FieldAccess {
-            expression: Box::new(LIRExpression::Identifier {
+        let control = RustASTExpression::FieldAccess {
+            expression: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("my_point"),
             }),
             field: String::from("x"),
@@ -472,35 +472,35 @@ mod lir_from_mir {
                 },
             }),
         };
-        let control = LIRExpression::Closure {
+        let control = RustASTExpression::Closure {
             r#move: false,
-            inputs: vec![LIRPattern::Typed {
-                pattern: Box::new(LIRPattern::Identifier {
+            inputs: vec![RustASTPattern::Typed {
+                pattern: Box::new(RustASTPattern::Identifier {
                     reference: false,
                     mutable: false,
                     identifier: String::from("x"),
                 }),
-                r#type: LIRType::Identifier {
+                r#type: RustASTType::Identifier {
                     identifier: String::from("i64"),
                 },
             }],
-            output: Some(LIRType::Identifier {
+            output: Some(RustASTType::Identifier {
                 identifier: String::from("i64"),
             }),
-            body: Box::new(LIRExpression::Block {
-                block: LIRBlock {
+            body: Box::new(RustASTExpression::Block {
+                block: RustASTBlock {
                     statements: vec![
-                        LIRStatement::Let(Let {
-                            pattern: LIRPattern::Identifier {
+                        RustASTStatement::Let(Let {
+                            pattern: RustASTPattern::Identifier {
                                 reference: false,
                                 mutable: false,
                                 identifier: String::from("y"),
                             },
-                            expression: LIRExpression::Identifier {
+                            expression: RustASTExpression::Identifier {
                                 identifier: String::from("x"),
                             },
                         }),
-                        LIRStatement::ExpressionLast(LIRExpression::Identifier {
+                        RustASTStatement::ExpressionLast(RustASTExpression::Identifier {
                             identifier: String::from("y"),
                         }),
                     ],
@@ -531,17 +531,17 @@ mod lir_from_mir {
                 }],
             },
         };
-        let control = LIRExpression::IfThenElse {
-            condition: Box::new(LIRExpression::Identifier {
+        let control = RustASTExpression::IfThenElse {
+            condition: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("test"),
             }),
-            then_branch: LIRBlock {
-                statements: vec![LIRStatement::ExpressionLast(LIRExpression::Literal {
+            then_branch: RustASTBlock {
+                statements: vec![RustASTStatement::ExpressionLast(RustASTExpression::Literal {
                     literal: Constant::Integer(1),
                 })],
             },
-            else_branch: Some(LIRBlock {
-                statements: vec![LIRStatement::ExpressionLast(LIRExpression::Literal {
+            else_branch: Some(RustASTBlock {
+                statements: vec![RustASTStatement::ExpressionLast(RustASTExpression::Literal {
                     literal: Constant::Integer(0),
                 })],
             }),
@@ -578,26 +578,26 @@ mod lir_from_mir {
                 ),
             ],
         };
-        let control = LIRExpression::Match {
-            matched: Box::new(LIRExpression::Identifier {
+        let control = RustASTExpression::Match {
+            matched: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("my_color"),
             }),
             arms: vec![
                 Arm {
-                    pattern: LIRPattern::Literal {
+                    pattern: RustASTPattern::Literal {
                         literal: Constant::Enumeration(String::from("Color"), format!("Blue")),
                     },
                     guard: None,
-                    body: LIRExpression::Literal {
+                    body: RustASTExpression::Literal {
                         literal: Constant::Integer(1),
                     },
                 },
                 Arm {
-                    pattern: LIRPattern::Literal {
+                    pattern: RustASTPattern::Literal {
                         literal: Constant::Enumeration(String::from("Color"), format!("Green")),
                     },
                     guard: None,
-                    body: LIRExpression::Literal {
+                    body: RustASTExpression::Literal {
                         literal: Constant::Integer(0),
                     },
                 },

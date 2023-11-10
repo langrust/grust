@@ -1,15 +1,15 @@
 use crate::ast::pattern::Pattern;
-use crate::rust_ast::pattern::{FieldPattern, Pattern as LIRPattern};
+use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
 
-/// Transform MIR pattern into LIR pattern.
-pub fn lir_from_mir(pattern: Pattern) -> LIRPattern {
+/// Transform MIR pattern into RustAST pattern.
+pub fn lir_from_mir(pattern: Pattern) -> RustASTPattern {
     match pattern {
-        Pattern::Identifier { name, .. } => LIRPattern::Identifier {
+        Pattern::Identifier { name, .. } => RustASTPattern::Identifier {
             reference: false,
             mutable: false,
             identifier: name,
         },
-        Pattern::Constant { constant, .. } => LIRPattern::Literal { literal: constant },
+        Pattern::Constant { constant, .. } => RustASTPattern::Literal { literal: constant },
         Pattern::Structure { name, fields, .. } => {
             let fields = fields
                 .into_iter()
@@ -18,18 +18,18 @@ pub fn lir_from_mir(pattern: Pattern) -> LIRPattern {
                     pattern: lir_from_mir(pattern),
                 })
                 .collect();
-            LIRPattern::Structure {
+            RustASTPattern::Structure {
                 name,
                 fields,
                 dots: false,
             }
         }
-        Pattern::Some { pattern, .. } => LIRPattern::TupleStructure {
+        Pattern::Some { pattern, .. } => RustASTPattern::TupleStructure {
             name: String::from("Some"),
             elements: vec![lir_from_mir(*pattern)],
         },
-        Pattern::None { .. } => LIRPattern::Default,
-        Pattern::Default { .. } => LIRPattern::Default,
+        Pattern::None { .. } => RustASTPattern::Default,
+        Pattern::Default { .. } => RustASTPattern::Default,
     }
 }
 
@@ -39,14 +39,14 @@ mod lir_from_mir {
     use crate::common::constant::Constant;
     use crate::common::location::Location;
     use crate::frontend::lir_from_mir::pattern::lir_from_mir;
-    use crate::rust_ast::pattern::{FieldPattern, Pattern as LIRPattern};
+    use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
 
     #[test]
     fn should_create_a_lir_default_pattern_from_a_mir_default_pattern() {
         let pattern = Pattern::Default {
             location: Location::default(),
         };
-        let control = LIRPattern::Default;
+        let control = RustASTPattern::Default;
         assert_eq!(lir_from_mir(pattern), control)
     }
 
@@ -55,7 +55,7 @@ mod lir_from_mir {
         let pattern = Pattern::None {
             location: Location::default(),
         };
-        let control = LIRPattern::Default;
+        let control = RustASTPattern::Default;
         assert_eq!(lir_from_mir(pattern), control)
     }
 
@@ -67,9 +67,9 @@ mod lir_from_mir {
             }),
             location: Location::default(),
         };
-        let control = LIRPattern::TupleStructure {
+        let control = RustASTPattern::TupleStructure {
             name: String::from("Some"),
-            elements: vec![LIRPattern::Default],
+            elements: vec![RustASTPattern::Default],
         };
         assert_eq!(lir_from_mir(pattern), control)
     }
@@ -80,7 +80,7 @@ mod lir_from_mir {
             constant: Constant::Integer(1),
             location: Location::default(),
         };
-        let control = LIRPattern::Literal {
+        let control = RustASTPattern::Literal {
             literal: Constant::Integer(1),
         };
         assert_eq!(lir_from_mir(pattern), control)
@@ -92,7 +92,7 @@ mod lir_from_mir {
             name: String::from("x"),
             location: Location::default(),
         };
-        let control = LIRPattern::Identifier {
+        let control = RustASTPattern::Identifier {
             reference: false,
             mutable: false,
             identifier: String::from("x"),
@@ -121,16 +121,16 @@ mod lir_from_mir {
             ],
             location: Location::default(),
         };
-        let control = LIRPattern::Structure {
+        let control = RustASTPattern::Structure {
             name: String::from("Point"),
             fields: vec![
                 FieldPattern {
                     name: String::from("x"),
-                    pattern: LIRPattern::Default,
+                    pattern: RustASTPattern::Default,
                 },
                 FieldPattern {
                     name: String::from("y"),
-                    pattern: LIRPattern::Identifier {
+                    pattern: RustASTPattern::Identifier {
                         reference: false,
                         mutable: false,
                         identifier: String::from("y"),
