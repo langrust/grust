@@ -1,5 +1,5 @@
 ---
-source: tests/mir_from_hir.rs
+source: tests/lir_from_hir.rs
 expression: project
 ---
 items:

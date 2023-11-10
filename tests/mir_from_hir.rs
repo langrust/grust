@@ -2,11 +2,11 @@ use codespan_reporting::files::{Files, SimpleFiles};
 
 use grustine::ast::file::File;
 use grustine::frontend::hir_from_ast::file::hir_from_ast;
-use grustine::frontend::lir_from_hir::file::mir_from_hir;
+use grustine::frontend::lir_from_hir::file::lir_from_hir;
 use grustine::parser::langrust;
 
 #[test]
-fn mir_from_hir_transformation_for_counter() {
+fn lir_from_hir_transformation_for_counter() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -24,12 +24,12 @@ fn mir_from_hir_transformation_for_counter() {
     file.causality_analysis(&mut errors).unwrap();
     file.normalize(&mut errors).unwrap();
 
-    let project = mir_from_hir(file);
+    let project = lir_from_hir(file);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn mir_from_hir_transformation_for_blinking() {
+fn lir_from_hir_transformation_for_blinking() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -47,12 +47,12 @@ fn mir_from_hir_transformation_for_blinking() {
     file.causality_analysis(&mut errors).unwrap();
     file.normalize(&mut errors).unwrap();
 
-    let project = mir_from_hir(file);
+    let project = lir_from_hir(file);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn mir_from_hir_transformation_for_button_management() {
+fn lir_from_hir_transformation_for_button_management() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -70,12 +70,12 @@ fn mir_from_hir_transformation_for_button_management() {
     file.causality_analysis(&mut errors).unwrap();
     file.normalize(&mut errors).unwrap();
 
-    let project = mir_from_hir(file);
+    let project = lir_from_hir(file);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn mir_from_hir_transformation_for_button_management_condition_match() {
+fn lir_from_hir_transformation_for_button_management_condition_match() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -94,12 +94,12 @@ fn mir_from_hir_transformation_for_button_management_condition_match() {
     file.causality_analysis(&mut errors).unwrap();
     file.normalize(&mut errors).unwrap();
 
-    let project = mir_from_hir(file);
+    let project = lir_from_hir(file);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn mir_from_hir_transformation_for_button_management_using_function() {
+fn lir_from_hir_transformation_for_button_management_using_function() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -118,12 +118,12 @@ fn mir_from_hir_transformation_for_button_management_using_function() {
     file.causality_analysis(&mut errors).unwrap();
     file.normalize(&mut errors).unwrap();
 
-    let project = mir_from_hir(file);
+    let project = lir_from_hir(file);
     insta::assert_yaml_snapshot!(project);
 }
 
 #[test]
-fn mir_from_hir_transformation_for_pid() {
+fn lir_from_hir_transformation_for_pid() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
 
@@ -141,6 +141,6 @@ fn mir_from_hir_transformation_for_pid() {
     file.causality_analysis(&mut errors).unwrap();
     file.normalize(&mut errors).unwrap();
 
-    let project = mir_from_hir(file);
+    let project = lir_from_hir(file);
     insta::assert_yaml_snapshot!(project);
 }

@@ -1,22 +1,22 @@
 use crate::{ast::statement::Statement, lir::statement::Statement as LIRStatement};
 
-use super::expression::mir_from_hir as expression_mir_from_hir;
+use super::expression::lir_from_hir as expression_lir_from_hir;
 
 /// Transform HIR statement into LIR statement.
-pub fn mir_from_hir(statement: Statement) -> LIRStatement {
+pub fn lir_from_hir(statement: Statement) -> LIRStatement {
     let Statement { id, expression, .. } = statement;
     LIRStatement::Let {
         identifier: id,
-        expression: expression_mir_from_hir(expression),
+        expression: expression_lir_from_hir(expression),
     }
 }
 
 #[cfg(test)]
-mod mir_from_hir {
+mod lir_from_hir {
     use crate::{
         ast::{expression::Expression as ASTExpression, statement::Statement as ASTStatement},
         common::{constant::Constant, location::Location, r#type::Type},
-        frontend::lir_from_hir::statement::mir_from_hir,
+        frontend::lir_from_hir::statement::lir_from_hir,
         lir::{expression::Expression, statement::Statement},
     };
 
@@ -38,6 +38,6 @@ mod mir_from_hir {
                 literal: Constant::Integer(1),
             },
         };
-        assert_eq!(mir_from_hir(statement), control)
+        assert_eq!(lir_from_hir(statement), control)
     }
 }

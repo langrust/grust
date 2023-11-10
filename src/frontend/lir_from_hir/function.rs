@@ -4,11 +4,11 @@ use crate::{
 };
 
 use super::{
-    expression::mir_from_hir as expression_mir_from_hir,
-    statement::mir_from_hir as statement_mir_from_hir,
+    expression::lir_from_hir as expression_lir_from_hir,
+    statement::lir_from_hir as statement_lir_from_hir,
 };
 /// Transform HIR function into LIR function.
-pub fn mir_from_hir(function: Function) -> LIRFunction {
+pub fn lir_from_hir(function: Function) -> LIRFunction {
     let Function {
         id,
         inputs,
@@ -19,10 +19,10 @@ pub fn mir_from_hir(function: Function) -> LIRFunction {
 
     let mut statements = statements
         .into_iter()
-        .map(statement_mir_from_hir)
+        .map(statement_lir_from_hir)
         .collect::<Vec<_>>();
     statements.push(Statement::ExpressionLast {
-        expression: expression_mir_from_hir(last_expression),
+        expression: expression_lir_from_hir(last_expression),
     });
 
     LIRFunction {
@@ -34,14 +34,14 @@ pub fn mir_from_hir(function: Function) -> LIRFunction {
 }
 
 #[cfg(test)]
-mod mir_from_hir {
+mod lir_from_hir {
     use crate::{
         ast::{
             expression::Expression as ASTExpression, function::Function as ASTFunction,
             statement::Statement as ASTStatement,
         },
         common::{location::Location, r#type::Type},
-        frontend::lir_from_hir::function::mir_from_hir,
+        frontend::lir_from_hir::function::lir_from_hir,
         lir::{
             block::Block, expression::Expression, item::function::Function, statement::Statement,
         },
@@ -121,6 +121,6 @@ mod mir_from_hir {
                 ],
             },
         };
-        assert_eq!(mir_from_hir(function), control)
+        assert_eq!(lir_from_hir(function), control)
     }
 }
