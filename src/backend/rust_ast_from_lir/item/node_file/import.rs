@@ -69,10 +69,13 @@ mod rust_ast_from_lir {
         let control = RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
-                module_name: String::from("functions"),
-                tree: Box::new(PathTree::Name {
-                    name: String::from("foo"),
-                    alias: None,
+                module_name: String::from("crate"),
+                tree: Box::new(PathTree::Path {
+                    module_name: String::from("functions"),
+                    tree: Box::new(PathTree::Name {
+                        name: String::from("foo"),
+                        alias: None,
+                    }),
                 }),
             },
         };
@@ -85,8 +88,11 @@ mod rust_ast_from_lir {
         let control = RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
-                module_name: String::from("my_node"),
-                tree: Box::new(PathTree::Star),
+                module_name: String::from("crate"),
+                tree: Box::new(PathTree::Path {
+                    module_name: String::from("my_node"),
+                    tree: Box::new(PathTree::Star),
+                }),
             },
         };
         assert_eq!(rust_ast_from_lir(import), control)
