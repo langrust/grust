@@ -52,7 +52,7 @@ pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
     let mut lib_file = File::new(format!("src/lib.rs"));
     rust_ast_project.files.iter().for_each(|file| {
         let module_name = Path::new(&file.path)
-            .file_name()
+            .file_stem()
             .unwrap()
             .to_str()
             .unwrap()
