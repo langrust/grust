@@ -1,6 +1,7 @@
 use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
+use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 use crate::rust_ast::block::Block;
 use crate::rust_ast::expression::{Expression, FieldExpression};
@@ -21,13 +22,13 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
         inputs: vec![(
             String::from("input"),
             RustASTType::Identifier {
-                identifier: format!("{}Input", step.node_name),
+                identifier: camel_case(&format!("{}Input", step.node_name)),
             },
         )],
         output: RustASTType::Tuple {
             elements: vec![
                 RustASTType::Identifier {
-                    identifier: format!("{}State", step.node_name),
+                    identifier: camel_case(&format!("{}State", step.node_name)),
                 },
                 type_rust_ast_from_lir(step.output_type),
             ],
@@ -55,7 +56,7 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
     let statement = Statement::ExpressionLast(Expression::Tuple {
         elements: vec![
             Expression::Structure {
-                name: format!("{}State", step.node_name),
+                name: camel_case(&format!("{}State", step.node_name)),
                 fields,
             },
             expression_rust_ast_from_lir(step.output_expression),

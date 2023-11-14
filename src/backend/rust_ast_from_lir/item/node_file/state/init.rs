@@ -1,3 +1,4 @@
+use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::init::{Init, StateElementInit};
 use crate::rust_ast::block::Block;
 use crate::rust_ast::expression::{Expression, FieldExpression};
@@ -14,7 +15,7 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
         receiver: None,
         inputs: vec![],
         output: RustASTType::Identifier {
-            identifier: format!("{}State", init.node_name),
+            identifier: camel_case(&format!("{}State", init.node_name)),
         },
     };
     let fields = init
@@ -37,7 +38,7 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
                 name: identifier,
                 expression: Expression::FunctionCall {
                     function: Box::new(Expression::Identifier {
-                        identifier: format!("{}State::init", node_name),
+                        identifier: camel_case(&format!("{}State::init", node_name)),
                     }),
                     arguments: vec![],
                 },
@@ -45,7 +46,7 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
         })
         .collect();
     let statement = Statement::ExpressionLast(Expression::Structure {
-        name: format!("{}State", init.node_name),
+        name: camel_case(&format!("{}State", init.node_name)),
         fields,
     });
     let body = Block {

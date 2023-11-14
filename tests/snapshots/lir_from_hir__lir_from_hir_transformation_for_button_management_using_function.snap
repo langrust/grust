@@ -217,7 +217,7 @@ items:
                 expression:
                   NodeCall:
                     node_identifier: counter_o_counter
-                    input_name: counter_oInput
+                    input_name: CounterOInput
                     input_fields:
                       - - res
                         - Identifier:
@@ -374,7 +374,7 @@ items:
                 expression:
                   NodeCall:
                     node_identifier: counter_o_counter
-                    input_name: counter_oInput
+                    input_name: CounterOInput
                     input_fields:
                       - - res
                         - Identifier:

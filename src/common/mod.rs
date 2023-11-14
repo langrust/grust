@@ -24,3 +24,6 @@ pub mod scope;
 
 /// Serialization module.
 pub mod serialize;
+
+/// Case converter module.
+pub mod convert_case;

@@ -100,7 +100,7 @@ mod lir_from_hir {
             identifiers: vec![format!("my_node_o_y"), format!("y")],
             expression: Expression::NodeCall {
                 node_identifier: format!("my_node_o_y"),
-                input_name: format!("my_node_oInput"),
+                input_name: format!("MyNodeOInput"),
                 input_fields: vec![
                     (
                         format!("i"),
