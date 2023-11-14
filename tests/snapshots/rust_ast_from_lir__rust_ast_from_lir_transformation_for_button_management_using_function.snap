@@ -2,8 +2,9 @@
 source: tests/rust_ast_from_lir.rs
 expression: project
 ---
+directory: ""
 files:
-  - path: countero
+  - path: src/countero.rs
     items:
       - Structure:
           public_visibility: true
@@ -20,7 +21,7 @@ files:
                 Identifier:
                   identifier: i64
       - Structure:
-          public_visibility: false
+          public_visibility: true
           name: counteroState
           fields:
             - public_visibility: false
@@ -124,25 +125,31 @@ files:
                                         identifier: o
                             - Identifier:
                                 identifier: o
-  - path: reset_buttonuser_reset_request
+  - path: src/reset_buttonuser_reset_request.rs
     items:
       - Import:
           Use:
             public_visibility: false
             tree:
               Path:
-                module_name: typedefs
+                module_name: crate
                 tree:
-                  Name:
-                    name: Button
-                    alias: ~
+                  Path:
+                    module_name: typedefs
+                    tree:
+                      Name:
+                        name: Button
+                        alias: ~
       - Import:
           Use:
             public_visibility: false
             tree:
               Path:
-                module_name: countero
-                tree: Star
+                module_name: crate
+                tree:
+                  Path:
+                    module_name: countero
+                    tree: Star
       - Structure:
           public_visibility: true
           name: reset_buttonuser_reset_requestInput
@@ -168,7 +175,7 @@ files:
                 Identifier:
                   identifier: i64
       - Structure:
-          public_visibility: false
+          public_visibility: true
           name: reset_buttonuser_reset_requestState
           fields:
             - public_visibility: false
@@ -402,35 +409,44 @@ files:
                                         identifier: counterocounter
                             - Identifier:
                                 identifier: user_reset_request
-  - path: reset_buttonuser_reset_request_state
+  - path: src/reset_buttonuser_reset_request_state.rs
     items:
       - Import:
           Use:
             public_visibility: false
             tree:
               Path:
-                module_name: typedefs
+                module_name: crate
                 tree:
-                  Name:
-                    name: Button
-                    alias: ~
+                  Path:
+                    module_name: typedefs
+                    tree:
+                      Name:
+                        name: Button
+                        alias: ~
       - Import:
           Use:
             public_visibility: false
             tree:
               Path:
-                module_name: countero
-                tree: Star
+                module_name: crate
+                tree:
+                  Path:
+                    module_name: countero
+                    tree: Star
       - Import:
           Use:
             public_visibility: false
             tree:
               Path:
-                module_name: functions
+                module_name: crate
                 tree:
-                  Name:
-                    name: reset_state_management
-                    alias: ~
+                  Path:
+                    module_name: functions
+                    tree:
+                      Name:
+                        name: reset_state_management
+                        alias: ~
       - Structure:
           public_visibility: true
           name: reset_buttonuser_reset_request_stateInput
@@ -451,7 +467,7 @@ files:
                 Identifier:
                   identifier: i64
       - Structure:
-          public_visibility: false
+          public_visibility: true
           name: reset_buttonuser_reset_request_stateState
           fields:
             - public_visibility: false
@@ -639,7 +655,7 @@ files:
                                         identifier: counterocounter
                             - Identifier:
                                 identifier: user_reset_request_state
-  - path: functions.rs
+  - path: src/functions.rs
     items:
       - Function:
           signature:
@@ -718,7 +734,7 @@ files:
               - ExpressionLast:
                   Identifier:
                     identifier: result
-  - path: typedefs.rs
+  - path: src/typedefs.rs
     items:
       - Enumeration:
           public_visibility: true
@@ -732,4 +748,26 @@ files:
           elements:
             - InProgress
             - Confirmed
+  - path: src/lib.rs
+    items:
+      - Import:
+          Module:
+            public_visibility: true
+            name: countero
+      - Import:
+          Module:
+            public_visibility: true
+            name: reset_buttonuser_reset_request
+      - Import:
+          Module:
+            public_visibility: true
+            name: reset_buttonuser_reset_request_state
+      - Import:
+          Module:
+            public_visibility: true
+            name: functions
+      - Import:
+          Module:
+            public_visibility: true
+            name: typedefs
 

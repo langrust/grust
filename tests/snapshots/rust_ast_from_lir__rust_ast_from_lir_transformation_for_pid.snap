@@ -2,19 +2,23 @@
 source: tests/rust_ast_from_lir.rs
 expression: project
 ---
+directory: ""
 files:
-  - path: integratei
+  - path: src/integratei.rs
     items:
       - Import:
           Use:
             public_visibility: false
             tree:
               Path:
-                module_name: functions
+                module_name: crate
                 tree:
-                  Name:
-                    name: min
-                    alias: ~
+                  Path:
+                    module_name: functions
+                    tree:
+                      Name:
+                        name: min
+                        alias: ~
       - Structure:
           public_visibility: true
           name: integrateiInput
@@ -30,7 +34,7 @@ files:
                 Identifier:
                   identifier: f64
       - Structure:
-          public_visibility: false
+          public_visibility: true
           name: integrateiState
           fields:
             - public_visibility: false
@@ -150,7 +154,7 @@ files:
                                         identifier: i
                             - Identifier:
                                 identifier: i
-  - path: derived
+  - path: src/derived.rs
     items:
       - Structure:
           public_visibility: true
@@ -167,7 +171,7 @@ files:
                 Identifier:
                   identifier: f64
       - Structure:
-          public_visibility: false
+          public_visibility: true
           name: derivedState
           fields:
             - public_visibility: false
@@ -276,32 +280,41 @@ files:
                                         field: x
                             - Identifier:
                                 identifier: d
-  - path: pidu
+  - path: src/pidu.rs
     items:
       - Import:
           Use:
             public_visibility: false
             tree:
               Path:
-                module_name: derived
-                tree: Star
-      - Import:
-          Use:
-            public_visibility: false
-            tree:
-              Path:
-                module_name: integratei
-                tree: Star
-      - Import:
-          Use:
-            public_visibility: false
-            tree:
-              Path:
-                module_name: typedefs
+                module_name: crate
                 tree:
-                  Name:
-                    name: GainPID
-                    alias: ~
+                  Path:
+                    module_name: derived
+                    tree: Star
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: crate
+                tree:
+                  Path:
+                    module_name: integratei
+                    tree: Star
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: crate
+                tree:
+                  Path:
+                    module_name: typedefs
+                    tree:
+                      Name:
+                        name: GainPID
+                        alias: ~
       - Structure:
           public_visibility: true
           name: piduInput
@@ -322,7 +335,7 @@ files:
                 Identifier:
                   identifier: f64
       - Structure:
-          public_visibility: false
+          public_visibility: true
           name: piduState
           fields:
             - public_visibility: false
@@ -591,7 +604,7 @@ files:
                                         identifier: integrateie_i
                             - Identifier:
                                 identifier: u
-  - path: functions.rs
+  - path: src/functions.rs
     items:
       - Function:
           signature:
@@ -649,7 +662,7 @@ files:
               - ExpressionLast:
                   Identifier:
                     identifier: result
-  - path: typedefs.rs
+  - path: src/typedefs.rs
     items:
       - Structure:
           public_visibility: true
@@ -670,4 +683,26 @@ files:
               type:
                 Identifier:
                   identifier: f64
+  - path: src/lib.rs
+    items:
+      - Import:
+          Module:
+            public_visibility: true
+            name: integratei
+      - Import:
+          Module:
+            public_visibility: true
+            name: derived
+      - Import:
+          Module:
+            public_visibility: true
+            name: pidu
+      - Import:
+          Module:
+            public_visibility: true
+            name: functions
+      - Import:
+          Module:
+            public_visibility: true
+            name: typedefs
 

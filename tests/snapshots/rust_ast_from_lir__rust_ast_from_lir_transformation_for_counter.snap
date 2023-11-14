@@ -2,8 +2,9 @@
 source: tests/rust_ast_from_lir.rs
 expression: project
 ---
+directory: ""
 files:
-  - path: countero
+  - path: src/countero.rs
     items:
       - Structure:
           public_visibility: true
@@ -20,7 +21,7 @@ files:
                 Identifier:
                   identifier: bool
       - Structure:
-          public_visibility: false
+          public_visibility: true
           name: counteroState
           fields:
             - public_visibility: false
@@ -147,21 +148,24 @@ files:
                                         identifier: o
                             - Identifier:
                                 identifier: o
-  - path: mainy
+  - path: src/mainy.rs
     items:
       - Import:
           Use:
             public_visibility: false
             tree:
               Path:
-                module_name: countero
-                tree: Star
+                module_name: crate
+                tree:
+                  Path:
+                    module_name: countero
+                    tree: Star
       - Structure:
           public_visibility: true
           name: mainyInput
           fields: []
       - Structure:
-          public_visibility: false
+          public_visibility: true
           name: mainyState
           fields:
             - public_visibility: false
@@ -325,8 +329,26 @@ files:
                                         identifier: counteroy
                             - Identifier:
                                 identifier: y
-  - path: functions.rs
+  - path: src/functions.rs
     items: []
-  - path: typedefs.rs
+  - path: src/typedefs.rs
     items: []
+  - path: src/lib.rs
+    items:
+      - Import:
+          Module:
+            public_visibility: true
+            name: countero
+      - Import:
+          Module:
+            public_visibility: true
+            name: mainy
+      - Import:
+          Module:
+            public_visibility: true
+            name: functions
+      - Import:
+          Module:
+            public_visibility: true
+            name: typedefs
 
