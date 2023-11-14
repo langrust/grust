@@ -1,4 +1,5 @@
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
+use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::input::{Input, InputElement};
 use crate::rust_ast::item::structure::{Field, Structure};
 
@@ -15,7 +16,7 @@ pub fn rust_ast_from_lir(input: Input) -> Structure {
         .collect();
     Structure {
         public_visibility: true,
-        name: format!("{}Input", input.node_name),
+        name: camel_case(&format!("{}Input", input.node_name)),
         fields,
     }
 }

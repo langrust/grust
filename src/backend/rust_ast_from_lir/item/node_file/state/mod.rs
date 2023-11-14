@@ -1,6 +1,7 @@
 use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir as init_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir as step_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
+use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::{State, StateElement};
 use crate::rust_ast::item::implementation::Implementation;
 use crate::rust_ast::item::structure::{Field, Structure};
@@ -29,20 +30,20 @@ pub fn rust_ast_from_lir(state: State) -> (Structure, Implementation) {
                 public_visibility: false,
                 name: identifier,
                 r#type: RustASTType::Identifier {
-                    identifier: format!("{}State", node_name),
+                    identifier: camel_case(&format!("{}State", node_name)),
                 },
             },
         })
         .collect();
     let structure = Structure {
         public_visibility: true,
-        name: format!("{}State", state.node_name),
+        name: camel_case(&format!("{}State", state.node_name)),
         fields,
     };
 
     let implementation = Implementation {
         trait_name: None,
-        type_name: format!("{}State", state.node_name),
+        type_name: camel_case(&format!("{}State", state.node_name)),
         items: vec![
             init_rust_ast_from_lir(state.init),
             step_rust_ast_from_lir(state.step),

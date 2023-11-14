@@ -241,7 +241,7 @@ items:
                 expression:
                   NodeCall:
                     node_identifier: derive_d_e_d
-                    input_name: derive_dInput
+                    input_name: DeriveDInput
                     input_fields:
                       - - x
                         - Identifier:
@@ -256,7 +256,7 @@ items:
                 expression:
                   NodeCall:
                     node_identifier: integrate_i_e_i
-                    input_name: integrate_iInput
+                    input_name: IntegrateIInput
                     input_fields:
                       - - x
                         - Identifier:

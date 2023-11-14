@@ -8,7 +8,7 @@ files:
     items:
       - Structure:
           public_visibility: true
-          name: counter_oInput
+          name: CounterOInput
           fields:
             - public_visibility: true
               name: res
@@ -22,7 +22,7 @@ files:
                   identifier: bool
       - Structure:
           public_visibility: true
-          name: counter_oState
+          name: CounterOState
           fields:
             - public_visibility: false
               name: mem_o
@@ -31,7 +31,7 @@ files:
                   identifier: i64
       - Implementation:
           trait_name: ~
-          type_name: counter_oState
+          type_name: CounterOState
           items:
             - AssociatedMethod:
                 signature:
@@ -41,12 +41,12 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: counter_oState
+                      identifier: CounterOState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: counter_oState
+                          name: CounterOState
                           fields:
                             - name: mem_o
                               expression:
@@ -63,12 +63,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: counter_oInput
+                          identifier: CounterOInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: counter_oState
+                            identifier: CounterOState
                         - Identifier:
                             identifier: i64
                 body:
@@ -140,7 +140,7 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: counter_oState
+                                name: CounterOState
                                 fields:
                                   - name: mem_o
                                     expression:
@@ -162,11 +162,11 @@ files:
                     tree: Star
       - Structure:
           public_visibility: true
-          name: main_yInput
+          name: MainYInput
           fields: []
       - Structure:
           public_visibility: true
-          name: main_yState
+          name: MainYState
           fields:
             - public_visibility: false
               name: mem_half
@@ -182,10 +182,10 @@ files:
               name: counter_o_y
               type:
                 Identifier:
-                  identifier: counter_oState
+                  identifier: CounterOState
       - Implementation:
           trait_name: ~
-          type_name: main_yState
+          type_name: MainYState
           items:
             - AssociatedMethod:
                 signature:
@@ -195,12 +195,12 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: main_yState
+                      identifier: MainYState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: main_yState
+                          name: MainYState
                           fields:
                             - name: mem_half
                               expression:
@@ -217,7 +217,7 @@ files:
                                 FunctionCall:
                                   function:
                                     Identifier:
-                                      identifier: "counter_oState::init"
+                                      identifier: "CounterOState::init"
                                   arguments: []
             - AssociatedMethod:
                 signature:
@@ -229,12 +229,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: main_yInput
+                          identifier: MainYInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: main_yState
+                            identifier: MainYState
                         - Identifier:
                             identifier: i64
                 body:
@@ -286,7 +286,7 @@ files:
                             method: step
                             arguments:
                               - Structure:
-                                  name: counter_oInput
+                                  name: CounterOInput
                                   fields:
                                     - name: res
                                       expression:
@@ -300,7 +300,7 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: main_yState
+                                name: MainYState
                                 fields:
                                   - name: mem_half
                                     expression:

@@ -21,7 +21,7 @@ files:
                         alias: ~
       - Structure:
           public_visibility: true
-          name: integrate_iInput
+          name: IntegrateIInput
           fields:
             - public_visibility: true
               name: x
@@ -35,7 +35,7 @@ files:
                   identifier: f64
       - Structure:
           public_visibility: true
-          name: integrate_iState
+          name: IntegrateIState
           fields:
             - public_visibility: false
               name: mem_prev_i
@@ -44,7 +44,7 @@ files:
                   identifier: f64
       - Implementation:
           trait_name: ~
-          type_name: integrate_iState
+          type_name: IntegrateIState
           items:
             - AssociatedMethod:
                 signature:
@@ -54,12 +54,12 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: integrate_iState
+                      identifier: IntegrateIState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: integrate_iState
+                          name: IntegrateIState
                           fields:
                             - name: mem_prev_i
                               expression:
@@ -76,12 +76,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: integrate_iInput
+                          identifier: IntegrateIInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: integrate_iState
+                            identifier: IntegrateIState
                         - Identifier:
                             identifier: f64
                 body:
@@ -146,7 +146,7 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: integrate_iState
+                                name: IntegrateIState
                                 fields:
                                   - name: mem_prev_i
                                     expression:
@@ -158,7 +158,7 @@ files:
     items:
       - Structure:
           public_visibility: true
-          name: derive_dInput
+          name: DeriveDInput
           fields:
             - public_visibility: true
               name: x
@@ -172,7 +172,7 @@ files:
                   identifier: f64
       - Structure:
           public_visibility: true
-          name: derive_dState
+          name: DeriveDState
           fields:
             - public_visibility: false
               name: mem_prev_x
@@ -181,7 +181,7 @@ files:
                   identifier: f64
       - Implementation:
           trait_name: ~
-          type_name: derive_dState
+          type_name: DeriveDState
           items:
             - AssociatedMethod:
                 signature:
@@ -191,12 +191,12 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: derive_dState
+                      identifier: DeriveDState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: derive_dState
+                          name: DeriveDState
                           fields:
                             - name: mem_prev_x
                               expression:
@@ -213,12 +213,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: derive_dInput
+                          identifier: DeriveDInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: derive_dState
+                            identifier: DeriveDState
                         - Identifier:
                             identifier: f64
                 body:
@@ -269,7 +269,7 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: derive_dState
+                                name: DeriveDState
                                 fields:
                                   - name: mem_prev_x
                                     expression:
@@ -317,7 +317,7 @@ files:
                         alias: ~
       - Structure:
           public_visibility: true
-          name: pid_uInput
+          name: PidUInput
           fields:
             - public_visibility: true
               name: v_c
@@ -336,21 +336,21 @@ files:
                   identifier: f64
       - Structure:
           public_visibility: true
-          name: pid_uState
+          name: PidUState
           fields:
             - public_visibility: false
               name: derive_d_e_d
               type:
                 Identifier:
-                  identifier: derive_dState
+                  identifier: DeriveDState
             - public_visibility: false
               name: integrate_i_e_i
               type:
                 Identifier:
-                  identifier: integrate_iState
+                  identifier: IntegrateIState
       - Implementation:
           trait_name: ~
-          type_name: pid_uState
+          type_name: PidUState
           items:
             - AssociatedMethod:
                 signature:
@@ -360,26 +360,26 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: pid_uState
+                      identifier: PidUState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: pid_uState
+                          name: PidUState
                           fields:
                             - name: derive_d_e_d
                               expression:
                                 FunctionCall:
                                   function:
                                     Identifier:
-                                      identifier: "derive_dState::init"
+                                      identifier: "DeriveDState::init"
                                   arguments: []
                             - name: integrate_i_e_i
                               expression:
                                 FunctionCall:
                                   function:
                                     Identifier:
-                                      identifier: "integrate_iState::init"
+                                      identifier: "IntegrateIState::init"
                                   arguments: []
             - AssociatedMethod:
                 signature:
@@ -391,12 +391,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: pid_uInput
+                          identifier: PidUInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: pid_uState
+                            identifier: PidUState
                         - Identifier:
                             identifier: f64
                 body:
@@ -445,7 +445,7 @@ files:
                             method: step
                             arguments:
                               - Structure:
-                                  name: derive_dInput
+                                  name: DeriveDInput
                                   fields:
                                     - name: x
                                       expression:
@@ -481,7 +481,7 @@ files:
                             method: step
                             arguments:
                               - Structure:
-                                  name: integrate_iInput
+                                  name: IntegrateIInput
                                   fields:
                                     - name: x
                                       expression:
@@ -592,7 +592,7 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: pid_uState
+                                name: PidUState
                                 fields:
                                   - name: derive_d_e_d
                                     expression:

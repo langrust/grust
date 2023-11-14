@@ -5,7 +5,7 @@ use crate::{
     ast::{expression::Expression, pattern::Pattern},
     common::{
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
-        scope::Scope,
+        scope::Scope, convert_case::camel_case,
     },
     hir::{signal::Signal, stream_expression::StreamExpression},
     lir::{
@@ -147,7 +147,7 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             ..
         } => LIRExpression::NodeCall {
             node_identifier: id.unwrap(),
-            input_name: format!("{node}_{signal}Input"),
+            input_name: camel_case(&format!("{node}_{signal}Input")),
             input_fields: inputs
                 .into_iter()
                 .map(|(id, expression)| (id, lir_from_hir(expression)))
@@ -813,7 +813,7 @@ mod lir_from_hir {
         };
         let control = Expression::NodeCall {
             node_identifier: format!("my_node_o_x"),
-            input_name: format!("my_node_oInput"),
+            input_name: format!("MyNodeOInput"),
             input_fields: vec![
                 (
                     format!("i"),
