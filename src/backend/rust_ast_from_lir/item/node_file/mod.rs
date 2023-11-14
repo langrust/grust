@@ -26,7 +26,7 @@ pub fn rust_ast_from_lir(node_file: NodeFile) -> File {
     items.push(Item::Structure(state_structure));
     items.push(Item::Implementation(state_implementation));
     File {
-        path: node_file.name,
+        path: node_file.name + ".rs",
         items,
     }
 }
