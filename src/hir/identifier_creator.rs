@@ -102,7 +102,12 @@ impl IdentifierCreator {
     /// let control = String::from("mem_x_1");
     /// assert_eq!(identifier, control)
     /// ```
-    pub fn new_identifier(&mut self, mut prefix: String, name: String, mut suffix: String) -> String {
+    pub fn new_identifier(
+        &mut self,
+        mut prefix: String,
+        name: String,
+        mut suffix: String,
+    ) -> String {
         if !(prefix.is_empty() || prefix.ends_with("_")) {
             prefix.push_str("_");
         }

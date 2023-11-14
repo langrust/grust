@@ -1,28 +1,26 @@
 /// Transforms snake case strings into camel case.
-/// 
+///
 /// Snake case strings are delimited by underscores `_` and are all lowercase.
 /// Camel case strings are lowercase, but for every word the first letter is capitalized.
 ///
 /// ```
 /// use grustine::common::convert_case::camel_case;
-/// 
+///
 /// let string = camel_case("my_node_o");
 /// let control = format!("MyNodeO");
 /// assert_eq!(string, control)
 /// ```
 pub fn camel_case(s: &str) -> String {
     s.split('_')
-    .map(|word| {
-        let mut chars = word.chars();
-        if let Some(a) = chars.next() {
-            a.to_uppercase()
-                .chain(chars.as_str().chars())
-                .collect()
-        } else {
-            String::new()
-        }
-    })
-    .collect()
+        .map(|word| {
+            let mut chars = word.chars();
+            if let Some(a) = chars.next() {
+                a.to_uppercase().chain(chars.as_str().chars()).collect()
+            } else {
+                String::new()
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]

@@ -4,8 +4,9 @@ use strum::IntoEnumIterator;
 use crate::{
     ast::{expression::Expression, pattern::Pattern},
     common::{
+        convert_case::camel_case,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
-        scope::Scope, convert_case::camel_case,
+        scope::Scope,
     },
     hir::{signal::Signal, stream_expression::StreamExpression},
     lir::{
