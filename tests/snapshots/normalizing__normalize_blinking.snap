@@ -266,17 +266,17 @@ nodes:
                             inputs:
                               - SignalCall:
                                   signal:
-                                    id: memo
+                                    id: mem_o
                                     scope: Memory
                                   typing: Integer
                                   location: ~
                                   dependencies:
-                                    - - memo
+                                    - - mem_o
                                       - 0
                             typing: Integer
                             location: ~
                             dependencies:
-                              - - memo
+                              - - mem_o
                                 - 0
                         - SignalCall:
                             signal:
@@ -290,7 +290,7 @@ nodes:
                       typing: Integer
                       location: ~
                       dependencies:
-                        - - memo
+                        - - mem_o
                           - 0
                         - - inc
                           - 0
@@ -299,14 +299,14 @@ nodes:
                 dependencies:
                   - - res
                     - 0
-                  - - memo
+                  - - mem_o
                     - 0
                   - - inc
                     - 0
             location: ~
         memory:
           buffers:
-            memo:
+            mem_o:
               typing: Integer
               initial_value:
                 Integer: 0
@@ -330,8 +330,8 @@ nodes:
               neighbors:
                 - id: tick
                   weight: 0
-            memo:
-              id: memo
+            mem_o:
+              id: mem_o
               value: White
               neighbors: []
             o:
@@ -340,7 +340,7 @@ nodes:
               neighbors:
                 - id: res
                   weight: 0
-                - id: memo
+                - id: mem_o
                   weight: 0
                 - id: inc
                   weight: 0
@@ -688,12 +688,12 @@ nodes:
             expression:
               SignalCall:
                 signal:
-                  id: memres
+                  id: mem_res
                   scope: Memory
                 typing: Boolean
                 location: ~
                 dependencies:
-                  - - memres
+                  - - mem_res
                     - 0
             location: ~
           - scope: Local
@@ -712,7 +712,7 @@ nodes:
             signal_type: Integer
             expression:
               UnitaryNodeApplication:
-                id: counterocounter
+                id: counter_o_counter
                 node: counter
                 signal: o
                 inputs:
@@ -813,19 +813,19 @@ nodes:
                           - 0
                   - SignalCall:
                       signal:
-                        id: memon_off
+                        id: mem_on_off
                         scope: Memory
                       typing: Boolean
                       location: ~
                       dependencies:
-                        - - memon_off
+                        - - mem_on_off
                           - 0
                 typing: Boolean
                 location: ~
                 dependencies:
                   - - res
                     - 0
-                  - - memon_off
+                  - - mem_on_off
                     - 0
             location: ~
           - scope: Output
@@ -900,7 +900,7 @@ nodes:
             location: ~
         memory:
           buffers:
-            memon_off:
+            mem_on_off:
               typing: Boolean
               initial_value:
                 Boolean: true
@@ -914,7 +914,7 @@ nodes:
                   dependencies:
                     - - on_off
                       - 0
-            memres:
+            mem_res:
               typing: Boolean
               initial_value:
                 Boolean: true
@@ -995,7 +995,7 @@ nodes:
                     - - tick_number
                       - 0
           called_nodes:
-            counterocounter:
+            counter_o_counter:
               node_id: counter
               signal_id: o
         location: ~
@@ -1009,12 +1009,12 @@ nodes:
                   weight: 0
                 - id: x
                   weight: 0
-            memon_off:
-              id: memon_off
+            mem_on_off:
+              id: mem_on_off
               value: White
               neighbors: []
-            memres:
-              id: memres
+            mem_res:
+              id: mem_res
               value: White
               neighbors: []
             on_off:
@@ -1023,13 +1023,13 @@ nodes:
               neighbors:
                 - id: res
                   weight: 0
-                - id: memon_off
+                - id: mem_on_off
                   weight: 0
             res:
               id: res
               value: White
               neighbors:
-                - id: memres
+                - id: mem_res
                   weight: 0
             status:
               id: status

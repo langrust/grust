@@ -21,13 +21,13 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
         inputs: vec![(
             String::from("input"),
             RustASTType::Identifier {
-                identifier: step.node_name.clone() + "Input",
+                identifier: format!("{}Input", step.node_name),
             },
         )],
         output: RustASTType::Tuple {
             elements: vec![
                 RustASTType::Identifier {
-                    identifier: step.node_name.clone() + "State",
+                    identifier: format!("{}State", step.node_name),
                 },
                 type_rust_ast_from_lir(step.output_type),
             ],
@@ -55,7 +55,7 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
     let statement = Statement::ExpressionLast(Expression::Tuple {
         elements: vec![
             Expression::Structure {
-                name: step.node_name + "State",
+                name: format!("{}State", step.node_name),
                 fields,
             },
             expression_rust_ast_from_lir(step.output_expression),

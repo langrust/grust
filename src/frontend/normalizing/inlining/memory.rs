@@ -237,7 +237,7 @@ mod add_necessary_renaming {
         let memory = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                String::from("my_nodeoy"),
+                String::from("my_node_o_y"),
                 CalledNode {
                     node_id: format!("my_node"),
                     signal_id: format!("o"),
@@ -256,7 +256,7 @@ mod add_necessary_renaming {
 
         memory.add_necessary_renaming(&mut identifier_creator, &mut context_map);
 
-        let control = IdentifierCreator::from(vec![String::from("a"), String::from("my_nodeoy")]);
+        let control = IdentifierCreator::from(vec![String::from("a"), String::from("my_node_o_y")]);
 
         assert_eq!(identifier_creator, control)
     }
@@ -476,7 +476,7 @@ mod replace_by_context {
         let memory = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                format!("my_nodeoz"),
+                format!("my_node_o_z"),
                 CalledNode {
                     node_id: format!("my_node"),
                     signal_id: format!("o"),
@@ -485,9 +485,9 @@ mod replace_by_context {
         };
 
         let context_map = HashMap::from([(
-            String::from("my_nodeoz"),
+            String::from("my_node_o_z"),
             Union::I1(Signal {
-                id: String::from("my_nodeoz1"),
+                id: String::from("my_node_o_z1"),
                 scope: Scope::Memory,
             }),
         )]);
@@ -497,7 +497,7 @@ mod replace_by_context {
         let control = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                format!("my_nodeoz1"),
+                format!("my_node_o_z1"),
                 CalledNode {
                     node_id: format!("my_node"),
                     signal_id: format!("o"),
@@ -520,7 +520,7 @@ mod remove_called_node {
         let mut memory = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                format!("my_nodeoz"),
+                format!("my_node_o_z"),
                 CalledNode {
                     node_id: format!("my_node"),
                     signal_id: format!("o"),
@@ -528,7 +528,7 @@ mod remove_called_node {
             )]),
         };
 
-        memory.remove_called_node(&format!("my_nodeoz"));
+        memory.remove_called_node(&format!("my_node_o_z"));
 
         let control = Memory::new();
 
@@ -540,7 +540,7 @@ mod remove_called_node {
         let mut memory = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                format!("my_nodeoz"),
+                format!("my_node_o_z"),
                 CalledNode {
                     node_id: format!("my_node"),
                     signal_id: format!("o"),
@@ -548,12 +548,12 @@ mod remove_called_node {
             )]),
         };
 
-        memory.remove_called_node(&format!("other_nodeoz"));
+        memory.remove_called_node(&format!("other_node_o_z"));
 
         let control = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                format!("my_nodeoz"),
+                format!("my_node_o_z"),
                 CalledNode {
                     node_id: format!("my_node"),
                     signal_id: format!("o"),
@@ -582,7 +582,7 @@ mod combine {
         let mut memory = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                format!("my_nodeoz"),
+                format!("my_node_o_z"),
                 CalledNode {
                     node_id: format!("my_node"),
                     signal_id: format!("o"),
@@ -592,7 +592,7 @@ mod combine {
         let other = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                format!("other_nodeoy"),
+                format!("other_node_o_y"),
                 CalledNode {
                     node_id: format!("other_node"),
                     signal_id: format!("o"),
@@ -606,14 +606,14 @@ mod combine {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([
                 (
-                    format!("my_nodeoz"),
+                    format!("my_node_o_z"),
                     CalledNode {
                         node_id: format!("my_node"),
                         signal_id: format!("o"),
                     },
                 ),
                 (
-                    format!("other_nodeoy"),
+                    format!("other_node_o_y"),
                     CalledNode {
                         node_id: format!("other_node"),
                         signal_id: format!("o"),

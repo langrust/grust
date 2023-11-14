@@ -1220,7 +1220,7 @@ mod replace_by_context {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 signal: String::from("o"),
                 inputs: vec![
@@ -1306,7 +1306,7 @@ mod replace_by_context {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 signal: String::from("o"),
                 inputs: vec![
@@ -1376,7 +1376,7 @@ mod replace_by_context {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 signal: String::from("o"),
                 inputs: vec![
@@ -1448,9 +1448,9 @@ mod replace_by_context {
                 }),
             ),
             (
-                format!("my_nodeox"),
+                format!("my_node_o_x"),
                 Union::I1(Signal {
-                    id: String::from("my_nodeox1"),
+                    id: String::from("my_node_o_x1"),
                     scope: Scope::Memory,
                 }),
             ),
@@ -1469,7 +1469,7 @@ mod replace_by_context {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox1")),
+                id: Some(format!("my_node_o_x1")),
                 node: String::from("my_node"),
                 signal: String::from("o"),
                 inputs: vec![
@@ -1697,7 +1697,7 @@ mod inline_when_needed {
                 location: Location::default(),
             },
             inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -1763,7 +1763,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -1802,8 +1802,8 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,

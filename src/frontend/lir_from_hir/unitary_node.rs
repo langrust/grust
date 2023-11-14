@@ -46,27 +46,27 @@ pub fn lir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
     let (elements, state_elements_init, state_elements_step) = memory.get_state_elements();
 
     NodeFile {
-        name: node_id.clone() + &output_id,
+        name: format!("{node_id}_{output_id}"),
         imports,
         input: Input {
-            node_name: node_id.clone() + &output_id,
+            node_name: format!("{node_id}_{output_id}"),
             elements: inputs
                 .into_iter()
                 .map(|(identifier, r#type)| InputElement { identifier, r#type })
                 .collect(),
         },
         state: State {
-            node_name: node_id.clone() + &output_id,
+            node_name: format!("{node_id}_{output_id}"),
             elements,
             step: Step {
-                node_name: node_id.clone() + &output_id,
+                node_name: format!("{node_id}_{output_id}"),
                 output_type,
                 body: equations.into_iter().map(equation_lir_from_hir).collect(),
                 state_elements_step,
                 output_expression,
             },
             init: Init {
-                node_name: node_id + &output_id,
+                node_name: format!("{node_id}_{output_id}"),
                 state_elements_init,
             },
         },
@@ -147,7 +147,7 @@ mod lir_from_hir {
                 },
             )]),
             called_nodes: HashMap::from([(
-                format!("other_nodeoo"),
+                format!("other_node_o_o"),
                 CalledNode {
                     node_id: format!("other_node"),
                     signal_id: format!("o"),
@@ -179,7 +179,7 @@ mod lir_from_hir {
                     id: format!("o"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::UnitaryNodeApplication {
-                        id: Some(format!("other_nodeoo")),
+                        id: Some(format!("other_node_o_o")),
                         node: format!("other_node"),
                         signal: format!("o"),
                         inputs: vec![
@@ -223,29 +223,29 @@ mod lir_from_hir {
             graph: OnceCell::new(),
         };
         let control = NodeFile {
-            name: format!("my_nodeo"),
-            imports: vec![Import::NodeFile(format!("other_nodeo"))],
+            name: format!("my_node_o"),
+            imports: vec![Import::NodeFile(format!("other_node_o"))],
             input: Input {
-                node_name: format!("my_nodeo"),
+                node_name: format!("my_node_o"),
                 elements: vec![InputElement {
                     identifier: format!("x"),
                     r#type: Type::Integer,
                 }],
             },
             state: State {
-                node_name: format!("my_nodeo"),
+                node_name: format!("my_node_o"),
                 elements: vec![
                     StateElement::Buffer {
                         identifier: format!("mem_i"),
                         r#type: Type::Integer,
                     },
                     StateElement::CalledNode {
-                        identifier: format!("other_nodeoo"),
-                        node_name: format!("other_nodeo"),
+                        identifier: format!("other_node_o_o"),
+                        node_name: format!("other_node_o"),
                     },
                 ],
                 step: Step {
-                    node_name: format!("my_nodeo"),
+                    node_name: format!("my_node_o"),
                     output_type: Type::Integer,
                     body: vec![
                         Statement::Let {
@@ -255,10 +255,10 @@ mod lir_from_hir {
                             },
                         },
                         Statement::LetTuple {
-                            identifiers: vec![format!("other_nodeoo"), format!("o")],
+                            identifiers: vec![format!("other_node_o_o"), format!("o")],
                             expression: Expression::NodeCall {
-                                node_identifier: format!("other_nodeoo"),
-                                input_name: format!("other_nodeoInput"),
+                                node_identifier: format!("other_node_o_o"),
+                                input_name: format!("other_node_oInput"),
                                 input_fields: vec![
                                     (
                                         format!("a"),
@@ -294,9 +294,9 @@ mod lir_from_hir {
                             },
                         },
                         StateElementStep {
-                            identifier: format!("other_nodeoo"),
+                            identifier: format!("other_node_o_o"),
                             expression: Expression::Identifier {
-                                identifier: format!("other_nodeoo"),
+                                identifier: format!("other_node_o_o"),
                             },
                         },
                     ],
@@ -305,15 +305,15 @@ mod lir_from_hir {
                     },
                 },
                 init: Init {
-                    node_name: format!("my_nodeo"),
+                    node_name: format!("my_node_o"),
                     state_elements_init: vec![
                         StateElementInit::BufferInit {
                             identifier: format!("mem_i"),
                             initial_value: Constant::Integer(0),
                         },
                         StateElementInit::CalledNodeInit {
-                            identifier: format!("other_nodeoo"),
-                            node_name: format!("other_nodeo"),
+                            identifier: format!("other_node_o_o"),
+                            node_name: format!("other_node_o"),
                         },
                     ],
                 },

@@ -12,7 +12,7 @@ impl Equation {
     /// `mem: int = 0 fby v;` and becomes `x: int = mem;`.
     ///
     /// An equation `x: int = my_node(s, x_1).o;` increments memory with the
-    /// node call `memmy_nodeo: (my_node, o);` and the equation is unchanged.
+    /// node call `memmy_node_o_: (my_node, o);` and the equation is unchanged.
     ///
     /// Examples are tested in source.
     pub fn memorize(&mut self, identifier_creator: &mut IdentifierCreator, memory: &mut Memory) {
@@ -92,7 +92,7 @@ mod memorize {
 
         let mut control = Memory::new();
         control.add_buffer(
-            String::from("memx"),
+            String::from("mem_x"),
             Constant::Integer(0),
             StreamExpression::SignalCall {
                 signal: Signal {
@@ -131,19 +131,19 @@ mod memorize {
                     },
                     StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("memx"),
+                            id: String::from("mem_x"),
                             scope: Scope::Memory,
                         },
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("memx"), 0)]),
+                        dependencies: Dependencies::from(vec![(String::from("mem_x"), 0)]),
                     },
                 ],
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![
                     (String::from("s"), 0),
-                    (String::from("memx"), 0),
+                    (String::from("mem_x"), 0),
                 ]),
             },
             location: Location::default(),
@@ -163,7 +163,7 @@ mod memorize {
             id: String::from("x_2"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeoy")),
+                id: Some(format!("my_node_o_y")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -205,7 +205,7 @@ mod memorize {
 
         let mut control = Memory::new();
         control.add_called_node(
-            String::from("my_nodeoy"),
+            String::from("my_node_o_y"),
             String::from("my_node"),
             String::from("o"),
         );
@@ -216,7 +216,7 @@ mod memorize {
             id: String::from("x_2"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeoy")),
+                id: Some(format!("my_node_o_y")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (

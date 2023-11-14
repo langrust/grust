@@ -58,24 +58,24 @@ items:
                 Identifier:
                   identifier: result
   - NodeFile:
-      name: integratei
+      name: integrate_i
       imports:
         - Function: min
       input:
-        node_name: integratei
+        node_name: integrate_i
         elements:
           - identifier: x
             type: Float
           - identifier: dt
             type: Float
       state:
-        node_name: integratei
+        node_name: integrate_i
         elements:
           - Buffer:
-              identifier: memprev_i
+              identifier: mem_prev_i
               type: Float
         step:
-          node_name: integratei
+          node_name: integrate_i
           output_type: Float
           body:
             - Let:
@@ -88,7 +88,7 @@ items:
                 identifier: prev_i
                 expression:
                   MemoryAccess:
-                    identifier: memprev_i
+                    identifier: mem_prev_i
             - Let:
                 identifier: i
                 expression:
@@ -116,7 +116,7 @@ items:
                       - Identifier:
                           identifier: MAX_INTEGRALE
           state_elements_step:
-            - identifier: memprev_i
+            - identifier: mem_prev_i
               expression:
                 Identifier:
                   identifier: i
@@ -124,37 +124,37 @@ items:
             Identifier:
               identifier: i
         init:
-          node_name: integratei
+          node_name: integrate_i
           state_elements_init:
             - BufferInit:
-                identifier: memprev_i
+                identifier: mem_prev_i
                 initial_value:
                   Float: 0
   - NodeFile:
-      name: derived
+      name: derive_d
       imports: []
       input:
-        node_name: derived
+        node_name: derive_d
         elements:
           - identifier: x
             type: Float
           - identifier: dt
             type: Float
       state:
-        node_name: derived
+        node_name: derive_d
         elements:
           - Buffer:
-              identifier: memprev_x
+              identifier: mem_prev_x
               type: Float
         step:
-          node_name: derived
+          node_name: derive_d
           output_type: Float
           body:
             - Let:
                 identifier: prev_x
                 expression:
                   MemoryAccess:
-                    identifier: memprev_x
+                    identifier: mem_prev_x
             - Let:
                 identifier: d
                 expression:
@@ -180,7 +180,7 @@ items:
                       - InputAccess:
                           identifier: dt
           state_elements_step:
-            - identifier: memprev_x
+            - identifier: mem_prev_x
               expression:
                 InputAccess:
                   identifier: x
@@ -188,20 +188,20 @@ items:
             Identifier:
               identifier: d
         init:
-          node_name: derived
+          node_name: derive_d
           state_elements_init:
             - BufferInit:
-                identifier: memprev_x
+                identifier: mem_prev_x
                 initial_value:
                   Float: 0
   - NodeFile:
-      name: pidu
+      name: pid_u
       imports:
-        - NodeFile: derived
-        - NodeFile: integratei
+        - NodeFile: derive_d
+        - NodeFile: integrate_i
         - Structure: GainPID
       input:
-        node_name: pidu
+        node_name: pid_u
         elements:
           - identifier: v_c
             type: Float
@@ -210,16 +210,16 @@ items:
           - identifier: dt
             type: Float
       state:
-        node_name: pidu
+        node_name: pid_u
         elements:
           - CalledNode:
-              identifier: derivede_d
-              node_name: derived
+              identifier: derive_d_e_d
+              node_name: derive_d
           - CalledNode:
-              identifier: integrateie_i
-              node_name: integratei
+              identifier: integrate_i_e_i
+              node_name: integrate_i
         step:
-          node_name: pidu
+          node_name: pid_u
           output_type: Float
           body:
             - Let:
@@ -236,12 +236,12 @@ items:
                           identifier: v
             - LetTuple:
                 identifiers:
-                  - derivede_d
+                  - derive_d_e_d
                   - e_d
                 expression:
                   NodeCall:
-                    node_identifier: derivede_d
-                    input_name: derivedInput
+                    node_identifier: derive_d_e_d
+                    input_name: derive_dInput
                     input_fields:
                       - - x
                         - Identifier:
@@ -251,12 +251,12 @@ items:
                             identifier: dt
             - LetTuple:
                 identifiers:
-                  - integrateie_i
+                  - integrate_i_e_i
                   - e_i
                 expression:
                   NodeCall:
-                    node_identifier: integrateie_i
-                    input_name: integrateiInput
+                    node_identifier: integrate_i_e_i
+                    input_name: integrate_iInput
                     input_fields:
                       - - x
                         - Identifier:
@@ -345,24 +345,24 @@ items:
                                     - Identifier:
                                         identifier: e_d
           state_elements_step:
-            - identifier: derivede_d
+            - identifier: derive_d_e_d
               expression:
                 Identifier:
-                  identifier: derivede_d
-            - identifier: integrateie_i
+                  identifier: derive_d_e_d
+            - identifier: integrate_i_e_i
               expression:
                 Identifier:
-                  identifier: integrateie_i
+                  identifier: integrate_i_e_i
           output_expression:
             Identifier:
               identifier: u
         init:
-          node_name: pidu
+          node_name: pid_u
           state_elements_init:
             - CalledNodeInit:
-                identifier: derivede_d
-                node_name: derived
+                identifier: derive_d_e_d
+                node_name: derive_d
             - CalledNodeInit:
-                identifier: integrateie_i
-                node_name: integratei
+                identifier: integrate_i_e_i
+                node_name: integrate_i
 

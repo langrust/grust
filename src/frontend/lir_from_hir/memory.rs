@@ -56,11 +56,11 @@ impl Memory {
             .for_each(|(id, CalledNode { node_id, signal_id })| {
                 elements.push(StateElement::CalledNode {
                     identifier: id.clone(),
-                    node_name: node_id.clone() + &signal_id,
+                    node_name: format!("{node_id}_{signal_id}"),
                 });
                 inits.push(StateElementInit::CalledNodeInit {
                     identifier: id.clone(),
-                    node_name: node_id + &signal_id,
+                    node_name: format!("{node_id}_{signal_id}"),
                 });
                 steps.push(StateElementStep {
                     identifier: id.clone(),
@@ -169,7 +169,7 @@ mod get_state_elements {
         let memory = Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::from([(
-                format!("my_nodeox"),
+                format!("my_node_o_x"),
                 CalledNode {
                     node_id: format!("my_node"),
                     signal_id: format!("o"),
@@ -178,17 +178,17 @@ mod get_state_elements {
         };
         let control = (
             vec![StateElement::CalledNode {
-                identifier: format!("my_nodeox"),
-                node_name: format!("my_nodeo"),
+                identifier: format!("my_node_o_x"),
+                node_name: format!("my_node_o"),
             }],
             vec![StateElementInit::CalledNodeInit {
-                identifier: format!("my_nodeox"),
-                node_name: format!("my_nodeo"),
+                identifier: format!("my_node_o_x"),
+                node_name: format!("my_node_o"),
             }],
             vec![StateElementStep {
-                identifier: format!("my_nodeox"),
+                identifier: format!("my_node_o_x"),
                 expression: Expression::Identifier {
-                    identifier: format!("my_nodeox"),
+                    identifier: format!("my_node_o_x"),
                 },
             }],
         );

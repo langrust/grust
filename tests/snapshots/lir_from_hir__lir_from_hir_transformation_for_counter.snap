@@ -4,23 +4,23 @@ expression: project
 ---
 items:
   - NodeFile:
-      name: countero
+      name: counter_o
       imports: []
       input:
-        node_name: countero
+        node_name: counter_o
         elements:
           - identifier: res
             type: Boolean
           - identifier: tick
             type: Boolean
       state:
-        node_name: countero
+        node_name: counter_o
         elements:
           - Buffer:
-              identifier: memo
+              identifier: mem_o
               type: Integer
         step:
-          node_name: countero
+          node_name: counter_o
           output_type: Integer
           body:
             - Let:
@@ -73,11 +73,11 @@ items:
                                           identifier: (_)
                                       arguments:
                                         - MemoryAccess:
-                                            identifier: memo
+                                            identifier: mem_o
                                   - Identifier:
                                       identifier: inc
           state_elements_step:
-            - identifier: memo
+            - identifier: mem_o
               expression:
                 Identifier:
                   identifier: o
@@ -85,53 +85,53 @@ items:
             Identifier:
               identifier: o
         init:
-          node_name: countero
+          node_name: counter_o
           state_elements_init:
             - BufferInit:
-                identifier: memo
+                identifier: mem_o
                 initial_value:
                   Integer: 0
   - NodeFile:
-      name: mainy
+      name: main_y
       imports:
-        - NodeFile: countero
+        - NodeFile: counter_o
       input:
-        node_name: mainy
+        node_name: main_y
         elements: []
       state:
-        node_name: mainy
+        node_name: main_y
         elements:
           - Buffer:
-              identifier: memhalf
+              identifier: mem_half
               type: Boolean
           - Buffer:
-              identifier: memx
+              identifier: mem_x
               type: Boolean
           - CalledNode:
-              identifier: counteroy
-              node_name: countero
+              identifier: counter_o_y
+              node_name: counter_o
         step:
-          node_name: mainy
+          node_name: main_y
           output_type: Integer
           body:
             - Let:
                 identifier: half
                 expression:
                   MemoryAccess:
-                    identifier: memhalf
+                    identifier: mem_half
             - Let:
                 identifier: x
                 expression:
                   MemoryAccess:
-                    identifier: memx
+                    identifier: mem_x
             - LetTuple:
                 identifiers:
-                  - counteroy
+                  - counter_o_y
                   - y
                 expression:
                   NodeCall:
-                    node_identifier: counteroy
-                    input_name: counteroInput
+                    node_identifier: counter_o_y
+                    input_name: counter_oInput
                     input_fields:
                       - - res
                         - Identifier:
@@ -140,7 +140,7 @@ items:
                         - Identifier:
                             identifier: half
           state_elements_step:
-            - identifier: memhalf
+            - identifier: mem_half
               expression:
                 FunctionCall:
                   function:
@@ -149,7 +149,7 @@ items:
                   arguments:
                     - Identifier:
                         identifier: half
-            - identifier: memx
+            - identifier: mem_x
               expression:
                 FunctionCall:
                   function:
@@ -166,25 +166,25 @@ items:
                           - Literal:
                               literal:
                                 Integer: 35
-            - identifier: counteroy
+            - identifier: counter_o_y
               expression:
                 Identifier:
-                  identifier: counteroy
+                  identifier: counter_o_y
           output_expression:
             Identifier:
               identifier: y
         init:
-          node_name: mainy
+          node_name: main_y
           state_elements_init:
             - BufferInit:
-                identifier: memhalf
+                identifier: mem_half
                 initial_value:
                   Boolean: true
             - BufferInit:
-                identifier: memx
+                identifier: mem_x
                 initial_value:
                   Boolean: false
             - CalledNodeInit:
-                identifier: counteroy
-                node_name: countero
+                identifier: counter_o_y
+                node_name: counter_o
 

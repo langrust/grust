@@ -191,17 +191,17 @@ nodes:
                             inputs:
                               - SignalCall:
                                   signal:
-                                    id: memo
+                                    id: mem_o
                                     scope: Memory
                                   typing: Integer
                                   location: ~
                                   dependencies:
-                                    - - memo
+                                    - - mem_o
                                       - 0
                             typing: Integer
                             location: ~
                             dependencies:
-                              - - memo
+                              - - mem_o
                                 - 0
                         - SignalCall:
                             signal:
@@ -215,7 +215,7 @@ nodes:
                       typing: Integer
                       location: ~
                       dependencies:
-                        - - memo
+                        - - mem_o
                           - 0
                         - - inc
                           - 0
@@ -224,14 +224,14 @@ nodes:
                 dependencies:
                   - - res
                     - 0
-                  - - memo
+                  - - mem_o
                     - 0
                   - - inc
                     - 0
             location: ~
         memory:
           buffers:
-            memo:
+            mem_o:
               typing: Integer
               initial_value:
                 Integer: 0
@@ -253,8 +253,8 @@ nodes:
               id: inc
               value: White
               neighbors: []
-            memo:
-              id: memo
+            mem_o:
+              id: mem_o
               value: White
               neighbors: []
             o:
@@ -263,7 +263,7 @@ nodes:
               neighbors:
                 - id: res
                   weight: 0
-                - id: memo
+                - id: mem_o
                   weight: 0
                 - id: inc
                   weight: 0
@@ -825,24 +825,24 @@ nodes:
                       inputs:
                         - SignalCall:
                             signal:
-                              id: memres
+                              id: mem_res
                               scope: Memory
                             typing: Boolean
                             location: ~
                             dependencies:
-                              - - memres
+                              - - mem_res
                                 - 0
                       typing: Boolean
                       location: ~
                       dependencies:
-                        - - memres
+                        - - mem_res
                           - 0
                 typing: Boolean
                 location: ~
                 dependencies:
                   - - button_state
                     - 0
-                  - - memres
+                  - - mem_res
                     - 0
             location: ~
           - scope: Local
@@ -850,7 +850,7 @@ nodes:
             signal_type: Integer
             expression:
               UnitaryNodeApplication:
-                id: counterocounter
+                id: counter_o_counter
                 node: counter
                 signal: o
                 inputs:
@@ -909,12 +909,12 @@ nodes:
                     - []
                     - SignalCall:
                         signal:
-                          id: memuser_reset_request
+                          id: mem_user_reset_request
                           scope: Memory
                         typing: Boolean
                         location: ~
                         dependencies:
-                          - - memuser_reset_request
+                          - - mem_user_reset_request
                             - 0
                   - - Constant:
                         constant:
@@ -992,7 +992,7 @@ nodes:
                 typing: Boolean
                 location: ~
                 dependencies:
-                  - - memuser_reset_request
+                  - - mem_user_reset_request
                     - 0
                   - - counter
                     - 0
@@ -1005,7 +1005,7 @@ nodes:
             location: ~
         memory:
           buffers:
-            memres:
+            mem_res:
               typing: Boolean
               initial_value:
                 Boolean: true
@@ -1045,7 +1045,7 @@ nodes:
                   dependencies:
                     - - button_state
                       - 0
-            memuser_reset_request:
+            mem_user_reset_request:
               typing: Boolean
               initial_value:
                 Boolean: false
@@ -1060,7 +1060,7 @@ nodes:
                     - - user_reset_request
                       - 0
           called_nodes:
-            counterocounter:
+            counter_o_counter:
               node_id: counter
               signal_id: o
         location: ~
@@ -1078,12 +1078,12 @@ nodes:
                   weight: 0
                 - id: period
                   weight: 0
-            memres:
-              id: memres
+            mem_res:
+              id: mem_res
               value: White
               neighbors: []
-            memuser_reset_request:
-              id: memuser_reset_request
+            mem_user_reset_request:
+              id: mem_user_reset_request
               value: White
               neighbors: []
             period:
@@ -1096,7 +1096,7 @@ nodes:
               neighbors:
                 - id: button_state
                   weight: 0
-                - id: memres
+                - id: mem_res
                   weight: 0
             reset_limit_1:
               id: reset_limit_1
@@ -1110,7 +1110,7 @@ nodes:
               id: user_reset_request
               value: White
               neighbors:
-                - id: memuser_reset_request
+                - id: mem_user_reset_request
                   weight: 0
                 - id: counter
                   weight: 0
@@ -1208,24 +1208,24 @@ nodes:
                       inputs:
                         - SignalCall:
                             signal:
-                              id: memres
+                              id: mem_res
                               scope: Memory
                             typing: Boolean
                             location: ~
                             dependencies:
-                              - - memres
+                              - - mem_res
                                 - 0
                       typing: Boolean
                       location: ~
                       dependencies:
-                        - - memres
+                        - - mem_res
                           - 0
                 typing: Boolean
                 location: ~
                 dependencies:
                   - - button_state
                     - 0
-                  - - memres
+                  - - mem_res
                     - 0
             location: ~
           - scope: Local
@@ -1233,7 +1233,7 @@ nodes:
             signal_type: Integer
             expression:
               UnitaryNodeApplication:
-                id: counterocounter
+                id: counter_o_counter
                 node: counter
                 signal: o
                 inputs:
@@ -1395,7 +1395,7 @@ nodes:
             location: ~
         memory:
           buffers:
-            memres:
+            mem_res:
               typing: Boolean
               initial_value:
                 Boolean: true
@@ -1436,7 +1436,7 @@ nodes:
                     - - button_state
                       - 0
           called_nodes:
-            counterocounter:
+            counter_o_counter:
               node_id: counter
               signal_id: o
         location: ~
@@ -1454,8 +1454,8 @@ nodes:
                   weight: 0
                 - id: period
                   weight: 0
-            memres:
-              id: memres
+            mem_res:
+              id: mem_res
               value: White
               neighbors: []
             period:
@@ -1468,7 +1468,7 @@ nodes:
               neighbors:
                 - id: button_state
                   weight: 0
-                - id: memres
+                - id: mem_res
                   weight: 0
             reset_limit_1:
               id: reset_limit_1
