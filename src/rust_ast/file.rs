@@ -22,6 +22,20 @@ impl File {
         self.items.push(item)
     }
 
+    /// Set file's directory.
+    pub fn set_parent<P>(&mut self, path: P)
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let subpath = std::mem::take(&mut self.path);
+        self.path = path
+            .as_ref()
+            .join(subpath)
+            .into_os_string()
+            .into_string()
+            .unwrap();
+    }
+
     /// Generate the file at its location path.
     pub fn generate(&self) {
         let file_str = self.to_string();

@@ -17,6 +17,16 @@ impl Project {
         self.files.push(file)
     }
 
+    /// Set project's directory.
+    pub fn set_parent<P>(&mut self, path: P)
+    where
+        P: AsRef<std::path::Path>,
+    {
+        self.files
+            .iter_mut()
+            .for_each(|file| file.set_parent(&path))
+    }
+
     /// Generate Rust project.
     pub fn generate(&self) {
         for file in &self.files {
