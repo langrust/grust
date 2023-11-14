@@ -9,7 +9,11 @@ use crate::{
         structure::rust_ast_from_lir as structure_rust_ast_from_lir,
     },
     lir::{item::Item, project::Project},
-    rust_ast::{file::File, item::{Item as RustASTItem, import::Import}, project::Project as RustASTProject},
+    rust_ast::{
+        file::File,
+        item::{import::Import, Item as RustASTItem},
+        project::Project as RustASTProject,
+    },
 };
 
 /// Transform LIR item into RustAST item.
@@ -47,8 +51,16 @@ pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
 
     let mut lib_file = File::new(format!("src/lib.rs"));
     rust_ast_project.files.iter().for_each(|file| {
-        let module_name = Path::new(&file.path).file_name().unwrap().to_str().unwrap().to_string();
-        let module_import = Import::Module { public_visibility: true, name: module_name };
+        let module_name = Path::new(&file.path)
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        let module_import = Import::Module {
+            public_visibility: true,
+            name: module_name,
+        };
         lib_file.add_item(RustASTItem::Import(module_import))
     });
     rust_ast_project.add_file(lib_file);
