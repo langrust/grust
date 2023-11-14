@@ -4,11 +4,11 @@ expression: project
 ---
 directory: ""
 files:
-  - path: src/countero.rs
+  - path: src/counter_o.rs
     items:
       - Structure:
           public_visibility: true
-          name: counteroInput
+          name: counter_oInput
           fields:
             - public_visibility: true
               name: res
@@ -22,16 +22,16 @@ files:
                   identifier: bool
       - Structure:
           public_visibility: true
-          name: counteroState
+          name: counter_oState
           fields:
             - public_visibility: false
-              name: memo
+              name: mem_o
               type:
                 Identifier:
                   identifier: i64
       - Implementation:
           trait_name: ~
-          type_name: counteroState
+          type_name: counter_oState
           items:
             - AssociatedMethod:
                 signature:
@@ -41,14 +41,14 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: counteroState
+                      identifier: counter_oState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: counteroState
+                          name: counter_oState
                           fields:
-                            - name: memo
+                            - name: mem_o
                               expression:
                                 Literal:
                                   literal:
@@ -63,12 +63,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: counteroInput
+                          identifier: counter_oInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: counteroState
+                            identifier: counter_oState
                         - Identifier:
                             identifier: i64
                 body:
@@ -131,7 +131,7 @@ files:
                                               expression:
                                                 Identifier:
                                                   identifier: self
-                                              field: memo
+                                              field: mem_o
                                       operator: Add
                                       right:
                                         Identifier:
@@ -140,15 +140,15 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: counteroState
+                                name: counter_oState
                                 fields:
-                                  - name: memo
+                                  - name: mem_o
                                     expression:
                                       Identifier:
                                         identifier: o
                             - Identifier:
                                 identifier: o
-  - path: src/blinkingstatus.rs
+  - path: src/blinking_status.rs
     items:
       - Import:
           Use:
@@ -158,11 +158,11 @@ files:
                 module_name: crate
                 tree:
                   Path:
-                    module_name: countero
+                    module_name: counter_o
                     tree: Star
       - Structure:
           public_visibility: true
-          name: blinkingstatusInput
+          name: blinking_statusInput
           fields:
             - public_visibility: true
               name: tick_number
@@ -171,26 +171,26 @@ files:
                   identifier: i64
       - Structure:
           public_visibility: true
-          name: blinkingstatusState
+          name: blinking_statusState
           fields:
             - public_visibility: false
-              name: memon_off
+              name: mem_on_off
               type:
                 Identifier:
                   identifier: bool
             - public_visibility: false
-              name: memres
+              name: mem_res
               type:
                 Identifier:
                   identifier: bool
             - public_visibility: false
-              name: counterocounter
+              name: counter_o_counter
               type:
                 Identifier:
-                  identifier: counteroState
+                  identifier: counter_oState
       - Implementation:
           trait_name: ~
-          type_name: blinkingstatusState
+          type_name: blinking_statusState
           items:
             - AssociatedMethod:
                 signature:
@@ -200,29 +200,29 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: blinkingstatusState
+                      identifier: blinking_statusState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: blinkingstatusState
+                          name: blinking_statusState
                           fields:
-                            - name: memon_off
+                            - name: mem_on_off
                               expression:
                                 Literal:
                                   literal:
                                     Boolean: true
-                            - name: memres
+                            - name: mem_res
                               expression:
                                 Literal:
                                   literal:
                                     Boolean: true
-                            - name: counterocounter
+                            - name: counter_o_counter
                               expression:
                                 FunctionCall:
                                   function:
                                     Identifier:
-                                      identifier: "counteroState::init"
+                                      identifier: "counter_oState::init"
                                   arguments: []
             - AssociatedMethod:
                 signature:
@@ -234,12 +234,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: blinkingstatusInput
+                          identifier: blinking_statusInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: blinkingstatusState
+                            identifier: blinking_statusState
                         - Identifier:
                             identifier: i64
                 body:
@@ -255,7 +255,7 @@ files:
                             expression:
                               Identifier:
                                 identifier: self
-                            field: memres
+                            field: mem_res
                     - Let:
                         pattern:
                           Identifier:
@@ -273,7 +273,7 @@ files:
                               - Identifier:
                                   reference: false
                                   mutable: false
-                                  identifier: counterocounter
+                                  identifier: counter_o_counter
                               - Identifier:
                                   reference: false
                                   mutable: false
@@ -285,11 +285,11 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: self
-                                field: counterocounter
+                                field: counter_o_counter
                             method: step
                             arguments:
                               - Structure:
-                                  name: counteroInput
+                                  name: counter_oInput
                                   fields:
                                     - name: res
                                       expression:
@@ -357,7 +357,7 @@ files:
                                   expression:
                                     Identifier:
                                       identifier: self
-                                  field: memon_off
+                                  field: mem_on_off
                     - Let:
                         pattern:
                           Identifier:
@@ -391,13 +391,13 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: blinkingstatusState
+                                name: blinking_statusState
                                 fields:
-                                  - name: memon_off
+                                  - name: mem_on_off
                                     expression:
                                       Identifier:
                                         identifier: on_off
-                                  - name: memres
+                                  - name: mem_res
                                     expression:
                                       Unary:
                                         operator: Brackets
@@ -420,10 +420,10 @@ files:
                                                   Identifier:
                                                     identifier: input
                                                 field: tick_number
-                                  - name: counterocounter
+                                  - name: counter_o_counter
                                     expression:
                                       Identifier:
-                                        identifier: counterocounter
+                                        identifier: counter_o_counter
                             - Identifier:
                                 identifier: status
   - path: src/functions.rs
@@ -435,11 +435,11 @@ files:
       - Import:
           Module:
             public_visibility: true
-            name: countero
+            name: counter_o
       - Import:
           Module:
             public_visibility: true
-            name: blinkingstatus
+            name: blinking_status
       - Import:
           Module:
             public_visibility: true

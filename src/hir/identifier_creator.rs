@@ -94,15 +94,21 @@ impl IdentifierCreator {
     /// };
     /// let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
     ///
-    /// let identifier = identifier_creator.new_identifier(String::from("mem_"), String::from("x"), String::from(""));
+    /// let identifier = identifier_creator.new_identifier(String::from("mem"), String::from("x"), String::from(""));
     /// let control = String::from("mem_x");
     /// assert_eq!(identifier, control);
     ///
-    /// let identifier = identifier_creator.new_identifier(String::from("mem_"), String::from("x"), String::from(""));
+    /// let identifier = identifier_creator.new_identifier(String::from("mem"), String::from("x"), String::from(""));
     /// let control = String::from("mem_x_1");
     /// assert_eq!(identifier, control)
     /// ```
-    pub fn new_identifier(&mut self, prefix: String, name: String, suffix: String) -> String {
+    pub fn new_identifier(&mut self, mut prefix: String, name: String, mut suffix: String) -> String {
+        if !(prefix.is_empty() || prefix.ends_with("_")) {
+            prefix.push_str("_");
+        }
+        if !(suffix.is_empty() || suffix.starts_with("_")) {
+            suffix.insert(0, '_');
+        }
         let mut identifier = format!("{prefix}{name}{suffix}");
 
         let mut counter = 1;

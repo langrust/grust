@@ -257,12 +257,12 @@ nodes:
             expression:
               SignalCall:
                 signal:
-                  id: memprev_i
+                  id: mem_prev_i
                   scope: Memory
                 typing: Float
                 location: ~
                 dependencies:
-                  - - memprev_i
+                  - - mem_prev_i
                     - 0
             location: ~
           - scope: Output
@@ -368,7 +368,7 @@ nodes:
             location: ~
         memory:
           buffers:
-            memprev_i:
+            mem_prev_i:
               typing: Float
               initial_value:
                 Float: 0
@@ -406,15 +406,15 @@ nodes:
                   weight: 0
                 - id: MAX_INTEGRALE
                   weight: 0
-            memprev_i:
-              id: memprev_i
+            mem_prev_i:
+              id: mem_prev_i
               value: White
               neighbors: []
             prev_i:
               id: prev_i
               value: White
               neighbors:
-                - id: memprev_i
+                - id: mem_prev_i
                   weight: 0
             x:
               id: x
@@ -589,12 +589,12 @@ nodes:
             expression:
               SignalCall:
                 signal:
-                  id: memprev_x
+                  id: mem_prev_x
                   scope: Memory
                 typing: Float
                 location: ~
                 dependencies:
-                  - - memprev_x
+                  - - mem_prev_x
                     - 0
             location: ~
           - scope: Output
@@ -686,7 +686,7 @@ nodes:
             location: ~
         memory:
           buffers:
-            memprev_x:
+            mem_prev_x:
               typing: Float
               initial_value:
                 Float: 0
@@ -718,15 +718,15 @@ nodes:
               id: dt
               value: White
               neighbors: []
-            memprev_x:
-              id: memprev_x
+            mem_prev_x:
+              id: mem_prev_x
               value: White
               neighbors: []
             prev_x:
               id: prev_x
               value: White
               neighbors:
-                - id: memprev_x
+                - id: mem_prev_x
                   weight: 0
             x:
               id: x
@@ -1181,7 +1181,7 @@ component:
           signal_type: Float
           expression:
             UnitaryNodeApplication:
-              id: derivede_d
+              id: derive_d_e_d
               node: derive
               signal: d
               inputs:
@@ -1218,7 +1218,7 @@ component:
           signal_type: Float
           expression:
             UnitaryNodeApplication:
-              id: integrateie_i
+              id: integrate_i_e_i
               node: integrate
               signal: i
               inputs:
@@ -1490,10 +1490,10 @@ component:
       memory:
         buffers: {}
         called_nodes:
-          derivede_d:
+          derive_d_e_d:
             node_id: derive
             signal_id: d
-          integrateie_i:
+          integrate_i_e_i:
             node_id: integrate
             signal_id: i
       location: ~

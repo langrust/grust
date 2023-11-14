@@ -15,7 +15,7 @@ pub fn rust_ast_from_lir(input: Input) -> Structure {
         .collect();
     Structure {
         public_visibility: true,
-        name: input.node_name + "Input",
+        name: format!("{}Input", input.node_name),
         fields,
     }
 }

@@ -147,7 +147,7 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             ..
         } => LIRExpression::NodeCall {
             node_identifier: id.unwrap(),
-            input_name: node + &signal + "Input",
+            input_name: format!("{node}_{signal}Input"),
             input_fields: inputs
                 .into_iter()
                 .map(|(id, expression)| (id, lir_from_hir(expression)))
@@ -211,7 +211,7 @@ impl StreamExpression {
                     .iter()
                     .flat_map(|(_, expression)| expression.get_imports())
                     .collect::<Vec<_>>();
-                let node_name = node_id.clone() + &signal_id;
+                let node_name = format!("{node_id}_{signal_id}");
                 imports.push(Import::NodeFile(node_name));
                 imports.into_iter().unique().collect()
             }
@@ -781,7 +781,7 @@ mod lir_from_hir {
     #[test]
     fn should_transform_hir_unitary_node_application_into_lir_node_call() {
         let expression = StreamExpression::UnitaryNodeApplication {
-            id: Some(format!("my_nodeox")),
+            id: Some(format!("my_node_o_x")),
             node: format!("my_node"),
             signal: format!("o"),
             inputs: vec![
@@ -812,8 +812,8 @@ mod lir_from_hir {
             dependencies: Dependencies::from(vec![(format!("x"), 0)]),
         };
         let control = Expression::NodeCall {
-            node_identifier: format!("my_nodeox"),
-            input_name: format!("my_nodeoInput"),
+            node_identifier: format!("my_node_o_x"),
+            input_name: format!("my_node_oInput"),
             input_fields: vec![
                 (
                     format!("i"),
@@ -895,7 +895,7 @@ mod get_imports {
     #[test]
     fn should_get_node_import_from_node_call_expression() {
         let expression = StreamExpression::UnitaryNodeApplication {
-            id: Some(format!("my_nodeox")),
+            id: Some(format!("my_node_o_x")),
             node: format!("my_node"),
             signal: format!("o"),
             inputs: vec![(
@@ -914,20 +914,20 @@ mod get_imports {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(format!("x"), 0)]),
         };
-        let control = vec![Import::NodeFile(format!("my_nodeo"))];
+        let control = vec![Import::NodeFile(format!("my_node_o"))];
         assert_eq!(expression.get_imports(), control)
     }
 
     #[test]
     fn should_not_duplicate_imports() {
         let expression = StreamExpression::UnitaryNodeApplication {
-            id: Some(format!("my_nodeox")),
+            id: Some(format!("my_node_o_x")),
             node: format!("my_node"),
             signal: format!("o"),
             inputs: vec![(
                 format!("i"),
                 StreamExpression::UnitaryNodeApplication {
-                    id: Some(format!("my_nodeox")),
+                    id: Some(format!("my_node_o_x")),
                     node: format!("my_node"),
                     signal: format!("o"),
                     inputs: vec![(
@@ -979,7 +979,7 @@ mod get_imports {
         };
         let control = vec![
             Import::Function(format!("my_function")),
-            Import::NodeFile(format!("my_nodeo")),
+            Import::NodeFile(format!("my_node_o")),
         ];
         assert_eq!(expression.get_imports(), control)
     }

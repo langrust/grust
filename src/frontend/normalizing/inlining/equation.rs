@@ -645,7 +645,7 @@ mod inline_when_needed {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -702,7 +702,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -741,8 +741,8 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -795,7 +795,7 @@ mod inline_when_needed {
 
         // x: int = v*2 + mem_o
         let mut control = Memory::new();
-        control.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        control.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         control.add_buffer(
             format!("mem_o"),
             Constant::Integer(0),
@@ -969,7 +969,7 @@ mod inline_when_needed {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -1026,7 +1026,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -1065,8 +1065,8 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -1342,7 +1342,7 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::UnitaryNodeApplication {
-                    id: Some(format!("my_nodeox")),
+                    id: Some(format!("my_node_o_x")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -1406,7 +1406,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -1445,8 +1445,8 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -1615,7 +1615,7 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::UnitaryNodeApplication {
-                        id: Some(format!("other_nodeoo")),
+                        id: Some(format!("other_node_o_o")),
                         node: String::from("other_node"),
                         inputs: vec![(
                             format!("i"),
@@ -1763,7 +1763,7 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::UnitaryNodeApplication {
-                    id: Some(format!("my_nodeox")),
+                    id: Some(format!("my_node_o_x")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -1827,7 +1827,7 @@ mod inline_when_needed {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -1866,8 +1866,8 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -1934,7 +1934,7 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::UnitaryNodeApplication {
-                        id: Some(format!("other_nodeoo")),
+                        id: Some(format!("other_node_o_o")),
                         node: String::from("other_node"),
                         inputs: vec![(
                             format!("i"),
@@ -2200,7 +2200,7 @@ mod inline_when_needed_reccursive {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -2257,7 +2257,7 @@ mod inline_when_needed_reccursive {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -2296,8 +2296,8 @@ mod inline_when_needed_reccursive {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -2350,7 +2350,7 @@ mod inline_when_needed_reccursive {
 
         // x: int = v*2 + mem_o
         let mut control = Memory::new();
-        control.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        control.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         control.add_buffer(
             format!("mem_o"),
             Constant::Integer(0),
@@ -2524,7 +2524,7 @@ mod inline_when_needed_reccursive {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -2581,7 +2581,7 @@ mod inline_when_needed_reccursive {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -2620,8 +2620,8 @@ mod inline_when_needed_reccursive {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -2897,7 +2897,7 @@ mod inline_when_needed_reccursive {
                     location: Location::default(),
                 },
                 inputs: vec![StreamExpression::UnitaryNodeApplication {
-                    id: Some(format!("my_nodeox")),
+                    id: Some(format!("my_node_o_x")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -2961,7 +2961,7 @@ mod inline_when_needed_reccursive {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -3000,8 +3000,8 @@ mod inline_when_needed_reccursive {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -3179,7 +3179,7 @@ mod inline_when_needed_reccursive {
                         dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
                     },
                     StreamExpression::UnitaryNodeApplication {
-                        id: Some(format!("other_nodeoo")),
+                        id: Some(format!("other_node_o_o")),
                         node: String::from("other_node"),
                         signal: String::from("o"),
                         inputs: vec![(
@@ -3303,7 +3303,7 @@ mod inline_when_needed_reccursive {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox")),
+                id: Some(format!("my_node_o_x")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -3360,7 +3360,7 @@ mod inline_when_needed_reccursive {
             id: String::from("y"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_nodeoy")),
+                id: Some(format!("other_node_o_y")),
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
@@ -3399,8 +3399,8 @@ mod inline_when_needed_reccursive {
         //     out y: int = other_node(x-1).o
         // }
         let mut memory = Memory::new();
-        memory.add_called_node(format!("my_nodeox"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_nodeoy"), format!("other_node"), format!("o"));
+        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
+        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
         let mut node = Node {
             id: String::from("test"),
             is_component: false,

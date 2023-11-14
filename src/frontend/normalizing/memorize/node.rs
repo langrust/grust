@@ -29,7 +29,7 @@ impl Node {
     ///         mem: int = 0 fby v;
     ///     },
     ///     called_nodes: {
-    ///         memmy_nodeo: (my_node, o);
+    ///         memmy_node_o_: (my_node, o);
     ///     },
     /// }
     /// ```
@@ -137,7 +137,7 @@ mod memorize {
         };
         node.memorize();
 
-        // out x: int = s + memx
+        // out x: int = s + mem_x
         let new_equation = Equation {
             scope: Scope::Output,
             id: String::from("x"),
@@ -163,29 +163,29 @@ mod memorize {
                     },
                     StreamExpression::SignalCall {
                         signal: Signal {
-                            id: String::from("memx"),
+                            id: String::from("mem_x"),
                             scope: Scope::Memory,
                         },
                         typing: Type::Integer,
                         location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("memx"), 0)]),
+                        dependencies: Dependencies::from(vec![(String::from("mem_x"), 0)]),
                     },
                 ],
                 typing: Type::Integer,
                 location: Location::default(),
                 dependencies: Dependencies::from(vec![
                     (String::from("s"), 0),
-                    (String::from("memx"), 0),
+                    (String::from("mem_x"), 0),
                 ]),
             },
             location: Location::default(),
         };
         // node test(s: int, v: int) {
-        //      out x: int = s + memx
+        //      out x: int = s + mem_x
         // }
         let mut memory = Memory::new();
         memory.add_buffer(
-            String::from("memx"),
+            String::from("mem_x"),
             Constant::Integer(0),
             StreamExpression::SignalCall {
                 signal: Signal {
@@ -201,9 +201,9 @@ mod memorize {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("s"), Color::White);
         graph.add_vertex(format!("v"), Color::White);
-        graph.add_vertex(format!("memx"), Color::White);
+        graph.add_vertex(format!("mem_x"), Color::White);
         graph.add_edge(&format!("x"), format!("s"), 0);
-        graph.add_edge(&format!("x"), format!("memx"), 0);
+        graph.add_edge(&format!("x"), format!("mem_x"), 0);
         let control = Node {
             id: String::from("test"),
             is_component: false,
@@ -269,7 +269,7 @@ mod memorize {
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: Some(format!("my_nodeoy")),
+                    id: Some(format!("my_node_o_y")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (
@@ -381,7 +381,7 @@ mod memorize {
 
         let mut memory = Memory::new();
         memory.add_called_node(
-            String::from("my_nodeoy"),
+            String::from("my_node_o_y"),
             String::from("my_node"),
             String::from("o"),
         );

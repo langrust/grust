@@ -90,15 +90,15 @@ impl StreamExpression {
                     .collect::<Vec<_>>();
 
                 let fresh_id = identifier_creator.new_identifier(
-                    String::from("x"),
                     String::from(""),
+                    String::from("x"),
                     String::from(""),
                 );
 
                 // set the identifier to the node state
                 *id = Some(identifier_creator.new_identifier(
-                    String::from(""),
-                    node.clone() + signal,
+                    node.clone(),
+                    signal.clone(),
                     fresh_id.clone(),
                 ));
 
@@ -300,8 +300,8 @@ impl StreamExpression {
                 let location = self.get_location().clone();
 
                 let fresh_id = identifier_creator.new_identifier(
-                    String::from("x"),
                     String::from(""),
+                    String::from("x"),
                     String::from(""),
                 );
 
@@ -548,7 +548,7 @@ mod normal_form {
             id: String::from("x_2"),
             signal_type: Type::Integer,
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeox_2")),
+                id: Some(format!("my_node_o_x_2")),
                 node: String::from("my_node"),
                 inputs: vec![
                     (
@@ -736,7 +736,7 @@ mod normal_form {
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: Some(format!("my_nodeox_2")),
+                    id: Some(format!("my_node_o_x_2")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (

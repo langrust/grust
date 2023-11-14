@@ -14,7 +14,7 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
         receiver: None,
         inputs: vec![],
         output: RustASTType::Identifier {
-            identifier: init.node_name.clone() + "State",
+            identifier: format!("{}State", init.node_name),
         },
     };
     let fields = init
@@ -37,7 +37,7 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
                 name: identifier,
                 expression: Expression::FunctionCall {
                     function: Box::new(Expression::Identifier {
-                        identifier: node_name + "State::init",
+                        identifier: format!("{}State::init", node_name),
                     }),
                     arguments: vec![],
                 },
@@ -45,7 +45,7 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
         })
         .collect();
     let statement = Statement::ExpressionLast(Expression::Structure {
-        name: init.node_name + "State",
+        name: format!("{}State", init.node_name),
         fields,
     });
     let body = Block {

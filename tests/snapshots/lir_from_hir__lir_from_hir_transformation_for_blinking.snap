@@ -4,23 +4,23 @@ expression: project
 ---
 items:
   - NodeFile:
-      name: countero
+      name: counter_o
       imports: []
       input:
-        node_name: countero
+        node_name: counter_o
         elements:
           - identifier: res
             type: Boolean
           - identifier: tick
             type: Boolean
       state:
-        node_name: countero
+        node_name: counter_o
         elements:
           - Buffer:
-              identifier: memo
+              identifier: mem_o
               type: Integer
         step:
-          node_name: countero
+          node_name: counter_o
           output_type: Integer
           body:
             - Let:
@@ -73,11 +73,11 @@ items:
                                           identifier: (_)
                                       arguments:
                                         - MemoryAccess:
-                                            identifier: memo
+                                            identifier: mem_o
                                   - Identifier:
                                       identifier: inc
           state_elements_step:
-            - identifier: memo
+            - identifier: mem_o
               expression:
                 Identifier:
                   identifier: o
@@ -85,42 +85,42 @@ items:
             Identifier:
               identifier: o
         init:
-          node_name: countero
+          node_name: counter_o
           state_elements_init:
             - BufferInit:
-                identifier: memo
+                identifier: mem_o
                 initial_value:
                   Integer: 0
   - NodeFile:
-      name: blinkingstatus
+      name: blinking_status
       imports:
-        - NodeFile: countero
+        - NodeFile: counter_o
       input:
-        node_name: blinkingstatus
+        node_name: blinking_status
         elements:
           - identifier: tick_number
             type: Integer
       state:
-        node_name: blinkingstatus
+        node_name: blinking_status
         elements:
           - Buffer:
-              identifier: memon_off
+              identifier: mem_on_off
               type: Boolean
           - Buffer:
-              identifier: memres
+              identifier: mem_res
               type: Boolean
           - CalledNode:
-              identifier: counterocounter
-              node_name: countero
+              identifier: counter_o_counter
+              node_name: counter_o
         step:
-          node_name: blinkingstatus
+          node_name: blinking_status
           output_type: Integer
           body:
             - Let:
                 identifier: res
                 expression:
                   MemoryAccess:
-                    identifier: memres
+                    identifier: mem_res
             - Let:
                 identifier: x
                 expression:
@@ -129,12 +129,12 @@ items:
                       Boolean: true
             - LetTuple:
                 identifiers:
-                  - counterocounter
+                  - counter_o_counter
                   - counter
                 expression:
                   NodeCall:
-                    node_identifier: counterocounter
-                    input_name: counteroInput
+                    node_identifier: counter_o_counter
+                    input_name: counter_oInput
                     input_fields:
                       - - res
                         - Identifier:
@@ -180,7 +180,7 @@ items:
                       - Identifier:
                           identifier: res
                       - MemoryAccess:
-                          identifier: memon_off
+                          identifier: mem_on_off
             - Let:
                 identifier: status
                 expression:
@@ -210,11 +210,11 @@ items:
                                 literal:
                                   Integer: 0
           state_elements_step:
-            - identifier: memon_off
+            - identifier: mem_on_off
               expression:
                 Identifier:
                   identifier: on_off
-            - identifier: memres
+            - identifier: mem_res
               expression:
                 FunctionCall:
                   function:
@@ -238,25 +238,25 @@ items:
                                       Integer: 1
                           - InputAccess:
                               identifier: tick_number
-            - identifier: counterocounter
+            - identifier: counter_o_counter
               expression:
                 Identifier:
-                  identifier: counterocounter
+                  identifier: counter_o_counter
           output_expression:
             Identifier:
               identifier: status
         init:
-          node_name: blinkingstatus
+          node_name: blinking_status
           state_elements_init:
             - BufferInit:
-                identifier: memon_off
+                identifier: mem_on_off
                 initial_value:
                   Boolean: true
             - BufferInit:
-                identifier: memres
+                identifier: mem_res
                 initial_value:
                   Boolean: true
             - CalledNodeInit:
-                identifier: counterocounter
-                node_name: countero
+                identifier: counter_o_counter
+                node_name: counter_o
 

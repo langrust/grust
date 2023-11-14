@@ -4,11 +4,11 @@ expression: project
 ---
 directory: ""
 files:
-  - path: src/countero.rs
+  - path: src/counter_o.rs
     items:
       - Structure:
           public_visibility: true
-          name: counteroInput
+          name: counter_oInput
           fields:
             - public_visibility: true
               name: res
@@ -22,16 +22,16 @@ files:
                   identifier: i64
       - Structure:
           public_visibility: true
-          name: counteroState
+          name: counter_oState
           fields:
             - public_visibility: false
-              name: memo
+              name: mem_o
               type:
                 Identifier:
                   identifier: i64
       - Implementation:
           trait_name: ~
-          type_name: counteroState
+          type_name: counter_oState
           items:
             - AssociatedMethod:
                 signature:
@@ -41,14 +41,14 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: counteroState
+                      identifier: counter_oState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: counteroState
+                          name: counter_oState
                           fields:
-                            - name: memo
+                            - name: mem_o
                               expression:
                                 Literal:
                                   literal:
@@ -63,12 +63,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: counteroInput
+                          identifier: counter_oInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: counteroState
+                            identifier: counter_oState
                         - Identifier:
                             identifier: i64
                 body:
@@ -105,7 +105,7 @@ files:
                                               expression:
                                                 Identifier:
                                                   identifier: self
-                                              field: memo
+                                              field: mem_o
                                       operator: Add
                                       right:
                                         FieldAccess:
@@ -117,15 +117,15 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: counteroState
+                                name: counter_oState
                                 fields:
-                                  - name: memo
+                                  - name: mem_o
                                     expression:
                                       Identifier:
                                         identifier: o
                             - Identifier:
                                 identifier: o
-  - path: src/reset_buttonuser_reset_request.rs
+  - path: src/reset_button_user_reset_request.rs
     items:
       - Import:
           Use:
@@ -148,11 +148,11 @@ files:
                 module_name: crate
                 tree:
                   Path:
-                    module_name: countero
+                    module_name: counter_o
                     tree: Star
       - Structure:
           public_visibility: true
-          name: reset_buttonuser_reset_requestInput
+          name: reset_button_user_reset_requestInput
           fields:
             - public_visibility: true
               name: button_state
@@ -176,26 +176,26 @@ files:
                   identifier: i64
       - Structure:
           public_visibility: true
-          name: reset_buttonuser_reset_requestState
+          name: reset_button_user_reset_requestState
           fields:
             - public_visibility: false
-              name: memres
+              name: mem_res
               type:
                 Identifier:
                   identifier: bool
             - public_visibility: false
-              name: memuser_reset_request
+              name: mem_user_reset_request
               type:
                 Identifier:
                   identifier: bool
             - public_visibility: false
-              name: counterocounter
+              name: counter_o_counter
               type:
                 Identifier:
-                  identifier: counteroState
+                  identifier: counter_oState
       - Implementation:
           trait_name: ~
-          type_name: reset_buttonuser_reset_requestState
+          type_name: reset_button_user_reset_requestState
           items:
             - AssociatedMethod:
                 signature:
@@ -205,29 +205,29 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: reset_buttonuser_reset_requestState
+                      identifier: reset_button_user_reset_requestState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: reset_buttonuser_reset_requestState
+                          name: reset_button_user_reset_requestState
                           fields:
-                            - name: memres
+                            - name: mem_res
                               expression:
                                 Literal:
                                   literal:
                                     Boolean: true
-                            - name: memuser_reset_request
+                            - name: mem_user_reset_request
                               expression:
                                 Literal:
                                   literal:
                                     Boolean: false
-                            - name: counterocounter
+                            - name: counter_o_counter
                               expression:
                                 FunctionCall:
                                   function:
                                     Identifier:
-                                      identifier: "counteroState::init"
+                                      identifier: "counter_oState::init"
                                   arguments: []
             - AssociatedMethod:
                 signature:
@@ -239,12 +239,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: reset_buttonuser_reset_requestInput
+                          identifier: reset_button_user_reset_requestInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: reset_buttonuser_reset_requestState
+                            identifier: reset_button_user_reset_requestState
                         - Identifier:
                             identifier: bool
                 body:
@@ -284,7 +284,7 @@ files:
                                     expression:
                                       Identifier:
                                         identifier: self
-                                    field: memres
+                                    field: mem_res
                     - Let:
                         pattern:
                           Tuple:
@@ -292,7 +292,7 @@ files:
                               - Identifier:
                                   reference: false
                                   mutable: false
-                                  identifier: counterocounter
+                                  identifier: counter_o_counter
                               - Identifier:
                                   reference: false
                                   mutable: false
@@ -304,11 +304,11 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: self
-                                field: counterocounter
+                                field: counter_o_counter
                             method: step
                             arguments:
                               - Structure:
-                                  name: counteroInput
+                                  name: counter_oInput
                                   fields:
                                     - name: res
                                       expression:
@@ -348,7 +348,7 @@ files:
                                     expression:
                                       Identifier:
                                         identifier: self
-                                    field: memuser_reset_request
+                                    field: mem_user_reset_request
                               - pattern:
                                   Literal:
                                     literal:
@@ -381,9 +381,9 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: reset_buttonuser_reset_requestState
+                                name: reset_button_user_reset_requestState
                                 fields:
-                                  - name: memres
+                                  - name: mem_res
                                     expression:
                                       Binary:
                                         left:
@@ -399,17 +399,17 @@ files:
                                               Enumeration:
                                                 - Button
                                                 - Released
-                                  - name: memuser_reset_request
+                                  - name: mem_user_reset_request
                                     expression:
                                       Identifier:
                                         identifier: user_reset_request
-                                  - name: counterocounter
+                                  - name: counter_o_counter
                                     expression:
                                       Identifier:
-                                        identifier: counterocounter
+                                        identifier: counter_o_counter
                             - Identifier:
                                 identifier: user_reset_request
-  - path: src/reset_buttonuser_reset_request_state.rs
+  - path: src/reset_button_user_reset_request_state.rs
     items:
       - Import:
           Use:
@@ -432,7 +432,7 @@ files:
                 module_name: crate
                 tree:
                   Path:
-                    module_name: countero
+                    module_name: counter_o
                     tree: Star
       - Import:
           Use:
@@ -449,7 +449,7 @@ files:
                         alias: ~
       - Structure:
           public_visibility: true
-          name: reset_buttonuser_reset_request_stateInput
+          name: reset_button_user_reset_request_stateInput
           fields:
             - public_visibility: true
               name: button_state
@@ -468,21 +468,21 @@ files:
                   identifier: i64
       - Structure:
           public_visibility: true
-          name: reset_buttonuser_reset_request_stateState
+          name: reset_button_user_reset_request_stateState
           fields:
             - public_visibility: false
-              name: memres
+              name: mem_res
               type:
                 Identifier:
                   identifier: bool
             - public_visibility: false
-              name: counterocounter
+              name: counter_o_counter
               type:
                 Identifier:
-                  identifier: counteroState
+                  identifier: counter_oState
       - Implementation:
           trait_name: ~
-          type_name: reset_buttonuser_reset_request_stateState
+          type_name: reset_button_user_reset_request_stateState
           items:
             - AssociatedMethod:
                 signature:
@@ -492,24 +492,24 @@ files:
                   inputs: []
                   output:
                     Identifier:
-                      identifier: reset_buttonuser_reset_request_stateState
+                      identifier: reset_button_user_reset_request_stateState
                 body:
                   statements:
                     - ExpressionLast:
                         Structure:
-                          name: reset_buttonuser_reset_request_stateState
+                          name: reset_button_user_reset_request_stateState
                           fields:
-                            - name: memres
+                            - name: mem_res
                               expression:
                                 Literal:
                                   literal:
                                     Boolean: true
-                            - name: counterocounter
+                            - name: counter_o_counter
                               expression:
                                 FunctionCall:
                                   function:
                                     Identifier:
-                                      identifier: "counteroState::init"
+                                      identifier: "counter_oState::init"
                                   arguments: []
             - AssociatedMethod:
                 signature:
@@ -521,12 +521,12 @@ files:
                   inputs:
                     - - input
                       - Identifier:
-                          identifier: reset_buttonuser_reset_request_stateInput
+                          identifier: reset_button_user_reset_request_stateInput
                   output:
                     Tuple:
                       elements:
                         - Identifier:
-                            identifier: reset_buttonuser_reset_request_stateState
+                            identifier: reset_button_user_reset_request_stateState
                         - Identifier:
                             identifier: ResetState
                 body:
@@ -566,7 +566,7 @@ files:
                                     expression:
                                       Identifier:
                                         identifier: self
-                                    field: memres
+                                    field: mem_res
                     - Let:
                         pattern:
                           Tuple:
@@ -574,7 +574,7 @@ files:
                               - Identifier:
                                   reference: false
                                   mutable: false
-                                  identifier: counterocounter
+                                  identifier: counter_o_counter
                               - Identifier:
                                   reference: false
                                   mutable: false
@@ -586,11 +586,11 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: self
-                                field: counterocounter
+                                field: counter_o_counter
                             method: step
                             arguments:
                               - Structure:
-                                  name: counteroInput
+                                  name: counter_oInput
                                   fields:
                                     - name: res
                                       expression:
@@ -667,9 +667,9 @@ files:
                         Tuple:
                           elements:
                             - Structure:
-                                name: reset_buttonuser_reset_request_stateState
+                                name: reset_button_user_reset_request_stateState
                                 fields:
-                                  - name: memres
+                                  - name: mem_res
                                     expression:
                                       Binary:
                                         left:
@@ -685,10 +685,10 @@ files:
                                               Enumeration:
                                                 - Button
                                                 - Released
-                                  - name: counterocounter
+                                  - name: counter_o_counter
                                     expression:
                                       Identifier:
-                                        identifier: counterocounter
+                                        identifier: counter_o_counter
                             - Identifier:
                                 identifier: user_reset_request_state
   - path: src/functions.rs
@@ -712,15 +712,15 @@ files:
       - Import:
           Module:
             public_visibility: true
-            name: countero
+            name: counter_o
       - Import:
           Module:
             public_visibility: true
-            name: reset_buttonuser_reset_request
+            name: reset_button_user_reset_request
       - Import:
           Module:
             public_visibility: true
-            name: reset_buttonuser_reset_request_state
+            name: reset_button_user_reset_request_state
       - Import:
           Module:
             public_visibility: true

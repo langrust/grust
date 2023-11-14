@@ -266,17 +266,17 @@ nodes:
                             inputs:
                               - SignalCall:
                                   signal:
-                                    id: memo
+                                    id: mem_o
                                     scope: Memory
                                   typing: Integer
                                   location: ~
                                   dependencies:
-                                    - - memo
+                                    - - mem_o
                                       - 0
                             typing: Integer
                             location: ~
                             dependencies:
-                              - - memo
+                              - - mem_o
                                 - 0
                         - SignalCall:
                             signal:
@@ -290,7 +290,7 @@ nodes:
                       typing: Integer
                       location: ~
                       dependencies:
-                        - - memo
+                        - - mem_o
                           - 0
                         - - inc
                           - 0
@@ -299,14 +299,14 @@ nodes:
                 dependencies:
                   - - res
                     - 0
-                  - - memo
+                  - - mem_o
                     - 0
                   - - inc
                     - 0
             location: ~
         memory:
           buffers:
-            memo:
+            mem_o:
               typing: Integer
               initial_value:
                 Integer: 0
@@ -330,8 +330,8 @@ nodes:
               neighbors:
                 - id: tick
                   weight: 0
-            memo:
-              id: memo
+            mem_o:
+              id: mem_o
               value: White
               neighbors: []
             o:
@@ -340,7 +340,7 @@ nodes:
               neighbors:
                 - id: res
                   weight: 0
-                - id: memo
+                - id: mem_o
                   weight: 0
                 - id: inc
                   weight: 0
@@ -518,12 +518,12 @@ component:
           expression:
             SignalCall:
               signal:
-                id: memhalf
+                id: mem_half
                 scope: Memory
               typing: Boolean
               location: ~
               dependencies:
-                - - memhalf
+                - - mem_half
                   - 0
           location: ~
         - scope: Local
@@ -532,12 +532,12 @@ component:
           expression:
             SignalCall:
               signal:
-                id: memx
+                id: mem_x
                 scope: Memory
               typing: Boolean
               location: ~
               dependencies:
-                - - memx
+                - - mem_x
                   - 0
           location: ~
         - scope: Output
@@ -545,7 +545,7 @@ component:
           signal_type: Integer
           expression:
             UnitaryNodeApplication:
-              id: counteroy
+              id: counter_o_y
               node: counter
               signal: o
               inputs:
@@ -579,7 +579,7 @@ component:
           location: ~
       memory:
         buffers:
-          memhalf:
+          mem_half:
             typing: Boolean
             initial_value:
               Boolean: true
@@ -608,7 +608,7 @@ component:
                 dependencies:
                   - - half
                     - 0
-          memx:
+          mem_x:
             typing: Boolean
             initial_value:
               Boolean: false
@@ -660,7 +660,7 @@ component:
                   - - y
                     - 0
         called_nodes:
-          counteroy:
+          counter_o_y:
             node_id: counter
             signal_id: o
       location: ~
@@ -670,21 +670,21 @@ component:
             id: half
             value: White
             neighbors:
-              - id: memhalf
+              - id: mem_half
                 weight: 0
-          memhalf:
-            id: memhalf
+          mem_half:
+            id: mem_half
             value: White
             neighbors: []
-          memx:
-            id: memx
+          mem_x:
+            id: mem_x
             value: White
             neighbors: []
           x:
             id: x
             value: White
             neighbors:
-              - id: memx
+              - id: mem_x
                 weight: 0
           y:
             id: y

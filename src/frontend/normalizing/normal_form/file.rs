@@ -592,7 +592,7 @@ mod normal_form {
                 id: String::from("x_2"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::UnitaryNodeApplication {
-                    id: Some(format!("my_nodeox_2")),
+                    id: Some(format!("my_node_o_x_2")),
                     node: String::from("my_node"),
                     inputs: vec![
                         (

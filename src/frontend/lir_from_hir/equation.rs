@@ -63,7 +63,7 @@ mod lir_from_hir {
             scope: Scope::Local,
             id: format!("y"),
             expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_nodeoy")),
+                id: Some(format!("my_node_o_y")),
                 node: format!("my_node"),
                 signal: format!("o"),
                 inputs: vec![
@@ -97,10 +97,10 @@ mod lir_from_hir {
             location: Location::default(),
         };
         let control = Statement::LetTuple {
-            identifiers: vec![format!("my_nodeoy"), format!("y")],
+            identifiers: vec![format!("my_node_o_y"), format!("y")],
             expression: Expression::NodeCall {
-                node_identifier: format!("my_nodeoy"),
-                input_name: format!("my_nodeoInput"),
+                node_identifier: format!("my_node_o_y"),
+                input_name: format!("my_node_oInput"),
                 input_fields: vec![
                     (
                         format!("i"),

@@ -29,20 +29,20 @@ pub fn rust_ast_from_lir(state: State) -> (Structure, Implementation) {
                 public_visibility: false,
                 name: identifier,
                 r#type: RustASTType::Identifier {
-                    identifier: node_name + "State",
+                    identifier: format!("{}State", node_name),
                 },
             },
         })
         .collect();
     let structure = Structure {
         public_visibility: true,
-        name: state.node_name.clone() + "State",
+        name: format!("{}State", state.node_name),
         fields,
     };
 
     let implementation = Implementation {
         trait_name: None,
-        type_name: state.node_name + "State",
+        type_name: format!("{}State", state.node_name),
         items: vec![
             init_rust_ast_from_lir(state.init),
             step_rust_ast_from_lir(state.step),
