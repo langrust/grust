@@ -35,7 +35,7 @@ pub fn rust_ast_from_lir(state: State) -> (Structure, Implementation) {
         })
         .collect();
     let structure = Structure {
-        public_visibility: false,
+        public_visibility: true,
         name: state.node_name.clone() + "State",
         fields,
     };
