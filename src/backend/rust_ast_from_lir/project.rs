@@ -12,9 +12,11 @@ use crate::{
 
 /// Transform LIR item into RustAST item.
 pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
-    let mut function_file = File::new(format!("functions.rs"));
-    let mut typedefs_file = File::new(format!("typedefs.rs"));
     let mut rust_ast_project = RustASTProject::new();
+
+    let mut function_file = File::new(format!("src/functions.rs"));
+    let mut typedefs_file = File::new(format!("src/typedefs.rs"));
+
     project.items.into_iter().for_each(|item| match item {
         Item::NodeFile(node_file) => {
             let rust_ast_node_file = node_file_rust_ast_from_lir(node_file);
