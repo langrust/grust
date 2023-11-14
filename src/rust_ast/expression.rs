@@ -197,7 +197,11 @@ impl std::fmt::Display for Expression {
             Expression::Unary {
                 operator,
                 expression,
-            } => write!(f, "{}{expression}", operator.to_string()),
+            } => match operator {
+                UnaryOperator::Neg => write!(f, "-{expression}"),
+                UnaryOperator::Not => write!(f, "!{expression}"),
+                UnaryOperator::Brackets => write!(f, "({expression})"),
+            },
             Expression::Binary {
                 left,
                 operator,
