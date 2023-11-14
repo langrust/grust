@@ -1803,7 +1803,11 @@ mod inline_when_needed {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,

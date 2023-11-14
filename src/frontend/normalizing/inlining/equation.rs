@@ -742,7 +742,11 @@ mod inline_when_needed {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -795,7 +799,11 @@ mod inline_when_needed {
 
         // x: int = v*2 + mem_o
         let mut control = Memory::new();
-        control.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        control.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         control.add_buffer(
             format!("mem_o"),
             Constant::Integer(0),
@@ -1066,7 +1074,11 @@ mod inline_when_needed {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -1446,7 +1458,11 @@ mod inline_when_needed {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -1867,7 +1883,11 @@ mod inline_when_needed {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -2297,7 +2317,11 @@ mod inline_when_needed_reccursive {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -2350,7 +2374,11 @@ mod inline_when_needed_reccursive {
 
         // x: int = v*2 + mem_o
         let mut control = Memory::new();
-        control.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        control.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         control.add_buffer(
             format!("mem_o"),
             Constant::Integer(0),
@@ -2621,7 +2649,11 @@ mod inline_when_needed_reccursive {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -3001,7 +3033,11 @@ mod inline_when_needed_reccursive {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
@@ -3400,7 +3436,11 @@ mod inline_when_needed_reccursive {
         // }
         let mut memory = Memory::new();
         memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(format!("other_node_o_y"), format!("other_node"), format!("o"));
+        memory.add_called_node(
+            format!("other_node_o_y"),
+            format!("other_node"),
+            format!("o"),
+        );
         let mut node = Node {
             id: String::from("test"),
             is_component: false,
