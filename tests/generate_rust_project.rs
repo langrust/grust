@@ -67,7 +67,10 @@ fn generate_rust_project_for_button_management() {
     );
 
     let mut file: File = langrust::fileParser::new()
-        .parse(button_management_id, &files.source(button_management_id).unwrap())
+        .parse(
+            button_management_id,
+            &files.source(button_management_id).unwrap(),
+        )
         .unwrap();
     file.typing(&mut errors).unwrap();
     let mut file = hir_from_ast(file);
@@ -93,7 +96,10 @@ fn generate_rust_project_for_button_management_condition_match() {
     );
 
     let mut file: File = langrust::fileParser::new()
-        .parse(button_management_condition_match_id, &files.source(button_management_condition_match_id).unwrap())
+        .parse(
+            button_management_condition_match_id,
+            &files.source(button_management_condition_match_id).unwrap(),
+        )
         .unwrap();
     file.typing(&mut errors).unwrap();
     let mut file = hir_from_ast(file);
@@ -119,7 +125,10 @@ fn generate_rust_project_for_button_management_using_function() {
     );
 
     let mut file: File = langrust::fileParser::new()
-        .parse(button_management_using_function_id, &files.source(button_management_using_function_id).unwrap())
+        .parse(
+            button_management_using_function_id,
+            &files.source(button_management_using_function_id).unwrap(),
+        )
         .unwrap();
     file.typing(&mut errors).unwrap();
     let mut file = hir_from_ast(file);
