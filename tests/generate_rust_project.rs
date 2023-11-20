@@ -57,6 +57,83 @@ fn generate_rust_project_for_blinking() {
 }
 
 #[test]
+fn generate_rust_project_for_button_management() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let button_management_id = files.add(
+        "button_management.gr",
+        std::fs::read_to_string("tests/fixture/button_management.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(button_management_id, &files.source(button_management_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+    file.normalize(&mut errors).unwrap();
+    let project = lir_from_hir(file);
+    let mut project = rust_ast_from_lir(project);
+    project.set_parent("tests/generated/button_management/");
+
+    project.generate()
+}
+
+#[test]
+fn generate_rust_project_for_button_management_condition_match() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let button_management_condition_match_id = files.add(
+        "button_management_condition_match.gr",
+        std::fs::read_to_string("tests/fixture/button_management_condition_match.gr")
+            .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(button_management_condition_match_id, &files.source(button_management_condition_match_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+    file.normalize(&mut errors).unwrap();
+    let project = lir_from_hir(file);
+    let mut project = rust_ast_from_lir(project);
+    project.set_parent("tests/generated/button_management_condition_match/");
+
+    project.generate()
+}
+
+#[test]
+fn generate_rust_project_for_button_management_using_function() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let button_management_using_function_id = files.add(
+        "button_management_using_function.gr",
+        std::fs::read_to_string("tests/fixture/button_management_using_function.gr")
+            .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(button_management_using_function_id, &files.source(button_management_using_function_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+    file.normalize(&mut errors).unwrap();
+    let project = lir_from_hir(file);
+    let mut project = rust_ast_from_lir(project);
+    project.set_parent("tests/generated/button_management_using_function/");
+
+    project.generate()
+}
+
+#[test]
 fn generate_rust_project_for_pid() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
