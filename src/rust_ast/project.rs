@@ -49,8 +49,14 @@ impl Project {
     }
 
     fn generate_cargo(&self) {
-        let file_string = "[package]
-name = \"TODO\"
+        let project_name = std::path::Path::new(&self.directory)
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap();
+        let file_string = format!(
+            "[package]
+name = \"{project_name}\"
 version = \"0.1.0\"
 edition = \"2021\"
 authors = [\"Émilie THOMÉ <emilie.e.thome@renault.com>\"]
@@ -58,7 +64,8 @@ authors = [\"Émilie THOMÉ <emilie.e.thome@renault.com>\"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-";
+"
+        );
         let path = std::path::Path::new(&self.directory).join("Cargo.toml");
 
         if let Some(p) = AsRef::<std::path::Path>::as_ref(&path).parent() {

@@ -1,5 +1,5 @@
 [package]
-name = "TODO"
+name = "counter"
 version = "0.1.0"
 edition = "2021"
 authors = ["Émilie THOMÉ <emilie.e.thome@renault.com>"]
