@@ -1,0 +1,37 @@
+use crate::counter_o::*;
+pub struct BlinkingStatusInput {
+    pub tick_number: i64,
+}
+pub struct BlinkingStatusState {
+    mem_on_off: bool,
+    mem_res: bool,
+    counter_o_counter: CounterOState,
+}
+impl BlinkingStatusState {
+    pub fn init() -> BlinkingStatusState {
+        BlinkingStatusState {
+            mem_on_off: true,
+            mem_res: true,
+            counter_o_counter: CounterOState::init(),
+        }
+    }
+    pub fn step(self, input: BlinkingStatusInput) -> (BlinkingStatusState, i64) {
+        let res = self.mem_res;
+        let x = true;
+        let (counter_o_counter, counter) = self
+            .counter_o_counter
+            .step(CounterOInput { res, tick: x });
+        let on_off = |t: bool, b: bool| -> bool {
+            if t { !b } else { b }
+        }(res, self.mem_on_off);
+        let status = if on_off { counter + 1i64 } else { 0i64 };
+        (
+            BlinkingStatusState {
+                mem_on_off: on_off,
+                mem_res: (counter + 1i64 == input.tick_number),
+                counter_o_counter,
+            },
+            status,
+        )
+    }
+}
