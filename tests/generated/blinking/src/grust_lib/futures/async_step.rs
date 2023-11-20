@@ -18,8 +18,8 @@ pub enum AsyncStep<S, I, O, FutState, FutInput>
 where
     FutState: Future<Output = Result<S, JoinError>> + Send + 'static,
     FutInput: Future<Output = Result<I, JoinError>> + Send + 'static,
-    S: Node<I, O> + Clone + Send + Sync + 'static,
-    O: Clone + Send + Sync + 'static,
+    S: Node<I, O> + Send + Sync + 'static,
+    O: Send + Sync + 'static,
     I: Send,
 {
     /// A not-yet-completed future.
@@ -45,8 +45,8 @@ pub fn async_step<S, I, O, FutState, FutInput>(
 where
     FutState: Future<Output = Result<S, JoinError>> + Send + 'static,
     FutInput: Future<Output = Result<I, JoinError>> + Send + 'static,
-    S: Node<I, O> + Clone + Send + Sync + 'static,
-    O: Clone + Send + Sync + 'static,
+    S: Node<I, O> + Send + Sync + 'static,
+    O: Send + Sync + 'static,
     I: Send,
 {
     AsyncStep::Future {
@@ -60,8 +60,8 @@ impl<S, I, O, FutState, FutInput> Future for AsyncStep<S, I, O, FutState, FutInp
 where
     FutState: Future<Output = Result<S, JoinError>> + Send + 'static,
     FutInput: Future<Output = Result<I, JoinError>> + Send + 'static,
-    S: Node<I, O> + Clone + Send + Sync + 'static,
-    O: Clone + Send + Sync + 'static,
+    S: Node<I, O> + Send + Sync + 'static,
+    O: Send + Sync + 'static,
     I: Send,
 {
     type Output = (S, O);
