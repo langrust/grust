@@ -18,11 +18,14 @@ impl BlinkingStatusState {
     pub fn step(self, input: BlinkingStatusInput) -> (BlinkingStatusState, i64) {
         let res = self.mem_res;
         let x = true;
-        let (counter_o_counter, counter) = self
-            .counter_o_counter
-            .step(CounterOInput { res, tick: x });
+        let (counter_o_counter, counter) =
+            self.counter_o_counter.step(CounterOInput { res, tick: x });
         let on_off = |t: bool, b: bool| -> bool {
-            if t { !b } else { b }
+            if t {
+                !b
+            } else {
+                b
+            }
         }(res, self.mem_on_off);
         let status = if on_off { counter + 1i64 } else { 0i64 };
         (
