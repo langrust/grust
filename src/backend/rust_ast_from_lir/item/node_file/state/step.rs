@@ -4,7 +4,7 @@ use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement
 use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 use crate::rust_ast::block::Block;
-use crate::rust_ast::expression::{Expression, FieldExpression};
+use crate::rust_ast::expression::Expression;
 use crate::rust_ast::item::implementation::AssociatedItem;
 use crate::rust_ast::item::signature::{Receiver, Signature};
 use crate::rust_ast::r#type::Type as RustASTType;
@@ -16,8 +16,8 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
         public_visibility: true,
         name: String::from("step"),
         receiver: Some(Receiver {
-            reference: false,
-            mutable: false,
+            reference: true,
+            mutable: true,
         }),
         inputs: vec![(
             String::from("input"),
@@ -25,14 +25,7 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
                 identifier: camel_case(&format!("{}Input", step.node_name)),
             },
         )],
-        output: RustASTType::Tuple {
-            elements: vec![
-                RustASTType::Identifier {
-                    identifier: camel_case(&format!("{}State", step.node_name)),
-                },
-                type_rust_ast_from_lir(step.output_type),
-            ],
-        },
+        output: type_rust_ast_from_lir(step.output_type),
     };
     let mut statements = step
         .body
@@ -40,30 +33,33 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
         .map(statement_rust_ast_from_lir)
         .collect::<Vec<_>>();
 
-    let fields = step
+    let mut fields_update = step
         .state_elements_step
         .into_iter()
         .map(
             |StateElementStep {
                  identifier,
                  expression,
-             }| FieldExpression {
-                name: identifier,
-                expression: expression_rust_ast_from_lir(expression),
+             }| {
+                let field_acces = Expression::FieldAccess {
+                    expression: Box::new(Expression::Identifier {
+                        identifier: format!("self"),
+                    }),
+                    field: identifier,
+                };
+                Statement::ExpressionIntern(Expression::Assignement {
+                    left: Box::new(field_acces),
+                    right: Box::new(expression_rust_ast_from_lir(expression)),
+                })
             },
         )
-        .collect();
-    let statement = Statement::ExpressionLast(Expression::Tuple {
-        elements: vec![
-            Expression::Structure {
-                name: camel_case(&format!("{}State", step.node_name)),
-                fields,
-            },
-            expression_rust_ast_from_lir(step.output_expression),
-        ],
-    });
+        .collect::<Vec<_>>();
 
-    statements.push(statement);
+    let output_statement =
+        Statement::ExpressionLast(expression_rust_ast_from_lir(step.output_expression));
+
+    statements.append(&mut fields_update);
+    statements.push(output_statement);
 
     let body = Block { statements };
     AssociatedItem::AssociatedMethod { signature, body }
