@@ -124,10 +124,8 @@ items:
                 expression:
                   MemoryAccess:
                     identifier: mem_x
-            - LetTuple:
-                identifiers:
-                  - counter_o_y
-                  - y
+            - Let:
+                identifier: y
                 expression:
                   NodeCall:
                     node_identifier: counter_o_y
@@ -166,10 +164,6 @@ items:
                           - Literal:
                               literal:
                                 Integer: 35
-            - identifier: counter_o_y
-              expression:
-                Identifier:
-                  identifier: counter_o_y
           output_expression:
             Identifier:
               identifier: y

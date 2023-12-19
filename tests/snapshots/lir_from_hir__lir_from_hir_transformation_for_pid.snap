@@ -234,10 +234,8 @@ items:
                           identifier: v_c
                       - InputAccess:
                           identifier: v
-            - LetTuple:
-                identifiers:
-                  - derive_d_e_d
-                  - e_d
+            - Let:
+                identifier: e_d
                 expression:
                   NodeCall:
                     node_identifier: derive_d_e_d
@@ -249,10 +247,8 @@ items:
                       - - dt
                         - InputAccess:
                             identifier: dt
-            - LetTuple:
-                identifiers:
-                  - integrate_i_e_i
-                  - e_i
+            - Let:
+                identifier: e_i
                 expression:
                   NodeCall:
                     node_identifier: integrate_i_e_i
@@ -344,15 +340,7 @@ items:
                                         identifier: k_d
                                     - Identifier:
                                         identifier: e_d
-          state_elements_step:
-            - identifier: derive_d_e_d
-              expression:
-                Identifier:
-                  identifier: derive_d_e_d
-            - identifier: integrate_i_e_i
-              expression:
-                Identifier:
-                  identifier: integrate_i_e_i
+          state_elements_step: []
           output_expression:
             Identifier:
               identifier: u

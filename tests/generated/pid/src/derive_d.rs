@@ -9,14 +9,10 @@ impl DeriveDState {
     pub fn init() -> DeriveDState {
         DeriveDState { mem_prev_x: 0f64 }
     }
-    pub fn step(self, input: DeriveDInput) -> (DeriveDState, f64) {
+    pub fn step(&mut self, input: DeriveDInput) -> f64 {
         let prev_x = self.mem_prev_x;
         let d = (input.x - prev_x) / input.dt;
-        (
-            DeriveDState {
-                mem_prev_x: input.x,
-            },
-            d,
-        )
+        self.mem_prev_x = input.x;
+        d
     }
 }

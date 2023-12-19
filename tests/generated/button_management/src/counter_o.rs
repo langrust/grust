@@ -9,8 +9,9 @@ impl CounterOState {
     pub fn init() -> CounterOState {
         CounterOState { mem_o: 0i64 }
     }
-    pub fn step(self, input: CounterOInput) -> (CounterOState, i64) {
+    pub fn step(&mut self, input: CounterOInput) -> i64 {
         let o = if input.res { 0i64 } else { (self.mem_o) + input.inc };
-        (CounterOState { mem_o: o }, o)
+        self.mem_o = o;
+        o
     }
 }

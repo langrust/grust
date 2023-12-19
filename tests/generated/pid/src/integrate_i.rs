@@ -12,10 +12,11 @@ impl IntegrateIState {
             mem_prev_i: 0f64,
         }
     }
-    pub fn step(self, input: IntegrateIInput) -> (IntegrateIState, f64) {
+    pub fn step(&mut self, input: IntegrateIInput) -> f64 {
         let MAX_INTEGRALE = 1000f64;
         let prev_i = self.mem_prev_i;
         let i = min(prev_i + input.x * input.dt, MAX_INTEGRALE);
-        (IntegrateIState { mem_prev_i: i }, i)
+        self.mem_prev_i = i;
+        i
     }
 }

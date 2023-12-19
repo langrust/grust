@@ -17,12 +17,9 @@ impl ResetButtonUserResetRequestStateState {
             counter_o_counter: CounterOState::init(),
         }
     }
-    pub fn step(
-        self,
-        input: ResetButtonUserResetRequestStateInput,
-    ) -> (ResetButtonUserResetRequestStateState, ResetState) {
+    pub fn step(&mut self, input: ResetButtonUserResetRequestStateInput) -> ResetState {
         let res = (input.button_state == Button::Pressed) && (self.mem_res);
-        let (counter_o_counter, counter) = self
+        let counter = self
             .counter_o_counter
             .step(CounterOInput {
                 res,
@@ -38,12 +35,7 @@ impl ResetButtonUserResetRequestStateState {
                 }
             }
         };
-        (
-            ResetButtonUserResetRequestStateState {
-                mem_res: input.button_state == Button::Released,
-                counter_o_counter,
-            },
-            user_reset_request_state,
-        )
+        self.mem_res = input.button_state == Button::Released;
+        user_reset_request_state
     }
 }

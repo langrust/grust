@@ -58,19 +58,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: CounterOInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: CounterOState
-                        - Identifier:
-                            identifier: i64
+                    Identifier:
+                      identifier: i64
                 body:
                   statements:
                     - Let:
@@ -136,18 +132,20 @@ files:
                                       right:
                                         Identifier:
                                           identifier: inc
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_o
+                          right:
+                            Identifier:
+                              identifier: o
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: CounterOState
-                                fields:
-                                  - name: mem_o
-                                    expression:
-                                      Identifier:
-                                        identifier: o
-                            - Identifier:
-                                identifier: o
+                        Identifier:
+                          identifier: o
   - path: src/blinking_status.rs
     items:
       - Import:
@@ -229,19 +227,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: BlinkingStatusInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: BlinkingStatusState
-                        - Identifier:
-                            identifier: i64
+                    Identifier:
+                      identifier: i64
                 body:
                   statements:
                     - Let:
@@ -268,16 +262,10 @@ files:
                               Boolean: true
                     - Let:
                         pattern:
-                          Tuple:
-                            elements:
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: counter_o_counter
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: counter
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: counter
                         expression:
                           MethodCall:
                             receiver:
@@ -387,45 +375,50 @@ files:
                                     Literal:
                                       literal:
                                         Integer: 0
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_on_off
+                          right:
+                            Identifier:
+                              identifier: on_off
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_res
+                          right:
+                            Unary:
+                              operator: Brackets
+                              expression:
+                                Binary:
+                                  left:
+                                    Binary:
+                                      left:
+                                        Identifier:
+                                          identifier: counter
+                                      operator: Add
+                                      right:
+                                        Literal:
+                                          literal:
+                                            Integer: 1
+                                  operator: Eq
+                                  right:
+                                    FieldAccess:
+                                      expression:
+                                        Identifier:
+                                          identifier: input
+                                      field: tick_number
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: BlinkingStatusState
-                                fields:
-                                  - name: mem_on_off
-                                    expression:
-                                      Identifier:
-                                        identifier: on_off
-                                  - name: mem_res
-                                    expression:
-                                      Unary:
-                                        operator: Brackets
-                                        expression:
-                                          Binary:
-                                            left:
-                                              Binary:
-                                                left:
-                                                  Identifier:
-                                                    identifier: counter
-                                                operator: Add
-                                                right:
-                                                  Literal:
-                                                    literal:
-                                                      Integer: 1
-                                            operator: Eq
-                                            right:
-                                              FieldAccess:
-                                                expression:
-                                                  Identifier:
-                                                    identifier: input
-                                                field: tick_number
-                                  - name: counter_o_counter
-                                    expression:
-                                      Identifier:
-                                        identifier: counter_o_counter
-                            - Identifier:
-                                identifier: status
+                        Identifier:
+                          identifier: status
   - path: src/functions.rs
     items: []
   - path: src/typedefs.rs
