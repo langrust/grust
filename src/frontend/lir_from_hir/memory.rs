@@ -3,10 +3,7 @@ use itertools::Itertools;
 use crate::{
     frontend::lir_from_hir::stream_expression::lir_from_hir as stream_expression_lir_from_hir,
     hir::memory::{Buffer, CalledNode, Memory},
-    lir::{
-        expression::Expression as LIRExpression,
-        item::node_file::state::{init::StateElementInit, step::StateElementStep, StateElement},
-    },
+    lir::item::node_file::state::{init::StateElementInit, step::StateElementStep, StateElement},
 };
 
 impl Memory {
@@ -62,10 +59,10 @@ impl Memory {
                     identifier: id.clone(),
                     node_name: format!("{node_id}_{signal_id}"),
                 });
-                steps.push(StateElementStep {
-                    identifier: id.clone(),
-                    expression: LIRExpression::Identifier { identifier: id },
-                });
+                // steps.push(StateElementStep {
+                //     identifier: id.clone(),
+                //     expression: LIRExpression::Identifier { identifier: id },
+                // });
             });
 
         (elements, inits, steps)
@@ -185,12 +182,7 @@ mod get_state_elements {
                 identifier: format!("my_node_o_x"),
                 node_name: format!("my_node_o"),
             }],
-            vec![StateElementStep {
-                identifier: format!("my_node_o_x"),
-                expression: Expression::Identifier {
-                    identifier: format!("my_node_o_x"),
-                },
-            }],
+            vec![],
         );
         assert_eq!(memory.get_state_elements(), control)
     }
