@@ -145,10 +145,8 @@ items:
                           arguments:
                             - MemoryAccess:
                                 identifier: mem_res
-            - LetTuple:
-                identifiers:
-                  - counter_o_counter
-                  - counter
+            - Let:
+                identifier: counter
                 expression:
                   NodeCall:
                     node_identifier: counter_o_counter
@@ -219,10 +217,6 @@ items:
               expression:
                 Identifier:
                   identifier: user_reset_request
-            - identifier: counter_o_counter
-              expression:
-                Identifier:
-                  identifier: counter_o_counter
           output_expression:
             Identifier:
               identifier: user_reset_request
@@ -302,10 +296,8 @@ items:
                           arguments:
                             - MemoryAccess:
                                 identifier: mem_res
-            - LetTuple:
-                identifiers:
-                  - counter_o_counter
-                  - counter
+            - Let:
+                identifier: counter
                 expression:
                   NodeCall:
                     node_identifier: counter_o_counter
@@ -388,10 +380,6 @@ items:
                           Enumeration:
                             - Button
                             - Released
-            - identifier: counter_o_counter
-              expression:
-                Identifier:
-                  identifier: counter_o_counter
           output_expression:
             Identifier:
               identifier: user_reset_request_state

@@ -13,22 +13,17 @@ impl MainYState {
             counter_o_y: CounterOState::init(),
         }
     }
-    pub fn step(self, input: MainYInput) -> (MainYState, i64) {
+    pub fn step(&mut self, input: MainYInput) -> i64 {
         let half = self.mem_half;
         let x = self.mem_x;
-        let (counter_o_y, y) = self
+        let y = self
             .counter_o_y
             .step(CounterOInput {
                 res: x,
                 tick: half,
             });
-        (
-            MainYState {
-                mem_half: !half,
-                mem_x: (y > 35i64),
-                counter_o_y,
-            },
-            y,
-        )
+        self.mem_half = !half;
+        self.mem_x = (y > 35i64);
+        y
     }
 }

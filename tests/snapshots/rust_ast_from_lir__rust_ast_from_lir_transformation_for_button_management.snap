@@ -58,19 +58,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: CounterOInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: CounterOState
-                        - Identifier:
-                            identifier: i64
+                    Identifier:
+                      identifier: i64
                 body:
                   statements:
                     - Let:
@@ -113,18 +109,20 @@ files:
                                             Identifier:
                                               identifier: input
                                           field: inc
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_o
+                          right:
+                            Identifier:
+                              identifier: o
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: CounterOState
-                                fields:
-                                  - name: mem_o
-                                    expression:
-                                      Identifier:
-                                        identifier: o
-                            - Identifier:
-                                identifier: o
+                        Identifier:
+                          identifier: o
   - path: src/reset_button_user_reset_request.rs
     items:
       - Import:
@@ -234,19 +232,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: ResetButtonUserResetRequestInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: ResetButtonUserResetRequestState
-                        - Identifier:
-                            identifier: bool
+                    Identifier:
+                      identifier: bool
                 body:
                   statements:
                     - Let:
@@ -287,16 +281,10 @@ files:
                                     field: mem_res
                     - Let:
                         pattern:
-                          Tuple:
-                            elements:
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: counter_o_counter
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: counter
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: counter
                         expression:
                           MethodCall:
                             receiver:
@@ -377,38 +365,43 @@ files:
                                               Identifier:
                                                 identifier: input
                                             field: reset_limit_2
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_res
+                          right:
+                            Binary:
+                              left:
+                                FieldAccess:
+                                  expression:
+                                    Identifier:
+                                      identifier: input
+                                  field: button_state
+                              operator: Eq
+                              right:
+                                Literal:
+                                  literal:
+                                    Enumeration:
+                                      - Button
+                                      - Released
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_user_reset_request
+                          right:
+                            Identifier:
+                              identifier: user_reset_request
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: ResetButtonUserResetRequestState
-                                fields:
-                                  - name: mem_res
-                                    expression:
-                                      Binary:
-                                        left:
-                                          FieldAccess:
-                                            expression:
-                                              Identifier:
-                                                identifier: input
-                                            field: button_state
-                                        operator: Eq
-                                        right:
-                                          Literal:
-                                            literal:
-                                              Enumeration:
-                                                - Button
-                                                - Released
-                                  - name: mem_user_reset_request
-                                    expression:
-                                      Identifier:
-                                        identifier: user_reset_request
-                                  - name: counter_o_counter
-                                    expression:
-                                      Identifier:
-                                        identifier: counter_o_counter
-                            - Identifier:
-                                identifier: user_reset_request
+                        Identifier:
+                          identifier: user_reset_request
   - path: src/reset_button_user_reset_request_state.rs
     items:
       - Import:
@@ -516,19 +509,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: ResetButtonUserResetRequestStateInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: ResetButtonUserResetRequestStateState
-                        - Identifier:
-                            identifier: ResetState
+                    Identifier:
+                      identifier: ResetState
                 body:
                   statements:
                     - Let:
@@ -569,16 +558,10 @@ files:
                                     field: mem_res
                     - Let:
                         pattern:
-                          Tuple:
-                            elements:
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: counter_o_counter
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: counter
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: counter
                         expression:
                           MethodCall:
                             receiver:
@@ -668,34 +651,32 @@ files:
                                                 Enumeration:
                                                   - ResetState
                                                   - Confirmed
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_res
+                          right:
+                            Binary:
+                              left:
+                                FieldAccess:
+                                  expression:
+                                    Identifier:
+                                      identifier: input
+                                  field: button_state
+                              operator: Eq
+                              right:
+                                Literal:
+                                  literal:
+                                    Enumeration:
+                                      - Button
+                                      - Released
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: ResetButtonUserResetRequestStateState
-                                fields:
-                                  - name: mem_res
-                                    expression:
-                                      Binary:
-                                        left:
-                                          FieldAccess:
-                                            expression:
-                                              Identifier:
-                                                identifier: input
-                                            field: button_state
-                                        operator: Eq
-                                        right:
-                                          Literal:
-                                            literal:
-                                              Enumeration:
-                                                - Button
-                                                - Released
-                                  - name: counter_o_counter
-                                    expression:
-                                      Identifier:
-                                        identifier: counter_o_counter
-                            - Identifier:
-                                identifier: user_reset_request_state
+                        Identifier:
+                          identifier: user_reset_request_state
   - path: src/functions.rs
     items: []
   - path: src/typedefs.rs

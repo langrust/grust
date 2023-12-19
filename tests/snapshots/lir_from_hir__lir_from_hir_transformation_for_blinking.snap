@@ -127,10 +127,8 @@ items:
                   Literal:
                     literal:
                       Boolean: true
-            - LetTuple:
-                identifiers:
-                  - counter_o_counter
-                  - counter
+            - Let:
+                identifier: counter
                 expression:
                   NodeCall:
                     node_identifier: counter_o_counter
@@ -238,10 +236,6 @@ items:
                                       Integer: 1
                           - InputAccess:
                               identifier: tick_number
-            - identifier: counter_o_counter
-              expression:
-                Identifier:
-                  identifier: counter_o_counter
           output_expression:
             Identifier:
               identifier: status

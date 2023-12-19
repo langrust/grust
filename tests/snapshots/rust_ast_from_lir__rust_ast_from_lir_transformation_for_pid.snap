@@ -71,19 +71,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: IntegrateIInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: IntegrateIState
-                        - Identifier:
-                            identifier: f64
+                    Identifier:
+                      identifier: f64
                 body:
                   statements:
                     - Let:
@@ -142,18 +138,20 @@ files:
                                           field: dt
                               - Identifier:
                                   identifier: MAX_INTEGRALE
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_prev_i
+                          right:
+                            Identifier:
+                              identifier: i
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: IntegrateIState
-                                fields:
-                                  - name: mem_prev_i
-                                    expression:
-                                      Identifier:
-                                        identifier: i
-                            - Identifier:
-                                identifier: i
+                        Identifier:
+                          identifier: i
   - path: src/derive_d.rs
     items:
       - Structure:
@@ -208,19 +206,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: DeriveDInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: DeriveDState
-                        - Identifier:
-                            identifier: f64
+                    Identifier:
+                      identifier: f64
                 body:
                   statements:
                     - Let:
@@ -265,21 +259,23 @@ files:
                                   Identifier:
                                     identifier: input
                                 field: dt
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_prev_x
+                          right:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: input
+                              field: x
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: DeriveDState
-                                fields:
-                                  - name: mem_prev_x
-                                    expression:
-                                      FieldAccess:
-                                        expression:
-                                          Identifier:
-                                            identifier: input
-                                        field: x
-                            - Identifier:
-                                identifier: d
+                        Identifier:
+                          identifier: d
   - path: src/pid_u.rs
     items:
       - Import:
@@ -386,19 +382,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: PidUInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: PidUState
-                        - Identifier:
-                            identifier: f64
+                    Identifier:
+                      identifier: f64
                 body:
                   statements:
                     - Let:
@@ -424,16 +416,10 @@ files:
                                 field: v
                     - Let:
                         pattern:
-                          Tuple:
-                            elements:
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: derive_d_e_d
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: e_d
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: e_d
                         expression:
                           MethodCall:
                             receiver:
@@ -460,16 +446,10 @@ files:
                                           field: dt
                     - Let:
                         pattern:
-                          Tuple:
-                            elements:
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: integrate_i_e_i
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: e_i
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: e_i
                         expression:
                           MethodCall:
                             receiver:
@@ -589,21 +569,8 @@ files:
                                           Identifier:
                                             identifier: e_d
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: PidUState
-                                fields:
-                                  - name: derive_d_e_d
-                                    expression:
-                                      Identifier:
-                                        identifier: derive_d_e_d
-                                  - name: integrate_i_e_i
-                                    expression:
-                                      Identifier:
-                                        identifier: integrate_i_e_i
-                            - Identifier:
-                                identifier: u
+                        Identifier:
+                          identifier: u
   - path: src/functions.rs
     items:
       - Function:

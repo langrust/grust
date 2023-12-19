@@ -58,19 +58,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: CounterOInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: CounterOState
-                        - Identifier:
-                            identifier: i64
+                    Identifier:
+                      identifier: i64
                 body:
                   statements:
                     - Let:
@@ -136,18 +132,20 @@ files:
                                       right:
                                         Identifier:
                                           identifier: inc
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_o
+                          right:
+                            Identifier:
+                              identifier: o
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: CounterOState
-                                fields:
-                                  - name: mem_o
-                                    expression:
-                                      Identifier:
-                                        identifier: o
-                            - Identifier:
-                                identifier: o
+                        Identifier:
+                          identifier: o
   - path: src/main_y.rs
     items:
       - Import:
@@ -224,19 +222,15 @@ files:
                   public_visibility: true
                   name: step
                   receiver:
-                    reference: false
-                    mutable: false
+                    reference: true
+                    mutable: true
                   inputs:
                     - - input
                       - Identifier:
                           identifier: MainYInput
                   output:
-                    Tuple:
-                      elements:
-                        - Identifier:
-                            identifier: MainYState
-                        - Identifier:
-                            identifier: i64
+                    Identifier:
+                      identifier: i64
                 body:
                   statements:
                     - Let:
@@ -265,16 +259,10 @@ files:
                             field: mem_x
                     - Let:
                         pattern:
-                          Tuple:
-                            elements:
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: counter_o_y
-                              - Identifier:
-                                  reference: false
-                                  mutable: false
-                                  identifier: y
+                          Identifier:
+                            reference: false
+                            mutable: false
+                            identifier: y
                         expression:
                           MethodCall:
                             receiver:
@@ -296,39 +284,44 @@ files:
                                       expression:
                                         Identifier:
                                           identifier: half
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_half
+                          right:
+                            Unary:
+                              operator: Not
+                              expression:
+                                Identifier:
+                                  identifier: half
+                    - ExpressionIntern:
+                        Assignement:
+                          left:
+                            FieldAccess:
+                              expression:
+                                Identifier:
+                                  identifier: self
+                              field: mem_x
+                          right:
+                            Unary:
+                              operator: Brackets
+                              expression:
+                                Binary:
+                                  left:
+                                    Identifier:
+                                      identifier: y
+                                  operator: Grt
+                                  right:
+                                    Literal:
+                                      literal:
+                                        Integer: 35
                     - ExpressionLast:
-                        Tuple:
-                          elements:
-                            - Structure:
-                                name: MainYState
-                                fields:
-                                  - name: mem_half
-                                    expression:
-                                      Unary:
-                                        operator: Not
-                                        expression:
-                                          Identifier:
-                                            identifier: half
-                                  - name: mem_x
-                                    expression:
-                                      Unary:
-                                        operator: Brackets
-                                        expression:
-                                          Binary:
-                                            left:
-                                              Identifier:
-                                                identifier: y
-                                            operator: Grt
-                                            right:
-                                              Literal:
-                                                literal:
-                                                  Integer: 35
-                                  - name: counter_o_y
-                                    expression:
-                                      Identifier:
-                                        identifier: counter_o_y
-                            - Identifier:
-                                identifier: y
+                        Identifier:
+                          identifier: y
   - path: src/functions.rs
     items: []
   - path: src/typedefs.rs
