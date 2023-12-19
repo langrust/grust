@@ -19,23 +19,6 @@ pub fn rust_ast_from_lir(statement: Statement) -> RustASTStatement {
             },
             expression: expression_rust_ast_from_lir(expression),
         }),
-        Statement::LetTuple {
-            identifiers,
-            expression,
-        } => {
-            let elements = identifiers
-                .into_iter()
-                .map(|identifier| Pattern::Identifier {
-                    reference: false,
-                    mutable: false,
-                    identifier,
-                })
-                .collect();
-            RustASTStatement::Let(Let {
-                pattern: Pattern::Tuple { elements },
-                expression: expression_rust_ast_from_lir(expression),
-            })
-        }
         Statement::ExpressionLast { expression } => {
             RustASTStatement::ExpressionLast(expression_rust_ast_from_lir(expression))
         }
@@ -75,9 +58,9 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_let_tuple_statement_from_lir_let_tuple_statement() {
-        let statement = Statement::LetTuple {
-            identifiers: vec![String::from("o"), String::from("new_node_state")],
+    fn should_create_rust_ast_let_statement_from_lir_let_statement_with_node_call() {
+        let statement = Statement::Let {
+            identifier: String::from("o"),
             expression: Expression::NodeCall {
                 node_identifier: String::from("node_state"),
                 input_name: String::from("NodeInput"),
@@ -90,19 +73,10 @@ mod rust_ast_from_lir {
             },
         };
         let control = RustASTStatement::Let(Let {
-            pattern: Pattern::Tuple {
-                elements: vec![
-                    Pattern::Identifier {
-                        reference: false,
-                        mutable: false,
-                        identifier: String::from("o"),
-                    },
-                    Pattern::Identifier {
-                        reference: false,
-                        mutable: false,
-                        identifier: String::from("new_node_state"),
-                    },
-                ],
+            pattern: Pattern::Identifier {
+                reference: false,
+                mutable: false,
+                identifier: String::from("o"),
             },
             expression: RustASTExpression::MethodCall {
                 receiver: Box::new(RustASTExpression::FieldAccess {

@@ -254,8 +254,8 @@ mod lir_from_hir {
                                 identifier: format!("mem_i"),
                             },
                         },
-                        Statement::LetTuple {
-                            identifiers: vec![format!("other_node_o_o"), format!("o")],
+                        Statement::Let {
+                            identifier: format!("o"),
                             expression: Expression::NodeCall {
                                 node_identifier: format!("other_node_o_o"),
                                 input_name: format!("OtherNodeOInput"),
@@ -276,30 +276,22 @@ mod lir_from_hir {
                             },
                         },
                     ],
-                    state_elements_step: vec![
-                        StateElementStep {
-                            identifier: format!("mem_i"),
-                            expression: Expression::FunctionCall {
-                                function: Box::new(Expression::Identifier {
-                                    identifier: format!(" + "),
-                                }),
-                                arguments: vec![
-                                    Expression::Identifier {
-                                        identifier: format!("i"),
-                                    },
-                                    Expression::Literal {
-                                        literal: Constant::Integer(1),
-                                    },
-                                ],
-                            },
+                    state_elements_step: vec![StateElementStep {
+                        identifier: format!("mem_i"),
+                        expression: Expression::FunctionCall {
+                            function: Box::new(Expression::Identifier {
+                                identifier: format!(" + "),
+                            }),
+                            arguments: vec![
+                                Expression::Identifier {
+                                    identifier: format!("i"),
+                                },
+                                Expression::Literal {
+                                    literal: Constant::Integer(1),
+                                },
+                            ],
                         },
-                        StateElementStep {
-                            identifier: format!("other_node_o_o"),
-                            expression: Expression::Identifier {
-                                identifier: format!("other_node_o_o"),
-                            },
-                        },
-                    ],
+                    }],
                     output_expression: Expression::Identifier {
                         identifier: format!("o"),
                     },
