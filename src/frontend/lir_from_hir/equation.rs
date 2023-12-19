@@ -1,24 +1,13 @@
-use crate::{
-    hir::{equation::Equation, stream_expression::StreamExpression},
-    lir::statement::Statement,
-};
+use crate::{hir::equation::Equation, lir::statement::Statement};
 
 use super::stream_expression::lir_from_hir as stream_expression_lir_from_hir;
 
 /// Transform HIR equation into LIR statement.
 pub fn lir_from_hir(equation: Equation) -> Statement {
     let Equation { id, expression, .. } = equation;
-    match &expression {
-        StreamExpression::UnitaryNodeApplication {
-            id: node_state_id, ..
-        } => Statement::LetTuple {
-            identifiers: vec![node_state_id.clone().unwrap(), id],
-            expression: stream_expression_lir_from_hir(expression),
-        },
-        _ => Statement::Let {
-            identifier: id,
-            expression: stream_expression_lir_from_hir(expression),
-        },
+    Statement::Let {
+        identifier: id,
+        expression: stream_expression_lir_from_hir(expression),
     }
 }
 
@@ -96,8 +85,8 @@ mod lir_from_hir {
             signal_type: Type::Integer,
             location: Location::default(),
         };
-        let control = Statement::LetTuple {
-            identifiers: vec![format!("my_node_o_y"), format!("y")],
+        let control = Statement::Let {
+            identifier: format!("y"),
             expression: Expression::NodeCall {
                 node_identifier: format!("my_node_o_y"),
                 input_name: format!("MyNodeOInput"),
