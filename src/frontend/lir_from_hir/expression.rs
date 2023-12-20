@@ -105,7 +105,15 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
                 (Pattern::None { location }, None, lir_from_hir(*default)),
             ],
         },
-        _ => unreachable!(),
+        Expression::FieldAccess {
+            expression, field, ..
+        } => LIRExpression::FieldAccess {
+            expression: Box::new(lir_from_hir(*expression)),
+            field,
+        },
+        Expression::TypedAbstraction { .. } | Expression::Abstraction { .. } => {
+            unreachable!()
+        }
     }
 }
 
@@ -621,6 +629,27 @@ mod lir_from_hir {
                     },
                 ],
             }),
+        };
+        assert_eq!(lir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_ast_field_access_into_lir_field_access() {
+        let expression = ASTExpression::FieldAccess {
+            expression: Box::new(ASTExpression::Call {
+                id: format!("p"),
+                typing: Some(Type::Structure("Point".to_string())),
+                location: Location::default(),
+            }),
+            field: format!("x"),
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let control = Expression::FieldAccess {
+            expression: Box::new(Expression::Identifier {
+                identifier: format!("p"),
+            }),
+            field: format!("x"),
         };
         assert_eq!(lir_from_hir(expression), control)
     }
