@@ -3,6 +3,39 @@ source: tests/lir_from_hir.rs
 expression: project
 ---
 items:
+  - Function:
+      name: xor
+      inputs:
+        - - t
+          - Boolean
+        - - b
+          - Boolean
+      output: Boolean
+      body:
+        statements:
+          - ExpressionLast:
+              expression:
+                IfThenElse:
+                  condition:
+                    Identifier:
+                      identifier: t
+                  then_branch:
+                    statements:
+                      - ExpressionLast:
+                          expression:
+                            FunctionCall:
+                              function:
+                                Identifier:
+                                  identifier: "!"
+                              arguments:
+                                - Identifier:
+                                    identifier: b
+                  else_branch:
+                    statements:
+                      - ExpressionLast:
+                          expression:
+                            Identifier:
+                              identifier: b
   - NodeFile:
       name: counter_o
       imports: []
@@ -95,6 +128,7 @@ items:
       name: blinking_status
       imports:
         - NodeFile: counter_o
+        - Function: xor
       input:
         node_name: blinking_status
         elements:
@@ -145,35 +179,8 @@ items:
                 expression:
                   FunctionCall:
                     function:
-                      Lambda:
-                        inputs:
-                          - - t
-                            - Boolean
-                          - - b
-                            - Boolean
-                        output: Boolean
-                        body:
-                          IfThenElse:
-                            condition:
-                              Identifier:
-                                identifier: t
-                            then_branch:
-                              statements:
-                                - ExpressionLast:
-                                    expression:
-                                      FunctionCall:
-                                        function:
-                                          Identifier:
-                                            identifier: "!"
-                                        arguments:
-                                          - Identifier:
-                                              identifier: b
-                            else_branch:
-                              statements:
-                                - ExpressionLast:
-                                    expression:
-                                      Identifier:
-                                        identifier: b
+                      Identifier:
+                        identifier: xor
                     arguments:
                       - Identifier:
                           identifier: res

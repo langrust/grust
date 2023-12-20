@@ -1099,7 +1099,7 @@ mod langrust_ast_constructs {
         let file_id3 = files.add("brackets_test.gr", "(3)");
         let file_id4 = files.add("unary_test.gr", "-3");
         let file_id5 = files.add("binary_test.gr", "4*5-3");
-        let file_id6 = files.add("function_application_test.gr", "(x*y).map(sqrt)");
+        let file_id6 = files.add("function_application_test.gr", "sqrt(x*y)");
         let file_id7 = files.add("print_test.gr", "print(\"Hello world\")");
         let file_id8 = files.add(
             "node_application_test.gr",

@@ -5,7 +5,7 @@ enum GainPID {
 
 node integrate(x: float, dt: float) {
     prev_i: float = 0.0 fby i;
-    out i: float = (prev_i + x * dt, MAX_INTEGRALE).map(min);
+    out i: float = min(prev_i + x * dt, MAX_INTEGRALE);
     MAX_INTEGRALE: float = 1000.0;
 }
 

@@ -404,9 +404,13 @@ streamTerm: StreamExpression = {
         }
     },
     // catches function applications as stream expressions
-    <start:@L> "(" <v_expr: list<streamExpression>> ").map" "(" <f: expression> ")" <end:@R> => {
+    <start:@L> <fun_name: ID> <end_fun:@R> "(" <v_expr: list<streamExpression>> ")" <end:@R> => {
         StreamExpression::FunctionApplication {
-            function_expression: f,
+            function_expression: Expression::Call {
+                id: fun_name,
+                typing: None,
+                location: Location{ file_id, range: start..end_fun }
+            },
             inputs: v_expr,
             typing: None,
             location: Location{ file_id, range: start..end },
