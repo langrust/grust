@@ -5,8 +5,8 @@ use crate::error::{Error, TerminationError};
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 impl StreamExpression {
-    /// Compute dependencies of a map application stream expression.
-    pub fn compute_map_application_dependencies(
+    /// Compute dependencies of a function application stream expression.
+    pub fn compute_function_application_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -14,8 +14,8 @@ impl StreamExpression {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
-            // dependencies of map application are dependencies of its inputs
-            StreamExpression::MapApplication {
+            // dependencies of function application are dependencies of its inputs
+            StreamExpression::FunctionApplication {
                 inputs,
                 dependencies,
                 ..
@@ -51,7 +51,7 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod compute_map_application_dependencies {
+mod compute_function_application_dependencies {
     use crate::ast::expression::Expression;
     use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
@@ -60,13 +60,13 @@ mod compute_map_application_dependencies {
     use std::collections::HashMap;
 
     #[test]
-    fn should_compute_dependencies_of_map_application_inputs_with_duplicates() {
+    fn should_compute_dependencies_of_function_application_inputs_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
 
-        let stream_expression = StreamExpression::MapApplication {
+        let stream_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -87,7 +87,7 @@ mod compute_map_application_dependencies {
         };
 
         stream_expression
-            .compute_map_application_dependencies(
+            .compute_function_application_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,

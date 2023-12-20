@@ -18,7 +18,7 @@ nodes:
           id: o
           signal_type: Integer
           expression:
-            MapApplication:
+            FunctionApplication:
               function_expression:
                 Call:
                   id: if_then_else
@@ -39,7 +39,7 @@ nodes:
                       Integer: 0
                     typing: Integer
                     location: ~
-                - MapApplication:
+                - FunctionApplication:
                     function_expression:
                       Call:
                         id: " + "
@@ -50,7 +50,7 @@ nodes:
                             - Integer
                         location: ~
                     inputs:
-                      - MapApplication:
+                      - FunctionApplication:
                           function_expression:
                             Call:
                               id: (_)
@@ -86,7 +86,7 @@ nodes:
           id: inc
           signal_type: Integer
           expression:
-            MapApplication:
+            FunctionApplication:
               function_expression:
                 Call:
                   id: if_then_else
@@ -133,7 +133,7 @@ component:
                   constant:
                     Boolean: false
                   expression:
-                    MapApplication:
+                    FunctionApplication:
                       function_expression:
                         Call:
                           id: (_)
@@ -143,7 +143,7 @@ component:
                               - Boolean
                           location: ~
                       inputs:
-                        - MapApplication:
+                        - FunctionApplication:
                             function_expression:
                               Call:
                                 id: " > "
@@ -186,7 +186,7 @@ component:
             constant:
               Boolean: true
             expression:
-              MapApplication:
+              FunctionApplication:
                 function_expression:
                   Call:
                     id: "!"

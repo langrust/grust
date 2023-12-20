@@ -172,7 +172,7 @@ mod compute_match_dependencies {
                     },
                     None,
                     vec![],
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
@@ -295,7 +295,7 @@ mod compute_match_dependencies {
                     },
                     None,
                     vec![],
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(

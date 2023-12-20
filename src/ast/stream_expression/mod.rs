@@ -9,7 +9,7 @@ use crate::error::{Error, TerminationError};
 mod array;
 mod constant;
 mod followed_by;
-mod map_application;
+mod function_application;
 mod r#match;
 mod node_application;
 mod signal_call;
@@ -49,7 +49,7 @@ pub enum StreamExpression {
         location: Location,
     },
     /// Map application stream expression.
-    MapApplication {
+    FunctionApplication {
         /// The expression applied.
         function_expression: Expression,
         /// The inputs to the expression.
@@ -160,7 +160,7 @@ impl StreamExpression {
                 user_types_context,
                 errors,
             ),
-            StreamExpression::MapApplication { .. } => self.typing_map_application(
+            StreamExpression::FunctionApplication { .. } => self.typing_function_application(
                 nodes_context,
                 signals_context,
                 global_context,
@@ -225,7 +225,7 @@ impl StreamExpression {
             StreamExpression::Constant { typing, .. } => typing.as_ref(),
             StreamExpression::SignalCall { typing, .. } => typing.as_ref(),
             StreamExpression::FollowedBy { typing, .. } => typing.as_ref(),
-            StreamExpression::MapApplication { typing, .. } => typing.as_ref(),
+            StreamExpression::FunctionApplication { typing, .. } => typing.as_ref(),
             StreamExpression::NodeApplication { typing, .. } => typing.as_ref(),
             StreamExpression::Structure { typing, .. } => typing.as_ref(),
             StreamExpression::Array { typing, .. } => typing.as_ref(),
@@ -254,7 +254,7 @@ impl StreamExpression {
             StreamExpression::Constant { typing, .. } => typing,
             StreamExpression::SignalCall { typing, .. } => typing,
             StreamExpression::FollowedBy { typing, .. } => typing,
-            StreamExpression::MapApplication { typing, .. } => typing,
+            StreamExpression::FunctionApplication { typing, .. } => typing,
             StreamExpression::NodeApplication { typing, .. } => typing,
             StreamExpression::Structure { typing, .. } => typing,
             StreamExpression::Array { typing, .. } => typing,
@@ -675,7 +675,7 @@ mod typing {
             .unwrap_err();
     }
     #[test]
-    fn should_type_map_application_stream_expression() {
+    fn should_type_function_application_stream_expression() {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
@@ -687,7 +687,7 @@ mod typing {
         );
         let user_types_context = HashMap::new();
 
-        let mut stream_expression = StreamExpression::MapApplication {
+        let mut stream_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: None,
@@ -701,7 +701,7 @@ mod typing {
             typing: None,
             location: Location::default(),
         };
-        let control = StreamExpression::MapApplication {
+        let control = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -730,7 +730,7 @@ mod typing {
     }
 
     #[test]
-    fn should_raise_error_for_incompatible_map_application() {
+    fn should_raise_error_for_incompatible_function_application() {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
@@ -742,7 +742,7 @@ mod typing {
         );
         let user_types_context = HashMap::new();
 
-        let mut stream_expression = StreamExpression::MapApplication {
+        let mut stream_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: None,
@@ -952,7 +952,7 @@ mod typing {
                         location: Location::default(),
                     },
                     None,
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: None,
@@ -1027,7 +1027,7 @@ mod typing {
                         location: Location::default(),
                     },
                     None,
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
@@ -1078,7 +1078,7 @@ mod typing {
 
         let mut stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Integer(0),
-            expression: Box::new(StreamExpression::MapApplication {
+            expression: Box::new(StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("add_one"),
                     typing: None,
@@ -1097,7 +1097,7 @@ mod typing {
         };
         let control = StreamExpression::FollowedBy {
             constant: Constant::Integer(0),
-            expression: Box::new(StreamExpression::MapApplication {
+            expression: Box::new(StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("add_one"),
                     typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -1143,7 +1143,7 @@ mod typing {
 
         let mut stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Float(0.0),
-            expression: Box::new(StreamExpression::MapApplication {
+            expression: Box::new(StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("add_one"),
                     typing: None,
@@ -1200,7 +1200,7 @@ mod typing {
         let mut stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: None,
@@ -1227,7 +1227,7 @@ mod typing {
         let control = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -1293,7 +1293,7 @@ mod typing {
         let mut stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_component"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: None,
@@ -1357,7 +1357,7 @@ mod typing {
         let mut stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: None,

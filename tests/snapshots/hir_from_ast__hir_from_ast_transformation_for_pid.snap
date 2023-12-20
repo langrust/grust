@@ -109,7 +109,7 @@ nodes:
         id: i
         signal_type: Float
         expression:
-          MapApplication:
+          FunctionApplication:
             function_expression:
               Call:
                 id: min
@@ -120,7 +120,7 @@ nodes:
                     - Float
                 location: ~
             inputs:
-              - MapApplication:
+              - FunctionApplication:
                   function_expression:
                     Call:
                       id: " + "
@@ -138,7 +138,7 @@ nodes:
                         typing: Float
                         location: ~
                         dependencies: ~
-                    - MapApplication:
+                    - FunctionApplication:
                         function_expression:
                           Call:
                             id: " * "
@@ -216,7 +216,7 @@ nodes:
         id: d
         signal_type: Float
         expression:
-          MapApplication:
+          FunctionApplication:
             function_expression:
               Call:
                 id: " / "
@@ -227,7 +227,7 @@ nodes:
                     - Float
                 location: ~
             inputs:
-              - MapApplication:
+              - FunctionApplication:
                   function_expression:
                     Call:
                       id: (_)
@@ -237,7 +237,7 @@ nodes:
                           - Float
                       location: ~
                   inputs:
-                    - MapApplication:
+                    - FunctionApplication:
                         function_expression:
                           Call:
                             id: " - "
@@ -318,7 +318,7 @@ component:
       id: e
       signal_type: Float
       expression:
-        MapApplication:
+        FunctionApplication:
           function_expression:
             Call:
               id: " - "
@@ -470,7 +470,7 @@ component:
                   location: ~
               - ~
               - []
-              - MapApplication:
+              - FunctionApplication:
                   function_expression:
                     Call:
                       id: " + "
@@ -481,7 +481,7 @@ component:
                           - Float
                       location: ~
                   inputs:
-                    - MapApplication:
+                    - FunctionApplication:
                         function_expression:
                           Call:
                             id: " + "
@@ -492,7 +492,7 @@ component:
                                 - Float
                             location: ~
                         inputs:
-                          - MapApplication:
+                          - FunctionApplication:
                               function_expression:
                                 Call:
                                   id: " * "
@@ -520,7 +520,7 @@ component:
                               typing: Float
                               location: ~
                               dependencies: ~
-                          - MapApplication:
+                          - FunctionApplication:
                               function_expression:
                                 Call:
                                   id: " * "
@@ -551,7 +551,7 @@ component:
                         typing: Float
                         location: ~
                         dependencies: ~
-                    - MapApplication:
+                    - FunctionApplication:
                         function_expression:
                           Call:
                             id: " * "

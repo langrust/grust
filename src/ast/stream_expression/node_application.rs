@@ -123,7 +123,7 @@ mod typing_node_application {
         let mut stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: None,
@@ -150,7 +150,7 @@ mod typing_node_application {
         let control = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -216,7 +216,7 @@ mod typing_node_application {
         let mut stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_component"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: None,
@@ -280,7 +280,7 @@ mod typing_node_application {
         let mut stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: None,

@@ -41,7 +41,7 @@ pub enum StreamExpression {
         dependencies: Dependencies,
     },
     /// Map application stream expression.
-    MapApplication {
+    FunctionApplication {
         /// The expression applied.
         function_expression: Expression,
         /// The inputs to the expression.
@@ -173,7 +173,7 @@ impl StreamExpression {
             StreamExpression::Constant { typing, .. }
             | StreamExpression::SignalCall { typing, .. }
             | StreamExpression::FollowedBy { typing, .. }
-            | StreamExpression::MapApplication { typing, .. }
+            | StreamExpression::FunctionApplication { typing, .. }
             | StreamExpression::NodeApplication { typing, .. }
             | StreamExpression::UnitaryNodeApplication { typing, .. }
             | StreamExpression::Structure { typing, .. }
@@ -205,7 +205,7 @@ impl StreamExpression {
             StreamExpression::Constant { location, .. }
             | StreamExpression::SignalCall { location, .. }
             | StreamExpression::FollowedBy { location, .. }
-            | StreamExpression::MapApplication { location, .. }
+            | StreamExpression::FunctionApplication { location, .. }
             | StreamExpression::NodeApplication { location, .. }
             | StreamExpression::UnitaryNodeApplication { location, .. }
             | StreamExpression::Structure { location, .. }
@@ -237,7 +237,7 @@ impl StreamExpression {
             StreamExpression::Constant { dependencies, .. }
             | StreamExpression::SignalCall { dependencies, .. }
             | StreamExpression::FollowedBy { dependencies, .. }
-            | StreamExpression::MapApplication { dependencies, .. }
+            | StreamExpression::FunctionApplication { dependencies, .. }
             | StreamExpression::NodeApplication { dependencies, .. }
             | StreamExpression::UnitaryNodeApplication { dependencies, .. }
             | StreamExpression::Structure { dependencies, .. }

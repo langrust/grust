@@ -182,7 +182,7 @@ mod typing_match {
                         location: Location::default(),
                     },
                     None,
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: None,
@@ -257,7 +257,7 @@ mod typing_match {
                         location: Location::default(),
                     },
                     None,
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(

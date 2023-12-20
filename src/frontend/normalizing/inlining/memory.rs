@@ -326,7 +326,7 @@ mod replace_by_context {
                 Buffer {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("+"),
                             typing: Some(Type::Abstract(
@@ -377,7 +377,7 @@ mod replace_by_context {
             ),
             (
                 String::from("y"),
-                Union::I2(StreamExpression::MapApplication {
+                Union::I2(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -414,7 +414,7 @@ mod replace_by_context {
                 Buffer {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("+"),
                             typing: Some(Type::Abstract(
@@ -433,7 +433,7 @@ mod replace_by_context {
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                             },
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("/2"),
                                     typing: Some(Type::Abstract(
@@ -633,7 +633,7 @@ mod combine {
                 Buffer {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("+"),
                             typing: Some(Type::Abstract(
@@ -652,7 +652,7 @@ mod combine {
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                             },
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("/2"),
                                     typing: Some(Type::Abstract(
@@ -692,7 +692,7 @@ mod combine {
                 Buffer {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("+"),
                             typing: Some(Type::Abstract(
@@ -741,7 +741,7 @@ mod combine {
                     Buffer {
                         typing: Type::Integer,
                         initial_value: Constant::Integer(0),
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
@@ -760,7 +760,7 @@ mod combine {
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                                 },
-                                StreamExpression::MapApplication {
+                                StreamExpression::FunctionApplication {
                                     function_expression: Expression::Call {
                                         id: String::from("/2"),
                                         typing: Some(Type::Abstract(
@@ -800,7 +800,7 @@ mod combine {
                     Buffer {
                         typing: Type::Integer,
                         initial_value: Constant::Integer(0),
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(

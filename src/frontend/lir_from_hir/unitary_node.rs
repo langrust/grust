@@ -114,7 +114,7 @@ mod lir_from_hir {
                 Buffer {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: ASTExpression::Call {
                             id: format!(" + "),
                             typing: Some(Type::Abstract(

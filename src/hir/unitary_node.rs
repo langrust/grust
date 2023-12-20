@@ -70,7 +70,7 @@ mod get_signals {
             scope: Scope::Output,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(

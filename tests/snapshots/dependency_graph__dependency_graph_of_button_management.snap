@@ -30,7 +30,7 @@ nodes:
         id: o
         signal_type: Integer
         expression:
-          MapApplication:
+          FunctionApplication:
             function_expression:
               Call:
                 id: if_then_else
@@ -57,7 +57,7 @@ nodes:
                   typing: Integer
                   location: ~
                   dependencies: []
-              - MapApplication:
+              - FunctionApplication:
                   function_expression:
                     Call:
                       id: " + "
@@ -68,7 +68,7 @@ nodes:
                           - Integer
                       location: ~
                   inputs:
-                    - MapApplication:
+                    - FunctionApplication:
                         function_expression:
                           Call:
                             id: (_)
@@ -203,7 +203,7 @@ nodes:
         id: res
         signal_type: Boolean
         expression:
-          MapApplication:
+          FunctionApplication:
             function_expression:
               Call:
                 id: " && "
@@ -214,7 +214,7 @@ nodes:
                     - Boolean
                 location: ~
             inputs:
-              - MapApplication:
+              - FunctionApplication:
                   function_expression:
                     Call:
                       id: (_)
@@ -224,7 +224,7 @@ nodes:
                           - Boolean
                       location: ~
                   inputs:
-                    - MapApplication:
+                    - FunctionApplication:
                         function_expression:
                           Call:
                             id: " == "
@@ -264,7 +264,7 @@ nodes:
                   dependencies:
                     - - button_state
                       - 0
-              - MapApplication:
+              - FunctionApplication:
                   function_expression:
                     Call:
                       id: (_)
@@ -278,7 +278,7 @@ nodes:
                         constant:
                           Boolean: true
                         expression:
-                          MapApplication:
+                          FunctionApplication:
                             function_expression:
                               Call:
                                 id: " == "
@@ -383,7 +383,7 @@ nodes:
                     location: ~
                 - ~
                 - []
-                - MapApplication:
+                - FunctionApplication:
                     function_expression:
                       Call:
                         id: " >= "
@@ -403,7 +403,7 @@ nodes:
                           dependencies:
                             - - counter
                               - 0
-                      - MapApplication:
+                      - FunctionApplication:
                           function_expression:
                             Call:
                               id: " + "
@@ -506,7 +506,7 @@ nodes:
                     location: ~
                 - ~
                 - []
-                - MapApplication:
+                - FunctionApplication:
                     function_expression:
                       Call:
                         id: if_then_else
@@ -518,7 +518,7 @@ nodes:
                             - Enumeration: ResetState
                         location: ~
                     inputs:
-                      - MapApplication:
+                      - FunctionApplication:
                           function_expression:
                             Call:
                               id: " >= "

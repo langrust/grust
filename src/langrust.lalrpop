@@ -392,7 +392,7 @@ streamTerm: StreamExpression = {
     },
     // catches brackets as stream expressions
     <start:@L> "(" <e: streamExpression> ")" <end:@R> => {
-        StreamExpression::MapApplication {
+        StreamExpression::FunctionApplication {
             function_expression: Expression::Call{
                 id: UnaryOperator::Brackets.to_string(),
                 typing: None,
@@ -403,9 +403,9 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches map applications as stream expressions
+    // catches function applications as stream expressions
     <start:@L> "(" <v_expr: list<streamExpression>> ").map" "(" <f: expression> ")" <end:@R> => {
-        StreamExpression::MapApplication {
+        StreamExpression::FunctionApplication {
             function_expression: f,
             inputs: v_expr,
             typing: None,
@@ -434,7 +434,7 @@ streamTerm: StreamExpression = {
     },
     // catches print applications as stream expressions
     <start:@L> "print" "(" <e: streamExpression> ")" <end:@R> => {
-        StreamExpression::MapApplication {
+        StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: OtherOperator::Print.to_string(),
                 typing: None,
@@ -475,7 +475,7 @@ streamTerm: StreamExpression = {
 /// Catches unary operations as stream expression first or a term
 unaryStreamExpression: StreamExpression = {
     <start:@L> <start_op:@L> <op: unaryOperator> <end_op:@R> <e: streamTerm> <end:@R> => {
-        StreamExpression::MapApplication {
+        StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: op.to_string(),
                 typing: None,
@@ -493,7 +493,7 @@ unaryStreamExpression: StreamExpression = {
 /// of form `E Op E`, otherwise parses a stream expression of form `E`.
 auxBinaryStreamExpression<Op,E>: StreamExpression = {
     <start:@L> <e1: auxBinaryStreamExpression<Op,E>> <start_op:@L> <op: Op> <end_op:@R> <e2: E> <end:@R> => {
-        StreamExpression::MapApplication{
+        StreamExpression::FunctionApplication{
             function_expression: Expression::Call{
                 id: op.to_string(),
                 typing: None,
@@ -526,7 +526,7 @@ pub streamExpression: StreamExpression = {
     // catches if_then_else as stream expressions
     <start:@L> "if" <e1: streamExpression> "then" <e2: streamExpression>
     "else" <e3: streamExpression> <end:@R> => {
-        StreamExpression::MapApplication {
+        StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
                 typing: None,

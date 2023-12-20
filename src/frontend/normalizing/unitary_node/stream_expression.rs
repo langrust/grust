@@ -30,7 +30,7 @@ impl StreamExpression {
             StreamExpression::FollowedBy { expression, .. } => {
                 expression.change_node_application_into_unitary_node_application(used_inputs)
             }
-            StreamExpression::MapApplication { inputs, .. } => {
+            StreamExpression::FunctionApplication { inputs, .. } => {
                 inputs.iter_mut().for_each(|expression| {
                     expression.change_node_application_into_unitary_node_application(used_inputs)
                 })
@@ -137,7 +137,7 @@ mod change_node_application_into_unitary_node_application {
         let mut expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("-1"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -180,7 +180,7 @@ mod change_node_application_into_unitary_node_application {
             inputs: vec![
                 (
                     format!("x"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -242,7 +242,7 @@ mod change_node_application_into_unitary_node_application {
         let mut expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("-1"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -320,7 +320,7 @@ mod change_node_application_into_unitary_node_application {
         let mut expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("-1"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),

@@ -115,7 +115,7 @@ mod normal_form {
                     scope: Scope::Output,
                     id: String::from("o"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*"),
                             typing: Some(Type::Abstract(
@@ -167,7 +167,7 @@ mod normal_form {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
@@ -236,7 +236,7 @@ mod normal_form {
                     scope: Scope::Output,
                     id: String::from("x"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("1+"),
                             typing: Some(Type::Abstract(
@@ -257,7 +257,7 @@ mod normal_form {
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                                 },
-                                StreamExpression::MapApplication {
+                                StreamExpression::FunctionApplication {
                                     function_expression: Expression::Call {
                                         id: String::from("*2"),
                                         typing: Some(Type::Abstract(
@@ -314,7 +314,7 @@ mod normal_form {
                         scope: Scope::Output,
                         id: String::from("x"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("1+"),
                                 typing: Some(Type::Abstract(
@@ -344,7 +344,7 @@ mod normal_form {
                                     ),
                                     (
                                         format!("y"),
-                                        StreamExpression::MapApplication {
+                                        StreamExpression::FunctionApplication {
                                             function_expression: Expression::Call {
                                                 id: String::from("*2"),
                                                 typing: Some(Type::Abstract(
@@ -447,7 +447,7 @@ mod normal_form {
                     scope: Scope::Output,
                     id: String::from("o"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*"),
                             typing: Some(Type::Abstract(
@@ -499,7 +499,7 @@ mod normal_form {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
@@ -566,7 +566,7 @@ mod normal_form {
                 scope: Scope::Local,
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("*2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -634,7 +634,7 @@ mod normal_form {
                 scope: Scope::Output,
                 id: String::from("x"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("1+"),
                         typing: Some(Type::Abstract(
@@ -684,7 +684,7 @@ mod normal_form {
                     scope: Scope::Output,
                     id: String::from("x"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("1+"),
                             typing: Some(Type::Abstract(
@@ -705,7 +705,7 @@ mod normal_form {
                                     location: Location::default(),
                                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                                 },
-                                StreamExpression::MapApplication {
+                                StreamExpression::FunctionApplication {
                                     function_expression: Expression::Call {
                                         id: String::from("*2"),
                                         typing: Some(Type::Abstract(

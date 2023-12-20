@@ -209,7 +209,7 @@ mod normalize {
                         scope: Scope::Output,
                         id: String::from("o1"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
@@ -254,7 +254,7 @@ mod normalize {
                         scope: Scope::Output,
                         id: String::from("o2"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("2*"),
                                 typing: Some(Type::Abstract(
@@ -393,7 +393,7 @@ mod normalize {
                         scope: Scope::Local,
                         id: String::from("y"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("1+"),
                                 typing: Some(Type::Abstract(
@@ -406,7 +406,7 @@ mod normalize {
                                 node: String::from("my_node"),
                                 signal: String::from("o2"),
                                 inputs: vec![
-                                    StreamExpression::MapApplication {
+                                    StreamExpression::FunctionApplication {
                                         function_expression: Expression::Call {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
@@ -434,7 +434,7 @@ mod normalize {
                                             0,
                                         )]),
                                     },
-                                    StreamExpression::MapApplication {
+                                    StreamExpression::FunctionApplication {
                                         function_expression: Expression::Call {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
@@ -546,7 +546,7 @@ mod normalize {
                         scope: Scope::Output,
                         id: String::from("o1"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
@@ -591,7 +591,7 @@ mod normalize {
                         scope: Scope::Output,
                         id: String::from("o2"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("2*"),
                                 typing: Some(Type::Abstract(
@@ -726,7 +726,7 @@ mod normalize {
                         scope: Scope::Local,
                         id: String::from("y"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("1+"),
                                 typing: Some(Type::Abstract(
@@ -739,7 +739,7 @@ mod normalize {
                                 node: String::from("my_node"),
                                 signal: String::from("o2"),
                                 inputs: vec![
-                                    StreamExpression::MapApplication {
+                                    StreamExpression::FunctionApplication {
                                         function_expression: Expression::Call {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
@@ -767,7 +767,7 @@ mod normalize {
                                             0,
                                         )]),
                                     },
-                                    StreamExpression::MapApplication {
+                                    StreamExpression::FunctionApplication {
                                         function_expression: Expression::Call {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
@@ -868,7 +868,7 @@ mod normalize {
                 scope: Scope::Output,
                 id: String::from("o1"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("+"),
                         typing: Some(Type::Abstract(
@@ -925,7 +925,7 @@ mod normalize {
                 scope: Scope::Output,
                 id: String::from("o2"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("2*"),
                         typing: Some(Type::Abstract(
@@ -975,7 +975,7 @@ mod normalize {
                         scope: Scope::Output,
                         id: String::from("o1"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
@@ -1020,7 +1020,7 @@ mod normalize {
                         scope: Scope::Output,
                         id: String::from("o2"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("2*"),
                                 typing: Some(Type::Abstract(
@@ -1173,7 +1173,7 @@ mod normalize {
                     scope: Scope::Local,
                     id: String::from("x_1"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -1227,7 +1227,7 @@ mod normalize {
                     scope: Scope::Local,
                     id: String::from("y"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("1+"),
                             typing: Some(Type::Abstract(
@@ -1402,7 +1402,7 @@ mod normalize {
                         scope: Scope::Local,
                         id: String::from("y"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("1+"),
                                 typing: Some(Type::Abstract(
@@ -1415,7 +1415,7 @@ mod normalize {
                                 node: String::from("my_node"),
                                 signal: String::from("o2"),
                                 inputs: vec![
-                                    StreamExpression::MapApplication {
+                                    StreamExpression::FunctionApplication {
                                         function_expression: Expression::Call {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
@@ -1443,7 +1443,7 @@ mod normalize {
                                             0,
                                         )]),
                                     },
-                                    StreamExpression::MapApplication {
+                                    StreamExpression::FunctionApplication {
                                         function_expression: Expression::Call {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(

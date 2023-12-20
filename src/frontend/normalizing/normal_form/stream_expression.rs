@@ -52,7 +52,7 @@ impl StreamExpression {
 
                 new_equations
             }
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 inputs,
                 ref mut dependencies,
                 ..
@@ -472,7 +472,7 @@ mod normal_form {
             signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
         };
 
-        let mut expression = StreamExpression::MapApplication {
+        let mut expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -503,7 +503,7 @@ mod normal_form {
                         ),
                         (
                             format!("y"),
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
@@ -589,7 +589,7 @@ mod normal_form {
         assert_eq!(*equations.get(1).unwrap(), control);
 
         // x: int = 1 + x_2;
-        let control = StreamExpression::MapApplication {
+        let control = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -633,7 +633,7 @@ mod normal_form {
             signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
         };
 
-        let mut expression = StreamExpression::MapApplication {
+        let mut expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -664,7 +664,7 @@ mod normal_form {
                         ),
                         (
                             format!("y"),
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
@@ -710,7 +710,7 @@ mod normal_form {
                 scope: Scope::Local,
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("*2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -792,7 +792,7 @@ mod normal_form {
             signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
         };
 
-        let mut expression = StreamExpression::MapApplication {
+        let mut expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -823,7 +823,7 @@ mod normal_form {
                         ),
                         (
                             format!("y"),
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(

@@ -756,7 +756,7 @@ mod langrust_ast_constructs {
                                 ],
                                 location: Location::default()
                             },
-                            Some(StreamExpression::MapApplication {
+                            Some(StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: BinaryOperator::Low.to_string(),
                                     typing: None,
@@ -777,7 +777,7 @@ mod langrust_ast_constructs {
                                 typing: None,
                                 location: Location::default()
                             }),
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: UnaryOperator::Neg.to_string(),
                                     typing: None,
@@ -1099,7 +1099,7 @@ mod langrust_ast_constructs {
         let file_id3 = files.add("brackets_test.gr", "(3)");
         let file_id4 = files.add("unary_test.gr", "-3");
         let file_id5 = files.add("binary_test.gr", "4*5-3");
-        let file_id6 = files.add("map_application_test.gr", "(x*y).map(sqrt)");
+        let file_id6 = files.add("function_application_test.gr", "(x*y).map(sqrt)");
         let file_id7 = files.add("print_test.gr", "print(\"Hello world\")");
         let file_id8 = files.add(
             "node_application_test.gr",
@@ -1143,7 +1143,7 @@ mod langrust_ast_constructs {
             .parse(file_id3, &files.source(file_id3).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: UnaryOperator::Brackets.to_string(),
                     typing: None,
@@ -1163,7 +1163,7 @@ mod langrust_ast_constructs {
             .parse(file_id4, &files.source(file_id4).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: UnaryOperator::Neg.to_string(),
                     typing: None,
@@ -1183,14 +1183,14 @@ mod langrust_ast_constructs {
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: BinaryOperator::Sub.to_string(),
                     typing: None,
                     location: Location::default()
                 },
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: BinaryOperator::Mul.to_string(),
                             typing: None,
@@ -1226,13 +1226,13 @@ mod langrust_ast_constructs {
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("sqrt"),
                     typing: None,
                     location: Location::default()
                 },
-                inputs: vec![StreamExpression::MapApplication {
+                inputs: vec![StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: BinaryOperator::Mul.to_string(),
                         typing: None,
@@ -1262,7 +1262,7 @@ mod langrust_ast_constructs {
             .parse(file_id7, &files.source(file_id7).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: OtherOperator::Print.to_string(),
                     typing: None,
@@ -1308,7 +1308,7 @@ mod langrust_ast_constructs {
         assert_eq!(
             StreamExpression::FollowedBy {
                 constant: Constant::Integer(0),
-                expression: Box::new(StreamExpression::MapApplication {
+                expression: Box::new(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: BinaryOperator::Add.to_string(),
                         typing: None,
@@ -1338,7 +1338,7 @@ mod langrust_ast_constructs {
             .parse(file_id10, &files.source(file_id10).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: OtherOperator::IfThenElse.to_string(),
                     typing: None,
@@ -1559,7 +1559,7 @@ mod langrust_ast_constructs {
                             ],
                             location: Location::default()
                         },
-                        Some(StreamExpression::MapApplication {
+                        Some(StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: BinaryOperator::Low.to_string(),
                                 typing: None,
@@ -1580,7 +1580,7 @@ mod langrust_ast_constructs {
                             typing: None,
                             location: Location::default()
                         }),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: UnaryOperator::Neg.to_string(),
                                 typing: None,
