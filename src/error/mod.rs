@@ -104,7 +104,7 @@ pub enum Error {
         /// the error location
         location: Location,
     },
-    /// incompatible type
+    /// incompatible pattern
     IncompatiblePattern {
         /// given pattern
         given_pattern: Pattern,
