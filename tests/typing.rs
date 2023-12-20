@@ -386,3 +386,29 @@ fn error_when_typing_blinking_incompatible_type() {
         let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
     }
 }
+
+#[test]
+fn error_when_typing_pid_incompatible_pattern() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_incompatible_pattern_id = files.add(
+        "pid_incompatible_pattern.gr",
+        std::fs::read_to_string("tests/fixture/pid_incompatible_pattern.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            pid_incompatible_pattern_id,
+            &files.source(pid_incompatible_pattern_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
+}
