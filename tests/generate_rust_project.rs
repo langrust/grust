@@ -178,7 +178,10 @@ fn generate_rust_project_for_pid_function_field_access() {
     );
 
     let mut file: File = langrust::fileParser::new()
-        .parse(pid_function_field_access_id, &files.source(pid_function_field_access_id).unwrap())
+        .parse(
+            pid_function_field_access_id,
+            &files.source(pid_function_field_access_id).unwrap(),
+        )
         .unwrap();
     file.typing(&mut errors).unwrap();
     let mut file = hir_from_ast(file);
