@@ -340,7 +340,7 @@ impl Error {
                 ]
             ),
             Error::ExpectAbstraction { input_types, given_type, location } => Diagnostic::error()
-                .with_message("expect abstraction")
+                .with_message("incompatible type")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
                         .with_message("wrong type")
