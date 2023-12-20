@@ -1,4 +1,10 @@
-use codespan_reporting::files::{Files, SimpleFiles};
+use codespan_reporting::{
+    files::{Files, SimpleFiles},
+    term::{
+        self,
+        termcolor::{ColorChoice, StandardStream},
+    },
+};
 
 use grustine::ast::file::File;
 use grustine::frontend::hir_from_ast::file::hir_from_ast;
@@ -136,4 +142,34 @@ fn normalize_pid() {
 
     file.normalize(&mut errors).unwrap();
     insta::assert_yaml_snapshot!(file);
+}
+
+#[test]
+fn error_when_normalize_pid_unused_signal() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_unused_signal_id = files.add(
+        "pid_unused_signal.gr",
+        std::fs::read_to_string("tests/fixture/pid_unused_signal.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            pid_unused_signal_id,
+            &files.source(pid_unused_signal_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+    file.normalize(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
 }
