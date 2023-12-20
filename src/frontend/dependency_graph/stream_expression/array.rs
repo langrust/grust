@@ -79,7 +79,7 @@ mod compute_array_dependencies {
                     location: Location::default(),
                     dependencies: Dependencies::new(),
                 },
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),

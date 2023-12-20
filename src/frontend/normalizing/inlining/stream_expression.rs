@@ -62,7 +62,7 @@ impl StreamExpression {
                         .collect(),
                 );
             }
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 inputs,
                 ref mut dependencies,
                 ..
@@ -345,7 +345,7 @@ impl StreamExpression {
                 );
                 new_equations
             }
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 inputs,
                 ref mut dependencies,
                 ..
@@ -559,7 +559,7 @@ mod replace_by_context {
 
     #[test]
     fn should_replace_all_occurence_of_identifiers_in_expression_by_context() {
-        let mut expression = StreamExpression::MapApplication {
+        let mut expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(
@@ -603,7 +603,7 @@ mod replace_by_context {
             ),
             (
                 String::from("y"),
-                Union::I2(StreamExpression::MapApplication {
+                Union::I2(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -627,7 +627,7 @@ mod replace_by_context {
 
         expression.replace_by_context(&context_map);
 
-        let control = StreamExpression::MapApplication {
+        let control = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(
@@ -646,7 +646,7 @@ mod replace_by_context {
                     location: Location::default(),
                     dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                 },
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -676,7 +676,7 @@ mod replace_by_context {
 
     #[test]
     fn should_replace_all_occurence_of_identifiers_in_dependencies_by_context() {
-        let mut expression = StreamExpression::MapApplication {
+        let mut expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(
@@ -720,7 +720,7 @@ mod replace_by_context {
             ),
             (
                 String::from("y"),
-                Union::I2(StreamExpression::MapApplication {
+                Union::I2(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -817,7 +817,7 @@ mod replace_by_context {
                     },
                     None,
                     vec![],
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
@@ -856,7 +856,7 @@ mod replace_by_context {
             ),
             (
                 String::from("x"),
-                Union::I2(StreamExpression::MapApplication {
+                Union::I2(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -946,7 +946,7 @@ mod replace_by_context {
                     },
                     None,
                     vec![],
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
@@ -1046,7 +1046,7 @@ mod replace_by_context {
                     },
                     None,
                     vec![],
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
@@ -1085,7 +1085,7 @@ mod replace_by_context {
             ),
             (
                 String::from("x"),
-                Union::I2(StreamExpression::MapApplication {
+                Union::I2(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -1175,7 +1175,7 @@ mod replace_by_context {
                     },
                     None,
                     vec![],
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
@@ -1210,7 +1210,7 @@ mod replace_by_context {
     #[test]
     fn should_refactor_unitary_application_dependencies_to_input_dependencies() {
         // 1 + my_node(x, y).o // depending on [x: 1; y: 0]
-        let mut expression = StreamExpression::MapApplication {
+        let mut expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("1+"),
                 typing: Some(Type::Abstract(
@@ -1271,7 +1271,7 @@ mod replace_by_context {
             ),
             (
                 String::from("y"),
-                Union::I2(StreamExpression::MapApplication {
+                Union::I2(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -1296,7 +1296,7 @@ mod replace_by_context {
         expression.replace_by_context(&context_map);
 
         // 1 + my_node(a, b/2).o // depending on [a: 0; b: 0]
-        let control = StreamExpression::MapApplication {
+        let control = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("1+"),
                 typing: Some(Type::Abstract(
@@ -1324,7 +1324,7 @@ mod replace_by_context {
                     ),
                     (
                         format!("j"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("/2"),
                                 typing: Some(Type::Abstract(
@@ -1366,7 +1366,7 @@ mod replace_by_context {
     #[test]
     fn should_replace_the_id_of_called_node_when_already_used() {
         // 1 + my_node(x, y).o
-        let mut expression = StreamExpression::MapApplication {
+        let mut expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("1+"),
                 typing: Some(Type::Abstract(
@@ -1427,7 +1427,7 @@ mod replace_by_context {
             ),
             (
                 String::from("y"),
-                Union::I2(StreamExpression::MapApplication {
+                Union::I2(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -1459,7 +1459,7 @@ mod replace_by_context {
         expression.replace_by_context(&context_map);
 
         // 1 + my_node(a, b/2).o
-        let control = StreamExpression::MapApplication {
+        let control = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("1+"),
                 typing: Some(Type::Abstract(
@@ -1487,7 +1487,7 @@ mod replace_by_context {
                     ),
                     (
                         format!("j"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("/2"),
                                 typing: Some(Type::Abstract(
@@ -1553,7 +1553,7 @@ mod inline_when_needed {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -1687,7 +1687,7 @@ mod inline_when_needed {
         nodes.insert(String::from("other_node"), other_node);
 
         // x: int = 1 + my_node(v*2, x).o
-        let mut expression_1 = StreamExpression::MapApplication {
+        let mut expression_1 = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("1+"),
                 typing: Some(Type::Abstract(
@@ -1702,7 +1702,7 @@ mod inline_when_needed {
                 inputs: vec![
                     (
                         format!("i"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
@@ -1767,7 +1767,7 @@ mod inline_when_needed {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -1864,7 +1864,7 @@ mod inline_when_needed {
             scope: Scope::Local,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -1874,7 +1874,7 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
@@ -1923,7 +1923,7 @@ mod inline_when_needed {
         }];
         assert_eq!(new_equations, control);
         // x: int = 1 + o
-        let control = StreamExpression::MapApplication {
+        let control = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("1+"),
                 typing: Some(Type::Abstract(

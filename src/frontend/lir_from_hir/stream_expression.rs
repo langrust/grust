@@ -46,7 +46,7 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             signal: Signal { id, .. },
             ..
         } => LIRExpression::Identifier { identifier: id },
-        StreamExpression::MapApplication {
+        StreamExpression::FunctionApplication {
             function_expression,
             mut inputs,
             ..
@@ -174,7 +174,7 @@ impl StreamExpression {
                 imports.append(&mut constant_import);
                 imports.into_iter().unique().collect()
             }
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression,
                 inputs,
                 ..
@@ -382,8 +382,8 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_map_application_into_lir_function_call() {
-        let expression = StreamExpression::MapApplication {
+    fn should_transform_hir_function_application_into_lir_function_call() {
+        let expression = StreamExpression::FunctionApplication {
             function_expression: ASTExpression::Call {
                 id: format!(" + "),
                 typing: Some(Type::Abstract(
@@ -430,8 +430,8 @@ mod lir_from_hir {
     }
 
     #[test]
-    fn should_transform_hir_map_application_of_if_then_else_into_lir_if_then_else() {
-        let expression = StreamExpression::MapApplication {
+    fn should_transform_hir_function_application_of_if_then_else_into_lir_if_then_else() {
+        let expression = StreamExpression::FunctionApplication {
             function_expression: ASTExpression::Call {
                 id: OtherOperator::IfThenElse.to_string(),
                 typing: Some(Type::Abstract(
@@ -690,7 +690,7 @@ mod lir_from_hir {
                 dependencies: Dependencies::from(vec![(format!("x"), 0)]),
             }),
             present_body: vec![],
-            present: Box::new(StreamExpression::MapApplication {
+            present: Box::new(StreamExpression::FunctionApplication {
                 function_expression: ASTExpression::Call {
                     id: format!(" + "),
                     typing: Some(Type::Abstract(
@@ -839,7 +839,7 @@ mod get_imports {
 
     #[test]
     fn should_get_function_import_from_function_call_expression() {
-        let expression = StreamExpression::MapApplication {
+        let expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: format!("my_function"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -864,7 +864,7 @@ mod get_imports {
 
     #[test]
     fn should_not_import_builtin_functions() {
-        let expression = StreamExpression::MapApplication {
+        let expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: UnaryOperator::Neg.to_string(),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -927,7 +927,7 @@ mod get_imports {
                     signal: format!("o"),
                     inputs: vec![(
                         format!("i"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: format!("my_function"),
                                 typing: Some(Type::Abstract(
@@ -936,7 +936,7 @@ mod get_imports {
                                 )),
                                 location: Location::default(),
                             },
-                            inputs: vec![StreamExpression::MapApplication {
+                            inputs: vec![StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: format!("my_function"),
                                     typing: Some(Type::Abstract(

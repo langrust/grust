@@ -40,7 +40,7 @@ mod hir_from_ast {
 
     #[test]
     fn should_construct_hir_structure_from_typed_ast() {
-        let ast_expression = StreamExpression::MapApplication {
+        let ast_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -69,7 +69,7 @@ mod hir_from_ast {
             id: String::from("o"),
             scope: Scope::Output,
             signal_type: Type::Integer,
-            expression: HIRStreamExpression::MapApplication {
+            expression: HIRStreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("f"),
                     typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -96,7 +96,7 @@ mod hir_from_ast {
     #[test]
     #[should_panic]
     fn should_panic_with_untyped_ast() {
-        let ast_expression = StreamExpression::MapApplication {
+        let ast_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -125,7 +125,7 @@ mod hir_from_ast {
     #[test]
     #[should_panic]
     fn should_panic_with_unknown_signal() {
-        let ast_expression = StreamExpression::MapApplication {
+        let ast_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),

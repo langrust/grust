@@ -65,7 +65,7 @@ mod memorize {
             scope: Scope::Output,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -150,7 +150,7 @@ mod memorize {
             scope: Scope::Output,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -257,7 +257,7 @@ mod memorize {
                 scope: Scope::Local,
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("*2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -325,7 +325,7 @@ mod memorize {
                 scope: Scope::Output,
                 id: String::from("x"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("+"),
                         typing: Some(Type::Abstract(

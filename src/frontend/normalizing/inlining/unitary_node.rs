@@ -208,7 +208,7 @@ mod instantiate_equations_and_memory {
                     scope: Scope::Local,
                     id: String::from("j"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("+1"),
                             typing: Some(Type::Integer),
@@ -280,7 +280,7 @@ mod instantiate_equations_and_memory {
                 scope: Scope::Local,
                 id: String::from("j_1"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("+1"),
                         typing: Some(Type::Integer),
@@ -357,7 +357,7 @@ mod instantiate_equations_and_memory {
                     scope: Scope::Local,
                     id: String::from("j"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("+1"),
                             typing: Some(Type::Integer),
@@ -432,7 +432,7 @@ mod instantiate_equations_and_memory {
                 scope: Scope::Local,
                 id: String::from("j_1"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("+1"),
                         typing: Some(Type::Integer),
@@ -483,7 +483,7 @@ mod instantiate_equations_and_memory {
         memory.add_buffer(
             format!("mem_o"),
             Constant::Integer(0),
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+1"),
                     typing: Some(Type::Integer),
@@ -549,7 +549,7 @@ mod instantiate_equations_and_memory {
         control.add_buffer(
             format!("mem_o"),
             Constant::Integer(0),
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+1"),
                     typing: Some(Type::Integer),
@@ -593,7 +593,7 @@ mod instantiate_equations_and_memory {
         memory.add_buffer(
             format!("mem_o"),
             Constant::Integer(0),
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+1"),
                     typing: Some(Type::Integer),
@@ -662,7 +662,7 @@ mod instantiate_equations_and_memory {
         control.add_buffer(
             format!("mem_o"),
             Constant::Integer(0),
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+1"),
                     typing: Some(Type::Integer),

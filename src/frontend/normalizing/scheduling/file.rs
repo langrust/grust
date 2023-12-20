@@ -66,7 +66,7 @@ mod schedule {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -123,7 +123,7 @@ mod schedule {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -133,7 +133,7 @@ mod schedule {
                     location: Location::default(),
                 },
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
@@ -262,7 +262,7 @@ mod schedule {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -319,7 +319,7 @@ mod schedule {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -329,7 +329,7 @@ mod schedule {
                     location: Location::default(),
                 },
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(

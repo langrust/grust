@@ -331,7 +331,7 @@ mod replace_by_context {
         let equation = Equation {
             id: String::from("z"),
             scope: Scope::Local,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -381,7 +381,7 @@ mod replace_by_context {
             ),
             (
                 String::from("y"),
-                Union::I2(StreamExpression::MapApplication {
+                Union::I2(StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -415,7 +415,7 @@ mod replace_by_context {
         let control = Equation {
             id: String::from("c"),
             scope: Scope::Local,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -434,7 +434,7 @@ mod replace_by_context {
                         location: Location::default(),
                         dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                     },
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("/2"),
                             typing: Some(Type::Abstract(
@@ -497,7 +497,7 @@ mod inline_when_needed {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -650,7 +650,7 @@ mod inline_when_needed {
                 inputs: vec![
                     (
                         format!("i"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
@@ -706,7 +706,7 @@ mod inline_when_needed {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -838,7 +838,7 @@ mod inline_when_needed {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -982,7 +982,7 @@ mod inline_when_needed {
                 inputs: vec![
                     (
                         format!("i"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
@@ -1038,7 +1038,7 @@ mod inline_when_needed {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -1134,7 +1134,7 @@ mod inline_when_needed {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -1144,7 +1144,7 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
@@ -1206,7 +1206,7 @@ mod inline_when_needed {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -1344,7 +1344,7 @@ mod inline_when_needed {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
@@ -1359,7 +1359,7 @@ mod inline_when_needed {
                     inputs: vec![
                         (
                             format!("i"),
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
@@ -1422,7 +1422,7 @@ mod inline_when_needed {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -1518,7 +1518,7 @@ mod inline_when_needed {
             scope: Scope::Local,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -1528,7 +1528,7 @@ mod inline_when_needed {
                     location: Location::default(),
                 },
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
@@ -1580,7 +1580,7 @@ mod inline_when_needed {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
@@ -1620,7 +1620,7 @@ mod inline_when_needed {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -1769,7 +1769,7 @@ mod inline_when_needed {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
@@ -1784,7 +1784,7 @@ mod inline_when_needed {
                     inputs: vec![
                         (
                             format!("i"),
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
@@ -1847,7 +1847,7 @@ mod inline_when_needed {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -1943,7 +1943,7 @@ mod inline_when_needed {
             scope: Scope::Local,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -1958,7 +1958,7 @@ mod inline_when_needed {
                         node: String::from("other_node"),
                         inputs: vec![(
                             format!("i"),
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
@@ -2016,7 +2016,7 @@ mod inline_when_needed {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
@@ -2072,7 +2072,7 @@ mod inline_when_needed_reccursive {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -2225,7 +2225,7 @@ mod inline_when_needed_reccursive {
                 inputs: vec![
                     (
                         format!("i"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
@@ -2281,7 +2281,7 @@ mod inline_when_needed_reccursive {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -2413,7 +2413,7 @@ mod inline_when_needed_reccursive {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -2557,7 +2557,7 @@ mod inline_when_needed_reccursive {
                 inputs: vec![
                     (
                         format!("i"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
@@ -2613,7 +2613,7 @@ mod inline_when_needed_reccursive {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -2709,7 +2709,7 @@ mod inline_when_needed_reccursive {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -2719,7 +2719,7 @@ mod inline_when_needed_reccursive {
                     location: Location::default(),
                 },
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
@@ -2781,7 +2781,7 @@ mod inline_when_needed_reccursive {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -2919,7 +2919,7 @@ mod inline_when_needed_reccursive {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
@@ -2934,7 +2934,7 @@ mod inline_when_needed_reccursive {
                     inputs: vec![
                         (
                             format!("i"),
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
@@ -2997,7 +2997,7 @@ mod inline_when_needed_reccursive {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -3093,7 +3093,7 @@ mod inline_when_needed_reccursive {
             scope: Scope::Local,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -3103,7 +3103,7 @@ mod inline_when_needed_reccursive {
                     location: Location::default(),
                 },
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
@@ -3155,7 +3155,7 @@ mod inline_when_needed_reccursive {
             scope: Scope::Local,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
@@ -3195,7 +3195,7 @@ mod inline_when_needed_reccursive {
             scope: Scope::Output,
             id: String::from("o"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -3344,7 +3344,7 @@ mod inline_when_needed_reccursive {
                 inputs: vec![
                     (
                         format!("i"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
@@ -3400,7 +3400,7 @@ mod inline_when_needed_reccursive {
                 node: String::from("other_node"),
                 inputs: vec![(
                     format!("i"),
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -3519,7 +3519,7 @@ mod inline_when_needed_reccursive {
                 scope: Scope::Local,
                 id: String::from("x"),
                 signal_type: Type::Integer,
-                expression: StreamExpression::MapApplication {
+                expression: StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("+"),
                         typing: Some(Type::Abstract(
@@ -3529,7 +3529,7 @@ mod inline_when_needed_reccursive {
                         location: Location::default(),
                     },
                     inputs: vec![
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(

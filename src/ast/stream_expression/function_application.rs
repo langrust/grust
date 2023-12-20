@@ -8,8 +8,8 @@ use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
 
 impl StreamExpression {
-    /// Add a [Type] to the map application stream expression.
-    pub fn typing_map_application(
+    /// Add a [Type] to the function application stream expression.
+    pub fn typing_function_application(
         &mut self,
         nodes_context: &HashMap<String, NodeDescription>,
         signals_context: &HashMap<String, Type>,
@@ -18,9 +18,9 @@ impl StreamExpression {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
-            // a map application expression type is the result of the application
+            // a function application expression type is the result of the application
             // of the inputs types to the abstraction/function type
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 function_expression,
                 inputs,
                 typing,
@@ -93,13 +93,13 @@ impl StreamExpression {
 }
 
 #[cfg(test)]
-mod typing_map_application {
+mod typing_function_application {
     use crate::ast::{expression::Expression, stream_expression::StreamExpression};
     use crate::common::{location::Location, r#type::Type};
     use std::collections::HashMap;
 
     #[test]
-    fn should_type_map_application_stream_expression() {
+    fn should_type_function_application_stream_expression() {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
@@ -111,7 +111,7 @@ mod typing_map_application {
         );
         let user_types_context = HashMap::new();
 
-        let mut stream_expression = StreamExpression::MapApplication {
+        let mut stream_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: None,
@@ -125,7 +125,7 @@ mod typing_map_application {
             typing: None,
             location: Location::default(),
         };
-        let control = StreamExpression::MapApplication {
+        let control = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -141,7 +141,7 @@ mod typing_map_application {
         };
 
         stream_expression
-            .typing_map_application(
+            .typing_function_application(
                 &nodes_context,
                 &signals_context,
                 &global_context,
@@ -154,7 +154,7 @@ mod typing_map_application {
     }
 
     #[test]
-    fn should_raise_error_for_incompatible_map_application() {
+    fn should_raise_error_for_incompatible_function_application() {
         let mut errors = vec![];
         let nodes_context = HashMap::new();
         let mut signals_context = HashMap::new();
@@ -166,7 +166,7 @@ mod typing_map_application {
         );
         let user_types_context = HashMap::new();
 
-        let mut stream_expression = StreamExpression::MapApplication {
+        let mut stream_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: None,
@@ -182,7 +182,7 @@ mod typing_map_application {
         };
 
         stream_expression
-            .typing_map_application(
+            .typing_function_application(
                 &nodes_context,
                 &signals_context,
                 &global_context,

@@ -49,7 +49,7 @@ impl StreamExpression {
                     dependencies: Dependencies::from(vec![(memory_id, 0)]),
                 }
             }
-            StreamExpression::MapApplication {
+            StreamExpression::FunctionApplication {
                 inputs,
                 dependencies,
                 ..
@@ -212,7 +212,7 @@ mod memorize {
         };
         let mut memory = Memory::new();
 
-        let mut expression = StreamExpression::MapApplication {
+        let mut expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(
@@ -269,7 +269,7 @@ mod memorize {
         );
         assert_eq!(memory, control);
 
-        let control = StreamExpression::MapApplication {
+        let control = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(

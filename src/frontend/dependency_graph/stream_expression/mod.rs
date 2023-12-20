@@ -7,7 +7,7 @@ use crate::hir::{node::Node, stream_expression::StreamExpression};
 mod array;
 mod constant;
 mod followed_by;
-mod map_application;
+mod function_application;
 mod r#match;
 mod node_application;
 mod signal_call;
@@ -47,12 +47,13 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
-            StreamExpression::MapApplication { .. } => self.compute_map_application_dependencies(
-                nodes_context,
-                nodes_graphs,
-                nodes_reduced_graphs,
-                errors,
-            ),
+            StreamExpression::FunctionApplication { .. } => self
+                .compute_function_application_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                ),
             StreamExpression::Structure { .. } => self.compute_structure_dependencies(
                 nodes_context,
                 nodes_graphs,
@@ -119,7 +120,7 @@ mod compute_dependencies {
                     location: Location::default(),
                     dependencies: Dependencies::new(),
                 },
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -203,7 +204,7 @@ mod compute_dependencies {
 
         let stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Float(0.0),
-            expression: Box::new(StreamExpression::MapApplication {
+            expression: Box::new(StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("add_one"),
                     typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -243,13 +244,13 @@ mod compute_dependencies {
     }
 
     #[test]
-    fn should_compute_dependencies_of_map_application_inputs_with_duplicates() {
+    fn should_compute_dependencies_of_function_application_inputs_with_duplicates() {
         let nodes_context = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
 
-        let stream_expression = StreamExpression::MapApplication {
+        let stream_expression = StreamExpression::FunctionApplication {
             function_expression: Expression::Call {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
@@ -355,7 +356,7 @@ mod compute_dependencies {
                     },
                     None,
                     vec![],
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
@@ -478,7 +479,7 @@ mod compute_dependencies {
                     },
                     None,
                     vec![],
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
@@ -566,7 +567,7 @@ mod compute_dependencies {
                         signal_type: Type::Integer,
                         expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(1),
-                            expression: Box::new(StreamExpression::MapApplication {
+                            expression: Box::new(StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
                                     typing: Some(Type::Abstract(
@@ -625,7 +626,7 @@ mod compute_dependencies {
         let stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),

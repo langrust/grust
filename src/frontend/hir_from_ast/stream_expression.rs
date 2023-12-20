@@ -36,12 +36,12 @@ pub fn hir_from_ast(
                 dependencies: Dependencies::new(),
             }
         }
-        StreamExpression::MapApplication {
+        StreamExpression::FunctionApplication {
             function_expression,
             inputs,
             typing,
             location,
-        } => HIRStreamExpression::MapApplication {
+        } => HIRStreamExpression::FunctionApplication {
             function_expression,
             inputs: inputs
                 .into_iter()

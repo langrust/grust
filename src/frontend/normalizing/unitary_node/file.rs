@@ -108,7 +108,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o1"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
@@ -153,7 +153,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o2"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
@@ -224,7 +224,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o1"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
@@ -269,7 +269,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o2"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
@@ -317,7 +317,7 @@ mod generate_unitary_nodes {
                             scope: Scope::Output,
                             id: String::from("o1"),
                             signal_type: Type::Integer,
-                            expression: StreamExpression::MapApplication {
+                            expression: StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
                                     typing: Some(Type::Abstract(
@@ -376,7 +376,7 @@ mod generate_unitary_nodes {
                             scope: Scope::Output,
                             id: String::from("o2"),
                             signal_type: Type::Integer,
-                            expression: StreamExpression::MapApplication {
+                            expression: StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*"),
                                     typing: Some(Type::Abstract(
@@ -450,7 +450,7 @@ mod generate_unitary_nodes {
                     scope: Scope::Output,
                     id: String::from("o"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*"),
                             typing: Some(Type::Abstract(
@@ -516,7 +516,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o1"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
@@ -561,7 +561,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o2"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
@@ -614,7 +614,7 @@ mod generate_unitary_nodes {
             scope: Scope::Output,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -642,7 +642,7 @@ mod generate_unitary_nodes {
                                 location: Location::default(),
                                 dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                             },
-                            StreamExpression::MapApplication {
+                            StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
@@ -691,7 +691,7 @@ mod generate_unitary_nodes {
             expression: StreamExpression::NodeApplication {
                 node: String::from("other_node"),
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -741,7 +741,7 @@ mod generate_unitary_nodes {
             expression: StreamExpression::NodeApplication {
                 node: String::from("other_node"),
                 inputs: vec![
-                    StreamExpression::MapApplication {
+                    StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
@@ -857,7 +857,7 @@ mod generate_unitary_nodes {
                     scope: Scope::Output,
                     id: String::from("o"),
                     signal_type: Type::Integer,
-                    expression: StreamExpression::MapApplication {
+                    expression: StreamExpression::FunctionApplication {
                         function_expression: Expression::Call {
                             id: String::from("*"),
                             typing: Some(Type::Abstract(
@@ -909,7 +909,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
@@ -970,7 +970,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o1"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
@@ -1015,7 +1015,7 @@ mod generate_unitary_nodes {
                         scope: Scope::Output,
                         id: String::from("o2"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
@@ -1063,7 +1063,7 @@ mod generate_unitary_nodes {
                             scope: Scope::Output,
                             id: String::from("o1"),
                             signal_type: Type::Integer,
-                            expression: StreamExpression::MapApplication {
+                            expression: StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
                                     typing: Some(Type::Abstract(
@@ -1122,7 +1122,7 @@ mod generate_unitary_nodes {
                             scope: Scope::Output,
                             id: String::from("o2"),
                             signal_type: Type::Integer,
-                            expression: StreamExpression::MapApplication {
+                            expression: StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("*"),
                                     typing: Some(Type::Abstract(
@@ -1172,7 +1172,7 @@ mod generate_unitary_nodes {
             scope: Scope::Output,
             id: String::from("x"),
             signal_type: Type::Integer,
-            expression: StreamExpression::MapApplication {
+            expression: StreamExpression::FunctionApplication {
                 function_expression: Expression::Call {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
@@ -1206,7 +1206,7 @@ mod generate_unitary_nodes {
                             ),
                             (
                                 format!("y"),
-                                StreamExpression::MapApplication {
+                                StreamExpression::FunctionApplication {
                                     function_expression: Expression::Call {
                                         id: String::from("*2"),
                                         typing: Some(Type::Abstract(
@@ -1274,7 +1274,7 @@ mod generate_unitary_nodes {
                 inputs: vec![
                     (
                         format!("x"),
-                        StreamExpression::MapApplication {
+                        StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("-1"),
                                 typing: Some(Type::Abstract(

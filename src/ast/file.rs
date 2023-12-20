@@ -470,7 +470,7 @@ mod typing {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("test"),
                                 typing: None,
@@ -591,7 +591,7 @@ mod typing {
                         scope: Scope::Output,
                         id: String::from("o"),
                         signal_type: Type::Integer,
-                        expression: StreamExpression::MapApplication {
+                        expression: StreamExpression::FunctionApplication {
                             function_expression: Expression::Call {
                                 id: String::from("test"),
                                 typing: Some(Type::Abstract(

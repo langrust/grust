@@ -53,7 +53,7 @@ impl StreamExpression {
                     .into_iter()
                     .for_each(|Neighbor { id, weight }| reduced_graph.add_edge(signal, id, weight));
 
-                // map "dependencies to inputs" and "input expressions's dependencies"
+                // function "dependencies to inputs" and "input expressions's dependencies"
                 // of node application
                 dependencies.set(
                     inputs
@@ -150,7 +150,7 @@ mod compute_node_application_dependencies {
                         signal_type: Type::Integer,
                         expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(1),
-                            expression: Box::new(StreamExpression::MapApplication {
+                            expression: Box::new(StreamExpression::FunctionApplication {
                                 function_expression: Expression::Call {
                                     id: String::from("+"),
                                     typing: Some(Type::Abstract(
@@ -209,7 +209,7 @@ mod compute_node_application_dependencies {
         let stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
             inputs: vec![
-                StreamExpression::MapApplication {
+                StreamExpression::FunctionApplication {
                     function_expression: Expression::Call {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
