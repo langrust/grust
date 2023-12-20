@@ -412,3 +412,34 @@ fn error_when_typing_pid_incompatible_pattern() {
         let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
     }
 }
+
+#[test]
+fn error_when_typing_button_management_using_function_incompatible_input_number() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let button_management_using_function_incompatible_input_number_id = files.add(
+        "button_management_using_function_incompatible_input_number.gr",
+        std::fs::read_to_string(
+            "tests/fixture/button_management_using_function_incompatible_input_number.gr",
+        )
+        .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            button_management_using_function_incompatible_input_number_id,
+            &files
+                .source(button_management_using_function_incompatible_input_number_id)
+                .unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
+}
