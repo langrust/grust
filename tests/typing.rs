@@ -359,3 +359,30 @@ fn error_when_typing_blinking_already_defined_element() {
         let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
     }
 }
+
+#[test]
+fn error_when_typing_blinking_incompatible_type() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let blinking_incompatible_type_id = files.add(
+        "blinking_incompatible_type.gr",
+        std::fs::read_to_string("tests/fixture/blinking_incompatible_type.gr")
+            .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            blinking_incompatible_type_id,
+            &files.source(blinking_incompatible_type_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
+}
