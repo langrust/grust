@@ -3,9 +3,13 @@ node counter(res: bool, tick: bool) {
     inc: int = if tick then 1 else 0;
 }
 
+function xor(t: bool, b: bool) -> bool {
+    return if t then !b else b;
+}
+
 node blinking(tick_number: int) {
     out status: int = if on_off then counter + 1 else 0;
     counter: int = counter(res, true).o;
     res: bool = true fby (counter + 1 == tick_number);
-    on_off: bool = (res, true fby on_off).map(|t, b| if t then !b else b);
+    on_off: bool = xor(res, true fby on_off);
 }

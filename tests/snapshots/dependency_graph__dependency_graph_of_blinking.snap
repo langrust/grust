@@ -3,7 +3,55 @@ source: tests/dependency_graph.rs
 expression: file
 ---
 typedefs: []
-functions: []
+functions:
+  - id: xor
+    inputs:
+      - - t
+        - Boolean
+      - - b
+        - Boolean
+    statements: []
+    returned:
+      - Boolean
+      - Application:
+          function_expression:
+            Call:
+              id: if_then_else
+              typing:
+                Abstract:
+                  - - Boolean
+                    - Boolean
+                    - Boolean
+                  - Boolean
+              location: ~
+          inputs:
+            - Call:
+                id: t
+                typing: Boolean
+                location: ~
+            - Application:
+                function_expression:
+                  Call:
+                    id: "!"
+                    typing:
+                      Abstract:
+                        - - Boolean
+                        - Boolean
+                    location: ~
+                inputs:
+                  - Call:
+                      id: b
+                      typing: Boolean
+                      location: ~
+                typing: Boolean
+                location: ~
+            - Call:
+                id: b
+                typing: Boolean
+                location: ~
+          typing: Boolean
+          location: ~
+    location: ~
 nodes:
   - id: counter
     is_component: false
@@ -232,51 +280,8 @@ nodes:
         expression:
           FunctionApplication:
             function_expression:
-              TypedAbstraction:
-                inputs:
-                  - - t
-                    - Boolean
-                  - - b
-                    - Boolean
-                expression:
-                  Application:
-                    function_expression:
-                      Call:
-                        id: if_then_else
-                        typing:
-                          Abstract:
-                            - - Boolean
-                              - Boolean
-                              - Boolean
-                            - Boolean
-                        location: ~
-                    inputs:
-                      - Call:
-                          id: t
-                          typing: Boolean
-                          location: ~
-                      - Application:
-                          function_expression:
-                            Call:
-                              id: "!"
-                              typing:
-                                Abstract:
-                                  - - Boolean
-                                  - Boolean
-                              location: ~
-                          inputs:
-                            - Call:
-                                id: b
-                                typing: Boolean
-                                location: ~
-                          typing: Boolean
-                          location: ~
-                      - Call:
-                          id: b
-                          typing: Boolean
-                          location: ~
-                    typing: Boolean
-                    location: ~
+              Call:
+                id: xor
                 typing:
                   Abstract:
                     - - Boolean

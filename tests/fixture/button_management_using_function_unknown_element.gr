@@ -13,7 +13,7 @@ node counter(res: bool, inc: int) {
 }
 
 node reset_button(button_state: Button, period: int, reset_limit_1: int, reset_limit_2: int) {
-    out user_reset_request_state : ResetState = (button_state, counter, reset_limit_1).map(reset_state_management);
+    out user_reset_request_state : ResetState = reset_state_management(button_state, counter, reset_limit_1);
     out user_reset_request: bool = match (button_state) {
         Button.Released => false fby user_reset_request,
         Button.Pressed => counter >= reset_limit_1 + reset_limit_2,

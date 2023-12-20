@@ -158,6 +158,19 @@ files:
                   Path:
                     module_name: counter_o
                     tree: Star
+      - Import:
+          Use:
+            public_visibility: false
+            tree:
+              Path:
+                module_name: crate
+                tree:
+                  Path:
+                    module_name: functions
+                    tree:
+                      Name:
+                        name: xor
+                        alias: ~
       - Structure:
           public_visibility: true
           name: BlinkingStatusInput
@@ -296,48 +309,8 @@ files:
                         expression:
                           FunctionCall:
                             function:
-                              Closure:
-                                move: false
-                                inputs:
-                                  - Typed:
-                                      pattern:
-                                        Identifier:
-                                          reference: false
-                                          mutable: false
-                                          identifier: t
-                                      type:
-                                        Identifier:
-                                          identifier: bool
-                                  - Typed:
-                                      pattern:
-                                        Identifier:
-                                          reference: false
-                                          mutable: false
-                                          identifier: b
-                                      type:
-                                        Identifier:
-                                          identifier: bool
-                                output:
-                                  Identifier:
-                                    identifier: bool
-                                body:
-                                  IfThenElse:
-                                    condition:
-                                      Identifier:
-                                        identifier: t
-                                    then_branch:
-                                      statements:
-                                        - ExpressionLast:
-                                            Unary:
-                                              operator: Not
-                                              expression:
-                                                Identifier:
-                                                  identifier: b
-                                    else_branch:
-                                      statements:
-                                        - ExpressionLast:
-                                            Identifier:
-                                              identifier: b
+                              Identifier:
+                                identifier: xor
                             arguments:
                               - Identifier:
                                   identifier: res
@@ -420,7 +393,42 @@ files:
                         Identifier:
                           identifier: status
   - path: src/functions.rs
-    items: []
+    items:
+      - Function:
+          signature:
+            public_visibility: true
+            name: xor
+            receiver: ~
+            inputs:
+              - - t
+                - Identifier:
+                    identifier: bool
+              - - b
+                - Identifier:
+                    identifier: bool
+            output:
+              Identifier:
+                identifier: bool
+          body:
+            statements:
+              - ExpressionLast:
+                  IfThenElse:
+                    condition:
+                      Identifier:
+                        identifier: t
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            Unary:
+                              operator: Not
+                              expression:
+                                Identifier:
+                                  identifier: b
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            Identifier:
+                              identifier: b
   - path: src/typedefs.rs
     items: []
   - path: src/lib.rs

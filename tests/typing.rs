@@ -401,28 +401,6 @@ fn error_when_typing_counter_expect_number() {
 }
 
 #[test]
-fn error_when_typing_blinking_expect_abstraction() {
-    let mut files = SimpleFiles::new();
-    let mut errors = vec![];
-
-    let blinking_expect_abstraction_id = files.add(
-        "blinking_expect_abstraction.gr",
-        std::fs::read_to_string("tests/fixture/blinking_expect_abstraction.gr")
-            .expect("unkown file"),
-    );
-
-    let mut file: File = langrust::fileParser::new()
-        .parse(
-            blinking_expect_abstraction_id,
-            &files.source(blinking_expect_abstraction_id).unwrap(),
-        )
-        .unwrap();
-    file.typing(&mut errors).unwrap_err();
-
-    display(&errors, &files);
-}
-
-#[test]
 fn error_when_typing_counter_expect_option() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
