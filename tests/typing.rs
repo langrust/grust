@@ -496,3 +496,29 @@ fn error_when_typing_blinking_expect_abstraction() {
         let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
     }
 }
+
+#[test]
+fn error_when_typing_counter_expect_option() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let counter_expect_option_id = files.add(
+        "counter_expect_option.gr",
+        std::fs::read_to_string("tests/fixture/counter_expect_option.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            counter_expect_option_id,
+            &files.source(counter_expect_option_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
+}

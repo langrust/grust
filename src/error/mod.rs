@@ -350,10 +350,10 @@ impl Error {
                 ]
             ),
             Error::ExpectOption { given_type, location } => Diagnostic::error()
-                .with_message("expect option type")
+                .with_message("incompatible type")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
-                        .with_message("not option type")
+                        .with_message("wrong type")
                 ])
                 .with_notes(vec![
                     format!("expect option type of the form 't?' but '{given_type}' was given")
