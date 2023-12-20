@@ -7,7 +7,7 @@ pub fn rust_ast_from_lir(import: Import) -> RustASTImport {
         Import::NodeFile(module_name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
-                module_name: format!("crate"),
+                module_name: "crate".to_string(),
                 tree: Box::new(PathTree::Path {
                     module_name,
                     tree: Box::new(PathTree::Star),
@@ -17,7 +17,7 @@ pub fn rust_ast_from_lir(import: Import) -> RustASTImport {
         Import::Function(name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
-                module_name: format!("crate"),
+                module_name: "crate".to_string(),
                 tree: Box::new(PathTree::Path {
                     module_name: String::from("functions"),
                     tree: Box::new(PathTree::Name { name, alias: None }),
@@ -27,7 +27,7 @@ pub fn rust_ast_from_lir(import: Import) -> RustASTImport {
         Import::Enumeration(name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
-                module_name: format!("crate"),
+                module_name: "crate".to_string(),
                 tree: Box::new(PathTree::Path {
                     module_name: String::from("typedefs"),
                     tree: Box::new(PathTree::Name { name, alias: None }),
@@ -37,7 +37,7 @@ pub fn rust_ast_from_lir(import: Import) -> RustASTImport {
         Import::Structure(name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
-                module_name: format!("crate"),
+                module_name: "crate".to_string(),
                 tree: Box::new(PathTree::Path {
                     module_name: String::from("typedefs"),
                     tree: Box::new(PathTree::Name { name, alias: None }),
@@ -47,7 +47,7 @@ pub fn rust_ast_from_lir(import: Import) -> RustASTImport {
         Import::ArrayAlias(name) => RustASTImport::Use {
             public_visibility: false,
             tree: PathTree::Path {
-                module_name: format!("crate"),
+                module_name: "crate".to_string(),
                 tree: Box::new(PathTree::Path {
                     module_name: String::from("typedefs"),
                     tree: Box::new(PathTree::Name { name, alias: None }),

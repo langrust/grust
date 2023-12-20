@@ -43,7 +43,7 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
              }| {
                 let field_acces = Expression::FieldAccess {
                     expression: Box::new(Expression::Identifier {
-                        identifier: format!("self"),
+                        identifier: "self".to_string(),
                     }),
                     field: identifier,
                 };

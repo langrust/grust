@@ -108,10 +108,10 @@ impl IdentifierCreator {
         name: String,
         mut suffix: String,
     ) -> String {
-        if !(prefix.is_empty() || prefix.ends_with("_")) {
-            prefix.push_str("_");
+        if !(prefix.is_empty() || prefix.ends_with('_')) {
+            prefix.push('_');
         }
-        if !(suffix.is_empty() || suffix.starts_with("_")) {
+        if !(suffix.is_empty() || suffix.starts_with('_')) {
             suffix.insert(0, '_');
         }
         let mut identifier = format!("{prefix}{name}{suffix}");
