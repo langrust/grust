@@ -1,5 +1,3 @@
-use std::fmt::{self, Display};
-
 /// Signals scopes in LanGRust nodes or components.
 ///
 /// A [Scope] is the visibility of the signal in a node/component.
@@ -59,14 +57,4 @@ pub enum Scope {
     Local,
     /// only used during compilation to indicate that the value is in the buffer
     Memory,
-}
-impl Display for Scope {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Scope::Output => write!(f, "out"),
-            Scope::Input => write!(f, "input"),
-            Scope::Local => write!(f, "let"),
-            Scope::Memory => write!(f, "mem"),
-        }
-    }
 }
