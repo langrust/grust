@@ -77,6 +77,13 @@ impl BinaryOperator {
                 };
                 return Err(error);
             };
+            if type_2 != Type::Float && type_2 != Type::Integer {
+                let error = Error::ExpectNumber {
+                    given_type: type_2,
+                    location,
+                };
+                return Err(error);
+            };
             if type_1 != type_2 {
                 let error = Error::IncompatibleType {
                     given_type: type_2,
@@ -106,6 +113,13 @@ impl BinaryOperator {
             if type_1 != Type::Float && type_1 != Type::Integer {
                 let error = Error::ExpectNumber {
                     given_type: type_1,
+                    location,
+                };
+                return Err(error);
+            };
+            if type_2 != Type::Float && type_2 != Type::Integer {
+                let error = Error::ExpectNumber {
+                    given_type: type_2,
                     location,
                 };
                 return Err(error);

@@ -124,7 +124,7 @@ pub enum Error {
     },
     /// expect number type
     ExpectNumber {
-        /// given type instead of the abstraction
+        /// given type
         given_type: Type,
         /// the error location
         location: Location,
