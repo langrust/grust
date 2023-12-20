@@ -9,6 +9,7 @@ mod application;
 mod array;
 mod call;
 mod constant;
+mod field_access;
 mod r#match;
 mod structure;
 mod when;
@@ -113,6 +114,17 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
+    /// Field access expression.
+    FieldAccess {
+        /// The structure expression.
+        expression: Box<Expression>,
+        /// The field to access.
+        field: String,
+        /// Expression type.
+        typing: Option<Type>,
+        /// Expression location.
+        location: Location,
+    },
 }
 
 impl Expression {
@@ -167,6 +179,12 @@ impl Expression {
             Expression::Match { .. } => {
                 self.typing_match(global_context, elements_context, user_types_context, errors)
             }
+            Expression::FieldAccess { .. } => self.typing_field_access(
+                global_context,
+                elements_context,
+                user_types_context,
+                errors,
+            ),
         }
     }
 
@@ -196,6 +214,7 @@ impl Expression {
             Expression::Array { typing, .. } => typing.as_ref(),
             Expression::Match { typing, .. } => typing.as_ref(),
             Expression::When { typing, .. } => typing.as_ref(),
+            Expression::FieldAccess { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -225,6 +244,7 @@ impl Expression {
             Expression::Array { typing, .. } => typing.as_mut(),
             Expression::Match { typing, .. } => typing.as_mut(),
             Expression::When { typing, .. } => typing.as_mut(),
+            Expression::FieldAccess { typing, .. } => typing.as_mut(),
         }
     }
 
@@ -254,6 +274,7 @@ impl Expression {
             Expression::Array { typing, .. } => typing,
             Expression::Match { typing, .. } => typing,
             Expression::When { typing, .. } => typing,
+            Expression::FieldAccess { typing, .. } => typing,
         }
     }
 }
