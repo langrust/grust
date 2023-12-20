@@ -522,3 +522,29 @@ fn error_when_typing_counter_expect_option() {
         let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
     }
 }
+
+#[test]
+fn error_when_typing_pid_expect_structure_type() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_expect_structure_type_id = files.add(
+        "pid_expect_structure_type.gr",
+        std::fs::read_to_string("tests/fixture/pid_expect_structure_type.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            pid_expect_structure_type_id,
+            &files.source(pid_expect_structure_type_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in &errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
+    }
+}

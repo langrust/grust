@@ -147,7 +147,7 @@ pub enum Error {
     },
     /// expect structure type
     ExpectStructure {
-        /// given type instead of the option
+        /// given type instead of the structure
         given_type: Type,
         /// the error location
         location: Location,
@@ -360,10 +360,10 @@ impl Error {
                 ]
             ),
             Error::ExpectStructure { given_type, location } => Diagnostic::error()
-                .with_message("expect structure type")
+                .with_message("incompatible type")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
-                        .with_message("not structure type")
+                        .with_message("wrong type")
                 ])
                 .with_notes(vec![
                     format!("expect structure type but '{given_type}' was given")
