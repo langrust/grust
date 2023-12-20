@@ -1,12 +1,7 @@
-use codespan_reporting::{
-    files::{Files, SimpleFiles},
-    term::{
-        self,
-        termcolor::{ColorChoice, StandardStream},
-    },
-};
+use codespan_reporting::files::{Files, SimpleFiles};
 
 use grustine::ast::file::File;
+use grustine::error::display;
 use grustine::frontend::hir_from_ast::file::hir_from_ast;
 use grustine::parser::langrust;
 
@@ -154,10 +149,5 @@ fn error_when_typing_counter_not_causal() {
 
     file.causality_analysis(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }

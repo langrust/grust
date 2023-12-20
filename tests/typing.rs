@@ -1,12 +1,7 @@
-use codespan_reporting::{
-    files::{Files, SimpleFiles},
-    term::{
-        self,
-        termcolor::{ColorChoice, StandardStream},
-    },
-};
+use codespan_reporting::files::{Files, SimpleFiles};
 
 use grustine::ast::file::File;
+use grustine::error::display;
 use grustine::parser::langrust;
 
 #[test]
@@ -137,12 +132,7 @@ fn error_when_typing_counter_not_well_typed() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -163,12 +153,7 @@ fn error_when_typing_counter_unknown_signal() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -189,12 +174,7 @@ fn error_when_typing_blinking_unknown_node() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -220,12 +200,7 @@ fn error_when_typing_button_management_using_function_unknown_element() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -247,12 +222,7 @@ fn error_when_typing_button_management_unknown_type() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -273,12 +243,7 @@ fn error_when_typing_pid_unknown_field() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -299,12 +264,7 @@ fn error_when_typing_pid_missing_field() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -325,12 +285,7 @@ fn error_when_typing_blinking_component_call() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -352,12 +307,7 @@ fn error_when_typing_blinking_already_defined_element() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -379,12 +329,7 @@ fn error_when_typing_blinking_incompatible_type() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -405,12 +350,7 @@ fn error_when_typing_pid_incompatible_pattern() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -436,12 +376,7 @@ fn error_when_typing_button_management_using_function_incompatible_input_number(
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -462,12 +397,7 @@ fn error_when_typing_counter_expect_number() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -489,12 +419,7 @@ fn error_when_typing_blinking_expect_abstraction() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -515,12 +440,7 @@ fn error_when_typing_counter_expect_option() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
 
 #[test]
@@ -541,10 +461,5 @@ fn error_when_typing_pid_expect_structure_type() {
         .unwrap();
     file.typing(&mut errors).unwrap_err();
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = term::Config::default();
-    for error in &errors {
-        let writer = &mut writer.lock();
-        let _ = term::emit(writer, &config, &files, &error.to_diagnostic());
-    }
+    display(&errors, &files);
 }
