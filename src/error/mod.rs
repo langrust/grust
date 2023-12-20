@@ -1,4 +1,11 @@
-use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::{
+    diagnostic::{Diagnostic, Label},
+    files::SimpleFiles,
+    term::{
+        self,
+        termcolor::{ColorChoice, StandardStream},
+    },
+};
 
 use crate::common::{location::Location, pattern::Pattern, r#type::Type};
 
@@ -426,3 +433,13 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+/// Display errors in terminal.
+pub fn display(errors: &Vec<Error>, files: &SimpleFiles<&str, String>) {
+    let writer = StandardStream::stderr(ColorChoice::Always);
+    let config = term::Config::default();
+    for error in errors {
+        let writer = &mut writer.lock();
+        let _ = term::emit(writer, &config, files, &error.to_diagnostic());
+    }
+}
