@@ -195,6 +195,7 @@ impl Expression {
             }
             Expression::TypedAbstraction { expression, .. } => expression.get_imports(),
             Expression::Abstraction { .. } => unreachable!(),
+            Expression::FieldAccess { expression, .. } => expression.get_imports(),
         }
     }
 }

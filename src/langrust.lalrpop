@@ -262,6 +262,15 @@ term: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches field access as expressions
+    <start:@L> <e: term> "::" <field: ID> <end:@R> => {
+        Expression::FieldAccess {
+            expression: Box::new(e),
+            field,
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches unary operations as expression first or a term
