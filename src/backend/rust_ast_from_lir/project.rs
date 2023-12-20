@@ -20,8 +20,8 @@ use crate::{
 pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
     let mut rust_ast_project = RustASTProject::new();
 
-    let mut function_file = File::new(format!("src/functions.rs"));
-    let mut typedefs_file = File::new(format!("src/typedefs.rs"));
+    let mut function_file = File::new("src/functions.rs".to_string());
+    let mut typedefs_file = File::new("src/typedefs.rs".to_string());
 
     project.items.into_iter().for_each(|item| match item {
         Item::NodeFile(node_file) => {
@@ -49,7 +49,7 @@ pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
     rust_ast_project.add_file(function_file);
     rust_ast_project.add_file(typedefs_file);
 
-    let mut lib_file = File::new(format!("src/lib.rs"));
+    let mut lib_file = File::new("src/lib.rs".to_string());
     rust_ast_project.files.iter().for_each(|file| {
         let module_name = Path::new(&file.path)
             .file_stem()

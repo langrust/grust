@@ -185,15 +185,9 @@ impl StreamExpression {
                     .collect::<Vec<_>>();
                 let mut function_import = match function_expression {
                     Expression::Call { id, .. }
-                        if BinaryOperator::iter()
-                            .find(|binary| &binary.to_string() == id)
-                            .is_none()
-                            && UnaryOperator::iter()
-                                .find(|unary| &unary.to_string() == id)
-                                .is_none()
-                            && OtherOperator::iter()
-                                .find(|other| &other.to_string() == id)
-                                .is_none() =>
+                        if !(BinaryOperator::iter().any(|binary| &binary.to_string() == id)
+                            || UnaryOperator::iter().any(|unary| &unary.to_string() == id)
+                            || OtherOperator::iter().any(|other| &other.to_string() == id)) =>
                     {
                         vec![Import::Function(id.clone())]
                     }
