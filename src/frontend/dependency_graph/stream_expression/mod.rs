@@ -7,6 +7,7 @@ use crate::hir::{node::Node, stream_expression::StreamExpression};
 mod array;
 mod constant;
 mod field_access;
+mod fold;
 mod followed_by;
 mod function_application;
 mod map;
@@ -98,8 +99,13 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
+            StreamExpression::Fold { .. } => self.compute_fold_dependencies(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
             StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
-            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 }
@@ -944,6 +950,58 @@ mod compute_dependencies {
                 location: Location::default(),
             },
             typing: Type::Array(Box::new(Type::Float), 3),
+            location: Location::default(),
+            dependencies: Dependencies::new(),
+        };
+
+        stream_expression
+            .compute_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+        let mut dependencies = stream_expression.get_dependencies().clone();
+        dependencies.sort_unstable();
+
+        let control = vec![(String::from("a"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_compute_dependencies_of_fold() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::Fold {
+            expression: Box::new(StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("a"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Array(Box::new(Type::Integer), 3),
+                location: Location::default(),
+                dependencies: Dependencies::new(),
+            }),
+            initialization_expression: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::new(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("sum"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            typing: Type::Integer,
             location: Location::default(),
             dependencies: Dependencies::new(),
         };
