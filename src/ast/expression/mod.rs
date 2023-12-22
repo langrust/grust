@@ -10,6 +10,7 @@ mod array;
 mod call;
 mod constant;
 mod field_access;
+mod map;
 mod r#match;
 mod structure;
 mod when;
@@ -125,6 +126,17 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
+    /// Array map operator expression.
+    Map {
+        /// The array expression.
+        expression: Box<Expression>,
+        /// The function expression.
+        function_expression: Box<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
+        /// Expression location.
+        location: Location,
+    },
 }
 
 impl Expression {
@@ -185,6 +197,9 @@ impl Expression {
                 user_types_context,
                 errors,
             ),
+            Expression::Map { .. } => {
+                self.typing_map(global_context, elements_context, user_types_context, errors)
+            }
         }
     }
 
@@ -214,7 +229,8 @@ impl Expression {
             | Expression::Array { typing, .. }
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
-            | Expression::FieldAccess { typing, .. } => typing.as_ref(),
+            | Expression::FieldAccess { typing, .. }
+            | Expression::Map { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -244,7 +260,8 @@ impl Expression {
             | Expression::Array { typing, .. }
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
-            | Expression::FieldAccess { typing, .. } => typing.as_mut(),
+            | Expression::FieldAccess { typing, .. }
+            | Expression::Map { typing, .. } => typing.as_mut(),
         }
     }
 
@@ -274,7 +291,8 @@ impl Expression {
             | Expression::Array { typing, .. }
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
-            | Expression::FieldAccess { typing, .. } => typing,
+            | Expression::FieldAccess { typing, .. }
+            | Expression::Map { typing, .. } => typing,
         }
     }
 }
@@ -1435,6 +1453,133 @@ mod typing {
                 location: Location::default(),
             }),
             field: "z".to_string(),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_map() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Map {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::Map {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("f"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Array(Box::new(Type::Float), 3)),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_expression_mapped_not_array() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Integer);
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Map {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_mapping_function_not_compatible_with_array_elements() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Boolean), 3));
+        elements_context.insert(
+            String::from("f"),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Map {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            }),
             typing: None,
             location: Location::default(),
         };
