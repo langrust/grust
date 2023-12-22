@@ -192,7 +192,8 @@ impl StreamExpression {
             | StreamExpression::Structure { typing, .. }
             | StreamExpression::Array { typing, .. }
             | StreamExpression::Match { typing, .. }
-            | StreamExpression::When { typing, .. } => typing,
+            | StreamExpression::When { typing, .. }
+            | StreamExpression::FieldAccess { typing, .. } => typing,
         }
     }
 
@@ -224,7 +225,8 @@ impl StreamExpression {
             | StreamExpression::Structure { location, .. }
             | StreamExpression::Array { location, .. }
             | StreamExpression::Match { location, .. }
-            | StreamExpression::When { location, .. } => location,
+            | StreamExpression::When { location, .. }
+            | StreamExpression::FieldAccess { location, .. } => location,
         }
     }
 
@@ -256,7 +258,8 @@ impl StreamExpression {
             | StreamExpression::Structure { dependencies, .. }
             | StreamExpression::Array { dependencies, .. }
             | StreamExpression::Match { dependencies, .. }
-            | StreamExpression::When { dependencies, .. } => dependencies.get().unwrap(),
+            | StreamExpression::When { dependencies, .. }
+            | StreamExpression::FieldAccess { dependencies, .. } => dependencies.get().unwrap(),
         }
     }
 }
