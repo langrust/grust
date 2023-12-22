@@ -187,7 +187,11 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
                 rust_ast_from_lir(*function),
             ],
         },
-        Expression::Sort { sorted, function } => todo!(),
+        Expression::Sort { sorted, function } => RustASTExpression::MethodCall {
+            receiver: Box::new(rust_ast_from_lir(*sorted)),
+            method: "sort".to_string(),
+            arguments: vec![rust_ast_from_lir(*function)],
+        },
     }
 }
 
