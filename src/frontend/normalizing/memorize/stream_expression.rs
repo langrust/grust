@@ -208,7 +208,24 @@ impl StreamExpression {
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
-            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
+            StreamExpression::Fold {
+                expression,
+                initialization_expression,
+                ref mut dependencies,
+                ..
+            } => {
+                expression.memorize(signal_name, identifier_creator, memory);
+                initialization_expression.memorize(signal_name, identifier_creator, memory);
+
+                // get matched expressions dependencies
+                let mut expression_dependencies = expression.get_dependencies().clone();
+                let mut initialization_expression_dependencies =
+                    expression.get_dependencies().clone();
+                expression_dependencies.append(&mut initialization_expression_dependencies);
+
+                // push all dependencies in arms dependencies
+                *dependencies = Dependencies::from(expression_dependencies);
+            }
         }
     }
 }

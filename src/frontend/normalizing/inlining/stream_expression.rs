@@ -247,7 +247,23 @@ impl StreamExpression {
                 // push all dependencies in arms dependencies
                 *dependencies = Dependencies::from(expression_dependencies);
             }
-            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
+            StreamExpression::Fold {
+                expression,
+                initialization_expression,
+                ref mut dependencies,
+                ..
+            } => {
+                expression.replace_by_context(context_map);
+                initialization_expression.replace_by_context(context_map);
+                // get matched expressions dependencies
+                let mut expression_dependencies = expression.get_dependencies().clone();
+                let mut initialization_expression_dependencies =
+                    expression.get_dependencies().clone();
+                expression_dependencies.append(&mut initialization_expression_dependencies);
+
+                // push all dependencies in arms dependencies
+                *dependencies = Dependencies::from(expression_dependencies);
+            }
         }
     }
 
@@ -603,7 +619,39 @@ impl StreamExpression {
 
                 new_equations
             }
-            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
+            StreamExpression::Fold {
+                expression,
+                initialization_expression,
+                ref mut dependencies,
+                ..
+            } => {
+                let mut new_equations = expression.inline_when_needed(
+                    signal_id,
+                    memory,
+                    identifier_creator,
+                    graph,
+                    nodes,
+                );
+                let mut initialization_equations = initialization_expression.inline_when_needed(
+                    signal_id,
+                    memory,
+                    identifier_creator,
+                    graph,
+                    nodes,
+                );
+                new_equations.append(&mut initialization_equations);
+
+                // get matched expressions dependencies
+                let mut expression_dependencies = expression.get_dependencies().clone();
+                let mut initialization_expression_dependencies =
+                    expression.get_dependencies().clone();
+                expression_dependencies.append(&mut initialization_expression_dependencies);
+
+                // push all dependencies in arms dependencies
+                *dependencies = Dependencies::from(expression_dependencies);
+
+                new_equations
+            }
         }
     }
 }

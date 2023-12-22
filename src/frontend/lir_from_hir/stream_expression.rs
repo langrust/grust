@@ -171,7 +171,14 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
         StreamExpression::FollowedBy { .. } | StreamExpression::NodeApplication { .. } => {
             unreachable!()
         }
-        StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
+        StreamExpression::Fold {
+            expression,
+            initialization_expression,
+            function_expression,
+            typing,
+            location,
+            dependencies,
+        } => todo!(),
     }
 }
 
@@ -313,7 +320,14 @@ impl StreamExpression {
                 imports.append(&mut function_expression_imports);
                 imports.into_iter().unique().collect()
             }
-            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
+            StreamExpression::Fold {
+                expression,
+                initialization_expression,
+                function_expression,
+                typing,
+                location,
+                dependencies,
+            } => todo!(),
         }
     }
 }

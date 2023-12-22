@@ -292,7 +292,29 @@ impl StreamExpression {
                 new_equations
             }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => vec![],
-            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
+            StreamExpression::Fold {
+                expression,
+                initialization_expression,
+                ref mut dependencies,
+                ..
+            } => {
+                let mut new_equations =
+                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
+                let mut initialization_equations =
+                    initialization_expression.normal_form(nodes_reduced_graphs, identifier_creator);
+                new_equations.append(&mut initialization_equations);
+
+                // get matched expressions dependencies
+                let mut expression_dependencies = expression.get_dependencies().clone();
+                let mut initialization_expression_dependencies =
+                    expression.get_dependencies().clone();
+                expression_dependencies.append(&mut initialization_expression_dependencies);
+
+                // push all dependencies in arms dependencies
+                *dependencies = Dependencies::from(expression_dependencies);
+
+                new_equations
+            }
         }
     }
 
