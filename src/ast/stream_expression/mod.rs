@@ -163,7 +163,7 @@ impl StreamExpression {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
-            StreamExpression::Constant { .. } => self.typing_constant(),
+            StreamExpression::Constant { .. } => self.typing_constant(user_types_context, errors),
             StreamExpression::SignalCall { .. } => self.typing_signal_call(signals_context, errors),
             StreamExpression::FollowedBy { .. } => self.typing_followed_by(
                 nodes_context,
