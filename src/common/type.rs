@@ -101,7 +101,15 @@ impl Display for Type {
             Type::Enumeration(enumeration) => write!(f, "{enumeration}"),
             Type::Structure(structure) => write!(f, "{structure}"),
             Type::NotDefinedYet(s) => write!(f, "{s}"),
-            Type::Abstract(t1, t2) => write!(f, "{:#?} -> {}", t1, *t2),
+            Type::Abstract(t1, t2) => write!(
+                f,
+                "({}) -> {}",
+                t1.into_iter()
+                    .map(|input_type| input_type.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                *t2
+            ),
             Type::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
         }
     }
@@ -112,7 +120,8 @@ impl Type {
     ///
     /// This function tries to apply the input type to the self type.
     /// If types are incompatible for application then an error is raised.
-    /// In case of a [Type::Polymorphism], it reines the type according to the inputs.
+    ///
+    /// In case of a [Type::Polymorphism], it redefines the type according to the inputs.
     ///
     /// # Example
     /// ```rust
@@ -268,7 +277,29 @@ impl Type {
                 *self = user_type.into_type();
                 Ok(())
             }
-            _ => Ok(()),
+            Type::Integer
+            | Type::Float
+            | Type::Boolean
+            | Type::String
+            | Type::Enumeration(_)
+            | Type::Structure(_)
+            | Type::Polymorphism(_)
+            | Type::Unit => Ok(()),
+            Type::Array(element_type, _) => {
+                element_type.resolve_undefined(location, user_types_context, errors)
+            }
+            Type::Option(element_type) => {
+                element_type.resolve_undefined(location, user_types_context, errors)
+            }
+            Type::Abstract(inputs_type, output_type) => {
+                inputs_type
+                    .iter_mut()
+                    .map(|input_type| {
+                        input_type.resolve_undefined(location.clone(), user_types_context, errors)
+                    })
+                    .collect::<Result<_, _>>()?;
+                output_type.resolve_undefined(location, user_types_context, errors)
+            }
         }
     }
 
@@ -449,7 +480,34 @@ mod resolve_undefined {
     }
 
     #[test]
-    fn should_leave_already_determined_types_unchanged() {
+    fn should_resolve_undefined_type_recursively_when_in_context() {
+        let mut errors = vec![];
+        let mut user_types_context = HashMap::new();
+        user_types_context.insert(
+            String::from("Point"),
+            Typedef::Structure {
+                id: String::from("Point"),
+                fields: vec![
+                    (String::from("x"), Type::Integer),
+                    (String::from("y"), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        );
+
+        let mut my_type = Type::Option(Box::new(Type::NotDefinedYet(String::from("Point"))));
+
+        let control = Type::Option(Box::new(Type::Structure(String::from("Point"))));
+
+        my_type
+            .resolve_undefined(Location::default(), &user_types_context, &mut errors)
+            .unwrap();
+
+        assert_eq!(my_type, control);
+    }
+
+    #[test]
+    fn should_leave_already_resolved_types_unchanged() {
         let mut errors = vec![];
         let user_types_context = HashMap::new();
 
