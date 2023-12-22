@@ -161,6 +161,19 @@ pub enum StreamExpression {
         /// Stream expression dependencies.
         dependencies: Dependencies,
     },
+    /// Array map operator expression.
+    Map {
+        /// The array expression.
+        expression: Box<StreamExpression>,
+        /// The function expression.
+        function_expression: Expression,
+        /// Expression type.
+        typing: Type,
+        /// Expression location.
+        location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
+    },
 }
 
 impl StreamExpression {
@@ -193,7 +206,8 @@ impl StreamExpression {
             | StreamExpression::Array { typing, .. }
             | StreamExpression::Match { typing, .. }
             | StreamExpression::When { typing, .. }
-            | StreamExpression::FieldAccess { typing, .. } => typing,
+            | StreamExpression::FieldAccess { typing, .. }
+            | StreamExpression::Map { typing, .. } => typing,
         }
     }
 
@@ -226,7 +240,8 @@ impl StreamExpression {
             | StreamExpression::Array { location, .. }
             | StreamExpression::Match { location, .. }
             | StreamExpression::When { location, .. }
-            | StreamExpression::FieldAccess { location, .. } => location,
+            | StreamExpression::FieldAccess { location, .. }
+            | StreamExpression::Map { location, .. } => location,
         }
     }
 
@@ -259,7 +274,8 @@ impl StreamExpression {
             | StreamExpression::Array { dependencies, .. }
             | StreamExpression::Match { dependencies, .. }
             | StreamExpression::When { dependencies, .. }
-            | StreamExpression::FieldAccess { dependencies, .. } => dependencies.get().unwrap(),
+            | StreamExpression::FieldAccess { dependencies, .. }
+            | StreamExpression::Map { dependencies, .. } => dependencies.get().unwrap(),
         }
     }
 }
