@@ -135,9 +135,11 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
         Expression::Sort {
             expression,
             function_expression,
-            typing,
-            location,
-        } => todo!(),
+            ..
+        } => LIRExpression::Sort {
+            sorted: Box::new(lir_from_hir(*expression)),
+            function: Box::new(lir_from_hir(*function_expression)),
+        },
     }
 }
 
@@ -260,9 +262,16 @@ impl Expression {
             Expression::Sort {
                 expression,
                 function_expression,
-                typing,
-                location,
-            } => todo!(),
+                ..
+            } => {
+                let mut expression_imports = expression.get_imports();
+                let mut function_expression_imports = function_expression.get_imports();
+
+                let mut imports = vec![];
+                imports.append(&mut expression_imports);
+                imports.append(&mut function_expression_imports);
+                imports.into_iter().unique().collect()
+            }
         }
     }
 }
@@ -773,6 +782,36 @@ mod lir_from_hir {
             }),
             function: Box::new(Expression::Identifier {
                 identifier: format!("sum"),
+            }),
+        };
+        assert_eq!(lir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_ast_sort_into_lir_sort() {
+        let expression = ASTExpression::Sort {
+            expression: Box::new(ASTExpression::Call {
+                id: format!("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            function_expression: Box::new(ASTExpression::Call {
+                id: format!("diff"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Array(Box::new(Type::Float), 3)),
+            location: Location::default(),
+        };
+        let control = Expression::Sort {
+            sorted: Box::new(Expression::Identifier {
+                identifier: format!("a"),
+            }),
+            function: Box::new(Expression::Identifier {
+                identifier: format!("diff"),
             }),
         };
         assert_eq!(lir_from_hir(expression), control)

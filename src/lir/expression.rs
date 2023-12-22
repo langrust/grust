@@ -109,4 +109,11 @@ pub enum Expression {
         /// The folding function.
         function: Box<Expression>,
     },
+    /// A sort expression: `my_list.map(|a, b| a - b)`
+    Sort {
+        /// The sorted expression.
+        sorted: Box<Expression>,
+        /// The sorting function.
+        function: Box<Expression>,
+    },
 }
