@@ -1654,6 +1654,7 @@ mod langrust_ast_constructs {
             "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
         );
         let file_id17 = files.add("field_access_test.gr", "p::x");
+        let file_id18 = files.add("map_test.gr", "x.map(f)");
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -2188,6 +2189,26 @@ mod langrust_ast_constructs {
                     location: Location::default()
                 }),
                 field: "x".to_string(),
+                typing: None,
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id18, &files.source(file_id18).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Map {
+                expression: Box::new(Expression::Call {
+                    id: String::from("x"),
+                    typing: None,
+                    location: Location::default()
+                }),
+                function_expression: Box::new(Expression::Call {
+                    id: String::from("f"),
+                    typing: None,
+                    location: Location::default()
+                }),
                 typing: None,
                 location: Location::default()
             },
