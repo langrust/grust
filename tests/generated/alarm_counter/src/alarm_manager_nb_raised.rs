@@ -1,4 +1,3 @@
-use crate::functions::alarms_processing;
 pub struct AlarmManagerNbRaisedInput {
     pub alarms: [Alarm; 10],
 }
@@ -8,7 +7,7 @@ impl AlarmManagerNbRaisedState {
         AlarmManagerNbRaisedState {}
     }
     pub fn step(&mut self, input: AlarmManagerNbRaisedInput) -> i64 {
-        let nb_raised = alarms_processing(input.alarms);
+        let nb_raised = input.alarms.into_iter().fold(0i64, sum_alarm);
         nb_raised
     }
 }

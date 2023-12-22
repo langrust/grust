@@ -6,6 +6,3 @@ pub fn sum_alarm(sum: i64, alarm: Alarm) -> i64 {
     let new_sum = if is_raiseable { sum + 1i64 } else { sum };
     new_sum
 }
-pub fn alarms_processing(alarms: [Alarm; 10]) -> i64 {
-    alarms.into_iter().fold(0i64, sum_alarm)
-}

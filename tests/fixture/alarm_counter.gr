@@ -1,0 +1,24 @@
+enum Priority {
+    Low, Medium, High
+}
+
+struct Alarm {
+    priority: Priority,
+    raised: bool,
+}
+
+function sum_alarm(sum: int, alarm: Alarm) -> int {
+    let is_raiseable: bool = match (alarm) {
+        Alarm {
+            priority: Priority.High,
+            raised: raised,
+        } => raised,
+        _ => false,
+    };
+    let new_sum: int = if is_raiseable then sum + 1 else sum;
+    return new_sum;
+}
+
+node alarm_manager(alarms: [Alarm; 10]) {
+    out nb_raised: int = alarms.fold(0, sum_alarm);
+}
