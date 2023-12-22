@@ -137,6 +137,19 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
+    /// Array fold operator expression.
+    Fold {
+        /// The array expression.
+        expression: Box<Expression>,
+        /// The initialization expression.
+        initialization_expression: Box<Expression>,
+        /// The function expression.
+        function_expression: Box<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
+        /// Expression location.
+        location: Location,
+    },
 }
 
 impl Expression {
@@ -200,6 +213,7 @@ impl Expression {
             Expression::Map { .. } => {
                 self.typing_map(global_context, elements_context, user_types_context, errors)
             }
+            Expression::Fold { expression, initialization_expression, function_expression, typing, location } => todo!(),
         }
     }
 
@@ -230,7 +244,8 @@ impl Expression {
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
-            | Expression::Map { typing, .. } => typing.as_ref(),
+            | Expression::Map { typing, .. }
+            | Expression::Fold { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -261,7 +276,8 @@ impl Expression {
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
-            | Expression::Map { typing, .. } => typing.as_mut(),
+            | Expression::Map { typing, .. }
+            | Expression::Fold { typing, .. } => typing.as_mut(),
         }
     }
 
@@ -292,7 +308,8 @@ impl Expression {
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
-            | Expression::Map { typing, .. } => typing,
+            | Expression::Map { typing, .. }
+            | Expression::Fold { typing, .. } => typing,
         }
     }
 }
