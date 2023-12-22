@@ -192,6 +192,12 @@ pub fn hir_from_ast(
             location,
             dependencies: Dependencies::new(),
         },
+        StreamExpression::Sort {
+            expression,
+            function_expression,
+            typing,
+            location,
+        } => todo!(),
     }
 }
 

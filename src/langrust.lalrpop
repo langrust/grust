@@ -539,6 +539,15 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches array sorting as stream expressions
+    <start:@L> <e: streamTerm> ".sort" "(" <f: expression> ")" <end:@R> => {
+        StreamExpression::Sort {
+            expression: Box::new(e),
+            function_expression: f,
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches unary operations as stream expression first or a term
