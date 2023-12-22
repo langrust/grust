@@ -93,4 +93,11 @@ pub enum Expression {
         /// The pattern matching arms.
         arms: Vec<(Pattern, Option<Expression>, Expression)>,
     },
+    /// A map expression: `my_list.map(|x| x + 1)`
+    Map {
+        /// The mapped expression.
+        mapped: Box<Expression>,
+        /// The mapping function.
+        function: Box<Expression>,
+    },
 }

@@ -166,6 +166,11 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
                 arms,
             }
         }
+        Expression::Map { mapped, function } => RustASTExpression::MethodCall {
+            receiver: Box::new(rust_ast_from_lir(*mapped)),
+            method: "map".to_string(),
+            arguments: vec![rust_ast_from_lir(*function)],
+        },
     }
 }
 
@@ -607,6 +612,28 @@ mod rust_ast_from_lir {
                     },
                 },
             ],
+        };
+        assert_eq!(rust_ast_from_lir(expression), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_map_iterator_from_lir_map() {
+        let expression = Expression::Map {
+            mapped: Box::new(Expression::Identifier {
+                identifier: format!("a"),
+            }),
+            function: Box::new(Expression::Identifier {
+                identifier: format!("f"),
+            }),
+        };
+        let control = RustASTExpression::MethodCall {
+            receiver: Box::new(RustASTExpression::Identifier {
+                identifier: "a".to_string(),
+            }),
+            method: "map".to_string(),
+            arguments: vec![RustASTExpression::Identifier {
+                identifier: "f".to_string(),
+            }],
         };
         assert_eq!(rust_ast_from_lir(expression), control)
     }

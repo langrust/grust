@@ -114,6 +114,14 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
         Expression::TypedAbstraction { .. } | Expression::Abstraction { .. } => {
             unreachable!()
         }
+        Expression::Map {
+            expression,
+            function_expression,
+            ..
+        } => LIRExpression::Map {
+            mapped: Box::new(lir_from_hir(*expression)),
+            function: Box::new(lir_from_hir(*function_expression)),
+        },
     }
 }
 
@@ -204,6 +212,19 @@ impl Expression {
             Expression::TypedAbstraction { expression, .. } => expression.get_imports(),
             Expression::Abstraction { .. } => unreachable!(),
             Expression::FieldAccess { expression, .. } => expression.get_imports(),
+            Expression::Map {
+                expression,
+                function_expression,
+                ..
+            } => {
+                let mut expression_imports = expression.get_imports();
+                let mut function_expression_imports = function_expression.get_imports();
+
+                let mut imports = vec![];
+                imports.append(&mut expression_imports);
+                imports.append(&mut function_expression_imports);
+                imports.into_iter().unique().collect()
+            }
         }
     }
 }
@@ -650,6 +671,33 @@ mod lir_from_hir {
                 identifier: format!("p"),
             }),
             field: format!("x"),
+        };
+        assert_eq!(lir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_ast_map_into_lir_map() {
+        let expression = ASTExpression::Map {
+            expression: Box::new(ASTExpression::Call {
+                id: format!("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            function_expression: Box::new(ASTExpression::Call {
+                id: format!("f"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Array(Box::new(Type::Float), 3)),
+            location: Location::default(),
+        };
+        let control = Expression::Map {
+            mapped: Box::new(Expression::Identifier {
+                identifier: format!("a"),
+            }),
+            function: Box::new(Expression::Identifier {
+                identifier: format!("f"),
+            }),
         };
         assert_eq!(lir_from_hir(expression), control)
     }
