@@ -370,7 +370,9 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect abstraction of the form '{input_types:#?} -> t' but '{given_type}' was given")
+                    format!("expect function type of the form '({}) -> t' but '{given_type}' was given", 
+                    input_types.into_iter().map(|input_type| input_type.to_string()).collect::<Vec<_>>().join(", ")
+                )
                 ]
             ),
             Error::ExpectOption { given_type, location } => Diagnostic::error()
