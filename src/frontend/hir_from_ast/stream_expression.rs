@@ -175,6 +175,13 @@ pub fn hir_from_ast(
             location,
             dependencies: Dependencies::new(),
         },
+        StreamExpression::Fold {
+            expression,
+            initialization_expression,
+            function_expression,
+            typing,
+            location,
+        } => todo!(),
     }
 }
 
