@@ -175,10 +175,12 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             expression,
             initialization_expression,
             function_expression,
-            typing,
-            location,
-            dependencies,
-        } => todo!(),
+            ..
+        } => LIRExpression::Fold {
+            folded: Box::new(lir_from_hir(*expression)),
+            initialization: Box::new(lir_from_hir(*initialization_expression)),
+            function: Box::new(expression_lir_from_hir(function_expression)),
+        },
     }
 }
 
@@ -324,10 +326,18 @@ impl StreamExpression {
                 expression,
                 initialization_expression,
                 function_expression,
-                typing,
-                location,
-                dependencies,
-            } => todo!(),
+                ..
+            } => {
+                let mut initialization_expression_imports = initialization_expression.get_imports();
+                let mut expression_imports = expression.get_imports();
+                let mut function_expression_imports = function_expression.get_imports();
+
+                let mut imports = vec![];
+                imports.append(&mut expression_imports);
+                imports.append(&mut initialization_expression_imports);
+                imports.append(&mut function_expression_imports);
+                imports.into_iter().unique().collect()
+            }
         }
     }
 }
@@ -895,6 +905,50 @@ mod lir_from_hir {
                 identifier: format!("p"),
             }),
             field: format!("x"),
+        };
+        assert_eq!(lir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_ast_fold_into_lir_fold() {
+        let expression = StreamExpression::Fold {
+            expression: Box::new(StreamExpression::SignalCall {
+                signal: Signal {
+                    id: format!("a"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Array(Box::new(Type::Integer), 3),
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![("a".to_string(), 0)]),
+            }),
+            initialization_expression: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![]),
+            }),
+            function_expression: ASTExpression::Call {
+                id: format!("sum"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![("a".to_string(), 0)]),
+        };
+        let control = Expression::Fold {
+            folded: Box::new(Expression::Identifier {
+                identifier: format!("a"),
+            }),
+            initialization: Box::new(Expression::Literal {
+                literal: Constant::Integer(0),
+            }),
+            function: Box::new(Expression::Identifier {
+                identifier: format!("sum"),
+            }),
         };
         assert_eq!(lir_from_hir(expression), control)
     }
