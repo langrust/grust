@@ -280,6 +280,15 @@ term: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches array sorting as expressions
+    <start:@L> <a: term> ".sort" "(" <f: expression> ")" <end:@R> => {
+        Expression::Sort {
+            expression: Box::new(a),
+            function_expression: Box::new(f),
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
     // catches array folding as expressions
     <start:@L> <a: term> ".fold" "(" <e: expression> "," <f: expression> ")" <end:@R> => {
         Expression::Fold {
