@@ -189,6 +189,19 @@ pub enum StreamExpression {
         /// Stream expression dependencies.
         dependencies: Dependencies,
     },
+    /// Array sort operator expression.
+    Sort {
+        /// The array expression.
+        expression: Box<StreamExpression>,
+        /// The function expression.
+        function_expression: Expression,
+        /// Expression type.
+        typing: Type,
+        /// Expression location.
+        location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
+    },
 }
 
 impl StreamExpression {
@@ -223,7 +236,8 @@ impl StreamExpression {
             | StreamExpression::When { typing, .. }
             | StreamExpression::FieldAccess { typing, .. }
             | StreamExpression::Map { typing, .. }
-            | StreamExpression::Fold { typing, .. } => typing,
+            | StreamExpression::Fold { typing, .. }
+            | StreamExpression::Sort { typing, .. } => typing,
         }
     }
 
@@ -258,7 +272,8 @@ impl StreamExpression {
             | StreamExpression::When { location, .. }
             | StreamExpression::FieldAccess { location, .. }
             | StreamExpression::Map { location, .. }
-            | StreamExpression::Fold { location, .. } => location,
+            | StreamExpression::Fold { location, .. }
+            | StreamExpression::Sort { location, .. } => location,
         }
     }
 
@@ -293,7 +308,8 @@ impl StreamExpression {
             | StreamExpression::When { dependencies, .. }
             | StreamExpression::FieldAccess { dependencies, .. }
             | StreamExpression::Map { dependencies, .. }
-            | StreamExpression::Fold { dependencies, .. } => dependencies.get().unwrap(),
+            | StreamExpression::Fold { dependencies, .. }
+            | StreamExpression::Sort { dependencies, .. } => dependencies.get().unwrap(),
         }
     }
 }

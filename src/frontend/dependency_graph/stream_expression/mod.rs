@@ -106,6 +106,7 @@ impl StreamExpression {
                 errors,
             ),
             StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
+            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 }

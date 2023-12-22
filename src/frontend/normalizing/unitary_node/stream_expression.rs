@@ -120,6 +120,7 @@ impl StreamExpression {
                 initialization_expression
                     .change_node_application_into_unitary_node_application(used_inputs)
             }
+            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 }

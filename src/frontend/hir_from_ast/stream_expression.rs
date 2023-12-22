@@ -197,7 +197,13 @@ pub fn hir_from_ast(
             function_expression,
             typing,
             location,
-        } => todo!(),
+        } => HIRStreamExpression::Sort {
+            expression: Box::new(hir_from_ast(*expression, signals_context)),
+            function_expression,
+            typing: typing.unwrap(),
+            location,
+            dependencies: Dependencies::new(),
+        },
     }
 }
 
