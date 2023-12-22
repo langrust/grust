@@ -160,6 +160,14 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             expression: Box::new(lir_from_hir(*expression)),
             field,
         },
+        StreamExpression::Map {
+            expression,
+            function_expression,
+            ..
+        } => LIRExpression::Map {
+            mapped: Box::new(lir_from_hir(*expression)),
+            function: Box::new(expression_lir_from_hir(function_expression)),
+        },
         StreamExpression::FollowedBy { .. } | StreamExpression::NodeApplication { .. } => {
             unreachable!()
         }
@@ -291,6 +299,19 @@ impl StreamExpression {
             }
             StreamExpression::NodeApplication { .. } => unreachable!(),
             StreamExpression::FieldAccess { expression, .. } => expression.get_imports(),
+            StreamExpression::Map {
+                expression,
+                function_expression,
+                ..
+            } => {
+                let mut expression_imports = expression.get_imports();
+                let mut function_expression_imports = function_expression.get_imports();
+
+                let mut imports = vec![];
+                imports.append(&mut expression_imports);
+                imports.append(&mut function_expression_imports);
+                imports.into_iter().unique().collect()
+            }
         }
     }
 }

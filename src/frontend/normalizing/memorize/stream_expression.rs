@@ -199,6 +199,14 @@ impl StreamExpression {
                 expression.memorize(signal_name, identifier_creator, memory);
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
+            StreamExpression::Map {
+                expression,
+                dependencies,
+                ..
+            } => {
+                expression.memorize(signal_name, identifier_creator, memory);
+                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+            }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
         }
     }

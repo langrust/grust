@@ -108,6 +108,9 @@ impl StreamExpression {
                 expression.change_node_application_into_unitary_node_application(used_inputs)
             }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
+            StreamExpression::Map { expression, .. } => {
+                expression.change_node_application_into_unitary_node_application(used_inputs)
+            }
         }
     }
 }
