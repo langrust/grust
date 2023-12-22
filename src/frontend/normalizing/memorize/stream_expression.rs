@@ -188,7 +188,15 @@ impl StreamExpression {
 
                 *dependencies = Dependencies::from(option_dependencies);
             }
-            _ => (),
+            StreamExpression::FieldAccess {
+                expression,
+                dependencies,
+                ..
+            } => {
+                expression.memorize(signal_name, identifier_creator, memory);
+                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+            }
+            StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
         }
     }
 }

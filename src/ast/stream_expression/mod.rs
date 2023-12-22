@@ -8,6 +8,7 @@ use crate::error::{Error, TerminationError};
 
 mod array;
 mod constant;
+mod field_access;
 mod followed_by;
 mod function_application;
 mod r#match;
