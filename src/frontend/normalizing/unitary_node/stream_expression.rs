@@ -104,7 +104,10 @@ impl StreamExpression {
                 present.change_node_application_into_unitary_node_application(used_inputs);
                 default.change_node_application_into_unitary_node_application(used_inputs)
             }
-            _ => (),
+            StreamExpression::FieldAccess { expression, .. } => {
+                expression.change_node_application_into_unitary_node_application(used_inputs)
+            }
+            StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
         }
     }
 }

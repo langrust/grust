@@ -148,6 +148,19 @@ pub enum StreamExpression {
         /// Stream expression dependencies.
         dependencies: Dependencies,
     },
+    /// Field access stream expression.
+    FieldAccess {
+        /// The structure expression.
+        expression: Box<StreamExpression>,
+        /// The field to access.
+        field: String,
+        /// Stream expression type.
+        typing: Type,
+        /// Stream expression location.
+        location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
+    },
 }
 
 impl StreamExpression {

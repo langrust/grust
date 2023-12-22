@@ -6,6 +6,7 @@ use crate::hir::{node::Node, stream_expression::StreamExpression};
 
 mod array;
 mod constant;
+mod field_access;
 mod followed_by;
 mod function_application;
 mod r#match;
@@ -866,4 +867,44 @@ mod compute_dependencies {
 
         assert_eq!(dependencies, control)
     }
+
+    #[test]
+    fn should_compute_dependencies_of_field_access() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::FieldAccess {
+            expression: Box::new(StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("p"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Structure(String::from("Point")),
+                location: Location::default(),
+                dependencies: Dependencies::new(),
+            }),
+            field: "x".to_string(),
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::new(),
+        };
+
+        stream_expression
+            .compute_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+        let mut dependencies = stream_expression.get_dependencies().clone();
+        dependencies.sort_unstable();
+
+        let control = vec![(String::from("p"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
 }

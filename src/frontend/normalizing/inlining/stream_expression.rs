@@ -225,6 +225,17 @@ impl StreamExpression {
                 option_dependencies.append(&mut default_dependencies);
                 *dependencies = Dependencies::from(option_dependencies);
             }
+            StreamExpression::FieldAccess {
+                expression,
+                ref mut dependencies,
+                ..
+            } => {
+                expression.replace_by_context(context_map);
+                // get matched expression dependencies
+                let expression_dependencies = expression.get_dependencies().clone();
+                // push all dependencies in arms dependencies
+                *dependencies = Dependencies::from(expression_dependencies);
+            }
         }
     }
 
@@ -541,6 +552,25 @@ impl StreamExpression {
                 *dependencies = Dependencies::from(option_dependencies);
 
                 new_equations_option
+            }
+            StreamExpression::FieldAccess {
+                expression,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = expression.inline_when_needed(
+                    signal_id,
+                    memory,
+                    identifier_creator,
+                    graph,
+                    nodes,
+                );
+                // get matched expression dependencies
+                let expression_dependencies = expression.get_dependencies().clone();
+                // push all dependencies in arms dependencies
+                *dependencies = Dependencies::from(expression_dependencies);
+
+                new_equations
             }
         }
     }
