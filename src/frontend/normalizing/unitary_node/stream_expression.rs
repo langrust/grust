@@ -111,6 +111,7 @@ impl StreamExpression {
             StreamExpression::Map { expression, .. } => {
                 expression.change_node_application_into_unitary_node_application(used_inputs)
             }
+            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 }

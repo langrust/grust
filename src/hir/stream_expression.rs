@@ -174,6 +174,21 @@ pub enum StreamExpression {
         /// Stream expression dependencies.
         dependencies: Dependencies,
     },
+    /// Array fold operator stream expression.
+    Fold {
+        /// The array stream expression.
+        expression: Box<StreamExpression>,
+        /// The initialization stream expression.
+        initialization_expression: Box<StreamExpression>,
+        /// The function expression.
+        function_expression: Expression,
+        /// Stream expression type.
+        typing: Type,
+        /// Stream expression location.
+        location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
+    },
 }
 
 impl StreamExpression {
@@ -207,7 +222,8 @@ impl StreamExpression {
             | StreamExpression::Match { typing, .. }
             | StreamExpression::When { typing, .. }
             | StreamExpression::FieldAccess { typing, .. }
-            | StreamExpression::Map { typing, .. } => typing,
+            | StreamExpression::Map { typing, .. }
+            | StreamExpression::Fold { typing, .. } => typing,
         }
     }
 
@@ -241,7 +257,8 @@ impl StreamExpression {
             | StreamExpression::Match { location, .. }
             | StreamExpression::When { location, .. }
             | StreamExpression::FieldAccess { location, .. }
-            | StreamExpression::Map { location, .. } => location,
+            | StreamExpression::Map { location, .. }
+            | StreamExpression::Fold { location, .. } => location,
         }
     }
 
@@ -275,7 +292,8 @@ impl StreamExpression {
             | StreamExpression::Match { dependencies, .. }
             | StreamExpression::When { dependencies, .. }
             | StreamExpression::FieldAccess { dependencies, .. }
-            | StreamExpression::Map { dependencies, .. } => dependencies.get().unwrap(),
+            | StreamExpression::Map { dependencies, .. }
+            | StreamExpression::Fold { dependencies, .. } => dependencies.get().unwrap(),
         }
     }
 }

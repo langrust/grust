@@ -208,6 +208,7 @@ impl StreamExpression {
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
+            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 }
