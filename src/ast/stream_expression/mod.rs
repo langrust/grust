@@ -9,6 +9,7 @@ use crate::error::{Error, TerminationError};
 mod array;
 mod constant;
 mod field_access;
+mod fold;
 mod followed_by;
 mod function_application;
 mod map;
@@ -131,15 +132,28 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
-    /// Array map operator expression.
+    /// Array map operator stream expression.
     Map {
-        /// The array expression.
+        /// The array stream expression.
         expression: Box<StreamExpression>,
         /// The function expression.
         function_expression: Expression,
-        /// Expression type.
+        /// Stream expression type.
         typing: Option<Type>,
-        /// Expression location.
+        /// Stream expression location.
+        location: Location,
+    },
+    /// Array fold operator stream expression.
+    Fold {
+        /// The array stream expression.
+        expression: Box<StreamExpression>,
+        /// The initialization stream expression.
+        initialization_expression: Box<StreamExpression>,
+        /// The function expression.
+        function_expression: Expression,
+        /// Stream expression type.
+        typing: Option<Type>,
+        /// Stream expression location.
         location: Location,
     },
 }
@@ -240,6 +254,13 @@ impl StreamExpression {
                 user_types_context,
                 errors,
             ),
+            StreamExpression::Fold { .. } => self.typing_fold(
+                nodes_context,
+                signals_context,
+                global_context,
+                user_types_context,
+                errors,
+            ),
         }
     }
 
@@ -270,7 +291,8 @@ impl StreamExpression {
             | StreamExpression::Match { typing, .. }
             | StreamExpression::When { typing, .. }
             | StreamExpression::FieldAccess { typing, .. }
-            | StreamExpression::Map { typing, .. } => typing.as_ref(),
+            | StreamExpression::Map { typing, .. }
+            | StreamExpression::Fold { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -301,7 +323,8 @@ impl StreamExpression {
             | StreamExpression::Match { typing, .. }
             | StreamExpression::When { typing, .. }
             | StreamExpression::FieldAccess { typing, .. }
-            | StreamExpression::Map { typing, .. } => typing,
+            | StreamExpression::Map { typing, .. }
+            | StreamExpression::Fold { typing, .. } => typing,
         }
     }
 }
@@ -1724,6 +1747,206 @@ mod typing {
             }),
             function_expression: Expression::Call {
                 id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_fold() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("sum"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Fold {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("sum"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::Fold {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("sum"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_folded_expression_not_array() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Integer);
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("sum"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Fold {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("sum"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_folding_function_not_compatible_with_folding_inputs() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("sum"),
+            Type::Abstract(vec![Type::Integer, Type::Float], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Fold {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("sum"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_folding_function_return_type_not_equal_to_initialization() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("sum"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Float)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Fold {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(StreamExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
             },
