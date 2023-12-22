@@ -443,6 +443,50 @@ fn error_when_typing_pid_expect_structure_type() {
 }
 
 #[test]
+fn error_when_typing_alarm_manager_expect_abstraction() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let alarm_manager_expect_abstraction_id = files.add(
+        "alarm_manager_expect_abstraction.gr",
+        std::fs::read_to_string("tests/fixture/alarm_manager_expect_abstraction.gr")
+            .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            alarm_manager_expect_abstraction_id,
+            &files.source(alarm_manager_expect_abstraction_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    display(&errors, &files);
+}
+
+#[test]
+fn error_when_typing_alarm_manager_expect_array() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let alarm_manager_expect_array_id = files.add(
+        "alarm_manager_expect_array.gr",
+        std::fs::read_to_string("tests/fixture/alarm_manager_expect_array.gr")
+            .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            alarm_manager_expect_array_id,
+            &files.source(alarm_manager_expect_array_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    display(&errors, &files);
+}
+
+#[test]
 fn error_when_typing_pid_unknown_enumeration() {
     let mut files = SimpleFiles::new();
     let mut errors = vec![];
