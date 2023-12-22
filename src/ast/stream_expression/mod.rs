@@ -241,15 +241,16 @@ impl StreamExpression {
     /// ```
     pub fn get_type(&self) -> Option<&Type> {
         match self {
-            StreamExpression::Constant { typing, .. } => typing.as_ref(),
-            StreamExpression::SignalCall { typing, .. } => typing.as_ref(),
-            StreamExpression::FollowedBy { typing, .. } => typing.as_ref(),
-            StreamExpression::FunctionApplication { typing, .. } => typing.as_ref(),
-            StreamExpression::NodeApplication { typing, .. } => typing.as_ref(),
-            StreamExpression::Structure { typing, .. } => typing.as_ref(),
-            StreamExpression::Array { typing, .. } => typing.as_ref(),
-            StreamExpression::Match { typing, .. } => typing.as_ref(),
-            StreamExpression::When { typing, .. } => typing.as_ref(),
+            StreamExpression::Constant { typing, .. }
+            | StreamExpression::SignalCall { typing, .. }
+            | StreamExpression::FollowedBy { typing, .. }
+            | StreamExpression::FunctionApplication { typing, .. }
+            | StreamExpression::NodeApplication { typing, .. }
+            | StreamExpression::Structure { typing, .. }
+            | StreamExpression::Array { typing, .. }
+            | StreamExpression::Match { typing, .. }
+            | StreamExpression::When { typing, .. }
+            | StreamExpression::FieldAccess { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -270,15 +271,16 @@ impl StreamExpression {
     /// ```
     pub fn get_type_owned(self) -> Option<Type> {
         match self {
-            StreamExpression::Constant { typing, .. } => typing,
-            StreamExpression::SignalCall { typing, .. } => typing,
-            StreamExpression::FollowedBy { typing, .. } => typing,
-            StreamExpression::FunctionApplication { typing, .. } => typing,
-            StreamExpression::NodeApplication { typing, .. } => typing,
-            StreamExpression::Structure { typing, .. } => typing,
-            StreamExpression::Array { typing, .. } => typing,
-            StreamExpression::Match { typing, .. } => typing,
-            StreamExpression::When { typing, .. } => typing,
+            StreamExpression::Constant { typing, .. }
+            | StreamExpression::SignalCall { typing, .. }
+            | StreamExpression::FollowedBy { typing, .. }
+            | StreamExpression::FunctionApplication { typing, .. }
+            | StreamExpression::NodeApplication { typing, .. }
+            | StreamExpression::Structure { typing, .. }
+            | StreamExpression::Array { typing, .. }
+            | StreamExpression::Match { typing, .. }
+            | StreamExpression::When { typing, .. }
+            | StreamExpression::FieldAccess { typing, .. } => typing,
         }
     }
 }
