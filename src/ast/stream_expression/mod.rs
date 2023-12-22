@@ -51,7 +51,7 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
-    /// Map application stream expression.
+    /// Function application stream expression.
     FunctionApplication {
         /// The expression applied.
         function_expression: Expression,
@@ -149,6 +149,17 @@ pub enum StreamExpression {
         expression: Box<StreamExpression>,
         /// The initialization stream expression.
         initialization_expression: Box<StreamExpression>,
+        /// The function expression.
+        function_expression: Expression,
+        /// Stream expression type.
+        typing: Option<Type>,
+        /// Stream expression location.
+        location: Location,
+    },
+    /// Array sort operator stream expression.
+    Sort {
+        /// The array stream expression.
+        expression: Box<StreamExpression>,
         /// The function expression.
         function_expression: Expression,
         /// Stream expression type.
@@ -261,6 +272,12 @@ impl StreamExpression {
                 user_types_context,
                 errors,
             ),
+            StreamExpression::Sort {
+                expression,
+                function_expression,
+                typing,
+                location,
+            } => todo!(),
         }
     }
 
@@ -292,7 +309,8 @@ impl StreamExpression {
             | StreamExpression::When { typing, .. }
             | StreamExpression::FieldAccess { typing, .. }
             | StreamExpression::Map { typing, .. }
-            | StreamExpression::Fold { typing, .. } => typing.as_ref(),
+            | StreamExpression::Fold { typing, .. }
+            | StreamExpression::Sort { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -324,7 +342,8 @@ impl StreamExpression {
             | StreamExpression::When { typing, .. }
             | StreamExpression::FieldAccess { typing, .. }
             | StreamExpression::Map { typing, .. }
-            | StreamExpression::Fold { typing, .. } => typing,
+            | StreamExpression::Fold { typing, .. }
+            | StreamExpression::Sort { typing, .. } => typing,
         }
     }
 }
