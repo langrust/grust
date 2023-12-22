@@ -100,4 +100,13 @@ pub enum Expression {
         /// The mapping function.
         function: Box<Expression>,
     },
+    /// A fold expression: `my_list.fold(0, |sum, x| x + sum)`
+    Fold {
+        /// The folded expression.
+        folded: Box<Expression>,
+        /// The initialization expression.
+        initialization: Box<Expression>,
+        /// The folding function.
+        function: Box<Expression>,
+    },
 }

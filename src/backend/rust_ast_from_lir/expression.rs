@@ -171,6 +171,11 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
             method: "map".to_string(),
             arguments: vec![rust_ast_from_lir(*function)],
         },
+        Expression::Fold {
+            folded,
+            initialization,
+            function,
+        } => todo!(),
     }
 }
 
