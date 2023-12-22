@@ -1,0 +1,12 @@
+enum Priority {
+    Low, Medium, High
+}
+
+struct Alarm {
+    priority: Priority,
+    raised: bool,
+}
+
+node alarm_manager(alarms: [Alarm; 10]) {
+    out raise: [bool; 10] = alarms.map(true);
+}

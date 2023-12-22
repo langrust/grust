@@ -250,3 +250,28 @@ fn generate_rust_project_for_alarm_manager_function() {
 
     project.generate()
 }
+
+#[test]
+fn generate_rust_project_for_alarm_manager() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let alarm_manager_id = files.add(
+        "alarm_manager.gr",
+        std::fs::read_to_string("tests/fixture/alarm_manager.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(alarm_manager_id, &files.source(alarm_manager_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+    file.normalize(&mut errors).unwrap();
+    let project = lir_from_hir(file);
+    let mut project = rust_ast_from_lir(project);
+    project.set_parent("tests/generated/alarm_manager/");
+
+    project.generate()
+}
