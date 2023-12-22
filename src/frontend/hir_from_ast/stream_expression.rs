@@ -163,6 +163,18 @@ pub fn hir_from_ast(
             location,
             dependencies: Dependencies::new(),
         },
+        StreamExpression::Map {
+            expression,
+            function_expression,
+            typing,
+            location,
+        } => HIRStreamExpression::Map {
+            expression: Box::new(hir_from_ast(*expression, signals_context)),
+            function_expression,
+            typing: typing.unwrap(),
+            location,
+            dependencies: Dependencies::new(),
+        },
     }
 }
 
