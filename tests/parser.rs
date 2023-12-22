@@ -1116,6 +1116,7 @@ mod langrust_ast_constructs {
             "match_test.gr",
             "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
         );
+        let file_id17 = files.add("field_access_test.gr", "p::x");
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1611,6 +1612,22 @@ mod langrust_ast_constructs {
                 location: Location::default()
             },
             stream_expression
+        );
+        let expression = langrust::streamExpressionParser::new()
+            .parse(file_id17, &files.source(file_id17).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::FieldAccess {
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: String::from("p"),
+                    typing: None,
+                    location: Location::default()
+                }),
+                field: "x".to_string(),
+                typing: None,
+                location: Location::default()
+            },
+            expression
         );
     }
 
