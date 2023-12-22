@@ -520,6 +520,16 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches array folding as stream expressions
+    <start:@L> <a: streamTerm> ".fold" "(" <e: streamExpression> "," <f: expression> ")" <end:@R> => {
+        StreamExpression::Fold {
+            expression: Box::new(a),
+            initialization_expression: Box::new(e),
+            function_expression: f,
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches unary operations as stream expression first or a term
