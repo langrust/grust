@@ -184,10 +184,11 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
         StreamExpression::Sort {
             expression,
             function_expression,
-            typing,
-            location,
-            dependencies,
-        } => todo!(),
+            ..
+        } => LIRExpression::Sort {
+            sorted: Box::new(lir_from_hir(*expression)),
+            function: Box::new(expression_lir_from_hir(function_expression)),
+        },
     }
 }
 
@@ -348,10 +349,16 @@ impl StreamExpression {
             StreamExpression::Sort {
                 expression,
                 function_expression,
-                typing,
-                location,
-                dependencies,
-            } => todo!(),
+                ..
+            } => {
+                let mut expression_imports = expression.get_imports();
+                let mut function_expression_imports = function_expression.get_imports();
+
+                let mut imports = vec![];
+                imports.append(&mut expression_imports);
+                imports.append(&mut function_expression_imports);
+                imports.into_iter().unique().collect()
+            }
         }
     }
 }
