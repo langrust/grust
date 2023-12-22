@@ -187,6 +187,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
                 rust_ast_from_lir(*function),
             ],
         },
+        Expression::Sort { sorted, function } => todo!(),
     }
 }
 
