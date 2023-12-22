@@ -205,16 +205,16 @@ impl Expression {
     /// ```
     pub fn get_type(&self) -> Option<&Type> {
         match self {
-            Expression::Constant { typing, .. } => typing.as_ref(),
-            Expression::Call { typing, .. } => typing.as_ref(),
-            Expression::Application { typing, .. } => typing.as_ref(),
-            Expression::Abstraction { typing, .. } => typing.as_ref(),
-            Expression::TypedAbstraction { typing, .. } => typing.as_ref(),
-            Expression::Structure { typing, .. } => typing.as_ref(),
-            Expression::Array { typing, .. } => typing.as_ref(),
-            Expression::Match { typing, .. } => typing.as_ref(),
-            Expression::When { typing, .. } => typing.as_ref(),
-            Expression::FieldAccess { typing, .. } => typing.as_ref(),
+            Expression::Constant { typing, .. }
+            | Expression::Call { typing, .. }
+            | Expression::Application { typing, .. }
+            | Expression::Abstraction { typing, .. }
+            | Expression::TypedAbstraction { typing, .. }
+            | Expression::Structure { typing, .. }
+            | Expression::Array { typing, .. }
+            | Expression::Match { typing, .. }
+            | Expression::When { typing, .. }
+            | Expression::FieldAccess { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -235,16 +235,16 @@ impl Expression {
     /// ```
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         match self {
-            Expression::Constant { typing, .. } => typing.as_mut(),
-            Expression::Call { typing, .. } => typing.as_mut(),
-            Expression::Application { typing, .. } => typing.as_mut(),
-            Expression::Abstraction { typing, .. } => typing.as_mut(),
-            Expression::TypedAbstraction { typing, .. } => typing.as_mut(),
-            Expression::Structure { typing, .. } => typing.as_mut(),
-            Expression::Array { typing, .. } => typing.as_mut(),
-            Expression::Match { typing, .. } => typing.as_mut(),
-            Expression::When { typing, .. } => typing.as_mut(),
-            Expression::FieldAccess { typing, .. } => typing.as_mut(),
+            Expression::Constant { typing, .. }
+            | Expression::Call { typing, .. }
+            | Expression::Application { typing, .. }
+            | Expression::Abstraction { typing, .. }
+            | Expression::TypedAbstraction { typing, .. }
+            | Expression::Structure { typing, .. }
+            | Expression::Array { typing, .. }
+            | Expression::Match { typing, .. }
+            | Expression::When { typing, .. }
+            | Expression::FieldAccess { typing, .. } => typing.as_mut(),
         }
     }
 
@@ -265,16 +265,16 @@ impl Expression {
     /// ```
     pub fn get_type_owned(self) -> Option<Type> {
         match self {
-            Expression::Constant { typing, .. } => typing,
-            Expression::Call { typing, .. } => typing,
-            Expression::Application { typing, .. } => typing,
-            Expression::Abstraction { typing, .. } => typing,
-            Expression::TypedAbstraction { typing, .. } => typing,
-            Expression::Structure { typing, .. } => typing,
-            Expression::Array { typing, .. } => typing,
-            Expression::Match { typing, .. } => typing,
-            Expression::When { typing, .. } => typing,
-            Expression::FieldAccess { typing, .. } => typing,
+            Expression::Constant { typing, .. }
+            | Expression::Call { typing, .. }
+            | Expression::Application { typing, .. }
+            | Expression::Abstraction { typing, .. }
+            | Expression::TypedAbstraction { typing, .. }
+            | Expression::Structure { typing, .. }
+            | Expression::Array { typing, .. }
+            | Expression::Match { typing, .. }
+            | Expression::When { typing, .. }
+            | Expression::FieldAccess { typing, .. } => typing,
         }
     }
 }
