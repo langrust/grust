@@ -441,3 +441,25 @@ fn error_when_typing_pid_expect_structure_type() {
 
     display(&errors, &files);
 }
+
+#[test]
+fn error_when_typing_pid_unknown_enumeration() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_unknown_enumeration_id = files.add(
+        "pid_unknown_enumeration.gr",
+        std::fs::read_to_string("tests/fixture/pid_unknown_enumeration.gr")
+            .expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            pid_unknown_enumeration_id,
+            &files.source(pid_unknown_enumeration_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap_err();
+
+    display(&errors, &files);
+}

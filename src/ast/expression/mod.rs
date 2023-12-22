@@ -156,7 +156,7 @@ impl Expression {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
-            Expression::Constant { .. } => self.typing_constant(),
+            Expression::Constant { .. } => self.typing_constant(user_types_context, errors),
             Expression::Call { .. } => self.typing_call(elements_context, errors),
             Expression::Application { .. } => self.typing_application(
                 global_context,

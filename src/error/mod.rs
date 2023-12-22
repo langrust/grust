@@ -70,6 +70,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// encountering an unknown enumeration
+    UnknownEnumeration {
+        /// the unknow enumeration identifier
+        name: String,
+        /// the error location
+        location: Location,
+    },
     /// encountering an unknown field
     UnknownField {
         /// the structure of the supposed field
@@ -263,6 +270,16 @@ impl Error {
                     format!("type '{name}' is not defined")
                 ]
             ),
+            Error::UnknownEnumeration { name, location } => Diagnostic::error()
+                .with_message("unknown enumeration")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("unknown")
+                ])
+                .with_notes(vec![
+                    format!("enumeration '{name}' is not defined")
+                ]
+            ),
             Error::UnknownField { structure_name, field_name, location } => Diagnostic::error()
                 .with_message("unknown field")
                 .with_labels(vec![
@@ -414,6 +431,7 @@ impl std::fmt::Display for Error {
             Error::UnknownSignal { .. } => write!(f, "Unknown Signal"),
             Error::UnknownNode { .. } => write!(f, "Unknown Node"),
             Error::UnknownType { .. } => write!(f, "Unknown Type"),
+            Error::UnknownEnumeration { .. } => write!(f, "Unknown Enumeration"),
             Error::UnknownField { .. } => write!(f, "Unknown Field"),
             Error::MissingField { .. } => write!(f, "Missing Field"),
             Error::ComponentCall { .. } => write!(f, "Component Call"),
