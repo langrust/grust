@@ -264,7 +264,17 @@ impl StreamExpression {
                 // push all dependencies in arms dependencies
                 *dependencies = Dependencies::from(expression_dependencies);
             }
-            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
+            StreamExpression::Sort {
+                expression,
+                ref mut dependencies,
+                ..
+            } => {
+                expression.replace_by_context(context_map);
+                // get matched expression dependencies
+                let expression_dependencies = expression.get_dependencies().clone();
+                // push all dependencies in arms dependencies
+                *dependencies = Dependencies::from(expression_dependencies);
+            }
         }
     }
 
@@ -653,7 +663,25 @@ impl StreamExpression {
 
                 new_equations
             }
-            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
+            StreamExpression::Sort {
+                expression,
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = expression.inline_when_needed(
+                    signal_id,
+                    memory,
+                    identifier_creator,
+                    graph,
+                    nodes,
+                );
+                // get matched expression dependencies
+                let expression_dependencies = expression.get_dependencies().clone();
+                // push all dependencies in arms dependencies
+                *dependencies = Dependencies::from(expression_dependencies);
+
+                new_equations
+            }
         }
     }
 }

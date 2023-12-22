@@ -207,7 +207,6 @@ impl StreamExpression {
                 expression.memorize(signal_name, identifier_creator, memory);
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
-            StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
             StreamExpression::Fold {
                 expression,
                 initialization_expression,
@@ -226,7 +225,15 @@ impl StreamExpression {
                 // push all dependencies in arms dependencies
                 *dependencies = Dependencies::from(expression_dependencies);
             }
-            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
+            StreamExpression::Sort {
+                expression,
+                dependencies,
+                ..
+            } => {
+                expression.memorize(signal_name, identifier_creator, memory);
+                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+            }
+            StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
         }
     }
 }
