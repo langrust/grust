@@ -136,28 +136,28 @@ impl StreamExpression {
                     });
                 let mut arms_dependencies = arms
                     .iter()
-                        .flat_map(|(pattern, bound, _, matched_expression)| {
-                            // get local signals defined in pattern
-                            let local_signals = pattern.local_identifiers();
+                    .flat_map(|(pattern, bound, _, matched_expression)| {
+                        // get local signals defined in pattern
+                        let local_signals = pattern.local_identifiers();
 
-                            // remove identifiers created by the pattern from the dependencies
+                        // remove identifiers created by the pattern from the dependencies
                         let mut bound_dependencies = bound.as_ref().map_or(vec![], |expression| {
-                                    expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .filter(|(signal, _)| !local_signals.contains(signal))
-                                        .collect()
-                                });
-                            let mut matched_expression_dependencies = matched_expression
+                            expression
                                 .get_dependencies()
                                 .clone()
                                 .into_iter()
                                 .filter(|(signal, _)| !local_signals.contains(signal))
-                                .collect::<Vec<_>>();
-                            matched_expression_dependencies.append(&mut bound_dependencies);
-                            matched_expression_dependencies
-                        })
+                                .collect()
+                        });
+                        let mut matched_expression_dependencies = matched_expression
+                            .get_dependencies()
+                            .clone()
+                            .into_iter()
+                            .filter(|(signal, _)| !local_signals.contains(signal))
+                            .collect::<Vec<_>>();
+                        matched_expression_dependencies.append(&mut bound_dependencies);
+                        matched_expression_dependencies
+                    })
                     .collect::<Vec<_>>();
 
                 expression_dependencies.append(&mut arms_dependencies);

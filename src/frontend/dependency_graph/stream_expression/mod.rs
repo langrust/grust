@@ -912,5 +912,4 @@ mod compute_dependencies {
 
         assert_eq!(dependencies, control)
     }
-
 }

@@ -222,4 +222,3 @@ fn generate_rust_project_for_pid_field_access() {
 
     project.generate()
 }
-
