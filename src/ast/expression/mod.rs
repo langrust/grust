@@ -151,6 +151,17 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
+    /// Array sort operator expression.
+    Sort {
+        /// The array expression.
+        expression: Box<Expression>,
+        /// The function expression.
+        function_expression: Box<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
+        /// Expression location.
+        location: Location,
+    },
 }
 
 impl Expression {
@@ -217,6 +228,12 @@ impl Expression {
             Expression::Fold { .. } => {
                 self.typing_fold(global_context, elements_context, user_types_context, errors)
             }
+            Expression::Sort {
+                expression,
+                function_expression,
+                typing,
+                location,
+            } => todo!(),
         }
     }
 
@@ -248,7 +265,8 @@ impl Expression {
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
             | Expression::Map { typing, .. }
-            | Expression::Fold { typing, .. } => typing.as_ref(),
+            | Expression::Fold { typing, .. }
+            | Expression::Sort { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -280,7 +298,8 @@ impl Expression {
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
             | Expression::Map { typing, .. }
-            | Expression::Fold { typing, .. } => typing.as_mut(),
+            | Expression::Fold { typing, .. }
+            | Expression::Sort { typing, .. } => typing.as_mut(),
         }
     }
 
@@ -312,7 +331,8 @@ impl Expression {
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
             | Expression::Map { typing, .. }
-            | Expression::Fold { typing, .. } => typing,
+            | Expression::Fold { typing, .. }
+            | Expression::Sort { typing, .. } => typing,
         }
     }
 }
