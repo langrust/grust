@@ -113,7 +113,18 @@ pub enum StreamExpression {
         present: Box<StreamExpression>,
         /// The default stream expression.
         default: Box<StreamExpression>,
-        /// Stream Expression type.
+        /// Stream expression type.
+        typing: Option<Type>,
+        /// Stream expression location.
+        location: Location,
+    },
+    /// Field access stream expression.
+    FieldAccess {
+        /// The structure expression.
+        expression: Box<StreamExpression>,
+        /// The field to access.
+        field: String,
+        /// Stream expression type.
         typing: Option<Type>,
         /// Stream expression location.
         location: Location,
@@ -196,6 +207,13 @@ impl StreamExpression {
                 errors,
             ),
             StreamExpression::Match { .. } => self.typing_match(
+                nodes_context,
+                signals_context,
+                global_context,
+                user_types_context,
+                errors,
+            ),
+            StreamExpression::FieldAccess { .. } => self.typing_field_access(
                 nodes_context,
                 signals_context,
                 global_context,
@@ -674,6 +692,7 @@ mod typing {
             )
             .unwrap_err();
     }
+
     #[test]
     fn should_type_function_application_stream_expression() {
         let mut errors = vec![];
@@ -1392,6 +1411,180 @@ mod typing {
             )
             .unwrap_err();
     }
+
+    #[test]
+    fn should_type_field_access() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("p"), Type::Structure("Point".to_string()));
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::from([(
+            "Point".to_string(),
+            Typedef::Structure {
+                id: "Point".to_string(),
+                fields: vec![
+                    ("x".to_string(), Type::Integer),
+                    ("y".to_string(), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        )]);
+
+        let mut expression = StreamExpression::FieldAccess {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            field: "x".to_string(),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::FieldAccess {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: Some(Type::Structure("Point".to_string())),
+                location: Location::default(),
+            }),
+            field: "x".to_string(),
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_expression_to_field_access_not_structure() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("p"), Type::Integer);
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::from([(
+            "Point".to_string(),
+            Typedef::Structure {
+                id: "Point".to_string(),
+                fields: vec![
+                    ("x".to_string(), Type::Integer),
+                    ("y".to_string(), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        )]);
+
+        let mut expression = StreamExpression::FieldAccess {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            field: "x".to_string(),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_expression_to_field_access_is_enumeration() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("p"), Type::Structure("Point".to_string()));
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::from([(
+            "Point".to_string(),
+            Typedef::Enumeration {
+                id: "Point".to_string(),
+                elements: vec!["A".to_string(), "B".to_string()],
+                location: Location::default(),
+            },
+        )]);
+
+        let mut expression = StreamExpression::FieldAccess {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            field: "x".to_string(),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_for_unknown_field_to_acces() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("p"), Type::Structure("Point".to_string()));
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::from([(
+            "Point".to_string(),
+            Typedef::Structure {
+                id: "Point".to_string(),
+                fields: vec![
+                    ("x".to_string(), Type::Integer),
+                    ("y".to_string(), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        )]);
+
+        let mut expression = StreamExpression::FieldAccess {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            field: "z".to_string(),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
 }
 
 #[cfg(test)]
