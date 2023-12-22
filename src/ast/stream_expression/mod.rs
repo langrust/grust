@@ -11,6 +11,7 @@ mod constant;
 mod field_access;
 mod followed_by;
 mod function_application;
+mod map;
 mod r#match;
 mod node_application;
 mod signal_call;
@@ -130,6 +131,17 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
+    /// Array map operator expression.
+    Map {
+        /// The array expression.
+        expression: Box<StreamExpression>,
+        /// The function expression.
+        function_expression: Expression,
+        /// Expression type.
+        typing: Option<Type>,
+        /// Expression location.
+        location: Location,
+    },
 }
 
 impl StreamExpression {
@@ -221,6 +233,13 @@ impl StreamExpression {
                 user_types_context,
                 errors,
             ),
+            StreamExpression::Map { .. } => self.typing_map(
+                nodes_context,
+                signals_context,
+                global_context,
+                user_types_context,
+                errors,
+            ),
         }
     }
 
@@ -250,7 +269,8 @@ impl StreamExpression {
             | StreamExpression::Array { typing, .. }
             | StreamExpression::Match { typing, .. }
             | StreamExpression::When { typing, .. }
-            | StreamExpression::FieldAccess { typing, .. } => typing.as_ref(),
+            | StreamExpression::FieldAccess { typing, .. }
+            | StreamExpression::Map { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -280,7 +300,8 @@ impl StreamExpression {
             | StreamExpression::Array { typing, .. }
             | StreamExpression::Match { typing, .. }
             | StreamExpression::When { typing, .. }
-            | StreamExpression::FieldAccess { typing, .. } => typing,
+            | StreamExpression::FieldAccess { typing, .. }
+            | StreamExpression::Map { typing, .. } => typing,
         }
     }
 }
@@ -1578,6 +1599,139 @@ mod typing {
         };
 
         expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_map() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("f"),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Map {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::Map {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
+                location: Location::default(),
+            },
+            typing: Some(Type::Array(Box::new(Type::Float), 3)),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_mapped_expression_not_array() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Integer);
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("f"),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Map {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_mapping_function_not_compatible_with_array_elements() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Boolean), 3));
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("f"),
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Float)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Map {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
