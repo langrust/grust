@@ -1117,6 +1117,8 @@ mod langrust_ast_constructs {
             "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
         );
         let file_id17 = files.add("field_access_test.gr", "p::x");
+        let file_id18 = files.add("map_test.gr", "x.map(f)");
+        let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1613,7 +1615,7 @@ mod langrust_ast_constructs {
             },
             stream_expression
         );
-        let expression = langrust::streamExpressionParser::new()
+        let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id17, &files.source(file_id17).unwrap())
             .unwrap();
         assert_eq!(
@@ -1627,8 +1629,74 @@ mod langrust_ast_constructs {
                 typing: None,
                 location: Location::default()
             },
-            expression
+            stream_expression
         );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id18, &files.source(file_id18).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::Map {
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: String::from("x"),
+                    typing: None,
+                    location: Location::default()
+                }),
+                function_expression: Expression::Call {
+                    id: String::from("f"),
+                    typing: None,
+                    location: Location::default()
+                },
+                typing: None,
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id19, &files.source(file_id19).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::Fold {
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: "l".to_string(),
+                    typing: None,
+                    location: Location::default()
+                }),
+                initialization_expression: Box::new(StreamExpression::Constant {
+                    constant: Constant::Integer(0),
+                    typing: None,
+                    location: Location::default()
+                }),
+                function_expression: Expression::Abstraction {
+                    inputs: vec![String::from("sum"), String::from("x")],
+                    expression: Box::new(Expression::Application {
+                        function_expression: Box::new(Expression::Call {
+                            id: BinaryOperator::Add.to_string(),
+                            typing: None,
+                            location: Location::default()
+                        }),
+                        inputs: vec![
+                            Expression::Call {
+                                id: String::from("x"),
+                                typing: None,
+                                location: Location::default()
+                            },
+                            Expression::Call {
+                                id: String::from("sum"),
+                                typing: None,
+                                location: Location::default()
+                            },
+                        ],
+                        typing: None,
+                        location: Location::default()
+                    }),
+                    typing: None,
+                    location: Location::default()
+                },
+                typing: None,
+                location: Location::default()
+            },
+            stream_expression
+        )
     }
 
     #[test]
@@ -1655,6 +1723,7 @@ mod langrust_ast_constructs {
         );
         let file_id17 = files.add("field_access_test.gr", "p::x");
         let file_id18 = files.add("map_test.gr", "x.map(f)");
+        let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -2214,6 +2283,52 @@ mod langrust_ast_constructs {
             },
             expression
         );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id19, &files.source(file_id19).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Fold {
+                expression: Box::new(Expression::Call {
+                    id: "l".to_string(),
+                    typing: None,
+                    location: Location::default()
+                }),
+                initialization_expression: Box::new(Expression::Constant {
+                    constant: Constant::Integer(0),
+                    typing: None,
+                    location: Location::default()
+                }),
+                function_expression: Box::new(Expression::Abstraction {
+                    inputs: vec![String::from("sum"), String::from("x")],
+                    expression: Box::new(Expression::Application {
+                        function_expression: Box::new(Expression::Call {
+                            id: BinaryOperator::Add.to_string(),
+                            typing: None,
+                            location: Location::default()
+                        }),
+                        inputs: vec![
+                            Expression::Call {
+                                id: String::from("x"),
+                                typing: None,
+                                location: Location::default()
+                            },
+                            Expression::Call {
+                                id: String::from("sum"),
+                                typing: None,
+                                location: Location::default()
+                            },
+                        ],
+                        typing: None,
+                        location: Location::default()
+                    }),
+                    typing: None,
+                    location: Location::default()
+                }),
+                typing: None,
+                location: Location::default()
+            },
+            expression
+        )
     }
 
     #[test]
