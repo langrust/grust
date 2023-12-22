@@ -175,7 +175,18 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
             folded,
             initialization,
             function,
-        } => todo!(),
+        } => RustASTExpression::MethodCall {
+            receiver: Box::new(RustASTExpression::MethodCall {
+                receiver: Box::new(rust_ast_from_lir(*folded)),
+                method: "into_iter".to_string(),
+                arguments: vec![],
+            }),
+            method: "fold".to_string(),
+            arguments: vec![
+                rust_ast_from_lir(*initialization),
+                rust_ast_from_lir(*function),
+            ],
+        },
     }
 }
 
@@ -622,7 +633,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_map_iterator_from_lir_map() {
+    fn should_create_rust_ast_map_operation_from_lir_map() {
         let expression = Expression::Map {
             mapped: Box::new(Expression::Identifier {
                 identifier: format!("a"),
@@ -639,6 +650,40 @@ mod rust_ast_from_lir {
             arguments: vec![RustASTExpression::Identifier {
                 identifier: "f".to_string(),
             }],
+        };
+        assert_eq!(rust_ast_from_lir(expression), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_fold_iterator_from_lir_fold() {
+        let expression = Expression::Fold {
+            folded: Box::new(Expression::Identifier {
+                identifier: format!("a"),
+            }),
+            initialization: Box::new(Expression::Literal {
+                literal: Constant::Integer(0),
+            }),
+            function: Box::new(Expression::Identifier {
+                identifier: format!("sum"),
+            }),
+        };
+        let control = RustASTExpression::MethodCall {
+            receiver: Box::new(RustASTExpression::MethodCall {
+                receiver: Box::new(RustASTExpression::Identifier {
+                    identifier: "a".to_string(),
+                }),
+                method: "into_iter".to_string(),
+                arguments: vec![],
+            }),
+            method: "fold".to_string(),
+            arguments: vec![
+                RustASTExpression::Literal {
+                    literal: Constant::Integer(0),
+                },
+                RustASTExpression::Identifier {
+                    identifier: "sum".to_string(),
+                },
+            ],
         };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
