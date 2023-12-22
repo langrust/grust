@@ -194,3 +194,32 @@ fn generate_rust_project_for_pid_function_field_access() {
 
     project.generate()
 }
+
+#[test]
+fn generate_rust_project_for_pid_field_access() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let pid_function_field_access_id = files.add(
+        "pid_field_access.gr",
+        std::fs::read_to_string("tests/fixture/pid_field_access.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            pid_function_field_access_id,
+            &files.source(pid_function_field_access_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+    file.normalize(&mut errors).unwrap();
+    let project = lir_from_hir(file);
+    let mut project = rust_ast_from_lir(project);
+    project.set_parent("tests/generated/pid_field_access/");
+
+    project.generate()
+}
+
