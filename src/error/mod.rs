@@ -166,6 +166,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// expect array type
+    ExpectArray {
+        /// given type instead of the array
+        given_type: Type,
+        /// the error location
+        location: Location,
+    },
     /// can not infere type
     NoTypeInference {
         /// the error location
@@ -395,6 +402,16 @@ impl Error {
                     format!("expect structure type but '{given_type}' was given")
                 ]
             ),
+            Error::ExpectArray { given_type, location } => Diagnostic::error()
+                .with_message("incompatible type")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong type")
+                ])
+                .with_notes(vec![
+                    format!("expect array type but '{given_type}' was given")
+                ]
+            ),
             Error::NoTypeInference { location } => Diagnostic::error()
                 .with_message("can not infere type")
                 .with_labels(vec![
@@ -445,6 +462,7 @@ impl std::fmt::Display for Error {
             Error::ExpectAbstraction { .. } => write!(f, "Expect Abstraction"),
             Error::ExpectOption { .. } => write!(f, "Expect Option"),
             Error::ExpectStructure { .. } => write!(f, "Expect Structure"),
+            Error::ExpectArray { .. } => write!(f, "Expect Array"),
             Error::NoTypeInference { .. } => write!(f, "No Type Inference"),
             Error::NotCausal { .. } => write!(f, "Not Causal"),
             Error::UnusedSignal { .. } => write!(f, "Unused Signal"),
