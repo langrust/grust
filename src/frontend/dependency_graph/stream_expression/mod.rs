@@ -9,6 +9,7 @@ mod constant;
 mod field_access;
 mod followed_by;
 mod function_application;
+mod map;
 mod r#match;
 mod node_application;
 mod signal_call;
@@ -86,6 +87,12 @@ impl StreamExpression {
                 errors,
             ),
             StreamExpression::FieldAccess { .. } => self.compute_field_access_dependencies(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            StreamExpression::Map { .. } => self.compute_map_dependencies(
                 nodes_context,
                 nodes_graphs,
                 nodes_reduced_graphs,
@@ -909,6 +916,49 @@ mod compute_dependencies {
         dependencies.sort_unstable();
 
         let control = vec![(String::from("p"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_compute_dependencies_of_map() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::Map {
+            expression: Box::new(StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("a"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Array(Box::new(Type::Integer), 3),
+                location: Location::default(),
+                dependencies: Dependencies::new(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("f"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
+                location: Location::default(),
+            },
+            typing: Type::Array(Box::new(Type::Float), 3),
+            location: Location::default(),
+            dependencies: Dependencies::new(),
+        };
+
+        stream_expression
+            .compute_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+        let mut dependencies = stream_expression.get_dependencies().clone();
+        dependencies.sort_unstable();
+
+        let control = vec![(String::from("a"), 0)];
 
         assert_eq!(dependencies, control)
     }

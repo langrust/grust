@@ -279,7 +279,18 @@ impl StreamExpression {
 
                 new_equations
             }
+            StreamExpression::Map {
+                expression,
+                dependencies,
+                ..
+            } => {
+                let new_equations =
+                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
 
+                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+
+                new_equations
+            }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => vec![],
         }
     }
