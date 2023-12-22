@@ -483,6 +483,15 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches field access as stream expressions
+    <start:@L> <e: streamTerm> "::" <field: ID> <end:@R> => {
+        StreamExpression::FieldAccess {
+            expression: Box::new(e),
+            field,
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches unary operations as stream expression first or a term
