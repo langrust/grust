@@ -16,7 +16,7 @@ impl Pattern {
                 imports.into_iter().unique().collect()
             }
             Pattern::Some { pattern, .. } => pattern.get_imports(),
-            _ => vec![],
+            Pattern::Identifier { .. } | Pattern::None { .. } | Pattern::Default { .. } => vec![],
         }
     }
 }

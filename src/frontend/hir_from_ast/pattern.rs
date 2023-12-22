@@ -14,7 +14,7 @@ impl Pattern {
                 .iter()
                 .for_each(|(_, pattern)| pattern.fill_context(elements_context)),
             Pattern::Some { pattern, .. } => pattern.fill_context(elements_context),
-            _ => (),
+            Pattern::Constant { .. } | Pattern::None { .. } | Pattern::Default { .. } => (),
         }
     }
 }
