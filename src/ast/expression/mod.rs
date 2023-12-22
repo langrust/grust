@@ -13,6 +13,7 @@ mod field_access;
 mod fold;
 mod map;
 mod r#match;
+mod sort;
 mod structure;
 mod when;
 
@@ -228,12 +229,9 @@ impl Expression {
             Expression::Fold { .. } => {
                 self.typing_fold(global_context, elements_context, user_types_context, errors)
             }
-            Expression::Sort {
-                expression,
-                function_expression,
-                typing,
-                location,
-            } => todo!(),
+            Expression::Sort { .. } => {
+                self.typing_sort(global_context, elements_context, user_types_context, errors)
+            }
         }
     }
 
@@ -1809,6 +1807,173 @@ mod typing {
             }),
             function_expression: Box::new(Expression::Call {
                 id: String::from("sum"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_sort() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        elements_context.insert(
+            String::from("diff"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Sort {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("diff"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::Sort {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("diff"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_expression_not_array() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Integer);
+        elements_context.insert(
+            String::from("diff"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Sort {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("diff"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_function_not_compatible_with_array_elements() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Boolean), 3));
+        elements_context.insert(
+            String::from("diff"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Sort {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("diff"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_function_not_compatible_with_sorting() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        elements_context.insert(
+            String::from("diff"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Boolean)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Sort {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("diff"),
                 typing: None,
                 location: Location::default(),
             }),
