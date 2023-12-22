@@ -10,6 +10,7 @@ mod array;
 mod call;
 mod constant;
 mod field_access;
+mod fold;
 mod map;
 mod r#match;
 mod structure;
@@ -213,7 +214,9 @@ impl Expression {
             Expression::Map { .. } => {
                 self.typing_map(global_context, elements_context, user_types_context, errors)
             }
-            Expression::Fold { expression, initialization_expression, function_expression, typing, location } => todo!(),
+            Expression::Fold { .. } => {
+                self.typing_fold(global_context, elements_context, user_types_context, errors)
+            }
         }
     }
 
@@ -1594,6 +1597,198 @@ mod typing {
             }),
             function_expression: Box::new(Expression::Call {
                 id: String::from("f"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_fold() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        elements_context.insert(
+            String::from("sum"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Fold {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(Expression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("sum"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::Fold {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(Expression::Constant {
+                constant: Constant::Integer(0),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("sum"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_folded_expression_not_array() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Integer);
+        elements_context.insert(
+            String::from("sum"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Fold {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(Expression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("sum"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_folding_function_not_compatible_with_folding_inputs() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        elements_context.insert(
+            String::from("sum"),
+            Type::Abstract(vec![Type::Integer, Type::Float], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Fold {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(Expression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("sum"),
+                typing: None,
+                location: Location::default(),
+            }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_folding_function_return_type_not_equal_to_initialization() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        elements_context.insert(
+            String::from("sum"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Float)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Fold {
+            expression: Box::new(Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(Expression::Constant {
+                constant: Constant::Integer(0),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Box::new(Expression::Call {
+                id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
             }),
