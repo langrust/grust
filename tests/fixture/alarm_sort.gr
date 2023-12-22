@@ -1,0 +1,39 @@
+enum Priority {
+    Low, Medium, High
+}
+
+struct Alarm {
+    priority: Priority,
+    raised: bool,
+}
+
+function priority_order(priority: Priority, other: Priority) -> int {
+    let higher_priority: int = match (priority) {
+        Priority.High => match (other) {
+            Priority.High => 0,
+            _ => 1,
+        },
+        Priority.Medium => match (other) {
+            Priority.High => -1,
+            Priority.Medium => 0,
+            Priority.Low => 1,
+        },
+        Priority.Low => match (other) {
+            Priority.Low => 1,
+            _ => -1,
+        },
+    };
+    return higher_priority;
+}
+
+function prioritize(alarm: Alarm, other: Alarm) -> int {
+    let raise_difference : bool = alarm::raised != other::raised;
+    let priority_ordering : int = priority_order(alarm::priority, other::priority);
+    return if raise_difference
+           then (if alarm::raised then 1 else -1)
+           else priority_ordering;
+}
+
+node alarm_manager(alarms: [Alarm; 10]) {
+    out raise: [Alarm; 10] = alarms.sort(prioritize);
+}
