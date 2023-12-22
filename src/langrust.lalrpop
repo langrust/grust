@@ -501,6 +501,15 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches array mapping as stream expressions
+    <start:@L> <e: streamTerm> ".map" "(" <f: expression> ")" <end:@R> => {
+        StreamExpression::Map {
+            expression: Box::new(e),
+            function_expression: f,
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches unary operations as stream expression first or a term
