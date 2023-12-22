@@ -272,9 +272,19 @@ term: Expression = {
         }
     },
     // catches array mapping as expressions
-    <start:@L> <e: term> ".map" "(" <f: expression> ")" <end:@R> => {
+    <start:@L> <a: term> ".map" "(" <f: expression> ")" <end:@R> => {
         Expression::Map {
-            expression: Box::new(e),
+            expression: Box::new(a),
+            function_expression: Box::new(f),
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches array folding as expressions
+    <start:@L> <a: term> ".fold" "(" <e: expression> "," <f: expression> ")" <end:@R> => {
+        Expression::Fold {
+            expression: Box::new(a),
+            initialization_expression: Box::new(e),
             function_expression: Box::new(f),
             typing: None,
             location: Location{ file_id, range: start..end }
