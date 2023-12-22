@@ -151,6 +151,18 @@ pub fn hir_from_ast(
             location,
             dependencies: Dependencies::new(),
         },
+        StreamExpression::FieldAccess {
+            expression,
+            field,
+            typing,
+            location,
+        } => HIRStreamExpression::FieldAccess {
+            expression: Box::new(hir_from_ast(*expression, signals_context)),
+            field,
+            typing: typing.unwrap(),
+            location,
+            dependencies: Dependencies::new(),
+        },
     }
 }
 
