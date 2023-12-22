@@ -122,6 +122,13 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
             mapped: Box::new(lir_from_hir(*expression)),
             function: Box::new(lir_from_hir(*function_expression)),
         },
+        Expression::Fold {
+            expression,
+            initialization_expression,
+            function_expression,
+            typing,
+            location,
+        } => todo!(),
     }
 }
 
@@ -225,6 +232,13 @@ impl Expression {
                 imports.append(&mut function_expression_imports);
                 imports.into_iter().unique().collect()
             }
+            Expression::Fold {
+                expression,
+                initialization_expression,
+                function_expression,
+                typing,
+                location,
+            } => todo!(),
         }
     }
 }
