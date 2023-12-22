@@ -85,6 +85,12 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
+            StreamExpression::FieldAccess { .. } => self.compute_field_access_dependencies(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
             StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
         }
     }
