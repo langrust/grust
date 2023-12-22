@@ -271,6 +271,15 @@ term: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches array mapping as expressions
+    <start:@L> <e: term> ".map" "(" <f: expression> ")" <end:@R> => {
+        Expression::Map {
+            expression: Box::new(e),
+            function_expression: Box::new(f),
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches unary operations as expression first or a term
