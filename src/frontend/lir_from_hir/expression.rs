@@ -727,6 +727,44 @@ mod lir_from_hir {
         };
         assert_eq!(lir_from_hir(expression), control)
     }
+
+    #[test]
+    fn should_transform_ast_fold_into_lir_fold() {
+        let expression = ASTExpression::Fold {
+            expression: Box::new(ASTExpression::Call {
+                id: format!("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            initialization_expression: Box::new(ASTExpression::Constant {
+                constant: Constant::Integer(0),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }),
+            function_expression: Box::new(ASTExpression::Call {
+                id: format!("sum"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            }),
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let control = Expression::Fold {
+            folded: Box::new(Expression::Identifier {
+                identifier: format!("a"),
+            }),
+            initialization: Box::new(Expression::Literal {
+                literal: Constant::Integer(0),
+            }),
+            function: Box::new(Expression::Identifier {
+                identifier: format!("sum"),
+            }),
+        };
+        assert_eq!(lir_from_hir(expression), control)
+    }
 }
 
 #[cfg(test)]
