@@ -328,3 +328,31 @@ fn generate_rust_project_for_alarm_counter() {
 
     project.generate()
 }
+
+#[test]
+fn generate_rust_project_for_alarm_sort_function() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let alarm_sort_function_id = files.add(
+        "alarm_sort_function.gr",
+        std::fs::read_to_string("tests/fixture/alarm_sort_function.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(
+            alarm_sort_function_id,
+            &files.source(alarm_sort_function_id).unwrap(),
+        )
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+    file.normalize(&mut errors).unwrap();
+    let project = lir_from_hir(file);
+    let mut project = rust_ast_from_lir(project);
+    project.set_parent("tests/generated/alarm_sort_function/");
+
+    project.generate()
+}
