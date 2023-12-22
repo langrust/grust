@@ -315,6 +315,7 @@ impl StreamExpression {
 
                 new_equations
             }
+            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 

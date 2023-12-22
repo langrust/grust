@@ -181,6 +181,7 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             initialization: Box::new(lir_from_hir(*initialization_expression)),
             function: Box::new(expression_lir_from_hir(function_expression)),
         },
+        StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
     }
 }
 
@@ -338,6 +339,7 @@ impl StreamExpression {
                 imports.append(&mut function_expression_imports);
                 imports.into_iter().unique().collect()
             }
+            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 }

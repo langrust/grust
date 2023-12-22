@@ -264,6 +264,7 @@ impl StreamExpression {
                 // push all dependencies in arms dependencies
                 *dependencies = Dependencies::from(expression_dependencies);
             }
+            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 
@@ -652,6 +653,7 @@ impl StreamExpression {
 
                 new_equations
             }
+            StreamExpression::Sort { expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 }
