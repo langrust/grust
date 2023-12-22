@@ -1724,6 +1724,7 @@ mod langrust_ast_constructs {
         let file_id17 = files.add("field_access_test.gr", "p::x");
         let file_id18 = files.add("map_test.gr", "x.map(f)");
         let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
+        let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -2328,7 +2329,48 @@ mod langrust_ast_constructs {
                 location: Location::default()
             },
             expression
-        )
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id20, &files.source(file_id20).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Sort {
+                expression: Box::new(Expression::Call {
+                    id: "l".to_string(),
+                    typing: None,
+                    location: Location::default()
+                }),
+                function_expression: Box::new(Expression::Abstraction {
+                    inputs: vec![String::from("a"), String::from("b")],
+                    expression: Box::new(Expression::Application {
+                        function_expression: Box::new(Expression::Call {
+                            id: BinaryOperator::Sub.to_string(),
+                            typing: None,
+                            location: Location::default()
+                        }),
+                        inputs: vec![
+                            Expression::Call {
+                                id: String::from("a"),
+                                typing: None,
+                                location: Location::default()
+                            },
+                            Expression::Call {
+                                id: String::from("b"),
+                                typing: None,
+                                location: Location::default()
+                            },
+                        ],
+                        typing: None,
+                        location: Location::default()
+                    }),
+                    typing: None,
+                    location: Location::default()
+                }),
+                typing: None,
+                location: Location::default()
+            },
+            expression
+        );
     }
 
     #[test]
