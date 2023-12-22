@@ -99,6 +99,7 @@ impl StreamExpression {
                 errors,
             ),
             StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
+            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 }

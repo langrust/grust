@@ -292,6 +292,7 @@ impl StreamExpression {
                 new_equations
             }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => vec![],
+            StreamExpression::Fold { expression, initialization_expression, function_expression, typing, location, dependencies } => todo!(),
         }
     }
 
