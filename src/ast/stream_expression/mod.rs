@@ -16,6 +16,7 @@ mod map;
 mod r#match;
 mod node_application;
 mod signal_call;
+mod sort;
 mod structure;
 mod when;
 
@@ -272,12 +273,13 @@ impl StreamExpression {
                 user_types_context,
                 errors,
             ),
-            StreamExpression::Sort {
-                expression,
-                function_expression,
-                typing,
-                location,
-            } => todo!(),
+            StreamExpression::Sort { .. } => self.typing_sort(
+                nodes_context,
+                signals_context,
+                global_context,
+                user_types_context,
+                errors,
+            ),
         }
     }
 
@@ -1974,6 +1976,181 @@ mod typing {
         };
 
         stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_sort() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("diff"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = StreamExpression::Sort {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("diff"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::Sort {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("diff"),
+                typing: Some(Type::Abstract(
+                    vec![Type::Integer, Type::Integer],
+                    Box::new(Type::Integer),
+                )),
+                location: Location::default(),
+            },
+            typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_sorted_expression_not_array() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Integer);
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("diff"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = StreamExpression::Sort {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("diff"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_sorting_function_not_compatible_with_array_elements() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Boolean), 3));
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("diff"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = StreamExpression::Sort {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("diff"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_sorting_function_not_compatible_with_sorting() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        let mut global_context = HashMap::new();
+        global_context.insert(
+            String::from("diff"),
+            Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Boolean)),
+        );
+        let user_types_context = HashMap::new();
+
+        let mut expression = StreamExpression::Sort {
+            expression: Box::new(StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }),
+            function_expression: Expression::Call {
+                id: String::from("diff"),
+                typing: None,
+                location: Location::default(),
+            },
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
             .typing(
                 &nodes_context,
                 &signals_context,
