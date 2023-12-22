@@ -122,6 +122,8 @@ impl StreamExpression {
                 ..
             } => {
                 expression.memorize(signal_name, identifier_creator, memory);
+                let mut expression_dependencies = expression.get_dependencies().clone();
+
                 arms.iter_mut()
                     .for_each(|(_, bound_expression, equations, expression)| {
                         if let Some(expression) = bound_expression.as_mut() {
@@ -132,16 +134,14 @@ impl StreamExpression {
                             .for_each(|equation| equation.memorize(identifier_creator, memory));
                         expression.memorize(signal_name, identifier_creator, memory)
                     });
-
-                *dependencies = Dependencies::from(
-                    arms.iter()
+                let mut arms_dependencies = arms
+                    .iter()
                         .flat_map(|(pattern, bound, _, matched_expression)| {
                             // get local signals defined in pattern
                             let local_signals = pattern.local_identifiers();
 
                             // remove identifiers created by the pattern from the dependencies
-                            let mut bound_dependencies =
-                                bound.as_ref().map_or(vec![], |expression| {
+                        let mut bound_dependencies = bound.as_ref().map_or(vec![], |expression| {
                                     expression
                                         .get_dependencies()
                                         .clone()
@@ -158,8 +158,11 @@ impl StreamExpression {
                             matched_expression_dependencies.append(&mut bound_dependencies);
                             matched_expression_dependencies
                         })
-                        .collect(),
-                );
+                    .collect::<Vec<_>>();
+
+                expression_dependencies.append(&mut arms_dependencies);
+
+                *dependencies = Dependencies::from(expression_dependencies);
             }
             StreamExpression::When {
                 option,
