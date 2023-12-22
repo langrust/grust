@@ -154,7 +154,15 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
                 .map(|(id, expression)| (id, lir_from_hir(expression)))
                 .collect(),
         },
-        _ => unreachable!(),
+        StreamExpression::FieldAccess {
+            expression, field, ..
+        } => LIRExpression::FieldAccess {
+            expression: Box::new(lir_from_hir(*expression)),
+            field,
+        },
+        StreamExpression::FollowedBy { .. } | StreamExpression::NodeApplication { .. } => {
+            unreachable!()
+        }
     }
 }
 
@@ -282,6 +290,7 @@ impl StreamExpression {
                 imports.into_iter().unique().collect()
             }
             StreamExpression::NodeApplication { .. } => unreachable!(),
+            StreamExpression::FieldAccess { expression, .. } => expression.get_imports(),
         }
     }
 }
@@ -823,6 +832,32 @@ mod lir_from_hir {
                     },
                 ),
             ],
+        };
+        assert_eq!(lir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_ast_field_access_into_lir_field_access() {
+        let expression = StreamExpression::FieldAccess {
+            expression: Box::new(StreamExpression::SignalCall {
+                signal: Signal {
+                    id: format!("p"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Structure("Point".to_string()),
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(format!("p"), 0)]),
+            }),
+            field: format!("x"),
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::from(vec![(format!("p"), 0)]),
+        };
+        let control = Expression::FieldAccess {
+            expression: Box::new(Expression::Identifier {
+                identifier: format!("p"),
+            }),
+            field: format!("x"),
         };
         assert_eq!(lir_from_hir(expression), control)
     }
