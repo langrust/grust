@@ -449,8 +449,7 @@ fn error_when_typing_pid_unknown_enumeration() {
 
     let pid_unknown_enumeration_id = files.add(
         "pid_unknown_enumeration.gr",
-        std::fs::read_to_string("tests/fixture/pid_unknown_enumeration.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/pid_unknown_enumeration.gr").expect("unkown file"),
     );
 
     let mut file: File = langrust::fileParser::new()

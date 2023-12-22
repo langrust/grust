@@ -279,7 +279,7 @@ impl StreamExpression {
 
                 new_equations
             }
-            
+
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => vec![],
         }
     }

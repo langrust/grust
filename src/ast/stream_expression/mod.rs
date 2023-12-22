@@ -1587,7 +1587,6 @@ mod typing {
             )
             .unwrap_err();
     }
-
 }
 
 #[cfg(test)]
