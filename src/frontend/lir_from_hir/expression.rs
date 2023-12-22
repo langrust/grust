@@ -126,9 +126,12 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
             expression,
             initialization_expression,
             function_expression,
-            typing,
-            location,
-        } => todo!(),
+            ..
+        } => LIRExpression::Fold {
+            folded: Box::new(lir_from_hir(*expression)),
+            initialization: Box::new(lir_from_hir(*initialization_expression)),
+            function: Box::new(lir_from_hir(*function_expression)),
+        },
     }
 }
 
@@ -236,9 +239,18 @@ impl Expression {
                 expression,
                 initialization_expression,
                 function_expression,
-                typing,
-                location,
-            } => todo!(),
+                ..
+            } => {
+                let mut initialization_expression_imports = initialization_expression.get_imports();
+                let mut expression_imports = expression.get_imports();
+                let mut function_expression_imports = function_expression.get_imports();
+
+                let mut imports = vec![];
+                imports.append(&mut expression_imports);
+                imports.append(&mut initialization_expression_imports);
+                imports.append(&mut function_expression_imports);
+                imports.into_iter().unique().collect()
+            }
         }
     }
 }
