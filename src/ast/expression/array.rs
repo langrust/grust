@@ -21,6 +21,14 @@ impl Expression {
                 typing,
                 location,
             } => {
+                if elements.len() == 0 {
+                    let error = Error::ExpectInput {
+                        location: location.clone(),
+                    };
+                    errors.push(error);
+                    return Err(TerminationError);
+                }
+
                 elements
                     .iter_mut()
                     .map(|element| {
@@ -30,7 +38,7 @@ impl Expression {
                     .into_iter()
                     .collect::<Result<(), TerminationError>>()?;
 
-                let first_type = elements[0].get_type().unwrap();
+                let first_type = elements[0].get_type().unwrap(); // todo: manage zero element error
                 elements
                     .iter()
                     .map(|element| {
@@ -181,6 +189,29 @@ mod typing_array {
                     location: Location::default(),
                 },
             ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing_array(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_zero_element() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Array {
+            elements: vec![],
             typing: None,
             location: Location::default(),
         };
