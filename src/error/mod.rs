@@ -136,6 +136,11 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// expect at least one input
+    ExpectInput {
+        /// the error location
+        location: Location,
+    },
     /// expect number type
     ExpectNumber {
         /// given type
@@ -170,6 +175,15 @@ pub enum Error {
     ExpectArray {
         /// given type instead of the array
         given_type: Type,
+        /// the error location
+        location: Location,
+    },
+    /// incompatible array length
+    IncompatibleLength {
+        /// given length
+        given_length: usize,
+        /// expected length
+        expected_length: usize,
         /// the error location
         location: Location,
     },
@@ -360,6 +374,16 @@ impl Error {
                     )
                 ]
             ),
+            Error::ExpectInput { location } => Diagnostic::error()
+                .with_message("missing inputs")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("empty")
+                ])
+                .with_notes(vec![
+                    format!("expect at least one input")
+                ]
+            ),
             Error::ExpectNumber { given_type, location } => Diagnostic::error()
                 .with_message("incompatible type")
                 .with_labels(vec![
@@ -412,6 +436,16 @@ impl Error {
                     format!("expect array type but '{given_type}' was given")
                 ]
             ),
+            Error::IncompatibleLength { given_length, expected_length, location } => Diagnostic::error()
+                .with_message("incompatible array lenght")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong length")
+                ])
+                .with_notes(vec![
+                    format!("expect array of length '{expected_length}' but an array of length '{given_length}' was given")
+                ]
+            ),
             Error::NoTypeInference { location } => Diagnostic::error()
                 .with_message("can not infere type")
                 .with_labels(vec![
@@ -458,11 +492,13 @@ impl std::fmt::Display for Error {
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
             Error::IncompatiblePattern { .. } => write!(f, "Incompatible Pattern"),
             Error::IncompatibleInputsNumber { .. } => write!(f, "Incompatible Inputs Number"),
+            Error::ExpectInput { .. } => write!(f, "Expect Input"),
             Error::ExpectNumber { .. } => write!(f, "Expect Number"),
             Error::ExpectAbstraction { .. } => write!(f, "Expect Abstraction"),
             Error::ExpectOption { .. } => write!(f, "Expect Option"),
             Error::ExpectStructure { .. } => write!(f, "Expect Structure"),
             Error::ExpectArray { .. } => write!(f, "Expect Array"),
+            Error::IncompatibleLength { .. } => write!(f, "Incompatible Length"),
             Error::NoTypeInference { .. } => write!(f, "No Type Inference"),
             Error::NotCausal { .. } => write!(f, "Not Causal"),
             Error::UnusedSignal { .. } => write!(f, "Unused Signal"),
