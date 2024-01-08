@@ -48,6 +48,8 @@ pub enum Type {
     Abstract(Vec<Type>, Box<Type>),
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Type -> t -> 't -> 't`
     Polymorphism(fn(Vec<Type>, Location) -> Result<Type, Error>),
+    /// Tuple type, if `z = zip(a, b)` with `a: [int; 5]` and `b: [float; 5]` then `z: [(int, float); 5]`
+    Tuple(Vec<Type>),
 }
 impl serde::Serialize for Type {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -85,6 +87,9 @@ impl serde::Serialize for Type {
                 serde::ser::SerializeTupleVariant::end(s)
             }
             Type::Polymorphism(_) => serializer.serialize_unit_variant("Type", 11, "Polymorphism"),
+            Type::Tuple(tuple_types) => {
+                serializer.serialize_newtype_variant("Type", 12, "Tuple", tuple_types)
+            }
         }
     }
 }
@@ -111,6 +116,14 @@ impl Display for Type {
                 *t2
             ),
             Type::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
+            Type::Tuple(ts) => write!(
+                f,
+                "({})",
+                ts.into_iter()
+                    .map(|input_type| input_type.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            ),
         }
     }
 }
@@ -300,6 +313,12 @@ impl Type {
                     .collect::<Result<_, _>>()?;
                 output_type.resolve_undefined(location, user_types_context, errors)
             }
+            Type::Tuple(tuple_types) => tuple_types
+                .iter_mut()
+                .map(|tuple_type| {
+                    tuple_type.resolve_undefined(location.clone(), user_types_context, errors)
+                })
+                .collect::<Result<_, _>>(),
         }
     }
 
