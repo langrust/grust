@@ -1,0 +1,8 @@
+function factorial(n: int) -> int {
+    let res: int = if n <= 1 then 1 else n * factorial(n-1);
+    return res;
+}
+
+component classification(rgb_images: [int; 10], regions_of_interest: int) {
+    out classification: [int; 10] = rgb_images.fold(regions_of_interest, |acc, n| acc + factorial(n));
+}

@@ -1,0 +1,7 @@
+component fusion(
+    radar_detections: [int; 10],
+    classification: [int; 10],
+    lidar_detections: [int; 10],
+) {
+    out fused_information: [int; 10] = rgb_images.fold(regions_of_interest, |acc, n| acc + factorial(n));
+}
