@@ -16,6 +16,7 @@ mod r#match;
 mod sort;
 mod structure;
 mod when;
+mod zip;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust expression AST.
@@ -163,6 +164,15 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
+    /// Arrays zip operator expression.
+    Zip {
+        /// The arrays expression.
+        arrays: Vec<Expression>,
+        /// Expression type.
+        typing: Option<Type>,
+        /// Expression location.
+        location: Location,
+    },
 }
 
 impl Expression {
@@ -232,6 +242,9 @@ impl Expression {
             Expression::Sort { .. } => {
                 self.typing_sort(global_context, elements_context, user_types_context, errors)
             }
+            Expression::Zip { .. } => {
+                self.typing_zip(global_context, elements_context, user_types_context, errors)
+            }
         }
     }
 
@@ -264,7 +277,8 @@ impl Expression {
             | Expression::FieldAccess { typing, .. }
             | Expression::Map { typing, .. }
             | Expression::Fold { typing, .. }
-            | Expression::Sort { typing, .. } => typing.as_ref(),
+            | Expression::Sort { typing, .. }
+            | Expression::Zip { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -297,7 +311,8 @@ impl Expression {
             | Expression::FieldAccess { typing, .. }
             | Expression::Map { typing, .. }
             | Expression::Fold { typing, .. }
-            | Expression::Sort { typing, .. } => typing.as_mut(),
+            | Expression::Sort { typing, .. }
+            | Expression::Zip { typing, .. } => typing.as_mut(),
         }
     }
 
@@ -330,7 +345,8 @@ impl Expression {
             | Expression::FieldAccess { typing, .. }
             | Expression::Map { typing, .. }
             | Expression::Fold { typing, .. }
-            | Expression::Sort { typing, .. } => typing,
+            | Expression::Sort { typing, .. }
+            | Expression::Zip { typing, .. } => typing,
         }
     }
 }
@@ -744,6 +760,29 @@ mod typing {
                     location: Location::default(),
                 },
             ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_zero_element_in_array() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Array {
+            elements: vec![],
             typing: None,
             location: Location::default(),
         };
@@ -1977,6 +2016,189 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_zip_with_one_array() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Zip {
+            arrays: vec![Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::Zip {
+            arrays: vec![Expression::Call {
+                id: String::from("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }],
+            typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_type_zip_with_multiple_arrays() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        elements_context.insert(String::from("b"), Type::Array(Box::new(Type::Float), 3));
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Zip {
+            arrays: vec![
+                Expression::Call {
+                    id: String::from("a"),
+                    typing: None,
+                    location: Location::default(),
+                },
+                Expression::Call {
+                    id: String::from("b"),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::Zip {
+            arrays: vec![
+                Expression::Call {
+                    id: String::from("a"),
+                    typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                    location: Location::default(),
+                },
+                Expression::Call {
+                    id: String::from("b"),
+                    typing: Some(Type::Array(Box::new(Type::Float), 3)),
+                    location: Location::default(),
+                },
+            ],
+            typing: Some(Type::Array(
+                Box::new(Type::Tuple(vec![Type::Integer, Type::Float])),
+                3,
+            )),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_zero_array_to_zip() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let elements_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Zip {
+            arrays: vec![],
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_zip_input_when_not_array() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Integer);
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Zip {
+            arrays: vec![Expression::Call {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }],
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_incompatible_length_between_zipped_arrays() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        elements_context.insert(String::from("b"), Type::Array(Box::new(Type::Float), 5));
+        let user_types_context = HashMap::new();
+
+        let mut expression = Expression::Zip {
+            arrays: vec![
+                Expression::Call {
+                    id: String::from("a"),
+                    typing: None,
+                    location: Location::default(),
+                },
+                Expression::Call {
+                    id: String::from("b"),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ],
             typing: None,
             location: Location::default(),
         };
