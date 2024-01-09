@@ -140,11 +140,9 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
             sorted: Box::new(lir_from_hir(*expression)),
             function: Box::new(lir_from_hir(*function_expression)),
         },
-        Expression::Zip {
-            arrays,
-            typing,
-            location,
-        } => todo!(),
+        Expression::Zip { arrays, .. } => LIRExpression::Zip {
+            arrays: arrays.into_iter().map(lir_from_hir).collect(),
+        },
     }
 }
 
@@ -277,11 +275,11 @@ impl Expression {
                 imports.append(&mut function_expression_imports);
                 imports.into_iter().unique().collect()
             }
-            Expression::Zip {
-                arrays,
-                typing,
-                location,
-            } => todo!(),
+            Expression::Zip { arrays, .. } => arrays
+                .iter()
+                .flat_map(Expression::get_imports)
+                .unique()
+                .collect(),
         }
     }
 }
@@ -823,6 +821,40 @@ mod lir_from_hir {
             function: Box::new(Expression::Identifier {
                 identifier: format!("diff"),
             }),
+        };
+        assert_eq!(lir_from_hir(expression), control)
+    }
+
+    #[test]
+    fn should_transform_ast_zip_into_lir_zip() {
+        let expression = ASTExpression::Zip {
+            arrays: vec![
+                ASTExpression::Call {
+                    id: String::from("a"),
+                    typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                    location: Location::default(),
+                },
+                ASTExpression::Call {
+                    id: String::from("b"),
+                    typing: Some(Type::Array(Box::new(Type::Float), 3)),
+                    location: Location::default(),
+                },
+            ],
+            typing: Some(Type::Array(
+                Box::new(Type::Tuple(vec![Type::Integer, Type::Float])),
+                3,
+            )),
+            location: Location::default(),
+        };
+        let control = Expression::Zip {
+            arrays: vec![
+                Expression::Identifier {
+                    identifier: "a".to_string(),
+                },
+                Expression::Identifier {
+                    identifier: "b".to_string(),
+                },
+            ],
         };
         assert_eq!(lir_from_hir(expression), control)
     }

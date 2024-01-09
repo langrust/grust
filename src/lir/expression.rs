@@ -116,4 +116,9 @@ pub enum Expression {
         /// The sorting function.
         function: Box<Expression>,
     },
+    /// Arrays zip operator expression: `zip(a, b, [1, 2, 3])`
+    Zip {
+        /// The arrays expression.
+        arrays: Vec<Expression>,
+    },
 }
