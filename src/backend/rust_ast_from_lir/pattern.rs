@@ -30,6 +30,10 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> RustASTPattern {
         },
         Pattern::None { .. } => RustASTPattern::Default,
         Pattern::Default { .. } => RustASTPattern::Default,
+        Pattern::Tuple { elements, .. } => {
+            let elements = elements.into_iter().map(rust_ast_from_lir).collect();
+            RustASTPattern::Tuple { elements }
+        }
     }
 }
 

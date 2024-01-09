@@ -13,6 +13,9 @@ impl Pattern {
             Pattern::Structure { fields, .. } => fields
                 .iter()
                 .for_each(|(_, pattern)| pattern.fill_context(elements_context)),
+            Pattern::Tuple { elements, .. } => elements
+                .iter()
+                .for_each(|pattern| pattern.fill_context(elements_context)),
             Pattern::Some { pattern, .. } => pattern.fill_context(elements_context),
             Pattern::Constant { .. } | Pattern::None { .. } | Pattern::Default { .. } => (),
         }
