@@ -15,6 +15,10 @@ impl Pattern {
                 imports.push(Import::Structure(name.clone()));
                 imports.into_iter().unique().collect()
             }
+            Pattern::Tuple { elements, .. } => elements
+                .iter()
+                .flat_map(|pattern| pattern.get_imports())
+                .collect::<Vec<_>>(),
             Pattern::Some { pattern, .. } => pattern.get_imports(),
             Pattern::Identifier { .. } | Pattern::None { .. } | Pattern::Default { .. } => vec![],
         }

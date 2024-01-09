@@ -32,6 +32,13 @@ pub enum Pattern {
         /// Pattern location.
         location: Location,
     },
+    /// Tuple pattern that matches tuples.
+    Tuple {
+        /// The elements of the tuple.
+        elements: Vec<Pattern>,
+        /// Pattern location.
+        location: Location,
+    },
     /// Some pattern that matches when an optional has a value which match the pattern.
     Some {
         /// The pattern matching the value.
@@ -68,6 +75,16 @@ impl Display for Pattern {
                     write!(f, "{}: {},", field, pattern)?;
                 }
                 write!(f, " }}")
+            }
+            Pattern::Tuple {
+                elements,
+                location: _,
+            } => {
+                write!(f, "( ")?;
+                for pattern in elements.iter() {
+                    write!(f, "{},", pattern)?;
+                }
+                write!(f, " )")
             }
             Pattern::Some {
                 pattern,
@@ -196,6 +213,31 @@ impl Pattern {
                     Err(TerminationError)
                 }
             },
+            Pattern::Tuple { elements, location } => match expected_type {
+                Type::Tuple(elements_type) if elements.len() == elements_type.len() => elements
+                    .iter()
+                    .zip(elements_type)
+                    .map(|(pattern, element_type)| {
+                        pattern.construct_context(
+                            element_type,
+                            elements_context,
+                            user_types_context,
+                            errors,
+                        )
+                    })
+                    .collect::<Vec<Result<_, TerminationError>>>()
+                    .into_iter()
+                    .collect::<Result<(), TerminationError>>(),
+                _ => {
+                    let error = Error::IncompatiblePattern {
+                        given_pattern: self.clone(),
+                        expected_type: expected_type.clone(),
+                        location: location.clone(),
+                    };
+                    errors.push(error);
+                    Err(TerminationError)
+                }
+            },
             Pattern::Some { pattern, location } => match expected_type {
                 Type::Option(optional_type) => pattern.construct_context(
                     optional_type,
@@ -284,7 +326,11 @@ impl Pattern {
                 .flat_map(|(_, pattern)| pattern.local_identifiers())
                 .collect(),
             Pattern::Some { pattern, .. } => pattern.local_identifiers(),
-            _ => vec![],
+            Pattern::Tuple { elements, .. } => elements
+                .iter()
+                .flat_map(|pattern| pattern.local_identifiers())
+                .collect(),
+            Pattern::Constant { .. } | Pattern::None { .. } | Pattern::Default { .. } => vec![],
         }
     }
 }
@@ -449,6 +495,68 @@ mod construct_context {
             location: Location::default(),
         };
         let expected_type = Type::Structure(String::from("Coordinates"));
+
+        given_pattern
+            .construct_context(
+                &expected_type,
+                &mut elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_check_tuple_pattern_for_tuple_type() {
+        let mut errors = vec![];
+        let user_types_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+
+        let given_pattern = Pattern::Tuple {
+            elements: vec![
+                Pattern::Constant {
+                    constant: Constant::Integer(1),
+                    location: Location::default(),
+                },
+                Pattern::Identifier {
+                    name: String::from("y"),
+                    location: Location::default(),
+                },
+            ],
+            location: Location::default(),
+        };
+        let expected_type = Type::Tuple(vec![Type::Integer, Type::Float]);
+
+        given_pattern
+            .construct_context(
+                &expected_type,
+                &mut elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap()
+    }
+
+    #[test]
+    fn should_raise_error_for_tuple_pattern_and_mismatching_type() {
+        let mut errors = vec![];
+        let user_types_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+
+        let given_pattern = Pattern::Tuple {
+            elements: vec![
+                Pattern::Constant {
+                    constant: Constant::Integer(1),
+                    location: Location::default(),
+                },
+                Pattern::Identifier {
+                    name: String::from("y"),
+                    location: Location::default(),
+                },
+            ],
+            location: Location::default(),
+        };
+        let expected_type = Type::Tuple(vec![Type::Float, Type::Float]);
 
         given_pattern
             .construct_context(
