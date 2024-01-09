@@ -192,6 +192,10 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
             method: "sort".to_string(),
             arguments: vec![rust_ast_from_lir(*function)],
         },
+        Expression::Zip { arrays } => RustASTExpression::Macro {
+            r#macro: "par_zip".to_string(),
+            arguments: arrays.into_iter().map(rust_ast_from_lir).collect(),
+        },
     }
 }
 
@@ -687,6 +691,54 @@ mod rust_ast_from_lir {
                 },
                 RustASTExpression::Identifier {
                     identifier: "sum".to_string(),
+                },
+            ],
+        };
+        assert_eq!(rust_ast_from_lir(expression), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_sort_iterator_from_lir_sort() {
+        let expression = Expression::Sort {
+            sorted: Box::new(Expression::Identifier {
+                identifier: format!("a"),
+            }),
+            function: Box::new(Expression::Identifier {
+                identifier: format!("compare"),
+            }),
+        };
+        let control = RustASTExpression::MethodCall {
+            receiver: Box::new(RustASTExpression::Identifier {
+                identifier: "a".to_string(),
+            }),
+            method: "sort".to_string(),
+            arguments: vec![RustASTExpression::Identifier {
+                identifier: "compare".to_string(),
+            }],
+        };
+        assert_eq!(rust_ast_from_lir(expression), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_macro_from_lir_zip() {
+        let expression = Expression::Zip {
+            arrays: vec![
+                Expression::Identifier {
+                    identifier: format!("a"),
+                },
+                Expression::Identifier {
+                    identifier: format!("b"),
+                },
+            ],
+        };
+        let control = RustASTExpression::Macro {
+            r#macro: "par_zip".to_string(),
+            arguments: vec![
+                RustASTExpression::Identifier {
+                    identifier: "a".to_string(),
+                },
+                RustASTExpression::Identifier {
+                    identifier: "b".to_string(),
                 },
             ],
         };
