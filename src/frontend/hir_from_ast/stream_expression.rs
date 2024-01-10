@@ -208,7 +208,15 @@ pub fn hir_from_ast(
             arrays,
             typing,
             location,
-        } => todo!(),
+        } => HIRStreamExpression::Zip {
+            arrays: arrays
+                .into_iter()
+                .map(|array| hir_from_ast(array, signals_context))
+                .collect(),
+            typing: typing.unwrap(),
+            location,
+            dependencies: Dependencies::new(),
+        },
     }
 }
 
