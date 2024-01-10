@@ -168,6 +168,15 @@ pub enum StreamExpression {
         /// Stream expression location.
         location: Location,
     },
+    /// Arrays zip operator stream expression.
+    Zip {
+        /// The array stream expressions.
+        arrays: Vec<Expression>,
+        /// Stream expression type.
+        typing: Option<Type>,
+        /// Stream expression location.
+        location: Location,
+    },
 }
 
 impl StreamExpression {
@@ -280,6 +289,11 @@ impl StreamExpression {
                 user_types_context,
                 errors,
             ),
+            StreamExpression::Zip {
+                arrays,
+                typing,
+                location,
+            } => todo!(),
         }
     }
 
@@ -312,7 +326,8 @@ impl StreamExpression {
             | StreamExpression::FieldAccess { typing, .. }
             | StreamExpression::Map { typing, .. }
             | StreamExpression::Fold { typing, .. }
-            | StreamExpression::Sort { typing, .. } => typing.as_ref(),
+            | StreamExpression::Sort { typing, .. }
+            | StreamExpression::Zip { typing, .. } => typing.as_ref(),
         }
     }
 
@@ -345,7 +360,8 @@ impl StreamExpression {
             | StreamExpression::FieldAccess { typing, .. }
             | StreamExpression::Map { typing, .. }
             | StreamExpression::Fold { typing, .. }
-            | StreamExpression::Sort { typing, .. } => typing,
+            | StreamExpression::Sort { typing, .. }
+            | StreamExpression::Zip { typing, .. } => typing,
         }
     }
 }

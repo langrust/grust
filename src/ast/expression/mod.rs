@@ -178,7 +178,7 @@ pub enum Expression {
     },
     /// Arrays zip operator expression.
     Zip {
-        /// The arrays expression.
+        /// The array expressions.
         arrays: Vec<Expression>,
         /// Expression type.
         typing: Option<Type>,

@@ -204,6 +204,11 @@ pub fn hir_from_ast(
             location,
             dependencies: Dependencies::new(),
         },
+        StreamExpression::Zip {
+            arrays,
+            typing,
+            location,
+        } => todo!(),
     }
 }
 
