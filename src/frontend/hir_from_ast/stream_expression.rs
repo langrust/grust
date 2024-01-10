@@ -217,6 +217,12 @@ pub fn hir_from_ast(
             location,
             dependencies: Dependencies::new(),
         },
+        StreamExpression::TupleElementAccess {
+            expression,
+            element_number,
+            typing,
+            location,
+        } => todo!(),
     }
 }
 
