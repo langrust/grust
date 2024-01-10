@@ -31,7 +31,9 @@ mod rust_ast_from_lir {
     use crate::common::constant::Constant;
     use crate::lir::expression::Expression;
     use crate::lir::statement::Statement;
-    use crate::rust_ast::expression::{Expression as RustASTExpression, FieldExpression};
+    use crate::rust_ast::expression::{
+        Expression as RustASTExpression, FieldExpression, FieldIdentifier,
+    };
     use crate::rust_ast::pattern::Pattern;
     use crate::rust_ast::statement::r#let::Let;
     use crate::rust_ast::statement::Statement as RustASTStatement;
@@ -83,7 +85,7 @@ mod rust_ast_from_lir {
                     expression: Box::new(RustASTExpression::Identifier {
                         identifier: String::from("self"),
                     }),
-                    field: String::from("node_state"),
+                    field: FieldIdentifier::Named(String::from("node_state")),
                 }),
                 method: String::from("step"),
                 arguments: vec![RustASTExpression::Structure {

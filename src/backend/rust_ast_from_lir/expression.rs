@@ -1,6 +1,9 @@
 use crate::common::operator::{BinaryOperator, UnaryOperator};
-use crate::lir::expression::Expression;
-use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
+use crate::lir::expression::{Expression, FieldIdentifier};
+use crate::rust_ast::expression::{
+    Arm, Expression as RustASTExpression, FieldExpression,
+    FieldIdentifier as RustASTFieldIdentifier,
+};
 use crate::rust_ast::pattern::Pattern;
 
 use super::{
@@ -22,7 +25,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
             };
             RustASTExpression::FieldAccess {
                 expression: Box::new(self_call),
-                field: identifier,
+                field: RustASTFieldIdentifier::Named(identifier),
             }
         }
         Expression::InputAccess { identifier } => {
@@ -31,7 +34,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
             };
             RustASTExpression::FieldAccess {
                 expression: Box::new(input_call),
-                field: identifier,
+                field: RustASTFieldIdentifier::Named(identifier),
             }
         }
         Expression::Structure { name, fields } => {
@@ -97,7 +100,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
             };
             let receiver = RustASTExpression::FieldAccess {
                 expression: Box::new(self_call),
-                field: node_identifier,
+                field: RustASTFieldIdentifier::Named(node_identifier),
             };
             let input_fields = input_fields
                 .into_iter()
@@ -118,7 +121,10 @@ pub fn rust_ast_from_lir(expression: Expression) -> RustASTExpression {
         }
         Expression::FieldAccess { expression, field } => RustASTExpression::FieldAccess {
             expression: Box::new(rust_ast_from_lir(*expression)),
-            field,
+            field: match field {
+                FieldIdentifier::Named(name) => RustASTFieldIdentifier::Named(name),
+                FieldIdentifier::Unamed(number) => RustASTFieldIdentifier::Unamed(number),
+            },
         },
         Expression::Lambda {
             inputs,
@@ -208,10 +214,13 @@ mod rust_ast_from_lir {
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
     use crate::lir::block::Block;
-    use crate::lir::expression::Expression;
+    use crate::lir::expression::{Expression, FieldIdentifier};
     use crate::lir::statement::Statement;
     use crate::rust_ast::block::Block as RustASTBlock;
-    use crate::rust_ast::expression::{Arm, Expression as RustASTExpression, FieldExpression};
+    use crate::rust_ast::expression::{
+        Arm, Expression as RustASTExpression, FieldExpression,
+        FieldIdentifier as RustASTFieldIdentifier,
+    };
     use crate::rust_ast::pattern::Pattern as RustASTPattern;
     use crate::rust_ast::r#type::Type as RustASTType;
     use crate::rust_ast::statement::r#let::Let;
@@ -248,7 +257,7 @@ mod rust_ast_from_lir {
             expression: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("self"),
             }),
-            field: String::from("mem_x"),
+            field: RustASTFieldIdentifier::Named(String::from("mem_x")),
         };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
@@ -262,7 +271,7 @@ mod rust_ast_from_lir {
             expression: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("input"),
             }),
-            field: String::from("i"),
+            field: RustASTFieldIdentifier::Named(String::from("i")),
         };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
@@ -447,7 +456,7 @@ mod rust_ast_from_lir {
                 expression: Box::new(RustASTExpression::Identifier {
                     identifier: String::from("self"),
                 }),
-                field: String::from("node_state"),
+                field: RustASTFieldIdentifier::Named(String::from("node_state")),
             }),
             method: String::from("step"),
             arguments: vec![RustASTExpression::Structure {
@@ -469,13 +478,13 @@ mod rust_ast_from_lir {
             expression: Box::new(Expression::Identifier {
                 identifier: String::from("my_point"),
             }),
-            field: String::from("x"),
+            field: FieldIdentifier::Named(String::from("x")),
         };
         let control = RustASTExpression::FieldAccess {
             expression: Box::new(RustASTExpression::Identifier {
                 identifier: String::from("my_point"),
             }),
-            field: String::from("x"),
+            field: RustASTFieldIdentifier::Named(String::from("x")),
         };
         assert_eq!(rust_ast_from_lir(expression), control)
     }

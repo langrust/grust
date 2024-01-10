@@ -4,7 +4,7 @@ use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement
 use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 use crate::rust_ast::block::Block;
-use crate::rust_ast::expression::Expression;
+use crate::rust_ast::expression::{Expression, FieldIdentifier};
 use crate::rust_ast::item::implementation::AssociatedItem;
 use crate::rust_ast::item::signature::{Receiver, Signature};
 use crate::rust_ast::r#type::Type as RustASTType;
@@ -45,7 +45,7 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
                     expression: Box::new(Expression::Identifier {
                         identifier: "self".to_string(),
                     }),
-                    field: identifier,
+                    field: FieldIdentifier::Named(identifier),
                 };
                 Statement::ExpressionIntern(Expression::Assignement {
                     left: Box::new(field_acces),
@@ -71,11 +71,13 @@ mod rust_ast_from_lir {
     use crate::common::constant::Constant;
     use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
-    use crate::lir::expression::Expression;
+    use crate::lir::expression::{Expression, FieldIdentifier};
     use crate::lir::item::node_file::state::step::{StateElementStep, Step};
     use crate::lir::statement::Statement;
     use crate::rust_ast::block::Block;
-    use crate::rust_ast::expression::Expression as RustASTExpression;
+    use crate::rust_ast::expression::{
+        Expression as RustASTExpression, FieldIdentifier as RustASTFieldIdentifier,
+    };
     use crate::rust_ast::item::implementation::AssociatedItem;
     use crate::rust_ast::item::signature::{Receiver, Signature};
     use crate::rust_ast::pattern::Pattern;
@@ -95,7 +97,7 @@ mod rust_ast_from_lir {
                         expression: Box::new(Expression::Identifier {
                             identifier: format!("self"),
                         }),
-                        field: format!("mem_i"),
+                        field: FieldIdentifier::Named(format!("mem_i")),
                     },
                 },
                 Statement::Let {
@@ -175,7 +177,7 @@ mod rust_ast_from_lir {
                             expression: Box::new(RustASTExpression::Identifier {
                                 identifier: format!("self"),
                             }),
-                            field: format!("mem_i"),
+                            field: RustASTFieldIdentifier::Named(format!("mem_i")),
                         },
                     }),
                     RustASTStatement::Let(Let {
@@ -189,7 +191,7 @@ mod rust_ast_from_lir {
                                 expression: Box::new(RustASTExpression::Identifier {
                                     identifier: format!("self"),
                                 }),
-                                field: format!("called_node_state"),
+                                field: RustASTFieldIdentifier::Named(format!("called_node_state")),
                             }),
                             method: format!("step"),
                             arguments: vec![RustASTExpression::Structure {
@@ -203,7 +205,7 @@ mod rust_ast_from_lir {
                             expression: Box::new(RustASTExpression::Identifier {
                                 identifier: format!("self"),
                             }),
-                            field: format!("mem_i"),
+                            field: RustASTFieldIdentifier::Named(format!("mem_i")),
                         }),
                         right: Box::new(RustASTExpression::Binary {
                             left: Box::new(RustASTExpression::Identifier {
@@ -220,7 +222,7 @@ mod rust_ast_from_lir {
                             expression: Box::new(RustASTExpression::Identifier {
                                 identifier: format!("self"),
                             }),
-                            field: format!("called_node_state"),
+                            field: RustASTFieldIdentifier::Named(format!("called_node_state")),
                         }),
                         right: Box::new(RustASTExpression::Identifier {
                             identifier: format!("new_called_node_state"),

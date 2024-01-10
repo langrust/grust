@@ -59,7 +59,7 @@ mod fmt {
         common::{constant::Constant, operator::BinaryOperator},
         rust_ast::{
             block::Block,
-            expression::Expression,
+            expression::{Expression, FieldIdentifier},
             item::Item,
             item::{
                 enumeration::Enumeration,
@@ -210,13 +210,13 @@ mod fmt {
                                     expression: Box::new(Expression::Identifier {
                                         identifier: String::from("self"),
                                     }),
-                                    field: String::from("x"),
+                                    field: FieldIdentifier::Named(String::from("x")),
                                 },
                                 Expression::FieldAccess {
                                     expression: Box::new(Expression::Identifier {
                                         identifier: String::from("self"),
                                     }),
-                                    field: String::from("y"),
+                                    field: FieldIdentifier::Named(String::from("y")),
                                 },
                             ],
                         })],

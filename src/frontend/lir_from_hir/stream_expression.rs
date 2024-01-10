@@ -10,7 +10,9 @@ use crate::{
     },
     hir::{signal::Signal, stream_expression::StreamExpression},
     lir::{
-        block::Block, expression::Expression as LIRExpression, item::node_file::import::Import,
+        block::Block,
+        expression::{Expression as LIRExpression, FieldIdentifier},
+        item::node_file::import::Import,
         statement::Statement,
     },
 };
@@ -158,7 +160,7 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             expression, field, ..
         } => LIRExpression::FieldAccess {
             expression: Box::new(lir_from_hir(*expression)),
-            field,
+            field: FieldIdentifier::Named(field),
         },
         StreamExpression::Map {
             expression,
@@ -373,7 +375,11 @@ mod lir_from_hir {
         },
         frontend::lir_from_hir::stream_expression::lir_from_hir,
         hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression},
-        lir::{block::Block, expression::Expression, statement::Statement},
+        lir::{
+            block::Block,
+            expression::{Expression, FieldIdentifier},
+            statement::Statement,
+        },
     };
 
     #[test]
@@ -925,7 +931,7 @@ mod lir_from_hir {
             expression: Box::new(Expression::Identifier {
                 identifier: format!("p"),
             }),
-            field: format!("x"),
+            field: FieldIdentifier::Named(format!("x")),
         };
         assert_eq!(lir_from_hir(expression), control)
     }

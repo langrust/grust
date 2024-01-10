@@ -103,7 +103,8 @@ files:
                             expression:
                               Identifier:
                                 identifier: self
-                            field: mem_prev_i
+                            field:
+                              Named: mem_prev_i
                     - Let:
                         pattern:
                           Identifier:
@@ -128,14 +129,16 @@ files:
                                           expression:
                                             Identifier:
                                               identifier: input
-                                          field: x
+                                          field:
+                                            Named: x
                                       operator: Mul
                                       right:
                                         FieldAccess:
                                           expression:
                                             Identifier:
                                               identifier: input
-                                          field: dt
+                                          field:
+                                            Named: dt
                               - Identifier:
                                   identifier: MAX_INTEGRALE
                     - ExpressionIntern:
@@ -145,7 +148,8 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_prev_i
+                              field:
+                                Named: mem_prev_i
                           right:
                             Identifier:
                               identifier: i
@@ -228,7 +232,8 @@ files:
                             expression:
                               Identifier:
                                 identifier: self
-                            field: mem_prev_x
+                            field:
+                              Named: mem_prev_x
                     - Let:
                         pattern:
                           Identifier:
@@ -247,7 +252,8 @@ files:
                                         expression:
                                           Identifier:
                                             identifier: input
-                                        field: x
+                                        field:
+                                          Named: x
                                     operator: Sub
                                     right:
                                       Identifier:
@@ -258,7 +264,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: input
-                                field: dt
+                                field:
+                                  Named: dt
                     - ExpressionIntern:
                         Assignement:
                           left:
@@ -266,13 +273,15 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_prev_x
+                              field:
+                                Named: mem_prev_x
                           right:
                             FieldAccess:
                               expression:
                                 Identifier:
                                   identifier: input
-                              field: x
+                              field:
+                                Named: x
                     - ExpressionLast:
                         Identifier:
                           identifier: d
@@ -406,14 +415,16 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: input
-                                field: v_c
+                                field:
+                                  Named: v_c
                             operator: Sub
                             right:
                               FieldAccess:
                                 expression:
                                   Identifier:
                                     identifier: input
-                                field: v
+                                field:
+                                  Named: v
                     - Let:
                         pattern:
                           Identifier:
@@ -427,7 +438,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: self
-                                field: derive_d_e_d
+                                field:
+                                  Named: derive_d_e_d
                             method: step
                             arguments:
                               - Structure:
@@ -443,7 +455,8 @@ files:
                                           expression:
                                             Identifier:
                                               identifier: input
-                                          field: dt
+                                          field:
+                                            Named: dt
                     - Let:
                         pattern:
                           Identifier:
@@ -457,7 +470,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: self
-                                field: integrate_i_e_i
+                                field:
+                                  Named: integrate_i_e_i
                             method: step
                             arguments:
                               - Structure:
@@ -473,7 +487,8 @@ files:
                                           expression:
                                             Identifier:
                                               identifier: input
-                                          field: dt
+                                          field:
+                                            Named: dt
                     - Let:
                         pattern:
                           Identifier:

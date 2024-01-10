@@ -82,7 +82,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: input
-                                field: res
+                                field:
+                                  Named: res
                             then_branch:
                               statements:
                                 - ExpressionLast:
@@ -101,14 +102,16 @@ files:
                                               expression:
                                                 Identifier:
                                                   identifier: self
-                                              field: mem_o
+                                              field:
+                                                Named: mem_o
                                       operator: Add
                                       right:
                                         FieldAccess:
                                           expression:
                                             Identifier:
                                               identifier: input
-                                          field: inc
+                                          field:
+                                            Named: inc
                     - ExpressionIntern:
                         Assignement:
                           left:
@@ -116,7 +119,8 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_o
+                              field:
+                                Named: mem_o
                           right:
                             Identifier:
                               identifier: o
@@ -261,7 +265,8 @@ files:
                                         expression:
                                           Identifier:
                                             identifier: input
-                                        field: button_state
+                                        field:
+                                          Named: button_state
                                     operator: Eq
                                     right:
                                       Literal:
@@ -278,7 +283,8 @@ files:
                                     expression:
                                       Identifier:
                                         identifier: self
-                                    field: mem_res
+                                    field:
+                                      Named: mem_res
                     - Let:
                         pattern:
                           Identifier:
@@ -292,7 +298,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: self
-                                field: counter_o_counter
+                                field:
+                                  Named: counter_o_counter
                             method: step
                             arguments:
                               - Structure:
@@ -308,7 +315,8 @@ files:
                                           expression:
                                             Identifier:
                                               identifier: input
-                                          field: period
+                                          field:
+                                            Named: period
                     - Let:
                         pattern:
                           Identifier:
@@ -322,7 +330,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: input
-                                field: button_state
+                                field:
+                                  Named: button_state
                             arms:
                               - pattern:
                                   Literal:
@@ -336,7 +345,8 @@ files:
                                     expression:
                                       Identifier:
                                         identifier: self
-                                    field: mem_user_reset_request
+                                    field:
+                                      Named: mem_user_reset_request
                               - pattern:
                                   Literal:
                                     literal:
@@ -357,14 +367,16 @@ files:
                                             expression:
                                               Identifier:
                                                 identifier: input
-                                            field: reset_limit_1
+                                            field:
+                                              Named: reset_limit_1
                                         operator: Add
                                         right:
                                           FieldAccess:
                                             expression:
                                               Identifier:
                                                 identifier: input
-                                            field: reset_limit_2
+                                            field:
+                                              Named: reset_limit_2
                     - ExpressionIntern:
                         Assignement:
                           left:
@@ -372,7 +384,8 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_res
+                              field:
+                                Named: mem_res
                           right:
                             Binary:
                               left:
@@ -380,7 +393,8 @@ files:
                                   expression:
                                     Identifier:
                                       identifier: input
-                                  field: button_state
+                                  field:
+                                    Named: button_state
                               operator: Eq
                               right:
                                 Literal:
@@ -395,7 +409,8 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_user_reset_request
+                              field:
+                                Named: mem_user_reset_request
                           right:
                             Identifier:
                               identifier: user_reset_request
@@ -538,7 +553,8 @@ files:
                                         expression:
                                           Identifier:
                                             identifier: input
-                                        field: button_state
+                                        field:
+                                          Named: button_state
                                     operator: Eq
                                     right:
                                       Literal:
@@ -555,7 +571,8 @@ files:
                                     expression:
                                       Identifier:
                                         identifier: self
-                                    field: mem_res
+                                    field:
+                                      Named: mem_res
                     - Let:
                         pattern:
                           Identifier:
@@ -569,7 +586,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: self
-                                field: counter_o_counter
+                                field:
+                                  Named: counter_o_counter
                             method: step
                             arguments:
                               - Structure:
@@ -585,7 +603,8 @@ files:
                                           expression:
                                             Identifier:
                                               identifier: input
-                                          field: period
+                                          field:
+                                            Named: period
                     - Let:
                         pattern:
                           Identifier:
@@ -599,7 +618,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: input
-                                field: button_state
+                                field:
+                                  Named: button_state
                             arms:
                               - pattern:
                                   Literal:
@@ -634,7 +654,8 @@ files:
                                             expression:
                                               Identifier:
                                                 identifier: input
-                                            field: reset_limit_1
+                                            field:
+                                              Named: reset_limit_1
                                     then_branch:
                                       statements:
                                         - ExpressionLast:
@@ -658,7 +679,8 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_res
+                              field:
+                                Named: mem_res
                           right:
                             Binary:
                               left:
@@ -666,7 +688,8 @@ files:
                                   expression:
                                     Identifier:
                                       identifier: input
-                                  field: button_state
+                                  field:
+                                    Named: button_state
                               operator: Eq
                               right:
                                 Literal:
