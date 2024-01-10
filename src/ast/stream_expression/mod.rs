@@ -19,6 +19,7 @@ mod signal_call;
 mod sort;
 mod structure;
 mod when;
+mod zip;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust stream expression AST.
@@ -171,7 +172,7 @@ pub enum StreamExpression {
     /// Arrays zip operator stream expression.
     Zip {
         /// The array stream expressions.
-        arrays: Vec<Expression>,
+        arrays: Vec<StreamExpression>,
         /// Stream expression type.
         typing: Option<Type>,
         /// Stream expression location.
@@ -289,11 +290,13 @@ impl StreamExpression {
                 user_types_context,
                 errors,
             ),
-            StreamExpression::Zip {
-                arrays,
-                typing,
-                location,
-            } => todo!(),
+            StreamExpression::Zip { .. } => self.typing_zip(
+                nodes_context,
+                signals_context,
+                global_context,
+                user_types_context,
+                errors,
+            ),
         }
     }
 
@@ -2167,6 +2170,199 @@ mod typing {
         };
 
         expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_zip_with_one_array() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Zip {
+            arrays: vec![StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::Zip {
+            arrays: vec![StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                location: Location::default(),
+            }],
+            typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_type_zip_with_multiple_arrays() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        signals_context.insert(String::from("b"), Type::Array(Box::new(Type::Float), 3));
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Zip {
+            arrays: vec![
+                StreamExpression::SignalCall {
+                    id: String::from("a"),
+                    typing: None,
+                    location: Location::default(),
+                },
+                StreamExpression::SignalCall {
+                    id: String::from("b"),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+        let control = StreamExpression::Zip {
+            arrays: vec![
+                StreamExpression::SignalCall {
+                    id: String::from("a"),
+                    typing: Some(Type::Array(Box::new(Type::Integer), 3)),
+                    location: Location::default(),
+                },
+                StreamExpression::SignalCall {
+                    id: String::from("b"),
+                    typing: Some(Type::Array(Box::new(Type::Float), 3)),
+                    location: Location::default(),
+                },
+            ],
+            typing: Some(Type::Array(
+                Box::new(Type::Tuple(vec![Type::Integer, Type::Float])),
+                3,
+            )),
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(stream_expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_typing_zip_with_zero_array() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let signals_context = HashMap::new();
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Zip {
+            arrays: vec![],
+            typing: None,
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_typing_zip_with_not_array() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Integer);
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Zip {
+            arrays: vec![StreamExpression::SignalCall {
+                id: String::from("a"),
+                typing: None,
+                location: Location::default(),
+            }],
+            typing: None,
+            location: Location::default(),
+        };
+
+        stream_expression
+            .typing(
+                &nodes_context,
+                &signals_context,
+                &global_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_when_typing_zip_with_incompatible_length() {
+        let mut errors = vec![];
+        let nodes_context = HashMap::new();
+        let mut signals_context = HashMap::new();
+        signals_context.insert(String::from("a"), Type::Array(Box::new(Type::Integer), 3));
+        signals_context.insert(String::from("b"), Type::Array(Box::new(Type::Float), 5));
+        let global_context = HashMap::new();
+        let user_types_context = HashMap::new();
+
+        let mut stream_expression = StreamExpression::Zip {
+            arrays: vec![
+                StreamExpression::SignalCall {
+                    id: String::from("a"),
+                    typing: None,
+                    location: Location::default(),
+                },
+                StreamExpression::SignalCall {
+                    id: String::from("b"),
+                    typing: None,
+                    location: Location::default(),
+                },
+            ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        stream_expression
             .typing(
                 &nodes_context,
                 &signals_context,
