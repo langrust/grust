@@ -81,12 +81,12 @@ pub enum Expression {
         /// The expression assigned to the receiver.
         right: Box<Expression>,
     },
-    /// A field access: `my_point.x`.
+    /// A named or unamed field access: `my_point.x`.
     FieldAccess {
         /// The structure typed expression.
         expression: Box<Expression>,
         /// The identifier of the field.
-        field: String,
+        field: FieldIdentifier,
     },
     /// A reference: `&mut x`.
     Reference {
@@ -316,6 +316,24 @@ impl std::fmt::Display for Arm {
     }
 }
 
+/// A field identifer.
+#[derive(Debug, PartialEq, serde::Serialize)]
+pub enum FieldIdentifier {
+    /// Named field access.
+    Named(String),
+    /// Unamed field access.
+    Unamed(usize),
+}
+
+impl std::fmt::Display for FieldIdentifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FieldIdentifier::Named(name) => write!(f, "{}", name),
+            FieldIdentifier::Unamed(number) => write!(f, "{}", number),
+        }
+    }
+}
+
 #[cfg(test)]
 mod fmt {
     use crate::{
@@ -325,7 +343,7 @@ mod fmt {
         },
         rust_ast::{
             block::Block,
-            expression::{Arm, FieldExpression},
+            expression::{Arm, FieldExpression, FieldIdentifier},
             pattern::Pattern,
             r#type::Type,
             statement::{r#let::Let, Statement},
@@ -598,14 +616,26 @@ mod fmt {
     }
 
     #[test]
-    fn should_format_field_access_expression() {
+    fn should_format_named_field_access_expression() {
         let expression = Expression::FieldAccess {
             expression: Box::new(Expression::Identifier {
                 identifier: String::from("my_point"),
             }),
-            field: String::from("x"),
+            field: FieldIdentifier::Named(String::from("x")),
         };
         let control = String::from("my_point.x");
+        assert_eq!(format!("{}", expression), control)
+    }
+
+    #[test]
+    fn should_format_unamed_field_access_expression() {
+        let expression = Expression::FieldAccess {
+            expression: Box::new(Expression::Identifier {
+                identifier: String::from("my_tuple"),
+            }),
+            field: FieldIdentifier::Unamed(0),
+        };
+        let control = String::from("my_tuple.0");
         assert_eq!(format!("{}", expression), control)
     }
 

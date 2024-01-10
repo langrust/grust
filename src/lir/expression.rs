@@ -61,12 +61,12 @@ pub enum Expression {
         /// The filled input's fields.
         input_fields: Vec<(String, Expression)>,
     },
-    /// A field access: `my_point.x`.
+    /// A named or unamed field access: `my_point.x`.
     FieldAccess {
-        /// The structure typed expression.
+        /// The structure or tuple typed expression.
         expression: Box<Expression>,
         /// The identifier of the field.
-        field: String,
+        field: FieldIdentifier,
     },
     /// A lambda expression: `|x, y| x * y`.
     Lambda {
@@ -121,4 +121,13 @@ pub enum Expression {
         /// The arrays expression.
         arrays: Vec<Expression>,
     },
+}
+
+/// LIR field access member.
+#[derive(Debug, PartialEq, serde::Serialize)]
+pub enum FieldIdentifier {
+    /// Named field access.
+    Named(String),
+    /// Unamed field access.
+    Unamed(usize),
 }
