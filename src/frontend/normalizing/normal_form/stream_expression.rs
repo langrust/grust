@@ -327,6 +327,12 @@ impl StreamExpression {
                 new_equations
             }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => vec![],
+            StreamExpression::Zip {
+                arrays,
+                typing,
+                location,
+                dependencies,
+            } => todo!(),
         }
     }
 

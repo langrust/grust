@@ -234,6 +234,12 @@ impl StreamExpression {
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
+            StreamExpression::Zip {
+                arrays,
+                typing,
+                location,
+                dependencies,
+            } => todo!(),
         }
     }
 }

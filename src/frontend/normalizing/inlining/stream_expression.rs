@@ -275,6 +275,12 @@ impl StreamExpression {
                 // push all dependencies in arms dependencies
                 *dependencies = Dependencies::from(expression_dependencies);
             }
+            StreamExpression::Zip {
+                arrays,
+                typing,
+                location,
+                dependencies,
+            } => todo!(),
         }
     }
 
@@ -682,6 +688,12 @@ impl StreamExpression {
 
                 new_equations
             }
+            StreamExpression::Zip {
+                arrays,
+                typing,
+                location,
+                dependencies,
+            } => todo!(),
         }
     }
 }
