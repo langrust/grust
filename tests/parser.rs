@@ -968,6 +968,7 @@ mod langrust_ast_constructs {
         let file_id6 = files.add("array_test.gr", "[int; 3]");
         let file_id7 = files.add("option_test.gr", "int?");
         let file_id8 = files.add("undefined_type_test.gr", "Color");
+        let file_id9 = files.add("tuple_type_test.gr", "(int, Color)");
 
         let basic_type = langrust::basicTypeParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1001,6 +1002,16 @@ mod langrust_ast_constructs {
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
         assert_eq!(basic_type, Type::NotDefinedYet(String::from("Color")));
+        let basic_type = langrust::basicTypeParser::new()
+            .parse(file_id9, &files.source(file_id9).unwrap())
+            .unwrap();
+        assert_eq!(
+            basic_type,
+            Type::Tuple(vec![
+                Type::Integer,
+                Type::NotDefinedYet(String::from("Color"))
+            ])
+        );
     }
 
     #[test]

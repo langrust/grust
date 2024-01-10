@@ -61,6 +61,7 @@ pub basicType: Type = {
         Box::new(t),
         usize::from_str(n).unwrap()
     ),
+    "(" <v_t: list<basicType>> ")" => Type::Tuple(v_t),
     <t: basicType> "?" => Type::Option(Box::new(t)),
     <id:ID> => Type::NotDefinedYet(id),
 };
