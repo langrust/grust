@@ -161,6 +161,19 @@ pub enum StreamExpression {
         /// Stream expression dependencies.
         dependencies: Dependencies,
     },
+    /// Tuple element access stream expression.
+    TupleElementAccess {
+        /// The tuple stream expression.
+        expression: Box<StreamExpression>,
+        /// The element to access.
+        element_number: usize,
+        /// Stream expression type.
+        typing: Type,
+        /// Stream expression location.
+        location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
+    },
     /// Array map operator expression.
     Map {
         /// The array expression.
@@ -246,6 +259,7 @@ impl StreamExpression {
             | StreamExpression::Match { typing, .. }
             | StreamExpression::When { typing, .. }
             | StreamExpression::FieldAccess { typing, .. }
+            | StreamExpression::TupleElementAccess { typing, .. }
             | StreamExpression::Map { typing, .. }
             | StreamExpression::Fold { typing, .. }
             | StreamExpression::Sort { typing, .. }
@@ -283,6 +297,7 @@ impl StreamExpression {
             | StreamExpression::Match { location, .. }
             | StreamExpression::When { location, .. }
             | StreamExpression::FieldAccess { location, .. }
+            | StreamExpression::TupleElementAccess { location, .. }
             | StreamExpression::Map { location, .. }
             | StreamExpression::Fold { location, .. }
             | StreamExpression::Sort { location, .. }
@@ -320,6 +335,7 @@ impl StreamExpression {
             | StreamExpression::Match { dependencies, .. }
             | StreamExpression::When { dependencies, .. }
             | StreamExpression::FieldAccess { dependencies, .. }
+            | StreamExpression::TupleElementAccess { dependencies, .. }
             | StreamExpression::Map { dependencies, .. }
             | StreamExpression::Fold { dependencies, .. }
             | StreamExpression::Sort { dependencies, .. }
