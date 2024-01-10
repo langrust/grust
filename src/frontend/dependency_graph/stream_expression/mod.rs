@@ -113,6 +113,12 @@ impl StreamExpression {
                 errors,
             ),
             StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
+            StreamExpression::Zip {
+                arrays,
+                typing,
+                location,
+                dependencies,
+            } => todo!(),
         }
     }
 }

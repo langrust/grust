@@ -202,6 +202,17 @@ pub enum StreamExpression {
         /// Stream expression dependencies.
         dependencies: Dependencies,
     },
+    /// Array zip operator expression.
+    Zip {
+        /// The array expressions.
+        arrays: Vec<StreamExpression>,
+        /// Expression type.
+        typing: Type,
+        /// Expression location.
+        location: Location,
+        /// Stream expression dependencies.
+        dependencies: Dependencies,
+    },
 }
 
 impl StreamExpression {
@@ -237,7 +248,8 @@ impl StreamExpression {
             | StreamExpression::FieldAccess { typing, .. }
             | StreamExpression::Map { typing, .. }
             | StreamExpression::Fold { typing, .. }
-            | StreamExpression::Sort { typing, .. } => typing,
+            | StreamExpression::Sort { typing, .. }
+            | StreamExpression::Zip { typing, .. } => typing,
         }
     }
 
@@ -273,7 +285,8 @@ impl StreamExpression {
             | StreamExpression::FieldAccess { location, .. }
             | StreamExpression::Map { location, .. }
             | StreamExpression::Fold { location, .. }
-            | StreamExpression::Sort { location, .. } => location,
+            | StreamExpression::Sort { location, .. }
+            | StreamExpression::Zip { location, .. } => location,
         }
     }
 
@@ -309,7 +322,8 @@ impl StreamExpression {
             | StreamExpression::FieldAccess { dependencies, .. }
             | StreamExpression::Map { dependencies, .. }
             | StreamExpression::Fold { dependencies, .. }
-            | StreamExpression::Sort { dependencies, .. } => dependencies.get().unwrap(),
+            | StreamExpression::Sort { dependencies, .. }
+            | StreamExpression::Zip { dependencies, .. } => dependencies.get().unwrap(),
         }
     }
 }
