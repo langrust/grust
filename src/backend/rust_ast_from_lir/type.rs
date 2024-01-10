@@ -38,7 +38,10 @@ pub fn rust_ast_from_lir(r#type: Type) -> RustASTType {
                 output: Box::new(rust_ast_from_lir(*output)),
             }
         }
-        _ => unreachable!(),
+        Type::Tuple(elements) => RustASTType::Tuple {
+            elements: elements.into_iter().map(rust_ast_from_lir).collect(),
+        },
+        Type::NotDefinedYet(_) | Type::Polymorphism(_) => unreachable!(),
     }
 }
 
