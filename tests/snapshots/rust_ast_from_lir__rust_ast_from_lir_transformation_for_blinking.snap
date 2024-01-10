@@ -82,7 +82,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: input
-                                field: tick
+                                field:
+                                  Named: tick
                             then_branch:
                               statements:
                                 - ExpressionLast:
@@ -108,7 +109,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: input
-                                field: res
+                                field:
+                                  Named: res
                             then_branch:
                               statements:
                                 - ExpressionLast:
@@ -127,7 +129,8 @@ files:
                                               expression:
                                                 Identifier:
                                                   identifier: self
-                                              field: mem_o
+                                              field:
+                                                Named: mem_o
                                       operator: Add
                                       right:
                                         Identifier:
@@ -139,7 +142,8 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_o
+                              field:
+                                Named: mem_o
                           right:
                             Identifier:
                               identifier: o
@@ -262,7 +266,8 @@ files:
                             expression:
                               Identifier:
                                 identifier: self
-                            field: mem_res
+                            field:
+                              Named: mem_res
                     - Let:
                         pattern:
                           Identifier:
@@ -286,7 +291,8 @@ files:
                                 expression:
                                   Identifier:
                                     identifier: self
-                                field: counter_o_counter
+                                field:
+                                  Named: counter_o_counter
                             method: step
                             arguments:
                               - Structure:
@@ -318,7 +324,8 @@ files:
                                   expression:
                                     Identifier:
                                       identifier: self
-                                  field: mem_on_off
+                                  field:
+                                    Named: mem_on_off
                     - Let:
                         pattern:
                           Identifier:
@@ -355,7 +362,8 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_on_off
+                              field:
+                                Named: mem_on_off
                           right:
                             Identifier:
                               identifier: on_off
@@ -366,7 +374,8 @@ files:
                               expression:
                                 Identifier:
                                   identifier: self
-                              field: mem_res
+                              field:
+                                Named: mem_res
                           right:
                             Unary:
                               operator: Brackets
@@ -388,7 +397,8 @@ files:
                                       expression:
                                         Identifier:
                                           identifier: input
-                                      field: tick_number
+                                      field:
+                                        Named: tick_number
                     - ExpressionLast:
                         Identifier:
                           identifier: status

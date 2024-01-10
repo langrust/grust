@@ -8,7 +8,9 @@ use crate::{
         r#type::Type,
     },
     lir::{
-        block::Block, expression::Expression as LIRExpression, item::node_file::import::Import,
+        block::Block,
+        expression::{Expression as LIRExpression, FieldIdentifier},
+        item::node_file::import::Import,
         statement::Statement,
     },
 };
@@ -151,12 +153,6 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
         Expression::Zip { arrays, .. } => LIRExpression::Zip {
             arrays: arrays.into_iter().map(lir_from_hir).collect(),
         },
-        Expression::TupleElementAccess {
-            expression,
-            element_number,
-            typing,
-            location,
-        } => todo!(),
     }
 }
 
@@ -310,7 +306,11 @@ mod lir_from_hir {
         ast::{expression::Expression as ASTExpression, pattern::Pattern},
         common::{constant::Constant, location::Location, operator::OtherOperator, r#type::Type},
         frontend::lir_from_hir::expression::lir_from_hir,
-        lir::{block::Block, expression::Expression, statement::Statement},
+        lir::{
+            block::Block,
+            expression::{Expression, FieldIdentifier},
+            statement::Statement,
+        },
     };
 
     #[test]
@@ -745,7 +745,7 @@ mod lir_from_hir {
             expression: Box::new(Expression::Identifier {
                 identifier: format!("p"),
             }),
-            field: format!("x"),
+            field: FieldIdentifier::Named(format!("x")),
         };
         assert_eq!(lir_from_hir(expression), control)
     }
