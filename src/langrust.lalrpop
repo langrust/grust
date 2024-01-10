@@ -279,6 +279,15 @@ term: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches tuple element access as expressions
+    <start:@L> <e: term> "::" <n: r"\d+"> <end:@R> => {
+        Expression::TupleElementAccess {
+            expression: Box::new(e),
+            element_number: usize::from_str(n).unwrap(),
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
     // catches array mapping as expressions
     <start:@L> <a: term> ".map" "(" <f: expression> ")" <end:@R> => {
         Expression::Map {
