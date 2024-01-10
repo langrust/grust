@@ -11,6 +11,6 @@ function fibonacci(n: int) -> int {
 }
 
 component lidar_detection(rgb_images: [int; 10]) {
-    out regions_of_interest: [int; 10] = rgb_images.fold(0, |acc, n| acc + factorial(n));
+    out regions_of_interest: int = rgb_images.fold(0, |acc: int, n: int| acc + factorial(n));
     out list_of_detections: [int; 10] = rgb_images.map(fibonacci);
 }

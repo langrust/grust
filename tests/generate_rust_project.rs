@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use codespan_reporting::files::{Files, SimpleFiles};
 
 use grustine::ast::file::File;
@@ -405,4 +407,68 @@ fn generate_rust_project_for_factorial() {
     project.set_parent("tests/generated/factorial/");
 
     project.generate()
+}
+
+#[test]
+fn generate_rust_project_for_adas_example() {
+    let mut files = SimpleFiles::new();
+    let mut files_id = vec![];
+    let mut errors = vec![];
+
+    files_id.push(
+        files.add(
+            "radar_detection.gr",
+            std::fs::read_to_string("tests/fixture/adas_example/radar_detection.gr")
+                .expect("unkown file"),
+        ),
+    );
+    files_id.push(
+        files.add(
+            "lidar_detection.gr",
+            std::fs::read_to_string("tests/fixture/adas_example/lidar_detection.gr")
+                .expect("unkown file"),
+        ),
+    );
+    files_id.push(
+        files.add(
+            "classification.gr",
+            std::fs::read_to_string("tests/fixture/adas_example/classification.gr")
+                .expect("unkown file"),
+        ),
+    );
+    files_id.push(files.add(
+        "fusion.gr",
+        std::fs::read_to_string("tests/fixture/adas_example/fusion.gr").expect("unkown file"),
+    ));
+    files_id.push(
+        files.add(
+            "object_tracking.gr",
+            std::fs::read_to_string("tests/fixture/adas_example/object_tracking.gr")
+                .expect("unkown file"),
+        ),
+    );
+
+    for id in files_id {
+        let file_name = Path::new(files.name(id).unwrap())
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap();
+        let file_content = files.source(id).unwrap();
+
+        let mut file_ast: File = langrust::fileParser::new().parse(id, file_content).unwrap();
+        file_ast.typing(&mut errors).unwrap();
+
+        let mut file_hir = hir_from_ast(file_ast);
+        file_hir.generate_dependency_graphs(&mut errors).unwrap();
+        file_hir.causality_analysis(&mut errors).unwrap();
+        file_hir.normalize(&mut errors).unwrap();
+
+        let project_lir = lir_from_hir(file_hir);
+
+        let mut project_rust = rust_ast_from_lir(project_lir);
+        project_rust.set_parent(format!("tests/generated/adas_example/{file_name}/"));
+
+        project_rust.generate()
+    }
 }
