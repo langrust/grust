@@ -1012,6 +1012,7 @@ mod langrust_ast_constructs {
         let file_id4 = files.add("some_test.gr", "some(value)");
         let file_id5 = files.add("none_test.gr", "none");
         let file_id6 = files.add("default_test.gr", "_");
+        let file_id7 = files.add("tuple_test.gr", "(x, _)");
 
         let pattern = langrust::patternParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1085,6 +1086,24 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Pattern::Default {
+                location: Location::default()
+            },
+            pattern
+        );
+        let pattern = langrust::patternParser::new()
+            .parse(file_id7, &files.source(file_id7).unwrap())
+            .unwrap();
+        assert_eq!(
+            Pattern::Tuple {
+                elements: vec![
+                    Pattern::Identifier {
+                        name: format!("x"),
+                        location: Location::default()
+                    },
+                    Pattern::Default {
+                        location: Location::default()
+                    }
+                ],
                 location: Location::default()
             },
             pattern

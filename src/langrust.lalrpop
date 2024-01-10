@@ -145,6 +145,13 @@ pub pattern: Pattern = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches tuple patterns
+    <start:@L> "(" <elements: list<pattern>> ")" <end:@R> => {
+        Pattern::Tuple {
+            elements,
+            location: Location{ file_id, range: start..end }
+        }
+    },
     // catches optional patterns with value
     <start:@L> "some(" <p: pattern> ")" <end:@R> => {
         Pattern::Some {
