@@ -109,7 +109,15 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
             expression, field, ..
         } => LIRExpression::FieldAccess {
             expression: Box::new(lir_from_hir(*expression)),
-            field,
+            field: FieldIdentifier::Named(field),
+        },
+        Expression::TupleElementAccess {
+            expression,
+            element_number,
+            ..
+        } => LIRExpression::FieldAccess {
+            expression: Box::new(lir_from_hir(*expression)),
+            field: FieldIdentifier::Unamed(element_number),
         },
         Expression::TypedAbstraction { .. } | Expression::Abstraction { .. } => {
             unreachable!()
