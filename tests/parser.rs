@@ -1120,6 +1120,7 @@ mod langrust_ast_constructs {
         let file_id18 = files.add("map_test.gr", "x.map(f)");
         let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
         let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
+        let file_id21 = files.add("zip_test.gr", "zip(a,b)");
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1734,6 +1735,28 @@ mod langrust_ast_constructs {
                     typing: None,
                     location: Location::default()
                 },
+                typing: None,
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id21, &files.source(file_id21).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::Zip {
+                arrays: vec![
+                    StreamExpression::SignalCall {
+                        id: "a".to_string(),
+                        typing: None,
+                        location: Location::default()
+                    },
+                    StreamExpression::SignalCall {
+                        id: "b".to_string(),
+                        typing: None,
+                        location: Location::default()
+                    }
+                ],
                 typing: None,
                 location: Location::default()
             },
