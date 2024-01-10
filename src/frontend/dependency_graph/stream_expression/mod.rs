@@ -16,6 +16,7 @@ mod node_application;
 mod signal_call;
 mod sort;
 mod structure;
+mod tuple_element_access;
 mod when;
 mod zip;
 
@@ -95,6 +96,13 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
+            StreamExpression::TupleElementAccess { .. } => self
+                .compute_tuple_element_access_dependencies(
+                    nodes_context,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                ),
             StreamExpression::Map { .. } => self.compute_map_dependencies(
                 nodes_context,
                 nodes_graphs,
@@ -937,6 +945,49 @@ mod compute_dependencies {
         dependencies.sort_unstable();
 
         let control = vec![(String::from("p"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_compute_dependencies_of_tuple_element_access() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::TupleElementAccess {
+            expression: Box::new(StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("p123"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Tuple(vec![
+                    Type::Structure(String::from("Point")),
+                    Type::Structure(String::from("Point")),
+                    Type::Structure(String::from("Point")),
+                ]),
+                location: Location::default(),
+                dependencies: Dependencies::new(),
+            }),
+            element_number: 0,
+            typing: Type::Integer,
+            location: Location::default(),
+            dependencies: Dependencies::new(),
+        };
+
+        stream_expression
+            .compute_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+        let mut dependencies = stream_expression.get_dependencies().clone();
+        dependencies.sort_unstable();
+
+        let control = vec![(String::from("p123"), 0)];
 
         assert_eq!(dependencies, control)
     }
