@@ -326,13 +326,26 @@ impl StreamExpression {
 
                 new_equations
             }
-            StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => vec![],
             StreamExpression::Zip {
                 arrays,
-                typing,
-                location,
-                dependencies,
-            } => todo!(),
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = arrays
+                    .iter_mut()
+                    .flat_map(|array| array.normal_form(nodes_reduced_graphs, identifier_creator))
+                    .collect();
+
+                *dependencies = Dependencies::from(
+                    arrays
+                        .iter()
+                        .flat_map(|array| array.get_dependencies().clone())
+                        .collect(),
+                );
+
+                new_equations
+            }
+            StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => vec![],
         }
     }
 
