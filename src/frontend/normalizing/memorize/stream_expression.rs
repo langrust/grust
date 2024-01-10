@@ -236,10 +236,20 @@ impl StreamExpression {
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
             StreamExpression::Zip {
                 arrays,
-                typing,
-                location,
                 dependencies,
-            } => todo!(),
+                ..
+            } => {
+                arrays
+                    .iter_mut()
+                    .for_each(|array| array.memorize(signal_name, identifier_creator, memory));
+
+                *dependencies = Dependencies::from(
+                    arrays
+                        .iter()
+                        .flat_map(|array| array.get_dependencies().clone())
+                        .collect(),
+                );
+            }
         }
     }
 }

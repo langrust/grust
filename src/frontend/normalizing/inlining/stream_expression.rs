@@ -277,10 +277,20 @@ impl StreamExpression {
             }
             StreamExpression::Zip {
                 arrays,
-                typing,
-                location,
-                dependencies,
-            } => todo!(),
+                ref mut dependencies,
+                ..
+            } => {
+                arrays
+                    .iter_mut()
+                    .for_each(|array| array.replace_by_context(context_map));
+
+                *dependencies = Dependencies::from(
+                    arrays
+                        .iter()
+                        .flat_map(|array| array.get_dependencies().clone())
+                        .collect(),
+                );
+            }
         }
     }
 
@@ -690,10 +700,29 @@ impl StreamExpression {
             }
             StreamExpression::Zip {
                 arrays,
-                typing,
-                location,
-                dependencies,
-            } => todo!(),
+                ref mut dependencies,
+                ..
+            } => {
+                let new_equations = arrays
+                    .iter_mut()
+                    .flat_map(|array| {
+                        array.inline_when_needed(
+                            signal_id,
+                            memory,
+                            identifier_creator,
+                            graph,
+                            nodes,
+                        )
+                    })
+                    .collect();
+                *dependencies = Dependencies::from(
+                    arrays
+                        .iter()
+                        .flat_map(|array| array.get_dependencies().clone())
+                        .collect(),
+                );
+                new_equations
+            }
         }
     }
 }

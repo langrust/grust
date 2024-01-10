@@ -123,12 +123,9 @@ impl StreamExpression {
             StreamExpression::Sort { expression, .. } => {
                 expression.change_node_application_into_unitary_node_application(used_inputs)
             }
-            StreamExpression::Zip {
-                arrays,
-                typing,
-                location,
-                dependencies,
-            } => todo!(),
+            StreamExpression::Zip { arrays, .. } => arrays.iter_mut().for_each(|array| {
+                array.change_node_application_into_unitary_node_application(used_inputs)
+            }),
         }
     }
 }
