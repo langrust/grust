@@ -1121,6 +1121,7 @@ mod langrust_ast_constructs {
         let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
         let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
         let file_id21 = files.add("zip_test.gr", "zip(a,b)");
+        let file_id22 = files.add("tuple_element_access_test.gr", "my_tuple::0");
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1757,6 +1758,22 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }
                 ],
+                typing: None,
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id22, &files.source(file_id22).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression::TupleElementAccess {
+                expression: Box::new(StreamExpression::SignalCall {
+                    id: "my_tuple".to_string(),
+                    typing: None,
+                    location: Location::default()
+                }),
+                element_number: 0,
                 typing: None,
                 location: Location::default()
             },

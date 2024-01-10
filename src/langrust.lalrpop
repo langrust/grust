@@ -545,6 +545,15 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches tuple element access as stream expressions
+    <start:@L> <e: streamTerm> "::" <n: r"\d+"> <end:@R> => {
+        StreamExpression::TupleElementAccess {
+            expression: Box::new(e),
+            element_number: usize::from_str(n).unwrap(),
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
     // catches array mapping as stream expressions
     <start:@L> <e: streamTerm> ".map" "(" <f: expression> ")" <end:@R> => {
         StreamExpression::Map {
