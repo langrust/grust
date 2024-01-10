@@ -143,6 +143,12 @@ pub fn lir_from_hir(expression: Expression) -> LIRExpression {
         Expression::Zip { arrays, .. } => LIRExpression::Zip {
             arrays: arrays.into_iter().map(lir_from_hir).collect(),
         },
+        Expression::TupleElementAccess {
+            expression,
+            element_number,
+            typing,
+            location,
+        } => todo!(),
     }
 }
 
@@ -280,6 +286,12 @@ impl Expression {
                 .flat_map(Expression::get_imports)
                 .unique()
                 .collect(),
+            Expression::TupleElementAccess {
+                expression,
+                element_number,
+                typing,
+                location,
+            } => todo!(),
         }
     }
 }

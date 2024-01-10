@@ -95,6 +95,11 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// the index is out of bounds
+    IndexOutOfBounds {
+        /// the error location
+        location: Location,
+    },
     /// component is called
     ComponentCall {
         /// name of the calle Component
@@ -166,6 +171,13 @@ pub enum Error {
     },
     /// expect structure type
     ExpectStructure {
+        /// given type instead of the structure
+        given_type: Type,
+        /// the error location
+        location: Location,
+    },
+    /// expect tuple type
+    ExpectTuple {
         /// given type instead of the structure
         given_type: Type,
         /// the error location
@@ -320,6 +332,15 @@ impl Error {
                     format!("field '{field_name}' is missing in structure '{structure_name}' instantiation")
                 ]
             ),
+            Error::IndexOutOfBounds { location } => Diagnostic::error()
+                .with_message("index out of bounds")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                ])
+                .with_notes(vec![
+                    format!("the index is out of bounds")
+                ]
+            ),
             Error::ComponentCall { name, location } => Diagnostic::error()
                 .with_message("component can not be called")
                 .with_labels(vec![
@@ -426,6 +447,16 @@ impl Error {
                     format!("expect structure type but '{given_type}' was given")
                 ]
             ),
+            Error::ExpectTuple { given_type, location } => Diagnostic::error()
+                .with_message("incompatible type")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong type")
+                ])
+                .with_notes(vec![
+                    format!("expect tuple type but '{given_type}' was given")
+                ]
+            ),
             Error::ExpectArray { given_type, location } => Diagnostic::error()
                 .with_message("incompatible type")
                 .with_labels(vec![
@@ -487,6 +518,7 @@ impl std::fmt::Display for Error {
             Error::UnknownEnumeration { .. } => write!(f, "Unknown Enumeration"),
             Error::UnknownField { .. } => write!(f, "Unknown Field"),
             Error::MissingField { .. } => write!(f, "Missing Field"),
+            Error::IndexOutOfBounds { .. } => write!(f, "Index Out Of Bounds"),
             Error::ComponentCall { .. } => write!(f, "Component Call"),
             Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
@@ -497,6 +529,7 @@ impl std::fmt::Display for Error {
             Error::ExpectAbstraction { .. } => write!(f, "Expect Abstraction"),
             Error::ExpectOption { .. } => write!(f, "Expect Option"),
             Error::ExpectStructure { .. } => write!(f, "Expect Structure"),
+            Error::ExpectTuple { .. } => write!(f, "Expect Tuple"),
             Error::ExpectArray { .. } => write!(f, "Expect Array"),
             Error::IncompatibleLength { .. } => write!(f, "Incompatible Length"),
             Error::NoTypeInference { .. } => write!(f, "No Type Inference"),
