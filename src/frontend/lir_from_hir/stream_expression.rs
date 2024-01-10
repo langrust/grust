@@ -191,12 +191,9 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             sorted: Box::new(lir_from_hir(*expression)),
             function: Box::new(expression_lir_from_hir(function_expression)),
         },
-        StreamExpression::Zip {
-            arrays,
-            typing,
-            location,
-            dependencies,
-        } => todo!(),
+        StreamExpression::Zip { arrays, .. } => LIRExpression::Zip {
+            arrays: arrays.into_iter().map(lir_from_hir).collect(),
+        },
     }
 }
 
@@ -367,12 +364,11 @@ impl StreamExpression {
                 imports.append(&mut function_expression_imports);
                 imports.into_iter().unique().collect()
             }
-            StreamExpression::Zip {
-                arrays,
-                typing,
-                location,
-                dependencies,
-            } => todo!(),
+            StreamExpression::Zip { arrays, .. } => arrays
+                .iter()
+                .flat_map(StreamExpression::get_imports)
+                .unique()
+                .collect(),
         }
     }
 }
