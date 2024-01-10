@@ -243,6 +243,7 @@ impl Expression {
             Expression::TypedAbstraction { expression, .. } => expression.get_imports(),
             Expression::Abstraction { .. } => unreachable!(),
             Expression::FieldAccess { expression, .. } => expression.get_imports(),
+            Expression::TupleElementAccess { expression, .. } => expression.get_imports(),
             Expression::Map {
                 expression,
                 function_expression,
@@ -290,12 +291,6 @@ impl Expression {
                 .flat_map(Expression::get_imports)
                 .unique()
                 .collect(),
-            Expression::TupleElementAccess {
-                expression,
-                element_number,
-                typing,
-                location,
-            } => todo!(),
         }
     }
 }
