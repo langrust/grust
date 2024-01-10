@@ -15,6 +15,7 @@ mod map;
 mod r#match;
 mod sort;
 mod structure;
+mod tuple_element_access;
 mod when;
 mod zip;
 
@@ -124,6 +125,17 @@ pub enum Expression {
         expression: Box<Expression>,
         /// The field to access.
         field: String,
+        /// Expression type.
+        typing: Option<Type>,
+        /// Expression location.
+        location: Location,
+    },
+    /// Tuple element access expression.
+    TupleElementAccess {
+        /// The tuple expression.
+        expression: Box<Expression>,
+        /// The element to access.
+        element_number: usize,
         /// Expression type.
         typing: Option<Type>,
         /// Expression location.
@@ -245,6 +257,12 @@ impl Expression {
             Expression::Zip { .. } => {
                 self.typing_zip(global_context, elements_context, user_types_context, errors)
             }
+            Expression::TupleElementAccess { .. } => self.typing_tuple_element_access(
+                global_context,
+                elements_context,
+                user_types_context,
+                errors,
+            ),
         }
     }
 
@@ -275,6 +293,7 @@ impl Expression {
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
+            | Expression::TupleElementAccess { typing, .. }
             | Expression::Map { typing, .. }
             | Expression::Fold { typing, .. }
             | Expression::Sort { typing, .. }
@@ -309,6 +328,7 @@ impl Expression {
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
+            | Expression::TupleElementAccess { typing, .. }
             | Expression::Map { typing, .. }
             | Expression::Fold { typing, .. }
             | Expression::Sort { typing, .. }
@@ -343,6 +363,7 @@ impl Expression {
             | Expression::Match { typing, .. }
             | Expression::When { typing, .. }
             | Expression::FieldAccess { typing, .. }
+            | Expression::TupleElementAccess { typing, .. }
             | Expression::Map { typing, .. }
             | Expression::Fold { typing, .. }
             | Expression::Sort { typing, .. }
@@ -2199,6 +2220,153 @@ mod typing {
                     location: Location::default(),
                 },
             ],
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_type_tuple_element_access() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
+            String::from("p123"),
+            Type::Tuple(vec![
+                Type::Structure("Point".to_string()),
+                Type::Structure("Point".to_string()),
+                Type::Structure("Point".to_string()),
+            ]),
+        );
+        let user_types_context = HashMap::from([(
+            "Point".to_string(),
+            Typedef::Structure {
+                id: "Point".to_string(),
+                fields: vec![
+                    ("x".to_string(), Type::Integer),
+                    ("y".to_string(), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        )]);
+
+        let mut expression = Expression::TupleElementAccess {
+            expression: Box::new(Expression::Call {
+                id: String::from("p123"),
+                typing: None,
+                location: Location::default(),
+            }),
+            element_number: 2,
+            typing: None,
+            location: Location::default(),
+        };
+        let control = Expression::TupleElementAccess {
+            expression: Box::new(Expression::Call {
+                id: String::from("p123"),
+                typing: Some(Type::Tuple(vec![
+                    Type::Structure("Point".to_string()),
+                    Type::Structure("Point".to_string()),
+                    Type::Structure("Point".to_string()),
+                ])),
+                location: Location::default(),
+            }),
+            element_number: 2,
+            typing: Some(Type::Structure("Point".to_string())),
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap();
+
+        assert_eq!(expression, control);
+    }
+
+    #[test]
+    fn should_raise_error_when_expression_not_tuple_when_typing_tuple_element_access() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(String::from("p"), Type::Integer);
+        let user_types_context = HashMap::from([(
+            "Point".to_string(),
+            Typedef::Structure {
+                id: "Point".to_string(),
+                fields: vec![
+                    ("x".to_string(), Type::Integer),
+                    ("y".to_string(), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        )]);
+
+        let mut expression = Expression::TupleElementAccess {
+            expression: Box::new(Expression::Call {
+                id: String::from("p"),
+                typing: None,
+                location: Location::default(),
+            }),
+            element_number: 2,
+            typing: None,
+            location: Location::default(),
+        };
+
+        expression
+            .typing(
+                &global_context,
+                &elements_context,
+                &user_types_context,
+                &mut errors,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    fn should_raise_error_for_index_out_of_bounds_when_typing_tuple_element_access() {
+        let mut errors = vec![];
+        let global_context = HashMap::new();
+        let mut elements_context = HashMap::new();
+        elements_context.insert(
+            String::from("p123"),
+            Type::Tuple(vec![
+                Type::Structure("Point".to_string()),
+                Type::Structure("Point".to_string()),
+                Type::Structure("Point".to_string()),
+            ]),
+        );
+        let user_types_context = HashMap::from([(
+            "Point".to_string(),
+            Typedef::Structure {
+                id: "Point".to_string(),
+                fields: vec![
+                    ("x".to_string(), Type::Integer),
+                    ("y".to_string(), Type::Integer),
+                ],
+                location: Location::default(),
+            },
+        )]);
+
+        let mut expression = Expression::TupleElementAccess {
+            expression: Box::new(Expression::Call {
+                id: String::from("p123"),
+                typing: None,
+                location: Location::default(),
+            }),
+            element_number: 3,
             typing: None,
             location: Location::default(),
         };
