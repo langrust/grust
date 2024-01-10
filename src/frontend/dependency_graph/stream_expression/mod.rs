@@ -17,6 +17,7 @@ mod signal_call;
 mod sort;
 mod structure;
 mod when;
+mod zip;
 
 impl StreamExpression {
     /// Compute dependencies of a stream expression.
@@ -112,13 +113,13 @@ impl StreamExpression {
                 nodes_reduced_graphs,
                 errors,
             ),
+            StreamExpression::Zip { .. } => self.compute_zip_dependencies(
+                nodes_context,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
             StreamExpression::UnitaryNodeApplication { .. } => unreachable!(),
-            StreamExpression::Zip {
-                arrays,
-                typing,
-                location,
-                dependencies,
-            } => todo!(),
         }
     }
 }
@@ -1077,6 +1078,95 @@ mod compute_dependencies {
         dependencies.sort_unstable();
 
         let control = vec![(String::from("a"), 0)];
+
+        assert_eq!(dependencies, control)
+    }
+
+    #[test]
+    fn should_compute_dependencies_of_zip_with_duplicates() {
+        let nodes_context = HashMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut errors = vec![];
+
+        let stream_expression = StreamExpression::Zip {
+            arrays: vec![
+                StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("x"),
+                        scope: Scope::Local,
+                    },
+                    typing: Type::Array(Box::new(Type::Integer), 3),
+                    location: Location::default(),
+                    dependencies: Dependencies::new(),
+                },
+                StreamExpression::FunctionApplication {
+                    function_expression: Expression::Call {
+                        id: String::from("f"),
+                        typing: Some(Type::Abstract(
+                            vec![Type::Array(Box::new(Type::Integer), 3)],
+                            Box::new(Type::Array(Box::new(Type::Float), 3)),
+                        )),
+                        location: Location::default(),
+                    },
+                    inputs: vec![StreamExpression::SignalCall {
+                        signal: Signal {
+                            id: String::from("x"),
+                            scope: Scope::Local,
+                        },
+                        typing: Type::Array(Box::new(Type::Integer), 3),
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    }],
+                    typing: Type::Array(Box::new(Type::Float), 3),
+                    location: Location::default(),
+                    dependencies: Dependencies::new(),
+                },
+                StreamExpression::Array {
+                    elements: vec![
+                        StreamExpression::Constant {
+                            constant: Constant::Integer(1),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::new(),
+                        },
+                        StreamExpression::Constant {
+                            constant: Constant::Integer(1),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::new(),
+                        },
+                        StreamExpression::Constant {
+                            constant: Constant::Integer(1),
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::new(),
+                        },
+                    ],
+                    typing: Type::Array(Box::new(Type::Integer), 3),
+                    location: Location::default(),
+                    dependencies: Dependencies::new(),
+                },
+            ],
+            typing: Type::Array(
+                Box::new(Type::Tuple(vec![Type::Integer, Type::Float, Type::Integer])),
+                3,
+            ),
+            location: Location::default(),
+            dependencies: Dependencies::new(),
+        };
+
+        stream_expression
+            .compute_dependencies(
+                &nodes_context,
+                &mut nodes_graphs,
+                &mut nodes_reduced_graphs,
+                &mut errors,
+            )
+            .unwrap();
+        let dependencies = stream_expression.get_dependencies().clone();
+
+        let control = vec![(String::from("x"), 0), (String::from("x"), 0)];
 
         assert_eq!(dependencies, control)
     }
