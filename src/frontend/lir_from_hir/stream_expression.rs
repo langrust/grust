@@ -162,6 +162,14 @@ pub fn lir_from_hir(stream_expression: StreamExpression) -> LIRExpression {
             expression: Box::new(lir_from_hir(*expression)),
             field: FieldIdentifier::Named(field),
         },
+        StreamExpression::TupleElementAccess {
+            expression,
+            element_number,
+            ..
+        } => LIRExpression::FieldAccess {
+            expression: Box::new(lir_from_hir(*expression)),
+            field: FieldIdentifier::Unamed(element_number),
+        },
         StreamExpression::Map {
             expression,
             function_expression,
@@ -322,6 +330,7 @@ impl StreamExpression {
             }
             StreamExpression::NodeApplication { .. } => unreachable!(),
             StreamExpression::FieldAccess { expression, .. } => expression.get_imports(),
+            StreamExpression::TupleElementAccess { expression, .. } => expression.get_imports(),
             StreamExpression::Map {
                 expression,
                 function_expression,
