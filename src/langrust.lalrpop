@@ -137,7 +137,7 @@ pub pattern: Pattern = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches strcuture patterns
+    // catches structure patterns
     <start:@L> <name: ID> "{" <fields: hash<ID, pattern>> "}" <end:@R> => {
         Pattern::Structure {
             name,
