@@ -503,6 +503,14 @@ streamTerm: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches array zipping as stream expressions
+    <start:@L> "zip" "(" <v_expr: list<streamExpression>> ")" <end:@R> => {
+        StreamExpression::Zip {
+            arrays: v_expr,
+            typing: None,
+            location: Location{ file_id, range: start..end }
+        }
+    },
     // catches structure definition as stream expressions
     <start:@L> <name: ID> "{" <fields: hash<ID, streamExpression>> "}" <end:@R> => {
         StreamExpression::Structure {
