@@ -163,6 +163,18 @@ pub fn hir_from_ast(
             location,
             dependencies: Dependencies::new(),
         },
+        StreamExpression::TupleElementAccess {
+            expression,
+            element_number,
+            typing,
+            location,
+        } => HIRStreamExpression::TupleElementAccess {
+            expression: Box::new(hir_from_ast(*expression, signals_context)),
+            element_number,
+            typing: typing.unwrap(),
+            location,
+            dependencies: Dependencies::new(),
+        },
         StreamExpression::Map {
             expression,
             function_expression,
@@ -217,12 +229,6 @@ pub fn hir_from_ast(
             location,
             dependencies: Dependencies::new(),
         },
-        StreamExpression::TupleElementAccess {
-            expression,
-            element_number,
-            typing,
-            location,
-        } => todo!(),
     }
 }
 
