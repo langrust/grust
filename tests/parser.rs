@@ -1767,6 +1767,8 @@ mod langrust_ast_constructs {
         let file_id18 = files.add("map_test.gr", "x.map(f)");
         let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
         let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
+        let file_id21 = files.add("zip_test.gr", "zip(a,b)");
+        let file_id22 = files.add("tuple_element_access_test.gr", "my_tuple::0");
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -2408,6 +2410,44 @@ mod langrust_ast_constructs {
                     typing: None,
                     location: Location::default()
                 }),
+                typing: None,
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id21, &files.source(file_id21).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::Zip {
+                arrays: vec![
+                    Expression::Call {
+                        id: "a".to_string(),
+                        typing: None,
+                        location: Location::default()
+                    },
+                    Expression::Call {
+                        id: "b".to_string(),
+                        typing: None,
+                        location: Location::default()
+                    }
+                ],
+                typing: None,
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id22, &files.source(file_id22).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression::TupleElementAccess {
+                expression: Box::new(Expression::Call {
+                    id: "my_tuple".to_string(),
+                    typing: None,
+                    location: Location::default()
+                }),
+                element_number: 0,
                 typing: None,
                 location: Location::default()
             },
