@@ -1,6 +1,6 @@
 use futures_signals::{
     map_ref,
-    signal::{Signal, SignalExt},
+    signal::{Broadcaster, Signal, SignalExt},
 };
 
 use radar_detection::radar_detection_list_of_detections::{
@@ -10,7 +10,7 @@ use radar_detection::radar_detection_list_of_detections::{
 pub fn radar_detection_list_of_detections<A>(
     distances: A,
     mut state: RadarDetectionListOfDetectionsState,
-) -> impl Signal<Item = [i64; 10]>
+) -> Broadcaster<impl Signal<Item = [i64; 10]>>
 where
     A: Signal<Item = [i64; 10]>,
 {
@@ -21,5 +21,5 @@ where
     }
     .map(move |input| state.step(input));
 
-    list_of_detections
+    Broadcaster::new(list_of_detections)
 }

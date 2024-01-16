@@ -1,6 +1,6 @@
 use futures_signals::{
     map_ref,
-    signal::{Signal, SignalExt},
+    signal::{Broadcaster, Signal, SignalExt},
 };
 
 use fusion::fusion_fused_information::{FusionFusedInformationInput, FusionFusedInformationState};
@@ -10,7 +10,7 @@ pub fn fusion_fused_information<A, B, C>(
     classification: B,
     lidar_detections: C,
     mut state: FusionFusedInformationState,
-) -> impl Signal<Item = [i64; 10]>
+) -> Broadcaster<impl Signal<Item = [i64; 10]>>
 where
     A: Signal<Item = [i64; 10]>,
     B: Signal<Item = [i64; 10]>,
@@ -24,5 +24,5 @@ where
         state.step(input)
     });
 
-    fused_information
+    Broadcaster::new(fused_information)
 }

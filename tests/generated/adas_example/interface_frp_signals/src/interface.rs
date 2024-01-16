@@ -1,6 +1,6 @@
 use classification::classification_classification::ClassificationClassificationState;
 use fusion::fusion_fused_information::FusionFusedInformationState;
-use futures_signals::signal::{ReadOnlyMutable, Signal};
+use futures_signals::signal::{Broadcaster, ReadOnlyMutable, Signal};
 use lidar_detection::{
     lidar_detection_list_of_detections::LidarDetectionListOfDetectionsState,
     lidar_detection_regions_of_interest::LidarDetectionRegionsOfInterestState,
@@ -20,7 +20,7 @@ pub fn interface(
     distances: ReadOnlyMutable<[i64; 10]>,
     rgb_images: ReadOnlyMutable<[i64; 10]>,
     point_cloud: ReadOnlyMutable<[i64; 10]>,
-) -> impl Signal<Item = [i64; 10]> {
+) -> Broadcaster<impl Signal<Item = [i64; 10]>> {
     let radar_detections = radar_detection_list_of_detections(
         distances.signal_cloned(),
         RadarDetectionListOfDetectionsState::init(),
@@ -35,17 +35,19 @@ pub fn interface(
     );
     let classification = classification_classification(
         rgb_images.signal_cloned(),
-        regions_of_interest,
+        regions_of_interest.signal_cloned(),
         ClassificationClassificationState::init(),
     );
     let fused_information = fusion_fused_information(
-        radar_detections,
-        classification,
-        lidar_detections,
+        radar_detections.signal_cloned(),
+        classification.signal_cloned(),
+        lidar_detections.signal_cloned(),
         FusionFusedInformationState::init(),
     );
-    let object_motion =
-        object_tracking_object_motion(fused_information, ObjectTrackingObjectMotionState::init());
+    let object_motion = object_tracking_object_motion(
+        fused_information.signal_cloned(),
+        ObjectTrackingObjectMotionState::init(),
+    );
 
     object_motion
 }
