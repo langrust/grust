@@ -4,6 +4,7 @@ use codespan_reporting::files::{Files, SimpleFiles};
 
 use grustine::ast::file::File;
 use grustine::backend::rust_ast_from_lir::project::rust_ast_from_lir;
+use grustine::error::{display, TerminationError};
 use grustine::frontend::hir_from_ast::file::hir_from_ast;
 use grustine::frontend::lir_from_hir::file::lir_from_hir;
 use grustine::parser::langrust;
@@ -415,60 +416,67 @@ fn generate_rust_project_for_adas_example() {
     let mut files_id = vec![];
     let mut errors = vec![];
 
-    files_id.push(
-        files.add(
-            "radar_detection.gr",
-            std::fs::read_to_string("tests/fixture/adas_example/radar_detection.gr")
-                .expect("unkown file"),
-        ),
-    );
-    files_id.push(
-        files.add(
-            "lidar_detection.gr",
-            std::fs::read_to_string("tests/fixture/adas_example/lidar_detection.gr")
-                .expect("unkown file"),
-        ),
-    );
-    files_id.push(
-        files.add(
-            "classification.gr",
-            std::fs::read_to_string("tests/fixture/adas_example/classification.gr")
-                .expect("unkown file"),
-        ),
-    );
-    files_id.push(files.add(
-        "fusion.gr",
-        std::fs::read_to_string("tests/fixture/adas_example/fusion.gr").expect("unkown file"),
-    ));
-    files_id.push(
-        files.add(
-            "object_tracking.gr",
-            std::fs::read_to_string("tests/fixture/adas_example/object_tracking.gr")
-                .expect("unkown file"),
-        ),
-    );
+    // files_id.push(
+    //     files.add(
+    //         "radar_detection.gr",
+    //         std::fs::read_to_string("tests/fixture/adas_example/radar_detection.gr")
+    //             .expect("unkown file"),
+    //     ),
+    // );
+    // files_id.push(
+    //     files.add(
+    //         "lidar_detection.gr",
+    //         std::fs::read_to_string("tests/fixture/adas_example/lidar_detection.gr")
+    //             .expect("unkown file"),
+    //     ),
+    // );
+    // files_id.push(
+    //     files.add(
+    //         "classification.gr",
+    //         std::fs::read_to_string("tests/fixture/adas_example/classification.gr")
+    //             .expect("unkown file"),
+    //     ),
+    // );
+    // files_id.push(files.add(
+    //     "fusion.gr",
+    //     std::fs::read_to_string("tests/fixture/adas_example/fusion.gr").expect("unkown file"),
+    // ));
+    // files_id.push(
+    //     files.add(
+    //         "object_tracking.gr",
+    //         std::fs::read_to_string("tests/fixture/adas_example/object_tracking.gr")
+    //             .expect("unkown file"),
+    //     ),
+    // );
 
-    for id in files_id {
-        let file_name = Path::new(files.name(id).unwrap())
-            .file_stem()
-            .unwrap()
-            .to_str()
-            .unwrap();
-        let file_content = files.source(id).unwrap();
+    let test = files_id
+        .into_iter()
+        .map(|id| {
+            let file_name = Path::new(files.name(id).unwrap())
+                .file_stem()
+                .unwrap()
+                .to_str()
+                .unwrap();
+            let file_content = files.source(id).unwrap();
 
-        let mut file_ast: File = langrust::fileParser::new().parse(id, file_content).unwrap();
-        file_ast.typing(&mut errors).unwrap();
+            let mut file_ast: File = langrust::fileParser::new().parse(id, file_content).unwrap();
+            file_ast.typing(&mut errors)?;
 
-        let mut file_hir = hir_from_ast(file_ast);
-        file_hir.generate_dependency_graphs(&mut errors).unwrap();
-        file_hir.causality_analysis(&mut errors).unwrap();
-        file_hir.normalize(&mut errors).unwrap();
+            let mut file_hir = hir_from_ast(file_ast);
+            file_hir.generate_dependency_graphs(&mut errors)?;
+            file_hir.causality_analysis(&mut errors)?;
+            file_hir.normalize(&mut errors)?;
 
-        let project_lir = lir_from_hir(file_hir);
+            let project_lir = lir_from_hir(file_hir);
 
-        let mut project_rust = rust_ast_from_lir(project_lir);
-        project_rust.set_parent(format!("tests/generated/adas_example/{file_name}/"));
+            let mut project_rust = rust_ast_from_lir(project_lir);
+            project_rust.set_parent(format!("tests/generated/adas_example/{file_name}/"));
 
-        project_rust.generate()
-    }
+            Ok(project_rust.generate())
+        })
+        .collect::<Vec<Result<(), TerminationError>>>();
+
+    display(&errors, &files);
+
+    test.into_iter().collect::<Result<(), _>>().unwrap()
 }

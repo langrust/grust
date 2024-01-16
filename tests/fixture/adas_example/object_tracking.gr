@@ -1,8 +1,3 @@
-function factorial(n: int) -> int {
-    let res: int = if n <= 1 then 1 else n * factorial(n-1);
-    return res;
-}
-
 component object_tracking(fused_information: [int; 10]) {
-    out object_motion: [int; 10] = fused_information.map(factorial);
+    out object_motion: [int; 10] = fused_information.sort(|a: int, b: int| a - b );
 }
