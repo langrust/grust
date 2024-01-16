@@ -60,7 +60,7 @@ where
 
             // Make it into reactive future
             let cloned_output_path = output_path.clone();
-            let future = interface.for_each(move |object_motion| {
+            let future = interface.signal().for_each(move |object_motion| {
                 // Perform computation
                 let output = SystemOutput {
                     moving_objects: object_motion,

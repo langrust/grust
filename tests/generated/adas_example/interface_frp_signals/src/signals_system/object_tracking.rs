@@ -1,6 +1,6 @@
 use futures_signals::{
     map_ref,
-    signal::{Signal, SignalExt},
+    signal::{Broadcaster, Signal, SignalExt},
 };
 
 use object_tracking::object_tracking_object_motion::{
@@ -10,7 +10,7 @@ use object_tracking::object_tracking_object_motion::{
 pub fn object_tracking_object_motion<A>(
     fused_information: A,
     mut state: ObjectTrackingObjectMotionState,
-) -> impl Signal<Item = [i64; 10]>
+) -> Broadcaster<impl Signal<Item = [i64; 10]>>
 where
     A: Signal<Item = [i64; 10]>,
 {
@@ -21,5 +21,5 @@ where
     }
     .map(move |input| state.step(input));
 
-    object_motion
+    Broadcaster::new(object_motion)
 }

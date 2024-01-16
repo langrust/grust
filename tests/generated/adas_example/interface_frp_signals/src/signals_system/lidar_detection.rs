@@ -1,6 +1,6 @@
 use futures_signals::{
     map_ref,
-    signal::{Signal, SignalExt},
+    signal::{Broadcaster, Signal, SignalExt},
 };
 
 use lidar_detection::{
@@ -15,7 +15,7 @@ use lidar_detection::{
 pub fn lidar_detection_list_of_detections<A>(
     point_cloud: A,
     mut state: LidarDetectionListOfDetectionsState,
-) -> impl Signal<Item = [i64; 10]>
+) -> Broadcaster<impl Signal<Item = [i64; 10]>>
 where
     A: Signal<Item = [i64; 10]>,
 {
@@ -26,13 +26,13 @@ where
     }
     .map(move |input| state.step(input));
 
-    list_of_detections
+    Broadcaster::new(list_of_detections)
 }
 
 pub fn lidar_detection_regions_of_interest<A>(
     point_cloud: A,
     mut state: LidarDetectionRegionsOfInterestState,
-) -> impl Signal<Item = i64>
+) -> Broadcaster<impl Signal<Item = i64>>
 where
     A: Signal<Item = [i64; 10]>,
 {
@@ -43,5 +43,5 @@ where
     }
     .map(move |input| state.step(input));
 
-    regions_of_interest
+    Broadcaster::new(regions_of_interest)
 }

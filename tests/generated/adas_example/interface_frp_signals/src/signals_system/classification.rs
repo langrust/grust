@@ -1,6 +1,6 @@
 use futures_signals::{
     map_ref,
-    signal::{Signal, SignalExt},
+    signal::{Broadcaster, Signal, SignalExt},
 };
 
 use classification::classification_classification::{
@@ -11,7 +11,7 @@ pub fn classification_classification<A, B>(
     rgb_images: A,
     regions_of_interest: B,
     mut state: ClassificationClassificationState,
-) -> impl Signal<Item = [i64; 10]>
+) -> Broadcaster<impl Signal<Item = [i64; 10]>>
 where
     A: Signal<Item = [i64; 10]>,
     B: Signal<Item = i64>,
@@ -24,5 +24,5 @@ where
         state.step(input)
     });
 
-    classification
+    Broadcaster::new(classification)
 }
