@@ -4,7 +4,7 @@ pub struct ClassificationClassificationInput {
 }
 pub struct ClassificationClassificationState {}
 impl ClassificationClassificationState {
-    pub fn init() -> ClassificationClassificationState {
+    pub const fn init() -> ClassificationClassificationState {
         ClassificationClassificationState {}
     }
     pub fn step(&mut self, input: ClassificationClassificationInput) -> [i64; 10] {
