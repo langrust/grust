@@ -1,0 +1,16 @@
+import classification;
+import fusion;
+import lidar_detection;
+import object_tracking;
+import radar_detection;
+
+import distances from sdv.adas.fusion;
+import point_cloud from sdv.adas.fusion;
+import rgb_images from sdv.adas.fusion;
+
+radar_detections = radar_detection(distances).list_of_detections;
+lidar_detections = lidar_detection(point_cloud).list_of_detections;
+regions_of_interest = lidar_detection(point_cloud).regions_of_interest;
+classification = classification(rgb_images, regions_of_interest).classification;
+fused = fusion(radar_detections, classification, lidar_detections).fused_information;
+sdv.adas.fusion.moving_objects = object_tracking(fused_information).object_motion;
