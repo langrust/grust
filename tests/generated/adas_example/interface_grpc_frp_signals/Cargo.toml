@@ -30,9 +30,9 @@ crossbeam-channel = "0.5.11"
 tonic-build = "0.10"
 
 [[bin]]
-name = "routeguide-server"
+name = "interface-server"
 path = "src/server.rs"
 
 [[bin]]
-name = "routeguide-client"
+name = "interface-client"
 path = "src/client.rs"
