@@ -1,5 +1,4 @@
 use std::{
-    fmt::Debug,
     future::Future,
     pin::Pin,
     task::{Context, Poll},
