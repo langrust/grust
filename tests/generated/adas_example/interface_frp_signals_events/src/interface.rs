@@ -8,13 +8,13 @@ use lidar_detection::{
 use object_tracking::object_tracking_object_motion::ObjectTrackingObjectMotionState;
 use radar_detection::radar_detection_list_of_detections::RadarDetectionListOfDetectionsState;
 
-use crate::signals_system::{
+use crate::{event::SignalEvent, signals_system::{
     classification::classification_classification,
     fusion::fusion_fused_information,
     lidar_detection::{lidar_detection_list_of_detections, lidar_detection_regions_of_interest},
     object_tracking::object_tracking_object_motion,
     radar_detection::radar_detection_list_of_detections,
-};
+}};
 
 pub fn interface(
     distances: ReadOnlyMutable<[i64; 10]>,
@@ -22,7 +22,7 @@ pub fn interface(
     point_cloud: ReadOnlyMutable<[i64; 10]>,
 ) -> Broadcaster<impl Signal<Item = [i64; 10]>> {
     let radar_detections = radar_detection_list_of_detections(
-        distances.signal_cloned(),
+        distances.signal_cloned().event(3, |x| async move {x}),
         RadarDetectionListOfDetectionsState::init(),
     );
     let lidar_detections = lidar_detection_list_of_detections(
