@@ -24,7 +24,7 @@ use pin_project::pin_project;
 /// # use futures_signals::signal::always;
 /// # use interface_frp_signals_events::event::SignalEvent;
 /// # let input = always(1);
-/// let mapped = input.event(3, |x| async move {x * 10});
+/// let event = input.event(3, |x| async move {x * 10});
 /// ```
 pub trait SignalEvent: Signal {
     #[inline]
