@@ -148,3 +148,122 @@ where
     }
 }
 
+#[cfg(test)]
+mod event {
+    use futures_signals::signal::Mutable;
+    use std::cell::Cell;
+    use std::rc::Rc;
+    use std::{future::poll_fn, task::Poll};
+
+    use crate::{event::SignalEvent, util};
+
+    #[test]
+    fn should_bufferize_when_already_computing() {
+        let mutable = Rc::new(Mutable::new(1));
+
+        let block = Rc::new(Cell::new(true));
+
+        let s = {
+            let block = block.clone();
+
+            mutable.signal().event(3, move |value| {
+                let block = block.clone();
+
+                poll_fn(move |_| {
+                    if block.get() {
+                        Poll::Pending
+                    } else {
+                        Poll::Ready(value)
+                    }
+                })
+            })
+        };
+
+        util::ForEachSignal::new(s)
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    mutable.set(2);
+                }
+            })
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    block.set(false);
+                    mutable.set(3);
+                }
+            })
+            .next(|_, change| {
+                assert_eq!(change, Poll::Ready(Some(1)));
+            })
+            .next(|_, change| {
+                assert_eq!(change, Poll::Ready(Some(2)));
+            })
+            .next(|_, change| {
+                assert_eq!(change, Poll::Ready(Some(3)));
+            })
+            .run();
+    }
+
+    #[should_panic]
+    #[test]
+    fn should_panic_when_buffer_overflow() {
+        let mutable = Rc::new(Mutable::new(1));
+
+        let block = Rc::new(Cell::new(true));
+
+        let s = {
+            let block = block.clone();
+
+            mutable.signal().event(3, move |value| {
+                let block = block.clone();
+
+                poll_fn(move |_| {
+                    if block.get() {
+                        Poll::Pending
+                    } else {
+                        Poll::Ready(value)
+                    }
+                })
+            })
+        };
+
+        util::ForEachSignal::new(s)
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    mutable.set(2);
+                }
+            })
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    mutable.set(3);
+                }
+            })
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    mutable.set(4);
+                }
+            })
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    mutable.set(5);
+                }
+            })
+            .next({
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                }
+            })
+            .run();
+    }
+}
