@@ -6,6 +6,7 @@ use std::path::Path;
 
 use crate::interface::interface;
 
+pub mod event;
 mod interface;
 mod signals_system;
 
