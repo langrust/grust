@@ -85,7 +85,6 @@ where
     A: Signal,
     B: Future,
     C: FnMut(A::Item) -> B,
-    A::Item: Debug,
 {
     type Item = B::Output;
 
