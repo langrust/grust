@@ -8,6 +8,24 @@ use std::{
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 
+/// Constructs an event out of a signal and a callback.
+///
+/// The callback is applied to every value of the event.
+/// If the callback tacks to much time and a new value comes
+/// before the end of computation, then the new value is stored
+/// into a buffer.
+///
+/// The buffer is bounded, if the bound is exceeded the code panics.
+/// 
+/// The callback needs to be a future.
+///
+/// # Example
+/// ```rust
+/// # use futures_signals::signal::always;
+/// # use interface_frp_signals_events::event::SignalEvent;
+/// # let input = always(1);
+/// let mapped = input.event(3, |x| async move {x * 10});
+/// ```
 pub trait SignalEvent: Signal {
     #[inline]
     fn event<A, B>(self, bound: usize, callback: B) -> Event<Self, A, B>
@@ -163,7 +181,7 @@ mod event {
 
         let block = Rc::new(Cell::new(true));
 
-        let s = {
+        let event = {
             let block = block.clone();
 
             mutable.signal().event(3, move |value| {
@@ -179,7 +197,7 @@ mod event {
             })
         };
 
-        util::ForEachSignal::new(s)
+        util::ForEachSignal::new(event)
             .next({
                 let mutable = mutable.clone();
                 move |_, change| {
