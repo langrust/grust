@@ -9,6 +9,7 @@ use crate::interface::interface;
 pub mod event;
 mod interface;
 mod signals_system;
+pub mod util;
 
 /// Input of the system.
 #[derive(Deserialize)]
