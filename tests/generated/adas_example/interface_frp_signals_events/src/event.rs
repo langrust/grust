@@ -15,7 +15,7 @@ use pin_project::pin_project;
 /// into a buffer.
 ///
 /// The buffer is bounded, if the bound is exceeded the code panics.
-/// 
+///
 /// The callback needs to be a future.
 ///
 /// # Example
@@ -279,6 +279,85 @@ mod event {
                 move |_, change| {
                     assert_eq!(change, Poll::Pending);
                 }
+            })
+            .run();
+    }
+
+    #[test]
+    fn should_be_able_to_be_mapped_into_an_event() {
+        let mutable = Rc::new(Mutable::new(1));
+
+        let first_lock = Rc::new(Cell::new(true));
+
+        let event = {
+            let first_lock = first_lock.clone();
+
+            mutable.signal().event(3, move |value| {
+                let first_lock = first_lock.clone();
+
+                poll_fn(move |_| {
+                    if first_lock.get() {
+                        Poll::Pending
+                    } else {
+                        Poll::Ready(value)
+                    }
+                })
+            })
+        };
+
+        let second_lock = Rc::new(Cell::new(true));
+
+        let mapped_event = {
+            let second_lock = second_lock.clone();
+
+            event.event(3, move |value| {
+                let second_lock = second_lock.clone();
+
+                poll_fn(move |_| {
+                    if second_lock.get() {
+                        Poll::Pending
+                    } else {
+                        Poll::Ready(value)
+                    }
+                })
+            })
+        };
+
+        util::ForEachSignal::new(mapped_event)
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    mutable.set(2);
+                }
+            })
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    first_lock.set(false);
+                    mutable.set(3);
+                }
+            })
+            .next({
+                let mutable = mutable.clone();
+                move |_, change| {
+                    assert_eq!(change, Poll::Pending);
+                    second_lock.set(false);
+                    mutable.set(4);
+                }
+            })
+            .next(|_, change| {
+                assert_eq!(change, Poll::Ready(Some(1)));
+            })
+            .next(|_, change| {
+                assert_eq!(change, Poll::Ready(Some(2)));
+            })
+            .next(|_, change| {
+                assert_eq!(change, Poll::Ready(Some(3)));
+            })
+            .next(|_, change| {
+                assert_eq!(change, Poll::Ready(Some(4)));
             })
             .run();
     }
