@@ -47,7 +47,11 @@ where
             }
         })
     }
-    .map(move |input| state.step(input));
+    .map(move |input| {
+        println!("classification!");
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        state.step(input)
+    });
 
     Broadcaster::new(classification)
 }

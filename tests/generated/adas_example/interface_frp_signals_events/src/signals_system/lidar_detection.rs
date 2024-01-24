@@ -24,7 +24,11 @@ where
             LidarDetectionListOfDetectionsInput { point_cloud: *point_cloud }
         }
     }
-    .map(move |input| state.step(input));
+    .map(move |input| {
+        println!("lidar_detection list_of_detections!");
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        state.step(input)
+    });
 
     Broadcaster::new(list_of_detections)
 }
@@ -41,7 +45,11 @@ where
             LidarDetectionRegionsOfInterestInput { point_cloud: *point_cloud }
         }
     }
-    .map(move |input| state.step(input));
+    .map(move |input| {
+        println!("lidar_detection regions_of_interest!");
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        state.step(input)}
+    );
 
     Broadcaster::new(regions_of_interest)
 }

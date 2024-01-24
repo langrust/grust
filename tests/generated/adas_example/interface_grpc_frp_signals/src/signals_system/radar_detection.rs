@@ -21,6 +21,7 @@ where
     }
     .map(move |input| {
         println!("radar_detection!");
+        std::thread::sleep(std::time::Duration::from_millis(400));
         state.step(input)
     });
 

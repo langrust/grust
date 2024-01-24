@@ -19,7 +19,11 @@ where
             RadarDetectionListOfDetectionsInput { distances: *distances }
         }
     }
-    .map(move |input| state.step(input));
+    .map(move |input| {
+        println!("radar_detection!");
+        std::thread::sleep(std::time::Duration::from_millis(400));
+        state.step(input)
+    });
 
     Broadcaster::new(list_of_detections)
 }
