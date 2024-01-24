@@ -1,11 +1,13 @@
 use futures_signals::{
     map_ref,
-    signal::{Broadcaster, Signal, SignalExt},
+    signal::{Broadcaster, Signal},
 };
 
 use radar_detection::radar_detection_list_of_detections::{
     RadarDetectionListOfDetectionsInput, RadarDetectionListOfDetectionsState,
 };
+
+use crate::event::SignalEvent;
 
 pub fn radar_detection_list_of_detections<A>(
     distances: A,
@@ -15,14 +17,16 @@ where
     A: Signal<Item = [i64; 10]>,
 {
     let list_of_detections = map_ref! {
-        distances => {
+        let distances = distances.event(10, |value| async move { value }) => {
+            println!("\t\tradar_detection inputs changed");
             RadarDetectionListOfDetectionsInput { distances: *distances }
         }
     }
-    .map(move |input| {
+    .event(10, move |input| {
         println!("radar_detection!");
         std::thread::sleep(std::time::Duration::from_millis(400));
-        state.step(input)
+        let output = state.step(input);
+        async move { output }
     });
 
     Broadcaster::new(list_of_detections)

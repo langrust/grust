@@ -3,8 +3,11 @@ syntax = "proto3";
 package interface;
 
 service Interface {
-    // Compute according to inputs.
-    rpc Compute(Inputs) returns (Outputs) {}
+    rpc Compute(Inputs) returns (Empty) {}
+}
+
+service NextInterface {
+    rpc AddOutputs(Outputs) returns (Empty) {}
 }
 
 message Inputs {
@@ -28,3 +31,5 @@ message Outputs {
     }
     optional MovingObjects moving_objects = 1;
 }
+
+message Empty {}
