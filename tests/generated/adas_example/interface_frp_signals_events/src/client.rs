@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stream = read_json(INPUT_PATH);
 
     for value in stream {
-        std::thread::sleep(std::time::Duration::from_millis(3000));
+        std::thread::sleep(std::time::Duration::from_millis(rng.gen_range(0..1000)));
 
         // Get input
         let input: Inputs = from_value(value.unwrap()).unwrap();

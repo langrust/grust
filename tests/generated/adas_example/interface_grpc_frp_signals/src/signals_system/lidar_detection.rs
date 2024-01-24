@@ -26,6 +26,7 @@ where
     }
     .map(move |input| {
         println!("lidar_detection list_of_detections!");
+        std::thread::sleep(std::time::Duration::from_millis(300));
         state.step(input)
     });
 

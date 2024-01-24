@@ -24,6 +24,7 @@ tonic = "0.10"
 prost = "0.12"
 tokio-stream = "0.1"
 crossbeam-channel = "0.5.11"
+rand = "0.8.5"
 
 
 [build-dependencies]

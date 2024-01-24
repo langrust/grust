@@ -21,6 +21,8 @@ where
             FusionFusedInformationInput { radar_detections: *radar_detections, classification: *classification, lidar_detections: *lidar_detections }
         }
     }.map(move |input| {
+        println!("fusion!");
+        std::thread::sleep(std::time::Duration::from_millis(100));
         state.step(input)
     });
 

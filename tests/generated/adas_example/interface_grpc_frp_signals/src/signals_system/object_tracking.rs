@@ -21,6 +21,7 @@ where
     }
     .map(move |input| {
         println!("object_tracking!");
+        std::thread::sleep(std::time::Duration::from_millis(100));
         state.step(input)
     });
 
