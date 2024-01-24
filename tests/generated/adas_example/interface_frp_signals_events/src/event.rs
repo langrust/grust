@@ -108,6 +108,7 @@ where
                     if *compute {
                         if buffer.len() < *bound {
                             // but only if the buffer has no overflow
+                            println!("\tpush value into buffer event");
                             buffer.push(new_value);
                         } else {
                             panic!("Event: buffer overflow")
