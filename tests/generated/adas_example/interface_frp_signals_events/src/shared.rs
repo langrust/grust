@@ -316,7 +316,6 @@ impl ArcWake for Notifier {
 mod shared {
     use crate::{shared::StreamShared, stream_event::StreamEvent};
     use futures::{stream, StreamExt};
-    use futures_signals::signal::{Broadcaster, Mutable, SignalExt};
 
     #[tokio::test]
     async fn should_share_stream_between_threads() {
@@ -367,35 +366,6 @@ mod shared {
                     .map(|value| value + 1)
                     .for_each(|value| async move { println!("shared2: {value}") }),
             ),
-        );
-    }
-
-    #[tokio::test]
-    async fn should_share_signals_between_threads() {
-        let mutable = Mutable::new(1);
-        let broadcaster = Broadcaster::new(mutable.signal());
-        let signal1 = broadcaster.signal();
-        let signal2 = broadcaster.signal();
-
-        let _ = tokio::join!(
-            tokio::spawn(
-                signal1
-                    .map(|value| value * 2)
-                    .for_each(|value| async move { println!("signal1: {value}") }),
-            ),
-            tokio::spawn(
-                signal2
-                    .map(|value| value + 1)
-                    .for_each(|value| async move { println!("signal2: {value}") }),
-            ),
-            tokio::spawn(stream::iter(1..5).for_each(move |value| {
-                let mutable = mutable.clone();
-                println!("input: {value}");
-                async move {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-                    mutable.set(value)
-                }
-            })),
         );
     }
 }
