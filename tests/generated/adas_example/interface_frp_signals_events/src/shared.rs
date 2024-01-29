@@ -1,7 +1,7 @@
 //! Shareable stream.
 
 use futures::{
-    task::{waker_ref, ArcWake},
+    task::{self, ArcWake},
     Stream,
 };
 use slab::Slab;
@@ -47,20 +47,32 @@ pub struct Shared<S: Stream> {
 
 impl<S: Stream> Shared<S> {
     pub fn new(stream: S) -> Self {
+        let notifier = Arc::new(Notifier {
+            state: AtomicUsize::new(IDLE),
+            wakers: Mutex::new(Slab::new()),
+            updated: Mutex::new(Slab::new()),
+        });
+        let waker = task::waker(notifier.clone());
+
         let inner = Inner {
             value: UnsafeCell::new(None),
             stream: UnsafeCell::new(stream),
-            notifier: Arc::new(Notifier {
-                state: AtomicUsize::new(IDLE),
-                wakers: Mutex::new(Slab::new()),
-                updated: Mutex::new(Slab::new()),
-            }),
+            notifier,
+            waker,
         };
+
+        let mut wakers_guard = inner.notifier.wakers.lock().unwrap();
+        let waker_key = wakers_guard.insert(None);
+        drop(wakers_guard);
+
+        let mut updated_guard = inner.notifier.updated.lock().unwrap();
+        let updated_key = updated_guard.insert(true);
+        drop(updated_guard);
 
         Self {
             inner: Arc::new(inner),
-            waker_key: NULL_KEY,
-            updated_key: NULL_KEY,
+            waker_key,
+            updated_key,
         }
     }
 
@@ -71,9 +83,8 @@ impl<S: Stream> Shared<S> {
         <S as Stream>::Item: Clone,
     {
         assert_eq!(self.inner.notifier.state.load(Acquire), VALUE);
-        let result = self.inner.clone().take_or_clone_output();
+        let result = self.inner.clone().clone_output();
         self.inner.update(&mut self.updated_key, false);
-        self.inner.notifier.state.store(IDLE, SeqCst);
         result
     }
 }
@@ -90,8 +101,10 @@ where
         cx: &mut Context<'_>,
     ) -> std::task::Poll<std::option::Option<<S as Stream>::Item>> {
         let this = &mut *self;
-
         let inner = this.inner.clone();
+
+        inner.record_waker(&mut this.waker_key, cx);
+        inner.record_updated(&mut this.updated_key);
 
         // Fast path for when the wrapped stream has already completed
         if inner.notifier.state.load(Acquire) == VALUE && inner.is_updated(&mut this.updated_key) {
@@ -99,93 +112,43 @@ where
             return unsafe { Poll::Ready(this.take_output()) };
         }
 
-        inner.record_waker(&mut this.waker_key, cx);
-        inner.record_updated(&mut this.updated_key);
-
-        match inner
-            .notifier
-            .state
-            .compare_exchange(IDLE, POLLING, SeqCst, SeqCst)
-            .unwrap_or_else(|x| x)
-        {
-            IDLE => {
-                // Lock acquired, fall through
-            }
-            POLLING => {
-                // Another task is currently polling, at this point we just want
-                // to ensure that the waker for this task is registered
-                return Poll::Pending;
-            }
-            VALUE => {
-                // Safety: We're in the VALUE state
-                return unsafe { Poll::Ready(this.take_output()) };
-            }
-            POISONED => panic!("inner stream panicked during poll"),
-            _ => unreachable!(),
-        }
-
-        println!("yo");
-        let waker = waker_ref(&inner.notifier);
-        let mut cx = Context::from_waker(&waker);
-
-        struct Reset<'a> {
-            state: &'a AtomicUsize,
-            did_not_panic: bool,
-        }
-
-        impl Drop for Reset<'_> {
-            fn drop(&mut self) {
-                if !self.did_not_panic {
-                    self.state.store(POISONED, SeqCst);
+        loop {
+            match inner
+                .notifier
+                .state
+                .compare_exchange(IDLE, POLLING, SeqCst, SeqCst)
+                .unwrap_or_else(|x| x)
+            {
+                IDLE => {
+                    // Lock acquired, fall through
+                    inner.poll_signal(cx);
+                    break;
                 }
-            }
-        }
-
-        let mut reset = Reset {
-            state: &inner.notifier.state,
-            did_not_panic: false,
-        };
-
-        let output = {
-            let stream = unsafe { Pin::new_unchecked(&mut *inner.stream.get()) };
-
-            let poll_result = stream.poll_next(&mut cx);
-            reset.did_not_panic = true;
-
-            match poll_result {
-                Poll::Pending => {
-                    if inner
+                POLLING => {
+                    // Another task is currently polling
+                    break;
+                }
+                VALUE => {
+                    // Value hasn't changed
+                    let all_see = inner
                         .notifier
-                        .state
-                        .compare_exchange(POLLING, IDLE, SeqCst, SeqCst)
-                        .is_ok()
-                    {
-                        // Success
-                        drop(reset);
-                        return Poll::Pending;
+                        .updated
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .all(|(_, updated)| !*updated);
+                    if all_see {
+                        inner.notifier.state.store(IDLE, SeqCst)
                     } else {
-                        unreachable!()
+                        break;
                     }
                 }
-                Poll::Ready(output) => {
-                    inner.update(&mut this.updated_key, true);
-                    output
-                }
-            }
-        };
-
-        unsafe { inner.store_value(output) };
-
-        // Wake all tasks
-        let wakers_guard = inner.notifier.wakers.lock().unwrap();
-        for (_, waker) in wakers_guard.iter() {
-            if let Some(waker) = waker {
-                waker.wake_by_ref();
+                POISONED => panic!("inner stream panicked during poll"),
+                _ => unreachable!(),
             }
         }
 
-        // Safety: We're in the VALUE state
-        unsafe { Poll::Ready(this.take_output()) }
+        Poll::Pending
     }
 }
 
@@ -198,7 +161,7 @@ where
         let waker_key = wakers_guard.insert(None);
 
         let mut updated_guard = self.inner.notifier.updated.lock().unwrap();
-        let updated_key = updated_guard.insert(None);
+        let updated_key = updated_guard.insert(true);
 
         Self {
             inner: self.inner.clone(),
@@ -212,6 +175,7 @@ struct Inner<S: Stream> {
     value: UnsafeCell<Option<S::Item>>,
     stream: UnsafeCell<S>,
     notifier: Arc<Notifier>,
+    waker: Waker,
 }
 
 unsafe impl<S> Send for Inner<S>
@@ -244,6 +208,12 @@ where
             *self.value.get() = value;
         }
         self.notifier.state.store(VALUE, SeqCst);
+        self.notifier
+            .updated
+            .lock()
+            .unwrap()
+            .iter_mut()
+            .for_each(|(_, updated)| *updated = true)
     }
 }
 
@@ -275,7 +245,7 @@ where
         let mut updated_guard = self.notifier.updated.lock().unwrap();
 
         if *updated_key == NULL_KEY {
-            *updated_key = updated_guard.insert(Some(false));
+            *updated_key = updated_guard.insert(true);
         }
         debug_assert!(*updated_key != NULL_KEY);
     }
@@ -288,7 +258,7 @@ where
             self.record_updated(updated_key);
         }
 
-        updated_guard[*updated_key] = Some(updated);
+        updated_guard[*updated_key] = updated;
     }
 
     /// Get the boolean saying the value is updated.
@@ -299,16 +269,28 @@ where
             self.record_updated(updated_key);
         }
 
-        updated_guard[*updated_key].unwrap()
+        updated_guard[*updated_key]
     }
 
     /// Safety: callers must first ensure that `inner.state`
     /// is `VALUE`
-    unsafe fn take_or_clone_output(self: Arc<Self>) -> Option<S::Item> {
+    unsafe fn clone_output(self: Arc<Self>) -> Option<S::Item> {
         assert_eq!(self.notifier.state.load(Acquire), VALUE);
         match Arc::try_unwrap(self) {
             Ok(inner) => inner.value.into_inner(),
             Err(inner) => inner.output().clone(),
+        }
+    }
+
+    fn poll_signal(&self, cx: &mut Context<'_>) {
+        let stream = unsafe { Pin::new_unchecked(&mut *self.stream.get()) };
+
+        match stream.poll_next(cx) {
+            Poll::Ready(value) => {
+                self.waker.wake_by_ref();
+                unsafe { self.store_value(value) };
+            }
+            Poll::Pending => {}
         }
     }
 }
@@ -316,14 +298,13 @@ where
 struct Notifier {
     state: AtomicUsize,
     wakers: Mutex<Slab<Option<Waker>>>,
-    updated: Mutex<Slab<Option<bool>>>,
+    updated: Mutex<Slab<bool>>,
 }
 
 impl ArcWake for Notifier {
     fn wake_by_ref(arc_self: &Arc<Self>) {
         let wakers = &mut *arc_self.wakers.lock().unwrap();
-        for (waker_key, opt_waker) in wakers {
-            println!("record: {waker_key}");
+        for (_, opt_waker) in wakers {
             if let Some(waker) = opt_waker.take() {
                 waker.wake();
             }
@@ -335,23 +316,59 @@ impl ArcWake for Notifier {
 mod shared {
     use crate::shared::StreamShared;
     use futures::{stream, StreamExt};
+    use futures_signals::signal::{Broadcaster, Mutable, SignalExt};
 
     #[tokio::test]
     async fn should_share_stream_between_threads() {
-        let stream = stream::iter(1..5).shared();
+        let stream = stream::iter(1..5)
+            .map(|value| {
+                println!("input: {value}");
+                std::thread::sleep(std::time::Duration::from_millis(10));
+                value
+            })
+            .shared();
         let shared1 = stream.clone();
-        let shared2 = stream.clone();
+        let shared2 = stream;
         let _ = tokio::join!(
             tokio::spawn(
                 shared1
                     .map(|value| value * 2)
-                    .for_each(|value| async move { println!("{value}") }),
+                    .for_each(|value| async move { println!("shared1: {value}") }),
             ),
             tokio::spawn(
                 shared2
                     .map(|value| value + 1)
-                    .for_each(|value| async move { println!("{value}") }),
+                    .for_each(|value| async move { println!("shared2: {value}") }),
             ),
+        );
+    }
+
+    #[tokio::test]
+    async fn should_share_signals_between_threads() {
+        let mutable = Mutable::new(1);
+        let broadcaster = Broadcaster::new(mutable.signal());
+        let signal1 = broadcaster.signal();
+        let signal2 = broadcaster.signal();
+
+        let _ = tokio::join!(
+            tokio::spawn(
+                signal1
+                    .map(|value| value * 2)
+                    .for_each(|value| async move { println!("signal1: {value}") }),
+            ),
+            tokio::spawn(
+                signal2
+                    .map(|value| value + 1)
+                    .for_each(|value| async move { println!("signal2: {value}") }),
+            ),
+            tokio::spawn(stream::iter(1..5).for_each(move |value| {
+                let mutable = mutable.clone();
+                println!("input: {value}");
+                async move {
+                    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                    mutable.set(value)
+                }
+            })),
         );
     }
 }
