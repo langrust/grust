@@ -44,7 +44,7 @@ where
     A: Stream,
 {
     #[pin]
-    inner_stream: A,
+    inner_stream: Option<A>,
     #[pin]
     future: Option<B>,
     compute: bool,
@@ -62,7 +62,7 @@ where
     /// Create a new `Event`
     pub fn new(stream: A, bound: usize, callback: C) -> Self {
         Self {
-            inner_stream: stream,
+            inner_stream: Some(stream),
             future: None,
             compute: false,
             callback: callback,
@@ -99,11 +99,34 @@ where
         } = self.project();
 
         loop {
-            match inner_stream.as_mut().poll_next(cx) {
+            match inner_stream
+                .as_mut()
+                .as_pin_mut()
+                .map(|inner_stream| inner_stream.poll_next(cx))
+            {
+                // inner_stream is over
+                None => {
+                    // if the event does not compute then...
+                    if !*compute {
+                        match remove_first(buffer) {
+                            // if buffer contains value then compute
+                            Some(value) => {
+                                let value = Some(callback(value));
+                                future.set(value);
+                                *compute = true;
+                            }
+                            // otherwise, nothing else to do
+                            None => return Poll::Ready(None),
+                        };
+                    }
+                }
                 // if inner_stream output is None then inner_stream is over
-                Poll::Ready(None) => return Poll::Ready(None),
+                Some(Poll::Ready(None)) => {
+                    inner_stream.set(None);
+                    continue;
+                }
                 // if inner_stream output is Some value then...
-                Poll::Ready(Some(new_value)) => {
+                Some(Poll::Ready(Some(new_value))) => {
                     // if the event already computes then bufferize
                     if *compute {
                         if buffer.len() < *bound {
@@ -134,7 +157,7 @@ where
                     continue;
                 }
                 // if inner_stream is pending then...
-                Poll::Pending => {
+                Some(Poll::Pending) => {
                     // if the event does not compute then...
                     if !*compute {
                         match remove_first(buffer) {
