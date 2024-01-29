@@ -323,7 +323,6 @@ mod shared {
         let stream = stream::iter(1..5)
             .map(|value| {
                 println!("input: {value}");
-                std::thread::sleep(std::time::Duration::from_millis(10));
                 value
             })
             .shared();
