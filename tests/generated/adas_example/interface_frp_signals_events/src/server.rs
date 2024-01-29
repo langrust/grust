@@ -22,6 +22,7 @@ pub mod event;
 mod interface;
 pub mod shared;
 mod signals_system;
+pub mod stream_event;
 pub mod util;
 
 fn convert<T, const N: usize>(v: Vec<T>) -> [T; N] {
