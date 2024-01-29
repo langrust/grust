@@ -20,6 +20,7 @@ pub mod interface_grpc_frp_signals {
 }
 pub mod event;
 mod interface;
+pub mod shared;
 mod signals_system;
 pub mod util;
 
