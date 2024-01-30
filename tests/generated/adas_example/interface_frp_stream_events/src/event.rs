@@ -197,7 +197,7 @@ mod event {
     use futures::StreamExt;
     use futures_signals::signal::{Mutable, SignalExt};
 
-    use crate::{stream_event::StreamEvent, util::with_noop_context};
+    use crate::{event::StreamEvent, util::with_noop_context};
 
     #[test]
     fn should_bufferize_when_already_computing() {
