@@ -21,7 +21,8 @@ use std::{
 const IDLE: usize = 0;
 const POLLING: usize = 1;
 const VALUE: usize = 2;
-const POISONED: usize = 3;
+const PENDING: usize = 3;
+const POISONED: usize = 4;
 
 const NULL_KEY: usize = usize::max_value();
 
@@ -122,11 +123,19 @@ where
                 IDLE => {
                     // Lock acquired, fall through
                     inner.poll_signal(cx);
+                }
+                PENDING => {
+                    // Polling task returns pending
+                    inner.notifier.state.store(IDLE, SeqCst);
                     break;
                 }
                 POLLING => {
                     // Another task is currently polling
                     break;
+                }
+                VALUE if inner.is_updated(&mut this.updated_key) => {
+                    // Safety: We're in the VALUE state
+                    return unsafe { Poll::Ready(this.take_output()) };
                 }
                 VALUE => {
                     // Value hasn't changed
@@ -290,7 +299,9 @@ where
                 self.waker.wake_by_ref();
                 unsafe { self.store_value(value) };
             }
-            Poll::Pending => {}
+            Poll::Pending => {
+                self.notifier.state.store(PENDING, SeqCst);
+            }
         }
     }
 }
@@ -314,8 +325,35 @@ impl ArcWake for Notifier {
 
 #[cfg(test)]
 mod shared {
-    use crate::{shared::StreamShared, stream_event::StreamEvent};
+    use crate::{event::StreamEvent, shared::StreamShared};
     use futures::{stream, StreamExt};
+    use futures_signals::signal::{Mutable, SignalExt};
+
+    #[tokio::test]
+    async fn should_allow_unique_share() {
+        let mutable = Mutable::new(0);
+        let stream = mutable
+            .signal()
+            .to_stream()
+            .map(|value| {
+                println!("input: {value}");
+                value
+            })
+            .shared();
+
+        let handler = tokio::spawn(stream.for_each(|value| async move {
+            println!("shared1: {value}")
+        }));
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        mutable.set(1);
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        mutable.set(2);
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
+        drop(mutable);
+        handler.await.expect("Error: tokio thread paniqued");
+    }
 
     #[tokio::test]
     async fn should_share_stream_between_threads() {

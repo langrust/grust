@@ -1,13 +1,15 @@
+use futures::{StreamExt, TryFutureExt};
 use futures_signals::signal::{Mutable, SignalExt};
 use interface_grpc_frp_signals::next_interface_client::NextInterfaceClient;
 use std::convert::TryInto;
 use tonic::transport::Server;
 use tonic::{Request, Response};
 
-use crate::event::SignalEvent;
+use crate::event::StreamEvent;
 use crate::interface::interface;
 use crate::interface_grpc_frp_signals::outputs::MovingObjects;
 use crate::interface_grpc_frp_signals::Outputs;
+use crate::shared::StreamShared;
 
 use interface_grpc_frp_signals::interface_server::{Interface, InterfaceServer};
 use interface_grpc_frp_signals::{
@@ -20,8 +22,10 @@ pub mod interface_grpc_frp_signals {
 }
 pub mod event;
 mod interface;
+pub mod shared;
 mod signals_system;
 pub mod util;
+pub mod zip;
 
 fn convert<T, const N: usize>(v: Vec<T>) -> [T; N] {
     v.try_into()
@@ -67,9 +71,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rgb_images = Mutable::new([0; 10]);
     let point_cloud = Mutable::new([0; 10]);
     let interface = interface(
-        distances.read_only(),
-        rgb_images.read_only(),
-        point_cloud.read_only(),
+        distances.signal().to_stream().shared(),
+        rgb_images.signal().to_stream().shared(),
+        point_cloud.signal().to_stream().shared(),
     );
 
     let handler = tokio::spawn(async {
@@ -82,7 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // let svc = InterfaceServer::with_interceptor(interface, todo!("interceptor"));
         Server::builder()
             .add_service(svc)
-            .serve("[::1]:10000".parse().unwrap())
+            .serve_with_shutdown("[::1]:10000".parse().unwrap(), tokio::signal::ctrl_c().map_ok_or_else(|_| (), |_| ()))
             .await
             .expect("Error: server crashed")
     });
@@ -96,14 +100,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("*** CONNECTED TO CLIENT ***");
 
     // Make it into reactive future
+    let cloned_client = client.clone();
     let future = interface
-        .signal()
         .event(10, |value| async move {
             println!("\n*** COMPUTED ***");
             value
         })
         .for_each(move |object_motion| {
-            let mut client = client.clone();
+            let mut client = cloned_client.clone();
             async move {
                 println!("\n*** RESPONSE SENDED ***");
                 client
@@ -120,6 +124,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(future)
         .await
         .expect("Error: reactive interface paniqued");
+
+    // End of communication
+    drop(client);
 
     handler.await.expect("Error: server paniqued");
 

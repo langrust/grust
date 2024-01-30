@@ -1,0 +1,304 @@
+[
+    {
+        "distances": {
+            "distances": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "point_cloud": {
+            "point_cloud": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "rgb_images": {
+            "rgb_images": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        }
+    },
+    {
+        "distances": null,
+        "point_cloud": null,
+        "rgb_images": null
+    },
+    {
+        "distances": {
+            "distances": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        "point_cloud": null,
+        "rgb_images": null
+    },
+    {
+        "distances": {
+            "distances": [
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2
+            ]
+        },
+        "point_cloud": {
+            "point_cloud": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        "rgb_images": {
+            "rgb_images": [
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2
+            ]
+        }
+    },
+    {
+        "distances": {
+            "distances": [
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3
+            ]
+        },
+        "point_cloud": null,
+        "rgb_images": {
+            "rgb_images": [
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+            ]
+        }
+    },
+    {
+        "distances": {
+            "distances": [
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+            ]
+        },
+        "point_cloud": {
+            "point_cloud": [
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2
+            ]
+        },
+        "rgb_images": null
+    },
+    {
+        "distances": {
+            "distances": [
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5
+            ]
+        },
+        "point_cloud": {
+            "point_cloud": [
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3
+            ]
+        },
+        "rgb_images": null
+    },
+    {
+        "distances": null,
+        "point_cloud": {
+            "point_cloud": [
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4,
+                4
+            ]
+        },
+        "rgb_images": {
+            "rgb_images": [
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8
+            ]
+        }
+    },
+    {
+        "distances": null,
+        "point_cloud": {
+            "point_cloud": [
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5
+            ]
+        },
+        "rgb_images": {
+            "rgb_images": [
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16
+            ]
+        }
+    },
+    {
+        "distances": {
+            "distances": [
+                6,
+                6,
+                6,
+                6,
+                6,
+                6,
+                6,
+                6,
+                6,
+                6
+            ]
+        },
+        "point_cloud": null,
+        "rgb_images": null
+    },
+    {
+        "distances": {
+            "distances": [
+                7,
+                7,
+                7,
+                7,
+                7,
+                7,
+                7,
+                7,
+                7,
+                7
+            ]
+        },
+        "point_cloud": null,
+        "rgb_images": null
+    }
+]
