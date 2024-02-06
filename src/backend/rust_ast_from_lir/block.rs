@@ -39,7 +39,7 @@ mod rust_ast_from_lir {
         };
 
         let control: syn::Block = parse_quote!({
-            let x = 1;
+            let x = 1i64;
             x
         });
 

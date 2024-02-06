@@ -232,7 +232,7 @@ mod rust_ast_from_lir {
             pub fn step(input: NodeInput) -> i64 {
                 let o = self.mem_i;
                 let y = self.called_node_state.step(CalledNodeInput {});
-                self.mem_i = o + 1;
+                self.mem_i = o + 1i64;
                 self.called_node_state = new_called_node_state;
                 o + y
             }

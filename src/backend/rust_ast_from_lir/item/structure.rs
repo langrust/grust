@@ -43,7 +43,7 @@ mod rust_ast_from_lir {
         let control = parse_quote! {
             pub struct Point {
                 pub x: i64,
-                pub y: i64,
+                pub y: i64
             }
         };
         assert_eq!(rust_ast_from_lir(structure), control)

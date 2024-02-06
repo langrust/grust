@@ -36,7 +36,7 @@ pub fn rust_ast_from_lir(init: Init) -> ImplItemFn {
                 FieldValue {
                     attrs: vec![],
                     member: parse_quote! { #ident },
-                    colon_token: Default::default(),
+                    colon_token: Some(Default::default()),
                     expr: constant,
                 }
             }
@@ -45,15 +45,17 @@ pub fn rust_ast_from_lir(init: Init) -> ImplItemFn {
                 node_name,
             } => {
                 let ident = Ident::new(&identifier, Span::call_site());
-                let function = Ident::new(
-                    &camel_case(&format!("{}State::init", node_name)),
+                
+                let called_state_ty = Ident::new(
+                    &camel_case(&format!("{}State", node_name)),
                     Span::call_site(),
                 );
+                let expr = parse_quote!{#called_state_ty::init ()};
                 FieldValue {
                     attrs: vec![],
                     member: parse_quote! { #ident },
-                    colon_token: Default::default(),
-                    expr: parse_quote! { #function() },
+                    colon_token: Some(Default::default()),
+                    expr,
                 }
             }
         })
@@ -110,8 +112,8 @@ mod rust_ast_from_lir {
         let control = parse_quote! {
             pub fn init() -> NodeState {
                 NodeState {
-                    mem_i: 0,
-                    called_node_state: CalledNodeState::init(),
+                    mem_i: 0i64,
+                    called_node_state: CalledNodeState::init()
                 }
             }
         };

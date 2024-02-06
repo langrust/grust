@@ -6,6 +6,7 @@ use super::{
 use crate::common::operator::{BinaryOperator, UnaryOperator};
 use crate::lir::expression::{Expression, FieldIdentifier};
 use proc_macro2::Span;
+use quote::format_ident;
 use syn::*;
 
 use strum::IntoEnumIterator;
@@ -39,21 +40,27 @@ pub fn unary_to_syn(op: UnaryOperator) -> syn::UnOp {
 pub fn rust_ast_from_lir(expression: Expression) -> Expr {
     match expression {
         Expression::Literal { literal } => syn::parse_str(&format!("{literal}")).unwrap(),
-        Expression::Identifier { identifier } => parse_quote! { #identifier },
+        Expression::Identifier { identifier } => {
+            let identifier = Ident::new(&identifier, Span::call_site());
+            parse_quote! { #identifier }},
         Expression::MemoryAccess { identifier } => {
+            let identifier = Ident::new(&identifier, Span::call_site());
             parse_quote!( self . #identifier )
         }
         Expression::InputAccess { identifier } => {
+            let identifier = format_ident!("{identifier}");
             parse_quote!( input . #identifier )
         }
         Expression::Structure { name, fields } => {
             let fields: Vec<FieldValue> = fields
                 .into_iter()
                 .map(|(name, expression)| {
+                    let name = format_ident!("{name}");
                     let expression = rust_ast_from_lir(expression);
                     parse_quote!(#name : #expression)
                 })
                 .collect();
+            let name = format_ident!("{name}");
             parse_quote!(#name { #(#fields),* })
         }
         Expression::Array { elements } => {
@@ -205,7 +212,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
                         .map(|g| (Default::default(), Box::new(g))),
                     body: Box::new(rust_ast_from_lir(body)),
                     fat_arrow_token: Default::default(),
-                    comma: Default::default(),
+                    comma: Some(Default::default()),
                 })
                 .collect();
             syn::Expr::Match(syn::ExprMatch {
@@ -304,7 +311,7 @@ mod rust_ast_from_lir {
         let expression = Expression::Literal {
             literal: Constant::Integer(1),
         };
-        let control = parse_quote! { 1 };
+        let control = parse_quote! { 1i64 };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 
@@ -354,7 +361,7 @@ mod rust_ast_from_lir {
                 ),
             ],
         };
-        let control = parse_quote! { Point { x : 1, y : 2 } };
+        let control = parse_quote! { Point { x : 1i64, y : 2i64 } };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 
@@ -370,7 +377,7 @@ mod rust_ast_from_lir {
                 },
             ],
         };
-        let control = parse_quote! { [1, 2] };
+        let control = parse_quote! { [1i64, 2i64] };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 
@@ -393,7 +400,7 @@ mod rust_ast_from_lir {
                 ],
             },
         };
-        let control = parse_quote! { { let x = 1; x } };
+        let control = parse_quote! { { let x = 1i64; x } };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 
@@ -450,7 +457,7 @@ mod rust_ast_from_lir {
             )],
         };
 
-        let control = parse_quote! { self . node_state . step (struct NodeInput { i : 1 }) };
+        let control = parse_quote! { self . node_state . step ( NodeInput { i : 1i64 }) };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 
@@ -491,7 +498,7 @@ mod rust_ast_from_lir {
             }),
         };
 
-        let control = parse_quote! { |x: i64| -> i64 { let y = x; y } };
+        let control = parse_quote! { move |x: i64| -> i64 { let y = x; y } };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 
@@ -517,7 +524,7 @@ mod rust_ast_from_lir {
             },
         };
 
-        let control = parse_quote! { if test { 1 } else { 0 } };
+        let control = parse_quote! { if test { 1i64 } else { 0i64 } };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 
@@ -551,7 +558,7 @@ mod rust_ast_from_lir {
             ],
         };
 
-        let control = parse_quote! { match my_color { Color::Blue => 1, Color::Green => 0 } };
+        let control = parse_quote! { match my_color { Color::Blue => 1i64, Color::Green => 0i64, } };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 
@@ -584,7 +591,7 @@ mod rust_ast_from_lir {
             }),
         };
 
-        let control = parse_quote! { a . into_iter().fold(0, sum) };
+        let control = parse_quote! { a . into_iter().fold(0i64, sum) };
         assert_eq!(rust_ast_from_lir(expression), control)
     }
 

@@ -1,4 +1,5 @@
 use crate::common::r#type::Type;
+use proc_macro2::Span;
 use syn::*;
 
 /// Transform LIR type into RustAST type.
@@ -9,12 +10,18 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
         Type::Boolean => parse_quote!(bool),
         Type::String => parse_quote!(String),
         Type::Unit => parse_quote!(()),
-        Type::Enumeration(identifier) => parse_quote!(#identifier),
-        Type::Structure(identifier) => parse_quote!(#identifier),
+        Type::Enumeration(identifier) => {
+            let identifier = Ident::new(&identifier, Span::call_site());
+            parse_quote!(#identifier)
+        }
+        Type::Structure(identifier) =>  {
+            let identifier = Ident::new(&identifier, Span::call_site());
+            parse_quote!(#identifier)
+        },
         Type::Array(element, size) => {
             let ty = rust_ast_from_lir(*element);
 
-            parse_quote!([ty; #size])
+            parse_quote!([#ty; #size])
         }
         Type::Option(element) => {
             let ty = rust_ast_from_lir(*element);
@@ -96,7 +103,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_owned_array_from_lir_array() {
         let r#type = Type::Array(Box::new(Type::Float), 5);
-        let control = parse_quote! { [f64;5] };
+        let control = parse_quote! { [f64;5usize] };
 
         assert_eq!(rust_ast_from_lir(r#type), control)
     }

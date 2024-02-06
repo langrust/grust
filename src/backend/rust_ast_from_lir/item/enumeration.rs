@@ -45,7 +45,7 @@ mod rust_ast_from_lir {
         pub enum Color {
             Blue,
             Red,
-            Green,
+            Green
         }};
         assert_eq!(rust_ast_from_lir(enumeration), control)
     }
