@@ -135,6 +135,7 @@ mod langrust_ast_constructs {
                 ],
                 nodes: vec![
                     Node {
+                        contracts: (vec![], vec![]),
                         id: String::from("test"),
                         is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
@@ -170,7 +171,7 @@ mod langrust_ast_constructs {
                         ],
                         location: Location::default(),
                     },
-                    Node {
+                    Node { contracts: (vec![], vec![]),
                         id: String::from("test"),
                         is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
@@ -206,7 +207,7 @@ mod langrust_ast_constructs {
                         ],
                         location: Location::default(),
                     },
-                    Node {
+                    Node { contracts: (vec![], vec![]),
                         id: String::from("test"),
                         is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
@@ -343,7 +344,7 @@ mod langrust_ast_constructs {
                     }
                 ],
                 nodes: vec![
-                    Node {
+                    Node { contracts: (vec![], vec![]),
                         id: String::from("test"),
                         is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
@@ -379,7 +380,7 @@ mod langrust_ast_constructs {
                         ],
                         location: Location::default(),
                     },
-                    Node {
+                    Node { contracts: (vec![], vec![]),
                         id: String::from("test"),
                         is_component: false,
                         inputs: vec![(String::from("i"), Type::Integer)],
@@ -416,7 +417,7 @@ mod langrust_ast_constructs {
                         location: Location::default(),
                     }
                 ],
-                component: Some(Node {
+                component: Some(Node { contracts: (vec![], vec![]),
                     id: String::from("test"),
                     is_component: true,
                     inputs: vec![(String::from("i"), Type::Integer)],
@@ -523,7 +524,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             component,
-            Node {
+            Node { contracts: (vec![], vec![]),
                 id: String::from("test"),
                 is_component: true,
                 inputs: vec![(String::from("i"), Type::Integer)],
@@ -576,7 +577,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             node,
-            Node {
+            Node { contracts: (vec![], vec![]),
                 id: String::from("test"),
                 is_component: false,
                 inputs: vec![(String::from("i"), Type::Integer)],

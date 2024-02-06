@@ -1,6 +1,7 @@
 use super::item::Item;
 
 /// HIR of a Rust source code file.
+#[derive(Debug)]
 pub struct File {
     /// File's path.
     pub path: String,

@@ -480,3 +480,28 @@ fn generate_rust_project_for_adas_example() {
 
     test.into_iter().collect::<Result<(), _>>().unwrap()
 }
+
+#[test]
+fn generate_rust_project_for_contracts_test() {
+    let mut files = SimpleFiles::new();
+    let mut errors = vec![];
+
+    let contracts_test_id = files.add(
+        "contracts_test.gr",
+        std::fs::read_to_string("tests/fixture/contracts_test.gr").expect("unkown file"),
+    );
+
+    let mut file: File = langrust::fileParser::new()
+        .parse(contracts_test_id, &files.source(contracts_test_id).unwrap())
+        .unwrap();
+    file.typing(&mut errors).unwrap();
+    let mut file = hir_from_ast(file);
+    file.generate_dependency_graphs(&mut errors).unwrap();
+    file.causality_analysis(&mut errors).unwrap();
+    file.normalize(&mut errors).unwrap();
+    let project = lir_from_hir(file);
+    let mut project = rust_ast_from_lir(project);
+    project.set_parent("tests/generated/contracts_test/");
+
+    project.generate()
+}

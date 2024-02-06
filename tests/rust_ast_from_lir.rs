@@ -27,7 +27,7 @@ fn rust_ast_from_lir_transformation_for_counter() {
     let project = lir_from_hir(file);
 
     let project = rust_ast_from_lir(project);
-    insta::assert_yaml_snapshot!(project);
+    insta::assert_debug_snapshot!(project);
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn rust_ast_from_lir_transformation_for_blinking() {
     let project = lir_from_hir(file);
 
     let project = rust_ast_from_lir(project);
-    insta::assert_yaml_snapshot!(project);
+    insta::assert_debug_snapshot!(project);
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn rust_ast_from_lir_transformation_for_button_management() {
     let project = lir_from_hir(file);
 
     let project = rust_ast_from_lir(project);
-    insta::assert_yaml_snapshot!(project);
+    insta::assert_debug_snapshot!(project);
 }
 
 #[test]
@@ -100,7 +100,7 @@ fn rust_ast_from_lir_transformation_for_button_management_condition_match() {
     let project = lir_from_hir(file);
 
     let project = rust_ast_from_lir(project);
-    insta::assert_yaml_snapshot!(project);
+    insta::assert_debug_snapshot!(project);
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn rust_ast_from_lir_transformation_for_button_management_using_function() {
     let project = lir_from_hir(file);
 
     let project = rust_ast_from_lir(project);
-    insta::assert_yaml_snapshot!(project);
+    insta::assert_debug_snapshot!(project);
 }
 
 #[test]
@@ -149,5 +149,5 @@ fn rust_ast_from_lir_transformation_for_pid() {
     let project = lir_from_hir(file);
 
     let project = rust_ast_from_lir(project);
-    insta::assert_yaml_snapshot!(project);
+    insta::assert_debug_snapshot!(project);
 }
