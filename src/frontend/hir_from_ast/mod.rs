@@ -8,3 +8,4 @@ pub mod node;
 pub mod pattern;
 /// HIR StreamExpression construction from AST StreamExpression
 pub mod stream_expression;
+pub mod contract;

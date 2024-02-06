@@ -1,10 +1,9 @@
-use crate::ast::term::Contract;
 use crate::common::{
     graph::{color::Color, Graph},
     location::Location,
     r#type::Type,
 };
-use crate::hir::{equation::Equation, memory::Memory, once_cell::OnceCell};
+use crate::hir::{term::Contract, equation::Equation, memory::Memory, once_cell::OnceCell};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust unitary node HIR.

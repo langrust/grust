@@ -1,5 +1,5 @@
 use crate::{
-    ast::term::{Contract},
+    hir::term::Contract,
     common::r#type::Type,
     lir::{expression::Expression, statement::Statement},
 };
