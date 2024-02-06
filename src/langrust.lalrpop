@@ -10,7 +10,7 @@ use crate::ast::{
     statement::Statement,
     stream_expression::StreamExpression,
     typedef::Typedef,
-    term::{Term, TermKind, ClauseKind},
+    term::{Term, TermKind, ClauseKind, Contract},
     equation::{AssertKind, Assertion}
 };
 use crate::common::{
@@ -249,7 +249,7 @@ clause_kind : ClauseKind = {
 }
 
 contract_clause : (ClauseKind, Term) = {
-    <kind: clause_kind> "{" <term : termProof> "}" => (kind, temr)
+    <kind: clause_kind> "{" <term : termProof> "}" => (kind, term)
 }
 
 contracts: Contract = {
@@ -264,7 +264,7 @@ contracts: Contract = {
                 ClauseKind::Invariant => contract.invariant.push(c.1),
             }
         }
-        c
+        contract
     }
 }
 
@@ -880,7 +880,6 @@ pub component: Node = {
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contracts: c,
             location: Location{ file_id, range: start..end },
-            assertions,
         }
     },
     <start:@L> "component" <id: ID> "()"<c: contracts>  "{" <e: equation+> "}"  <end:@R> => {
@@ -891,7 +890,6 @@ pub component: Node = {
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contracts: c,
             location: Location{ file_id, range: start..end },
-            assertions,
         }
     }
 };
