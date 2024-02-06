@@ -170,7 +170,7 @@ mod add_unitary_node {
 
     #[test]
     fn should_add_unitary_node_computing_output() {
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -292,7 +292,7 @@ mod add_unitary_node {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let control = Node { contracts: (vec![], vec![]),
+        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -397,7 +397,7 @@ mod generate_unitary_nodes {
     fn should_generate_unitary_nodes_as_expected() {
         let mut errors = vec![];
 
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -542,7 +542,7 @@ mod generate_unitary_nodes {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let control = Node { contracts: (vec![], vec![]),
+        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -632,7 +632,7 @@ mod generate_unitary_nodes {
     fn should_generate_unitary_nodes_for_every_output() {
         let mut errors = vec![];
 
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -726,7 +726,7 @@ mod generate_unitary_nodes {
     fn should_raise_error_for_unused_signals() {
         let mut errors = vec![];
 
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![

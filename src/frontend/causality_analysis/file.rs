@@ -71,7 +71,9 @@ mod causality_analysis {
 
     #[test]
     fn should_accept_causal_files() {
-        let node = Node { contracts: (vec![], vec![]),
+        let node = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -126,7 +128,9 @@ mod causality_analysis {
         graph.add_edge(&String::from("o"), String::from("x"), 0);
         node.graph.set(graph).unwrap();
 
-        let component = Node { contracts: (vec![], vec![]),
+        let component = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -200,7 +204,9 @@ mod causality_analysis {
 
     #[test]
     fn should_raise_error_when_one_node_is_not_causal() {
-        let node1 = Node { contracts: (vec![], vec![]),
+        let node1 = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -254,7 +260,9 @@ mod causality_analysis {
         graph.add_edge(&String::from("o"), String::from("x"), 0);
         node1.graph.set(graph).unwrap();
 
-        let node2 = Node { contracts: (vec![], vec![]),
+        let node2 = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -328,7 +336,9 @@ mod causality_analysis {
 
     #[test]
     fn should_raise_error_when_many_nodes_are_not_causal() {
-        let node1 = Node { contracts: (vec![], vec![]),
+        let node1 = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -382,7 +392,9 @@ mod causality_analysis {
         graph.add_edge(&String::from("o"), String::from("x"), 0);
         node1.graph.set(graph).unwrap();
 
-        let node2 = Node { contracts: (vec![], vec![]),
+        let node2 = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -456,7 +468,9 @@ mod causality_analysis {
 
     #[test]
     fn should_raise_error_when_the_component_is_not_causal() {
-        let node = Node { contracts: (vec![], vec![]),
+        let node = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -511,7 +525,9 @@ mod causality_analysis {
         graph.add_edge(&String::from("o"), String::from("x"), 0);
         node.graph.set(graph).unwrap();
 
-        let component = Node { contracts: (vec![], vec![]),
+        let component = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],

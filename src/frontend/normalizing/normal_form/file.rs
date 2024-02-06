@@ -102,7 +102,7 @@ mod normal_form {
         my_node_graph.add_vertex(String::from("o"), Color::Black);
         my_node_graph.add_edge(&String::from("o"), String::from("x"), 0);
         my_node_graph.add_edge(&String::from("o"), String::from("y"), 0);
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -223,7 +223,7 @@ mod normal_form {
         node_graph.add_vertex(String::from("x"), Color::Black);
         node_graph.add_edge(&String::from("x"), String::from("s"), 0);
         node_graph.add_edge(&String::from("x"), String::from("v"), 0);
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -434,7 +434,7 @@ mod normal_form {
         // node my_node(x: int, y: int) {
         //     out o: int = x * y
         // }
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -671,7 +671,7 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::from(unitary_node_graph.clone()),
         };
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![

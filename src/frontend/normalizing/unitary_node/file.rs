@@ -94,7 +94,7 @@ mod generate_unitary_nodes {
         let mut errors = vec![];
 
         // my_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -210,7 +210,7 @@ mod generate_unitary_nodes {
         };
         file.generate_unitary_nodes(&mut errors).unwrap();
 
-        let node_control = Node { contracts: (vec![], vec![]),
+        let node_control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -437,7 +437,7 @@ mod generate_unitary_nodes {
         let mut errors = vec![];
 
         // my_node(x: int, y: int) { out o: int = x*y; }
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -502,7 +502,7 @@ mod generate_unitary_nodes {
         my_node.graph.set(my_node_graph.clone()).unwrap();
 
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![
@@ -780,7 +780,7 @@ mod generate_unitary_nodes {
             },
             location: Location::default(),
         };
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -844,7 +844,7 @@ mod generate_unitary_nodes {
         file.generate_unitary_nodes(&mut errors).unwrap();
 
         // my_node(x: int, y: int) { out o: int = x*y; }
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -956,7 +956,7 @@ mod generate_unitary_nodes {
             graph: OnceCell::from(my_node_graph),
         };
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![
@@ -1368,7 +1368,7 @@ mod generate_unitary_nodes {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
