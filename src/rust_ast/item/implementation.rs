@@ -1,3 +1,4 @@
+use quote::ToTokens;
 use syn::Attribute;
 
 use crate::rust_ast::{block::Block, item::signature::Signature, r#type::Type};
@@ -61,6 +62,9 @@ impl std::fmt::Display for AssociatedItem {
                 signature,
                 body,
             } => {
+                for attr in attributes {
+                    write!(f, "{}", attr.to_token_stream())?;
+                }
                 write!(f, "{signature} {body}")
             }
         }

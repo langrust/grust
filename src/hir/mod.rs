@@ -27,3 +27,5 @@ pub mod signal;
 
 /// HIR [OnceCell](crate::hir::once_cell::OnceCell) module.
 pub mod once_cell;
+
+pub mod term;

@@ -9,6 +9,8 @@ impl TestOState {
     pub fn init() -> TestOState {
         TestOState { mem_z: 1i64 }
     }
+    #[ensures("o"<0i64)]
+    #[requires(0i64<"i1")]
     pub fn step(&mut self, input: TestOInput) -> i64 {
         let x = input.i2 - input.i1;
         let y = input.i1 / x;

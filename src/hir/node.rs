@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
-use crate::ast::term::Contract;
 use crate::common::{
     graph::{color::Color, Graph},
     location::Location,
     r#type::Type,
     serialize::ordered_map,
 };
-use crate::hir::{equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
+use crate::hir::{
+    term::Contract,
+    equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust node HIR.
