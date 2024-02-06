@@ -1,4 +1,5 @@
 use crate::rust_ast::{block::Block, item::signature::Signature};
+use quote::ToTokens;
 use syn::Attribute;
 
 #[derive(Debug, PartialEq)]
@@ -14,6 +15,9 @@ pub struct Function {
 
 impl std::fmt::Display for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for attr in &self.attributes {
+            write!(f, "{}", attr.to_token_stream())?;
+        }
         write!(f, "{} {}", self.signature, self.body)
     }
 }

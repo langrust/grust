@@ -12,6 +12,7 @@ use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
 use proc_macro2::TokenStream;
 use quote::quote;
+use syn::parse_quote;
 
 fn term_to_token_stream(term: Term) -> TokenStream {
     match term.kind {
@@ -44,7 +45,16 @@ fn term_to_token_stream(term: Term) -> TokenStream {
 
 /// Transform LIR step into RustAST implementation method.
 pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
-    let attributes = todo!();
+    let (requires, ensures) = step.contracts;
+    let mut requires_attributes = requires.into_iter().map(|term|{
+        let ts = term_to_token_stream(term);
+        parse_quote!(#[requires(#ts)])
+    }).collect::<Vec<_>>();
+    let mut attributes = ensures.into_iter().map(|term|{
+        let ts = term_to_token_stream(term);
+        parse_quote!(#[ensures(#ts)])
+    }).collect::<Vec<_>>();
+    attributes.append(&mut requires_attributes);
     let signature = Signature {
         public_visibility: true,
         name: String::from("step"),
@@ -95,7 +105,7 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
     statements.push(output_statement);
 
     let body = Block { statements };
-    AssociatedItem::AssociatedMethod { attributes: todo!(), signature, body }
+    AssociatedItem::AssociatedMethod { attributes, signature, body }
 }
 
 #[cfg(test)]

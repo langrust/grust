@@ -1,6 +1,7 @@
 use super::file::File;
 
 /// A Rust source code project.
+#[derive(Debug)]
 pub struct Project {
     /// Project's directory.
     pub directory: String,
