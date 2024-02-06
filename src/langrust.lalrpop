@@ -11,6 +11,7 @@ use crate::ast::{
     stream_expression::StreamExpression,
     typedef::Typedef,
     term::{Term, TermKind},
+    equation::{AssertKind, Assertion}
 };
 use crate::common::{
     constant::Constant,
@@ -811,9 +812,22 @@ pub function: Function = {
     }
 };
 
+pub assert_kind : AssertKind = {
+    "assert" => AssertKind::Assert,
+    "invariant" => AssertKind::Invariant,
+}
+
+pub assertion : Assertion = {
+    <start:@L> <kind: assert_kind> "{" <term: termProof> "}" <end:@R> => {
+        Assertion {
+            kind, term, location: Location { file_id, range: start..end }
+        }
+    }
+}
+
 /// Catches node
 pub node: Node = {
-    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" <c: contracts> "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" <c: contracts> "{" <e: equation+> "}" "where" "{" <assertions: assertion*> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
@@ -821,9 +835,10 @@ pub node: Node = {
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contracts: c,
             location: Location{ file_id, range: start..end },
+            assertions
         }
     },
-    <start:@L> "node" <n: ID> "()" <c: contracts> "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "()" <c: contracts> "{" <e: equation+> "}" "where" "{" <assertions: assertion*> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
@@ -831,13 +846,14 @@ pub node: Node = {
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contracts: c,
             location: Location{ file_id, range: start..end },
+            assertions,
         }
     }
 };
 
 /// Catches component
 pub component: Node = {
-    <start:@L> "component" <id: ID> "(" <i: hash<ID, basicType>> ")"<c: contracts>  "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "component" <id: ID> "(" <i: hash<ID, basicType>> ")"<c: contracts>  "{" <e: equation+> "}"  "where" "{" <assertions: assertion*> "}" <end:@R> => {
         Node {
             id,
             is_component: true,
@@ -845,9 +861,10 @@ pub component: Node = {
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contracts: c,
             location: Location{ file_id, range: start..end },
+            assertions,
         }
     },
-    <start:@L> "component" <id: ID> "()"<c: contracts>  "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "component" <id: ID> "()"<c: contracts>  "{" <e: equation+> "}" "where" "{" <assertions: assertion*> "}" <end:@R> => {
         Node {
             id,
             is_component: true,
@@ -855,6 +872,7 @@ pub component: Node = {
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contracts: c,
             location: Location{ file_id, range: start..end },
+            assertions,
         }
     }
 };
