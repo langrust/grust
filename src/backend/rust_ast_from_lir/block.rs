@@ -1,16 +1,14 @@
-use crate::lir::block::Block;
-use crate::rust_ast::block::Block as RustASTBlock;
-
 use super::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
+use crate::lir::block::Block;
 
 /// Transform LIR block into RustAST block.
-pub fn rust_ast_from_lir(block: Block) -> RustASTBlock {
-    let statements = block
+pub fn rust_ast_from_lir(block: Block) -> syn::Block {
+    let stmts = block
         .statements
         .into_iter()
         .map(statement_rust_ast_from_lir)
         .collect();
-    RustASTBlock { statements }
+    syn::Block { stmts, brace_token: Default::default() }
 }
 
 #[cfg(test)]
@@ -20,11 +18,7 @@ mod rust_ast_from_lir {
     use crate::lir::block::Block;
     use crate::lir::expression::Expression;
     use crate::lir::statement::Statement;
-    use crate::rust_ast::block::Block as RustASTBlock;
-    use crate::rust_ast::expression::Expression as RustASTExpression;
-    use crate::rust_ast::pattern::Pattern as RustASTPattern;
-    use crate::rust_ast::statement::r#let::Let;
-    use crate::rust_ast::statement::Statement as RustASTStatement;
+    use syn::*;
 
     #[test]
     fn should_create_rust_ast_block_from_lir_block() {
@@ -43,23 +37,12 @@ mod rust_ast_from_lir {
                 },
             ],
         };
-        let control = RustASTBlock {
-            statements: vec![
-                RustASTStatement::Let(Let {
-                    pattern: RustASTPattern::Identifier {
-                        reference: false,
-                        mutable: false,
-                        identifier: String::from("x"),
-                    },
-                    expression: RustASTExpression::Literal {
-                        literal: Constant::Integer(1),
-                    },
-                }),
-                RustASTStatement::ExpressionLast(RustASTExpression::Identifier {
-                    identifier: String::from("x"),
-                }),
-            ],
-        };
+
+        let control: syn::Block = parse_quote!({
+            let x = 1;
+            x
+        });
+
         assert_eq!(rust_ast_from_lir(block), control)
     }
 }

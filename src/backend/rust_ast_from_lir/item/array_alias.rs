@@ -1,8 +1,6 @@
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::lir::item::array_alias::ArrayAlias;
-use crate::rust_ast::item::type_alias::TypeAlias;
-use crate::rust_ast::r#type::Type as RustASTType;
-
+use syn::*;
 /// Transform LIR array alias into RustAST type alias.
 pub fn rust_ast_from_lir(array_alias: ArrayAlias) -> TypeAlias {
     TypeAlias {

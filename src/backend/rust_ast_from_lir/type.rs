@@ -1,46 +1,35 @@
 use crate::common::r#type::Type;
-use crate::rust_ast::r#type::Type as RustASTType;
+use syn::*;
 
 /// Transform LIR type into RustAST type.
-pub fn rust_ast_from_lir(r#type: Type) -> RustASTType {
+pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
     match r#type {
-        Type::Integer => RustASTType::Identifier {
-            identifier: String::from("i64"),
-        },
-        Type::Float => RustASTType::Identifier {
-            identifier: String::from("f64"),
-        },
-        Type::Boolean => RustASTType::Identifier {
-            identifier: String::from("bool"),
-        },
-        Type::String => RustASTType::Identifier {
-            identifier: String::from("String"),
-        },
-        Type::Unit => RustASTType::Identifier {
-            identifier: String::from("()"),
-        },
-        Type::Enumeration(identifier) => RustASTType::Identifier { identifier },
-        Type::Structure(identifier) => RustASTType::Identifier { identifier },
-        Type::Array(element, size) => RustASTType::Array {
-            element: Box::new(rust_ast_from_lir(*element)),
-            size,
-        },
-        Type::Option(element) => RustASTType::Generic {
-            generic: Box::new(RustASTType::Identifier {
-                identifier: String::from("Option"),
-            }),
-            arguments: vec![rust_ast_from_lir(*element)],
-        },
-        Type::Abstract(arguments, output) => {
-            let arguments = arguments.into_iter().map(rust_ast_from_lir).collect();
-            RustASTType::Closure {
-                arguments,
-                output: Box::new(rust_ast_from_lir(*output)),
-            }
+        Type::Integer => parse_quote!(i64),
+        Type::Float => parse_quote!(f64),
+        Type::Boolean => parse_quote!(bool),
+        Type::String => parse_quote!(String),
+        Type::Unit => parse_quote!(()),
+        Type::Enumeration(identifier) => parse_quote!(#identifier),
+        Type::Structure(identifier) => parse_quote!(#identifier),
+        Type::Array(element, size) => {
+            let ty = rust_ast_from_lir(*element);
+
+            parse_quote!([ty; #size])
         }
-        Type::Tuple(elements) => RustASTType::Tuple {
-            elements: elements.into_iter().map(rust_ast_from_lir).collect(),
-        },
+        Type::Option(element) => {
+            let ty = rust_ast_from_lir(*element);
+            parse_quote!(Option<#ty>)
+        }
+        Type::Abstract(arguments, output) => {
+            let arguments = arguments.into_iter().map(rust_ast_from_lir);
+            let output = rust_ast_from_lir(*output);
+            parse_quote!(impl Fn(#(#arguments),*) -> #output)
+        }
+        Type::Tuple(elements) => {
+            let tys = elements.into_iter().map(rust_ast_from_lir);
+
+            parse_quote!((#(#tys),*))
+        }
         Type::NotDefinedYet(_) | Type::Polymorphism(_) => unreachable!(),
     }
 }
@@ -49,108 +38,81 @@ pub fn rust_ast_from_lir(r#type: Type) -> RustASTType {
 mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir;
     use crate::common::r#type::Type;
-    use crate::rust_ast::r#type::Type as RustASTType;
+    use syn::*;
 
     #[test]
     fn should_create_rust_ast_owned_i64_from_lir_integer() {
         let r#type = Type::Integer;
-        let control = RustASTType::Identifier {
-            identifier: String::from("i64"),
-        };
+        let control = parse_quote! { i64 };
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_f64_from_lir_float() {
         let r#type = Type::Float;
-        let control = RustASTType::Identifier {
-            identifier: String::from("f64"),
-        };
+        let control = parse_quote! { f64 };
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_bool_from_lir_boolean() {
         let r#type = Type::Boolean;
-        let control = RustASTType::Identifier {
-            identifier: String::from("bool"),
-        };
+        let control = parse_quote! { bool };
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_string_from_lir_string() {
         let r#type = Type::String;
-        let control = RustASTType::Identifier {
-            identifier: String::from("String"),
-        };
+        let control = parse_quote! { String };
+
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_unit_from_lir_unit() {
         let r#type = Type::Unit;
-        let control = RustASTType::Identifier {
-            identifier: String::from("()"),
-        };
+        let control = parse_quote! { () };
+
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_structure_from_lir_structure() {
         let r#type = Type::Structure(String::from("Point"));
-        let control = RustASTType::Identifier {
-            identifier: String::from("Point"),
-        };
+        let control = parse_quote! { Point };
+
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_enumeration_from_lir_enumeration() {
         let r#type = Type::Enumeration(String::from("Color"));
-        let control = RustASTType::Identifier {
-            identifier: String::from("Color"),
-        };
+        let control = parse_quote! { Color };
+
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_array_from_lir_array() {
         let r#type = Type::Array(Box::new(Type::Float), 5);
-        let control = RustASTType::Array {
-            element: Box::new(RustASTType::Identifier {
-                identifier: String::from("f64"),
-            }),
-            size: 5,
-        };
+        let control = parse_quote! { [f64;5] };
+
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_generic_from_lir_option() {
         let r#type = Type::Option(Box::new(Type::Float));
-        let control = RustASTType::Generic {
-            generic: Box::new(RustASTType::Identifier {
-                identifier: String::from("Option"),
-            }),
-            arguments: vec![RustASTType::Identifier {
-                identifier: String::from("f64"),
-            }],
-        };
+        let control = parse_quote!(Option<f64>);
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
     fn should_create_rust_ast_owned_closure_from_lir_abstract() {
         let r#type = Type::Abstract(vec![Type::Integer], Box::new(Type::Float));
-        let control = RustASTType::Closure {
-            arguments: vec![RustASTType::Identifier {
-                identifier: String::from("i64"),
-            }],
-            output: Box::new(RustASTType::Identifier {
-                identifier: String::from("f64"),
-            }),
-        };
+        let control = parse_quote!(impl Fn(i64) -> f64);
+
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 }
