@@ -1,7 +1,5 @@
 use crate::lir::item::node_file::NodeFile;
-use crate::rust_ast::file::File;
-use crate::rust_ast::item::Item;
-
+use syn::*;
 use self::import::rust_ast_from_lir as import_rust_ast_from_lir;
 use self::input::rust_ast_from_lir as input_rust_ast_from_lir;
 use self::state::rust_ast_from_lir as state_rust_ast_from_lir;
@@ -18,15 +16,17 @@ pub fn rust_ast_from_lir(node_file: NodeFile) -> File {
     let mut items = node_file
         .imports
         .into_iter()
-        .map(|import| Item::Import(import_rust_ast_from_lir(import)))
+        .map(|import| Item::Use(import_rust_ast_from_lir(import)))
         .collect::<Vec<_>>();
     let input_structure = input_rust_ast_from_lir(node_file.input);
     let (state_structure, state_implementation) = state_rust_ast_from_lir(node_file.state);
-    items.push(Item::Structure(input_structure));
-    items.push(Item::Structure(state_structure));
-    items.push(Item::Implementation(state_implementation));
+    items.push(Item::Struct(input_structure));
+    items.push(Item::Struct(state_structure));
+    items.push(Item::Impl(state_implementation));
     File {
-        path: format!("src/{}.rs", node_file.name),
+        // path: format!("src/{}.rs", node_file.name),
         items,
+        shebang: None,
+        attrs: Default::default(),
     }
 }
