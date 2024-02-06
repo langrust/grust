@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::ast::equation::Equation;
 use crate::ast::node::Node;
 use crate::common::scope::Scope;
-use crate::frontend::hir_from_ast::equation::hir_from_ast as equation_hir_from_ast;
+use crate::frontend::hir_from_ast::{equation::hir_from_ast as equation_hir_from_ast, contract::hir_from_ast as contract_hir_from_ast};
 use crate::hir::{node::Node as HIRNode, once_cell::OnceCell};
 
 /// Transform AST nodes into HIR nodes.
@@ -36,7 +36,7 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
             .map(|(signal, equation)| (signal, equation_hir_from_ast(equation, &signals_context)))
             .collect(),
         unitary_nodes: HashMap::new(),
-        contracts,
+        contracts: contract_hir_from_ast(contracts, &signals_context),
         location,
         graph: OnceCell::new(),
     }

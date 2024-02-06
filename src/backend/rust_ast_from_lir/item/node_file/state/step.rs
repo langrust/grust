@@ -1,29 +1,59 @@
-use crate::ast::expression;
-use crate::ast::term::{Contract, Term};
-use crate::backend::rust_ast_from_lir::expression::{binary_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir};
+use crate::common::{operator::BinaryOperator, scope::Scope};
+use crate::hir::signal::Signal;
+use crate::hir::term::{Contract, Term, TermKind};
+use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
-use syn::token::Impl;
-use syn::*;
-use proc_macro2::{Span, TokenStream};
+use crate::rust_ast::block::Block;
+use crate::rust_ast::expression::{Expression, FieldIdentifier};
+use crate::rust_ast::item::implementation::AssociatedItem;
+use crate::rust_ast::item::signature::{Receiver, Signature};
+use crate::rust_ast::r#type::Type as RustASTType;
+use crate::rust_ast::statement::Statement;
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::parse_quote;
 
 fn term_to_token_stream(term: Term) -> TokenStream {
     match term.kind {
-        crate::ast::term::TermKind::Binary { op, left, right } => {
+        TermKind::Binary { op, left, right } => {
             let ts_left = term_to_token_stream(*left);
             let ts_right = term_to_token_stream(*right);
-            let ts_op = binary_to_syn(op);
+            let ts_op = match op {
+                BinaryOperator::Mul => quote!(*),
+                BinaryOperator::Div => quote!(/),
+                BinaryOperator::Add => quote!(+),
+                BinaryOperator::Sub => quote!(-),
+                BinaryOperator::And => quote!(&&),
+                BinaryOperator::Or => quote!(||),
+                BinaryOperator::Eq => quote!(==),
+                BinaryOperator::Dif => quote!(!=),
+                BinaryOperator::Geq => quote!(>=),
+                BinaryOperator::Leq => quote!(<=),
+                BinaryOperator::Grt => quote!(>),
+                BinaryOperator::Low => quote!(<),
+            };
             quote!(#ts_left #ts_op #ts_right)
         }
-        crate::ast::term::TermKind::Constant { constant } => {
+        TermKind::Constant { constant } => {
             let s = format!("{constant}");
             s.parse().unwrap()
         }
-        crate::ast::term::TermKind::Variable { id } => quote!(#id),
+        TermKind::Variable { signal } => {
+            let Signal { id, scope } = signal;
+            let id = Ident::new(&id, Span::call_site());
+            match scope {
+                Scope::Input => {
+                    quote!(input.#id)
+                },
+                Scope::Memory => {
+                    quote!(self.#id)
+                },
+                Scope::Output | Scope::Local => quote!(#id),
+            }
+        },
     }
 }
 
