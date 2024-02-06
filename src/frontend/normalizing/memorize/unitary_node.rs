@@ -141,7 +141,7 @@ mod memorize {
         // node test(s: int, v: int) {
         //      out x: int = s + 0 fby v
         // }
-        let mut unitary_node = UnitaryNode {
+        let mut unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -222,7 +222,7 @@ mod memorize {
         graph.add_vertex(format!("mem_x"), Color::White);
         graph.add_edge(&format!("x"), format!("s"), 0);
         graph.add_edge(&format!("x"), format!("mem_x"), 0);
-        let control = UnitaryNode {
+        let control = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -353,7 +353,7 @@ mod memorize {
         //      x_2: int = my_node(s, x_1).o
         //      out x: int = x_2 + 1
         // }
-        let mut unitary_node = UnitaryNode {
+        let mut unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -383,7 +383,7 @@ mod memorize {
         graph.add_edge(&format!("x_2"), format!("s"), 0);
         graph.add_edge(&format!("x_2"), format!("x_1"), 0);
         graph.add_edge(&format!("x_1"), format!("v"), 0);
-        let control = UnitaryNode {
+        let control = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![

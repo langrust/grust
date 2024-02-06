@@ -13,7 +13,6 @@ pub fn run(inputs: Vec<test_o::TestOInput>) {
     #[invariant(1000i64 >= state.mem_z)]
     #[invariant(state.mem_z > 0i64)]
     for input in inputs {
-        let (new_state, _o) = state.step(input);
-        state = new_state;
+        let _o = state.step(input);
     }
 }

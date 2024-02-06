@@ -27,3 +27,9 @@ pub mod statement;
 
 /// LanGRust [Typedef](crate::ast::typedef::Typedef) AST module.
 pub mod typedef;
+
+/// LanGRust [Pattern](crate::ast::pattern::Pattern) AST module.
+pub mod pattern;
+
+/// ...
+pub mod term;

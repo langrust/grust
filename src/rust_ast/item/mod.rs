@@ -21,7 +21,7 @@ pub mod r#trait;
 pub mod type_alias;
 
 /// All items that can be defined in a module or a scope.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub enum Item {
     /// An enumeration definition: `enum Color { Blue, Yellow }`.
     Enumeration(Enumeration),
@@ -96,7 +96,7 @@ mod fmt {
 
     #[test]
     fn should_format_function_definition() {
-        let function = Item::Function(Function {
+        let function = Item::Function(Function {attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),
@@ -176,6 +176,7 @@ mod fmt {
                     },
                 },
                 AssociatedItem::AssociatedMethod {
+                    attributes: vec![],
                     signature: Signature {
                         public_visibility: false,
                         name: String::from("fmt"),

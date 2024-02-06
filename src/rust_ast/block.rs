@@ -1,7 +1,7 @@
 use crate::rust_ast::statement::Statement;
 
 /// A block of statements.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub struct Block {
     /// Statements of the block.
     pub statements: Vec<Statement>,

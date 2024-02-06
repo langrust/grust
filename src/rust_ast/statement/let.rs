@@ -1,7 +1,7 @@
 use crate::rust_ast::{expression::Expression, pattern::Pattern};
 
 /// A `let` binding: `let x: u64 = 5`.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub struct Let {
     /// The created pattern variables.
     pub pattern: Pattern,

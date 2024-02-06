@@ -1,3 +1,4 @@
+use crate::ast::term::Term;
 use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
@@ -9,9 +10,41 @@ use crate::rust_ast::item::implementation::AssociatedItem;
 use crate::rust_ast::item::signature::{Receiver, Signature};
 use crate::rust_ast::r#type::Type as RustASTType;
 use crate::rust_ast::statement::Statement;
+use proc_macro2::TokenStream;
+use quote::quote;
+
+fn term_to_token_stream(term: Term) -> TokenStream {
+    match term.kind {
+        crate::ast::term::TermKind::Binary { op, left, right } => {
+            let ts_left = term_to_token_stream(*left);
+            let ts_right = term_to_token_stream(*right);
+            let ts_op = match op {
+                crate::common::operator::BinaryOperator::Mul => quote!(*),
+                crate::common::operator::BinaryOperator::Div => quote!(/),
+                crate::common::operator::BinaryOperator::Add => quote!(+),
+                crate::common::operator::BinaryOperator::Sub => quote!(-),
+                crate::common::operator::BinaryOperator::And => quote!(&&),
+                crate::common::operator::BinaryOperator::Or => quote!(||),
+                crate::common::operator::BinaryOperator::Eq => quote!(==),
+                crate::common::operator::BinaryOperator::Dif => quote!(!=),
+                crate::common::operator::BinaryOperator::Geq => quote!(>=),
+                crate::common::operator::BinaryOperator::Leq => quote!(<=),
+                crate::common::operator::BinaryOperator::Grt => quote!(>),
+                crate::common::operator::BinaryOperator::Low => quote!(<),
+            };
+            quote!(#ts_left #ts_op #ts_right)
+        },
+        crate::ast::term::TermKind::Constant { constant } => {
+            let s = format!("{constant}");
+            s.parse().unwrap()
+        },
+        crate::ast::term::TermKind::Variable { id } => quote!(#id),
+    }
+}
 
 /// Transform LIR step into RustAST implementation method.
 pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
+    let attributes = todo!();
     let signature = Signature {
         public_visibility: true,
         name: String::from("step"),
@@ -62,7 +95,7 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
     statements.push(output_statement);
 
     let body = Block { statements };
-    AssociatedItem::AssociatedMethod { signature, body }
+    AssociatedItem::AssociatedMethod { attributes: todo!(), signature, body }
 }
 
 #[cfg(test)]
@@ -87,7 +120,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
-        let init = Step {
+        let init = Step { contracts: (vec![], vec![]),
             node_name: format!("Node"),
             output_type: Type::Integer,
             body: vec![
@@ -148,6 +181,7 @@ mod rust_ast_from_lir {
             },
         };
         let control = AssociatedItem::AssociatedMethod {
+            attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: format!("step"),

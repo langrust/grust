@@ -1,7 +1,9 @@
+use syn::Attribute;
+
 use crate::rust_ast::{block::Block, item::signature::Signature, r#type::Type};
 
 /// Rust trait or type implementation.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub struct Implementation {
     /// The optional trait that might is implemented.
     pub trait_name: Option<String>,
@@ -29,7 +31,7 @@ impl std::fmt::Display for Implementation {
 }
 
 /// Items that can be defined in an implementation.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub enum AssociatedItem {
     /// Associated type definition.
     AssociatedType {
@@ -40,6 +42,7 @@ pub enum AssociatedItem {
     },
     /// Associated method implementation.
     AssociatedMethod {
+        attributes: Vec<Attribute>,
         /// Method's signature.
         signature: Signature,
         /// Method's body.
@@ -53,7 +56,7 @@ impl std::fmt::Display for AssociatedItem {
             AssociatedItem::AssociatedType { name, r#type } => {
                 write!(f, "type {name} = {};", r#type)
             }
-            AssociatedItem::AssociatedMethod { signature, body } => {
+            AssociatedItem::AssociatedMethod { attributes, signature, body } => {
                 write!(f, "{signature} {body}")
             }
         }
@@ -89,6 +92,7 @@ mod fmt {
                     },
                 },
                 AssociatedItem::AssociatedMethod {
+                    attributes: vec![],
                     signature: Signature {
                         public_visibility: false,
                         name: String::from("fmt"),

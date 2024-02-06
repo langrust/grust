@@ -570,7 +570,7 @@ mod compute_dependencies {
     fn should_compute_dependencies_of_node_application_with_mapped_depth() {
         let mut errors = vec![];
 
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![

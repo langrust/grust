@@ -13,8 +13,8 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
         is_component,
         inputs,
         equations,
-        location,
-    } = node;
+        contracts,
+        location } = node;
 
     let signals_context = equations
         .iter()
@@ -35,6 +35,7 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
             .map(|(signal, equation)| (signal, equation_hir_from_ast(equation, &signals_context)))
             .collect(),
         unitary_nodes: HashMap::new(),
+        contracts,
         location,
         graph: OnceCell::new(),
     }
@@ -79,7 +80,7 @@ mod hir_from_ast {
             expression: ast_expression,
             location: Location::default(),
         };
-        let ast_node = Node {
+        let ast_node = Node { contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -88,7 +89,7 @@ mod hir_from_ast {
         };
         let hir_node = hir_from_ast(ast_node);
 
-        let control = HIRNode {
+        let control = HIRNode { contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -154,7 +155,7 @@ mod hir_from_ast {
             expression: ast_expression,
             location: Location::default(),
         };
-        let ast_node = Node {
+        let ast_node = Node { contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

@@ -20,7 +20,7 @@ use super::location::Location;
 /// - [BinaryOperator::Leq], "lower or equal" `<=`
 /// - [BinaryOperator::Grt], "greater" `>`
 /// - [BinaryOperator::Low], "lower" `<`
-#[derive(EnumIter, Debug, PartialEq, serde::Serialize)]
+#[derive(EnumIter, Debug, Clone, PartialEq, serde::Serialize)]
 pub enum BinaryOperator {
     /// Multiplication, `x * y`.
     Mul,

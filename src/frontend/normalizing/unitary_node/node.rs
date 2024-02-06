@@ -102,6 +102,7 @@ impl Node {
 
     fn add_unitary_node(&mut self, output: String) -> Graph<Color> {
         let Node {
+            contracts,
             id: node,
             inputs,
             unscheduled_equations,
@@ -132,6 +133,7 @@ impl Node {
 
         // construct unitary node
         let unitary_node = UnitaryNode {
+            contracts: contracts.clone(),
             node_id: node.clone(),
             output_id: output.clone(),
             inputs: unitary_node_inputs,
@@ -168,7 +170,7 @@ mod add_unitary_node {
 
     #[test]
     fn should_add_unitary_node_computing_output() {
-        let mut node = Node {
+        let mut node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -250,7 +252,7 @@ mod add_unitary_node {
 
         node.add_unitary_node(String::from("o1"));
 
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -290,7 +292,7 @@ mod add_unitary_node {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let control = Node {
+        let control = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -395,7 +397,7 @@ mod generate_unitary_nodes {
     fn should_generate_unitary_nodes_as_expected() {
         let mut errors = vec![];
 
-        let mut node = Node {
+        let mut node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -477,7 +479,7 @@ mod generate_unitary_nodes {
 
         node.generate_unitary_nodes(&mut errors).unwrap();
 
-        let unitary_node_1 = UnitaryNode {
+        let unitary_node_1 = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -517,7 +519,7 @@ mod generate_unitary_nodes {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let unitary_node_2 = UnitaryNode {
+        let unitary_node_2 = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("o2"),
             inputs: vec![(String::from("i2"), Type::Integer)],
@@ -540,7 +542,7 @@ mod generate_unitary_nodes {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let control = Node {
+        let control = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -630,7 +632,7 @@ mod generate_unitary_nodes {
     fn should_generate_unitary_nodes_for_every_output() {
         let mut errors = vec![];
 
-        let mut node = Node {
+        let mut node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -724,7 +726,7 @@ mod generate_unitary_nodes {
     fn should_raise_error_for_unused_signals() {
         let mut errors = vec![];
 
-        let mut node = Node {
+        let mut node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![

@@ -19,21 +19,18 @@ impl TestOState {
     #[requires(input.i2 > input.i1)]
     #[requires(1000i64 >= self.mem_z)]
     #[requires(self.mem_z > 0i64)]
-    #[ensures(1000i64 >= result.0.mem_z)]
-    #[ensures(result.0.mem_z > 0i64)]
-    #[ensures(input.i1 >= result.1)]
-    #[ensures(result.1 >= 0i64)]
-    pub fn step(self, input: TestOInput) -> (TestOState, i64) {
+    #[ensures(1000i64 >= (^self).mem_z)]
+    #[ensures((^self).mem_z > 0i64)]
+    #[ensures(input.i1 >= result)]
+    #[ensures(result >= 0i64)]
+    pub fn step(&mut self, input: TestOInput) -> i64 {
         let x = input.i2 - input.i1;
         let y = input.i1 / x;
         let z = self.mem_z;
         let o = y / z;
         let z_prime = z + x;
-        (
-            TestOState {
-                mem_z: if z_prime > 1000i64 { 1i64 } else { z_prime },
-            },
-            o,
-        )
+        self.mem_z = if z_prime > 1000i64 { 1i64 } else { z_prime };
+        
+        o
     }
 }
