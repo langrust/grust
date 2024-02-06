@@ -54,7 +54,7 @@ impl UnitaryNode {
                  ..
              }| {
                 for (to, weight) in expression.get_dependencies() {
-                    graph.add_edge(from, to.clone(), *weight)
+                    graph.add_weighted_edge(from, to.clone(), *weight)
                 }
             },
         );
@@ -82,8 +82,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
 
         // node test(s: int, v: int) {
@@ -180,9 +180,9 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("s"), Color::White);
         graph.add_vertex(format!("v"), Color::White);
-        graph.add_edge(&format!("x_1"), format!("s"), 0);
-        graph.add_edge(&format!("x_1"), format!("v"), 0);
-        graph.add_edge(&format!("x"), format!("x_1"), 0);
+        graph.add_weighted_edge(&format!("x_1"), format!("s"), 0);
+        graph.add_weighted_edge(&format!("x_1"), format!("v"), 0);
+        graph.add_weighted_edge(&format!("x"), format!("x_1"), 0);
         let equations = vec![
             Equation {
                 scope: Scope::Local,
@@ -286,8 +286,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
 
         // node test(v: int, g: int) {
@@ -373,9 +373,9 @@ mod normal_form {
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("g"), Color::White);
         graph.add_vertex(format!("v"), Color::White);
-        graph.add_edge(&format!("y"), format!("x"), 0);
-        graph.add_edge(&format!("y"), format!("v"), 0);
-        graph.add_edge(&format!("x"), format!("g"), 0);
+        graph.add_weighted_edge(&format!("y"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("y"), format!("v"), 0);
+        graph.add_weighted_edge(&format!("x"), format!("g"), 0);
         let equations = vec![
             Equation {
                 scope: Scope::Local,
@@ -468,8 +468,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
 
         // node test(v: int, g: int) {

@@ -438,8 +438,8 @@ mod into_signal_call {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         let mut identifier_creator = IdentifierCreator {
             signals: HashSet::new(),
@@ -475,8 +475,8 @@ mod into_signal_call {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         let mut identifier_creator = IdentifierCreator {
             signals: HashSet::from([String::from("x")]),
@@ -554,8 +554,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         // x: int = 1 + my_node(s, v*2).o;
         let mut identifier_creator = IdentifierCreator {
@@ -715,8 +715,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         // x: int = 1 + my_node(s, v*2).o;
         let mut identifier_creator = IdentifierCreator {
@@ -874,8 +874,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         // x: int = 1 + my_node(s, v*2).o;
         let mut identifier_creator = IdentifierCreator {

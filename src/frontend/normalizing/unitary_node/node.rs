@@ -245,9 +245,9 @@ mod add_unitary_node {
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("o1"), Color::Black);
         graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
+        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
 
         node.graph.set(graph).unwrap();
 
@@ -369,9 +369,9 @@ mod add_unitary_node {
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("o1"), Color::Black);
         graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
+        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
         control.graph.set(graph.clone()).unwrap();
 
         assert!(node.eq_unscheduled(&control))
@@ -475,9 +475,9 @@ mod generate_unitary_nodes {
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("o1"), Color::Black);
         graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
+        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
 
         node.graph.set(graph).unwrap();
 
@@ -626,9 +626,9 @@ mod generate_unitary_nodes {
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("o1"), Color::Black);
         graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
+        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
 
         control.graph.set(graph.clone()).unwrap();
 
@@ -714,9 +714,9 @@ mod generate_unitary_nodes {
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("o1"), Color::Black);
         graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_edge(&String::from("o2"), String::from("i2"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
+        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
 
         node.graph.set(graph).unwrap();
 
@@ -790,8 +790,8 @@ mod generate_unitary_nodes {
         graph.add_vertex(String::from("i2"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_edge(&String::from("o1"), String::from("i1"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
+        graph.add_weighted_edge(&String::from("o1"), String::from("i1"), 0);
 
         node.graph.set(graph).unwrap();
 

@@ -59,8 +59,8 @@ mod inline_when_needed {
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
         graph.add_vertex(String::from("j"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("j"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("i"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("j"), 1);
         let my_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -144,7 +144,7 @@ mod inline_when_needed {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("i"), 1);
         let other_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -297,9 +297,9 @@ mod inline_when_needed {
         graph.add_vertex(String::from("v"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
             contracts: Default::default(),
             id: String::from("test"),
@@ -444,9 +444,9 @@ mod inline_when_needed {
         unitary_graph.add_vertex(String::from("v"), Color::White);
         unitary_graph.add_vertex(String::from("x"), Color::White);
         unitary_graph.add_vertex(String::from("y"), Color::White);
-        unitary_graph.add_edge(&String::from("x"), String::from("v"), 0);
-        unitary_graph.add_edge(&String::from("x"), String::from("x"), 1);
-        unitary_graph.add_edge(&String::from("y"), String::from("x"), 0);
+        unitary_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        unitary_graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
+        unitary_graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
 
         // node test(v: int) {
         //     x: int = v*2 + 0 fby x
@@ -491,8 +491,8 @@ mod inline_when_needed {
         graph.add_vertex(format!("i"), Color::White);
         graph.add_vertex(format!("j"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("i"), 0);
-        graph.add_edge(&format!("o"), format!("j"), 1);
+        graph.add_weighted_edge(&format!("o"), format!("i"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("j"), 1);
         let my_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -576,7 +576,7 @@ mod inline_when_needed {
         let mut graph = Graph::new();
         graph.add_vertex(format!("i"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("i"), 1);
+        graph.add_weighted_edge(&format!("o"), format!("i"), 1);
         let other_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -745,9 +745,9 @@ mod inline_when_needed {
         graph.add_vertex(String::from("v"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
             contracts: Default::default(),
             id: String::from("test"),
@@ -922,10 +922,10 @@ mod inline_when_needed {
         unitary_graph.add_vertex(String::from("x"), Color::White);
         unitary_graph.add_vertex(String::from("y"), Color::White);
         unitary_graph.add_vertex(String::from("o"), Color::White);
-        unitary_graph.add_edge(&String::from("x"), String::from("o"), 0);
-        unitary_graph.add_edge(&String::from("o"), String::from("v"), 0);
-        unitary_graph.add_edge(&String::from("o"), String::from("x"), 1);
-        unitary_graph.add_edge(&String::from("y"), String::from("x"), 0);
+        unitary_graph.add_weighted_edge(&String::from("x"), String::from("o"), 0);
+        unitary_graph.add_weighted_edge(&String::from("o"), String::from("v"), 0);
+        unitary_graph.add_weighted_edge(&String::from("o"), String::from("x"), 1);
+        unitary_graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
 
         // node test(v: int) {
         //     o: int = v*2 + 0 fby x
@@ -970,8 +970,8 @@ mod inline_when_needed {
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
         graph.add_vertex(String::from("j"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("j"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("i"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("j"), 1);
         let my_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -1060,7 +1060,7 @@ mod inline_when_needed {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("i"), 1);
         let other_node_equation = Equation {
             scope: Scope::Output,
             id: String::from("o"),
@@ -1213,9 +1213,9 @@ mod inline_when_needed {
         graph.add_vertex(String::from("v"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
             contracts: Default::default(),
             id: String::from("test"),
@@ -1377,10 +1377,10 @@ mod inline_when_needed {
         unitary_graph.add_vertex(String::from("x"), Color::White);
         unitary_graph.add_vertex(String::from("y"), Color::White);
         unitary_graph.add_vertex(String::from("o_1"), Color::White);
-        unitary_graph.add_edge(&String::from("x"), String::from("v"), 0);
-        unitary_graph.add_edge(&String::from("x"), String::from("o_1"), 0);
-        unitary_graph.add_edge(&String::from("o_1"), String::from("x"), 1);
-        unitary_graph.add_edge(&String::from("y"), String::from("x"), 0);
+        unitary_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        unitary_graph.add_weighted_edge(&String::from("x"), String::from("o_1"), 0);
+        unitary_graph.add_weighted_edge(&String::from("o_1"), String::from("x"), 1);
+        unitary_graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
 
         // node test(v: int) {
         //     o_1: int = 0 fby x

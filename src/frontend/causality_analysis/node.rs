@@ -126,8 +126,8 @@ mod causal {
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         node.graph.set(graph).unwrap();
 
         let mut errors = vec![];
@@ -193,8 +193,8 @@ mod causal {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         node.graph.set(graph).unwrap();
 
         let mut errors = vec![];
@@ -255,8 +255,8 @@ mod causal {
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("o"), 0);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         node.graph.set(graph).unwrap();
 
         let mut errors = vec![];

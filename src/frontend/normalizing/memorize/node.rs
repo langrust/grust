@@ -204,8 +204,8 @@ mod memorize {
         graph.add_vertex(format!("s"), Color::White);
         graph.add_vertex(format!("v"), Color::White);
         graph.add_vertex(format!("mem_x"), Color::White);
-        graph.add_edge(&format!("x"), format!("s"), 0);
-        graph.add_edge(&format!("x"), format!("mem_x"), 0);
+        graph.add_weighted_edge(&format!("x"), format!("s"), 0);
+        graph.add_weighted_edge(&format!("x"), format!("mem_x"), 0);
         let control = Node {
             contracts: Default::default(),
             id: String::from("test"),
@@ -397,10 +397,10 @@ mod memorize {
         graph.add_vertex(format!("s"), Color::White);
         graph.add_vertex(format!("v"), Color::White);
         graph.add_vertex(format!("x"), Color::White);
-        graph.add_edge(&format!("x"), format!("x_2"), 0);
-        graph.add_edge(&format!("x_2"), format!("s"), 0);
-        graph.add_edge(&format!("x_2"), format!("x_1"), 0);
-        graph.add_edge(&format!("x_1"), format!("v"), 0);
+        graph.add_weighted_edge(&format!("x"), format!("x_2"), 0);
+        graph.add_weighted_edge(&format!("x_2"), format!("s"), 0);
+        graph.add_weighted_edge(&format!("x_2"), format!("x_1"), 0);
+        graph.add_weighted_edge(&format!("x_1"), format!("v"), 0);
         let control = Node {
             contracts: Default::default(),
             id: String::from("test"),

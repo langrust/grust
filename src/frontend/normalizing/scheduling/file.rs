@@ -194,10 +194,10 @@ mod schedule {
         graph.add_vertex(String::from("y"), Color::Black);
         graph.add_vertex(String::from("o_1"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("y"), String::from("x"), 0);
-        graph.add_edge(&String::from("o_1"), String::from("x"), 1);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("o_1"), 0);
+        graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("o_1"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o_1"), 0);
         unitary_node.graph.set(graph.clone()).unwrap();
         let node = Node {
             contracts: Default::default(),
@@ -393,10 +393,10 @@ mod schedule {
         graph.add_vertex(String::from("y"), Color::Black);
         graph.add_vertex(String::from("o_1"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("y"), String::from("x"), 0);
-        graph.add_edge(&String::from("o_1"), String::from("x"), 1);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("o_1"), 0);
+        graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("o_1"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o_1"), 0);
         unitary_node.graph.set(graph.clone()).unwrap();
 
         let node = Node {

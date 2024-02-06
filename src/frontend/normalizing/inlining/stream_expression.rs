@@ -1840,8 +1840,8 @@ mod inline_when_needed {
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
         graph.add_vertex(String::from("j"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("j"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("i"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("j"), 1);
         my_node.graph.set(graph).unwrap();
         nodes.insert(String::from("my_node"), my_node);
 
@@ -1897,7 +1897,7 @@ mod inline_when_needed {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("o"), String::from("i"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("i"), 1);
         other_node.graph.set(graph).unwrap();
         nodes.insert(String::from("other_node"), other_node);
 
@@ -2052,9 +2052,9 @@ mod inline_when_needed {
         graph.add_vertex(String::from("v"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_edge(&String::from("y"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
+        graph.add_weighted_edge(&String::from("y"), String::from("x"), 1);
         node.graph.set(graph.clone()).unwrap();
         nodes.insert(String::from("test"), node.clone());
 

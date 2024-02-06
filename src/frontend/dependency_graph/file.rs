@@ -181,8 +181,8 @@ mod generate_dependency_graphs {
         control.add_vertex(String::from("o"), Color::Black);
         control.add_vertex(String::from("x"), Color::Black);
         control.add_vertex(String::from("i"), Color::Black);
-        control.add_edge(&String::from("x"), String::from("i"), 0);
-        control.add_edge(&String::from("o"), String::from("x"), 0);
+        control.add_weighted_edge(&String::from("x"), String::from("i"), 0);
+        control.add_weighted_edge(&String::from("o"), String::from("x"), 0);
 
         assert_eq!(*graph, control);
     }
