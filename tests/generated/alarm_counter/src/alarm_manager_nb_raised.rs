@@ -1,5 +1,5 @@
 pub struct AlarmManagerNbRaisedInput {
-    pub alarms: [Alarm; 10],
+    pub alarms: [Alarm; 10usize],
 }
 pub struct AlarmManagerNbRaisedState {}
 impl AlarmManagerNbRaisedState {

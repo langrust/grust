@@ -34,7 +34,21 @@ impl PidUState {
             k_i: 1.5f64,
             k_d: 6f64,
         };
-        let u = access_k_p(gain) * e + access_k_i(gain) * e_i + access_k_d(gain) * e_d;
+        let u = Expr::FunctionCall(
+            parse_quote! {
+                access_k_p(gain)
+            },
+        ) * e
+            + Expr::FunctionCall(
+                parse_quote! {
+                    access_k_i(gain)
+                },
+            ) * e_i
+            + Expr::FunctionCall(
+                parse_quote! {
+                    access_k_d(gain)
+                },
+            ) * e_d;
         u
     }
 }
