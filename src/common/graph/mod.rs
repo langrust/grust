@@ -13,7 +13,7 @@ pub mod color;
 use std::collections::HashMap;
 
 use crate::common::{
-    graph::{color::Color, vertex::Vertex},
+    graph::{color::Color, vertex::Vertex, neighbor::Label},
     serialize::ordered_map,
 };
 
@@ -68,19 +68,34 @@ where
         self.get_vertex_mut(id).set_value(value)
     }
 
-    /// Add edge between existing vertices to the graph.
-    pub fn add_edge(&mut self, from: &String, to: String, weight: usize) {
+    /// Add weighted edge between existing vertices to the graph.
+    pub fn add_weighted_edge(&mut self, from: &String, to: String, weight: usize) {
         if !(self.has_vertex(from) && self.has_vertex(&to)) {
             panic!("vertices '{from}' or '{to}' do not exist")
         }
-        if !self.has_edge(from, &to, &weight) {
-            self.get_vertex_mut(from).add_neighbor(to, weight)
+        if !self.has_weighted_edge(from, &to, &weight) {
+            self.get_vertex_mut(from).add_neighbor(to, Label::Weight(weight))
         }
     }
 
+    /// Add edge between existing vertices to the graph.
+    pub fn add_edge(&mut self, from: &String, to: String, label: Label) {
+        if !(self.has_vertex(from) && self.has_vertex(&to)) {
+            panic!("vertices '{from}' or '{to}' do not exist")
+        }
+        if !self.has_edge(from, &to, &label) {
+            self.get_vertex_mut(from).add_neighbor(to, label)
+        }
+    }
+
+    /// Tells if weighted edge already exist with this weight.
+    pub fn has_weighted_edge(&self, from: &String, to: &String, weight: &usize) -> bool {
+        self.has_vertex(from) && self.get_vertex(from).has_neighbor_label(to, &Label::Weight(*weight))
+    }
+
     /// Tells if edge already exist with this weight.
-    pub fn has_edge(&self, from: &String, to: &String, weight: &usize) -> bool {
-        self.has_vertex(from) && self.get_vertex(from).has_neighbor_weight(to, weight)
+    pub fn has_edge(&self, from: &String, to: &String, label: &Label) -> bool {
+        self.has_vertex(from) && self.get_vertex(from).has_neighbor_label(to, label)
     }
 
     /// Get vertices' ids sorted by key.
@@ -91,14 +106,17 @@ where
     }
 
     /// Get edges as pairs of ids.
-    pub fn get_edges(&self) -> Vec<(String, String, usize)> {
+    pub fn get_weighted_edges(&self) -> Vec<(String, String, usize)> {
         self.vertices
             .values()
             .flat_map(|vertex| {
                 vertex
                     .neighbors
                     .iter()
-                    .map(|neighbor| (vertex.id.clone(), neighbor.id.clone(), neighbor.weight))
+                    .map(|neighbor| match neighbor.label {
+                        Label::Contract => todo!(),
+                        Label::Weight(weight) => (vertex.id.clone(), neighbor.id.clone(), weight),
+                    })
                     .collect::<Vec<(String, String, usize)>>()
             })
             .collect::<Vec<(String, String, usize)>>()
@@ -130,9 +148,9 @@ where
     {
         let mut subgraph = self.no_edges_graph();
 
-        for (from, to, weight) in self.get_edges() {
+        for (from, to, weight) in self.get_weighted_edges() {
             if predicate(weight) {
-                subgraph.add_edge(&from, to, weight)
+                subgraph.add_weighted_edge(&from, to, weight)
             }
         }
 
@@ -238,12 +256,12 @@ impl Graph<Color> {
             vertex.get_neighbors().iter().for_each(
                 |Neighbor {
                      id: neighbor,
-                     weight,
+                     label,
                  }| {
                     // visit vertex successors
                     self.subgraph_from_vertex_visit(neighbor, subgraph);
                     // add edge
-                    subgraph.add_edge(id, neighbor.clone(), *weight)
+                    subgraph.add_edge(id, neighbor.clone(), label.clone())
                 },
             );
 
@@ -465,21 +483,21 @@ mod set_vertex_value {
 }
 
 #[cfg(test)]
-mod add_edge {
+mod add_weighted_edge {
     use std::collections::HashMap;
 
-    use crate::common::graph::{vertex::Vertex, Graph};
+    use crate::common::graph::{vertex::Vertex, Graph, neighbor::Label};
 
     #[test]
-    fn should_add_edge_between_existing_vertices() {
+    fn should_add_weighted_edge_between_existing_vertices() {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
 
         let mut v1 = Vertex::new(String::from("v1"), 1);
         let v2 = Vertex::new(String::from("v2"), 2);
-        v1.add_neighbor(v2.id.clone(), 3);
+        v1.add_neighbor(v2.id.clone(), Label::Weight(3));
         let control = Graph {
             vertices: HashMap::from([(String::from("v1"), v1), (String::from("v2"), v2)]),
         };
@@ -493,7 +511,7 @@ mod add_edge {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v1"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
     }
 }
 
@@ -506,8 +524,8 @@ mod has_edge {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
-        assert!(graph.has_edge(&String::from("v1"), &String::from("v2"), &3))
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
+        assert!(graph.has_weighted_edge(&String::from("v1"), &String::from("v2"), &3))
     }
 
     #[test]
@@ -515,14 +533,14 @@ mod has_edge {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
-        assert!(!graph.has_edge(&String::from("v1"), &String::from("v2"), &2))
+        assert!(!graph.has_weighted_edge(&String::from("v1"), &String::from("v2"), &2))
     }
 
     #[test]
     fn should_not_panic_when_vertices_not_in_graph() {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v2"), 2);
-        assert!(!graph.has_edge(&String::from("v1"), &String::from("v2"), &2))
+        assert!(!graph.has_weighted_edge(&String::from("v1"), &String::from("v2"), &2))
     }
 }
 
@@ -535,7 +553,7 @@ mod get_vertices {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
 
         let mut vertices = graph.get_vertices();
         vertices.sort_unstable();
@@ -551,7 +569,7 @@ mod get_vertices {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
 
         let vertices = graph.get_vertices();
 
@@ -564,7 +582,7 @@ mod get_vertices {
 }
 
 #[cfg(test)]
-mod get_edges {
+mod get_weighted_edges {
     use crate::common::graph::Graph;
 
     #[test]
@@ -573,11 +591,11 @@ mod get_edges {
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
         graph.add_vertex(String::from("v3"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 3);
 
-        let mut edges = graph.get_edges();
+        let mut edges = graph.get_weighted_edges();
         edges.sort_unstable();
 
         let mut control = vec![
@@ -600,8 +618,8 @@ mod get_weights {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
 
         let mut weights = graph.get_weights(&String::from("v1"), &String::from("v2"));
         weights.sort_unstable();
@@ -616,8 +634,8 @@ mod get_weights {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
 
         let control = vec![];
 
@@ -638,9 +656,9 @@ mod no_edges_graph {
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
         graph.add_vertex(String::from("v3"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 3);
 
         let subgraph = graph.no_edges_graph();
 
@@ -658,13 +676,13 @@ mod no_edges_graph {
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
         graph.add_vertex(String::from("v3"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 3);
 
         let subgraph = graph.no_edges_graph();
 
-        assert!(subgraph.get_edges().is_empty());
+        assert!(subgraph.get_weighted_edges().is_empty());
     }
 }
 
@@ -678,9 +696,9 @@ mod subgraph_on_edges {
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
         graph.add_vertex(String::from("v3"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 3);
 
         let subgraph = graph.subgraph_on_edges(|weight| weight == 0);
 
@@ -698,17 +716,17 @@ mod subgraph_on_edges {
         graph.add_vertex(String::from("v1"), 1);
         graph.add_vertex(String::from("v2"), 2);
         graph.add_vertex(String::from("v3"), 2);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 3);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 3);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 3);
 
         let subgraph = graph.subgraph_on_edges(|weight| weight == 0);
 
-        let mut subgraph_edges = subgraph.get_edges();
+        let mut subgraph_edges = subgraph.get_weighted_edges();
         subgraph_edges.sort_unstable();
 
         let mut control = graph
-            .get_edges()
+            .get_weighted_edges()
             .into_iter()
             .filter(|(_, _, weight)| *weight == 0)
             .collect::<Vec<(String, String, usize)>>();
@@ -729,14 +747,14 @@ mod topological_sorting {
         graph.add_vertex(String::from("v2"), Color::Black);
         graph.add_vertex(String::from("v3"), Color::Black);
         graph.add_vertex(String::from("v4"), Color::Black);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v3"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v3"), String::from("v2"), 0);
 
         let schedule = graph.topological_sorting().unwrap();
 
-        for (v1, v2, _) in graph.get_edges() {
+        for (v1, v2, _) in graph.get_weighted_edges() {
             assert!(
                 schedule.iter().position(|id| id.eq(&v1)).unwrap()
                     >= schedule.iter().position(|id| id.eq(&v2)).unwrap()
@@ -751,10 +769,10 @@ mod topological_sorting {
         graph.add_vertex(String::from("v2"), Color::Black);
         graph.add_vertex(String::from("v3"), Color::Black);
         graph.add_vertex(String::from("v4"), Color::Black);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v3"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v3"), String::from("v2"), 0);
 
         let schedule = graph.topological_sorting().unwrap();
 
@@ -779,10 +797,10 @@ mod subgraph_from_vertex {
         graph.add_vertex(String::from("v2"), Color::Black);
         graph.add_vertex(String::from("v3"), Color::Black);
         graph.add_vertex(String::from("v4"), Color::Black);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 1);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v3"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 1);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v3"), String::from("v2"), 0);
 
         let subgraph = graph.subgraph_from_vertex(&String::from("v1"));
 
@@ -790,10 +808,10 @@ mod subgraph_from_vertex {
         control.add_vertex(String::from("v1"), Color::White);
         control.add_vertex(String::from("v2"), Color::White);
         control.add_vertex(String::from("v3"), Color::White);
-        control.add_edge(&String::from("v1"), String::from("v2"), 0);
-        control.add_edge(&String::from("v1"), String::from("v2"), 1);
-        control.add_edge(&String::from("v1"), String::from("v3"), 0);
-        control.add_edge(&String::from("v3"), String::from("v2"), 0);
+        control.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        control.add_weighted_edge(&String::from("v1"), String::from("v2"), 1);
+        control.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        control.add_weighted_edge(&String::from("v3"), String::from("v2"), 0);
 
         assert_eq!(subgraph, control)
     }
@@ -810,10 +828,10 @@ mod forgotten_vertices {
         graph.add_vertex(String::from("v2"), Color::Black);
         graph.add_vertex(String::from("v3"), Color::Black);
         graph.add_vertex(String::from("v4"), Color::Black);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 1);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v3"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 1);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v3"), String::from("v2"), 0);
 
         let subgraph1 = graph.subgraph_from_vertex(&String::from("v1"));
         let subgraph2 = graph.subgraph_from_vertex(&String::from("v2"));
@@ -836,10 +854,10 @@ mod is_loop {
         graph.add_vertex(String::from("v2"), Color::Black);
         graph.add_vertex(String::from("v3"), Color::Black);
         graph.add_vertex(String::from("v4"), Color::Black);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
-        graph.add_edge(&String::from("v2"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v3"), String::from("v1"), 1);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v2"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v3"), String::from("v1"), 1);
 
         assert!(graph.is_loop(&String::from("v1")))
     }
@@ -851,10 +869,10 @@ mod is_loop {
         graph.add_vertex(String::from("v2"), Color::Black);
         graph.add_vertex(String::from("v3"), Color::Black);
         graph.add_vertex(String::from("v4"), Color::Black);
-        graph.add_edge(&String::from("v1"), String::from("v2"), 0);
-        graph.add_edge(&String::from("v2"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v1"), String::from("v3"), 0);
-        graph.add_edge(&String::from("v3"), String::from("v2"), 1);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v2"), 0);
+        graph.add_weighted_edge(&String::from("v2"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
+        graph.add_weighted_edge(&String::from("v3"), String::from("v2"), 1);
 
         assert!(!graph.is_loop(&String::from("v1")))
     }

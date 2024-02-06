@@ -1,4 +1,4 @@
-use crate::common::graph::neighbor::Neighbor;
+use crate::common::graph::neighbor::{Neighbor, Label};
 
 /// Vertex structure for graph.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -27,27 +27,27 @@ impl<T> Vertex<T> {
     }
 
     /// Add a neighbor to the vertex.
-    pub fn add_neighbor(&mut self, id: String, weight: usize) {
-        if !self.has_neighbor_weight(&id, &weight) {
-            self.neighbors.push(Neighbor::new(id, weight))
+    pub fn add_neighbor(&mut self, id: String, label: Label) {
+        if !self.has_neighbor_label(&id, &label) {
+            self.neighbors.push(Neighbor::new(id, label))
         }
     }
 
-    /// Tells if the neighbor is already known with this weight.
-    pub fn has_neighbor_weight(&self, id: &String, weight: &usize) -> bool {
+    /// Tells if the neighbor is already known with this label.
+    pub fn has_neighbor_label(&self, id: &String, label: &Label) -> bool {
         for Neighbor {
             id: other_id,
-            weight: other_weight,
+            label: other_label,
         } in &self.neighbors
         {
-            if other_id.eq(id) && other_weight.eq(weight) {
+            if other_id.eq(id) && other_label.eq(label) {
                 return true;
             }
         }
         false
     }
 
-    /// Tells if the neighbor is already known with any weight.
+    /// Tells if the neighbor is already known with any label.
     pub fn has_neighbor(&self, id: &String) -> bool {
         for Neighbor { id: other_id, .. } in &self.neighbors {
             if other_id.eq(id) {
@@ -77,7 +77,10 @@ impl<T> Vertex<T> {
         self.neighbors
             .iter()
             .filter(|Neighbor { id, .. }| id == vertex_id)
-            .map(|Neighbor { weight, .. }| *weight)
+            .map(|Neighbor { label, .. }| match label {
+                Label::Contract => todo!(),
+                Label::Weight(weight) => *weight,
+            })
             .collect()
     }
 }
@@ -101,19 +104,17 @@ mod new {
 
 #[cfg(test)]
 mod add_neighbor {
-    use crate::common::graph::vertex::Neighbor;
-
-    use crate::common::graph::vertex::Vertex;
+    use crate::common::graph::{vertex::Vertex, neighbor::{Neighbor, Label}};
 
     #[test]
     fn should_add_neighbor_to_vertex() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 2);
+        vertex.add_neighbor(String::from("v2"), Label::Weight(2));
 
         let control = Vertex {
             id: String::from("v1"),
             value: 1,
-            neighbors: vec![Neighbor::new(String::from("v2"), 2)],
+            neighbors: vec![Neighbor::new(String::from("v2"), Label::Weight(2))],
         };
 
         assert_eq!(vertex, control)
@@ -122,13 +123,13 @@ mod add_neighbor {
     #[test]
     fn should_not_duplicate_neighbors() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 2);
-        vertex.add_neighbor(String::from("v2"), 2);
+        vertex.add_neighbor(String::from("v2"), Label::Weight(2));
+        vertex.add_neighbor(String::from("v2"), Label::Weight(2));
 
         let control = Vertex {
             id: String::from("v1"),
             value: 1,
-            neighbors: vec![Neighbor::new(String::from("v2"), 2)],
+            neighbors: vec![Neighbor::new(String::from("v2"), Label::Weight(2))],
         };
 
         assert_eq!(vertex, control)
@@ -136,39 +137,39 @@ mod add_neighbor {
 }
 
 #[cfg(test)]
-mod has_neighbor_weight {
-    use crate::common::graph::vertex::Vertex;
+mod has_neighbor_label {
+    use crate::common::graph::{vertex::Vertex, neighbor::Label};
 
     #[test]
     fn should_tell_when_vertex_has_neighbor() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 2);
-        assert!(vertex.has_neighbor_weight(&String::from("v2"), &2))
+        vertex.add_neighbor(String::from("v2"), Label::Weight(2));
+        assert!(vertex.has_neighbor_label(&String::from("v2"), &Label::Weight(2)))
     }
 
     #[test]
     fn should_tell_when_vertex_does_not_have_neighbor() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 2);
-        assert!(!vertex.has_neighbor_weight(&String::from("v3"), &2))
+        vertex.add_neighbor(String::from("v2"), Label::Weight(2));
+        assert!(!vertex.has_neighbor_label(&String::from("v3"), &Label::Weight(2)))
     }
 }
 
 #[cfg(test)]
 mod has_neighbor {
-    use crate::common::graph::vertex::Vertex;
+    use crate::common::graph::{vertex::Vertex, neighbor::Label};
 
     #[test]
     fn should_tell_when_vertex_has_neighbor() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 2);
+        vertex.add_neighbor(String::from("v2"), Label::Weight(2));
         assert!(vertex.has_neighbor(&String::from("v2")))
     }
 
     #[test]
     fn should_tell_when_vertex_does_not_have_neighbor() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 2);
+        vertex.add_neighbor(String::from("v2"), Label::Weight(2));
         assert!(!vertex.has_neighbor(&String::from("v3")))
     }
 }
@@ -199,16 +200,16 @@ mod get_value {
 
 #[cfg(test)]
 mod get_neighbors {
-    use crate::common::graph::{neighbor::Neighbor, vertex::Vertex};
+    use crate::common::graph::{neighbor::{Neighbor, Label}, vertex::Vertex};
 
     #[test]
     fn should_get_vertex_neighbors() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 1);
-        vertex.add_neighbor(String::from("v3"), 1);
+        vertex.add_neighbor(String::from("v2"), Label::Weight(1));
+        vertex.add_neighbor(String::from("v3"), Label::Weight(1));
 
-        let neighbor1 = Neighbor::new(String::from("v2"), 1);
-        let neighbor2 = Neighbor::new(String::from("v3"), 1);
+        let neighbor1 = Neighbor::new(String::from("v2"), Label::Weight(1));
+        let neighbor2 = Neighbor::new(String::from("v3"), Label::Weight(1));
 
         let control = vec![neighbor1, neighbor2];
 
@@ -218,13 +219,13 @@ mod get_neighbors {
 
 #[cfg(test)]
 mod get_weights {
-    use crate::common::graph::vertex::Vertex;
+    use crate::common::graph::{vertex::Vertex, neighbor::Label};
 
     #[test]
     fn should_get_vertex_neighbor_weights_when_exists() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 1);
-        vertex.add_neighbor(String::from("v2"), 3);
+        vertex.add_neighbor(String::from("v2"), Label::Weight(1));
+        vertex.add_neighbor(String::from("v2"), Label::Weight(3));
 
         let mut weights = vertex.get_weights(&String::from("v2"));
         weights.sort_unstable();
@@ -237,7 +238,7 @@ mod get_weights {
     #[test]
     fn should_return_empty_vector_when_neighbor_does_not_exist() {
         let mut vertex = Vertex::new(String::from("v1"), 1);
-        vertex.add_neighbor(String::from("v2"), 1);
+        vertex.add_neighbor(String::from("v2"), Label::Weight(1));
 
         let control = vec![];
 

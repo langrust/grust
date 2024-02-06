@@ -157,7 +157,7 @@ impl Node {
                         // s = e depends on s' <=> s -> s'
                         dependencies
                             .iter()
-                            .for_each(|(id, depth)| graph.add_edge(signal, id.clone(), *depth));
+                            .for_each(|(id, depth)| graph.add_weighted_edge(signal, id.clone(), *depth));
 
                         Ok(())
                     })?;
