@@ -3,6 +3,7 @@ use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_fr
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::{State, StateElement};
+use quote::format_ident;
 use syn::*;
 /// RustAST init method construction from LIR init.
 pub mod init;
@@ -16,6 +17,7 @@ pub fn rust_ast_from_lir(state: State) -> (ItemStruct, ItemImpl) {
         .into_iter()
         .map(|element| match element {
             StateElement::Buffer { identifier, r#type } => {
+                let identifier = format_ident!("{identifier}");
                 let ty = type_rust_ast_from_lir(r#type);
                 parse_quote! { #identifier : #ty }
             }
@@ -23,14 +25,15 @@ pub fn rust_ast_from_lir(state: State) -> (ItemStruct, ItemImpl) {
                 identifier,
                 node_name,
             } => {
-                let name = camel_case(&format!("{}State", node_name));
-
+                let name = format_ident!("{}", camel_case(&format!("{}State", node_name)));
+                let identifier = format_ident!("{identifier}");
+ 
                 parse_quote! { #identifier : #name }
             }
         })
         .collect();
 
-    let name = camel_case(&format!("{}State", state.node_name));
+    let name = format_ident!("{}", camel_case(&format!("{}State", state.node_name)));
     let structure = parse_quote!(
         pub struct #name { #(#fields),* }
     );
