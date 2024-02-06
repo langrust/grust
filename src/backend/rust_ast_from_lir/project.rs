@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use crate::{
     backend::rust_ast_from_lir::item::{
@@ -9,61 +9,89 @@ use crate::{
         structure::rust_ast_from_lir as structure_rust_ast_from_lir,
     },
     lir::{item::Item, project::Project},
-    rust_ast::{
-        file::File,
-        item::{import::Import, Item as RustASTItem},
-        project::Project as RustASTProject,
-    },
 };
+use proc_macro2::Span;
+use syn::*;
+
+struct RustASTProject {
+    files: HashMap<String, File>,
+}
+impl RustASTProject {
+    fn new() -> Self {
+        RustASTProject {
+            files: Default::default(),
+        }
+    }
+
+    fn add_file(&mut self, path: &str, file: File) {
+        self.files.insert(path.to_owned(), file);
+    }
+}
 
 /// Transform LIR item into RustAST item.
 pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
     let mut rust_ast_project = RustASTProject::new();
 
-    let mut function_file = File::new("src/functions.rs".to_string());
-    let mut typedefs_file = File::new("src/typedefs.rs".to_string());
+    let mut function_file = File {
+        shebang: None,
+        items: Default::default(),
+        attrs: vec![],
+    };
+    let mut typedefs_file = File {
+        shebang: None,
+        items: Default::default(),
+        attrs: vec![],
+    };
 
     project.items.into_iter().for_each(|item| match item {
         Item::NodeFile(node_file) => {
-            let rust_ast_node_file = node_file_rust_ast_from_lir(node_file);
-            rust_ast_project.add_file(rust_ast_node_file)
+            let (path, rust_ast_node_file) = node_file_rust_ast_from_lir(node_file);
+            rust_ast_project.add_file(&path, rust_ast_node_file)
         }
         Item::Function(function) => {
             let rust_ast_function = function_rust_ast_from_lir(function);
-            function_file.add_item(RustASTItem::Function(rust_ast_function))
+            function_file.items.push(syn::Item::Fn(rust_ast_function))
         }
         Item::Enumeration(enumeration) => {
             let rust_ast_enumeration = enumeration_rust_ast_from_lir(enumeration);
-            typedefs_file.add_item(RustASTItem::Enumeration(rust_ast_enumeration))
+            typedefs_file
+                .items
+                .push(syn::Item::Enum(rust_ast_enumeration))
         }
         Item::Structure(structure) => {
             let rust_ast_structure = structure_rust_ast_from_lir(structure);
-            typedefs_file.add_item(RustASTItem::Structure(rust_ast_structure))
+            typedefs_file
+                .items
+                .push(syn::Item::Struct(rust_ast_structure))
         }
         Item::ArrayAlias(array_alias) => {
             let rust_ast_array_alias = array_alias_rust_ast_from_lir(array_alias);
-            typedefs_file.add_item(RustASTItem::TypeAlias(rust_ast_array_alias))
+            typedefs_file
+                .items
+                .push(syn::Item::Type(rust_ast_array_alias))
         }
     });
 
-    rust_ast_project.add_file(function_file);
-    rust_ast_project.add_file(typedefs_file);
+    rust_ast_project.add_file("src/functions.rs", function_file);
+    rust_ast_project.add_file("src/typedefs.rs", typedefs_file);
 
-    let mut lib_file = File::new("src/lib.rs".to_string());
-    rust_ast_project.files.iter().for_each(|file| {
-        let module_name = Path::new(&file.path)
+    let mut lib_file = File {
+        shebang: None,
+        items: Default::default(),
+        attrs: vec![],
+    };
+    rust_ast_project.files.iter().for_each(|(path, file)| {
+        let module_name = Path::new(&path)
             .file_stem()
             .unwrap()
             .to_str()
             .unwrap()
             .to_string();
-        let module_import = Import::Module {
-            public_visibility: true,
-            name: module_name,
-        };
-        lib_file.add_item(RustASTItem::Import(module_import))
+        let module_ident = Ident::new(&module_name, Span::call_site());
+        let module_import = parse_quote! { use #module_ident; };
+        lib_file.items.push(syn::Item::Use(module_import))
     });
-    rust_ast_project.add_file(lib_file);
+    rust_ast_project.add_file("src/lib.rs", lib_file);
 
     rust_ast_project
 }

@@ -105,7 +105,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
             input_fields,
         } => {
             let id = Ident::new(&node_identifier, Span::call_site());
-            let receiver = parse_quote! { self . #id};
+            let receiver : ExprField = parse_quote! { self . #id};
             let input_fields: Vec<FieldValue> = input_fields
                 .into_iter()
                 .map(|(name, expression)| {
@@ -116,7 +116,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
                 .collect();
 
             let input_name = Ident::new(&input_name, Span::call_site());
-            let argument = parse_quote! { struct #input_name { #(#input_fields),* }};
+            let argument : ExprStruct = parse_quote! { #input_name { #(#input_fields),* }};
 
             Expr::MethodCall(parse_quote! { #receiver . step (#argument) })
         }
@@ -272,7 +272,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
         },
         Expression::Zip { arrays } => {
             let macro_name = syn::Ident::new("par_zip", proc_macro2::Span::call_site());
-            let arguments = arrays.into_iter().map(rust_ast_from_lir).collect();
+            let arguments = arrays.into_iter().map(rust_ast_from_lir);
             let macro_call = syn::ExprMacro {
                 attrs: Vec::new(),
                 mac: syn::Macro {
@@ -432,6 +432,7 @@ mod rust_ast_from_lir {
                 },
             ],
         };
+        
         let control = parse_quote! { a + b };
         assert_eq!(rust_ast_from_lir(expression), control)
     }

@@ -1,39 +1,107 @@
 use crate::ast::pattern::Pattern;
-use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
-
+use proc_macro2::Span;
+use syn::*;
 /// Transform LIR pattern into RustAST pattern.
-pub fn rust_ast_from_lir(pattern: Pattern) -> RustASTPattern {
+pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
+    // match pattern {
+    //     Pattern::Identifier { name, .. } => RustASTPattern::Identifier {
+    //         reference: false,
+    //         mutable: false,
+    //         identifier: name,
+    //     },
+    //     Pattern::Constant { constant, .. } => RustASTPattern::Literal { literal: constant },
+    //     Pattern::Structure { name, fields, .. } => {
+    //         let fields = fields
+    //             .into_iter()
+    //             .map(|(name, pattern)| FieldPattern {
+    //                 name,
+    //                 pattern: rust_ast_from_lir(pattern),
+    //             })
+    //             .collect();
+    //         RustASTPattern::Structure {
+    //             name,
+    //             fields,
+    //             dots: false,
+    //         }
+    //     }
+    //     Pattern::Some { pattern, .. } => RustASTPattern::TupleStructure {
+    //         name: String::from("Some"),
+    //         elements: vec![rust_ast_from_lir(*pattern)],
+    //     },
+    //     Pattern::None { .. } => RustASTPattern::Default,
+    //     Pattern::Default { .. } => RustASTPattern::Default,
+    //     Pattern::Tuple { elements, .. } => {
+    //         let elements = elements.into_iter().map(rust_ast_from_lir).collect();
+    //         RustASTPattern::Tuple { elements }
+    //     }
+    // }
     match pattern {
-        Pattern::Identifier { name, .. } => RustASTPattern::Identifier {
-            reference: false,
-            mutable: false,
-            identifier: name,
-        },
-        Pattern::Constant { constant, .. } => RustASTPattern::Literal { literal: constant },
-        Pattern::Structure { name, fields, .. } => {
-            let fields = fields
+        Pattern::Identifier { name, location } => Pat::Ident(PatIdent {
+            attrs: vec![],
+            by_ref: None,
+            mutability: None,
+            ident: Ident::new(&name, Span::call_site()),
+            subpat: None,
+        }),
+        Pattern::Some { pattern, location } => Pat::TupleStruct(PatTupleStruct {
+            attrs: vec![],
+            path: parse_quote! { Some },
+            elems: vec![rust_ast_from_lir(*pattern)].into_iter().collect(),
+            paren_token: Default::default(),
+            qself: None,
+        }),
+        Pattern::None { location } => parse_quote! { None },
+        Pattern::Default { location } => Pat::Wild(PatWild {
+            attrs: vec![],
+            underscore_token: Default::default(),
+        }),
+        Pattern::Structure {
+            name,
+            fields,
+            location,
+        } => Pat::Struct(PatStruct {
+            attrs: vec![],
+            path: parse_quote! { #name },
+            brace_token: Default::default(),
+            fields: fields
                 .into_iter()
-                .map(|(name, pattern)| FieldPattern {
-                    name,
-                    pattern: rust_ast_from_lir(pattern),
+                .map(|(name, pattern)| FieldPat {
+                    attrs: vec![],
+                    member: Member::Named(Ident::new(&name, Span::call_site())),
+                    colon_token: Default::default(),
+                    pat: Box::new(rust_ast_from_lir(pattern)),
                 })
-                .collect();
-            RustASTPattern::Structure {
-                name,
-                fields,
-                dots: false,
+                .collect(),
+            qself: None,
+            rest: None,
+        }),
+        Pattern::Tuple { elements, location } => Pat::Tuple(PatTuple {
+            attrs: vec![],
+            paren_token: Default::default(),
+            elems: elements.into_iter().map(rust_ast_from_lir).collect(),
+        }),
+
+        Pattern::Constant { constant, location } => match constant {
+            crate::common::constant::Constant::Integer(i) => Pat::Lit(parse_quote! { #i }),
+            crate::common::constant::Constant::Float(f) => Pat::Lit(parse_quote! { #f }),
+            crate::common::constant::Constant::Boolean(b) => Pat::Lit(parse_quote! { #b }),
+            crate::common::constant::Constant::String(s) => Pat::Lit(parse_quote! { #s }),
+            crate::common::constant::Constant::Unit => Pat::Tuple(PatTuple {
+                attrs: vec![],
+                paren_token: Default::default(),
+                elems: Default::default(),
+            }),
+            crate::common::constant::Constant::Enumeration(ty, cons) => {
+                let ty = Ident::new(&ty, Span::call_site());
+                let cons = Ident::new(&cons, Span::call_site());
+
+                Pat::Path(PatPath {
+                    attrs: vec![],
+                    qself: None,
+                    path: parse_quote! { #ty::#cons },
+                })
             }
-        }
-        Pattern::Some { pattern, .. } => RustASTPattern::TupleStructure {
-            name: String::from("Some"),
-            elements: vec![rust_ast_from_lir(*pattern)],
         },
-        Pattern::None { .. } => RustASTPattern::Default,
-        Pattern::Default { .. } => RustASTPattern::Default,
-        Pattern::Tuple { elements, .. } => {
-            let elements = elements.into_iter().map(rust_ast_from_lir).collect();
-            RustASTPattern::Tuple { elements }
-        }
     }
 }
 
@@ -43,14 +111,14 @@ mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::pattern::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::common::location::Location;
-    use crate::rust_ast::pattern::{FieldPattern, Pattern as RustASTPattern};
-
+    use syn::*;
+    
     #[test]
     fn should_create_a_rust_ast_default_pattern_from_a_lir_default_pattern() {
         let pattern = Pattern::Default {
             location: Location::default(),
         };
-        let control = RustASTPattern::Default;
+        let control = parse_quote! { _ };
         assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
@@ -59,7 +127,7 @@ mod rust_ast_from_lir {
         let pattern = Pattern::None {
             location: Location::default(),
         };
-        let control = RustASTPattern::Default;
+        let control = parse_quote! { _ };
         assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
@@ -71,10 +139,8 @@ mod rust_ast_from_lir {
             }),
             location: Location::default(),
         };
-        let control = RustASTPattern::TupleStructure {
-            name: String::from("Some"),
-            elements: vec![RustASTPattern::Default],
-        };
+
+        let control = parse_quote! { Some(_) };
         assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
@@ -84,9 +150,8 @@ mod rust_ast_from_lir {
             constant: Constant::Integer(1),
             location: Location::default(),
         };
-        let control = RustASTPattern::Literal {
-            literal: Constant::Integer(1),
-        };
+
+        let control = parse_quote! { 1 };
         assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
@@ -97,11 +162,8 @@ mod rust_ast_from_lir {
             name: String::from("x"),
             location: Location::default(),
         };
-        let control = RustASTPattern::Identifier {
-            reference: false,
-            mutable: false,
-            identifier: String::from("x"),
-        };
+
+        let control = parse_quote! { x };
         assert_eq!(rust_ast_from_lir(pattern), control)
     }
 
@@ -126,24 +188,8 @@ mod rust_ast_from_lir {
             ],
             location: Location::default(),
         };
-        let control = RustASTPattern::Structure {
-            name: String::from("Point"),
-            fields: vec![
-                FieldPattern {
-                    name: String::from("x"),
-                    pattern: RustASTPattern::Default,
-                },
-                FieldPattern {
-                    name: String::from("y"),
-                    pattern: RustASTPattern::Identifier {
-                        reference: false,
-                        mutable: false,
-                        identifier: String::from("y"),
-                    },
-                },
-            ],
-            dots: false,
-        };
+
+        let control = parse_quote! { Point { x: _, y } };
         assert_eq!(rust_ast_from_lir(pattern), control)
     }
 }
