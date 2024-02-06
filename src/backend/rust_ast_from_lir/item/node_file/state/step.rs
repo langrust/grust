@@ -77,7 +77,9 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
     attributes.append(&mut requires_attributes);
 
     let input_ty_name = Ident::new(&camel_case(&format!("{}Input", step.node_name)), Span::call_site());
-    let inputs = vec![FnArg::Typed(PatType{ 
+    let inputs = vec![
+        parse_quote!(&mut self),
+        FnArg::Typed(PatType{ 
         attrs: vec![],
         pat: Box::new(Pat::Ident(PatIdent {
             attrs: vec![],
@@ -229,7 +231,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! {
-            pub fn step(input: NodeInput) -> i64 {
+            pub fn step(&mut self, input: NodeInput) -> i64 {
                 let o = self.mem_i;
                 let y = self.called_node_state.step(CalledNodeInput {});
                 self.mem_i = o + 1i64;

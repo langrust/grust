@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::{Path, PathBuf}};
+use std::{collections::{BTreeMap, HashMap}, path::{Path, PathBuf}};
 
 use crate::{
     backend::rust_ast_from_lir::item::{
@@ -17,7 +17,7 @@ use syn::*;
 pub struct RustASTProject {
     /// Project's directory.
     pub directory: String,
-    files: HashMap<String, File>,
+    files: BTreeMap<String, File>,
 }
 impl RustASTProject {
     fn new() -> Self {
@@ -181,8 +181,8 @@ pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
             .unwrap()
             .to_string();
         let module_ident = Ident::new(&module_name, Span::call_site());
-        let module_import = parse_quote! { use #module_ident; };
-        lib_file.items.push(syn::Item::Use(module_import))
+        let module_decl = parse_quote! { pub mod #module_ident; };
+        lib_file.items.push(syn::Item::Mod(module_decl))
     });
     rust_ast_project.add_file("src/lib.rs", lib_file);
 
