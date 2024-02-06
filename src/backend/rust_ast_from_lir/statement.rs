@@ -1,26 +1,35 @@
 use crate::lir::statement::Statement;
-use crate::rust_ast::pattern::Pattern;
-use crate::rust_ast::statement::r#let::Let;
-use crate::rust_ast::statement::Statement as RustASTStatement;
-
+use proc_macro2::Span;
+use syn::*;
 use super::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 
 /// Transform LIR statement into RustAST statement.
-pub fn rust_ast_from_lir(statement: Statement) -> RustASTStatement {
+pub fn rust_ast_from_lir(statement: Statement) -> Stmt {
     match statement {
         Statement::Let {
             identifier,
             expression,
-        } => RustASTStatement::Let(Let {
-            pattern: Pattern::Identifier {
-                reference: false,
-                mutable: false,
-                identifier,
-            },
-            expression: expression_rust_ast_from_lir(expression),
-        }),
+        } => {
+            Stmt::Local(Local {
+                attrs: vec![],
+                let_token: Default::default(),
+                pat: Pat::Ident(PatIdent {
+                    attrs: vec![],
+                    by_ref: None,
+                    mutability: None,
+                    ident: Ident::new(&identifier, Span::call_site()),
+                    subpat: None,
+                }),
+                init: Some(LocalInit {
+                    eq_token: Default::default(),
+                    expr: Box::new(expression_rust_ast_from_lir(expression)),
+                    diverge: None,
+                }),
+                semi_token: Default::default(),
+            })
+    },
         Statement::ExpressionLast { expression } => {
-            RustASTStatement::ExpressionLast(expression_rust_ast_from_lir(expression))
+            Stmt::Expr(expression_rust_ast_from_lir(expression), None)
         }
     }
 }
@@ -31,13 +40,7 @@ mod rust_ast_from_lir {
     use crate::common::constant::Constant;
     use crate::lir::expression::Expression;
     use crate::lir::statement::Statement;
-    use crate::rust_ast::expression::{
-        Expression as RustASTExpression, FieldExpression, FieldIdentifier,
-    };
-    use crate::rust_ast::pattern::Pattern;
-    use crate::rust_ast::statement::r#let::Let;
-    use crate::rust_ast::statement::Statement as RustASTStatement;
-
+    use syn::*;
     #[test]
     fn should_create_rust_ast_let_statement_from_lir_let_statement() {
         let statement = Statement::Let {
@@ -46,16 +49,10 @@ mod rust_ast_from_lir {
                 literal: Constant::Integer(1),
             },
         };
-        let control = RustASTStatement::Let(Let {
-            pattern: Pattern::Identifier {
-                reference: false,
-                mutable: false,
-                identifier: String::from("x"),
-            },
-            expression: RustASTExpression::Literal {
-                literal: Constant::Integer(1),
-            },
-        });
+
+        let control = parse_quote! {
+            let x = 1;
+        };
         assert_eq!(rust_ast_from_lir(statement), control)
     }
 
@@ -74,31 +71,8 @@ mod rust_ast_from_lir {
                 )],
             },
         };
-        let control = RustASTStatement::Let(Let {
-            pattern: Pattern::Identifier {
-                reference: false,
-                mutable: false,
-                identifier: String::from("o"),
-            },
-            expression: RustASTExpression::MethodCall {
-                receiver: Box::new(RustASTExpression::FieldAccess {
-                    expression: Box::new(RustASTExpression::Identifier {
-                        identifier: String::from("self"),
-                    }),
-                    field: FieldIdentifier::Named(String::from("node_state")),
-                }),
-                method: String::from("step"),
-                arguments: vec![RustASTExpression::Structure {
-                    name: String::from("NodeInput"),
-                    fields: vec![FieldExpression {
-                        name: String::from("i"),
-                        expression: RustASTExpression::Literal {
-                            literal: Constant::Integer(1),
-                        },
-                    }],
-                }],
-            },
-        });
+
+        let control = parse_quote! { let o = self.node_state.step(NodeInput { i: 1 }); };
         assert_eq!(rust_ast_from_lir(statement), control)
     }
 
@@ -109,9 +83,8 @@ mod rust_ast_from_lir {
                 literal: Constant::Integer(1),
             },
         };
-        let control = RustASTStatement::ExpressionLast(RustASTExpression::Literal {
-            literal: Constant::Integer(1),
-        });
+
+        let control = parse_quote! { 1 };
         assert_eq!(rust_ast_from_lir(statement), control)
     }
 }

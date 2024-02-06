@@ -3,26 +3,46 @@ use crate::backend::rust_ast_from_lir::{
     r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
 use crate::lir::item::function::Function;
-use crate::rust_ast::item::{function::Function as RustASTFunction, signature::Signature};
+use proc_macro2::Span;
+use syn::*;
 
 /// Transform LIR function into RustAST function.
-pub fn rust_ast_from_lir(function: Function) -> RustASTFunction {
+pub fn rust_ast_from_lir(function: Function) -> ItemFn {
     let inputs = function
         .inputs
         .into_iter()
-        .map(|(name, r#type)| (name, type_rust_ast_from_lir(r#type)))
+        .map(|(name, r#type)| {
+            let name = Ident::new(&name, Span::call_site());
+            FnArg::Typed(PatType {
+                attrs: vec![],
+                pat: parse_quote!(#name),
+                colon_token: Default::default(),
+                ty: Box::new(type_rust_ast_from_lir(r#type)),
+            })
+        })
         .collect();
-    let signature = Signature {
-        public_visibility: true,
-        name: function.name,
-        receiver: None,
+
+    let sig = syn::Signature {
+        constness: None,
+        asyncness: None,
+        unsafety: None,
+        abi: None,
+        fn_token: Default::default(),
+        ident: Ident::new(&function.name, Span::call_site()),
+        generics: Default::default(),
+        paren_token: Default::default(),
         inputs,
-        output: type_rust_ast_from_lir(function.output),
+        variadic: None,
+        output: ReturnType::Type(
+            Default::default(),
+            Box::new(type_rust_ast_from_lir(function.output)),
+        ),
     };
-    RustASTFunction {
-        attributes: vec![],
-        signature,
-        body: block_rust_ast_from_lir(function.body),
+    ItemFn {
+        attrs: Default::default(),
+        vis: Visibility::Public(Default::default()),
+        sig,
+        block: Box::new(block_rust_ast_from_lir(function.body)),
     }
 }
 
@@ -35,12 +55,7 @@ mod rust_ast_from_lir {
     use crate::lir::expression::Expression;
     use crate::lir::item::function::Function;
     use crate::lir::statement::Statement;
-    use crate::rust_ast::block::Block as RustASTBlock;
-    use crate::rust_ast::expression::Expression as RustASTExpression;
-    use crate::rust_ast::item::function::Function as RustASTFunction;
-    use crate::rust_ast::item::signature::Signature;
-    use crate::rust_ast::r#type::Type as RustASTType;
-    use crate::rust_ast::statement::Statement as RustASTStatement;
+    use syn::*;
 
     #[test]
     fn should_create_rust_ast_function_from_lir_function() {
@@ -69,43 +84,11 @@ mod rust_ast_from_lir {
                 }],
             },
         };
-        let control = RustASTFunction {
-            attributes: vec![],
-            signature: Signature {
-                public_visibility: true,
-                name: String::from("foo"),
-                receiver: None,
-                inputs: vec![
-                    (
-                        String::from("a"),
-                        RustASTType::Identifier {
-                            identifier: String::from("i64"),
-                        },
-                    ),
-                    (
-                        String::from("b"),
-                        RustASTType::Identifier {
-                            identifier: String::from("i64"),
-                        },
-                    ),
-                ],
-                output: RustASTType::Identifier {
-                    identifier: String::from("i64"),
-                },
-            },
-            body: RustASTBlock {
-                statements: vec![RustASTStatement::ExpressionLast(
-                    RustASTExpression::Binary {
-                        left: Box::new(RustASTExpression::Identifier {
-                            identifier: String::from("a"),
-                        }),
-                        operator: BinaryOperator::Add,
-                        right: Box::new(RustASTExpression::Identifier {
-                            identifier: String::from("b"),
-                        }),
-                    },
-                )],
-            },
+
+        let control = parse_quote! {
+            pub fn foo(a: i64, b: i64) -> i64 {
+                a + b
+            }
         };
         assert_eq!(rust_ast_from_lir(function), control)
     }

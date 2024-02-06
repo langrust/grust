@@ -1,23 +1,28 @@
 use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::init::{Init, StateElementInit};
-use crate::rust_ast::block::Block;
-use crate::rust_ast::expression::{Expression, FieldExpression};
-use crate::rust_ast::item::implementation::AssociatedItem;
-use crate::rust_ast::item::signature::Signature;
-use crate::rust_ast::r#type::Type as RustASTType;
-use crate::rust_ast::statement::Statement;
+use proc_macro2::Span;
+use syn::*;
 
 /// Transform LIR init into RustAST implementation method.
-pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
-    let signature = Signature {
-        public_visibility: true,
-        name: String::from("init"),
-        receiver: None,
-        inputs: vec![],
-        output: RustASTType::Identifier {
-            identifier: camel_case(&format!("{}State", init.node_name)),
-        },
+pub fn rust_ast_from_lir(init: Init) -> ImplItemFn {
+    let state_ty = Ident::new(
+        &camel_case(&format!("{}State", init.node_name)),
+        Span::call_site(),
+    );
+    let signature = syn::Signature {
+        constness: None,
+        asyncness: None,
+        unsafety: None,
+        abi: None,
+        fn_token: Default::default(),
+        ident: Ident::new("init", Span::call_site()),
+        generics: Default::default(),
+        paren_token: Default::default(),
+        inputs: Default::default(),
+        variadic: None,
+        output: ReturnType::Type(Default::default(), parse_quote! { #state_ty }),
     };
+
     let fields = init
         .state_elements_init
         .into_iter()
@@ -25,37 +30,56 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
             StateElementInit::BufferInit {
                 identifier,
                 initial_value,
-            } => FieldExpression {
-                name: identifier,
-                expression: Expression::Literal {
-                    literal: initial_value,
-                },
-            },
+            } => {
+                let ident = Ident::new(&identifier, Span::call_site());
+                let constant : Expr = parse_str(&format!("{initial_value}")).unwrap();
+                FieldValue {
+                    attrs: vec![],
+                    member: parse_quote! { #ident },
+                    colon_token: Default::default(),
+                    expr: constant,
+                }
+            }
             StateElementInit::CalledNodeInit {
                 identifier,
                 node_name,
-            } => FieldExpression {
-                name: identifier,
-                expression: Expression::FunctionCall {
-                    function: Box::new(Expression::Identifier {
-                        identifier: camel_case(&format!("{}State::init", node_name)),
-                    }),
-                    arguments: vec![],
-                },
-            },
+            } => {
+                let ident = Ident::new(&identifier, Span::call_site());
+                let function = Ident::new(
+                    &camel_case(&format!("{}State::init", node_name)),
+                    Span::call_site(),
+                );
+                FieldValue {
+                    attrs: vec![],
+                    member: parse_quote! { #ident },
+                    colon_token: Default::default(),
+                    expr: parse_quote! { #function() },
+                }
+            }
         })
         .collect();
-    let statement = Statement::ExpressionLast(Expression::Structure {
-        name: camel_case(&format!("{}State", init.node_name)),
-        fields,
-    });
-    let body = Block {
-        statements: vec![statement],
+
+    let body = syn::Block {
+        brace_token: Default::default(),
+        stmts: vec![Stmt::Expr(
+            Expr::Struct(ExprStruct {
+                attrs: vec![],
+                path: parse_quote! { #state_ty },
+                brace_token: Default::default(),
+                dot2_token: None,
+                rest: None,
+                fields,
+                qself: None, // Add the qself field here
+            }),
+            None,
+        )],
     };
-    AssociatedItem::AssociatedMethod {
-        attributes: vec![],
-        signature,
-        body,
+    ImplItemFn {
+        attrs: vec![],
+        vis: Visibility::Public(Default::default()),
+        defaultness: None,
+        sig: signature,
+        block: body,
     }
 }
 
@@ -64,12 +88,7 @@ mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::lir::item::node_file::state::init::{Init, StateElementInit};
-    use crate::rust_ast::block::Block;
-    use crate::rust_ast::expression::{Expression, FieldExpression};
-    use crate::rust_ast::item::implementation::AssociatedItem;
-    use crate::rust_ast::item::signature::Signature;
-    use crate::rust_ast::r#type::Type as RustASTType;
-    use crate::rust_ast::statement::Statement;
+    use syn::*;
 
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
@@ -87,39 +106,14 @@ mod rust_ast_from_lir {
                 },
             ],
         };
-        let control = AssociatedItem::AssociatedMethod {
-            attributes: vec![],
-            signature: Signature {
-                public_visibility: true,
-                name: format!("init"),
-                receiver: None,
-                inputs: vec![],
-                output: RustASTType::Identifier {
-                    identifier: format!("NodeState"),
-                },
-            },
-            body: Block {
-                statements: vec![Statement::ExpressionLast(Expression::Structure {
-                    name: format!("NodeState"),
-                    fields: vec![
-                        FieldExpression {
-                            name: format!("mem_i"),
-                            expression: Expression::Literal {
-                                literal: Constant::Integer(0),
-                            },
-                        },
-                        FieldExpression {
-                            name: format!("called_node_state"),
-                            expression: Expression::FunctionCall {
-                                function: Box::new(Expression::Identifier {
-                                    identifier: format!("CalledNodeState::init"),
-                                }),
-                                arguments: vec![],
-                            },
-                        },
-                    ],
-                })],
-            },
+
+        let control = parse_quote! {
+            pub fn init() -> NodeState {
+                NodeState {
+                    mem_i: 0,
+                    called_node_state: CalledNodeState::init(),
+                }
+            }
         };
         assert_eq!(rust_ast_from_lir(init), control)
     }

@@ -12,7 +12,7 @@ pub mod input;
 pub mod state;
 
 /// Transform LIR node_file into RustAST file.
-pub fn rust_ast_from_lir(node_file: NodeFile) -> File {
+pub fn rust_ast_from_lir(node_file: NodeFile) -> (String,File) {
     let mut items = node_file
         .imports
         .into_iter()
@@ -23,10 +23,10 @@ pub fn rust_ast_from_lir(node_file: NodeFile) -> File {
     items.push(Item::Struct(input_structure));
     items.push(Item::Struct(state_structure));
     items.push(Item::Impl(state_implementation));
-    File {
-        // path: format!("src/{}.rs", node_file.name),
+    (format!("src/{}.rs", node_file.name), File {
+        // path: ,
         items,
         shebang: None,
         attrs: Default::default(),
-    }
+    })
 }
