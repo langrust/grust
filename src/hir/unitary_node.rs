@@ -1,8 +1,8 @@
-use crate::common::{
+use crate::{ast::term::Term, common::{
     graph::{color::Color, Graph},
     location::Location,
     r#type::Type,
-};
+}};
 use crate::hir::{equation::Equation, memory::Memory, once_cell::OnceCell};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
@@ -22,6 +22,7 @@ pub struct UnitaryNode {
     pub location: Location,
     /// Unitary node dependency graph.
     pub graph: OnceCell<Graph<Color>>,
+    pub contracts: (Vec<Term>, Vec<Term>),
 }
 
 impl UnitaryNode {
@@ -114,7 +115,7 @@ mod get_signals {
             },
             location: Location::default(),
         };
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -184,7 +185,7 @@ mod eq_unscheduled {
             },
             location: Location::default(),
         };
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -237,7 +238,7 @@ mod eq_unscheduled {
             },
             location: Location::default(),
         };
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -247,7 +248,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
 
-        let other = UnitaryNode {
+        let other = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -298,7 +299,7 @@ mod eq_unscheduled {
             },
             location: Location::default(),
         };
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -308,7 +309,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
 
-        let other = UnitaryNode {
+        let other = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -359,7 +360,7 @@ mod eq_unscheduled {
             },
             location: Location::default(),
         };
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -369,7 +370,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
 
-        let other = UnitaryNode {
+        let other = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],

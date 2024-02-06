@@ -298,7 +298,7 @@ mod create_initialized_graph {
 
     #[test]
     fn should_initialize_graph_with_node_signals() {
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -376,7 +376,7 @@ mod add_all_dependencies {
     fn should_add_all_nodes_dependencies() {
         let mut errors = vec![];
 
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -473,7 +473,7 @@ mod add_signal_dependencies {
     fn should_add_dependencies_of_a_signal_of_the_node_to_graph() {
         let mut errors = vec![];
 
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -570,7 +570,7 @@ mod add_signal_inputs_dependencies {
     fn should_add_inputs_dependencies_of_a_signal_of_the_node_to_reduced_graph() {
         let mut errors = vec![];
 
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

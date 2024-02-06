@@ -20,6 +20,7 @@ pub fn rust_ast_from_lir(function: Function) -> RustASTFunction {
         output: type_rust_ast_from_lir(function.output),
     };
     RustASTFunction {
+        attributes: vec![],
         signature,
         body: block_rust_ast_from_lir(function.body),
     }
@@ -69,6 +70,7 @@ mod rust_ast_from_lir {
             },
         };
         let control = RustASTFunction {
+            attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),

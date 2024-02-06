@@ -1,9 +1,11 @@
 use crate::rust_ast::{block::Block, item::signature::Signature};
+use syn::Attribute;
 
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 
 /// A function definition in Rust.
 pub struct Function {
+    pub attributes: Vec<Attribute>,
     /// Function's signature.
     pub signature: Signature,
     /// Function's body.
@@ -33,6 +35,7 @@ mod fmt {
     #[test]
     fn should_format_function_definition() {
         let function = Function {
+            attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),

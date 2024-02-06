@@ -1,6 +1,5 @@
 use super::item::Item;
 
-#[derive(serde::Serialize)]
 /// HIR of a Rust source code file.
 pub struct File {
     /// File's path.
@@ -100,6 +99,7 @@ mod fmt {
             ],
         });
         let function = Item::Function(Function {
+            attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),
@@ -171,6 +171,7 @@ mod fmt {
                     },
                 },
                 AssociatedItem::AssociatedMethod {
+                    attributes: vec![],
                     signature: Signature {
                         public_visibility: false,
                         name: String::from("fmt"),
@@ -425,6 +426,7 @@ mod generate {
             ],
         });
         let function = Item::Function(Function {
+            attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),
@@ -496,6 +498,7 @@ mod generate {
                     },
                 },
                 AssociatedItem::AssociatedMethod {
+                    attributes: vec![],
                     signature: Signature {
                         public_visibility: false,
                         name: String::from("fmt"),

@@ -52,7 +52,7 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
     let body = Block {
         statements: vec![statement],
     };
-    AssociatedItem::AssociatedMethod { signature, body }
+    AssociatedItem::AssociatedMethod { attributes: vec![], signature, body }
 }
 
 #[cfg(test)]
@@ -70,6 +70,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
         let init = Init {
+            postconditions: vec![],
             node_name: format!("Node"),
             state_elements_init: vec![
                 StateElementInit::BufferInit {
@@ -83,6 +84,7 @@ mod rust_ast_from_lir {
             ],
         };
         let control = AssociatedItem::AssociatedMethod {
+            attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: format!("init"),

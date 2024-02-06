@@ -1,6 +1,5 @@
 use super::file::File;
 
-#[derive(serde::Serialize)]
 /// A Rust source code project.
 pub struct Project {
     /// Project's directory.

@@ -1,6 +1,5 @@
 use crate::{
-    common::r#type::Type,
-    lir::{expression::Expression, statement::Statement},
+    ast::term::Term, common::r#type::Type, lir::{expression::Expression, statement::Statement}
 };
 
 /// A step function.
@@ -16,6 +15,7 @@ pub struct Step {
     pub state_elements_step: Vec<StateElementStep>,
     /// The output expression.
     pub output_expression: Expression,
+    pub contracts: (Vec<Term>, Vec<Term>),
 }
 
 /// A state element structure for the step update.

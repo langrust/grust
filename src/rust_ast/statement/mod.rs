@@ -4,7 +4,7 @@ use crate::rust_ast::{expression::Expression, item::Item, statement::r#let::Let}
 pub mod r#let;
 
 /// Rust statement.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     /// A `let` binding.
     Let(Let),
@@ -116,6 +116,7 @@ mod fmt {
     #[test]
     fn should_format_function_definition() {
         let function = Statement::Item(Item::Function(Function {
+            attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),
@@ -195,6 +196,7 @@ mod fmt {
                     },
                 },
                 AssociatedItem::AssociatedMethod {
+                    attributes: vec![],
                     signature: Signature {
                         public_visibility: false,
                         name: String::from("fmt"),

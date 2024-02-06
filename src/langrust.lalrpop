@@ -10,6 +10,7 @@ use crate::ast::{
     statement::Statement,
     stream_expression::StreamExpression,
     typedef::Typedef,
+    term::{Term, TermKind},
 };
 use crate::common::{
     constant::Constant,
@@ -121,6 +122,13 @@ fourthBinaryOperator: BinaryOperator = {
     "&&" => BinaryOperator::And,
     "||" => BinaryOperator::Or,
 };
+/// Catches all binary operators
+binary: BinaryOperator = {
+    #[precedence(level="0")]
+    "*" => BinaryOperator::Mul,
+    #[precedence(level="1")]
+    "+" => BinaryOperator::Add,
+};
 
 /// Catches patterns
 pub pattern: Pattern = {
@@ -177,6 +185,66 @@ pub pattern: Pattern = {
 arm<E>: (Pattern, Option<E>, E) = {
     <pattern> <("if" <E>)?> "=>" <E> => (<>)
 };
+
+termProof: Term = {
+    // catches constant
+    #[precedence(level="0")]
+    <start:@L> <c: constant> <end:@R> => {
+        Term {
+            kind: TermKind::Constant {constant: c},
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches element call
+    <start:@L> <id: ID> <end:@R> => {
+        Term {
+            kind: TermKind::Variable{id},
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    #[precedence(level="1")]
+    #[assoc(side="left")]
+    <start:@L> <e1: termProof> "*" <e2: termProof> <end:@R> => {
+        Term {
+            kind: TermKind::Binary {
+                op: BinaryOperator::Mul,
+                left: Box::new(e1),
+                right: Box::new(e2),
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    #[precedence(level="2")]
+    #[assoc(side="left")]
+    <start:@L> <e1: termProof> "+" <e2: termProof> <end:@R> => {
+        Term {
+            kind: TermKind::Binary {
+                op: BinaryOperator::Add,
+                left: Box::new(e1),
+                right: Box::new(e2),
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    #[precedence(level="3")]
+    #[assoc(side="left")]
+    <start:@L> <e1: termProof> "<" <e2: termProof> <end:@R> => {
+        Term {
+            kind: TermKind::Binary {
+                op: BinaryOperator::Low,
+                left: Box::new(e1),
+                right: Box::new(e2),
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+}
+
+contracts: (Vec<Term>, Vec<Term>) = {
+    <v1: ("requires" "{" <termProof> "}")*> <v2: ("ensures" "{" <termProof> "}")*> => {
+        (v1, v2)
+    }
+}
 
 /// Catches terms as expressions
 term: Expression = {
@@ -745,21 +813,23 @@ pub function: Function = {
 
 /// Catches node
 pub node: Node = {
-    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" <c: contracts> "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
             inputs: i,
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
+            contracts: c,
             location: Location{ file_id, range: start..end },
         }
     },
-    <start:@L> "node" <n: ID> "()" "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "()" <c: contracts> "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
             inputs: vec![],
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
+            contracts: c,
             location: Location{ file_id, range: start..end },
         }
     }
@@ -767,21 +837,23 @@ pub node: Node = {
 
 /// Catches component
 pub component: Node = {
-    <start:@L> "component" <c: ID> "(" <i: hash<ID, basicType>> ")" "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "component" <id: ID> "(" <i: hash<ID, basicType>> ")"<c: contracts>  "{" <e: equation+> "}" <end:@R> => {
         Node {
-            id: c,
+            id,
             is_component: true,
             inputs: i,
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
+            contracts: c,
             location: Location{ file_id, range: start..end },
         }
     },
-    <start:@L> "component" <c: ID> "()" "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "component" <id: ID> "()"<c: contracts>  "{" <e: equation+> "}" <end:@R> => {
         Node {
-            id: c,
+            id,
             is_component: true,
             inputs: vec![],
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
+            contracts: c,
             location: Location{ file_id, range: start..end },
         }
     }

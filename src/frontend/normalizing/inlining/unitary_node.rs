@@ -178,7 +178,7 @@ mod instantiate_equations_and_memory {
         //     out o: int = 0 fby j;
         //     j: int = i + 1;
         // }
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("to_be_inlined"),
             output_id: String::from("o"),
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -327,7 +327,7 @@ mod instantiate_equations_and_memory {
         //     out o: int = 0 fby j;
         //     j: int = i + 1;
         // }
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("to_be_inlined"),
             output_id: String::from("o"),
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -503,7 +503,7 @@ mod instantiate_equations_and_memory {
                 dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
             },
         );
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("to_be_inlined"),
             output_id: String::from("o"),
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -613,7 +613,7 @@ mod instantiate_equations_and_memory {
                 dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
             },
         );
-        let unitary_node = UnitaryNode {
+        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
             node_id: String::from("to_be_inlined"),
             output_id: String::from("o"),
             inputs: vec![(String::from("i"), Type::Integer)],

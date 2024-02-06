@@ -74,7 +74,7 @@ mod causal {
 
     #[test]
     fn should_accept_causal_nodes() {
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -135,7 +135,7 @@ mod causal {
 
     #[test]
     fn should_accept_shifted_causality_loops() {
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -201,7 +201,7 @@ mod causal {
 
     #[test]
     fn should_not_accept_direct_causality_loops() {
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

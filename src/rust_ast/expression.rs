@@ -6,7 +6,7 @@ use crate::common::{
 use super::{block::Block, pattern::Pattern, r#type::Type};
 
 /// Rust expressions.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     /// A literal expression: `1` or `"hello world"`.
     Literal {
@@ -276,7 +276,7 @@ impl std::fmt::Display for Expression {
 }
 
 /// A structure's field filled with an expression.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub struct FieldExpression {
     /// Name of the field.
     pub name: String,
@@ -295,7 +295,7 @@ impl std::fmt::Display for FieldExpression {
 }
 
 /// An arm in a match expression: `Point { x: 0, y } if y > 0 => y,`
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Debug, PartialEq)]
 pub struct Arm {
     /// The pattern matching.
     pub pattern: Pattern,

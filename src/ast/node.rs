@@ -4,6 +4,8 @@ use crate::ast::{equation::Equation, node_description::NodeDescription, typedef:
 use crate::common::{context::Context, location::Location, r#type::Type, scope::Scope};
 use crate::error::{Error, TerminationError};
 
+use super::term::Term;
+
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust node AST.
 pub struct Node {
@@ -15,6 +17,8 @@ pub struct Node {
     pub inputs: Vec<(String, Type)>,
     /// Node's equations.
     pub equations: Vec<(String, Equation)>,
+    /// Node's contracts.
+    pub contracts: (Vec<Term>, Vec<Term>),
     /// Node location.
     pub location: Location,
 }
@@ -48,7 +52,7 @@ impl Node {
     /// let global_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     ///
-    /// let mut node = Node {
+    /// let mut node = Node { contracts: (vec![], vec![]),
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
@@ -94,7 +98,7 @@ impl Node {
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let Node {
+        let Node { contracts,
             id,
             equations,
             location,
@@ -160,7 +164,7 @@ impl Node {
     ///
     /// let mut errors = vec![];
     ///
-    /// let node = Node {
+    /// let node = Node { contracts: (vec![], vec![]),
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
@@ -212,7 +216,7 @@ impl Node {
         &self,
         errors: &mut Vec<Error>,
     ) -> Result<NodeDescription, TerminationError> {
-        let Node {
+        let Node { contracts,
             is_component,
             inputs,
             equations,
@@ -312,7 +316,7 @@ impl Node {
     ///     }
     /// );
     ///
-    /// let mut node = Node {
+    /// let mut node = Node { contracts: (vec![], vec![]),
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![],
@@ -353,7 +357,7 @@ impl Node {
     ///     location: Location::default(),
     /// };
     ///
-    /// let control = Node {
+    /// let control = Node { contracts: (vec![], vec![]),
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![],
@@ -405,7 +409,7 @@ impl Node {
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let Node {
+        let Node { contracts,
             inputs,
             equations,
             location,
@@ -458,7 +462,7 @@ mod typing {
         let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
-        let mut node = Node {
+        let mut node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -495,7 +499,7 @@ mod typing {
             location: Location::default(),
         };
 
-        let control = Node {
+        let control = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -559,7 +563,7 @@ mod typing {
         let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
-        let mut node = Node {
+        let mut node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -620,7 +624,7 @@ mod into_node_description {
     fn should_return_a_node_description_from_a_node_with_no_duplicates() {
         let mut errors = vec![];
 
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -673,7 +677,7 @@ mod into_node_description {
     fn should_return_a_node_description_from_a_component_with_no_duplicates() {
         let mut errors = vec![];
 
-        let node = Node {
+        let node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -747,7 +751,7 @@ mod resolve_undefined_types {
             },
         );
 
-        let mut node = Node {
+        let mut node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -786,7 +790,7 @@ mod resolve_undefined_types {
             location: Location::default(),
         };
 
-        let control = Node {
+        let control = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -836,7 +840,7 @@ mod resolve_undefined_types {
         let mut errors = vec![];
         let user_types_context = HashMap::new();
 
-        let mut node = Node {
+        let mut node = Node { contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
