@@ -172,7 +172,7 @@ mod add_unitary_node {
     fn should_add_unitary_node_computing_output() {
         let mut node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -255,7 +255,7 @@ mod add_unitary_node {
         node.add_unitary_node(String::from("o1"));
 
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -297,7 +297,7 @@ mod add_unitary_node {
         };
         let control = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -404,7 +404,7 @@ mod generate_unitary_nodes {
 
         let mut node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -487,7 +487,7 @@ mod generate_unitary_nodes {
         node.generate_unitary_nodes(&mut errors).unwrap();
 
         let unitary_node_1 = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -528,7 +528,7 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
         let unitary_node_2 = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o2"),
             inputs: vec![(String::from("i2"), Type::Integer)],
@@ -553,7 +553,7 @@ mod generate_unitary_nodes {
         };
         let control = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -645,7 +645,7 @@ mod generate_unitary_nodes {
 
         let mut node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -741,7 +741,7 @@ mod generate_unitary_nodes {
 
         let mut node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![

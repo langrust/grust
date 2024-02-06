@@ -5,7 +5,7 @@ use crate::common::{context::Context, location::Location, r#type::Type, scope::S
 use crate::error::{Error, TerminationError};
 
 use super::equation::Assertion;
-use super::term::Term;
+use super::term::Contract;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust node AST.
@@ -19,7 +19,7 @@ pub struct Node {
     /// Node's equations.
     pub equations: Vec<(String, Equation)>,
     /// Node's contracts.
-    pub contracts: (Vec<Term>, Vec<Term>),
+    pub contracts: Contract,
     /// Node's assertions and invariants
     pub assertions: Vec<Assertion>,
     /// Node location.
@@ -55,7 +55,7 @@ impl Node {
     /// let global_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     ///
-    /// let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+    /// let mut node =Node { assertions: Default::default(), contracts: Default::default(),
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
@@ -168,7 +168,7 @@ impl Node {
     ///
     /// let mut errors = vec![];
     ///
-    /// let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+    /// let node =Node { assertions: Default::default(), contracts: Default::default(),
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![(String::from("i"), Type::Integer)],
@@ -321,7 +321,7 @@ impl Node {
     ///     }
     /// );
     ///
-    /// let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+    /// let mut node =Node { assertions: Default::default(), contracts: Default::default(),
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![],
@@ -362,7 +362,7 @@ impl Node {
     ///     location: Location::default(),
     /// };
     ///
-    /// let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+    /// let control =Node { assertions: Default::default(), contracts: Default::default(),
     ///     id: String::from("test"),
     ///     is_component: false,
     ///     inputs: vec![],
@@ -470,7 +470,7 @@ mod typing {
 
         let mut node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -509,7 +509,7 @@ mod typing {
 
         let control = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -575,7 +575,7 @@ mod typing {
 
         let mut node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -638,7 +638,7 @@ mod into_node_description {
 
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -693,7 +693,7 @@ mod into_node_description {
 
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -769,7 +769,7 @@ mod resolve_undefined_types {
 
         let mut node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -810,7 +810,7 @@ mod resolve_undefined_types {
 
         let control = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -862,7 +862,7 @@ mod resolve_undefined_types {
 
         let mut node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],

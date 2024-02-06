@@ -95,7 +95,7 @@ mod generate_dependency_graphs {
 
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

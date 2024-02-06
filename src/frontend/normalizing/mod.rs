@@ -197,7 +197,7 @@ mod normalize {
         my_node_graph.add_edge(&String::from("o2"), String::from("y"), 0);
         let my_node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -296,7 +296,7 @@ mod normalize {
         mem_graph.add_edge(&String::from("o"), String::from("i"), 1);
         let mem = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("mem"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -346,7 +346,7 @@ mod normalize {
         other_node_graph.add_edge(&String::from("z"), String::from("z"), 1);
         let other_node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![
@@ -540,7 +540,7 @@ mod normalize {
         my_node_graph.add_edge(&String::from("o2"), String::from("y"), 0);
         let my_node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -688,7 +688,7 @@ mod normalize {
         other_node_graph.add_edge(&String::from("z"), String::from("z"), 1);
         let other_node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -870,7 +870,7 @@ mod normalize {
         my_node_o1_graph.add_edge(&String::from("o1"), String::from("x"), 0);
         my_node_o1_graph.add_edge(&String::from("o1"), String::from("y"), 0);
         let my_node_o1 = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("my_node"),
             output_id: String::from("o1"),
             inputs: vec![
@@ -931,7 +931,7 @@ mod normalize {
         my_node_o2_graph.add_vertex(String::from("o2"), Color::Black);
         my_node_o2_graph.add_edge(&String::from("o2"), String::from("y"), 0);
         let my_node_o2 = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("my_node"),
             output_id: String::from("o2"),
             inputs: vec![(String::from("y"), Type::Integer)],
@@ -977,7 +977,7 @@ mod normalize {
         my_node_graph.add_edge(&String::from("o2"), String::from("y"), 0);
         let my_node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -1093,7 +1093,7 @@ mod normalize {
             },
         );
         let mem_unitary = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("mem"),
             output_id: String::from("o"),
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -1122,7 +1122,7 @@ mod normalize {
         mem_graph.add_edge(&String::from("o"), String::from("i"), 1);
         let mem = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("mem"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -1184,7 +1184,7 @@ mod normalize {
             String::from("o1"),
         );
         let other_node_x = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("other_node"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -1341,7 +1341,7 @@ mod normalize {
             },
         );
         let other_node_z = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("other_node"),
             output_id: String::from("z"),
             inputs: vec![],
@@ -1375,7 +1375,7 @@ mod normalize {
         other_node_graph.add_edge(&String::from("z"), String::from("z"), 1);
         let other_node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
