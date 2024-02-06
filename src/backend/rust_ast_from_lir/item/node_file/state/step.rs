@@ -34,11 +34,11 @@ fn term_to_token_stream(term: Term) -> TokenStream {
                 crate::common::operator::BinaryOperator::Low => quote!(<),
             };
             quote!(#ts_left #ts_op #ts_right)
-        },
+        }
         crate::ast::term::TermKind::Constant { constant } => {
             let s = format!("{constant}");
             s.parse().unwrap()
-        },
+        }
         crate::ast::term::TermKind::Variable { id } => quote!(#id),
     }
 }
@@ -46,14 +46,20 @@ fn term_to_token_stream(term: Term) -> TokenStream {
 /// Transform LIR step into RustAST implementation method.
 pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
     let (requires, ensures) = step.contracts;
-    let mut requires_attributes = requires.into_iter().map(|term|{
-        let ts = term_to_token_stream(term);
-        parse_quote!(#[requires(#ts)])
-    }).collect::<Vec<_>>();
-    let mut attributes = ensures.into_iter().map(|term|{
-        let ts = term_to_token_stream(term);
-        parse_quote!(#[ensures(#ts)])
-    }).collect::<Vec<_>>();
+    let mut requires_attributes = requires
+        .into_iter()
+        .map(|term| {
+            let ts = term_to_token_stream(term);
+            parse_quote!(#[requires(#ts)])
+        })
+        .collect::<Vec<_>>();
+    let mut attributes = ensures
+        .into_iter()
+        .map(|term| {
+            let ts = term_to_token_stream(term);
+            parse_quote!(#[ensures(#ts)])
+        })
+        .collect::<Vec<_>>();
     attributes.append(&mut requires_attributes);
     let signature = Signature {
         public_visibility: true,
@@ -105,7 +111,11 @@ pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
     statements.push(output_statement);
 
     let body = Block { statements };
-    AssociatedItem::AssociatedMethod { attributes, signature, body }
+    AssociatedItem::AssociatedMethod {
+        attributes,
+        signature,
+        body,
+    }
 }
 
 #[cfg(test)]
@@ -130,7 +140,8 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
-        let init = Step { contracts: (vec![], vec![]),
+        let init = Step {
+            contracts: (vec![], vec![]),
             node_name: format!("Node"),
             output_type: Type::Integer,
             body: vec![

@@ -179,7 +179,8 @@ mod schedule {
         //     o_1: int = 0 fby x
         //     x: int = v*2 + o_1
         // }
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -198,7 +199,9 @@ mod schedule {
         graph.add_edge(&String::from("x"), String::from("v"), 0);
         graph.add_edge(&String::from("x"), String::from("o_1"), 0);
         unitary_node.graph.set(graph.clone()).unwrap();
-        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -236,7 +239,8 @@ mod schedule {
         //     x: int = v*2 + o_1
         //     out y: int = other_node(x-1).o
         // }
-        let control = UnitaryNode { contracts: (vec![], vec![]),
+        let control = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -375,7 +379,8 @@ mod schedule {
         //     o_1: int = 0 fby x
         //     x: int = v*2 + o_1
         // }
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -395,7 +400,9 @@ mod schedule {
         graph.add_edge(&String::from("x"), String::from("o_1"), 0);
         unitary_node.graph.set(graph.clone()).unwrap();
 
-        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],

@@ -112,7 +112,8 @@ mod memorize {
         // node test(s: int, v: int) {
         //      out x: int = s + 0 fby v
         // }
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -124,7 +125,9 @@ mod memorize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -215,7 +218,9 @@ mod memorize {
         let control = File {
             typedefs: vec![],
             functions: vec![],
-            nodes: vec![Node { assertions: Default::default(), contracts: (vec![], vec![]),
+            nodes: vec![Node {
+                assertions: Default::default(),
+                contracts: (vec![], vec![]),
                 id: String::from("test"),
                 is_component: false,
                 inputs: vec![
@@ -225,7 +230,8 @@ mod memorize {
                 unscheduled_equations: HashMap::from([(String::from("x"), equation)]),
                 unitary_nodes: HashMap::from([(
                     String::from("o"),
-                    UnitaryNode { contracts: (vec![], vec![]),
+                    UnitaryNode {
+                        contracts: (vec![], vec![]),
                         node_id: String::from("test"),
                         output_id: String::from("x"),
                         inputs: vec![
@@ -363,7 +369,8 @@ mod memorize {
         //      x_2: int = my_node(s, x_1).o
         //      out x: int = x_2 + 1
         // }
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -375,7 +382,9 @@ mod memorize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -419,7 +428,9 @@ mod memorize {
         let control = File {
             typedefs: vec![],
             functions: vec![],
-            nodes: vec![Node { assertions: Default::default(), contracts: (vec![], vec![]),
+            nodes: vec![Node {
+                assertions: Default::default(),
+                contracts: (vec![], vec![]),
                 id: String::from("test"),
                 is_component: false,
                 inputs: vec![
@@ -433,7 +444,8 @@ mod memorize {
                     .collect(),
                 unitary_nodes: HashMap::from([(
                     String::from("x"),
-                    UnitaryNode { contracts: (vec![], vec![]),
+                    UnitaryNode {
+                        contracts: (vec![], vec![]),
                         node_id: String::from("test"),
                         output_id: String::from("x"),
                         inputs: vec![

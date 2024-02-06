@@ -1,5 +1,7 @@
 use crate::{
-    ast::term::Term, common::r#type::Type, lir::{expression::Expression, statement::Statement}
+    ast::term::Term,
+    common::r#type::Type,
+    lir::{expression::Expression, statement::Statement},
 };
 
 /// A step function.

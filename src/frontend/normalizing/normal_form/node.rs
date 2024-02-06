@@ -146,7 +146,8 @@ mod normal_form {
             },
             location: Location::default(),
         };
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -158,7 +159,9 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let mut node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -265,7 +268,8 @@ mod normal_form {
                 location: Location::default(),
             },
         ];
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -277,7 +281,9 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::from(graph),
         };
-        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let control = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -361,7 +367,8 @@ mod normal_form {
             },
             location: Location::default(),
         };
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![
@@ -373,7 +380,9 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let mut node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -469,7 +478,8 @@ mod normal_form {
                 location: Location::default(),
             },
         ];
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![
@@ -481,7 +491,9 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::from(graph),
         };
-        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let control = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -565,7 +577,8 @@ mod normal_form {
             },
             location: Location::default(),
         };
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![
@@ -577,7 +590,9 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let mut node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![

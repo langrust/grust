@@ -101,7 +101,8 @@ impl Node {
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let Node { contracts,
+        let Node {
+            contracts,
             id,
             equations,
             location,
@@ -219,7 +220,8 @@ impl Node {
         &self,
         errors: &mut Vec<Error>,
     ) -> Result<NodeDescription, TerminationError> {
-        let Node { contracts,
+        let Node {
+            contracts,
             is_component,
             inputs,
             equations,
@@ -412,7 +414,8 @@ impl Node {
         user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let Node { contracts,
+        let Node {
+            contracts,
             inputs,
             equations,
             location,
@@ -465,7 +468,9 @@ mod typing {
         let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
-        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let mut node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -502,7 +507,9 @@ mod typing {
             location: Location::default(),
         };
 
-        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let control = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -566,7 +573,9 @@ mod typing {
         let global_context = HashMap::new();
         let user_types_context = HashMap::new();
 
-        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let mut node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -627,7 +636,9 @@ mod into_node_description {
     fn should_return_a_node_description_from_a_node_with_no_duplicates() {
         let mut errors = vec![];
 
-        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -680,7 +691,9 @@ mod into_node_description {
     fn should_return_a_node_description_from_a_component_with_no_duplicates() {
         let mut errors = vec![];
 
-        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -754,7 +767,9 @@ mod resolve_undefined_types {
             },
         );
 
-        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let mut node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -793,7 +808,9 @@ mod resolve_undefined_types {
             location: Location::default(),
         };
 
-        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let control = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -843,7 +860,9 @@ mod resolve_undefined_types {
         let mut errors = vec![];
         let user_types_context = HashMap::new();
 
-        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let mut node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
