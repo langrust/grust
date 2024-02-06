@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::common::graph::neighbor::Label;
 use crate::common::graph::{color::Color, neighbor::Neighbor, Graph};
 use crate::error::{Error, TerminationError};
 use crate::hir::node::Node;
@@ -234,7 +235,7 @@ impl Node {
                 let vertex = graph.get_vertex_mut(signal);
 
                 // for every neighbors, get inputs dependencies
-                for Neighbor { id, weight: w1 } in vertex.get_neighbors() {
+                for Neighbor { id, label: l1 } in vertex.get_neighbors() {
                     // tells if the neighbor is an input
                     let is_input = inputs.iter().any(|(input, _)| *input == id);
 
@@ -242,7 +243,7 @@ impl Node {
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
                         // if input then add neighbor to reduced graph
-                        reduced_graph.add_edge(signal, id, w1);
+                        reduced_graph.add_edge(signal, id, l1);
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_inputs_dependencies(
@@ -260,11 +261,21 @@ impl Node {
 
                         // add dependencies as graph's edges:
                         // s = e depends on i <=> s -> i
-                        reduced_vertex.get_neighbors().into_iter().for_each(
-                            |Neighbor { id, weight: w2 }| {
-                                reduced_graph.add_edge(signal, id, w1 + w2)
-                            },
-                        );
+                        match l1 {
+                            Label::Contract => reduced_vertex.get_neighbors().into_iter().for_each(
+                                |Neighbor { id, label: _ }| {
+                                    reduced_graph.add_edge(signal, id, Label::Contract)
+                                },
+                            ),
+                            Label::Weight(w1) => reduced_vertex.get_neighbors().into_iter().for_each(
+                                |Neighbor { id, label: l2 }| {
+                                    match l2 {
+                                       Label::Contract => reduced_graph.add_edge(signal, id, Label::Contract),
+                                       Label::Weight(w2) => reduced_graph.add_edge(signal, id, Label::Weight(w1 + w2)),
+                                    }
+                                },
+                            ),
+                        }
                     }
                 }
 
@@ -448,8 +459,8 @@ mod add_all_dependencies {
         control.add_vertex(String::from("o"), Color::Black);
         control.add_vertex(String::from("x"), Color::Black);
         control.add_vertex(String::from("i"), Color::Black);
-        control.add_edge(&String::from("x"), String::from("i"), 0);
-        control.add_edge(&String::from("o"), String::from("x"), 0);
+        control.add_weighted_edge(&String::from("x"), String::from("i"), 0);
+        control.add_weighted_edge(&String::from("o"), String::from("x"), 0);
 
         assert_eq!(*graph, control);
     }
@@ -547,7 +558,7 @@ mod add_signal_dependencies {
         control.add_vertex(String::from("o"), Color::White);
         control.add_vertex(String::from("x"), Color::Black);
         control.add_vertex(String::from("i"), Color::White);
-        control.add_edge(&String::from("x"), String::from("i"), 0);
+        control.add_weighted_edge(&String::from("x"), String::from("i"), 0);
 
         assert_eq!(*graph, control);
     }
@@ -645,8 +656,8 @@ mod add_signal_inputs_dependencies {
         control.add_vertex(String::from("o"), Color::Black);
         control.add_vertex(String::from("x"), Color::Black);
         control.add_vertex(String::from("i"), Color::White);
-        control.add_edge(&String::from("x"), String::from("i"), 0);
-        control.add_edge(&String::from("o"), String::from("i"), 0);
+        control.add_weighted_edge(&String::from("x"), String::from("i"), 0);
+        control.add_weighted_edge(&String::from("o"), String::from("i"), 0);
 
         assert_eq!(*reduced_graph, control);
     }

@@ -142,7 +142,7 @@ impl UnitaryNode {
                  ..
              }| {
                 for (to, weight) in expression.get_dependencies() {
-                    graph.add_edge(from, to.clone(), *weight)
+                    graph.add_weighted_edge(from, to.clone(), *weight)
                 }
             },
         );

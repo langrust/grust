@@ -123,8 +123,8 @@ mod causality_analysis {
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         node.graph.set(graph).unwrap();
 
         let component = Node {
@@ -184,8 +184,8 @@ mod causality_analysis {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         component.graph.set(graph).unwrap();
 
         let file = File {
@@ -253,8 +253,8 @@ mod causality_analysis {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("o"), 0);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         node1.graph.set(graph).unwrap();
 
         let node2 = Node {
@@ -314,8 +314,8 @@ mod causality_analysis {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         node2.graph.set(graph).unwrap();
 
         let file = File {
@@ -383,8 +383,8 @@ mod causality_analysis {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("o"), 0);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         node1.graph.set(graph).unwrap();
 
         let node2 = Node {
@@ -444,8 +444,8 @@ mod causality_analysis {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_edge(&String::from("o"), String::from("o"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("o"), 0);
         node2.graph.set(graph).unwrap();
 
         let file = File {
@@ -514,8 +514,8 @@ mod causality_analysis {
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
         graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("i"), 0);
-        graph.add_edge(&String::from("o"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("i"), 0);
+        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         node.graph.set(graph).unwrap();
 
         let component = Node {
@@ -575,8 +575,8 @@ mod causality_analysis {
         let mut graph = Graph::new();
         graph.add_vertex(String::from("o"), Color::Black);
         graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_edge(&String::from("o"), String::from("o"), 0);
+        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
+        graph.add_weighted_edge(&String::from("o"), String::from("o"), 0);
         component.graph.set(graph).unwrap();
 
         let file = File {

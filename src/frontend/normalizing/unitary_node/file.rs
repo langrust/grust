@@ -197,9 +197,9 @@ mod generate_unitary_nodes {
         graph.add_vertex(String::from("y"), Color::Black);
         graph.add_vertex(String::from("o1"), Color::Black);
         graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_edge(&String::from("o1"), String::from("y"), 0);
-        graph.add_edge(&String::from("o2"), String::from("y"), 0);
+        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
+        graph.add_weighted_edge(&String::from("o1"), String::from("y"), 0);
+        graph.add_weighted_edge(&String::from("o2"), String::from("y"), 0);
         node.graph.set(graph.clone()).unwrap();
 
         let mut file = File {
@@ -502,8 +502,8 @@ mod generate_unitary_nodes {
         my_node_graph.add_vertex(String::from("x"), Color::Black);
         my_node_graph.add_vertex(String::from("y"), Color::Black);
         my_node_graph.add_vertex(String::from("o"), Color::Black);
-        my_node_graph.add_edge(&String::from("o"), String::from("x"), 0);
-        my_node_graph.add_edge(&String::from("o"), String::from("y"), 0);
+        my_node_graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        my_node_graph.add_weighted_edge(&String::from("o"), String::from("y"), 0);
         my_node.graph.set(my_node_graph.clone()).unwrap();
 
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
@@ -610,9 +610,9 @@ mod generate_unitary_nodes {
         other_node_graph.add_vertex(String::from("y"), Color::Black);
         other_node_graph.add_vertex(String::from("o1"), Color::Black);
         other_node_graph.add_vertex(String::from("o2"), Color::Black);
-        other_node_graph.add_edge(&String::from("o1"), String::from("x"), 0);
-        other_node_graph.add_edge(&String::from("o1"), String::from("y"), 0);
-        other_node_graph.add_edge(&String::from("o2"), String::from("y"), 0);
+        other_node_graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
+        other_node_graph.add_weighted_edge(&String::from("o1"), String::from("y"), 0);
+        other_node_graph.add_weighted_edge(&String::from("o2"), String::from("y"), 0);
         other_node.graph.set(other_node_graph.clone()).unwrap();
 
         // out x: int = 1 + my_node(s, v*2).o
@@ -811,11 +811,11 @@ mod generate_unitary_nodes {
         node_graph.add_vertex(String::from("x"), Color::Black);
         node_graph.add_vertex(String::from("y"), Color::Black);
         node_graph.add_vertex(String::from("z"), Color::Black);
-        node_graph.add_edge(&String::from("x"), String::from("s"), 0);
-        node_graph.add_edge(&String::from("x"), String::from("v"), 0);
-        node_graph.add_edge(&String::from("y"), String::from("g"), 0);
-        node_graph.add_edge(&String::from("y"), String::from("v"), 0);
-        node_graph.add_edge(&String::from("z"), String::from("v"), 0);
+        node_graph.add_weighted_edge(&String::from("x"), String::from("s"), 0);
+        node_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
+        node_graph.add_weighted_edge(&String::from("y"), String::from("g"), 0);
+        node_graph.add_weighted_edge(&String::from("y"), String::from("v"), 0);
+        node_graph.add_weighted_edge(&String::from("z"), String::from("v"), 0);
         node.graph.set(node_graph.clone()).unwrap();
 
         let function = Function {

@@ -100,8 +100,8 @@ mod normal_form {
         my_node_graph.add_vertex(String::from("x"), Color::Black);
         my_node_graph.add_vertex(String::from("y"), Color::Black);
         my_node_graph.add_vertex(String::from("o"), Color::Black);
-        my_node_graph.add_edge(&String::from("o"), String::from("x"), 0);
-        my_node_graph.add_edge(&String::from("o"), String::from("y"), 0);
+        my_node_graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        my_node_graph.add_weighted_edge(&String::from("o"), String::from("y"), 0);
         let my_node = Node {
             contracts: Default::default(),
             id: String::from("my_node"),
@@ -223,8 +223,8 @@ mod normal_form {
         node_graph.add_vertex(String::from("s"), Color::Black);
         node_graph.add_vertex(String::from("v"), Color::Black);
         node_graph.add_vertex(String::from("x"), Color::Black);
-        node_graph.add_edge(&String::from("x"), String::from("s"), 0);
-        node_graph.add_edge(&String::from("x"), String::from("v"), 0);
+        node_graph.add_weighted_edge(&String::from("x"), String::from("s"), 0);
+        node_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
         let node = Node {
             contracts: Default::default(),
             id: String::from("test"),
@@ -563,10 +563,10 @@ mod normal_form {
         unitary_node_graph.add_vertex(String::from("x_1"), Color::Black);
         unitary_node_graph.add_vertex(String::from("x_2"), Color::Black);
         unitary_node_graph.add_vertex(String::from("x"), Color::Black);
-        unitary_node_graph.add_edge(&String::from("x"), String::from("x_2"), 0);
-        unitary_node_graph.add_edge(&String::from("x_1"), String::from("v"), 0);
-        unitary_node_graph.add_edge(&String::from("x_2"), String::from("s"), 0);
-        unitary_node_graph.add_edge(&String::from("x_2"), String::from("x_1"), 0);
+        unitary_node_graph.add_weighted_edge(&String::from("x"), String::from("x_2"), 0);
+        unitary_node_graph.add_weighted_edge(&String::from("x_1"), String::from("v"), 0);
+        unitary_node_graph.add_weighted_edge(&String::from("x_2"), String::from("s"), 0);
+        unitary_node_graph.add_weighted_edge(&String::from("x_2"), String::from("x_1"), 0);
         let equations = vec![
             Equation {
                 scope: Scope::Local,

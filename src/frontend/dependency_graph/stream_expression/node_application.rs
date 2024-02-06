@@ -51,7 +51,7 @@ impl StreamExpression {
                     .get_vertex(signal)
                     .get_neighbors()
                     .into_iter()
-                    .for_each(|Neighbor { id, weight }| reduced_graph.add_edge(signal, id, weight));
+                    .for_each(|Neighbor { id, label }| reduced_graph.add_edge(signal, id, label));
 
                 // function "dependencies to inputs" and "input expressions's dependencies"
                 // of node application

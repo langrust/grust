@@ -128,8 +128,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
 
         // out x: int = 1 + my_node(s, v).o;
@@ -299,8 +299,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
 
         // out y: int = other_node(g-1, v).o;
@@ -448,8 +448,8 @@ mod normal_form {
         graph.add_vertex(format!("x"), Color::White);
         graph.add_vertex(format!("y"), Color::White);
         graph.add_vertex(format!("o"), Color::White);
-        graph.add_edge(&format!("o"), format!("x"), 0);
-        graph.add_edge(&format!("o"), format!("y"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
+        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
         let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
 
         // out y: int = other_node(g-1, v).o;
