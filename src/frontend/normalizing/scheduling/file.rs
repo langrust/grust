@@ -200,7 +200,6 @@ mod schedule {
         graph.add_edge(&String::from("x"), String::from("o_1"), 0);
         unitary_node.graph.set(graph.clone()).unwrap();
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -401,7 +400,6 @@ mod schedule {
         unitary_node.graph.set(graph.clone()).unwrap();
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

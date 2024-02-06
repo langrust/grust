@@ -112,7 +112,6 @@ mod compute_node_application_dependencies {
 
         let node = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![

@@ -848,7 +848,7 @@ pub assertion : Assertion = {
 
 /// Catches node
 pub node: Node = {
-    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" <c: contracts> "{" <e: equation+> "}" "where" "{" <assertions: assertion*> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" <c: contracts> "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
@@ -856,10 +856,9 @@ pub node: Node = {
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contracts: c,
             location: Location{ file_id, range: start..end },
-            assertions
         }
     },
-    <start:@L> "node" <n: ID> "()" <c: contracts> "{" <e: equation+> "}" "where" "{" <assertions: assertion*> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "()" <c: contracts> "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
@@ -867,14 +866,13 @@ pub node: Node = {
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contracts: c,
             location: Location{ file_id, range: start..end },
-            assertions,
         }
     }
 };
 
 /// Catches component
 pub component: Node = {
-    <start:@L> "component" <id: ID> "(" <i: hash<ID, basicType>> ")"<c: contracts>  "{" <e: equation+> "}"  "where" "{" <assertions: assertion*> "}" <end:@R> => {
+    <start:@L> "component" <id: ID> "(" <i: hash<ID, basicType>> ")"<c: contracts>  "{" <e: equation+> "}"  <end:@R> => {
         Node {
             id,
             is_component: true,
@@ -885,7 +883,7 @@ pub component: Node = {
             assertions,
         }
     },
-    <start:@L> "component" <id: ID> "()"<c: contracts>  "{" <e: equation+> "}" "where" "{" <assertions: assertion*> "}" <end:@R> => {
+    <start:@L> "component" <id: ID> "()"<c: contracts>  "{" <e: equation+> "}"  <end:@R> => {
         Node {
             id,
             is_component: true,

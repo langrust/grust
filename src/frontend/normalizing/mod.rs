@@ -196,7 +196,6 @@ mod normalize {
         my_node_graph.add_edge(&String::from("o1"), String::from("y"), 0);
         my_node_graph.add_edge(&String::from("o2"), String::from("y"), 0);
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -295,7 +294,6 @@ mod normalize {
         mem_graph.add_vertex(String::from("o"), Color::Black);
         mem_graph.add_edge(&String::from("o"), String::from("i"), 1);
         let mem = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("mem"),
             is_component: false,
@@ -345,7 +343,6 @@ mod normalize {
         other_node_graph.add_edge(&String::from("y"), String::from("v"), 0);
         other_node_graph.add_edge(&String::from("z"), String::from("z"), 1);
         let other_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
@@ -539,7 +536,6 @@ mod normalize {
         my_node_graph.add_edge(&String::from("o1"), String::from("y"), 0);
         my_node_graph.add_edge(&String::from("o2"), String::from("y"), 0);
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -639,7 +635,6 @@ mod normalize {
         mem_graph.add_edge(&String::from("o"), String::from("i"), 1);
         let mem = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("mem"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -687,7 +682,6 @@ mod normalize {
         other_node_graph.add_edge(&String::from("y"), String::from("v"), 0);
         other_node_graph.add_edge(&String::from("z"), String::from("z"), 1);
         let other_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
@@ -976,7 +970,6 @@ mod normalize {
         my_node_graph.add_edge(&String::from("o1"), String::from("y"), 0);
         my_node_graph.add_edge(&String::from("o2"), String::from("y"), 0);
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -1121,7 +1114,6 @@ mod normalize {
         mem_graph.add_vertex(String::from("o"), Color::Black);
         mem_graph.add_edge(&String::from("o"), String::from("i"), 1);
         let mem = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("mem"),
             is_component: false,
@@ -1374,7 +1366,6 @@ mod normalize {
         other_node_graph.add_edge(&String::from("y"), String::from("v"), 0);
         other_node_graph.add_edge(&String::from("z"), String::from("z"), 1);
         let other_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,

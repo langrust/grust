@@ -299,7 +299,6 @@ mod create_initialized_graph {
     #[test]
     fn should_initialize_graph_with_node_signals() {
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -379,7 +378,6 @@ mod add_all_dependencies {
         let mut errors = vec![];
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -479,7 +477,6 @@ mod add_signal_dependencies {
 
         let node = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -578,8 +575,6 @@ mod add_signal_inputs_dependencies {
 
         let node = Node {
             contracts: Default::default(),
-            assertions: vec![],
-
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

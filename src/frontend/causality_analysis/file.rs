@@ -73,7 +73,6 @@ mod causality_analysis {
     fn should_accept_causal_files() {
         let node = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -130,7 +129,6 @@ mod causality_analysis {
 
         let component = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -206,7 +204,6 @@ mod causality_analysis {
     fn should_raise_error_when_one_node_is_not_causal() {
         let node1 = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -262,7 +259,6 @@ mod causality_analysis {
 
         let node2 = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -338,7 +334,6 @@ mod causality_analysis {
     fn should_raise_error_when_many_nodes_are_not_causal() {
         let node1 = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -394,7 +389,6 @@ mod causality_analysis {
 
         let node2 = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],
@@ -470,7 +464,6 @@ mod causality_analysis {
     fn should_raise_error_when_the_component_is_not_causal() {
         let node = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -527,7 +520,6 @@ mod causality_analysis {
 
         let component = Node {
             contracts: Default::default(),
-            assertions: vec![],
             id: String::from("test"),
             is_component: false,
             inputs: vec![],

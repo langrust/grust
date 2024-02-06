@@ -103,7 +103,6 @@ mod normal_form {
         my_node_graph.add_edge(&String::from("o"), String::from("x"), 0);
         my_node_graph.add_edge(&String::from("o"), String::from("y"), 0);
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -227,7 +226,6 @@ mod normal_form {
         node_graph.add_edge(&String::from("x"), String::from("s"), 0);
         node_graph.add_edge(&String::from("x"), String::from("v"), 0);
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -441,7 +439,6 @@ mod normal_form {
         //     out o: int = x * y
         // }
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -676,13 +673,12 @@ mod normal_form {
                 (String::from("s"), Type::Integer),
                 (String::from("v"), Type::Integer),
             ],
-            equations: equations,
+            equations,
             memory: Memory::new(),
             location: Location::default(),
             graph: OnceCell::from(unitary_node_graph.clone()),
         };
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

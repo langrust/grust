@@ -94,7 +94,6 @@ mod generate_dependency_graphs {
         let mut errors = vec![];
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
