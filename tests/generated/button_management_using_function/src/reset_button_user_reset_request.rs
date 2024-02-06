@@ -24,7 +24,7 @@ impl ResetButtonUserResetRequestState {
         let counter = self
             .counter_o_counter
             .step(CounterOInput {
-                res,
+                res: res,
                 inc: input.period,
             });
         let user_reset_request = match input.button_state {

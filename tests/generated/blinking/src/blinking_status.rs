@@ -19,8 +19,12 @@ impl BlinkingStatusState {
     pub fn step(&mut self, input: BlinkingStatusInput) -> i64 {
         let res = self.mem_res;
         let x = true;
-        let counter = self.counter_o_counter.step(CounterOInput { res, tick: x });
-        let on_off = xor(res, self.mem_on_off);
+        let counter = self.counter_o_counter.step(CounterOInput { res: res, tick: x });
+        let on_off = Expr::FunctionCall(
+            parse_quote! {
+                xor(res, self.mem_on_off)
+            },
+        );
         let status = if on_off { counter + 1i64 } else { 0i64 };
         self.mem_on_off = on_off;
         self.mem_res = (counter + 1i64 == input.tick_number);

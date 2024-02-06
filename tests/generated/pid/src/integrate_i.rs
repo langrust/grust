@@ -15,7 +15,11 @@ impl IntegrateIState {
     pub fn step(&mut self, input: IntegrateIInput) -> f64 {
         let MAX_INTEGRALE = 1000f64;
         let prev_i = self.mem_prev_i;
-        let i = min(prev_i + input.x * input.dt, MAX_INTEGRALE);
+        let i = Expr::FunctionCall(
+            parse_quote! {
+                min(prev_i + input.x * input.dt, MAX_INTEGRALE)
+            },
+        );
         self.mem_prev_i = i;
         i
     }

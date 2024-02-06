@@ -22,13 +22,13 @@ impl ResetButtonUserResetRequestStateState {
         let counter = self
             .counter_o_counter
             .step(CounterOInput {
-                res,
+                res: res,
                 inc: input.period,
             });
-        let user_reset_request_state = reset_state_management(
-            input.button_state,
-            counter,
-            input.reset_limit_1,
+        let user_reset_request_state = Expr::FunctionCall(
+            parse_quote! {
+                reset_state_management(input.button_state, counter, input.reset_limit_1)
+            },
         );
         self.mem_res = input.button_state == Button::Released;
         user_reset_request_state

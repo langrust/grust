@@ -9,7 +9,11 @@ impl MainFState {
     }
     pub fn step(&mut self, input: MainFInput) -> i64 {
         let n = self.mem_n;
-        let f = factorial(n);
+        let f = Expr::FunctionCall(
+            parse_quote! {
+                factorial(n)
+            },
+        );
         self.mem_n = n + 1i64;
         f
     }

@@ -32,7 +32,7 @@ impl PidUState {
             k_d: 6f64,
         };
         let u = match gain {
-            GainPID { k_p, k_i, k_d } => k_p * e + k_i * e_i + k_d * e_d,
+            GainPID { k_p: k_p, k_i: k_i, k_d: k_d } => k_p * e + k_i * e_i + k_d * e_d,
         };
         u
     }
