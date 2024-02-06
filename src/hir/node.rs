@@ -1,16 +1,13 @@
 use std::collections::HashMap;
 
 use crate::ast::term::Contract;
-use crate::hir::{equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
-use crate::{
-    ast::equation::Assertion,
-    common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        serialize::ordered_map,
-    },
+use crate::common::{
+    graph::{color::Color, Graph},
+    location::Location,
+    r#type::Type,
+    serialize::ordered_map,
 };
+use crate::hir::{equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust node HIR.
@@ -29,8 +26,6 @@ pub struct Node {
     pub unitary_nodes: HashMap<String, UnitaryNode>,
     /// Node's contracts.
     pub contracts: Contract,
-    /// Node's assertions,
-    pub assertions: Vec<Assertion>,
     /// Node location.
     pub location: Location,
     /// Node dependency graph.
@@ -97,7 +92,6 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -163,7 +157,6 @@ mod eq_unscheduled {
         };
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -188,7 +181,6 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
         let other = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -255,7 +247,6 @@ mod eq_unscheduled {
         };
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -280,7 +271,6 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
         let other = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -357,7 +347,6 @@ mod eq_unscheduled {
         };
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -375,7 +364,6 @@ mod eq_unscheduled {
         };
 
         let other = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -445,7 +433,6 @@ mod eq_unscheduled {
         };
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -480,7 +467,6 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
         let other = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

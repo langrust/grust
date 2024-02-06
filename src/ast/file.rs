@@ -313,7 +313,6 @@ mod typing {
         let mut errors = vec![];
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -384,7 +383,6 @@ mod typing {
         };
 
         let expected_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -464,7 +462,6 @@ mod typing {
         let mut errors = vec![];
 
         let component = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("program_component"),
             is_component: true,
@@ -518,7 +515,6 @@ mod typing {
         };
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -589,7 +585,6 @@ mod typing {
         };
 
         let expected_component = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("program_component"),
             is_component: true,
@@ -646,7 +641,6 @@ mod typing {
         };
 
         let expected_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

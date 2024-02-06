@@ -95,7 +95,6 @@ mod generate_unitary_nodes {
 
         // my_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -213,7 +212,6 @@ mod generate_unitary_nodes {
         file.generate_unitary_nodes(&mut errors).unwrap();
 
         let node_control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -444,7 +442,6 @@ mod generate_unitary_nodes {
 
         // my_node(x: int, y: int) { out o: int = x*y; }
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -511,7 +508,6 @@ mod generate_unitary_nodes {
 
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
         let other_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
@@ -791,7 +787,6 @@ mod generate_unitary_nodes {
             location: Location::default(),
         };
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -857,7 +852,6 @@ mod generate_unitary_nodes {
 
         // my_node(x: int, y: int) { out o: int = x*y; }
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -972,7 +966,6 @@ mod generate_unitary_nodes {
         };
         // other_node(x: int, y: int) { out o1: int = x+y; out o2: int = 2*y; }
         let other_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
@@ -1391,7 +1384,6 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

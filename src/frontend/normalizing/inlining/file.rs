@@ -110,7 +110,6 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -168,7 +167,6 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let other_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
@@ -303,7 +301,6 @@ mod inline_when_needed {
         graph.add_edge(&String::from("x"), String::from("x"), 1);
         graph.add_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -456,7 +453,6 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -546,7 +542,6 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -604,7 +599,6 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let other_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
@@ -755,7 +749,6 @@ mod inline_when_needed {
         graph.add_edge(&String::from("x"), String::from("x"), 1);
         graph.add_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -940,7 +933,6 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -1034,7 +1026,6 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let my_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("my_node"),
             is_component: false,
@@ -1092,7 +1083,6 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let other_node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("other_node"),
             is_component: false,
@@ -1227,7 +1217,6 @@ mod inline_when_needed {
         graph.add_edge(&String::from("x"), String::from("x"), 1);
         graph.add_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -1399,7 +1388,6 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

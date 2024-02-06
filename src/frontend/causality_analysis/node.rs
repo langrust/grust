@@ -75,7 +75,6 @@ mod causal {
     #[test]
     fn should_accept_causal_nodes() {
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -138,7 +137,6 @@ mod causal {
     #[test]
     fn should_accept_shifted_causality_loops() {
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -206,7 +204,6 @@ mod causal {
     #[test]
     fn should_not_accept_direct_causality_loops() {
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

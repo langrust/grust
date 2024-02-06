@@ -126,7 +126,6 @@ mod memorize {
             graph: OnceCell::new(),
         };
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -219,7 +218,6 @@ mod memorize {
             typedefs: vec![],
             functions: vec![],
             nodes: vec![Node {
-                assertions: Default::default(),
                 contracts: Default::default(),
                 id: String::from("test"),
                 is_component: false,
@@ -383,7 +381,6 @@ mod memorize {
             graph: OnceCell::new(),
         };
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -429,7 +426,6 @@ mod memorize {
             typedefs: vec![],
             functions: vec![],
             nodes: vec![Node {
-                assertions: Default::default(),
                 contracts: Default::default(),
                 id: String::from("test"),
                 is_component: false,

@@ -160,7 +160,6 @@ mod normal_form {
             graph: OnceCell::new(),
         };
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -282,7 +281,6 @@ mod normal_form {
             graph: OnceCell::from(graph),
         };
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -381,7 +379,6 @@ mod normal_form {
             graph: OnceCell::new(),
         };
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -492,7 +489,6 @@ mod normal_form {
             graph: OnceCell::from(graph),
         };
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -591,7 +587,6 @@ mod normal_form {
             graph: OnceCell::new(),
         };
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

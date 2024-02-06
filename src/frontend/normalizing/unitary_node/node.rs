@@ -171,7 +171,6 @@ mod add_unitary_node {
     #[test]
     fn should_add_unitary_node_computing_output() {
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -296,7 +295,6 @@ mod add_unitary_node {
             graph: OnceCell::new(),
         };
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -403,7 +401,6 @@ mod generate_unitary_nodes {
         let mut errors = vec![];
 
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -552,7 +549,6 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -644,7 +640,6 @@ mod generate_unitary_nodes {
         let mut errors = vec![];
 
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -740,7 +735,6 @@ mod generate_unitary_nodes {
         let mut errors = vec![];
 
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,

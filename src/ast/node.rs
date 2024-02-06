@@ -4,7 +4,6 @@ use crate::ast::{equation::Equation, node_description::NodeDescription, typedef:
 use crate::common::{context::Context, location::Location, r#type::Type, scope::Scope};
 use crate::error::{Error, TerminationError};
 
-use super::equation::Assertion;
 use super::term::Contract;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
@@ -20,8 +19,6 @@ pub struct Node {
     pub equations: Vec<(String, Equation)>,
     /// Node's contracts.
     pub contracts: Contract,
-    /// Node's assertions and invariants
-    pub assertions: Vec<Assertion>,
     /// Node location.
     pub location: Location,
 }
@@ -469,7 +466,6 @@ mod typing {
         let user_types_context = HashMap::new();
 
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -508,7 +504,6 @@ mod typing {
         };
 
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -574,7 +569,6 @@ mod typing {
         let user_types_context = HashMap::new();
 
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -637,7 +631,6 @@ mod into_node_description {
         let mut errors = vec![];
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -692,7 +685,6 @@ mod into_node_description {
         let mut errors = vec![];
 
         let node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: true,
@@ -768,7 +760,6 @@ mod resolve_undefined_types {
         );
 
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -809,7 +800,6 @@ mod resolve_undefined_types {
         };
 
         let control = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
@@ -861,7 +851,6 @@ mod resolve_undefined_types {
         let user_types_context = HashMap::new();
 
         let mut node = Node {
-            assertions: Default::default(),
             contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
