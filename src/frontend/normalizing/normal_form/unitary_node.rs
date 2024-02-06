@@ -156,7 +156,8 @@ mod normal_form {
             },
             location: Location::default(),
         };
-        let mut unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let mut unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -263,7 +264,8 @@ mod normal_form {
                 location: Location::default(),
             },
         ];
-        let control = UnitaryNode { contracts: (vec![], vec![]),
+        let control = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -347,7 +349,8 @@ mod normal_form {
             },
             location: Location::default(),
         };
-        let mut unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let mut unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![
@@ -443,7 +446,8 @@ mod normal_form {
                 location: Location::default(),
             },
         ];
-        let control = UnitaryNode { contracts: (vec![], vec![]),
+        let control = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![
@@ -527,7 +531,8 @@ mod normal_form {
             },
             location: Location::default(),
         };
-        let mut unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let mut unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![

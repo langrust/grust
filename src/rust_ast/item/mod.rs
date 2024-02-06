@@ -96,7 +96,8 @@ mod fmt {
 
     #[test]
     fn should_format_function_definition() {
-        let function = Item::Function(Function {attributes: vec![],
+        let function = Item::Function(Function {
+            attributes: vec![],
             signature: Signature {
                 public_visibility: true,
                 name: String::from("foo"),

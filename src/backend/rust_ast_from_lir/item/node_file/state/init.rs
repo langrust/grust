@@ -52,7 +52,11 @@ pub fn rust_ast_from_lir(init: Init) -> AssociatedItem {
     let body = Block {
         statements: vec![statement],
     };
-    AssociatedItem::AssociatedMethod { attributes: vec![], signature, body }
+    AssociatedItem::AssociatedMethod {
+        attributes: vec![],
+        signature,
+        body,
+    }
 }
 
 #[cfg(test)]

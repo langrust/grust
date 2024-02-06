@@ -156,7 +156,8 @@ mod lir_from_hir {
                 },
             )]),
         };
-        let unitary_node = UnitaryNode { contracts: (vec![], vec![]),
+        let unitary_node = UnitaryNode {
+            contracts: (vec![], vec![]),
             node_id: format!("my_node"),
             output_id: format!("o"),
             inputs: vec![(format!("x"), Type::Integer)],
@@ -246,7 +247,8 @@ mod lir_from_hir {
                         node_name: format!("other_node_o"),
                     },
                 ],
-                step: Step {contracts: (vec![], vec![]),
+                step: Step {
+                    contracts: (vec![], vec![]),
                     node_name: format!("my_node_o"),
                     output_type: Type::Integer,
                     body: vec![

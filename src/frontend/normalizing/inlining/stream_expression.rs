@@ -1808,7 +1808,9 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let my_node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -1818,7 +1820,8 @@ mod inline_when_needed {
             unscheduled_equations: HashMap::from([(String::from("o"), my_node_equation.clone())]),
             unitary_nodes: HashMap::from([(
                 String::from("o"),
-                UnitaryNode { contracts: (vec![], vec![]),
+                UnitaryNode {
+                    contracts: (vec![], vec![]),
                     node_id: String::from("my_node"),
                     output_id: String::from("o"),
                     inputs: vec![
@@ -1867,7 +1870,9 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let other_node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -1877,7 +1882,8 @@ mod inline_when_needed {
             )]),
             unitary_nodes: HashMap::from([(
                 String::from("o"),
-                UnitaryNode { contracts: (vec![], vec![]),
+                UnitaryNode {
+                    contracts: (vec![], vec![]),
                     node_id: String::from("other_node"),
                     output_id: String::from("o"),
                     inputs: vec![(String::from("i"), Type::Integer)],
@@ -2019,7 +2025,9 @@ mod inline_when_needed {
             format!("other_node"),
             format!("o"),
         );
-        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
+        let mut node = Node {
+            assertions: Default::default(),
+            contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -2029,7 +2037,8 @@ mod inline_when_needed {
             ]),
             unitary_nodes: HashMap::from([(
                 String::from("y"),
-                UnitaryNode { contracts: (vec![], vec![]),
+                UnitaryNode {
+                    contracts: (vec![], vec![]),
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],

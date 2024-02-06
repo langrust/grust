@@ -8,24 +8,22 @@ use crate::error::{Error, TerminationError};
 
 use super::term::Term;
 
-
 /// Whether the assertion is inductive (invariant) or not
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize)]
 pub enum AssertKind {
     Assert,
-    Invariant
+    Invariant,
 }
 
 /// LanGRust assertions
 #[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct Assertion {
-    pub kind : AssertKind,
+    pub kind: AssertKind,
     /// ...
     pub term: Term,
     /// ...
     pub location: Location,
 }
-
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust equation AST.

@@ -56,7 +56,11 @@ impl std::fmt::Display for AssociatedItem {
             AssociatedItem::AssociatedType { name, r#type } => {
                 write!(f, "type {name} = {};", r#type)
             }
-            AssociatedItem::AssociatedMethod { attributes, signature, body } => {
+            AssociatedItem::AssociatedMethod {
+                attributes,
+                signature,
+                body,
+            } => {
                 write!(f, "{signature} {body}")
             }
         }
