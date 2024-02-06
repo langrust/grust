@@ -6,6 +6,7 @@ use proc_macro2::Span;
 use syn::*;
 /// Transform LIR array alias into RustAST type alias.
 pub fn rust_ast_from_lir(array_alias: ArrayAlias) -> ItemType {
+    let size = array_alias.size;
     ItemType {
         attrs: Default::default(),
         vis: Visibility::Public(Default::default()),
@@ -13,7 +14,13 @@ pub fn rust_ast_from_lir(array_alias: ArrayAlias) -> ItemType {
         ident: Ident::new(&array_alias.name, Span::call_site()),
         generics: Default::default(),
         eq_token: Default::default(),
-        ty: Box::new(type_rust_ast_from_lir(array_alias.array_type)),
+        ty: Box::new(Type::Array(TypeArray {
+            bracket_token: Default::default(),
+            elem: Box::new(type_rust_ast_from_lir(array_alias.array_type)),
+            semi_token: Default::default(),
+            len: parse_quote! { #size},
+        })),
+
         semi_token: Default::default(),
     }
 }
@@ -33,7 +40,7 @@ mod rust_ast_from_lir {
             size: 5,
         };
 
-        let control = parse_quote! { pub type Matrix5x5 = [[i64; 5]; 5];};
+        let control = parse_quote! { pub type Matrix5x5 = [[i64; 5usize]; 5usize];};
         assert_eq!(rust_ast_from_lir(array_alias), control)
     }
 }
