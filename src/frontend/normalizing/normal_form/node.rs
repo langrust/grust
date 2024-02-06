@@ -158,7 +158,7 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -277,7 +277,7 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::from(graph),
         };
-        let control = Node { contracts: (vec![], vec![]),
+        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -373,7 +373,7 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -481,7 +481,7 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::from(graph),
         };
-        let control = Node { contracts: (vec![], vec![]),
+        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -577,7 +577,7 @@ mod normal_form {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![

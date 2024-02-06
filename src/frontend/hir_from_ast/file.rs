@@ -93,7 +93,7 @@ mod hir_from_ast {
             expression: ast_expression,
             location: Location::default(),
         };
-        let ast_node = Node { contracts: (vec![], vec![]),
+        let ast_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -142,6 +142,7 @@ mod hir_from_ast {
             location: Location::default(),
         };
         let control_node = HIRNode { contracts: (vec![], vec![]),
+            assertions: vec![],
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -246,7 +247,7 @@ mod hir_from_ast {
             expression: ast_expression,
             location: Location::default(),
         };
-        let ast_node = Node { contracts: (vec![], vec![]),
+        let ast_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

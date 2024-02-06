@@ -549,7 +549,7 @@ mod inline_when_needed {
                 dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
             },
         );
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -609,7 +609,7 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -747,7 +747,7 @@ mod inline_when_needed {
             format!("other_node"),
             format!("o"),
         );
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -882,7 +882,7 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -941,7 +941,7 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -1079,7 +1079,7 @@ mod inline_when_needed {
             format!("other_node"),
             format!("o"),
         );
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -1250,7 +1250,7 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -1309,7 +1309,7 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -1463,7 +1463,7 @@ mod inline_when_needed {
             format!("other_node"),
             format!("o"),
         );
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -1675,7 +1675,7 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -1734,7 +1734,7 @@ mod inline_when_needed {
             },
             location: Location::default(),
         };
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -1888,7 +1888,7 @@ mod inline_when_needed {
             format!("other_node"),
             format!("o"),
         );
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -2124,7 +2124,7 @@ mod inline_when_needed_reccursive {
                 dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
             },
         );
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -2184,7 +2184,7 @@ mod inline_when_needed_reccursive {
             },
             location: Location::default(),
         };
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -2322,7 +2322,7 @@ mod inline_when_needed_reccursive {
             format!("other_node"),
             format!("o"),
         );
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -2457,7 +2457,7 @@ mod inline_when_needed_reccursive {
             },
             location: Location::default(),
         };
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -2516,7 +2516,7 @@ mod inline_when_needed_reccursive {
             },
             location: Location::default(),
         };
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -2654,7 +2654,7 @@ mod inline_when_needed_reccursive {
             format!("other_node"),
             format!("o"),
         );
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -2825,7 +2825,10 @@ mod inline_when_needed_reccursive {
             },
             location: Location::default(),
         };
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node = Node {
+            contracts: Default::default(),
+            assertions: vec![],
+
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -2884,7 +2887,9 @@ mod inline_when_needed_reccursive {
             },
             location: Location::default(),
         };
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node = Node {
+            contracts: Default::default(),
+            assertions: vec![],
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -3038,7 +3043,7 @@ mod inline_when_needed_reccursive {
             format!("other_node"),
             format!("o"),
         );
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -3244,7 +3249,7 @@ mod inline_when_needed_reccursive {
             },
             location: Location::default(),
         };
-        let my_node = Node { contracts: (vec![], vec![]),
+        let my_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -3303,7 +3308,7 @@ mod inline_when_needed_reccursive {
             },
             location: Location::default(),
         };
-        let other_node = Node { contracts: (vec![], vec![]),
+        let other_node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -3441,7 +3446,7 @@ mod inline_when_needed_reccursive {
             format!("other_node"),
             format!("o"),
         );
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],

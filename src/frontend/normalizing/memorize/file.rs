@@ -124,7 +124,7 @@ mod memorize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -215,7 +215,7 @@ mod memorize {
         let control = File {
             typedefs: vec![],
             functions: vec![],
-            nodes: vec![Node { contracts: (vec![], vec![]),
+            nodes: vec![Node { assertions: Default::default(), contracts: (vec![], vec![]),
                 id: String::from("test"),
                 is_component: false,
                 inputs: vec![
@@ -375,7 +375,7 @@ mod memorize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -419,7 +419,7 @@ mod memorize {
         let control = File {
             typedefs: vec![],
             functions: vec![],
-            nodes: vec![Node { contracts: (vec![], vec![]),
+            nodes: vec![Node { assertions: Default::default(), contracts: (vec![], vec![]),
                 id: String::from("test"),
                 is_component: false,
                 inputs: vec![

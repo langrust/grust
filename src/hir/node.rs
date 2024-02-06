@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{ast::term::Term, common::{
+use crate::{ast::{equation::Assertion, term::Term}, common::{
     graph::{color::Color, Graph}, location::Location, serialize::ordered_map, r#type::Type
 }};
 use crate::hir::{equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
@@ -22,6 +22,8 @@ pub struct Node {
     pub unitary_nodes: HashMap<String, UnitaryNode>,
     /// Node's contracts.
     pub contracts: (Vec<Term>, Vec<Term>),
+    /// Node's assertions,
+    pub assertions: Vec<Assertion>,
     /// Node location.
     pub location: Location,
     /// Node dependency graph.
@@ -86,7 +88,7 @@ mod eq_unscheduled {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("y"), Type::Integer)],
@@ -149,7 +151,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
 
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -171,7 +173,7 @@ mod eq_unscheduled {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let other = Node { contracts: (vec![], vec![]),
+        let other =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -235,7 +237,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
 
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -257,7 +259,7 @@ mod eq_unscheduled {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let other = Node { contracts: (vec![], vec![]),
+        let other =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -330,7 +332,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
 
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -346,7 +348,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
 
-        let other = Node { contracts: (vec![], vec![]),
+        let other =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -413,7 +415,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
 
-        let node = Node { contracts: (vec![], vec![]),
+        let node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -444,7 +446,7 @@ mod eq_unscheduled {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let other = Node { contracts: (vec![], vec![]),
+        let other =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],

@@ -123,7 +123,7 @@ mod memorize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -204,7 +204,7 @@ mod memorize {
         graph.add_vertex(format!("mem_x"), Color::White);
         graph.add_edge(&format!("x"), format!("s"), 0);
         graph.add_edge(&format!("x"), format!("mem_x"), 0);
-        let control = Node {  contracts: (vec![], vec![]),
+        let control = Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -361,7 +361,7 @@ mod memorize {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut node = Node { contracts: (vec![], vec![]),
+        let mut node =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -395,7 +395,7 @@ mod memorize {
         graph.add_edge(&format!("x_2"), format!("s"), 0);
         graph.add_edge(&format!("x_2"), format!("x_1"), 0);
         graph.add_edge(&format!("x_1"), format!("v"), 0);
-        let control = Node { contracts: (vec![], vec![]),
+        let control =Node { assertions: Default::default(), contracts: (vec![], vec![]),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
