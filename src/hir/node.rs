@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use crate::ast::term::Contract;
 use crate::hir::{equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode};
 use crate::{
-    ast::{equation::Assertion, term::Term},
+    ast::equation::Assertion,
     common::{
         graph::{color::Color, Graph},
         location::Location,
@@ -27,7 +28,7 @@ pub struct Node {
     #[serde(serialize_with = "ordered_map")]
     pub unitary_nodes: HashMap<String, UnitaryNode>,
     /// Node's contracts.
-    pub contracts: (Vec<Term>, Vec<Term>),
+    pub contracts: Contract,
     /// Node's assertions,
     pub assertions: Vec<Assertion>,
     /// Node location.
@@ -86,7 +87,7 @@ mod eq_unscheduled {
             location: Location::default(),
         };
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("y"), Type::Integer)],
@@ -97,7 +98,7 @@ mod eq_unscheduled {
         };
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("y"), Type::Integer)],
@@ -151,7 +152,7 @@ mod eq_unscheduled {
             location: Location::default(),
         };
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -163,7 +164,7 @@ mod eq_unscheduled {
 
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -177,7 +178,7 @@ mod eq_unscheduled {
         };
 
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -188,7 +189,7 @@ mod eq_unscheduled {
         };
         let other = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -243,7 +244,7 @@ mod eq_unscheduled {
             location: Location::default(),
         };
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -255,7 +256,7 @@ mod eq_unscheduled {
 
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -269,7 +270,7 @@ mod eq_unscheduled {
         };
 
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -280,7 +281,7 @@ mod eq_unscheduled {
         };
         let other = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -335,7 +336,7 @@ mod eq_unscheduled {
             location: Location::default(),
         };
         let unitary_node_1 = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -345,7 +346,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
         let unitary_node_2 = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -357,7 +358,7 @@ mod eq_unscheduled {
 
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -375,7 +376,7 @@ mod eq_unscheduled {
 
         let other = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -433,7 +434,7 @@ mod eq_unscheduled {
             location: Location::default(),
         };
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -445,7 +446,7 @@ mod eq_unscheduled {
 
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -459,7 +460,7 @@ mod eq_unscheduled {
         };
 
         let unitary_node_1 = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -469,7 +470,7 @@ mod eq_unscheduled {
             graph: OnceCell::new(),
         };
         let unitary_node_2 = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -480,7 +481,7 @@ mod eq_unscheduled {
         };
         let other = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],

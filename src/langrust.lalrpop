@@ -10,7 +10,7 @@ use crate::ast::{
     statement::Statement,
     stream_expression::StreamExpression,
     typedef::Typedef,
-    term::{Term, TermKind},
+    term::{Term, TermKind, ClauseKind},
     equation::{AssertKind, Assertion}
 };
 use crate::common::{
@@ -241,9 +241,30 @@ termProof: Term = {
     },
 }
 
-contracts: (Vec<Term>, Vec<Term>) = {
-    <v1: ("requires" "{" <termProof> "}")*> <v2: ("ensures" "{" <termProof> "}")*> => {
-        (v1, v2)
+clause_kind : ClauseKind = {
+    "requires" => ClauseKind::Requires,
+    "ensures" => ClauseKind::Ensures,
+    "assert" => ClauseKind::Assert,
+    "invariant" => ClauseKind::Invariant,
+}
+
+contract_clause : (ClauseKind, Term) = {
+    <kind: clause_kind> "{" <term : termProof> "}" => (kind, temr)
+}
+
+contracts: Contract = {
+    <mut clauses : contract_clause*> => {
+        let mut contract = Contract::default();
+
+        for c in clauses {
+            match c.0 {
+                ClauseKind::Requires => contract.requires.push(c.1),
+                ClauseKind::Ensures => contract.ensures.push(c.1),
+                ClauseKind::Assert => contract.assert.push(c.1),
+                ClauseKind::Invariant => contract.invariant.push(c.1),
+            }
+        }
+        c
     }
 }
 

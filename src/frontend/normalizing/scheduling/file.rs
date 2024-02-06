@@ -180,7 +180,7 @@ mod schedule {
         //     x: int = v*2 + o_1
         // }
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -201,7 +201,7 @@ mod schedule {
         unitary_node.graph.set(graph.clone()).unwrap();
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -240,7 +240,7 @@ mod schedule {
         //     out y: int = other_node(x-1).o
         // }
         let control = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -380,7 +380,7 @@ mod schedule {
         //     x: int = v*2 + o_1
         // }
         let unitary_node = UnitaryNode {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -402,7 +402,7 @@ mod schedule {
 
         let node = Node {
             assertions: Default::default(),
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],

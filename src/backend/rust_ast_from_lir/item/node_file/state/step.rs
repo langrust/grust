@@ -1,4 +1,4 @@
-use crate::ast::term::Term;
+use crate::ast::term::{Contract, Term};
 use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
@@ -45,7 +45,7 @@ fn term_to_token_stream(term: Term) -> TokenStream {
 
 /// Transform LIR step into RustAST implementation method.
 pub fn rust_ast_from_lir(step: Step) -> AssociatedItem {
-    let (requires, ensures) = step.contracts;
+    let Contract { requires, ensures, .. } = step.contracts;
     let mut requires_attributes = requires
         .into_iter()
         .map(|term| {
@@ -141,7 +141,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
         let init = Step {
-            contracts: (vec![], vec![]),
+            contracts: Default::default(),
             node_name: format!("Node"),
             output_type: Type::Integer,
             body: vec![
