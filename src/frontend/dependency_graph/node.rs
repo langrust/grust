@@ -4,6 +4,7 @@ use crate::common::graph::neighbor::Label;
 use crate::common::graph::{color::Color, neighbor::Neighbor, Graph};
 use crate::error::{Error, TerminationError};
 use crate::hir::node::Node;
+use crate::hir::term::Contract;
 
 impl Node {
     /// Create an initialized graph from a node.
@@ -35,7 +36,7 @@ impl Node {
         graph
     }
 
-    /// Complete dependency graph of the node.
+    /// Complete dependency graph of the node's equations.
     ///
     /// # Example
     ///
@@ -45,7 +46,7 @@ impl Node {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn add_all_dependencies(
+    pub fn add_all_equations_dependencies(
         &self,
         nodes_context: &HashMap<String, Node>,
         nodes_graphs: &mut HashMap<String, Graph<Color>>,
@@ -156,9 +157,9 @@ impl Node {
 
                         // add dependencies as graph's edges:
                         // s = e depends on s' <=> s -> s'
-                        dependencies
-                            .iter()
-                            .for_each(|(id, depth)| graph.add_weighted_edge(signal, id.clone(), *depth));
+                        dependencies.iter().for_each(|(id, depth)| {
+                            graph.add_weighted_edge(signal, id.clone(), *depth)
+                        });
 
                         Ok(())
                     })?;
@@ -267,14 +268,17 @@ impl Node {
                                     reduced_graph.add_edge(signal, id, Label::Contract)
                                 },
                             ),
-                            Label::Weight(w1) => reduced_vertex.get_neighbors().into_iter().for_each(
-                                |Neighbor { id, label: l2 }| {
-                                    match l2 {
-                                       Label::Contract => reduced_graph.add_edge(signal, id, Label::Contract),
-                                       Label::Weight(w2) => reduced_graph.add_edge(signal, id, Label::Weight(w1 + w2)),
+                            Label::Weight(w1) => reduced_vertex
+                                .get_neighbors()
+                                .into_iter()
+                                .for_each(|Neighbor { id, label: l2 }| match l2 {
+                                    Label::Contract => {
+                                        reduced_graph.add_edge(signal, id, Label::Contract)
                                     }
-                                },
-                            ),
+                                    Label::Weight(w2) => {
+                                        reduced_graph.add_edge(signal, id, Label::Weight(w1 + w2))
+                                    }
+                                }),
                         }
                     }
                 }
@@ -288,6 +292,50 @@ impl Node {
             }
             _ => Ok(()),
         }
+    }
+
+    /// Add signal dependencies in contracts.
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// requires { j < i }  // i and j depend on each other
+    /// ensures  { j < o }  // o and j depend on each other
+    /// node test(i: int, j: int) {
+    ///     out o: int = i;
+    /// }
+    /// ```
+    pub fn add_contract_dependencies(&self, nodes_graphs: &mut HashMap<String, Graph<Color>>) {
+        let Node {
+            id: node,
+            contracts:
+                Contract {
+                    requires,
+                    ensures,
+                    invariant,
+                    assert,
+                },
+            location,
+            ..
+        } = self;
+
+        // get node's graph
+        let graph = nodes_graphs.get_mut(node).unwrap();
+
+        // add edges to the graph
+        // corresponding to dependencies in contract's terms
+        requires
+            .iter()
+            .for_each(|term| term.add_term_dependencies(graph));
+        ensures
+            .iter()
+            .for_each(|term| term.add_term_dependencies(graph));
+        invariant
+            .iter()
+            .for_each(|term| term.add_term_dependencies(graph));
+        assert
+            .iter()
+            .for_each(|term| term.add_term_dependencies(graph));
     }
 }
 
@@ -369,7 +417,7 @@ mod create_initialized_graph {
 }
 
 #[cfg(test)]
-mod add_all_dependencies {
+mod add_all_equations_dependencies {
 
     use std::collections::HashMap;
 
@@ -445,7 +493,7 @@ mod add_all_dependencies {
         let reduced_graph = node.create_initialized_graph();
         let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
 
-        node.add_all_dependencies(
+        node.add_all_equations_dependencies(
             &nodes_context,
             &mut nodes_graphs,
             &mut nodes_reduced_graphs,

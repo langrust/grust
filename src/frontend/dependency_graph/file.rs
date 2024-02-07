@@ -44,11 +44,12 @@ impl File {
             .map(|node| (node.id.clone(), node.clone()))
             .collect::<HashMap<_, _>>();
 
-        // every nodes complete their dependency graphs
+        // every nodes complete their equations and contract dependency graphs
         nodes
             .iter()
             .map(|node| {
-                node.add_all_dependencies(
+                node.add_contract_dependencies(&mut nodes_graphs);
+                node.add_all_equations_dependencies(
                     &nodes_context,
                     &mut nodes_graphs,
                     &mut nodes_reduced_graphs,
@@ -61,7 +62,8 @@ impl File {
 
         // optional component completes its dependency graph
         component.as_ref().map_or(Ok(()), |component| {
-            component.add_all_dependencies(
+            component.add_contract_dependencies(&mut nodes_graphs);
+            component.add_all_equations_dependencies(
                 &nodes_context,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
