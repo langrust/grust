@@ -42,18 +42,19 @@ impl File {
     /// ```
     pub fn generate_unitary_nodes(
         &mut self,
+        creusot_contract: bool,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         // unitary nodes computations, it induces unused signals tracking
         self.nodes
             .iter_mut()
-            .map(|node| node.generate_unitary_nodes(errors))
+            .map(|node| node.generate_unitary_nodes(creusot_contract, errors))
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
         self.component
             .as_mut()
-            .map_or(Ok(()), |component| component.generate_unitary_nodes(errors))?;
+            .map_or(Ok(()), |component| component.generate_unitary_nodes(creusot_contract, errors))?;
 
         // get, for each unitary node, initial node's inputs
         // that are used by the unitary node
@@ -209,7 +210,7 @@ mod generate_unitary_nodes {
             component: None,
             location: Location::default(),
         };
-        file.generate_unitary_nodes(&mut errors).unwrap();
+        file.generate_unitary_nodes(false, &mut errors).unwrap();
 
         let node_control = Node {
             contracts: Default::default(),
@@ -848,7 +849,7 @@ mod generate_unitary_nodes {
             component: None,
             location: Location::default(),
         };
-        file.generate_unitary_nodes(&mut errors).unwrap();
+        file.generate_unitary_nodes(false, &mut errors).unwrap();
 
         // my_node(x: int, y: int) { out o: int = x*y; }
         let my_node = Node {

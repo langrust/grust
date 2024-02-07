@@ -157,7 +157,7 @@ impl File {
     /// }
     /// ```
     pub fn normalize(&mut self, errors: &mut Vec<Error>) -> Result<(), TerminationError> {
-        self.generate_unitary_nodes(errors)?; // check that all signals are used
+        self.generate_unitary_nodes(true, errors)?; // check that all signals are used
         self.normal_form();
         self.memorize();
         self.inline_when_needed();
