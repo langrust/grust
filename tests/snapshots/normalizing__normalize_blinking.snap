@@ -377,7 +377,8 @@ nodes:
               value: White
               neighbors:
                 - id: tick
-                  weight: 0
+                  label:
+                    Weight: 0
             mem_o:
               id: mem_o
               value: White
@@ -387,11 +388,14 @@ nodes:
               value: White
               neighbors:
                 - id: res
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: mem_o
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: inc
-                  weight: 0
+                  label:
+                    Weight: 0
             res:
               id: res
               value: White
@@ -400,6 +404,16 @@ nodes:
               id: tick
               value: White
               neighbors: []
+        contracts:
+          requires: []
+          ensures: []
+          invariant: []
+          assert: []
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -408,17 +422,21 @@ nodes:
           value: Black
           neighbors:
             - id: tick
-              weight: 0
+              label:
+                Weight: 0
         o:
           id: o
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: o
-              weight: 1
+              label:
+                Weight: 1
             - id: inc
-              weight: 0
+              label:
+                Weight: 0
         res:
           id: res
           value: Black
@@ -968,9 +986,11 @@ nodes:
               value: White
               neighbors:
                 - id: res
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: x
-                  weight: 0
+                  label:
+                    Weight: 0
             mem_on_off:
               id: mem_on_off
               value: White
@@ -984,23 +1004,28 @@ nodes:
               value: White
               neighbors:
                 - id: res
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: mem_on_off
-                  weight: 0
+                  label:
+                    Weight: 0
             res:
               id: res
               value: White
               neighbors:
                 - id: mem_res
-                  weight: 0
+                  label:
+                    Weight: 0
             status:
               id: status
               value: White
               neighbors:
                 - id: on_off
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: counter
-                  weight: 0
+                  label:
+                    Weight: 0
             tick_number:
               id: tick_number
               value: White
@@ -1009,6 +1034,16 @@ nodes:
               id: x
               value: White
               neighbors: []
+        contracts:
+          requires: []
+          ensures: []
+          invariant: []
+          assert: []
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -1017,33 +1052,41 @@ nodes:
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: res
-              weight: 1
+              label:
+                Weight: 1
         on_off:
           id: on_off
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: on_off
-              weight: 1
+              label:
+                Weight: 1
         res:
           id: res
           value: Black
           neighbors:
             - id: counter
-              weight: 1
+              label:
+                Weight: 1
             - id: tick_number
-              weight: 1
+              label:
+                Weight: 1
         status:
           id: status
           value: Black
           neighbors:
             - id: on_off
-              weight: 0
+              label:
+                Weight: 0
             - id: counter
-              weight: 0
+              label:
+                Weight: 0
         tick_number:
           id: tick_number
           value: Black

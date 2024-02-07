@@ -184,6 +184,11 @@ nodes:
             dependencies: ~
         location: ~
     unitary_nodes: {}
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph: ~
   - id: blinking
@@ -395,6 +400,11 @@ nodes:
             dependencies: ~
         location: ~
     unitary_nodes: {}
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph: ~
 component: ~

@@ -123,6 +123,11 @@ items:
           output_expression:
             Identifier:
               identifier: i
+          contracts:
+            requires: []
+            ensures: []
+            invariant: []
+            assert: []
         init:
           node_name: integrate_i
           state_elements_init:
@@ -130,6 +135,7 @@ items:
                 identifier: mem_prev_i
                 initial_value:
                   Float: 0
+          postconditions: []
   - NodeFile:
       name: derive_d
       imports: []
@@ -187,6 +193,11 @@ items:
           output_expression:
             Identifier:
               identifier: d
+          contracts:
+            requires: []
+            ensures: []
+            invariant: []
+            assert: []
         init:
           node_name: derive_d
           state_elements_init:
@@ -194,6 +205,7 @@ items:
                 identifier: mem_prev_x
                 initial_value:
                   Float: 0
+          postconditions: []
   - NodeFile:
       name: pid_u
       imports:
@@ -344,6 +356,11 @@ items:
           output_expression:
             Identifier:
               identifier: u
+          contracts:
+            requires: []
+            ensures: []
+            invariant: []
+            assert: []
         init:
           node_name: pid_u
           state_elements_init:
@@ -353,4 +370,5 @@ items:
             - CalledNodeInit:
                 identifier: integrate_i_e_i
                 node_name: integrate_i
+          postconditions: []
 

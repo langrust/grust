@@ -163,6 +163,11 @@ nodes:
               typing: Integer
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
   - id: blinking
     is_component: false
@@ -338,6 +343,11 @@ nodes:
               typing: Boolean
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
 component: ~
 location: ~

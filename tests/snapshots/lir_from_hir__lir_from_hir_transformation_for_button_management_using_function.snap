@@ -138,6 +138,11 @@ items:
           output_expression:
             Identifier:
               identifier: o
+          contracts:
+            requires: []
+            ensures: []
+            invariant: []
+            assert: []
         init:
           node_name: counter_o
           state_elements_init:
@@ -145,6 +150,7 @@ items:
                 identifier: mem_o
                 initial_value:
                   Integer: 0
+          postconditions: []
   - NodeFile:
       name: reset_button_user_reset_request
       imports:
@@ -285,6 +291,11 @@ items:
           output_expression:
             Identifier:
               identifier: user_reset_request
+          contracts:
+            requires: []
+            ensures: []
+            invariant: []
+            assert: []
         init:
           node_name: reset_button_user_reset_request
           state_elements_init:
@@ -299,6 +310,7 @@ items:
             - CalledNodeInit:
                 identifier: counter_o_counter
                 node_name: counter_o
+          postconditions: []
   - NodeFile:
       name: reset_button_user_reset_request_state
       imports:
@@ -406,6 +418,11 @@ items:
           output_expression:
             Identifier:
               identifier: user_reset_request_state
+          contracts:
+            requires: []
+            ensures: []
+            invariant: []
+            assert: []
         init:
           node_name: reset_button_user_reset_request_state
           state_elements_init:
@@ -416,4 +433,5 @@ items:
             - CalledNodeInit:
                 identifier: counter_o_counter
                 node_name: counter_o
+          postconditions: []
 

@@ -108,6 +108,11 @@ nodes:
             dependencies: ~
         location: ~
     unitary_nodes: {}
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph: ~
   - id: reset_button
@@ -460,6 +465,11 @@ nodes:
             dependencies: ~
         location: ~
     unitary_nodes: {}
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph: ~
 component: ~

@@ -180,6 +180,11 @@ nodes:
               typing: Float
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
   - id: derive
     is_component: false
@@ -261,6 +266,11 @@ nodes:
               typing: Float
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
 component:
   id: pid
@@ -493,6 +503,11 @@ component:
             typing: Float
             location: ~
         location: ~
+  contracts:
+    requires: []
+    ensures: []
+    invariant: []
+    assert: []
   location: ~
 location: ~
 

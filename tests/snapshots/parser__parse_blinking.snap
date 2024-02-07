@@ -138,6 +138,11 @@ nodes:
               typing: ~
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
   - id: blinking
     is_component: false
@@ -289,6 +294,11 @@ nodes:
               typing: ~
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
 component: ~
 location: ~

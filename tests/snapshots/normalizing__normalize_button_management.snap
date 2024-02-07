@@ -262,15 +262,28 @@ nodes:
               value: White
               neighbors:
                 - id: res
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: mem_o
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: inc
-                  weight: 0
+                  label:
+                    Weight: 0
             res:
               id: res
               value: White
               neighbors: []
+        contracts:
+          requires: []
+          ensures: []
+          invariant: []
+          assert: []
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -283,11 +296,14 @@ nodes:
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: o
-              weight: 1
+              label:
+                Weight: 1
             - id: inc
-              weight: 0
+              label:
+                Weight: 0
         res:
           id: res
           value: Black
@@ -1075,9 +1091,11 @@ nodes:
               value: White
               neighbors:
                 - id: res
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: period
-                  weight: 0
+                  label:
+                    Weight: 0
             mem_res:
               id: mem_res
               value: White
@@ -1095,9 +1113,11 @@ nodes:
               value: White
               neighbors:
                 - id: button_state
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: mem_res
-                  weight: 0
+                  label:
+                    Weight: 0
             reset_limit_1:
               id: reset_limit_1
               value: White
@@ -1111,15 +1131,25 @@ nodes:
               value: White
               neighbors:
                 - id: mem_user_reset_request
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: counter
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: reset_limit_1
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: reset_limit_2
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: button_state
-                  weight: 0
+                  label:
+                    Weight: 0
+        contracts:
+          requires: []
+          ensures: []
+          invariant: []
+          assert: []
       user_reset_request_state:
         node_id: reset_button
         output_id: user_reset_request_state
@@ -1451,9 +1481,11 @@ nodes:
               value: White
               neighbors:
                 - id: res
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: period
-                  weight: 0
+                  label:
+                    Weight: 0
             mem_res:
               id: mem_res
               value: White
@@ -1467,9 +1499,11 @@ nodes:
               value: White
               neighbors:
                 - id: button_state
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: mem_res
-                  weight: 0
+                  label:
+                    Weight: 0
             reset_limit_1:
               id: reset_limit_1
               value: White
@@ -1479,11 +1513,24 @@ nodes:
               value: White
               neighbors:
                 - id: counter
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: reset_limit_1
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: button_state
-                  weight: 0
+                  label:
+                    Weight: 0
+        contracts:
+          requires: []
+          ensures: []
+          invariant: []
+          assert: []
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -1496,11 +1543,14 @@ nodes:
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: res
-              weight: 1
+              label:
+                Weight: 1
             - id: period
-              weight: 0
+              label:
+                Weight: 0
         period:
           id: period
           value: Black
@@ -1510,9 +1560,11 @@ nodes:
           value: Black
           neighbors:
             - id: button_state
-              weight: 0
+              label:
+                Weight: 0
             - id: button_state
-              weight: 1
+              label:
+                Weight: 1
         reset_limit_1:
           id: reset_limit_1
           value: Black
@@ -1526,25 +1578,33 @@ nodes:
           value: Black
           neighbors:
             - id: user_reset_request
-              weight: 1
+              label:
+                Weight: 1
             - id: counter
-              weight: 0
+              label:
+                Weight: 0
             - id: reset_limit_1
-              weight: 0
+              label:
+                Weight: 0
             - id: reset_limit_2
-              weight: 0
+              label:
+                Weight: 0
             - id: button_state
-              weight: 0
+              label:
+                Weight: 0
         user_reset_request_state:
           id: user_reset_request_state
           value: Black
           neighbors:
             - id: counter
-              weight: 0
+              label:
+                Weight: 0
             - id: reset_limit_1
-              weight: 0
+              label:
+                Weight: 0
             - id: button_state
-              weight: 0
+              label:
+                Weight: 0
 component: ~
 location: ~
 

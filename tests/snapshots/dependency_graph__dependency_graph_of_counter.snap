@@ -160,6 +160,11 @@ nodes:
                 - 0
         location: ~
     unitary_nodes: {}
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -168,17 +173,21 @@ nodes:
           value: Black
           neighbors:
             - id: tick
-              weight: 0
+              label:
+                Weight: 0
         o:
           id: o
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: o
-              weight: 1
+              label:
+                Weight: 1
             - id: inc
-              weight: 0
+              label:
+                Weight: 0
         res:
           id: res
           value: Black
@@ -315,6 +324,11 @@ component:
               - 0
       location: ~
   unitary_nodes: {}
+  contracts:
+    requires: []
+    ensures: []
+    invariant: []
+    assert: []
   location: ~
   graph:
     vertices:
@@ -323,16 +337,20 @@ component:
         value: Black
         neighbors:
           - id: half
-            weight: 1
+            label:
+              Weight: 1
       y:
         id: y
         value: Black
         neighbors:
           - id: y
-            weight: 1
+            label:
+              Weight: 1
           - id: y
-            weight: 2
+            label:
+              Weight: 2
           - id: half
-            weight: 0
+            label:
+              Weight: 0
 location: ~
 
