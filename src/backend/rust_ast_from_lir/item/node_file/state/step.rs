@@ -51,7 +51,8 @@ fn term_to_token_stream(term: Term) -> TokenStream {
                 Scope::Memory => {
                     quote!(self.#id)
                 },
-                Scope::Output | Scope::Local => quote!(#id),
+                Scope::Output => quote!(result),
+                Scope::Local => quote!(#id),
             }
         },
     }
