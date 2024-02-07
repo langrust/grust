@@ -13,7 +13,7 @@ pub mod color;
 use std::collections::HashMap;
 
 use crate::common::{
-    graph::{color::Color, vertex::Vertex, neighbor::Label},
+    graph::{color::Color, neighbor::Label, vertex::Vertex},
     serialize::ordered_map,
 };
 
@@ -74,7 +74,8 @@ where
             panic!("vertices '{from}' or '{to}' do not exist")
         }
         if !self.has_weighted_edge(from, &to, &weight) {
-            self.get_vertex_mut(from).add_neighbor(to, Label::Weight(weight))
+            self.get_vertex_mut(from)
+                .add_neighbor(to, Label::Weight(weight))
         }
     }
 
@@ -90,7 +91,10 @@ where
 
     /// Tells if weighted edge already exist with this weight.
     pub fn has_weighted_edge(&self, from: &String, to: &String, weight: &usize) -> bool {
-        self.has_vertex(from) && self.get_vertex(from).has_neighbor_label(to, &Label::Weight(*weight))
+        self.has_vertex(from)
+            && self
+                .get_vertex(from)
+                .has_neighbor_label(to, &Label::Weight(*weight))
     }
 
     /// Tells if edge already exist with this weight.
@@ -224,7 +228,7 @@ impl Graph<Color> {
     ///
     /// This creates a subgraph with all successors of the given vertex
     /// and their edges.
-    pub fn subgraph_from_vertex(&self, vertex: &String) -> Graph<Color> {
+    pub fn subgraph_from_vertex(&self, vertex: &String, only_weight: bool) -> Graph<Color> {
         let mut graph = self.clone();
 
         // initialize subgraph
@@ -237,12 +241,17 @@ impl Graph<Color> {
             .for_each(|vertex| vertex.set_value(Color::White));
 
         // process of vertices
-        graph.subgraph_from_vertex_visit(vertex, &mut subgraph);
+        graph.subgraph_from_vertex_visit(vertex, only_weight, &mut subgraph);
 
         subgraph
     }
 
-    fn subgraph_from_vertex_visit(&mut self, id: &String, subgraph: &mut Graph<Color>) {
+    fn subgraph_from_vertex_visit(
+        &mut self,
+        id: &String,
+        only_weight: bool,
+        subgraph: &mut Graph<Color>,
+    ) {
         // add vertex to subgraph
         subgraph.add_vertex(id.clone(), Color::White);
 
@@ -258,10 +267,15 @@ impl Graph<Color> {
                      id: neighbor,
                      label,
                  }| {
-                    // visit vertex successors
-                    self.subgraph_from_vertex_visit(neighbor, subgraph);
-                    // add edge
-                    subgraph.add_edge(id, neighbor.clone(), label.clone())
+                    match label {
+                        Label::Contract if only_weight => (),
+                        _ => {
+                            // visit vertex successors
+                            self.subgraph_from_vertex_visit(neighbor, only_weight, subgraph);
+                            // add edge
+                            subgraph.add_edge(id, neighbor.clone(), label.clone())
+                        }
+                    }
                 },
             );
 
@@ -301,7 +315,7 @@ impl Graph<Color> {
             .collect()
     }
 
-    /// Tells if there is a loop from the given vertex.
+    /// Tells if there is a loop of weighted edges from the given vertex.
     pub fn is_loop(&mut self, id: &String) -> bool {
         // initialize all vertices to "unprocessed" state
         self.vertices
@@ -321,13 +335,20 @@ impl Graph<Color> {
                 vertex.set_value(Color::Grey);
 
                 // processus propagation
-                vertex
-                    .get_neighbors()
-                    .iter()
-                    .any(|Neighbor { id: neighbor, .. }| {
-                        // visit vertex successors
-                        self.is_loop_visit(id_start, neighbor)
-                    })
+                vertex.get_neighbors().iter().any(
+                    |Neighbor {
+                         id: neighbor,
+                         label,
+                     }| {
+                        match label {
+                            Label::Contract => false,
+                            Label::Weight(_) => {
+                                // visit vertex successors
+                                self.is_loop_visit(id_start, neighbor)
+                            }
+                        }
+                    },
+                )
             }
             // if the vertex has been seen then check if we made a loop
             Color::Grey => id_start == id_current,
@@ -486,7 +507,7 @@ mod set_vertex_value {
 mod add_weighted_edge {
     use std::collections::HashMap;
 
-    use crate::common::graph::{vertex::Vertex, Graph, neighbor::Label};
+    use crate::common::graph::{neighbor::Label, vertex::Vertex, Graph};
 
     #[test]
     fn should_add_weighted_edge_between_existing_vertices() {
@@ -802,7 +823,7 @@ mod subgraph_from_vertex {
         graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
         graph.add_weighted_edge(&String::from("v3"), String::from("v2"), 0);
 
-        let subgraph = graph.subgraph_from_vertex(&String::from("v1"));
+        let subgraph = graph.subgraph_from_vertex(&String::from("v1"), true);
 
         let mut control = Graph::new();
         control.add_vertex(String::from("v1"), Color::White);
@@ -833,8 +854,8 @@ mod forgotten_vertices {
         graph.add_weighted_edge(&String::from("v1"), String::from("v3"), 0);
         graph.add_weighted_edge(&String::from("v3"), String::from("v2"), 0);
 
-        let subgraph1 = graph.subgraph_from_vertex(&String::from("v1"));
-        let subgraph2 = graph.subgraph_from_vertex(&String::from("v2"));
+        let subgraph1 = graph.subgraph_from_vertex(&String::from("v1"), true);
+        let subgraph2 = graph.subgraph_from_vertex(&String::from("v2"), true);
         let forgotten_vertices = graph.forgotten_vertices(vec![subgraph1, subgraph2]);
 
         let control = vec![String::from("v4")];

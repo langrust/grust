@@ -1,11 +1,15 @@
 use std::collections::HashMap;
 
-use crate::common::{
-    graph::{color::Color, Graph},
-    scope::Scope,
-};
 use crate::error::{Error, TerminationError};
+use crate::hir::term::Term;
 use crate::hir::{memory::Memory, node::Node, once_cell::OnceCell, unitary_node::UnitaryNode};
+use crate::{
+    common::{
+        graph::{color::Color, Graph},
+        scope::Scope,
+    },
+    hir::term::Contract,
+};
 
 pub type UsedInputs = Vec<(String, bool)>;
 
@@ -66,6 +70,7 @@ impl Node {
     /// It also detects unused signal definitions or inputs.
     pub fn generate_unitary_nodes(
         &mut self,
+        creusot_contract: bool,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         // get outputs identifiers
@@ -79,7 +84,7 @@ impl Node {
         // construct unitary node for each output
         let subgraphs = outputs
             .into_iter()
-            .map(|output| self.add_unitary_node(output))
+            .map(|output| self.add_unitary_node(output, creusot_contract))
             .collect::<Vec<_>>();
 
         // check that every signals are used
@@ -100,9 +105,15 @@ impl Node {
             .collect::<Result<_, _>>()
     }
 
-    fn add_unitary_node(&mut self, output: String) -> Graph<Color> {
+    fn add_unitary_node(&mut self, output: String, creusot_contract: bool) -> Graph<Color> {
         let Node {
-            contracts,
+            contracts:
+                Contract {
+                    requires,
+                    ensures,
+                    invariant,
+                    assert,
+                },
             id: node,
             inputs,
             unscheduled_equations,
@@ -112,7 +123,7 @@ impl Node {
         } = self;
 
         // construct unitary node's subgraph from its output
-        let subgraph = self.graph.get().unwrap().subgraph_from_vertex(&output);
+        let subgraph = self.graph.get().unwrap().subgraph_from_vertex(&output, !creusot_contract);
 
         // get signals that compute the output
         let useful_signals = subgraph.get_vertices();
@@ -126,14 +137,35 @@ impl Node {
 
         // retrieve equations from useful signals
         let equations = useful_signals
-            .into_iter()
-            .filter_map(|signal| unscheduled_equations.get(&signal))
+            .iter()
+            .filter_map(|signal| unscheduled_equations.get(signal))
             .cloned()
             .collect();
 
+        // retrieve contract from usefull signals
+        let retrieve_terms = |terms: &Vec<Term>| {
+            terms
+                .iter()
+                .filter_map(|term| {
+                    if useful_signals.iter().any(|signal| term.contains_id(signal)) {
+                        Some(term)
+                    } else {
+                        None
+                    }
+                })
+                .cloned()
+                .collect::<Vec<_>>()
+        };
+        let contracts = Contract {
+            requires: retrieve_terms(requires),
+            ensures: retrieve_terms(ensures),
+            invariant: retrieve_terms(invariant),
+            assert: retrieve_terms(assert),
+        };
+
         // construct unitary node
         let unitary_node = UnitaryNode {
-            contracts: contracts.clone(),
+            contracts,
             node_id: node.clone(),
             output_id: output.clone(),
             inputs: unitary_node_inputs,
@@ -251,7 +283,7 @@ mod add_unitary_node {
 
         node.graph.set(graph).unwrap();
 
-        node.add_unitary_node(String::from("o1"));
+        node.add_unitary_node(String::from("o1"), false);
 
         let unitary_node = UnitaryNode {
             contracts: Default::default(),
@@ -481,7 +513,7 @@ mod generate_unitary_nodes {
 
         node.graph.set(graph).unwrap();
 
-        node.generate_unitary_nodes(&mut errors).unwrap();
+        node.generate_unitary_nodes(false, &mut errors).unwrap();
 
         let unitary_node_1 = UnitaryNode {
             contracts: Default::default(),
@@ -720,7 +752,7 @@ mod generate_unitary_nodes {
 
         node.graph.set(graph).unwrap();
 
-        node.generate_unitary_nodes(&mut errors).unwrap();
+        node.generate_unitary_nodes(false, &mut errors).unwrap();
 
         let mut output_equations = node
             .unscheduled_equations
@@ -795,6 +827,6 @@ mod generate_unitary_nodes {
 
         node.graph.set(graph).unwrap();
 
-        node.generate_unitary_nodes(&mut errors).unwrap_err();
+        node.generate_unitary_nodes(false, &mut errors).unwrap_err();
     }
 }

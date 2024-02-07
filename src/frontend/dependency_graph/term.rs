@@ -5,7 +5,7 @@ use crate::{
 
 impl Term {
     pub fn compute_dependencies(&self) -> Vec<String> {
-        match self.kind {
+        match &self.kind {
             TermKind::Binary { left, right, .. } => {
                 let mut dependencies_left = left.compute_dependencies();
                 let mut dependencies = right.compute_dependencies();
@@ -13,7 +13,7 @@ impl Term {
                 dependencies
             }
             TermKind::Constant { constant } => vec![],
-            TermKind::Variable { signal } => vec![signal.id],
+            TermKind::Variable { signal } => vec![signal.id.clone()],
         }
     }
 
