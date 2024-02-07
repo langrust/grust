@@ -98,6 +98,11 @@ nodes:
               typing: ~
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
 component:
   id: main
@@ -178,6 +183,11 @@ component:
             typing: ~
             location: ~
         location: ~
+  contracts:
+    requires: []
+    ensures: []
+    invariant: []
+    assert: []
   location: ~
 location: ~
 

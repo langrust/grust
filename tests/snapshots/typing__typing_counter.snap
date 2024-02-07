@@ -115,6 +115,11 @@ nodes:
               typing: Integer
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
 component:
   id: main
@@ -205,6 +210,11 @@ component:
             typing: Boolean
             location: ~
         location: ~
+  contracts:
+    requires: []
+    ensures: []
+    invariant: []
+    assert: []
   location: ~
 location: ~
 

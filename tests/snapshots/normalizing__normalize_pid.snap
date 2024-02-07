@@ -399,13 +399,17 @@ nodes:
               value: White
               neighbors:
                 - id: prev_i
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: x
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: dt
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: MAX_INTEGRALE
-                  weight: 0
+                  label:
+                    Weight: 0
             mem_prev_i:
               id: mem_prev_i
               value: White
@@ -415,11 +419,22 @@ nodes:
               value: White
               neighbors:
                 - id: mem_prev_i
-                  weight: 0
+                  label:
+                    Weight: 0
             x:
               id: x
               value: White
               neighbors: []
+        contracts:
+          requires: []
+          ensures: []
+          invariant: []
+          assert: []
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -436,19 +451,24 @@ nodes:
           value: Black
           neighbors:
             - id: prev_i
-              weight: 0
+              label:
+                Weight: 0
             - id: x
-              weight: 0
+              label:
+                Weight: 0
             - id: dt
-              weight: 0
+              label:
+                Weight: 0
             - id: MAX_INTEGRALE
-              weight: 0
+              label:
+                Weight: 0
         prev_i:
           id: prev_i
           value: Black
           neighbors:
             - id: i
-              weight: 1
+              label:
+                Weight: 1
         x:
           id: x
           value: Black
@@ -709,11 +729,14 @@ nodes:
               value: White
               neighbors:
                 - id: x
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: prev_x
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: dt
-                  weight: 0
+                  label:
+                    Weight: 0
             dt:
               id: dt
               value: White
@@ -727,11 +750,22 @@ nodes:
               value: White
               neighbors:
                 - id: mem_prev_x
-                  weight: 0
+                  label:
+                    Weight: 0
             x:
               id: x
               value: White
               neighbors: []
+        contracts:
+          requires: []
+          ensures: []
+          invariant: []
+          assert: []
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -740,11 +774,14 @@ nodes:
           value: Black
           neighbors:
             - id: x
-              weight: 0
+              label:
+                Weight: 0
             - id: prev_x
-              weight: 0
+              label:
+                Weight: 0
             - id: dt
-              weight: 0
+              label:
+                Weight: 0
         dt:
           id: dt
           value: Black
@@ -754,7 +791,8 @@ nodes:
           value: Black
           neighbors:
             - id: x
-              weight: 1
+              label:
+                Weight: 1
         x:
           id: x
           value: Black
@@ -1508,25 +1546,31 @@ component:
             value: White
             neighbors:
               - id: v_c
-                weight: 0
+                label:
+                  Weight: 0
               - id: v
-                weight: 0
+                label:
+                  Weight: 0
           e_d:
             id: e_d
             value: White
             neighbors:
               - id: e
-                weight: 0
+                label:
+                  Weight: 0
               - id: dt
-                weight: 0
+                label:
+                  Weight: 0
           e_i:
             id: e_i
             value: White
             neighbors:
               - id: e
-                weight: 0
+                label:
+                  Weight: 0
               - id: dt
-                weight: 0
+                label:
+                  Weight: 0
           gain:
             id: gain
             value: White
@@ -1536,13 +1580,17 @@ component:
             value: White
             neighbors:
               - id: e
-                weight: 0
+                label:
+                  Weight: 0
               - id: e_i
-                weight: 0
+                label:
+                  Weight: 0
               - id: e_d
-                weight: 0
+                label:
+                  Weight: 0
               - id: gain
-                weight: 0
+                label:
+                  Weight: 0
           v:
             id: v
             value: White
@@ -1551,6 +1599,16 @@ component:
             id: v_c
             value: White
             neighbors: []
+      contracts:
+        requires: []
+        ensures: []
+        invariant: []
+        assert: []
+  contracts:
+    requires: []
+    ensures: []
+    invariant: []
+    assert: []
   location: ~
   graph:
     vertices:
@@ -1563,27 +1621,34 @@ component:
         value: Black
         neighbors:
           - id: v_c
-            weight: 0
+            label:
+              Weight: 0
           - id: v
-            weight: 0
+            label:
+              Weight: 0
       e_d:
         id: e_d
         value: Black
         neighbors:
           - id: e
-            weight: 0
+            label:
+              Weight: 0
           - id: e
-            weight: 1
+            label:
+              Weight: 1
           - id: dt
-            weight: 0
+            label:
+              Weight: 0
       e_i:
         id: e_i
         value: Black
         neighbors:
           - id: e
-            weight: 0
+            label:
+              Weight: 0
           - id: dt
-            weight: 0
+            label:
+              Weight: 0
       gain:
         id: gain
         value: Black
@@ -1593,13 +1658,17 @@ component:
         value: Black
         neighbors:
           - id: e
-            weight: 0
+            label:
+              Weight: 0
           - id: e_i
-            weight: 0
+            label:
+              Weight: 0
           - id: e_d
-            weight: 0
+            label:
+              Weight: 0
           - id: gain
-            weight: 0
+            label:
+              Weight: 0
       v:
         id: v
         value: Black

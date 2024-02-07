@@ -81,6 +81,11 @@ nodes:
               typing: ~
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
   - id: reset_button
     is_component: false
@@ -332,6 +337,11 @@ nodes:
               typing: ~
               location: ~
           location: ~
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
 component: ~
 location: ~

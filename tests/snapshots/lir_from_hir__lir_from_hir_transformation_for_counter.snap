@@ -84,6 +84,11 @@ items:
           output_expression:
             Identifier:
               identifier: o
+          contracts:
+            requires: []
+            ensures: []
+            invariant: []
+            assert: []
         init:
           node_name: counter_o
           state_elements_init:
@@ -91,6 +96,7 @@ items:
                 identifier: mem_o
                 initial_value:
                   Integer: 0
+          postconditions: []
   - NodeFile:
       name: main_y
       imports:
@@ -167,6 +173,11 @@ items:
           output_expression:
             Identifier:
               identifier: y
+          contracts:
+            requires: []
+            ensures: []
+            invariant: []
+            assert: []
         init:
           node_name: main_y
           state_elements_init:
@@ -181,4 +192,5 @@ items:
             - CalledNodeInit:
                 identifier: counter_o_y
                 node_name: counter_o
+          postconditions: []
 

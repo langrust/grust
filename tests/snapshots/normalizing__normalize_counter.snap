@@ -329,7 +329,8 @@ nodes:
               value: White
               neighbors:
                 - id: tick
-                  weight: 0
+                  label:
+                    Weight: 0
             mem_o:
               id: mem_o
               value: White
@@ -339,11 +340,14 @@ nodes:
               value: White
               neighbors:
                 - id: res
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: mem_o
-                  weight: 0
+                  label:
+                    Weight: 0
                 - id: inc
-                  weight: 0
+                  label:
+                    Weight: 0
             res:
               id: res
               value: White
@@ -352,6 +356,16 @@ nodes:
               id: tick
               value: White
               neighbors: []
+        contracts:
+          requires: []
+          ensures: []
+          invariant: []
+          assert: []
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -360,17 +374,21 @@ nodes:
           value: Black
           neighbors:
             - id: tick
-              weight: 0
+              label:
+                Weight: 0
         o:
           id: o
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: o
-              weight: 1
+              label:
+                Weight: 1
             - id: inc
-              weight: 0
+              label:
+                Weight: 0
         res:
           id: res
           value: Black
@@ -671,7 +689,8 @@ component:
             value: White
             neighbors:
               - id: mem_half
-                weight: 0
+                label:
+                  Weight: 0
           mem_half:
             id: mem_half
             value: White
@@ -685,15 +704,28 @@ component:
             value: White
             neighbors:
               - id: mem_x
-                weight: 0
+                label:
+                  Weight: 0
           y:
             id: y
             value: White
             neighbors:
               - id: x
-                weight: 0
+                label:
+                  Weight: 0
               - id: half
-                weight: 0
+                label:
+                  Weight: 0
+      contracts:
+        requires: []
+        ensures: []
+        invariant: []
+        assert: []
+  contracts:
+    requires: []
+    ensures: []
+    invariant: []
+    assert: []
   location: ~
   graph:
     vertices:
@@ -702,16 +734,20 @@ component:
         value: Black
         neighbors:
           - id: half
-            weight: 1
+            label:
+              Weight: 1
       y:
         id: y
         value: Black
         neighbors:
           - id: y
-            weight: 1
+            label:
+              Weight: 1
           - id: y
-            weight: 2
+            label:
+              Weight: 2
           - id: half
-            weight: 0
+            label:
+              Weight: 0
 location: ~
 

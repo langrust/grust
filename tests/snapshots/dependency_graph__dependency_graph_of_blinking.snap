@@ -208,6 +208,11 @@ nodes:
                 - 0
         location: ~
     unitary_nodes: {}
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -216,17 +221,21 @@ nodes:
           value: Black
           neighbors:
             - id: tick
-              weight: 0
+              label:
+                Weight: 0
         o:
           id: o
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: o
-              weight: 1
+              label:
+                Weight: 1
             - id: inc
-              weight: 0
+              label:
+                Weight: 0
         res:
           id: res
           value: Black
@@ -488,6 +497,11 @@ nodes:
                 - 0
         location: ~
     unitary_nodes: {}
+    contracts:
+      requires: []
+      ensures: []
+      invariant: []
+      assert: []
     location: ~
     graph:
       vertices:
@@ -496,33 +510,41 @@ nodes:
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: res
-              weight: 1
+              label:
+                Weight: 1
         on_off:
           id: on_off
           value: Black
           neighbors:
             - id: res
-              weight: 0
+              label:
+                Weight: 0
             - id: on_off
-              weight: 1
+              label:
+                Weight: 1
         res:
           id: res
           value: Black
           neighbors:
             - id: counter
-              weight: 1
+              label:
+                Weight: 1
             - id: tick_number
-              weight: 1
+              label:
+                Weight: 1
         status:
           id: status
           value: Black
           neighbors:
             - id: on_off
-              weight: 0
+              label:
+                Weight: 0
             - id: counter
-              weight: 0
+              label:
+                Weight: 0
         tick_number:
           id: tick_number
           value: Black
