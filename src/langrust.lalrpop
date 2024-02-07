@@ -239,6 +239,17 @@ termProof: Term = {
             location: Location{ file_id, range: start..end },
         }
     },
+    #[assoc(side="left")]
+    <start:@L> <e1: termProof> "<=" <e2: termProof> <end:@R> => {
+        Term {
+            kind: TermKind::Binary {
+                op: BinaryOperator::Leq,
+                left: Box::new(e1),
+                right: Box::new(e2),
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
 }
 
 clause_kind : ClauseKind = {
