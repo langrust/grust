@@ -1,4 +1,5 @@
 use crate::common::scope::Scope;
+use crate::hir::term::Contract;
 use crate::hir::{
     dependencies::Dependencies, identifier_creator::IdentifierCreator, memory::Memory,
     signal::Signal, stream_expression::StreamExpression,
@@ -24,6 +25,7 @@ impl StreamExpression {
         signal_name: &String,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
+        contract: &mut Contract,
     ) {
         match self {
             StreamExpression::FollowedBy {
@@ -39,11 +41,13 @@ impl StreamExpression {
                     String::from(""),
                 );
                 memory.add_buffer(memory_id.clone(), constant.clone(), *expression.clone());
+                let memory_signal = Signal {
+                    id: memory_id.clone(),
+                    scope: Scope::Memory,
+                };
+                contract.rename(signal_name, memory_signal.clone());
                 *self = StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: memory_id.clone(),
-                        scope: Scope::Memory,
-                    },
+                    signal: memory_signal,
                     typing: typing.clone(),
                     location: location.clone(),
                     dependencies: Dependencies::from(vec![(memory_id, 0)]),
@@ -55,7 +59,7 @@ impl StreamExpression {
                 ..
             } => {
                 inputs.iter_mut().for_each(|expression| {
-                    expression.memorize(signal_name, identifier_creator, memory)
+                    expression.memorize(signal_name, identifier_creator, memory, contract)
                 });
 
                 *dependencies = Dependencies::from(
@@ -89,7 +93,7 @@ impl StreamExpression {
                 ..
             } => {
                 fields.iter_mut().for_each(|(_, expression)| {
-                    expression.memorize(signal_name, identifier_creator, memory)
+                    expression.memorize(signal_name, identifier_creator, memory, contract)
                 });
 
                 *dependencies = Dependencies::from(
@@ -105,7 +109,7 @@ impl StreamExpression {
                 ..
             } => {
                 elements.iter_mut().for_each(|expression| {
-                    expression.memorize(signal_name, identifier_creator, memory)
+                    expression.memorize(signal_name, identifier_creator, memory, contract)
                 });
 
                 *dependencies = Dependencies::from(
@@ -121,18 +125,18 @@ impl StreamExpression {
                 dependencies,
                 ..
             } => {
-                expression.memorize(signal_name, identifier_creator, memory);
+                expression.memorize(signal_name, identifier_creator, memory, contract);
                 let mut expression_dependencies = expression.get_dependencies().clone();
 
                 arms.iter_mut()
                     .for_each(|(_, bound_expression, equations, expression)| {
                         if let Some(expression) = bound_expression.as_mut() {
-                            expression.memorize(signal_name, identifier_creator, memory)
+                            expression.memorize(signal_name, identifier_creator, memory, contract)
                         };
-                        equations
-                            .iter_mut()
-                            .for_each(|equation| equation.memorize(identifier_creator, memory));
-                        expression.memorize(signal_name, identifier_creator, memory)
+                        equations.iter_mut().for_each(|equation| {
+                            equation.memorize(identifier_creator, memory, contract)
+                        });
+                        expression.memorize(signal_name, identifier_creator, memory, contract)
                     });
                 let mut arms_dependencies = arms
                     .iter()
@@ -173,15 +177,15 @@ impl StreamExpression {
                 dependencies,
                 ..
             } => {
-                option.memorize(signal_name, identifier_creator, memory);
+                option.memorize(signal_name, identifier_creator, memory, contract);
                 present_body
                     .iter_mut()
-                    .for_each(|equation| equation.memorize(identifier_creator, memory));
-                present.memorize(signal_name, identifier_creator, memory);
+                    .for_each(|equation| equation.memorize(identifier_creator, memory, contract));
+                present.memorize(signal_name, identifier_creator, memory, contract);
                 default_body
                     .iter_mut()
-                    .for_each(|equation| equation.memorize(identifier_creator, memory));
-                default.memorize(signal_name, identifier_creator, memory);
+                    .for_each(|equation| equation.memorize(identifier_creator, memory, contract));
+                default.memorize(signal_name, identifier_creator, memory, contract);
 
                 let mut option_dependencies = option.get_dependencies().clone();
                 let mut present_dependencies = present.get_dependencies().clone();
@@ -196,7 +200,7 @@ impl StreamExpression {
                 dependencies,
                 ..
             } => {
-                expression.memorize(signal_name, identifier_creator, memory);
+                expression.memorize(signal_name, identifier_creator, memory, contract);
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             StreamExpression::TupleElementAccess {
@@ -204,7 +208,7 @@ impl StreamExpression {
                 dependencies,
                 ..
             } => {
-                expression.memorize(signal_name, identifier_creator, memory);
+                expression.memorize(signal_name, identifier_creator, memory, contract);
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             StreamExpression::Map {
@@ -212,7 +216,7 @@ impl StreamExpression {
                 dependencies,
                 ..
             } => {
-                expression.memorize(signal_name, identifier_creator, memory);
+                expression.memorize(signal_name, identifier_creator, memory, contract);
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             StreamExpression::Fold {
@@ -221,8 +225,13 @@ impl StreamExpression {
                 ref mut dependencies,
                 ..
             } => {
-                expression.memorize(signal_name, identifier_creator, memory);
-                initialization_expression.memorize(signal_name, identifier_creator, memory);
+                expression.memorize(signal_name, identifier_creator, memory, contract);
+                initialization_expression.memorize(
+                    signal_name,
+                    identifier_creator,
+                    memory,
+                    contract,
+                );
 
                 // get matched expressions dependencies
                 let mut expression_dependencies = expression.get_dependencies().clone();
@@ -238,7 +247,7 @@ impl StreamExpression {
                 dependencies,
                 ..
             } => {
-                expression.memorize(signal_name, identifier_creator, memory);
+                expression.memorize(signal_name, identifier_creator, memory, contract);
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => (),
@@ -247,9 +256,9 @@ impl StreamExpression {
                 dependencies,
                 ..
             } => {
-                arrays
-                    .iter_mut()
-                    .for_each(|array| array.memorize(signal_name, identifier_creator, memory));
+                arrays.iter_mut().for_each(|array| {
+                    array.memorize(signal_name, identifier_creator, memory, contract)
+                });
 
                 *dependencies = Dependencies::from(
                     arrays
@@ -269,6 +278,7 @@ mod memorize {
     use crate::ast::expression::Expression;
     use crate::common::scope::Scope;
     use crate::common::{constant::Constant, location::Location, r#type::Type};
+    use crate::hir::term::Contract;
     use crate::hir::{
         dependencies::Dependencies, identifier_creator::IdentifierCreator, memory::Memory,
         signal::Signal, stream_expression::StreamExpression,
@@ -320,7 +330,12 @@ mod memorize {
             location: Location::default(),
             dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 1)]),
         };
-        expression.memorize(&String::from("x"), &mut identifier_creator, &mut memory);
+        expression.memorize(
+            &String::from("x"),
+            &mut identifier_creator,
+            &mut memory,
+            &mut Contract::default(),
+        );
 
         let mut control = Memory::new();
         control.add_buffer(
@@ -421,7 +436,12 @@ mod memorize {
                 (String::from("x_1"), 0),
             ]),
         };
-        expression.memorize(&String::from("y"), &mut identifier_creator, &mut memory);
+        expression.memorize(
+            &String::from("y"),
+            &mut identifier_creator,
+            &mut memory,
+            &mut Contract::default(),
+        );
 
         let mut control = Memory::new();
         control.add_called_node(
