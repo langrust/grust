@@ -17,8 +17,8 @@ node over_speed_alert(speed: int, dt: int)
     requires { speed <= 200 }
     requires { 0 < dt }
     requires { dt <= 10 }
-    assert { 0 <= t_level }
-    assert { t_level <= 1009 }
+    invariant { 0 <= t_level }
+    invariant { t_level <= 1009 }
     ensures { 0 <= alert }
     ensures { alert <= 2 }
 {
