@@ -47,7 +47,7 @@ impl UnitaryNode {
 
         self.equations
             .iter_mut()
-            .for_each(|equation| equation.memorize(&mut identifier_creator, &mut memory));
+            .for_each(|equation| equation.memorize(&mut identifier_creator, &mut memory, &mut self.contracts));
 
         self.memory = memory;
 

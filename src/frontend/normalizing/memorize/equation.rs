@@ -1,4 +1,4 @@
-use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory};
+use crate::hir::{equation::Equation, identifier_creator::IdentifierCreator, memory::Memory, term::Contract};
 
 impl Equation {
     /// Increment memory with equation's expression.
@@ -15,10 +15,10 @@ impl Equation {
     /// node call `memmy_node_o_: (my_node, o);` and the equation is unchanged.
     ///
     /// Examples are tested in source.
-    pub fn memorize(&mut self, identifier_creator: &mut IdentifierCreator, memory: &mut Memory) {
+    pub fn memorize(&mut self, identifier_creator: &mut IdentifierCreator, memory: &mut Memory, contract: &mut Contract) {
         let signal_name = self.id.clone();
         self.expression
-            .memorize(&signal_name, identifier_creator, memory)
+            .memorize(&signal_name, identifier_creator, memory, contract)
     }
 }
 
@@ -28,6 +28,7 @@ mod memorize {
 
     use crate::ast::expression::Expression;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
+    use crate::hir::term::Contract;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
         memory::Memory, signal::Signal, stream_expression::StreamExpression,
@@ -88,7 +89,7 @@ mod memorize {
             },
             location: Location::default(),
         };
-        equation.memorize(&mut identifier_creator, &mut memory);
+        equation.memorize(&mut identifier_creator, &mut memory, &mut Contract::default());
 
         let mut control = Memory::new();
         control.add_buffer(
@@ -201,7 +202,7 @@ mod memorize {
             },
             location: Location::default(),
         };
-        equation.memorize(&mut identifier_creator, &mut memory);
+        equation.memorize(&mut identifier_creator, &mut memory, &mut Contract::default());
 
         let mut control = Memory::new();
         control.add_called_node(
