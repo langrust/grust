@@ -76,8 +76,8 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
             let ts_pre = term_to_token_stream(term.clone(), false);
             let ts_post = term_to_token_stream(term, true); // state postcondition
             vec![
-                parse_quote!(#[ensures(#ts_pre)]),
-                parse_quote!(#[requires(#ts_post)]),
+                parse_quote!(#[requires(#ts_pre)]),
+                parse_quote!(#[ensures(#ts_post)]),
             ]
         })
         .collect::<Vec<_>>();
