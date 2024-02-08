@@ -1,40 +1,25 @@
-use crate::common::{operator::BinaryOperator, scope::Scope};
-use crate::hir::signal::Signal;
-use crate::hir::term::{Contract, Term, TermKind};
-use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
+use crate::backend::rust_ast_from_lir::expression::{
+    binary_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir,
+};
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
+use crate::common::{operator::BinaryOperator, scope::Scope};
+use crate::hir::signal::Signal;
+use crate::hir::term::{Contract, Term, TermKind};
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
-use crate::rust_ast::block::Block;
-use crate::rust_ast::expression::{Expression, FieldIdentifier};
-use crate::rust_ast::item::implementation::AssociatedItem;
-use crate::rust_ast::item::signature::{Receiver, Signature};
-use crate::rust_ast::r#type::Type as RustASTType;
-use crate::rust_ast::statement::Statement;
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::parse_quote;
+use syn::token::Impl;
+use syn::*;
 
-fn term_to_token_stream(term: Term) -> TokenStream {
+fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
     match term.kind {
         TermKind::Binary { op, left, right } => {
-            let ts_left = term_to_token_stream(*left);
-            let ts_right = term_to_token_stream(*right);
-            let ts_op = match op {
-                BinaryOperator::Mul => quote!(*),
-                BinaryOperator::Div => quote!(/),
-                BinaryOperator::Add => quote!(+),
-                BinaryOperator::Sub => quote!(-),
-                BinaryOperator::And => quote!(&&),
-                BinaryOperator::Or => quote!(||),
-                BinaryOperator::Eq => quote!(==),
-                BinaryOperator::Dif => quote!(!=),
-                BinaryOperator::Geq => quote!(>=),
-                BinaryOperator::Leq => quote!(<=),
-                BinaryOperator::Grt => quote!(>),
-                BinaryOperator::Low => quote!(<),
-            };
+            let ts_left = term_to_token_stream(*left, prophecy);
+            let ts_right = term_to_token_stream(*right, prophecy);
+            let ts_op = binary_to_syn(op);
             quote!(#ts_left #ts_op #ts_right)
         }
         TermKind::Constant { constant } => {
@@ -47,51 +32,79 @@ fn term_to_token_stream(term: Term) -> TokenStream {
             match scope {
                 Scope::Input => {
                     quote!(input.#id)
-                },
+                }
                 Scope::Memory => {
-                    quote!(self.#id)
-                },
+                    // there is prophecy only here
+                    if prophecy {
+                        quote!((^self).#id)
+                    } else {
+                        quote!(self.#id)
+                    }
+                }
                 Scope::Output => quote!(result),
                 Scope::Local => quote!(#id),
             }
-        },
+        }
     }
 }
 
 /// Transform LIR step into RustAST implementation method.
 pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
-    let Contract { requires, ensures, .. } = step.contracts;
-    let mut requires_attributes = requires
+    let Contract {
+        requires,
+        ensures,
+        invariant,
+        ..
+    } = step.contracts;
+    let mut attributes = requires
         .into_iter()
         .map(|term| {
-            let ts = term_to_token_stream(term);
+            let ts = term_to_token_stream(term, false);
             parse_quote!(#[requires(#ts)])
         })
         .collect::<Vec<_>>();
-    let mut attributes = ensures
+    let mut ensures_attributes = ensures
         .into_iter()
         .map(|term| {
-            let ts = term_to_token_stream(term);
+            let ts = term_to_token_stream(term, false);
             parse_quote!(#[ensures(#ts)])
         })
         .collect::<Vec<_>>();
-    attributes.append(&mut requires_attributes);
+    let mut invariant_attributes = invariant
+        .into_iter()
+        .flat_map(|term| {
+            let ts_pre = term_to_token_stream(term.clone(), false);
+            let ts_post = term_to_token_stream(term, true); // state postcondition
+            vec![
+                parse_quote!(#[ensures(#ts_pre)]),
+                parse_quote!(#[requires(#ts_post)]),
+            ]
+        })
+        .collect::<Vec<_>>();
+    attributes.append(&mut ensures_attributes);
+    attributes.append(&mut invariant_attributes);
 
-    let input_ty_name = Ident::new(&camel_case(&format!("{}Input", step.node_name)), Span::call_site());
+    let input_ty_name = Ident::new(
+        &camel_case(&format!("{}Input", step.node_name)),
+        Span::call_site(),
+    );
     let inputs = vec![
         parse_quote!(&mut self),
-        FnArg::Typed(PatType{ 
-        attrs: vec![],
-        pat: Box::new(Pat::Ident(PatIdent {
+        FnArg::Typed(PatType {
             attrs: vec![],
-            by_ref: None,
-            mutability: None,
-            ident: Ident::new("input", Span::call_site()),
-            subpat: None,
-        })),
-        colon_token: Default::default(),
-        ty: parse_quote!(#input_ty_name),
-    })].into_iter().collect();
+            pat: Box::new(Pat::Ident(PatIdent {
+                attrs: vec![],
+                by_ref: None,
+                mutability: None,
+                ident: Ident::new("input", Span::call_site()),
+                subpat: None,
+            })),
+            colon_token: Default::default(),
+            ty: parse_quote!(#input_ty_name),
+        }),
+    ]
+    .into_iter()
+    .collect();
 
     let signature = syn::Signature {
         constness: None,
@@ -123,29 +136,34 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
                  identifier,
                  expression,
              }| {
-            
                 let identifier = Ident::new(&identifier, Span::call_site());
                 let field_acces = parse_quote!(self.#identifier);
 
-                Stmt::Expr(Expr::Assign(ExprAssign {
-                    attrs: vec![],
-                    left: Box::new(field_acces),
-                    eq_token: Default::default(),
-                    right: Box::new(expression_rust_ast_from_lir(expression)),
-                }), Some(Default::default()))
+                Stmt::Expr(
+                    Expr::Assign(ExprAssign {
+                        attrs: vec![],
+                        left: Box::new(field_acces),
+                        eq_token: Default::default(),
+                        right: Box::new(expression_rust_ast_from_lir(expression)),
+                    }),
+                    Some(Default::default()),
+                )
             },
         )
         .collect::<Vec<_>>();
 
     // let output_statement =
     //     Statement::ExpressionLast(expression_rust_ast_from_lir(step.output_expression));
-    
+
     let output_statement = Stmt::Expr(expression_rust_ast_from_lir(step.output_expression), None);
 
     statements.append(&mut fields_update);
     statements.push(output_statement);
 
-    let body = Block { stmts: statements, brace_token: Default::default() };
+    let body = Block {
+        stmts: statements,
+        brace_token: Default::default(),
+    };
 
     ImplItemFn {
         attrs: attributes,

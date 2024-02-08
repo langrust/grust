@@ -15,12 +15,16 @@ impl OverSpeedAlertAlertState {
             mem_t_level: 0i64,
         }
     }
-    #[ensures(0i64<= result)]
-    #[ensures(result<= 2i64)]
     #[requires(0i64<= input.speed)]
     #[requires(input.speed<= 200i64)]
     #[requires(0i64<input.dt)]
     #[requires(input.dt<= 10i64)]
+    #[ensures(0i64<= result)]
+    #[ensures(result<= 2i64)]
+    #[ensures(0i64<= self.mem_t_level)]
+    #[requires(0i64<= (^self).mem_t_level)]
+    #[ensures(self.mem_t_level<= 1009i64)]
+    #[requires((^self).mem_t_level<= 1009i64)]
     pub fn step(&mut self, input: OverSpeedAlertAlertInput) -> i64 {
         let t_level = self.mem_t_level;
         let alert = if (80i64 < input.speed && input.speed < 120i64)
