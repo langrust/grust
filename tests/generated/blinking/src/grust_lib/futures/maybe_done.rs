@@ -59,7 +59,7 @@ impl<Fut: Future> MaybeDone<Fut> {
 impl<Fut: Future> Future for MaybeDone<Fut> {
     type Output = ();
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         match self.as_mut().project() {
             MaybeDoneProj::Future(f) => {
                 let res = match f.poll(cx) {

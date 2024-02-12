@@ -53,7 +53,7 @@ where
 
     fn poll_next(
         self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
+        cx: &mut Context,
     ) -> std::task::Poll<std::option::Option<(<S1 as Stream>::Item, <S2 as Stream>::Item)>> {
         let ZipProj {
             mut value1,

@@ -424,14 +424,14 @@ impl Snapshot {
 }
 
 impl fmt::Debug for State {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let snapshot = self.load();
         snapshot.fmt(fmt)
     }
 }
 
 impl fmt::Debug for Snapshot {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Snapshot")
             .field("is_running", &self.is_running())
             .field("is_complete", &self.is_complete())

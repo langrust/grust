@@ -1,4 +1,7 @@
+use petgraph::algo::toposort;
+
 use crate::{
+    common::graph::neighbor::Label,
     error::{Error, TerminationError},
     hir::node::Node,
 };
@@ -34,18 +37,22 @@ impl Node {
     /// }
     /// ```
     pub fn causal(&self, errors: &mut Vec<Error>) -> Result<(), TerminationError> {
-        // construct node's subgraph containing only 0-depth dependencies
-        let mut subgraph = self
+        // construct node's subgraph containing only 0-depth
+        let graph = self
             .graph
             .get()
-            .unwrap()
-            .subgraph_on_edges(|weight| weight == 0);
+            .expect("node dependency graph should be computed");
+        let mut subgraph = graph.clone();
+        graph.all_edges().for_each(|(from, to, label)| match label {
+            Label::Weight(0) => (),
+            _ => assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
+        });
 
         // if a schedule exists, then the node is causal
-        let _ = subgraph.topological_sorting().map_err(|signal| {
+        let _ = toposort(&subgraph, None).map_err(|signal| {
             let error = Error::NotCausal {
                 node: self.id.clone(),
-                signal,
+                signal: signal.node_id().clone(),
                 location: self.location.clone(),
             };
             errors.push(error);
@@ -60,12 +67,10 @@ impl Node {
 mod causal {
     use std::collections::HashMap;
 
+    use petgraph::graphmap::GraphMap;
+
     use crate::common::{
-        constant::Constant,
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        scope::Scope,
+        constant::Constant, graph::neighbor::Label, location::Location, r#type::Type, scope::Scope,
     };
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
@@ -122,12 +127,12 @@ mod causal {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i"), 0);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("i"));
+        graph.add_edge(String::from("x"), String::from("i"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         let mut errors = vec![];
@@ -190,11 +195,11 @@ mod causal {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("x"), String::from("o"), Label::Weight(1));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         let mut errors = vec![];
@@ -251,12 +256,12 @@ mod causal {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("o"), 0);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("i"));
+        graph.add_edge(String::from("x"), String::from("o"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         let mut errors = vec![];

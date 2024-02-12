@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::common::graph::{color::Color, Graph};
+use petgraph::graphmap::DiGraphMap;
+
+use crate::common::graph::color::Color;
+use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
@@ -8,9 +11,10 @@ impl StreamExpression {
     /// Compute dependencies of a match stream expression.
     pub fn compute_match_dependencies(
         &self,
-        nodes_context: &HashMap<String, Node>,
-        nodes_graphs: &mut HashMap<String, Graph<Color>>,
-        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_context: &HashMap<&String, Node>,
+        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
+        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
@@ -32,6 +36,7 @@ impl StreamExpression {
                         // get arm expression dependencies
                         arm_expression.compute_dependencies(
                             nodes_context,
+                            nodes_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
@@ -48,6 +53,7 @@ impl StreamExpression {
                             bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
                                 bound_expression.compute_dependencies(
                                     nodes_context,
+                                    nodes_processus_manager,
                                     nodes_graphs,
                                     nodes_reduced_graphs,
                                     errors,
@@ -75,6 +81,7 @@ impl StreamExpression {
                 // get matched expression dependencies
                 expression.compute_dependencies(
                     nodes_context,
+                    nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -104,6 +111,7 @@ mod compute_match_dependencies {
     #[test]
     fn should_compute_dependencies_of_match_elements_with_duplicates() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -204,6 +212,7 @@ mod compute_match_dependencies {
         stream_expression
             .compute_match_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -225,6 +234,7 @@ mod compute_match_dependencies {
     #[test]
     fn should_compute_dependencies_of_match_elements_without_pattern_dependencies() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -327,6 +337,7 @@ mod compute_match_dependencies {
         stream_expression
             .compute_match_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,

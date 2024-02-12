@@ -1,4 +1,6 @@
-use crate::hir::unitary_node::UnitaryNode;
+use petgraph::algo::toposort;
+
+use crate::{common::graph::neighbor::Label, hir::unitary_node::UnitaryNode};
 
 impl UnitaryNode {
     /// Schedule equations.
@@ -25,20 +27,24 @@ impl UnitaryNode {
     /// }
     /// ```
     pub fn schedule(&mut self) {
-        let mut subgraph = self
+        let graph = self
             .graph
-            .get_mut()
-            .unwrap()
-            .subgraph_on_edges(|weight| weight == 0);
+            .get()
+            .expect("node dependency graph should be computed");
+        let mut subgraph = graph.clone();
+        graph.all_edges().for_each(|(from, to, label)| match label {
+            Label::Weight(0) => (),
+            _ => assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
+        });
 
-        let schedule = subgraph.topological_sorting().unwrap();
+        let schedule = toposort(&subgraph, None).unwrap();
 
         let scheduled_equations = schedule
             .into_iter()
             .filter_map(|signal_id| {
                 self.equations
                     .iter()
-                    .position(|equation| equation.id == signal_id)
+                    .position(|equation| equation.id.eq(signal_id))
             })
             .map(|index| self.equations.get(index).unwrap().clone())
             .collect();
@@ -49,9 +55,10 @@ impl UnitaryNode {
 
 #[cfg(test)]
 mod schedule {
+    use petgraph::graphmap::GraphMap;
+
     use crate::ast::expression::Expression;
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
@@ -193,15 +200,15 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o_1"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o_1"), String::from("x"), 1);
-        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_weighted_edge(&String::from("x"), String::from("o_1"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("v"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o_1"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("y"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o_1"), String::from("x"), Label::Weight(1));
+        graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        graph.add_edge(String::from("x"), String::from("o_1"), Label::Weight(0));
         unitary_node.graph.set(graph.clone()).unwrap();
 
         unitary_node.schedule();
@@ -361,15 +368,15 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o_1"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o_1"), String::from("x"), 1);
-        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_weighted_edge(&String::from("x"), String::from("o_1"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("v"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o_1"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("y"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o_1"), String::from("x"), Label::Weight(1));
+        graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        graph.add_edge(String::from("x"), String::from("o_1"), Label::Weight(0));
         unitary_node.graph.set(graph).unwrap();
 
         let control = unitary_node.clone();

@@ -95,7 +95,7 @@ impl serde::Serialize for Type {
     }
 }
 impl Display for Type {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Type::Integer => write!(f, "i64"),
             Type::Float => write!(f, "f64"),

@@ -21,7 +21,7 @@ pub struct JoinError;
 impl<F: Future> Future for JoinHandle<F> {
     type Output = Result<F::Output, JoinError>;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let mut ret = Poll::Pending;
 
         // Task should always be set.

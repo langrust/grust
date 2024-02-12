@@ -99,7 +99,7 @@ where
 
     fn poll_next(
         mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
+        cx: &mut Context,
     ) -> std::task::Poll<std::option::Option<<S as Stream>::Item>> {
         let this = &mut *self;
         let inner = this.inner.clone();
@@ -232,7 +232,7 @@ where
     S::Item: Clone,
 {
     /// Registers the current task to receive a wakeup when we are awoken.
-    fn record_waker(&self, waker_key: &mut usize, cx: &mut Context<'_>) {
+    fn record_waker(&self, waker_key: &mut usize, cx: &mut Context) {
         let mut wakers_guard = self.notifier.wakers.lock().unwrap();
 
         let new_waker = cx.waker();
@@ -291,7 +291,7 @@ where
         }
     }
 
-    fn poll_signal(&self, cx: &mut Context<'_>) {
+    fn poll_signal(&self, cx: &mut Context) {
         let stream = unsafe { Pin::new_unchecked(&mut *self.stream.get()) };
 
         match stream.poll_next(cx) {

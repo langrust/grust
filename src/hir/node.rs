@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
+use petgraph::graphmap::DiGraphMap;
+
 use crate::common::{
-    graph::{color::Color, Graph},
-    location::Location,
-    serialize::ordered_map,
+    graph::neighbor::Label, location::Location, r#type::Type, serialize::ordered_map,
 };
 use crate::hir::{
     contract::Contract, equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode,
 };
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize)]
 /// LanGRust node HIR.
 pub struct Node {
     /// Node identifier.
@@ -25,5 +25,493 @@ pub struct Node {
     /// Node location.
     pub location: Location,
     /// Node dependency graph.
-    pub graph: OnceCell<Graph<Color>>,
+    pub graph: OnceCell<DiGraphMap<String, Label>>,
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.is_component == other.is_component
+            && self.inputs == other.inputs
+            && self.unscheduled_equations == other.unscheduled_equations
+            && self.unitary_nodes == other.unitary_nodes
+            && self.contract == other.contract
+            && self.location == other.location
+            && self.eq_oncecell_graph(other)
+    }
+}
+
+impl Node {
+    /// Tells if two unscheduled nodes are equal.
+    pub fn eq_unscheduled(&self, other: &Node) -> bool {
+        self.id == other.id
+            && self.is_component == other.is_component
+            && self.inputs == other.inputs
+            && self.unscheduled_equations == other.unscheduled_equations
+            && self.unitary_nodes.len() == other.unitary_nodes.len()
+            && self.unitary_nodes.iter().all(|(output_id, unitary_node)| {
+                other
+                    .unitary_nodes
+                    .get(output_id)
+                    .map_or(false, |other_unitary_node| {
+                        unitary_node.eq_unscheduled(other_unitary_node)
+                    })
+            })
+            && self.location == other.location
+            && self.eq_oncecell_graph(other)
+    }
+
+    fn eq_oncecell_graph(&self, other: &Node) -> bool {
+        fn eq_graph(graph: &DiGraphMap<String, Label>, other: &DiGraphMap<String, Label>) -> bool {
+            let graph_nodes = graph.nodes();
+            let other_nodes = other.nodes();
+            let graph_edges = graph.all_edges();
+            let other_edges = other.all_edges();
+            graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
+        }
+
+        self.graph.get().map_or_else(
+            || other.graph.get().is_none(),
+            |graph| {
+                other
+                    .graph
+                    .get()
+                    .map_or(false, |other| eq_graph(graph, other))
+            },
+        )
+    }
+}
+
+#[cfg(test)]
+mod eq_unscheduled {
+    use std::collections::HashMap;
+
+    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
+    use crate::hir::{
+        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node,
+        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+        unitary_node::UnitaryNode,
+    };
+
+    #[test]
+    fn should_return_true_for_strictly_equal_nodes() {
+        let equation = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("y"),
+                    scope: Scope::Input,
+                },
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+            },
+            location: Location::default(),
+        };
+        let unitary_node = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![(String::from("y"), Type::Integer)],
+            equations: vec![equation.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let node = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("y"), Type::Integer)],
+            unscheduled_equations: HashMap::from([(String::from("x"), equation)]),
+            unitary_nodes: HashMap::from([(String::from("x"), unitary_node)]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let other = node.clone();
+
+        assert!(node.eq_unscheduled(&other))
+    }
+
+    #[test]
+    fn should_return_true_for_nodes_with_unscheduled_unitary_nodes() {
+        let equation_1 = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("y"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+            },
+            location: Location::default(),
+        };
+        let equation_2 = Equation {
+            scope: Scope::Local,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("v"),
+                        scope: Scope::Input,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                }),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 1)]),
+            },
+            location: Location::default(),
+        };
+        let unitary_node = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_1.clone(), equation_2.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let node = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1.clone()),
+                (String::from("y"), equation_2.clone()),
+            ]),
+            unitary_nodes: HashMap::from([(String::from("x"), unitary_node)]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let unitary_node = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_2.clone(), equation_1.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let other = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1),
+                (String::from("y"), equation_2),
+            ]),
+            unitary_nodes: HashMap::from([(String::from("x"), unitary_node)]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        assert!(node.eq_unscheduled(&other))
+    }
+
+    #[test]
+    fn should_return_false_for_unequal_unitary_nodes() {
+        let equation_1 = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("y"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+            },
+            location: Location::default(),
+        };
+        let equation_2 = Equation {
+            scope: Scope::Local,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("v"),
+                        scope: Scope::Input,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                }),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 1)]),
+            },
+            location: Location::default(),
+        };
+        let unitary_node = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_1.clone(), equation_2.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let node = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1.clone()),
+                (String::from("y"), equation_2.clone()),
+            ]),
+            unitary_nodes: HashMap::from([(String::from("x"), unitary_node)]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let unitary_node = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_2.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let other = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1),
+                (String::from("y"), equation_2),
+            ]),
+            unitary_nodes: HashMap::from([(String::from("x"), unitary_node)]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        assert!(!node.eq_unscheduled(&other))
+    }
+
+    #[test]
+    fn should_return_false_for_missing_unitary_nodes() {
+        let equation_1 = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("y"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+            },
+            location: Location::default(),
+        };
+        let equation_2 = Equation {
+            scope: Scope::Local,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("v"),
+                        scope: Scope::Input,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                }),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 1)]),
+            },
+            location: Location::default(),
+        };
+        let unitary_node_1 = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_1.clone(), equation_2.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let unitary_node_2 = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("y"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_2.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let node = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1.clone()),
+                (String::from("y"), equation_2.clone()),
+            ]),
+            unitary_nodes: HashMap::from([
+                (String::from("x"), unitary_node_1.clone()),
+                (String::from("y"), unitary_node_2.clone()),
+            ]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let other = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1),
+                (String::from("y"), equation_2),
+            ]),
+            unitary_nodes: HashMap::from([
+                (String::from("x"), unitary_node_1.clone()),
+                (String::from("y"), unitary_node_1),
+            ]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        assert!(!node.eq_unscheduled(&other))
+    }
+
+    #[test]
+    fn should_return_false_for_too_much_unitary_nodes() {
+        let equation_1 = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::SignalCall {
+                signal: Signal {
+                    id: String::from("y"),
+                    scope: Scope::Local,
+                },
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
+            },
+            location: Location::default(),
+        };
+        let equation_2 = Equation {
+            scope: Scope::Local,
+            id: String::from("y"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FollowedBy {
+                constant: Constant::Integer(0),
+                expression: Box::new(StreamExpression::SignalCall {
+                    signal: Signal {
+                        id: String::from("v"),
+                        scope: Scope::Input,
+                    },
+                    typing: Type::Integer,
+                    location: Location::default(),
+                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                }),
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![(String::from("v"), 1)]),
+            },
+            location: Location::default(),
+        };
+        let unitary_node = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_1.clone(), equation_2.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let node = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1.clone()),
+                (String::from("y"), equation_2.clone()),
+            ]),
+            unitary_nodes: HashMap::from([(String::from("x"), unitary_node)]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        let unitary_node_1 = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_2.clone(), equation_1.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let unitary_node_2 = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("y"),
+            inputs: vec![(String::from("v"), Type::Integer)],
+            equations: vec![equation_2.clone()],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let other = Node {
+            contract: Default::default(),
+            id: String::from("test"),
+            is_component: false,
+            inputs: vec![(String::from("v"), Type::Integer)],
+            unscheduled_equations: HashMap::from([
+                (String::from("x"), equation_1),
+                (String::from("y"), equation_2),
+            ]),
+            unitary_nodes: HashMap::from([
+                (String::from("x"), unitary_node_1),
+                (String::from("y"), unitary_node_2),
+            ]),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+
+        assert!(!node.eq_unscheduled(&other))
+    }
 }

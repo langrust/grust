@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
+use petgraph::{algo::has_path_connecting, graphmap::DiGraphMap};
+
 use crate::{
-    common::{
-        graph::{color::Color, Graph},
-        scope::Scope,
-    },
+    common::{graph::neighbor::Label, scope::Scope},
     hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
         memory::Memory, node::Node, signal::Signal, stream_expression::StreamExpression,
@@ -324,7 +323,7 @@ impl StreamExpression {
         signal_id: &String,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
-        graph: &mut Graph<Color>,
+        graph: &DiGraphMap<String, Label>,
         nodes: &HashMap<String, Node>,
     ) -> Vec<Equation> {
         match self {
@@ -353,7 +352,7 @@ impl StreamExpression {
                     .collect::<Vec<_>>();
 
                 // a loop in the graph induces that inputs depends on output
-                let should_inline = graph.is_loop(signal_id);
+                let should_inline = has_path_connecting(graph, signal_id, signal_id, None); // TODO: check it is correct
 
                 // then node call must be inlined
                 if should_inline {
@@ -1741,9 +1740,10 @@ mod replace_by_context {
 #[cfg(test)]
 mod inline_when_needed {
 
+    use petgraph::graphmap::GraphMap;
+
     use crate::ast::expression::Expression;
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::identifier_creator::IdentifierCreator;
     use crate::hir::{
@@ -1836,12 +1836,12 @@ mod inline_when_needed {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_vertex(String::from("j"), Color::Black);
-        graph.add_weighted_edge(&String::from("o"), String::from("i"), 0);
-        graph.add_weighted_edge(&String::from("o"), String::from("j"), 1);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("i"));
+        graph.add_node(String::from("j"));
+        graph.add_edge(String::from("o"), String::from("i"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("j"), Label::Weight(1));
         my_node.graph.set(graph).unwrap();
         nodes.insert(String::from("my_node"), my_node);
 
@@ -1894,10 +1894,10 @@ mod inline_when_needed {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_weighted_edge(&String::from("o"), String::from("i"), 1);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("i"));
+        graph.add_edge(String::from("o"), String::from("i"), Label::Weight(1));
         other_node.graph.set(graph).unwrap();
         nodes.insert(String::from("other_node"), other_node);
 
@@ -2048,13 +2048,13 @@ mod inline_when_needed {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
-        graph.add_weighted_edge(&String::from("y"), String::from("x"), 1);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("v"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        graph.add_edge(String::from("x"), String::from("x"), Label::Weight(1));
+        graph.add_edge(String::from("y"), String::from("x"), Label::Weight(1));
         node.graph.set(graph.clone()).unwrap();
         nodes.insert(String::from("test"), node.clone());
 

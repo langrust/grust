@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use crate::common::graph::color::Color;
-use crate::common::graph::Graph;
+use petgraph::graphmap::DiGraphMap;
+
+use crate::common::graph::neighbor::Label;
 use crate::common::scope::Scope;
 use crate::hir::{
     dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
@@ -30,7 +31,7 @@ impl StreamExpression {
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &HashMap<String, Graph<Color>>,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
         identifier_creator: &mut IdentifierCreator,
     ) -> Vec<Equation> {
         match self {
@@ -109,17 +110,18 @@ impl StreamExpression {
                         .iter()
                         .flat_map(|(input_id, expression)| {
                             reduced_graph
-                                .get_weights(signal, input_id)
-                                .iter()
-                                .flat_map(|weight| {
-                                    expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .map(|(id, depth)| (id, depth + weight))
-                                        .collect::<Vec<_>>()
+                                .edge_weight(signal, input_id)
+                                .map_or(vec![], |label| {
+                                    match label {
+                                        Label::Contract => vec![], // TODO: do we loose the CREUSOT dependence with the input?
+                                        Label::Weight(weight) => expression
+                                            .get_dependencies()
+                                            .clone()
+                                            .into_iter()
+                                            .map(|(id, depth)| (id, depth + weight))
+                                            .collect(),
+                                    }
                                 })
-                                .collect::<Vec<_>>()
                         })
                         .collect(),
                 );
@@ -378,7 +380,7 @@ impl StreamExpression {
     /// ```
     pub fn into_signal_call(
         &mut self,
-        nodes_reduced_graphs: &HashMap<String, Graph<Color>>,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
         identifier_creator: &mut IdentifierCreator,
     ) -> Vec<Equation> {
         match self {
@@ -424,8 +426,9 @@ impl StreamExpression {
 mod into_signal_call {
     use std::collections::{HashMap, HashSet};
 
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use petgraph::graphmap::GraphMap;
+
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
@@ -434,12 +437,12 @@ mod into_signal_call {
 
     #[test]
     fn should_leave_signal_call_unchanged() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         let mut identifier_creator = IdentifierCreator {
             signals: HashSet::new(),
@@ -471,12 +474,12 @@ mod into_signal_call {
 
     #[test]
     fn should_create_signal_call_from_other_expression() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         let mut identifier_creator = IdentifierCreator {
             signals: HashSet::from([String::from("x")]),
@@ -539,9 +542,10 @@ mod into_signal_call {
 mod normal_form {
     use std::collections::{HashMap, HashSet};
 
+    use petgraph::graphmap::GraphMap;
+
     use crate::ast::expression::Expression;
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
@@ -550,12 +554,12 @@ mod normal_form {
 
     #[test]
     fn should_change_node_applications_to_be_root_expressions() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         // x: int = 1 + my_node(s, v*2).o;
         let mut identifier_creator = IdentifierCreator {
@@ -711,12 +715,12 @@ mod normal_form {
 
     #[test]
     fn should_change_inputs_expressions_to_be_signal_calls() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         // x: int = 1 + my_node(s, v*2).o;
         let mut identifier_creator = IdentifierCreator {
@@ -870,12 +874,12 @@ mod normal_form {
 
     #[test]
     fn should_set_identifier_to_node_state_in_unitary_node_application() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
         // x: int = 1 + my_node(s, v*2).o;
         let mut identifier_creator = IdentifierCreator {

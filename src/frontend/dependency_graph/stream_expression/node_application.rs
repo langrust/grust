@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use crate::common::{
-    context::Context,
-    graph::{color::Color, neighbor::Neighbor, Graph},
-};
+use petgraph::graphmap::DiGraphMap;
+
+use crate::common::graph::{color::Color, neighbor::Label};
 use crate::error::{Error, TerminationError};
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
@@ -11,9 +10,10 @@ impl StreamExpression {
     /// Compute dependencies of a node application.
     pub fn compute_node_application_dependencies(
         &self,
-        nodes_context: &HashMap<String, Node>,
-        nodes_graphs: &mut HashMap<String, Graph<Color>>,
-        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_context: &HashMap<&String, Node>,
+        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
+        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
@@ -23,20 +23,21 @@ impl StreamExpression {
                 node: node_name,
                 inputs,
                 signal,
-                location,
                 dependencies,
                 ..
             } => {
                 // get called node structure
-                let node = nodes_context.get_node_or_error(node_name, location.clone(), errors)?;
+                let node = nodes_context.get(node_name).unwrap();
 
                 // create local reduced graphs (because only complete for the called signal)
                 let mut local_nodes_reduced_graphs = nodes_reduced_graphs.clone();
+                // let mut local_nodes_processus_manager = nodes_processus_manager.clone(); // TODO: see if this is important
 
                 // add dependencies to inputs in the local graphs
                 node.add_signal_inputs_dependencies(
                     signal,
                     nodes_context,
+                    nodes_processus_manager,
                     nodes_graphs,
                     &mut local_nodes_reduced_graphs,
                     errors,
@@ -48,10 +49,10 @@ impl StreamExpression {
 
                 // store computed dependencies (in "local reduced graph") into "real reduced graph"
                 local_reduced_graph
-                    .get_vertex(signal)
-                    .get_neighbors()
-                    .into_iter()
-                    .for_each(|Neighbor { id, label }| reduced_graph.add_edge(signal, id, label));
+                    .edges(signal)
+                    .for_each(|(_, id, label)| {
+                        reduced_graph.add_edge(signal, id, label.clone());
+                    });
 
                 // function "dependencies to inputs" and "input expressions's dependencies"
                 // of node application
@@ -62,25 +63,25 @@ impl StreamExpression {
                         .map(|(input_expression, (input_id, _))| {
                             input_expression.compute_dependencies(
                                 nodes_context,
+                                nodes_processus_manager,
                                 nodes_graphs,
                                 nodes_reduced_graphs,
                                 errors,
                             )?;
-                            Ok(local_reduced_graph
-                                .get_weights(signal, input_id)
-                                .iter()
-                                .map(|weight| {
-                                    Ok(input_expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .map(|(id, depth)| (id, depth + weight))
-                                        .collect())
-                                })
-                                .collect::<Result<Vec<Vec<(String, usize)>>, TerminationError>>()?
-                                .into_iter()
-                                .flatten()
-                                .collect::<Vec<(String, usize)>>())
+                            Ok(local_reduced_graph.edge_weight(signal, input_id).map_or(
+                                Ok(vec![]),
+                                |label| {
+                                    match label {
+                                        Label::Contract => Ok(vec![]), // TODO: do we loose the CREUSOT dependence with the input?
+                                        Label::Weight(weight) => Ok(input_expression
+                                            .get_dependencies()
+                                            .clone()
+                                            .into_iter()
+                                            .map(|(id, depth)| (id, depth + weight))
+                                            .collect()),
+                                    }
+                                },
+                            )?)
                         })
                         .collect::<Result<Vec<Vec<(String, usize)>>, TerminationError>>()?
                         .into_iter()
@@ -198,7 +199,8 @@ mod compute_node_application_dependencies {
         };
 
         let mut nodes_context = HashMap::new();
-        nodes_context.insert(String::from("my_node"), node);
+        let my_node = String::from("my_node");
+        nodes_context.insert(&my_node, node);
         let node = nodes_context.get(&String::from("my_node")).unwrap();
 
         let graph = node.create_initialized_graph();
@@ -206,6 +208,9 @@ mod compute_node_application_dependencies {
 
         let reduced_graph = node.create_initialized_graph();
         let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
+
+        let processus_manager = node.create_initialized_processus_manager();
+        let mut nodes_processus_manager = HashMap::from([(node.id.clone(), processus_manager)]);
 
         let stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
@@ -245,6 +250,7 @@ mod compute_node_application_dependencies {
         stream_expression
             .compute_node_application_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,

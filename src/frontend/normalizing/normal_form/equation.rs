@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use petgraph::graphmap::DiGraphMap;
+
 use crate::{
-    common::graph::{color::Color, Graph},
+    common::graph::neighbor::Label,
     hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
         stream_expression::StreamExpression,
@@ -30,7 +32,7 @@ impl Equation {
     /// ```
     pub fn normal_form(
         self,
-        nodes_reduced_graphs: &HashMap<String, Graph<Color>>,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
         identifier_creator: &mut IdentifierCreator,
     ) -> Vec<Equation> {
         let Equation {
@@ -72,17 +74,18 @@ impl Equation {
                         .iter()
                         .flat_map(|(input_id, expression)| {
                             reduced_graph
-                                .get_weights(signal, input_id)
-                                .iter()
-                                .flat_map(|weight| {
-                                    expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .map(|(id, depth)| (id, depth + weight))
-                                        .collect::<Vec<_>>()
+                                .edge_weight(signal, input_id)
+                                .map_or(vec![], |label| {
+                                    match label {
+                                        Label::Contract => vec![], // TODO: do we loose the CREUSOT dependence with the input?
+                                        Label::Weight(weight) => expression
+                                            .get_dependencies()
+                                            .clone()
+                                            .into_iter()
+                                            .map(|(id, depth)| (id, depth + weight))
+                                            .collect(),
+                                    }
                                 })
-                                .collect::<Vec<_>>()
                         })
                         .collect(),
                 );
@@ -113,9 +116,10 @@ impl Equation {
 mod normal_form {
     use std::collections::HashMap;
 
+    use petgraph::graphmap::GraphMap;
+
     use crate::ast::expression::Expression;
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
@@ -124,12 +128,12 @@ mod normal_form {
 
     #[test]
     fn should_change_node_applications_to_be_root_expressions() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
 
         // out x: int = 1 + my_node(s, v).o;
@@ -295,12 +299,12 @@ mod normal_form {
 
     #[test]
     fn should_change_inputs_expressions_to_be_signal_calls() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
 
         // out y: int = other_node(g-1, v).o;
@@ -444,12 +448,12 @@ mod normal_form {
 
     #[test]
     fn should_set_identifier_to_node_state_in_unitary_node_application() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
 
         // out y: int = other_node(g-1, v).o;

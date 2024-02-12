@@ -66,7 +66,7 @@ where
 {
     type Output = (S, O);
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let mut all_done = true;
 
         match self.as_mut().project() {

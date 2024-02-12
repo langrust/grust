@@ -54,18 +54,15 @@ impl File {
 mod causality_analysis {
     use std::collections::HashMap;
 
+    use petgraph::graphmap::GraphMap;
+
+    use crate::common::graph::neighbor::Label;
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
         signal::Signal, stream_expression::StreamExpression,
     };
     use crate::{
-        common::{
-            constant::Constant,
-            graph::{color::Color, Graph},
-            location::Location,
-            r#type::Type,
-            scope::Scope,
-        },
+        common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
         hir::file::File,
     };
 
@@ -119,12 +116,12 @@ mod causality_analysis {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i"), 0);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("i"));
+        graph.add_edge(String::from("x"), String::from("i"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         let component = Node {
@@ -181,11 +178,11 @@ mod causality_analysis {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("x"), String::from("o"), Label::Weight(1));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         component.graph.set(graph).unwrap();
 
         let file = File {
@@ -250,11 +247,11 @@ mod causality_analysis {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("o"), 0);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("x"), String::from("o"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node1.graph.set(graph).unwrap();
 
         let node2 = Node {
@@ -311,11 +308,11 @@ mod causality_analysis {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("x"), String::from("o"), Label::Weight(1));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node2.graph.set(graph).unwrap();
 
         let file = File {
@@ -380,11 +377,11 @@ mod causality_analysis {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("o"), 0);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("x"), String::from("o"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node1.graph.set(graph).unwrap();
 
         let node2 = Node {
@@ -441,11 +438,11 @@ mod causality_analysis {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_weighted_edge(&String::from("o"), String::from("o"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("x"), String::from("o"), Label::Weight(1));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node2.graph.set(graph).unwrap();
 
         let file = File {
@@ -510,12 +507,12 @@ mod causality_analysis {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("i"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i"), 0);
-        graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("i"));
+        graph.add_edge(String::from("x"), String::from("i"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         let component = Node {
@@ -572,11 +569,11 @@ mod causality_analysis {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("o"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("o"), 1);
-        graph.add_weighted_edge(&String::from("o"), String::from("o"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("o"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("x"), String::from("o"), Label::Weight(1));
+        graph.add_edge(String::from("o"), String::from("o"), Label::Weight(0));
         component.graph.set(graph).unwrap();
 
         let file = File {

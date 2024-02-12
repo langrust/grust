@@ -39,7 +39,7 @@ pub fn map<T, Fut: Future>(future: Fut, function: fn(Fut::Output) -> T) -> Map<T
 impl<T, Fut: Future> Future for Map<T, Fut> {
     type Output = T;
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         match self.as_mut().project() {
             MapProj::Future(future, ..) => {
                 let res = match future.poll(cx) {

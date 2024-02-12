@@ -88,7 +88,7 @@ where
     type Item = B::Output;
 
     #[inline]
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let EventProj {
             mut inner_stream,
             mut future,

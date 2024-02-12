@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::common::graph::{color::Color, Graph};
+use petgraph::graphmap::DiGraphMap;
+
+use crate::common::graph::color::Color;
+use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
@@ -39,9 +42,10 @@ impl StreamExpression {
     /// of the memory of `x` (the signal is behind 2 fby operations).
     pub fn compute_dependencies(
         &self,
-        nodes_context: &HashMap<String, Node>,
-        nodes_graphs: &mut HashMap<String, Graph<Color>>,
-        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_context: &HashMap<&String, Node>,
+        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
+        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
@@ -49,6 +53,7 @@ impl StreamExpression {
             StreamExpression::SignalCall { .. } => self.compute_signal_call_dependencies(),
             StreamExpression::FollowedBy { .. } => self.compute_followed_by_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
@@ -56,42 +61,49 @@ impl StreamExpression {
             StreamExpression::FunctionApplication { .. } => self
                 .compute_function_application_dependencies(
                     nodes_context,
+                    nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
                 ),
             StreamExpression::Structure { .. } => self.compute_structure_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
             StreamExpression::Array { .. } => self.compute_array_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
             StreamExpression::Match { .. } => self.compute_match_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
             StreamExpression::When { .. } => self.compute_when_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
             StreamExpression::NodeApplication { .. } => self.compute_node_application_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
             StreamExpression::FieldAccess { .. } => self.compute_field_access_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
@@ -99,30 +111,35 @@ impl StreamExpression {
             StreamExpression::TupleElementAccess { .. } => self
                 .compute_tuple_element_access_dependencies(
                     nodes_context,
+                    nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
                 ),
             StreamExpression::Map { .. } => self.compute_map_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
             StreamExpression::Fold { .. } => self.compute_fold_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
             StreamExpression::Sort { .. } => self.compute_sort_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
             ),
             StreamExpression::Zip { .. } => self.compute_zip_dependencies(
                 nodes_context,
+                nodes_processus_manager,
                 nodes_graphs,
                 nodes_reduced_graphs,
                 errors,
@@ -148,6 +165,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_array_elements_with_duplicates() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -197,6 +215,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -212,6 +231,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_no_dependencies_from_constant_expression() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -226,6 +246,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -241,6 +262,7 @@ mod compute_dependencies {
     #[test]
     fn should_increment_dependencies_depth_in_followed_by() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -274,6 +296,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -289,6 +312,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_function_application_inputs_with_duplicates() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -316,6 +340,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -331,6 +356,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_match_elements_with_duplicates() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -431,6 +457,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -452,6 +479,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_match_elements_without_pattern_dependencies() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -554,6 +582,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -658,7 +687,8 @@ mod compute_dependencies {
         };
 
         let mut nodes_context = HashMap::new();
-        nodes_context.insert(String::from("my_node"), node);
+        let my_node = String::from("my_node");
+        nodes_context.insert(&my_node, node);
         let node = nodes_context.get(&String::from("my_node")).unwrap();
 
         let graph = node.create_initialized_graph();
@@ -666,6 +696,9 @@ mod compute_dependencies {
 
         let reduced_graph = node.create_initialized_graph();
         let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
+
+        let processus_manager = node.create_initialized_processus_manager();
+        let mut nodes_processus_manager = HashMap::from([(node.id.clone(), processus_manager)]);
 
         let stream_expression = StreamExpression::NodeApplication {
             node: String::from("my_node"),
@@ -705,6 +738,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -720,6 +754,7 @@ mod compute_dependencies {
     #[test]
     fn should_dependencies_of_signal_call_is_signal_with_zero_depth() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -737,6 +772,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -752,6 +788,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_structure_elements_with_duplicates() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -792,6 +829,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -807,6 +845,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_when_expressions_with_duplicates() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -844,6 +883,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -859,6 +899,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_when_expressions_without_local_signal() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -899,6 +940,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -914,6 +956,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_field_access() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -937,6 +980,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -953,6 +997,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_tuple_element_access() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -980,6 +1025,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -996,6 +1042,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_map() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -1023,6 +1070,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -1039,6 +1087,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_fold() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -1075,6 +1124,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -1091,6 +1141,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_sort() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -1121,6 +1172,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,
@@ -1137,6 +1189,7 @@ mod compute_dependencies {
     #[test]
     fn should_compute_dependencies_of_zip_with_duplicates() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -1211,6 +1264,7 @@ mod compute_dependencies {
         stream_expression
             .compute_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,

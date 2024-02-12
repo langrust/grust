@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use petgraph::graphmap::{DiGraphMap, GraphMap};
+
 use crate::{
-    common::graph::{color::Color, Graph},
+    common::graph::neighbor::Label,
     hir::{equation::Equation, identifier_creator::IdentifierCreator, unitary_node::UnitaryNode},
 };
 
@@ -29,7 +31,10 @@ impl UnitaryNode {
     ///     out x: int = 1 + x_2;
     /// }
     /// ```
-    pub fn normal_form(&mut self, nodes_reduced_graphs: &HashMap<String, Graph<Color>>) {
+    pub fn normal_form(
+        &mut self,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
+    ) {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals());
 
         let UnitaryNode { equations, .. } = self;
@@ -43,10 +48,10 @@ impl UnitaryNode {
             .collect();
 
         // add a dependency graph to the unitary node
-        let mut graph = Graph::new();
-        self.get_signals()
-            .iter()
-            .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
+        let mut graph = GraphMap::new();
+        self.get_signals().iter().for_each(|signal_id| {
+            graph.add_node(signal_id);
+        });
         self.equations.iter().for_each(
             |Equation {
                  id: from,
@@ -54,7 +59,7 @@ impl UnitaryNode {
                  ..
              }| {
                 for (to, weight) in expression.get_dependencies() {
-                    graph.add_weighted_edge(from, to.clone(), *weight)
+                    graph.add_edge(from, to, Label::Weight(*weight));
                 }
             },
         );
@@ -67,9 +72,10 @@ mod normal_form {
 
     use std::collections::HashMap;
 
+    use petgraph::graphmap::GraphMap;
+
     use crate::ast::expression::Expression;
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
@@ -78,12 +84,12 @@ mod normal_form {
 
     #[test]
     fn should_change_node_applications_to_be_root_expressions() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
 
         // node test(s: int, v: int) {
@@ -175,14 +181,14 @@ mod normal_form {
         //     x_1: int = my_node(s, v).o;
         //     out x: int = 1 + x_1;
         // }
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x_1"), Color::White);
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("s"), Color::White);
-        graph.add_vertex(format!("v"), Color::White);
-        graph.add_weighted_edge(&format!("x_1"), format!("s"), 0);
-        graph.add_weighted_edge(&format!("x_1"), format!("v"), 0);
-        graph.add_weighted_edge(&format!("x"), format!("x_1"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x_1"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("s"));
+        graph.add_node(String::from("v"));
+        graph.add_edge(String::from("x_1"), String::from("s"), Label::Weight(0));
+        graph.add_edge(String::from("x_1"), String::from("v"), Label::Weight(0));
+        graph.add_edge(String::from("x"), String::from("x_1"), Label::Weight(0));
         let equations = vec![
             Equation {
                 scope: Scope::Local,
@@ -282,12 +288,12 @@ mod normal_form {
 
     #[test]
     fn should_change_inputs_expressions_to_be_signal_calls() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
 
         // node test(v: int, g: int) {
@@ -368,14 +374,14 @@ mod normal_form {
         //     x: int = g-1;
         //     out y: int = other_node(x, v).o;
         // }
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("g"), Color::White);
-        graph.add_vertex(format!("v"), Color::White);
-        graph.add_weighted_edge(&format!("y"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("y"), format!("v"), 0);
-        graph.add_weighted_edge(&format!("x"), format!("g"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("g"));
+        graph.add_node(String::from("v"));
+        graph.add_edge(String::from("y"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("y"), String::from("v"), Label::Weight(0));
+        graph.add_edge(String::from("x"), String::from("g"), Label::Weight(0));
         let equations = vec![
             Equation {
                 scope: Scope::Local,
@@ -464,12 +470,12 @@ mod normal_form {
 
     #[test]
     fn should_set_identifier_to_node_state_in_unitary_node_application() {
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("y"), Color::White);
-        graph.add_vertex(format!("o"), Color::White);
-        graph.add_weighted_edge(&format!("o"), format!("x"), 0);
-        graph.add_weighted_edge(&format!("o"), format!("y"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o"));
+        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
         let nodes_reduced_graphs = HashMap::from([(format!("other_node"), graph)]);
 
         // node test(v: int, g: int) {

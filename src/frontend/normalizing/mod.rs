@@ -169,8 +169,10 @@ impl File {
 #[cfg(test)]
 mod normalize {
 
+    use petgraph::graphmap::GraphMap;
+
     use crate::ast::expression::Expression;
-    use crate::common::graph::{color::Color, Graph};
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, file::File, memory::Memory, node::Node,
@@ -187,14 +189,14 @@ mod normalize {
         //     out o1: int = x+y;
         //     out o2: int = 2*y;
         // }
-        let mut my_node_graph = Graph::new();
-        my_node_graph.add_vertex(String::from("x"), Color::Black);
-        my_node_graph.add_vertex(String::from("y"), Color::Black);
-        my_node_graph.add_vertex(String::from("o1"), Color::Black);
-        my_node_graph.add_vertex(String::from("o2"), Color::Black);
-        my_node_graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        my_node_graph.add_weighted_edge(&String::from("o1"), String::from("y"), 0);
-        my_node_graph.add_weighted_edge(&String::from("o2"), String::from("y"), 0);
+        let mut my_node_graph = GraphMap::new();
+        my_node_graph.add_node(String::from("x"));
+        my_node_graph.add_node(String::from("y"));
+        my_node_graph.add_node(String::from("o1"));
+        my_node_graph.add_node(String::from("o2"));
+        my_node_graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        my_node_graph.add_edge(String::from("o1"), String::from("y"), Label::Weight(0));
+        my_node_graph.add_edge(String::from("o2"), String::from("y"), Label::Weight(0));
         let my_node = Node {
             contract: Default::default(),
             id: String::from("my_node"),
@@ -289,10 +291,10 @@ mod normalize {
         // node mem(i: int) {
         //     out o: int = 0 fby i;
         // }
-        let mut mem_graph = Graph::new();
-        mem_graph.add_vertex(String::from("i"), Color::Black);
-        mem_graph.add_vertex(String::from("o"), Color::Black);
-        mem_graph.add_weighted_edge(&String::from("o"), String::from("i"), 1);
+        let mut mem_graph = GraphMap::new();
+        mem_graph.add_node(String::from("i"));
+        mem_graph.add_node(String::from("o"));
+        mem_graph.add_edge(String::from("o"), String::from("i"), Label::Weight(1));
         let mem = Node {
             contract: Default::default(),
             id: String::from("mem"),
@@ -332,16 +334,16 @@ mod normalize {
         //     y: int = 1 + my_node(g-1, v-1).o2;
         //     out z: int = mem(z).o;
         // }
-        let mut other_node_graph = Graph::new();
-        other_node_graph.add_vertex(String::from("v"), Color::Black);
-        other_node_graph.add_vertex(String::from("g"), Color::Black);
-        other_node_graph.add_vertex(String::from("x"), Color::Black);
-        other_node_graph.add_vertex(String::from("y"), Color::Black);
-        other_node_graph.add_vertex(String::from("z"), Color::Black);
-        other_node_graph.add_weighted_edge(&String::from("x"), String::from("y"), 0);
-        other_node_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        other_node_graph.add_weighted_edge(&String::from("y"), String::from("v"), 0);
-        other_node_graph.add_weighted_edge(&String::from("z"), String::from("z"), 1);
+        let mut other_node_graph = GraphMap::new();
+        other_node_graph.add_node(String::from("v"));
+        other_node_graph.add_node(String::from("g"));
+        other_node_graph.add_node(String::from("x"));
+        other_node_graph.add_node(String::from("y"));
+        other_node_graph.add_node(String::from("z"));
+        other_node_graph.add_edge(String::from("x"), String::from("y"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("y"), String::from("v"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("z"), String::from("z"), Label::Weight(1));
         let other_node = Node {
             contract: Default::default(),
             id: String::from("other_node"),
@@ -527,14 +529,14 @@ mod normalize {
         //     out o1: int = x+y;
         //     out o2: int = 2*y;
         // }
-        let mut my_node_graph = Graph::new();
-        my_node_graph.add_vertex(String::from("x"), Color::Black);
-        my_node_graph.add_vertex(String::from("y"), Color::Black);
-        my_node_graph.add_vertex(String::from("o1"), Color::Black);
-        my_node_graph.add_vertex(String::from("o2"), Color::Black);
-        my_node_graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        my_node_graph.add_weighted_edge(&String::from("o1"), String::from("y"), 0);
-        my_node_graph.add_weighted_edge(&String::from("o2"), String::from("y"), 0);
+        let mut my_node_graph = GraphMap::new();
+        my_node_graph.add_node(String::from("x"));
+        my_node_graph.add_node(String::from("y"));
+        my_node_graph.add_node(String::from("o1"));
+        my_node_graph.add_node(String::from("o2"));
+        my_node_graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        my_node_graph.add_edge(String::from("o1"), String::from("y"), Label::Weight(0));
+        my_node_graph.add_edge(String::from("o2"), String::from("y"), Label::Weight(0));
         let my_node = Node {
             contract: Default::default(),
             id: String::from("my_node"),
@@ -629,10 +631,10 @@ mod normalize {
         // node mem(i: int) {
         //     out o: int = 0 fby i;
         // }
-        let mut mem_graph = Graph::new();
-        mem_graph.add_vertex(String::from("i"), Color::Black);
-        mem_graph.add_vertex(String::from("o"), Color::Black);
-        mem_graph.add_weighted_edge(&String::from("o"), String::from("i"), 1);
+        let mut mem_graph = GraphMap::new();
+        mem_graph.add_node(String::from("i"));
+        mem_graph.add_node(String::from("o"));
+        mem_graph.add_edge(String::from("o"), String::from("i"), Label::Weight(1));
         let mem = Node {
             contract: Default::default(),
             id: String::from("mem"),
@@ -672,15 +674,15 @@ mod normalize {
         //     y: int = 1 + my_node(v-1).o2;
         //     out z: int = mem(z).o;
         // }
-        let mut other_node_graph = Graph::new();
-        other_node_graph.add_vertex(String::from("v"), Color::Black);
-        other_node_graph.add_vertex(String::from("x"), Color::Black);
-        other_node_graph.add_vertex(String::from("y"), Color::Black);
-        other_node_graph.add_vertex(String::from("z"), Color::Black);
-        other_node_graph.add_weighted_edge(&String::from("x"), String::from("y"), 0);
-        other_node_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        other_node_graph.add_weighted_edge(&String::from("y"), String::from("v"), 0);
-        other_node_graph.add_weighted_edge(&String::from("z"), String::from("z"), 1);
+        let mut other_node_graph = GraphMap::new();
+        other_node_graph.add_node(String::from("v"));
+        other_node_graph.add_node(String::from("x"));
+        other_node_graph.add_node(String::from("y"));
+        other_node_graph.add_node(String::from("z"));
+        other_node_graph.add_edge(String::from("x"), String::from("y"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("y"), String::from("v"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("z"), String::from("z"), Label::Weight(1));
         let other_node = Node {
             contract: Default::default(),
             id: String::from("other_node"),
@@ -857,12 +859,12 @@ mod normalize {
         // node my_node(x: int, y: int).o1 {
         //     out o1: int = x+y;
         // }
-        let mut my_node_o1_graph = Graph::new();
-        my_node_o1_graph.add_vertex(String::from("x"), Color::Black);
-        my_node_o1_graph.add_vertex(String::from("y"), Color::Black);
-        my_node_o1_graph.add_vertex(String::from("o1"), Color::Black);
-        my_node_o1_graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        my_node_o1_graph.add_weighted_edge(&String::from("o1"), String::from("y"), 0);
+        let mut my_node_o1_graph = GraphMap::new();
+        my_node_o1_graph.add_node(String::from("x"));
+        my_node_o1_graph.add_node(String::from("y"));
+        my_node_o1_graph.add_node(String::from("o1"));
+        my_node_o1_graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        my_node_o1_graph.add_edge(String::from("o1"), String::from("y"), Label::Weight(0));
         let my_node_o1 = UnitaryNode {
             contract: Default::default(),
             node_id: String::from("my_node"),
@@ -920,10 +922,10 @@ mod normalize {
         // node my_node(y: int).o2 {
         //     out o2: int = 2*y;
         // }
-        let mut my_node_o2_graph = Graph::new();
-        my_node_o2_graph.add_vertex(String::from("y"), Color::Black);
-        my_node_o2_graph.add_vertex(String::from("o2"), Color::Black);
-        my_node_o2_graph.add_weighted_edge(&String::from("o2"), String::from("y"), 0);
+        let mut my_node_o2_graph = GraphMap::new();
+        my_node_o2_graph.add_node(String::from("y"));
+        my_node_o2_graph.add_node(String::from("o2"));
+        my_node_o2_graph.add_edge(String::from("o2"), String::from("y"), Label::Weight(0));
         let my_node_o2 = UnitaryNode {
             contract: Default::default(),
             node_id: String::from("my_node"),
@@ -961,14 +963,14 @@ mod normalize {
             location: Location::default(),
             graph: OnceCell::from(my_node_o2_graph),
         };
-        let mut my_node_graph = Graph::new();
-        my_node_graph.add_vertex(String::from("x"), Color::Black);
-        my_node_graph.add_vertex(String::from("y"), Color::Black);
-        my_node_graph.add_vertex(String::from("o1"), Color::Black);
-        my_node_graph.add_vertex(String::from("o2"), Color::Black);
-        my_node_graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        my_node_graph.add_weighted_edge(&String::from("o1"), String::from("y"), 0);
-        my_node_graph.add_weighted_edge(&String::from("o2"), String::from("y"), 0);
+        let mut my_node_graph = GraphMap::new();
+        my_node_graph.add_node(String::from("x"));
+        my_node_graph.add_node(String::from("y"));
+        my_node_graph.add_node(String::from("o1"));
+        my_node_graph.add_node(String::from("o2"));
+        my_node_graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        my_node_graph.add_edge(String::from("o1"), String::from("y"), Label::Weight(0));
+        my_node_graph.add_edge(String::from("o2"), String::from("y"), Label::Weight(0));
         let my_node = Node {
             contract: Default::default(),
             id: String::from("my_node"),
@@ -1066,11 +1068,11 @@ mod normalize {
         // node mem(i: int) {
         //     out o: int = mem_o;
         // }
-        let mut mem_graph = Graph::new();
-        mem_graph.add_vertex(String::from("i"), Color::Black);
-        mem_graph.add_vertex(String::from("o"), Color::Black);
-        mem_graph.add_vertex(String::from("mem_o"), Color::Black);
-        mem_graph.add_weighted_edge(&String::from("o"), String::from("mem_o"), 0);
+        let mut mem_graph = GraphMap::new();
+        mem_graph.add_node(String::from("i"));
+        mem_graph.add_node(String::from("o"));
+        mem_graph.add_node(String::from("mem_o"));
+        mem_graph.add_edge(String::from("o"), String::from("mem_o"), Label::Weight(0));
         let mut memory = Memory::new();
         memory.add_buffer(
             format!("mem_o"),
@@ -1109,10 +1111,10 @@ mod normalize {
             location: Location::default(),
             graph: OnceCell::from(mem_graph),
         };
-        let mut mem_graph = Graph::new();
-        mem_graph.add_vertex(String::from("i"), Color::Black);
-        mem_graph.add_vertex(String::from("o"), Color::Black);
-        mem_graph.add_weighted_edge(&String::from("o"), String::from("i"), 1);
+        let mut mem_graph = GraphMap::new();
+        mem_graph.add_node(String::from("i"));
+        mem_graph.add_node(String::from("o"));
+        mem_graph.add_edge(String::from("o"), String::from("i"), Label::Weight(1));
         let mem = Node {
             contract: Default::default(),
             id: String::from("mem"),
@@ -1153,17 +1155,17 @@ mod normalize {
         //     y: int = 1 + x_2;
         //     out x: int = my_node(y, v).o1;
         // }
-        let mut other_node_x_graph = Graph::new();
-        other_node_x_graph.add_vertex(String::from("v"), Color::Black);
-        other_node_x_graph.add_vertex(String::from("y"), Color::Black);
-        other_node_x_graph.add_vertex(String::from("x_1"), Color::Black);
-        other_node_x_graph.add_vertex(String::from("x_2"), Color::Black);
-        other_node_x_graph.add_vertex(String::from("x"), Color::Black);
-        other_node_x_graph.add_weighted_edge(&String::from("x"), String::from("y"), 0);
-        other_node_x_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        other_node_x_graph.add_weighted_edge(&String::from("y"), String::from("x_2"), 0);
-        other_node_x_graph.add_weighted_edge(&String::from("x_2"), String::from("x_1"), 0);
-        other_node_x_graph.add_weighted_edge(&String::from("x_1"), String::from("v"), 0);
+        let mut other_node_x_graph = GraphMap::new();
+        other_node_x_graph.add_node(String::from("v"));
+        other_node_x_graph.add_node(String::from("y"));
+        other_node_x_graph.add_node(String::from("x_1"));
+        other_node_x_graph.add_node(String::from("x_2"));
+        other_node_x_graph.add_node(String::from("x"));
+        other_node_x_graph.add_edge(String::from("x"), String::from("y"), Label::Weight(0));
+        other_node_x_graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        other_node_x_graph.add_edge(String::from("y"), String::from("x_2"), Label::Weight(0));
+        other_node_x_graph.add_edge(String::from("x_2"), String::from("x_1"), Label::Weight(0));
+        other_node_x_graph.add_edge(String::from("x_1"), String::from("v"), Label::Weight(0));
         let mut memory = Memory::new();
         memory.add_called_node(
             format!("my_node_o2_x_2"),
@@ -1314,10 +1316,10 @@ mod normalize {
         // node other_node().z {
         //     out z: int = mem_o;
         // }
-        let mut other_node_z_graph = Graph::new();
-        other_node_z_graph.add_vertex(String::from("z"), Color::Black);
-        other_node_z_graph.add_vertex(String::from("mem_o"), Color::Black);
-        other_node_z_graph.add_weighted_edge(&String::from("z"), String::from("mem_o"), 0);
+        let mut other_node_z_graph = GraphMap::new();
+        other_node_z_graph.add_node(String::from("z"));
+        other_node_z_graph.add_node(String::from("mem_o"));
+        other_node_z_graph.add_edge(String::from("z"), String::from("mem_o"), Label::Weight(0));
         let mut memory = Memory::new();
         memory.add_buffer(
             format!("mem_o"),
@@ -1356,15 +1358,15 @@ mod normalize {
             location: Location::default(),
             graph: OnceCell::from(other_node_z_graph),
         };
-        let mut other_node_graph = Graph::new();
-        other_node_graph.add_vertex(String::from("v"), Color::Black);
-        other_node_graph.add_vertex(String::from("x"), Color::Black);
-        other_node_graph.add_vertex(String::from("y"), Color::Black);
-        other_node_graph.add_vertex(String::from("z"), Color::Black);
-        other_node_graph.add_weighted_edge(&String::from("x"), String::from("y"), 0);
-        other_node_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        other_node_graph.add_weighted_edge(&String::from("y"), String::from("v"), 0);
-        other_node_graph.add_weighted_edge(&String::from("z"), String::from("z"), 1);
+        let mut other_node_graph = GraphMap::new();
+        other_node_graph.add_node(String::from("v"));
+        other_node_graph.add_node(String::from("x"));
+        other_node_graph.add_node(String::from("y"));
+        other_node_graph.add_node(String::from("z"));
+        other_node_graph.add_edge(String::from("x"), String::from("y"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("y"), String::from("v"), Label::Weight(0));
+        other_node_graph.add_edge(String::from("z"), String::from("z"), Label::Weight(1));
         let other_node = Node {
             contract: Default::default(),
             id: String::from("other_node"),
