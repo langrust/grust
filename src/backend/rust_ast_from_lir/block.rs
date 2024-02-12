@@ -8,7 +8,10 @@ pub fn rust_ast_from_lir(block: Block) -> syn::Block {
         .into_iter()
         .map(statement_rust_ast_from_lir)
         .collect();
-    syn::Block { stmts, brace_token: Default::default() }
+    syn::Block {
+        stmts,
+        brace_token: Default::default(),
+    }
 }
 
 #[cfg(test)]

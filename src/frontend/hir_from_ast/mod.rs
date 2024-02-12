@@ -1,3 +1,5 @@
+/// HIR Contract construction from AST Contract
+pub mod contract;
 /// HIR Equation construction from AST Equation
 pub mod equation;
 /// HIR File construction from AST File
@@ -8,4 +10,3 @@ pub mod node;
 pub mod pattern;
 /// HIR StreamExpression construction from AST StreamExpression
 pub mod stream_expression;
-pub mod contract;

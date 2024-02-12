@@ -184,7 +184,7 @@ mod schedule {
         //     x: int = v*2 + o_1
         // }
         let mut unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -212,7 +212,7 @@ mod schedule {
         //     out y: int = other_node(x-1).o
         // }
         let control = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -352,7 +352,7 @@ mod schedule {
         //     x: int = v*2 + o_1
         // }
         let mut unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],

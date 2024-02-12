@@ -1,4 +1,4 @@
-use crate::{ast::term::Term, common::constant::Constant};
+use crate::{ast::contract::Term, common::constant::Constant};
 
 /// A init function.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -7,7 +7,8 @@ pub struct Init {
     pub node_name: String,
     /// The initialization of the node's state.
     pub state_elements_init: Vec<StateElementInit>,
-    pub postconditions: Vec<Term>,
+    /// The invariant initialisation to prove.
+    pub invariant_initialisation: Vec<Term>,
 }
 
 /// A state element structure for the initialization.

@@ -356,12 +356,12 @@ nodes:
               id: tick
               value: White
               neighbors: []
-        contracts:
+        contract:
           requires: []
           ensures: []
           invariant: []
           assert: []
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -716,12 +716,12 @@ component:
               - id: half
                 label:
                   Weight: 0
-      contracts:
+      contract:
         requires: []
         ensures: []
         invariant: []
         assert: []
-  contracts:
+  contract:
     requires: []
     ensures: []
     invariant: []

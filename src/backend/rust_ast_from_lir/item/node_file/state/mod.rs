@@ -27,7 +27,7 @@ pub fn rust_ast_from_lir(state: State) -> (ItemStruct, ItemImpl) {
             } => {
                 let name = format_ident!("{}", camel_case(&format!("{}State", node_name)));
                 let identifier = format_ident!("{identifier}");
- 
+
                 parse_quote! { #identifier : #name }
             }
         })

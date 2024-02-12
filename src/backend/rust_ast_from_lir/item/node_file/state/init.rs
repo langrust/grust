@@ -32,7 +32,7 @@ pub fn rust_ast_from_lir(init: Init) -> ImplItemFn {
                 initial_value,
             } => {
                 let ident = Ident::new(&identifier, Span::call_site());
-                let constant : Expr = parse_str(&format!("{initial_value}")).unwrap();
+                let constant: Expr = parse_str(&format!("{initial_value}")).unwrap();
                 FieldValue {
                     attrs: vec![],
                     member: parse_quote! { #ident },
@@ -45,12 +45,12 @@ pub fn rust_ast_from_lir(init: Init) -> ImplItemFn {
                 node_name,
             } => {
                 let ident = Ident::new(&identifier, Span::call_site());
-                
+
                 let called_state_ty = Ident::new(
                     &camel_case(&format!("{}State", node_name)),
                     Span::call_site(),
                 );
-                let expr = parse_quote!{#called_state_ty::init ()};
+                let expr = parse_quote! {#called_state_ty::init ()};
                 FieldValue {
                     attrs: vec![],
                     member: parse_quote! { #ident },
@@ -95,7 +95,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
         let init = Init {
-            postconditions: vec![],
+            invariant_initialisation: vec![],
             node_name: format!("Node"),
             state_elements_init: vec![
                 StateElementInit::BufferInit {

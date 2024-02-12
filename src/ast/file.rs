@@ -313,7 +313,7 @@ mod typing {
         let mut errors = vec![];
 
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -383,7 +383,7 @@ mod typing {
         };
 
         let expected_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -462,7 +462,7 @@ mod typing {
         let mut errors = vec![];
 
         let component = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("program_component"),
             is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -515,7 +515,7 @@ mod typing {
         };
 
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -585,7 +585,7 @@ mod typing {
         };
 
         let expected_component = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("program_component"),
             is_component: true,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -641,7 +641,7 @@ mod typing {
         };
 
         let expected_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

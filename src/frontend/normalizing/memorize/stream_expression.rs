@@ -1,5 +1,5 @@
 use crate::common::scope::Scope;
-use crate::hir::term::Contract;
+use crate::hir::contract::Contract;
 use crate::hir::{
     dependencies::Dependencies, identifier_creator::IdentifierCreator, memory::Memory,
     signal::Signal, stream_expression::StreamExpression,
@@ -278,7 +278,7 @@ mod memorize {
     use crate::ast::expression::Expression;
     use crate::common::scope::Scope;
     use crate::common::{constant::Constant, location::Location, r#type::Type};
-    use crate::hir::term::Contract;
+    use crate::hir::contract::Contract;
     use crate::hir::{
         dependencies::Dependencies, identifier_creator::IdentifierCreator, memory::Memory,
         signal::Signal, stream_expression::StreamExpression,

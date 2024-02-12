@@ -1,7 +1,7 @@
+use super::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::lir::statement::Statement;
 use proc_macro2::Span;
 use syn::*;
-use super::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 
 /// Transform LIR statement into RustAST statement.
 pub fn rust_ast_from_lir(statement: Statement) -> Stmt {
@@ -9,25 +9,23 @@ pub fn rust_ast_from_lir(statement: Statement) -> Stmt {
         Statement::Let {
             identifier,
             expression,
-        } => {
-            Stmt::Local(Local {
+        } => Stmt::Local(Local {
+            attrs: vec![],
+            let_token: Default::default(),
+            pat: Pat::Ident(PatIdent {
                 attrs: vec![],
-                let_token: Default::default(),
-                pat: Pat::Ident(PatIdent {
-                    attrs: vec![],
-                    by_ref: None,
-                    mutability: None,
-                    ident: Ident::new(&identifier, Span::call_site()),
-                    subpat: None,
-                }),
-                init: Some(LocalInit {
-                    eq_token: Default::default(),
-                    expr: Box::new(expression_rust_ast_from_lir(expression)),
-                    diverge: None,
-                }),
-                semi_token: Default::default(),
-            })
-    },
+                by_ref: None,
+                mutability: None,
+                ident: Ident::new(&identifier, Span::call_site()),
+                subpat: None,
+            }),
+            init: Some(LocalInit {
+                eq_token: Default::default(),
+                expr: Box::new(expression_rust_ast_from_lir(expression)),
+                diverge: None,
+            }),
+            semi_token: Default::default(),
+        }),
         Statement::ExpressionLast { expression } => {
             Stmt::Expr(expression_rust_ast_from_lir(expression), None)
         }

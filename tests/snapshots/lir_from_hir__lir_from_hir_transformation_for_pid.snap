@@ -123,7 +123,7 @@ items:
           output_expression:
             Identifier:
               identifier: i
-          contracts:
+          contract:
             requires: []
             ensures: []
             invariant: []
@@ -135,7 +135,7 @@ items:
                 identifier: mem_prev_i
                 initial_value:
                   Float: 0
-          postconditions: []
+          invariant_initialisation: []
   - NodeFile:
       name: derive_d
       imports: []
@@ -193,7 +193,7 @@ items:
           output_expression:
             Identifier:
               identifier: d
-          contracts:
+          contract:
             requires: []
             ensures: []
             invariant: []
@@ -205,7 +205,7 @@ items:
                 identifier: mem_prev_x
                 initial_value:
                   Float: 0
-          postconditions: []
+          invariant_initialisation: []
   - NodeFile:
       name: pid_u
       imports:
@@ -356,7 +356,7 @@ items:
           output_expression:
             Identifier:
               identifier: u
-          contracts:
+          contract:
             requires: []
             ensures: []
             invariant: []
@@ -370,5 +370,5 @@ items:
             - CalledNodeInit:
                 identifier: integrate_i_e_i
                 node_name: integrate_i
-          postconditions: []
+          invariant_initialisation: []
 

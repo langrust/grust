@@ -81,7 +81,7 @@ nodes:
               typing: ~
               location: ~
           location: ~
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -344,7 +344,7 @@ nodes:
               typing: ~
               location: ~
           location: ~
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []

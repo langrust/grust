@@ -103,7 +103,7 @@ mod normal_form {
         my_node_graph.add_weighted_edge(&String::from("o"), String::from("x"), 0);
         my_node_graph.add_weighted_edge(&String::from("o"), String::from("y"), 0);
         let my_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -158,7 +158,7 @@ mod normal_form {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("my_node"),
                     output_id: String::from("o"),
                     inputs: vec![
@@ -226,7 +226,7 @@ mod normal_form {
         node_graph.add_weighted_edge(&String::from("x"), String::from("s"), 0);
         node_graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -307,7 +307,7 @@ mod normal_form {
             unitary_nodes: HashMap::from([(
                 String::from("x"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("x"),
                     inputs: vec![
@@ -439,7 +439,7 @@ mod normal_form {
         //     out o: int = x * y
         // }
         let my_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -494,7 +494,7 @@ mod normal_form {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("my_node"),
                     output_id: String::from("o"),
                     inputs: vec![
@@ -666,7 +666,7 @@ mod normal_form {
             },
         ];
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -679,7 +679,7 @@ mod normal_form {
             graph: OnceCell::from(unitary_node_graph.clone()),
         };
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![

@@ -4,14 +4,13 @@ use crate::backend::rust_ast_from_lir::expression::{
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
-use crate::common::{operator::BinaryOperator, scope::Scope};
+use crate::common::scope::Scope;
+use crate::hir::contract::{Contract, Term, TermKind};
 use crate::hir::signal::Signal;
-use crate::hir::term::{Contract, Term, TermKind};
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::parse_quote;
-use syn::token::Impl;
 use syn::*;
 
 fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
@@ -26,7 +25,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
             let s = format!("{constant}");
             s.parse().unwrap()
         }
-        TermKind::Variable { signal } => {
+        TermKind::Identifier { signal } => {
             let Signal { id, scope } = signal;
             let id = Ident::new(&id, Span::call_site());
             match scope {
@@ -55,7 +54,7 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
         ensures,
         invariant,
         ..
-    } = step.contracts;
+    } = step.contract;
     let mut attributes = requires
         .into_iter()
         .map(|term| {
@@ -178,7 +177,6 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
 mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir;
     use crate::common::constant::Constant;
-    use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
     use crate::lir::expression::{Expression, FieldIdentifier};
     use crate::lir::item::node_file::state::step::{StateElementStep, Step};
@@ -188,7 +186,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
         let init = Step {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_name: format!("Node"),
             output_type: Type::Integer,
             body: vec![

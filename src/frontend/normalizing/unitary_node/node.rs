@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use crate::error::{Error, TerminationError};
-use crate::hir::term::Term;
+use crate::hir::contract::Term;
 use crate::hir::{memory::Memory, node::Node, once_cell::OnceCell, unitary_node::UnitaryNode};
 use crate::{
     common::{
         graph::{color::Color, Graph},
         scope::Scope,
     },
-    hir::term::Contract,
+    hir::contract::Contract,
 };
 
 pub type UsedInputs = Vec<(String, bool)>;
@@ -107,12 +107,11 @@ impl Node {
 
     fn add_unitary_node(&mut self, output: String, creusot_contract: bool) -> Graph<Color> {
         let Node {
-            contracts:
+            contract:
                 Contract {
                     requires,
                     ensures,
                     invariant,
-                    assert,
                 },
             id: node,
             inputs,
@@ -123,7 +122,11 @@ impl Node {
         } = self;
 
         // construct unitary node's subgraph from its output
-        let subgraph = self.graph.get().unwrap().subgraph_from_vertex(&output, !creusot_contract);
+        let subgraph = self
+            .graph
+            .get()
+            .unwrap()
+            .subgraph_from_vertex(&output, !creusot_contract);
 
         // get signals that compute the output
         let useful_signals = subgraph.get_vertices();
@@ -156,16 +159,15 @@ impl Node {
                 .cloned()
                 .collect::<Vec<_>>()
         };
-        let contracts = Contract {
+        let contract = Contract {
             requires: retrieve_terms(requires),
             ensures: retrieve_terms(ensures),
             invariant: retrieve_terms(invariant),
-            assert: retrieve_terms(assert),
         };
 
         // construct unitary node
         let unitary_node = UnitaryNode {
-            contracts,
+            contract,
             node_id: node.clone(),
             output_id: output.clone(),
             inputs: unitary_node_inputs,
@@ -203,7 +205,7 @@ mod add_unitary_node {
     #[test]
     fn should_add_unitary_node_computing_output() {
         let mut node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -286,7 +288,7 @@ mod add_unitary_node {
         node.add_unitary_node(String::from("o1"), false);
 
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -327,7 +329,7 @@ mod add_unitary_node {
             graph: OnceCell::new(),
         };
         let control = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -433,7 +435,7 @@ mod generate_unitary_nodes {
         let mut errors = vec![];
 
         let mut node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -516,7 +518,7 @@ mod generate_unitary_nodes {
         node.generate_unitary_nodes(false, &mut errors).unwrap();
 
         let unitary_node_1 = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -557,7 +559,7 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
         let unitary_node_2 = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o2"),
             inputs: vec![(String::from("i2"), Type::Integer)],
@@ -581,7 +583,7 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
         let control = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -672,7 +674,7 @@ mod generate_unitary_nodes {
         let mut errors = vec![];
 
         let mut node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -767,7 +769,7 @@ mod generate_unitary_nodes {
         let mut errors = vec![];
 
         let mut node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![

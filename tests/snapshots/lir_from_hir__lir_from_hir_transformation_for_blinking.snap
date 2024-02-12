@@ -117,7 +117,7 @@ items:
           output_expression:
             Identifier:
               identifier: o
-          contracts:
+          contract:
             requires: []
             ensures: []
             invariant: []
@@ -129,7 +129,7 @@ items:
                 identifier: mem_o
                 initial_value:
                   Integer: 0
-          postconditions: []
+          invariant_initialisation: []
   - NodeFile:
       name: blinking_status
       imports:
@@ -252,7 +252,7 @@ items:
           output_expression:
             Identifier:
               identifier: status
-          contracts:
+          contract:
             requires: []
             ensures: []
             invariant: []
@@ -271,5 +271,5 @@ items:
             - CalledNodeInit:
                 identifier: counter_o_counter
                 node_name: counter_o
-          postconditions: []
+          invariant_initialisation: []
 

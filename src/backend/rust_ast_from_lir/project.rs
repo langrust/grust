@@ -1,4 +1,7 @@
-use std::{collections::{BTreeMap, HashMap}, path::{Path, PathBuf}};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     backend::rust_ast_from_lir::item::{
@@ -14,6 +17,7 @@ use proc_macro2::Span;
 use syn::*;
 
 #[derive(Debug)]
+/// Rust project resulting from compiling.
 pub struct RustASTProject {
     /// Project's directory.
     pub directory: String,
@@ -173,7 +177,7 @@ pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
         items: Default::default(),
         attrs: vec![],
     };
-    rust_ast_project.files.iter().for_each(|(path, file)| {
+    rust_ast_project.files.iter().for_each(|(path, _)| {
         let module_name = Path::new(&path)
             .file_stem()
             .unwrap()

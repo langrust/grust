@@ -222,7 +222,7 @@ nodes:
                 - 0
         location: ~
     unitary_nodes: {}
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -622,7 +622,7 @@ nodes:
                 - 0
         location: ~
     unitary_nodes: {}
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []

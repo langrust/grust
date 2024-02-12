@@ -7,23 +7,23 @@ pub fn rust_ast_from_lir(import: Import) -> ItemUse {
         Import::NodeFile(name) => {
             let name = Ident::new(&name, Span::call_site());
             parse_quote! { use crate::#name::*; }
-        },
+        }
         Import::Function(name) => {
             let name = Ident::new(&name, Span::call_site());
             parse_quote! { use crate::functions::#name; }
-        },
+        }
         Import::Enumeration(name) => {
             let name = Ident::new(&name, Span::call_site());
             parse_quote! { use crate::typedefs::#name; }
-        },
+        }
         Import::Structure(name) => {
             let name = Ident::new(&name, Span::call_site());
             parse_quote! { use crate::typedefs::#name; }
-        },
+        }
         Import::ArrayAlias(name) => {
             let name = Ident::new(&name, Span::call_site());
             parse_quote! { use crate::typedefs::#name; }
-        },
+        }
     }
 }
 

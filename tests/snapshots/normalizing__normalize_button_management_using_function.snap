@@ -368,12 +368,12 @@ nodes:
               id: res
               value: White
               neighbors: []
-        contracts:
+        contract:
           requires: []
           ensures: []
           invariant: []
           assert: []
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -1167,7 +1167,7 @@ nodes:
                 - id: button_state
                   label:
                     Weight: 0
-        contracts:
+        contract:
           requires: []
           ensures: []
           invariant: []
@@ -1471,12 +1471,12 @@ nodes:
                 - id: reset_limit_1
                   label:
                     Weight: 0
-        contracts:
+        contract:
           requires: []
           ensures: []
           invariant: []
           assert: []
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []

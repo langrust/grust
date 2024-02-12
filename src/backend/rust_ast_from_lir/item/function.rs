@@ -49,7 +49,6 @@ pub fn rust_ast_from_lir(function: Function) -> ItemFn {
 #[cfg(test)]
 mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::item::function::rust_ast_from_lir;
-    use crate::common::operator::BinaryOperator;
     use crate::common::r#type::Type;
     use crate::lir::block::Block;
     use crate::lir::expression::Expression;

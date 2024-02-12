@@ -93,7 +93,7 @@ nodes:
               typing: Integer
               location: ~
           location: ~
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -402,7 +402,7 @@ nodes:
               typing: Boolean
               location: ~
           location: ~
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []

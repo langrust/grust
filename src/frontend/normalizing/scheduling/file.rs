@@ -180,7 +180,7 @@ mod schedule {
         //     x: int = v*2 + o_1
         // }
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -200,7 +200,7 @@ mod schedule {
         graph.add_weighted_edge(&String::from("x"), String::from("o_1"), 0);
         unitary_node.graph.set(graph.clone()).unwrap();
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -239,7 +239,7 @@ mod schedule {
         //     out y: int = other_node(x-1).o
         // }
         let control = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -379,7 +379,7 @@ mod schedule {
         //     x: int = v*2 + o_1
         // }
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("y"),
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -400,7 +400,7 @@ mod schedule {
         unitary_node.graph.set(graph.clone()).unwrap();
 
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],

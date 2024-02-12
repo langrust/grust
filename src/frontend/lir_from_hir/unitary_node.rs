@@ -59,7 +59,7 @@ pub fn lir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
             node_name: format!("{node_id}_{output_id}"),
             elements,
             step: Step {
-                contracts: unitary_node.contracts,
+                contract: unitary_node.contract,
                 node_name: format!("{node_id}_{output_id}"),
                 output_type,
                 body: equations.into_iter().map(equation_lir_from_hir).collect(),
@@ -69,7 +69,7 @@ pub fn lir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
             init: Init {
                 node_name: format!("{node_id}_{output_id}"),
                 state_elements_init,
-                postconditions: vec![],
+                invariant_initialisation: vec![], // TODO
             },
         },
     }
@@ -157,7 +157,7 @@ mod lir_from_hir {
             )]),
         };
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: format!("my_node"),
             output_id: format!("o"),
             inputs: vec![(format!("x"), Type::Integer)],
@@ -248,7 +248,7 @@ mod lir_from_hir {
                     },
                 ],
                 step: Step {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_name: format!("my_node_o"),
                     output_type: Type::Integer,
                     body: vec![
@@ -312,7 +312,7 @@ mod lir_from_hir {
                             node_name: format!("other_node_o"),
                         },
                     ],
-                    postconditions: vec![],
+                    invariant_initialisation: vec![],
                 },
             },
         };

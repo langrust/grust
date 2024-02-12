@@ -184,7 +184,7 @@ nodes:
             dependencies: ~
         location: ~
     unitary_nodes: {}
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -400,7 +400,7 @@ nodes:
             dependencies: ~
         location: ~
     unitary_nodes: {}
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []

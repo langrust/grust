@@ -10,8 +10,7 @@ use crate::ast::{
     statement::Statement,
     stream_expression::StreamExpression,
     typedef::Typedef,
-    term::{Term, TermKind, ClauseKind, Contract},
-    equation::{AssertKind, Assertion}
+    contract::{Term, TermKind, ClauseKind, Contract},
 };
 use crate::common::{
     constant::Constant,
@@ -199,7 +198,7 @@ termProof: Term = {
     // catches element call
     <start:@L> <id: ID> <end:@R> => {
         Term {
-            kind: TermKind::Variable{id},
+            kind: TermKind::Identifier{id},
             location: Location{ file_id, range: start..end },
         }
     },
@@ -255,7 +254,6 @@ termProof: Term = {
 clause_kind : ClauseKind = {
     "requires" => ClauseKind::Requires,
     "ensures" => ClauseKind::Ensures,
-    "assert" => ClauseKind::Assert,
     "invariant" => ClauseKind::Invariant,
 }
 
@@ -263,15 +261,14 @@ contract_clause : (ClauseKind, Term) = {
     <kind: clause_kind> "{" <term : termProof> "}" => (kind, term)
 }
 
-contracts: Contract = {
-    <mut clauses : contract_clause*> => {
+contract: Contract = {
+    <clauses : contract_clause*> => {
         let mut contract = Contract::default();
 
         for c in clauses {
             match c.0 {
                 ClauseKind::Requires => contract.requires.push(c.1),
                 ClauseKind::Ensures => contract.ensures.push(c.1),
-                ClauseKind::Assert => contract.assert.push(c.1),
                 ClauseKind::Invariant => contract.invariant.push(c.1),
             }
         }
@@ -844,38 +841,25 @@ pub function: Function = {
     }
 };
 
-pub assert_kind : AssertKind = {
-    "assert" => AssertKind::Assert,
-    "invariant" => AssertKind::Invariant,
-}
-
-pub assertion : Assertion = {
-    <start:@L> <kind: assert_kind> "{" <term: termProof> "}" <end:@R> => {
-        Assertion {
-            kind, term, location: Location { file_id, range: start..end }
-        }
-    }
-}
-
 /// Catches node
 pub node: Node = {
-    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" <c: contracts> "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" <c: contract> "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
             inputs: i,
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
-            contracts: c,
+            contract: c,
             location: Location{ file_id, range: start..end },
         }
     },
-    <start:@L> "node" <n: ID> "()" <c: contracts> "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "()" <c: contract> "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
             inputs: vec![],
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
-            contracts: c,
+            contract: c,
             location: Location{ file_id, range: start..end },
         }
     }
@@ -883,23 +867,23 @@ pub node: Node = {
 
 /// Catches component
 pub component: Node = {
-    <start:@L> "component" <id: ID> "(" <i: hash<ID, basicType>> ")"<c: contracts>  "{" <e: equation+> "}"  <end:@R> => {
+    <start:@L> "component" <id: ID> "(" <i: hash<ID, basicType>> ")"<c: contract>  "{" <e: equation+> "}"  <end:@R> => {
         Node {
             id,
             is_component: true,
             inputs: i,
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
-            contracts: c,
+            contract: c,
             location: Location{ file_id, range: start..end },
         }
     },
-    <start:@L> "component" <id: ID> "()"<c: contracts>  "{" <e: equation+> "}"  <end:@R> => {
+    <start:@L> "component" <id: ID> "()"<c: contract>  "{" <e: equation+> "}"  <end:@R> => {
         Node {
             id,
             is_component: true,
             inputs: vec![],
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
-            contracts: c,
+            contract: c,
             location: Location{ file_id, range: start..end },
         }
     }

@@ -96,7 +96,7 @@ mod generate_dependency_graphs {
         let mut errors = vec![];
 
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
