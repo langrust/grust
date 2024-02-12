@@ -1,15 +1,13 @@
 use std::collections::HashMap;
 
+use petgraph::algo::has_path_connecting;
+use petgraph::graphmap::DiGraphMap;
+
+use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::contract::Term;
 use crate::hir::{memory::Memory, node::Node, once_cell::OnceCell, unitary_node::UnitaryNode};
-use crate::{
-    common::{
-        graph::{color::Color, Graph},
-        scope::Scope,
-    },
-    hir::contract::Contract,
-};
+use crate::{common::scope::Scope, hir::contract::Contract};
 
 pub type UsedInputs = Vec<(String, bool)>;
 
@@ -81,20 +79,28 @@ impl Node {
             .map(|equation| equation.id.clone())
             .collect::<Vec<_>>();
 
-        // construct unitary node for each output
-        let subgraphs = outputs
+        // construct unitary node for each output and get used signals
+        let used_signals = outputs
             .into_iter()
             .map(|output| self.add_unitary_node(output, creusot_contract))
+            .flat_map(|subgraph| subgraph.nodes())
             .collect::<Vec<_>>();
 
         // check that every signals are used
-        let unused_signals = self.graph.get().unwrap().forgotten_vertices(subgraphs);
+        let graph = self
+            .graph
+            .get()
+            .expect("node dependency graph should be computed");
+        let unused_signals = graph
+            .nodes()
+            .filter(|id| used_signals.contains(id))
+            .collect::<Vec<_>>();
         unused_signals
             .into_iter()
             .map(|signal| {
                 let error = Error::UnusedSignal {
                     node: self.id.clone(),
-                    signal,
+                    signal: signal.clone(),
                     location: self.location.clone(),
                 };
                 errors.push(error);
@@ -105,7 +111,11 @@ impl Node {
             .collect::<Result<_, _>>()
     }
 
-    fn add_unitary_node(&mut self, output: String, creusot_contract: bool) -> Graph<Color> {
+    fn add_unitary_node(
+        &mut self,
+        output: String,
+        creusot_contract: bool,
+    ) -> DiGraphMap<String, Label> {
         let Node {
             contract:
                 Contract {
@@ -122,25 +132,28 @@ impl Node {
         } = self;
 
         // construct unitary node's subgraph from its output
-        let subgraph = self
+        let graph = self
             .graph
             .get()
-            .unwrap()
-            .subgraph_from_vertex(&output, !creusot_contract);
-
-        // get signals that compute the output
-        let useful_signals = subgraph.get_vertices();
+            .expect("node dependency graph should be computed");
+        let mut subgraph = graph.clone();
+        graph.nodes().for_each(|id| {
+            let has_path = has_path_connecting(graph, id, &output, None); // TODO: contrary?
+            if !has_path {
+                subgraph.remove_node(id);
+            }
+        });
 
         // get useful inputs (in application order)
         let unitary_node_inputs = inputs
             .iter_mut()
-            .filter(|(id, _)| useful_signals.contains(id))
+            .filter(|(id, _)| subgraph.contains_node(id))
             .map(|input| input.clone())
             .collect::<Vec<_>>();
 
         // retrieve equations from useful signals
-        let equations = useful_signals
-            .iter()
+        let equations = subgraph
+            .nodes()
             .filter_map(|signal| unscheduled_equations.get(signal))
             .cloned()
             .collect();
@@ -150,7 +163,7 @@ impl Node {
             terms
                 .iter()
                 .filter_map(|term| {
-                    if useful_signals.iter().any(|signal| term.contains_id(signal)) {
+                    if subgraph.nodes().any(|signal| term.contains_id(signal)) {
                         Some(term)
                     } else {
                         None
@@ -188,17 +201,15 @@ impl Node {
 mod add_unitary_node {
     use std::collections::HashMap;
 
+    use petgraph::graphmap::GraphMap;
+
+    use crate::common::graph::neighbor::Label;
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, once_cell::OnceCell, signal::Signal,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
     use crate::{
-        common::{
-            graph::{color::Color, Graph},
-            location::Location,
-            r#type::Type,
-            scope::Scope,
-        },
+        common::{location::Location, r#type::Type, scope::Scope},
         hir::dependencies::Dependencies,
     };
 
@@ -273,16 +284,15 @@ mod add_unitary_node {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("i1"), Color::Black);
-        graph.add_vertex(String::from("i2"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
-
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("i1"));
+        graph.add_node(String::from("i2"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("o1"));
+        graph.add_node(String::from("o2"));
+        graph.add_edge(String::from("x"), String::from("i1"), Label::Weight(0));
+        graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o2"), String::from("i2"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         node.add_unitary_node(String::from("o1"), false);
@@ -397,15 +407,15 @@ mod add_unitary_node {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("i1"), Color::Black);
-        graph.add_vertex(String::from("i2"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("i1"));
+        graph.add_node(String::from("i2"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("o1"));
+        graph.add_node(String::from("o2"));
+        graph.add_edge(String::from("x"), String::from("i1"), Label::Weight(0));
+        graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o2"), String::from("i2"), Label::Weight(0));
         control.graph.set(graph.clone()).unwrap();
 
         assert!(node.eq_unscheduled(&control))
@@ -415,17 +425,15 @@ mod add_unitary_node {
 #[cfg(test)]
 mod generate_unitary_nodes {
 
+    use petgraph::graphmap::GraphMap;
+
+    use crate::common::graph::neighbor::Label;
     use crate::hir::{
         equation::Equation, memory::Memory, node::Node, once_cell::OnceCell, signal::Signal,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,
     };
     use crate::{
-        common::{
-            graph::{color::Color, Graph},
-            location::Location,
-            r#type::Type,
-            scope::Scope,
-        },
+        common::{location::Location, r#type::Type, scope::Scope},
         hir::dependencies::Dependencies,
     };
     use std::collections::HashMap;
@@ -503,16 +511,15 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("i1"), Color::Black);
-        graph.add_vertex(String::from("i2"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
-
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("i1"));
+        graph.add_node(String::from("i2"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("o1"));
+        graph.add_node(String::from("o2"));
+        graph.add_edge(String::from("x"), String::from("i1"), Label::Weight(0));
+        graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o2"), String::from("i2"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         node.generate_unitary_nodes(false, &mut errors).unwrap();
@@ -654,16 +661,15 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("i1"), Color::Black);
-        graph.add_vertex(String::from("i2"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
-
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("i1"));
+        graph.add_node(String::from("i2"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("o1"));
+        graph.add_node(String::from("o2"));
+        graph.add_edge(String::from("x"), String::from("i1"), Label::Weight(0));
+        graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o2"), String::from("i2"), Label::Weight(0));
         control.graph.set(graph.clone()).unwrap();
 
         assert!(node.eq_unscheduled(&control));
@@ -742,16 +748,15 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("i1"), Color::Black);
-        graph.add_vertex(String::from("i2"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_vertex(String::from("o2"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_weighted_edge(&String::from("o1"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o2"), String::from("i2"), 0);
-
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("i1"));
+        graph.add_node(String::from("i2"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("o1"));
+        graph.add_node(String::from("o2"));
+        graph.add_edge(String::from("x"), String::from("i1"), Label::Weight(0));
+        graph.add_edge(String::from("o1"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o2"), String::from("i2"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         node.generate_unitary_nodes(false, &mut errors).unwrap();
@@ -819,14 +824,13 @@ mod generate_unitary_nodes {
             graph: OnceCell::new(),
         };
 
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("i1"), Color::Black);
-        graph.add_vertex(String::from("i2"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_vertex(String::from("o1"), Color::Black);
-        graph.add_weighted_edge(&String::from("x"), String::from("i1"), 0);
-        graph.add_weighted_edge(&String::from("o1"), String::from("i1"), 0);
-
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("i1"));
+        graph.add_node(String::from("i2"));
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("o1"));
+        graph.add_edge(String::from("x"), String::from("i1"), Label::Weight(0));
+        graph.add_edge(String::from("o1"), String::from("i1"), Label::Weight(0));
         node.graph.set(graph).unwrap();
 
         node.generate_unitary_nodes(false, &mut errors).unwrap_err();

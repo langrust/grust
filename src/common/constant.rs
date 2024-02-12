@@ -55,7 +55,7 @@ impl Constant {
     }
 }
 impl Display for Constant {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Constant::Integer(i) => write!(f, "{i}i64"),
             Constant::Float(l) => write!(f, "{l}f64"),

@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use petgraph::graphmap::GraphMap;
+
 use crate::{
-    common::graph::{color::Color, Graph},
+    common::graph::neighbor::Label,
     hir::{
         equation::Equation, identifier_creator::IdentifierCreator, memory::Memory, node::Node,
         once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
@@ -127,14 +129,13 @@ impl UnitaryNode {
         // put new equations in unitary node
         self.equations = new_equations.to_vec();
         // add a dependency graph to the unitary node
-        let mut graph = Graph::new();
-        self.get_signals()
-            .iter()
-            .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
-        self.memory
-            .buffers
-            .keys()
-            .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
+        let mut graph = GraphMap::new();
+        self.get_signals().iter().for_each(|signal_id| {
+            graph.add_node(signal_id);
+        });
+        self.memory.buffers.keys().for_each(|signal_id| {
+            graph.add_node(signal_id);
+        });
         self.equations.iter().for_each(
             |Equation {
                  id: from,
@@ -142,7 +143,7 @@ impl UnitaryNode {
                  ..
              }| {
                 for (to, weight) in expression.get_dependencies() {
-                    graph.add_weighted_edge(from, to.clone(), *weight)
+                    graph.add_edge(from, to, Label::Weight(*weight));
                 }
             },
         );

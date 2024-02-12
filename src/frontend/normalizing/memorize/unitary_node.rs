@@ -1,5 +1,7 @@
+use petgraph::graphmap::GraphMap;
+
 use crate::{
-    common::graph::{color::Color, Graph},
+    common::graph::neighbor::Label,
     hir::{
         equation::Equation, identifier_creator::IdentifierCreator, memory::Memory,
         once_cell::OnceCell, unitary_node::UnitaryNode,
@@ -52,14 +54,13 @@ impl UnitaryNode {
         self.memory = memory;
 
         // add a dependency graph to the unitary node
-        let mut graph = Graph::new();
-        self.get_signals()
-            .iter()
-            .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
-        self.memory
-            .buffers
-            .keys()
-            .for_each(|signal_id| graph.add_vertex(signal_id.clone(), Color::White));
+        let mut graph = GraphMap::new();
+        self.get_signals().iter().for_each(|signal_id| {
+            graph.add_node(signal_id);
+        });
+        self.memory.buffers.keys().for_each(|signal_id| {
+            graph.add_node(signal_id);
+        });
         self.equations.iter().for_each(
             |Equation {
                  id: from,
@@ -67,7 +68,7 @@ impl UnitaryNode {
                  ..
              }| {
                 for (to, weight) in expression.get_dependencies() {
-                    graph.add_weighted_edge(from, to.clone(), *weight)
+                    graph.add_edge(from, to, Label::Weight(*weight));
                 }
             },
         );
@@ -78,9 +79,10 @@ impl UnitaryNode {
 #[cfg(test)]
 mod memorize {
 
+    use petgraph::graphmap::GraphMap;
+
     use crate::ast::expression::Expression;
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, memory::Memory, once_cell::OnceCell,
@@ -216,13 +218,13 @@ mod memorize {
                 dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
             },
         );
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_vertex(format!("s"), Color::White);
-        graph.add_vertex(format!("v"), Color::White);
-        graph.add_vertex(format!("mem_x"), Color::White);
-        graph.add_weighted_edge(&format!("x"), format!("s"), 0);
-        graph.add_weighted_edge(&format!("x"), format!("mem_x"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x"));
+        graph.add_node(String::from("s"));
+        graph.add_node(String::from("v"));
+        graph.add_node(String::from("mem_x"));
+        graph.add_edge(String::from("x"), String::from("s"), Label::Weight(0));
+        graph.add_edge(String::from("x"), String::from("mem_x"), Label::Weight(0));
         let control = UnitaryNode {
             contract: Default::default(),
             node_id: String::from("test"),
@@ -376,16 +378,16 @@ mod memorize {
             String::from("my_node"),
             String::from("o"),
         );
-        let mut graph = Graph::new();
-        graph.add_vertex(format!("x_1"), Color::White);
-        graph.add_vertex(format!("x_2"), Color::White);
-        graph.add_vertex(format!("s"), Color::White);
-        graph.add_vertex(format!("v"), Color::White);
-        graph.add_vertex(format!("x"), Color::White);
-        graph.add_weighted_edge(&format!("x"), format!("x_2"), 0);
-        graph.add_weighted_edge(&format!("x_2"), format!("s"), 0);
-        graph.add_weighted_edge(&format!("x_2"), format!("x_1"), 0);
-        graph.add_weighted_edge(&format!("x_1"), format!("v"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("x_1"));
+        graph.add_node(String::from("x_2"));
+        graph.add_node(String::from("s"));
+        graph.add_node(String::from("v"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("x"), String::from("x_2"), Label::Weight(0));
+        graph.add_edge(String::from("x_2"), String::from("s"), Label::Weight(0));
+        graph.add_edge(String::from("x_2"), String::from("x_1"), Label::Weight(0));
+        graph.add_edge(String::from("x_1"), String::from("v"), Label::Weight(0));
         let control = UnitaryNode {
             contract: Default::default(),
             node_id: String::from("test"),

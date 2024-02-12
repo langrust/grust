@@ -26,7 +26,7 @@ pub fn ready<T>(value: T) -> Ready<T> {
 impl<T> Future for Ready<T> {
     type Output = T;
 
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Self::Output> {
         match self.project_replace(Self::Gone) {
             ReadyProjReplace::Value(value) => Poll::Ready(value),
             ReadyProjReplace::Gone => panic!("Ready polled after value taken"),

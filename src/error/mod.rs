@@ -14,7 +14,7 @@ use crate::common::{location::Location, r#type::Type};
 pub struct TerminationError;
 
 impl std::fmt::Display for TerminationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "Termination Error")
     }
 }
@@ -490,7 +490,7 @@ impl Error {
 }
 
 impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Error::UnknownElement { .. } => write!(f, "Unknown Element"),
             Error::UnknownSignal { .. } => write!(f, "Unknown Signal"),

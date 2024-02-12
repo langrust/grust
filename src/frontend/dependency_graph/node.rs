@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use petgraph::graphmap::DiGraphMap;
+
+use crate::common::graph::color::Color;
 use crate::common::graph::neighbor::Label;
-use crate::common::graph::{color::Color, neighbor::Neighbor, Graph};
 use crate::error::{Error, TerminationError};
 use crate::hir::contract::Contract;
 use crate::hir::node::Node;
@@ -11,9 +13,9 @@ impl Node {
     ///
     /// The created graph has every node's signals as vertices.
     /// But no edges are added.
-    pub fn create_initialized_graph(&self) -> Graph<Color> {
+    pub fn create_initialized_graph(&self) -> DiGraphMap<String, Label> {
         // create an empty graph
-        let mut graph = Graph::new();
+        let mut graph = DiGraphMap::new();
 
         // get node's signals
         let Node {
@@ -24,16 +26,42 @@ impl Node {
 
         // add input signals as vertices
         for (input, _) in inputs {
-            graph.add_vertex(input.clone(), Color::White);
+            graph.add_node(input);
         }
 
         // add other signals as vertices
         for signal in unscheduled_equations.keys() {
-            graph.add_vertex(signal.clone(), Color::White);
+            graph.add_node(signal);
         }
 
         // return graph
         graph
+    }
+
+    /// Create an initialized processus manager from a node.
+    pub fn create_initialized_processus_manager(&self) -> HashMap<&String, Color> {
+        // create an empty hash
+        let mut hash = HashMap::new();
+
+        // get node's signals
+        let Node {
+            inputs,
+            unscheduled_equations,
+            ..
+        } = self;
+
+        // add input signals with white color (unprocessed)
+        for (input, _) in inputs {
+            hash.insert(input, Color::White);
+        }
+
+        // add other signals with white color (unprocessed)
+        for signal in unscheduled_equations.keys() {
+            hash.insert(signal, Color::White);
+        }
+
+        // return hash
+        hash
     }
 
     /// Complete dependency graph of the node's equations.
@@ -48,9 +76,10 @@ impl Node {
     /// ```
     pub fn add_all_equations_dependencies(
         &self,
-        nodes_context: &HashMap<String, Node>,
-        nodes_graphs: &mut HashMap<String, Graph<Color>>,
-        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_context: &HashMap<&String, Node>,
+        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
+        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
@@ -67,6 +96,7 @@ impl Node {
                 self.add_signal_dependencies(
                     signal,
                     nodes_context,
+                    nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -84,6 +114,7 @@ impl Node {
                 self.add_signal_dependencies(
                     signal,
                     nodes_context,
+                    nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -114,9 +145,10 @@ impl Node {
     pub fn add_signal_dependencies(
         &self,
         signal: &String,
-        nodes_context: &HashMap<String, Node>,
-        nodes_graphs: &mut HashMap<String, Graph<Color>>,
-        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_context: &HashMap<&String, Node>,
+        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
+        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
@@ -126,16 +158,18 @@ impl Node {
             ..
         } = self;
 
-        // get node's graph
-        let graph = nodes_graphs.get_mut(node).unwrap();
-        // get signal's vertex
-        let vertex = graph.get_vertex_mut(signal);
+        // get node's processus manager
+        let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
+        // get signal's color
+        let color = processus_manager
+            .get_mut(signal)
+            .expect("signal should be in processing manager");
 
-        match vertex.get_value() {
+        match color {
             // if vertex unprocessed
             Color::White => {
                 // update status: processing
-                vertex.set_value(Color::Grey);
+                *color = Color::Grey;
 
                 unscheduled_equations
                     .get(signal)
@@ -146,30 +180,30 @@ impl Node {
                         // compute and get dependencies
                         expression.compute_dependencies(
                             nodes_context,
+                            nodes_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
                         )?;
-                        let dependencies = expression.get_dependencies().clone();
+                        let dependencies = expression.get_dependencies();
 
-                        // get node's graph (borrow checker)
                         let graph = nodes_graphs.get_mut(node).unwrap();
-
                         // add dependencies as graph's edges:
                         // s = e depends on s' <=> s -> s'
                         dependencies.iter().for_each(|(id, depth)| {
-                            graph.add_weighted_edge(signal, id.clone(), *depth)
+                            graph.add_edge(signal, id, Label::Weight(*depth)); // TODO: warning, there might be edges
                         });
 
                         Ok(())
                     })?;
 
-                // get node's graph (borrow checker)
-                let graph = nodes_graphs.get_mut(node).unwrap();
-                // get signal's vertes (borrow checker)
-                let vertex = graph.get_vertex_mut(signal);
+                let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
+                // get signal's color
+                let color = processus_manager
+                    .get_mut(signal)
+                    .expect("signal should be in processing manager");
                 // update status: processed
-                vertex.set_value(Color::Black);
+                *color = Color::Black;
 
                 Ok(())
             }
@@ -201,55 +235,58 @@ impl Node {
     pub fn add_signal_inputs_dependencies(
         &self,
         signal: &String,
-        nodes_context: &HashMap<String, Node>,
-        nodes_graphs: &mut HashMap<String, Graph<Color>>,
-        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_context: &HashMap<&String, Node>,
+        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
+        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
             id: node, inputs, ..
         } = self;
 
-        // get node's reduced graph
-        let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
-        // get signal's vertex
-        let reduced_vertex = reduced_graph.get_vertex_mut(signal);
+        // get node's processus manager
+        let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
+        // get signal's color
+        let color = processus_manager
+            .get_mut(signal)
+            .expect("signal should be in processing manager");
 
-        match reduced_vertex.get_value() {
+        match color {
             // if vertex unprocessed
             Color::White => {
                 // update status: processing
-                reduced_vertex.set_value(Color::Grey);
+                *color = Color::Grey;
 
                 // compute signals dependencies
                 self.add_signal_dependencies(
                     signal,
                     nodes_context,
+                    nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
                 )?;
 
                 // get node's graph
-                let graph = nodes_graphs.get_mut(node).unwrap();
-                // get signal's vertex
-                let vertex = graph.get_vertex_mut(signal);
+                let graph = nodes_graphs.get(node).unwrap().clone();
 
-                // for every neighbors, get inputs dependencies
-                for Neighbor { id, label: l1 } in vertex.get_neighbors() {
+                // for every neighbors, get inputs dependencies and add it as signal dependencies
+                for (_, neighbor_id, l1) in graph.edges(signal) {
                     // tells if the neighbor is an input
-                    let is_input = inputs.iter().any(|(input, _)| *input == id);
+                    let is_input = inputs.iter().any(|(input, _)| input == neighbor_id);
 
                     if is_input {
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
                         // if input then add neighbor to reduced graph
-                        reduced_graph.add_edge(signal, id, l1);
+                        reduced_graph.add_edge(signal, neighbor_id, l1.clone());
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_inputs_dependencies(
-                            &id,
+                            neighbor_id,
                             nodes_context,
+                            nodes_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
@@ -257,37 +294,41 @@ impl Node {
 
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
-                        // get neighbor's vertex
-                        let reduced_vertex = reduced_graph.get_vertex(&id);
+                        let reduced_graph_cloned = reduced_graph.clone();
 
                         // add dependencies as graph's edges:
                         // s = e depends on i <=> s -> i
                         match l1 {
-                            Label::Contract => reduced_vertex.get_neighbors().into_iter().for_each(
-                                |Neighbor { id, label: _ }| {
-                                    reduced_graph.add_edge(signal, id, Label::Contract)
+                            Label::Contract => reduced_graph_cloned.edges(neighbor_id).for_each(
+                                |(_, input_id, _)| {
+                                    reduced_graph.add_edge(signal, input_id, Label::Contract);
                                 },
                             ),
-                            Label::Weight(w1) => reduced_vertex
-                                .get_neighbors()
-                                .into_iter()
-                                .for_each(|Neighbor { id, label: l2 }| match l2 {
-                                    Label::Contract => {
-                                        reduced_graph.add_edge(signal, id, Label::Contract)
-                                    }
-                                    Label::Weight(w2) => {
-                                        reduced_graph.add_edge(signal, id, Label::Weight(w1 + w2))
-                                    }
-                                }),
+                            Label::Weight(w1) => reduced_graph_cloned.edges(neighbor_id).for_each(
+                                |(_, input_id, l2)| {
+                                    reduced_graph.add_edge(
+                                        signal,
+                                        input_id,
+                                        match l2 {
+                                            Label::Contract => Label::Contract,
+                                            Label::Weight(w2) => Label::Weight(w1 + w2),
+                                        },
+                                    );
+                                },
+                            ),
                         }
                     }
                 }
 
-                // get node's reduced graph (borrow checker)
-                let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
-                // get signal's vertex (borrow checker)
-                let reduced_vertex = reduced_graph.get_vertex_mut(signal);
-                reduced_vertex.set_value(Color::Black);
+                // get node's processus manager
+                let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
+                // get signal's color
+                let color = processus_manager
+                    .get_mut(signal)
+                    .expect("signal should be in processing manager");
+                // update status: processed
+                *color = Color::Black;
+
                 Ok(())
             }
             _ => Ok(()),
@@ -305,7 +346,10 @@ impl Node {
     ///     out o: int = i;
     /// }
     /// ```
-    pub fn add_contract_dependencies(&self, nodes_graphs: &mut HashMap<String, Graph<Color>>) {
+    pub fn add_contract_dependencies(
+        &self,
+        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+    ) {
         let Node {
             id: node,
             contract:
@@ -339,12 +383,7 @@ mod create_initialized_graph {
 
     use std::collections::HashMap;
 
-    use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        scope::Scope,
-    };
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
         signal::Signal, stream_expression::StreamExpression,
@@ -402,12 +441,9 @@ mod create_initialized_graph {
 
         let graph = node.create_initialized_graph();
 
-        let mut control = Graph::new();
-        control.add_vertex(String::from("o"), Color::White);
-        control.add_vertex(String::from("x"), Color::White);
-        control.add_vertex(String::from("i"), Color::White);
-
-        assert_eq!(graph, control);
+        assert!(graph.contains_node(&String::from("o")));
+        assert!(graph.contains_node(&String::from("x")));
+        assert!(graph.contains_node(&String::from("i")));
     }
 }
 
@@ -416,12 +452,7 @@ mod add_all_equations_dependencies {
 
     use std::collections::HashMap;
 
-    use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        scope::Scope,
-    };
+    use crate::common::{graph::neighbor::Label, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
         signal::Signal, stream_expression::StreamExpression,
@@ -479,7 +510,8 @@ mod add_all_equations_dependencies {
             graph: OnceCell::new(),
         };
         let mut nodes_context = HashMap::new();
-        nodes_context.insert(String::from("test"), node);
+        let test = String::from("test");
+        nodes_context.insert(&test, node);
         let node = nodes_context.get(&String::from("test")).unwrap();
 
         let graph = node.create_initialized_graph();
@@ -488,8 +520,12 @@ mod add_all_equations_dependencies {
         let reduced_graph = node.create_initialized_graph();
         let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
 
+        let processus_manager = node.create_initialized_processus_manager();
+        let mut nodes_processus_manager = HashMap::from([(node.id.clone(), processus_manager)]);
+
         node.add_all_equations_dependencies(
             &nodes_context,
+            &mut nodes_processus_manager,
             &mut nodes_graphs,
             &mut nodes_reduced_graphs,
             &mut errors,
@@ -498,14 +534,17 @@ mod add_all_equations_dependencies {
 
         let graph = nodes_graphs.get(&node.id).unwrap();
 
-        let mut control = Graph::new();
-        control.add_vertex(String::from("o"), Color::Black);
-        control.add_vertex(String::from("x"), Color::Black);
-        control.add_vertex(String::from("i"), Color::Black);
-        control.add_weighted_edge(&String::from("x"), String::from("i"), 0);
-        control.add_weighted_edge(&String::from("o"), String::from("x"), 0);
-
-        assert_eq!(*graph, control);
+        assert!(graph.contains_node(&String::from("o")));
+        assert!(graph.contains_node(&String::from("x")));
+        assert!(graph.contains_node(&String::from("i")));
+        assert_eq!(
+            graph.edge_weight(&String::from("x"), &String::from("i")),
+            Some(Label::Weight(0)).as_ref()
+        );
+        assert_eq!(
+            graph.edge_weight(&String::from("o"), &String::from("x")),
+            Some(Label::Weight(0)).as_ref()
+        );
     }
 }
 
@@ -514,12 +553,7 @@ mod add_signal_dependencies {
 
     use std::collections::HashMap;
 
-    use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        scope::Scope,
-    };
+    use crate::common::{graph::neighbor::Label, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
         signal::Signal, stream_expression::StreamExpression,
@@ -577,7 +611,8 @@ mod add_signal_dependencies {
             graph: OnceCell::new(),
         };
         let mut nodes_context = HashMap::new();
-        nodes_context.insert(String::from("test"), node);
+        let test = String::from("test");
+        nodes_context.insert(&test, node);
         let node = nodes_context.get(&String::from("test")).unwrap();
 
         let graph = node.create_initialized_graph();
@@ -586,9 +621,14 @@ mod add_signal_dependencies {
         let reduced_graph = node.create_initialized_graph();
         let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
 
+        let processus_manager = node.create_initialized_processus_manager();
+        let mut nodes_processus_manager = HashMap::from([(node.id.clone(), processus_manager)]);
+
+        let x = String::from("x");
         node.add_signal_dependencies(
-            &String::from("x"),
+            &x,
             &nodes_context,
+            &mut nodes_processus_manager,
             &mut nodes_graphs,
             &mut nodes_reduced_graphs,
             &mut errors,
@@ -597,13 +637,13 @@ mod add_signal_dependencies {
 
         let graph = nodes_graphs.get(&node.id).unwrap();
 
-        let mut control = Graph::new();
-        control.add_vertex(String::from("o"), Color::White);
-        control.add_vertex(String::from("x"), Color::Black);
-        control.add_vertex(String::from("i"), Color::White);
-        control.add_weighted_edge(&String::from("x"), String::from("i"), 0);
-
-        assert_eq!(*graph, control);
+        assert!(graph.contains_node(&String::from("o")));
+        assert!(graph.contains_node(&String::from("x")));
+        assert!(graph.contains_node(&String::from("i")));
+        assert_eq!(
+            graph.edge_weight(&String::from("x"), &String::from("i")),
+            Some(Label::Weight(0)).as_ref()
+        );
     }
 }
 
@@ -612,12 +652,7 @@ mod add_signal_inputs_dependencies {
 
     use std::collections::HashMap;
 
-    use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        scope::Scope,
-    };
+    use crate::common::{graph::neighbor::Label, location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
         signal::Signal, stream_expression::StreamExpression,
@@ -675,7 +710,8 @@ mod add_signal_inputs_dependencies {
             graph: OnceCell::new(),
         };
         let mut nodes_context = HashMap::new();
-        nodes_context.insert(String::from("test"), node);
+        let test = String::from("test");
+        nodes_context.insert(&test, node);
         let node = nodes_context.get(&String::from("test")).unwrap();
 
         let graph = node.create_initialized_graph();
@@ -684,9 +720,14 @@ mod add_signal_inputs_dependencies {
         let reduced_graph = node.create_initialized_graph();
         let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
 
+        let processus_manager = node.create_initialized_processus_manager();
+        let mut nodes_processus_manager = HashMap::from([(node.id.clone(), processus_manager)]);
+
+        let o = String::from("o");
         node.add_signal_inputs_dependencies(
-            &String::from("o"),
+            &o,
             &nodes_context,
+            &mut nodes_processus_manager,
             &mut nodes_graphs,
             &mut nodes_reduced_graphs,
             &mut errors,
@@ -695,13 +736,16 @@ mod add_signal_inputs_dependencies {
 
         let reduced_graph = nodes_reduced_graphs.get(&node.id).unwrap();
 
-        let mut control = Graph::new();
-        control.add_vertex(String::from("o"), Color::Black);
-        control.add_vertex(String::from("x"), Color::Black);
-        control.add_vertex(String::from("i"), Color::White);
-        control.add_weighted_edge(&String::from("x"), String::from("i"), 0);
-        control.add_weighted_edge(&String::from("o"), String::from("i"), 0);
-
-        assert_eq!(*reduced_graph, control);
+        assert!(reduced_graph.contains_node(&String::from("o")));
+        assert!(reduced_graph.contains_node(&String::from("x")));
+        assert!(reduced_graph.contains_node(&String::from("i")));
+        assert_eq!(
+            reduced_graph.edge_weight(&String::from("x"), &String::from("i")),
+            Some(Label::Weight(0)).as_ref()
+        );
+        assert_eq!(
+            reduced_graph.edge_weight(&String::from("o"), &String::from("i")),
+            Some(Label::Weight(0)).as_ref()
+        );
     }
 }

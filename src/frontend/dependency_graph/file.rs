@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::error::{Error, TerminationError};
 use crate::hir::file::File;
+use crate::hir::node::Node;
 
 impl File {
     /// Generate dependency graph for every nodes/component.
@@ -16,6 +17,7 @@ impl File {
         // initialize dictionaries for graphs
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
 
         // initialize every nodes' graphs
         nodes
@@ -24,6 +26,8 @@ impl File {
                 let graph = node.create_initialized_graph();
                 nodes_graphs.insert(node.id.clone(), graph.clone());
                 nodes_reduced_graphs.insert(node.id.clone(), graph);
+                let processus_manager = node.create_initialized_processus_manager();
+                nodes_processus_manager.insert(node.id.clone(), processus_manager);
                 Ok(())
             })
             .collect::<Vec<Result<(), TerminationError>>>()
@@ -35,13 +39,19 @@ impl File {
             let graph = component.create_initialized_graph();
             nodes_graphs.insert(component.id.clone(), graph.clone());
             nodes_reduced_graphs.insert(component.id.clone(), graph);
+            let processus_manager = component.create_initialized_processus_manager();
+            nodes_processus_manager.insert(component.id.clone(), processus_manager);
             Ok(())
         })?;
 
         // creates nodes context: nodes dictionary
         let nodes_context = nodes
             .iter()
-            .map(|node| (node.id.clone(), node.clone()))
+            .map(|node| {
+                let node_cloned = node.clone();
+                let Node { id, .. } = node;
+                (id, node_cloned)
+            })
             .collect::<HashMap<_, _>>();
 
         // every nodes complete their equations and contract dependency graphs
@@ -51,6 +61,7 @@ impl File {
                 node.add_contract_dependencies(&mut nodes_graphs);
                 node.add_all_equations_dependencies(
                     &nodes_context,
+                    &mut nodes_processus_manager,
                     &mut nodes_graphs,
                     &mut nodes_reduced_graphs,
                     errors,
@@ -65,6 +76,7 @@ impl File {
             component.add_contract_dependencies(&mut nodes_graphs);
             component.add_all_equations_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 errors,
@@ -80,12 +92,8 @@ mod generate_dependency_graphs {
     use std::collections::HashMap;
 
     use crate::ast::{expression::Expression, function::Function, statement::Statement};
-    use crate::common::{
-        graph::{color::Color, Graph},
-        location::Location,
-        r#type::Type,
-        scope::Scope,
-    };
+    use crate::common::graph::neighbor::Label;
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
     use crate::hir::{
         dependencies::Dependencies, equation::Equation, file::File, node::Node,
         once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
@@ -179,13 +187,16 @@ mod generate_dependency_graphs {
 
         let graph = file.nodes.get(0).unwrap().graph.get().unwrap();
 
-        let mut control = Graph::new();
-        control.add_vertex(String::from("o"), Color::Black);
-        control.add_vertex(String::from("x"), Color::Black);
-        control.add_vertex(String::from("i"), Color::Black);
-        control.add_weighted_edge(&String::from("x"), String::from("i"), 0);
-        control.add_weighted_edge(&String::from("o"), String::from("x"), 0);
-
-        assert_eq!(*graph, control);
+        assert!(graph.contains_node(&String::from("o")));
+        assert!(graph.contains_node(&String::from("x")));
+        assert!(graph.contains_node(&String::from("i")));
+        assert_eq!(
+            graph.edge_weight(&String::from("x"), &String::from("i")),
+            Some(Label::Weight(0)).as_ref()
+        );
+        assert_eq!(
+            graph.edge_weight(&String::from("o"), &String::from("x")),
+            Some(Label::Weight(0)).as_ref()
+        );
     }
 }

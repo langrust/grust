@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::common::graph::{color::Color, Graph};
+use petgraph::graphmap::DiGraphMap;
+
+use crate::common::graph::color::Color;
+use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{node::Node, stream_expression::StreamExpression};
 
@@ -8,9 +11,10 @@ impl StreamExpression {
     /// Compute dependencies of a zip stream expression.
     pub fn compute_zip_dependencies(
         &self,
-        nodes_context: &HashMap<String, Node>,
-        nodes_graphs: &mut HashMap<String, Graph<Color>>,
-        nodes_reduced_graphs: &mut HashMap<String, Graph<Color>>,
+        nodes_context: &HashMap<&String, Node>,
+        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
+        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
@@ -26,6 +30,7 @@ impl StreamExpression {
                     .map(|array_expression| {
                         array_expression.compute_dependencies(
                             nodes_context,
+                            nodes_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
@@ -62,6 +67,7 @@ mod compute_zip_dependencies {
     #[test]
     fn should_compute_dependencies_of_zip_with_duplicates() {
         let nodes_context = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
         let mut nodes_graphs = HashMap::new();
         let mut nodes_reduced_graphs = HashMap::new();
         let mut errors = vec![];
@@ -136,6 +142,7 @@ mod compute_zip_dependencies {
         stream_expression
             .compute_zip_dependencies(
                 &nodes_context,
+                &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 &mut errors,

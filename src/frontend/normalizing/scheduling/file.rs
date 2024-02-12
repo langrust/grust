@@ -43,9 +43,10 @@ impl File {
 mod schedule {
     use std::collections::HashMap;
 
+    use petgraph::graphmap::GraphMap;
+
     use crate::ast::expression::Expression;
-    use crate::common::graph::color::Color;
-    use crate::common::graph::Graph;
+    use crate::common::graph::neighbor::Label;
     use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
     use crate::hir::file::File;
     use crate::hir::node::Node;
@@ -189,15 +190,15 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o_1"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o_1"), String::from("x"), 1);
-        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_weighted_edge(&String::from("x"), String::from("o_1"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("v"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o_1"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("y"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o_1"), String::from("x"), Label::Weight(1));
+        graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        graph.add_edge(String::from("x"), String::from("o_1"), Label::Weight(0));
         unitary_node.graph.set(graph.clone()).unwrap();
         let node = Node {
             contract: Default::default(),
@@ -388,15 +389,15 @@ mod schedule {
             location: Location::default(),
             graph: OnceCell::new(),
         };
-        let mut graph = Graph::new();
-        graph.add_vertex(String::from("v"), Color::Black);
-        graph.add_vertex(String::from("y"), Color::Black);
-        graph.add_vertex(String::from("o_1"), Color::Black);
-        graph.add_vertex(String::from("x"), Color::Black);
-        graph.add_weighted_edge(&String::from("y"), String::from("x"), 0);
-        graph.add_weighted_edge(&String::from("o_1"), String::from("x"), 1);
-        graph.add_weighted_edge(&String::from("x"), String::from("v"), 0);
-        graph.add_weighted_edge(&String::from("x"), String::from("o_1"), 0);
+        let mut graph = GraphMap::new();
+        graph.add_node(String::from("v"));
+        graph.add_node(String::from("y"));
+        graph.add_node(String::from("o_1"));
+        graph.add_node(String::from("x"));
+        graph.add_edge(String::from("y"), String::from("x"), Label::Weight(0));
+        graph.add_edge(String::from("o_1"), String::from("x"), Label::Weight(1));
+        graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
+        graph.add_edge(String::from("x"), String::from("o_1"), Label::Weight(0));
         unitary_node.graph.set(graph.clone()).unwrap();
 
         let node = Node {
