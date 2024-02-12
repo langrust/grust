@@ -8,8 +8,11 @@ pub struct Neighbor {
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
+/// Edge label.
 pub enum Label {
+    /// Contract label
     Contract,
+    /// Weighted label
     Weight(usize),
 }
 
@@ -22,7 +25,7 @@ impl Neighbor {
 
 #[cfg(test)]
 mod new {
-    use crate::common::graph::neighbor::{Neighbor, Label};
+    use crate::common::graph::neighbor::{Label, Neighbor};
 
     #[test]
     fn should_create_a_neighbor_with_corresponding_id_and_label() {

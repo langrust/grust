@@ -31,5 +31,5 @@ pub mod typedef;
 /// LanGRust [Pattern](crate::ast::pattern::Pattern) AST module.
 pub mod pattern;
 
-/// ...
-pub mod term;
+/// LanGRust [Contract](crate::ast::contract::Contract) AST module.
+pub mod contract;

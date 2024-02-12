@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use crate::ast::equation::Equation;
 use crate::ast::node::Node;
 use crate::common::scope::Scope;
-use crate::frontend::hir_from_ast::{equation::hir_from_ast as equation_hir_from_ast, contract::hir_from_ast as contract_hir_from_ast};
+use crate::frontend::hir_from_ast::{
+    contract::hir_from_ast as contract_hir_from_ast,
+    equation::hir_from_ast as equation_hir_from_ast,
+};
 use crate::hir::{node::Node as HIRNode, once_cell::OnceCell};
 
 /// Transform AST nodes into HIR nodes.
@@ -13,7 +16,7 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
         is_component,
         inputs,
         equations,
-        contracts,
+        contract,
         location,
     } = node;
 
@@ -36,7 +39,7 @@ pub fn hir_from_ast(node: Node) -> HIRNode {
             .map(|(signal, equation)| (signal, equation_hir_from_ast(equation, &signals_context)))
             .collect(),
         unitary_nodes: HashMap::new(),
-        contracts: contract_hir_from_ast(contracts, &signals_context),
+        contract: contract_hir_from_ast(contract, &signals_context),
         location,
         graph: OnceCell::new(),
     }
@@ -82,7 +85,7 @@ mod hir_from_ast {
             location: Location::default(),
         };
         let ast_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -92,7 +95,7 @@ mod hir_from_ast {
         let hir_node = hir_from_ast(ast_node);
 
         let control = HIRNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -159,7 +162,7 @@ mod hir_from_ast {
             location: Location::default(),
         };
         let ast_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

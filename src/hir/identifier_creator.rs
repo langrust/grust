@@ -141,7 +141,7 @@ mod from {
     #[test]
     fn should_create_identifer_creator_with_all_signals_from_unitary_node() {
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -202,7 +202,7 @@ mod new_identifier {
     #[test]
     fn should_create_the_requested_identifier_when_not_used() {
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -256,7 +256,7 @@ mod new_identifier {
     #[test]
     fn should_create_new_identifier_when_used() {
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],
@@ -310,7 +310,7 @@ mod new_identifier {
     #[test]
     fn should_create_another_new_identifier_when_used_and_already_created_new_identifier() {
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("o1"),
             inputs: vec![(String::from("i1"), Type::Integer)],

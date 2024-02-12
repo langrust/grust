@@ -14,10 +14,10 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
             let identifier = Ident::new(&identifier, Span::call_site());
             parse_quote!(#identifier)
         }
-        Type::Structure(identifier) =>  {
+        Type::Structure(identifier) => {
             let identifier = Ident::new(&identifier, Span::call_site());
             parse_quote!(#identifier)
-        },
+        }
         Type::Array(element, size) => {
             let ty = rust_ast_from_lir(*element);
 

@@ -110,7 +110,7 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let my_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -121,7 +121,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("my_node"),
                     output_id: String::from("o"),
                     inputs: vec![
@@ -167,7 +167,7 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let other_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -178,7 +178,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("other_node"),
                     output_id: String::from("o"),
                     inputs: vec![(String::from("i"), Type::Integer)],
@@ -301,7 +301,7 @@ mod inline_when_needed {
         graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
         graph.add_weighted_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -312,7 +312,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("y"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
@@ -453,7 +453,7 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let control = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -464,7 +464,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("y"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
@@ -542,7 +542,7 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let my_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -553,7 +553,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("my_node"),
                     output_id: String::from("o"),
                     inputs: vec![
@@ -599,7 +599,7 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let other_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -610,7 +610,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("other_node"),
                     output_id: String::from("o"),
                     inputs: vec![(String::from("i"), Type::Integer)],
@@ -749,7 +749,7 @@ mod inline_when_needed {
         graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
         graph.add_weighted_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -760,7 +760,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("y"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
@@ -933,7 +933,7 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let control = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -944,7 +944,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("y"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
@@ -1026,7 +1026,7 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let my_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
@@ -1037,7 +1037,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("my_node"),
                     output_id: String::from("o"),
                     inputs: vec![
@@ -1083,7 +1083,7 @@ mod inline_when_needed {
             location: Location::default(),
         };
         let other_node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("other_node"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -1094,7 +1094,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("other_node"),
                     output_id: String::from("o"),
                     inputs: vec![(String::from("i"), Type::Integer)],
@@ -1217,7 +1217,7 @@ mod inline_when_needed {
         graph.add_weighted_edge(&String::from("x"), String::from("x"), 1);
         graph.add_weighted_edge(&String::from("y"), String::from("x"), 1);
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -1228,7 +1228,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("y"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],
@@ -1388,7 +1388,7 @@ mod inline_when_needed {
         //     out y: int = other_node(x-1).o
         // }
         let control = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("v"), Type::Integer)],
@@ -1399,7 +1399,7 @@ mod inline_when_needed {
             unitary_nodes: HashMap::from([(
                 String::from("y"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("y"),
                     inputs: vec![(String::from("v"), Type::Integer)],

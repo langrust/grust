@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::common::graph::neighbor::Label;
 use crate::common::graph::{color::Color, neighbor::Neighbor, Graph};
 use crate::error::{Error, TerminationError};
+use crate::hir::contract::Contract;
 use crate::hir::node::Node;
-use crate::hir::term::Contract;
 
 impl Node {
     /// Create an initialized graph from a node.
@@ -294,7 +294,7 @@ impl Node {
         }
     }
 
-    /// Add signal dependencies in contracts.
+    /// Add signal dependencies in contract.
     ///
     /// # Example
     ///
@@ -308,14 +308,12 @@ impl Node {
     pub fn add_contract_dependencies(&self, nodes_graphs: &mut HashMap<String, Graph<Color>>) {
         let Node {
             id: node,
-            contracts:
+            contract:
                 Contract {
                     requires,
                     ensures,
                     invariant,
-                    assert,
                 },
-            location,
             ..
         } = self;
 
@@ -331,9 +329,6 @@ impl Node {
             .iter()
             .for_each(|term| term.add_term_dependencies(graph));
         invariant
-            .iter()
-            .for_each(|term| term.add_term_dependencies(graph));
-        assert
             .iter()
             .for_each(|term| term.add_term_dependencies(graph));
     }
@@ -358,7 +353,7 @@ mod create_initialized_graph {
     #[test]
     fn should_initialize_graph_with_node_signals() {
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -437,7 +432,7 @@ mod add_all_equations_dependencies {
         let mut errors = vec![];
 
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -535,7 +530,7 @@ mod add_signal_dependencies {
         let mut errors = vec![];
 
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],
@@ -633,7 +628,7 @@ mod add_signal_inputs_dependencies {
         let mut errors = vec![];
 
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![(String::from("i"), Type::Integer)],

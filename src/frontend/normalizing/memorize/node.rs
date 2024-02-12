@@ -112,7 +112,7 @@ mod memorize {
         //      out x: int = s + 0 fby v
         // }
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -125,7 +125,7 @@ mod memorize {
             graph: OnceCell::new(),
         };
         let mut node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -207,7 +207,7 @@ mod memorize {
         graph.add_weighted_edge(&format!("x"), format!("s"), 0);
         graph.add_weighted_edge(&format!("x"), format!("mem_x"), 0);
         let control = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -218,7 +218,7 @@ mod memorize {
             unitary_nodes: HashMap::from([(
                 String::from("o"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("x"),
                     inputs: vec![
@@ -354,7 +354,7 @@ mod memorize {
         //      out x: int = x_2 + 1
         // }
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -367,7 +367,7 @@ mod memorize {
             graph: OnceCell::new(),
         };
         let mut node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -402,7 +402,7 @@ mod memorize {
         graph.add_weighted_edge(&format!("x_2"), format!("x_1"), 0);
         graph.add_weighted_edge(&format!("x_1"), format!("v"), 0);
         let control = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -417,7 +417,7 @@ mod memorize {
             unitary_nodes: HashMap::from([(
                 String::from("x"),
                 UnitaryNode {
-                    contracts: Default::default(),
+                    contract: Default::default(),
                     node_id: String::from("test"),
                     output_id: String::from("x"),
                     inputs: vec![

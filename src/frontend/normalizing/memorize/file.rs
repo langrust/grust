@@ -113,7 +113,7 @@ mod memorize {
         //      out x: int = s + 0 fby v
         // }
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -126,7 +126,7 @@ mod memorize {
             graph: OnceCell::new(),
         };
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -218,7 +218,7 @@ mod memorize {
             typedefs: vec![],
             functions: vec![],
             nodes: vec![Node {
-                contracts: Default::default(),
+                contract: Default::default(),
                 id: String::from("test"),
                 is_component: false,
                 inputs: vec![
@@ -229,7 +229,7 @@ mod memorize {
                 unitary_nodes: HashMap::from([(
                     String::from("o"),
                     UnitaryNode {
-                        contracts: Default::default(),
+                        contract: Default::default(),
                         node_id: String::from("test"),
                         output_id: String::from("x"),
                         inputs: vec![
@@ -368,7 +368,7 @@ mod memorize {
         //      out x: int = x_2 + 1
         // }
         let unitary_node = UnitaryNode {
-            contracts: Default::default(),
+            contract: Default::default(),
             node_id: String::from("test"),
             output_id: String::from("x"),
             inputs: vec![
@@ -381,7 +381,7 @@ mod memorize {
             graph: OnceCell::new(),
         };
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("test"),
             is_component: false,
             inputs: vec![
@@ -426,7 +426,7 @@ mod memorize {
             typedefs: vec![],
             functions: vec![],
             nodes: vec![Node {
-                contracts: Default::default(),
+                contract: Default::default(),
                 id: String::from("test"),
                 is_component: false,
                 inputs: vec![
@@ -441,7 +441,7 @@ mod memorize {
                 unitary_nodes: HashMap::from([(
                     String::from("x"),
                     UnitaryNode {
-                        contracts: Default::default(),
+                        contract: Default::default(),
                         node_id: String::from("test"),
                         output_id: String::from("x"),
                         inputs: vec![

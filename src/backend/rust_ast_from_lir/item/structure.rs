@@ -4,23 +4,20 @@ use proc_macro2::Span;
 use syn::*;
 /// Transform LIR structure into RustAST structure.
 pub fn rust_ast_from_lir(structure: Structure) -> ItemStruct {
-    let fields = structure
-        .fields
-        .into_iter()
-        .map(|(name, r#type)| {
-            let name = Ident::new(&name, Span::call_site());
-            let r#type = type_rust_ast_from_lir(r#type);
-            Field {
-                attrs: vec![],
-                vis: Visibility::Public(Default::default()),
-                ident: Some(name),
-                colon_token: Default::default(),
-                ty: r#type,
-                mutability: FieldMutability::None,
-            }
-        });
+    let fields = structure.fields.into_iter().map(|(name, r#type)| {
+        let name = Ident::new(&name, Span::call_site());
+        let r#type = type_rust_ast_from_lir(r#type);
+        Field {
+            attrs: vec![],
+            vis: Visibility::Public(Default::default()),
+            ident: Some(name),
+            colon_token: Default::default(),
+            ty: r#type,
+            mutability: FieldMutability::None,
+        }
+    });
     let name = Ident::new(&structure.name, Span::call_site());
-    parse_quote!{ pub struct #name { #(#fields),* } }
+    parse_quote! { pub struct #name { #(#fields),* } }
 }
 
 #[cfg(test)]

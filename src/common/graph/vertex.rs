@@ -1,4 +1,4 @@
-use crate::common::graph::neighbor::{Neighbor, Label};
+use crate::common::graph::neighbor::{Label, Neighbor};
 
 /// Vertex structure for graph.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -104,7 +104,10 @@ mod new {
 
 #[cfg(test)]
 mod add_neighbor {
-    use crate::common::graph::{vertex::Vertex, neighbor::{Neighbor, Label}};
+    use crate::common::graph::{
+        neighbor::{Label, Neighbor},
+        vertex::Vertex,
+    };
 
     #[test]
     fn should_add_neighbor_to_vertex() {
@@ -138,7 +141,7 @@ mod add_neighbor {
 
 #[cfg(test)]
 mod has_neighbor_label {
-    use crate::common::graph::{vertex::Vertex, neighbor::Label};
+    use crate::common::graph::{neighbor::Label, vertex::Vertex};
 
     #[test]
     fn should_tell_when_vertex_has_neighbor() {
@@ -157,7 +160,7 @@ mod has_neighbor_label {
 
 #[cfg(test)]
 mod has_neighbor {
-    use crate::common::graph::{vertex::Vertex, neighbor::Label};
+    use crate::common::graph::{neighbor::Label, vertex::Vertex};
 
     #[test]
     fn should_tell_when_vertex_has_neighbor() {
@@ -200,7 +203,10 @@ mod get_value {
 
 #[cfg(test)]
 mod get_neighbors {
-    use crate::common::graph::{neighbor::{Neighbor, Label}, vertex::Vertex};
+    use crate::common::graph::{
+        neighbor::{Label, Neighbor},
+        vertex::Vertex,
+    };
 
     #[test]
     fn should_get_vertex_neighbors() {
@@ -219,7 +225,7 @@ mod get_neighbors {
 
 #[cfg(test)]
 mod get_weights {
-    use crate::common::graph::{vertex::Vertex, neighbor::Label};
+    use crate::common::graph::{neighbor::Label, vertex::Vertex};
 
     #[test]
     fn should_get_vertex_neighbor_weights_when_exists() {

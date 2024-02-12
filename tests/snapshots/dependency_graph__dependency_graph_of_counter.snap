@@ -160,7 +160,7 @@ nodes:
                 - 0
         location: ~
     unitary_nodes: {}
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -324,7 +324,7 @@ component:
               - 0
       location: ~
   unitary_nodes: {}
-  contracts:
+  contract:
     requires: []
     ensures: []
     invariant: []

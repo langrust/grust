@@ -1,5 +1,3 @@
-use std::array;
-
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::lir::item::array_alias::ArrayAlias;
 use proc_macro2::Span;

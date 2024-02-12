@@ -1,8 +1,8 @@
-use crate::lir::item::node_file::NodeFile;
-use syn::*;
 use self::import::rust_ast_from_lir as import_rust_ast_from_lir;
 use self::input::rust_ast_from_lir as input_rust_ast_from_lir;
 use self::state::rust_ast_from_lir as state_rust_ast_from_lir;
+use crate::lir::item::node_file::NodeFile;
+use syn::*;
 
 /// RustAST node and function import construction from LIR import.
 pub mod import;
@@ -12,7 +12,7 @@ pub mod input;
 pub mod state;
 
 /// Transform LIR node_file into RustAST file.
-pub fn rust_ast_from_lir(node_file: NodeFile) -> (String,File) {
+pub fn rust_ast_from_lir(node_file: NodeFile) -> (String, File) {
     let mut items = node_file
         .imports
         .into_iter()
@@ -23,10 +23,13 @@ pub fn rust_ast_from_lir(node_file: NodeFile) -> (String,File) {
     items.push(Item::Struct(input_structure));
     items.push(Item::Struct(state_structure));
     items.push(Item::Impl(state_implementation));
-    (format!("src/{}.rs", node_file.name), File {
-        // path: ,
-        items,
-        shebang: None,
-        attrs: Default::default(),
-    })
+    (
+        format!("src/{}.rs", node_file.name),
+        File {
+            // path: ,
+            items,
+            shebang: None,
+            attrs: Default::default(),
+        },
+    )
 }

@@ -180,7 +180,7 @@ nodes:
               typing: Float
               location: ~
           location: ~
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -266,7 +266,7 @@ nodes:
               typing: Float
               location: ~
           location: ~
-    contracts:
+    contract:
       requires: []
       ensures: []
       invariant: []
@@ -503,7 +503,7 @@ component:
             typing: Float
             location: ~
         location: ~
-  contracts:
+  contract:
     requires: []
     ensures: []
     invariant: []

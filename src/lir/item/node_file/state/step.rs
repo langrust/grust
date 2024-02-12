@@ -1,6 +1,6 @@
 use crate::{
-    hir::term::Contract,
     common::r#type::Type,
+    hir::contract::Contract,
     lir::{expression::Expression, statement::Statement},
 };
 
@@ -17,7 +17,8 @@ pub struct Step {
     pub state_elements_step: Vec<StateElementStep>,
     /// The output expression.
     pub output_expression: Expression,
-    pub contracts: Contract,
+    /// The contract to prove.
+    pub contract: Contract,
 }
 
 /// A state element structure for the step update.

@@ -571,7 +571,7 @@ mod compute_dependencies {
         let mut errors = vec![];
 
         let node = Node {
-            contracts: Default::default(),
+            contract: Default::default(),
             id: String::from("my_node"),
             is_component: false,
             inputs: vec![
