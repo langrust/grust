@@ -7,10 +7,8 @@ use crate::error::{Error, TerminationError};
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust statement AST.
 pub struct Statement {
-    /// Identifier of the new element.
-    pub id: String,
-    /// Element type.
-    pub element_type: Type,
+    /// Identifier of the element.
+    pub id: usize,
     /// The expression defining the element.
     pub expression: Expression,
     /// Statement location.

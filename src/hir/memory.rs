@@ -12,10 +12,10 @@ use crate::hir::stream_expression::StreamExpression;
 pub struct Memory {
     /// Initialized buffers.
     #[serde(serialize_with = "ordered_map")]
-    pub buffers: HashMap<String, Buffer>,
+    pub buffers: HashMap<usize, Buffer>,
     /// Called unitary nodes' names.
     #[serde(serialize_with = "ordered_map")]
-    pub called_nodes: HashMap<String, CalledNode>,
+    pub called_nodes: HashMap<usize, CalledNode>,
 }
 
 /// Initialized buffer.
@@ -38,9 +38,9 @@ pub struct Buffer {
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct CalledNode {
     /// Node name.
-    pub node_id: String,
+    pub node_id: usize,
     /// Output signal name.
-    pub signal_id: String,
+    pub signal_id: usize,
 }
 
 impl Memory {
@@ -96,7 +96,7 @@ impl Memory {
     /// ```
     pub fn add_buffer(
         &mut self,
-        memory_id: String,
+        memory_id: usize,
         initial_value: Constant,
         expression: StreamExpression,
     ) {
@@ -134,7 +134,7 @@ impl Memory {
     /// assert!(memory.called_nodes.contains_key(&String::from("toto")));
     /// assert!(memory.buffers.is_empty());
     /// ```
-    pub fn add_called_node(&mut self, memory_id: String, node_id: String, signal_id: String) {
+    pub fn add_called_node(&mut self, memory_id: usize, node_id: usize, signal_id: usize) {
         assert!(self
             .called_nodes
             .insert(memory_id, CalledNode { node_id, signal_id })
