@@ -7,7 +7,10 @@ use codespan_reporting::{
     },
 };
 
-use crate::common::{location::Location, pattern::Pattern, r#type::Type};
+use crate::{
+    hir::pattern::Pattern,
+    common::{location::Location, r#type::Type},
+};
 
 /// Termination of compilation error.
 #[derive(Debug)]

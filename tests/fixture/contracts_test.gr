@@ -1,17 +1,3 @@
-
-// node test(i1: int, i2: int)
-//     requires {0 < i1}
-//     ensures {o < 0}
-//     // assert {x > 0}
-//     // invariant {z > 0}
-// {
-//     out o: int = y / z;
-//     x: int = i2 - i1;
-//     y: int = i1 / x;
-//     z_prime: int = z + x;
-//     z: int = 1 fby if z_prime > 1000 then 1 else z_prime;
-// }
-
 node over_speed_alert(speed: int, dt: int)
     requires { 0 <= speed }
     requires { speed <= 200 }

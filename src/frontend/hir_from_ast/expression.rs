@@ -1,56 +1,49 @@
-use crate::ast::stream_expression::StreamExpression;
+use crate::ast::expression::Expression;
 use crate::common::scope::Scope;
 use crate::error::{Error, TerminationError};
-use crate::frontend::hir_from_ast::{
-    expression::hir_from_ast as expression_hir_from_ast,
-    pattern::hir_from_ast as pattern_hir_from_ast,
-};
-use crate::hir::{
-    dependencies::Dependencies, stream_expression::StreamExpression as HIRStreamExpression,
-};
-use crate::symbol_table::{SymbolKind, SymbolTable};
+use crate::frontend::hir_from_ast::pattern::hir_from_ast as pattern_hir_from_ast;
+use crate::hir::expression::Expression as HIRExpression;
+use crate::symbol_table::SymbolTable;
 
 /// Transform AST stream expressions into HIR stream expressions.
 pub fn hir_from_ast(
-    stream_expression: StreamExpression,
+    expression: Expression,
     symbol_table: &mut SymbolTable,
     errors: &mut Vec<Error>,
-) -> Result<HIRStreamExpression, TerminationError> {
-    match stream_expression {
-        StreamExpression::Constant {
+) -> Result<HIRExpression, TerminationError> {
+    match expression {
+        Expression::Constant {
             constant,
             typing,
             location,
-        } => Ok(HIRStreamExpression::Constant {
+        } => Ok(HIRExpression::Constant {
             constant,
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::SignalCall {
+        Expression::Call {
             id,
             typing,
             location,
         } => {
-            let id = symbol_table.get_signal_id(&id, false, location, errors)?;
-            Ok(HIRStreamExpression::SignalCall {
+            let id = symbol_table.get_identifier_id(&id, false, location, errors)?;
+            Ok(HIRExpression::Call {
                 id,
                 typing: None,
                 location,
-                dependencies: Dependencies::new(),
             })
         }
-        StreamExpression::FunctionApplication {
+        Expression::Application {
             function_expression,
             inputs,
             typing,
             location,
-        } => Ok(HIRStreamExpression::FunctionApplication {
-            function_expression: expression_hir_from_ast(
-                function_expression,
+        } => Ok(HIRExpression::Application {
+            function_expression: Box::new(hir_from_ast(
+                *function_expression,
                 symbol_table,
                 errors,
-            )?,
+            )?),
             inputs: inputs
                 .into_iter()
                 .map(|input| hir_from_ast(input, symbol_table, errors))
@@ -59,14 +52,13 @@ pub fn hir_from_ast(
                 .collect::<Result<Vec<_>, _>>()?,
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::Structure {
+        Expression::Structure {
             name,
             fields,
             typing,
             location,
-        } => Ok(HIRStreamExpression::Structure {
+        } => Ok(HIRExpression::Structure {
             name,
             fields: fields
                 .into_iter()
@@ -78,13 +70,12 @@ pub fn hir_from_ast(
                 .collect::<Result<Vec<_>, _>>()?,
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::Array {
+        Expression::Array {
             elements,
             typing,
             location,
-        } => Ok(HIRStreamExpression::Array {
+        } => Ok(HIRExpression::Array {
             elements: elements
                 .into_iter()
                 .map(|expression| hir_from_ast(expression, symbol_table, errors))
@@ -93,20 +84,19 @@ pub fn hir_from_ast(
                 .collect::<Result<Vec<_>, _>>()?,
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::Match {
+        Expression::Match {
             expression,
             arms,
             typing,
             location,
-        } => Ok(HIRStreamExpression::Match {
+        } => Ok(HIRExpression::Match {
             expression: Box::new(hir_from_ast(*expression, symbol_table, errors)?),
             arms: arms
                 .into_iter()
                 .map(|(pattern, optional_expression, expression)| {
                     symbol_table.local();
-                    let pattern = pattern_hir_from_ast(pattern, true, symbol_table, errors)?;
+                    let pattern = pattern_hir_from_ast(pattern, false, symbol_table, errors)?;
                     let optional_expression = optional_expression
                         .map(|expression| hir_from_ast(expression, symbol_table, errors))
                         .transpose()?;
@@ -119,9 +109,8 @@ pub fn hir_from_ast(
                 .collect::<Result<Vec<_>, _>>()?,
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::When {
+        Expression::When {
             id,
             option,
             present,
@@ -136,7 +125,7 @@ pub fn hir_from_ast(
             let present = Box::new(hir_from_ast(*present, symbol_table, errors)?);
             let default = Box::new(hir_from_ast(*default, symbol_table, errors)?);
             symbol_table.global();
-            Ok(HIRStreamExpression::When {
+            Ok(HIRExpression::When {
                 id,
                 option,
                 present_body: vec![],
@@ -145,140 +134,74 @@ pub fn hir_from_ast(
                 default,
                 typing: None,
                 location,
-                dependencies: Dependencies::new(),
             })
         }
-        StreamExpression::FollowedBy {
-            constant,
-            expression,
-            typing,
-            location,
-        } => Ok(HIRStreamExpression::FollowedBy {
-            constant,
-            expression: Box::new(hir_from_ast(*expression, symbol_table, errors)?),
-            typing: None,
-            location,
-            dependencies: Dependencies::new(),
-        }),
-        StreamExpression::NodeApplication {
-            node,
-            inputs: inputs_stream_expressions,
-            signal,
-            typing,
-            location,
-        } => {
-            let node_id = symbol_table.get_node_id(&node, false, location, errors)?;
-            let node_symbol = symbol_table
-                .get_symbol(&node_id)
-                .expect("there should be a symbol");
-            match node_symbol.kind() {
-                SymbolKind::Node {
-                    inputs, outputs, ..
-                } => {
-                    let output_id = *outputs.get(&signal).expect("this is not an output"); // TODO: make it an error to raise
-                    Ok(HIRStreamExpression::NodeApplication {
-                        node_id,
-                        output_id,
-                        inputs: inputs_stream_expressions
-                            .into_iter()
-                            .zip(inputs)
-                            .map(|(input, id)| {
-                                Ok((*id, hir_from_ast(input, symbol_table, errors)?))
-                            })
-                            .collect::<Vec<Result<_, _>>>()
-                            .into_iter()
-                            .collect::<Result<Vec<_>, _>>()?,
-                        typing: None,
-                        location,
-                        dependencies: Dependencies::new(),
-                    })
-                }
-                _ => unreachable!(),
-            }
-        }
-        StreamExpression::FieldAccess {
+        Expression::FieldAccess {
             expression,
             field,
             typing,
             location,
-        } => Ok(HIRStreamExpression::FieldAccess {
+        } => Ok(HIRExpression::FieldAccess {
             expression: Box::new(hir_from_ast(*expression, symbol_table, errors)?),
             field,
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::TupleElementAccess {
+        Expression::TupleElementAccess {
             expression,
             element_number,
             typing,
             location,
-        } => Ok(HIRStreamExpression::TupleElementAccess {
+        } => Ok(HIRExpression::TupleElementAccess {
             expression: Box::new(hir_from_ast(*expression, symbol_table, errors)?),
             element_number,
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::Map {
+        Expression::Map {
             expression,
             function_expression,
             typing,
             location,
-        } => Ok(HIRStreamExpression::Map {
+        } => Ok(HIRExpression::Map {
             expression: Box::new(hir_from_ast(*expression, symbol_table, errors)?),
-            function_expression: expression_hir_from_ast(
-                function_expression,
-                symbol_table,
-                errors,
-            )?,
+            function_expression: Box::new(hir_from_ast(*function_expression, symbol_table, errors)?),
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::Fold {
+        Expression::Fold {
             expression,
             initialization_expression,
             function_expression,
             typing,
             location,
-        } => Ok(HIRStreamExpression::Fold {
+        } => Ok(HIRExpression::Fold {
             expression: Box::new(hir_from_ast(*expression, symbol_table, errors)?),
             initialization_expression: Box::new(hir_from_ast(
                 *initialization_expression,
                 symbol_table,
                 errors,
             )?),
-            function_expression: expression_hir_from_ast(
-                function_expression,
-                symbol_table,
-                errors,
-            )?,
+            function_expression: Box::new(hir_from_ast(*function_expression, symbol_table, errors)?),
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::Sort {
+        Expression::Sort {
             expression,
             function_expression,
             typing,
             location,
-        } => Ok(HIRStreamExpression::Sort {
+        } => Ok(HIRExpression::Sort {
             expression: Box::new(hir_from_ast(*expression, symbol_table, errors)?),
-            function_expression: expression_hir_from_ast(
-                function_expression,
-                symbol_table,
-                errors,
-            )?,
+            function_expression: Box::new(hir_from_ast(*function_expression, symbol_table, errors)?),
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
-        StreamExpression::Zip {
+        Expression::Zip {
             arrays,
             typing,
             location,
-        } => Ok(HIRStreamExpression::Zip {
+        } => Ok(HIRExpression::Zip {
             arrays: arrays
                 .into_iter()
                 .map(|array| hir_from_ast(array, symbol_table, errors))
@@ -287,7 +210,18 @@ pub fn hir_from_ast(
                 .collect::<Result<Vec<_>, _>>()?,
             typing: None,
             location,
-            dependencies: Dependencies::new(),
         }),
+        Expression::Abstraction {
+            inputs,
+            expression,
+            typing,
+            location,
+        } => todo!(),
+        Expression::TypedAbstraction {
+            inputs,
+            expression,
+            typing,
+            location,
+        } => todo!(),
     }
 }

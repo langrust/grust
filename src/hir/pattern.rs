@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-
-use crate::ast::typedef::Typedef;
-use crate::common::{constant::Constant, context::Context, location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-
 use std::fmt::{self, Display};
+
+use crate::common::{constant::Constant, location::Location};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust matching pattern AST.
@@ -56,4 +52,42 @@ pub enum Pattern {
         /// Pattern location.
         location: Location,
     },
+}
+impl Display for Pattern {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Pattern::Identifier { .. } => write!(f, "x"),
+            Pattern::Constant {
+                constant,
+                location: _,
+            } => write!(f, "{}", constant),
+            Pattern::Structure {
+                name,
+                fields,
+                location: _,
+            } => {
+                write!(f, "{} {{ ", name)?;
+                for (field, pattern) in fields.iter() {
+                    write!(f, "{}: {},", field, pattern)?;
+                }
+                write!(f, " }}")
+            }
+            Pattern::Tuple {
+                elements,
+                location: _,
+            } => {
+                write!(f, "( ")?;
+                for pattern in elements.iter() {
+                    write!(f, "{},", pattern)?;
+                }
+                write!(f, " )")
+            }
+            Pattern::Some {
+                pattern,
+                location: _,
+            } => write!(f, "some({})", pattern),
+            Pattern::None { location: _ } => write!(f, "none"),
+            Pattern::Default { location: _ } => write!(f, "_"),
+        }
+    }
 }

@@ -9,24 +9,24 @@ use crate::{
 pub enum SymbolKind {
     Signal {
         scope: Scope,
-        typing: Option<Type>,
+        typing: Type,
     },
     Identifier {
-        typing: Option<Type>,
+        typing: Type,
     },
     Function {
         inputs_typing: Vec<Type>,
-        output_typing: Option<Type>,
+        output_typing: Type,
     },
     Node {
         /// Is true when the node is a component.
         is_component: bool,
         /// Node's input signals.
-        inputs: Vec<(String, Type)>,
+        inputs: Vec<usize>,
         /// Node's output signals.
-        outputs: HashMap<String, Type>,
+        outputs: HashMap<String, usize>,
         /// Node's local signals.
-        locals: HashMap<String, Type>,
+        locals: HashMap<String, usize>,
     },
 }
 impl PartialEq for SymbolKind {
@@ -51,6 +51,14 @@ impl PartialEq for Symbol {
     }
 }
 impl Symbol {
+    pub fn kind(&self) -> &SymbolKind {
+        &self.kind
+    }
+
+    pub fn kind_mut(&mut self) -> &mut SymbolKind {
+        &mut self.kind
+    }
+
     fn hash_as_string(&self) -> String {
         match self.kind {
             SymbolKind::Signal { .. } => format!("signal_{}", self.name),
@@ -141,14 +149,12 @@ impl SymbolTable {
         }
     }
 
-    pub fn local(mut self) -> Self {
+    pub fn local(&mut self) {
         self.known_symbols = self.known_symbols.create_local_context();
-        self
     }
 
-    pub fn global(mut self) -> Self {
+    pub fn global(&mut self) {
         self.known_symbols = self.known_symbols.get_global_context();
-        self
     }
 
     fn insert_symbol(
@@ -180,15 +186,13 @@ impl SymbolTable {
         &mut self,
         name: String,
         scope: Scope,
+        typing: Type,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
-            kind: SymbolKind::Signal {
-                scope,
-                typing: None,
-            },
+            kind: SymbolKind::Signal { scope, typing },
             name,
         };
 
@@ -198,12 +202,13 @@ impl SymbolTable {
     pub fn insert_identifier(
         &mut self,
         name: String,
+        typing: Type,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
-            kind: SymbolKind::Identifier { typing: None },
+            kind: SymbolKind::Identifier { typing },
             name,
         };
 
@@ -213,14 +218,16 @@ impl SymbolTable {
     pub fn insert_function(
         &mut self,
         name: String,
+        inputs_typing: Vec<Type>,
+        output_typing: Type,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
             kind: SymbolKind::Function {
-                inputs_typing: vec![],
-                output_typing: None,
+                inputs_typing,
+                output_typing,
             },
             name,
         };
@@ -233,9 +240,9 @@ impl SymbolTable {
         name: String,
         is_component: bool,
         local: bool,
-        inputs: Vec<(String, Type)>,
-        outputs: HashMap<String, Type>,
-        locals: HashMap<String, Type>,
+        inputs: Vec<usize>,
+        outputs: HashMap<String, usize>,
+        locals: HashMap<String, usize>,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
@@ -250,6 +257,13 @@ impl SymbolTable {
         };
 
         self.insert_symbol(symbol, local, location, errors)
+    }
+
+    pub fn restore_context<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
+        ids.for_each(|id| {
+            let symbol = self.get_symbol(id).unwrap().clone();
+            self.known_symbols.add_symbol(symbol, *id);
+        })
     }
 
     pub fn get_symbol(&self, id: &usize) -> Option<&Symbol> {

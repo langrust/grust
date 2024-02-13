@@ -1,8 +1,6 @@
-use std::collections::HashMap;
 
-use crate::ast::{pattern::Pattern, typedef::Typedef};
 use crate::common::{constant::Constant, location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
+use crate::hir::{pattern::Pattern, statement::Statement};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust expression AST.
@@ -47,17 +45,6 @@ pub enum Expression {
         /// Expression location.
         location: Location,
     },
-    /// Abstraction expression with inputs types.
-    TypedAbstraction {
-        /// The inputs to the abstraction.
-        inputs: Vec<usize>,
-        /// The expression abstracted.
-        expression: Box<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
-    },
     /// Structure expression.
     Structure {
         /// The structure name.
@@ -83,7 +70,7 @@ pub enum Expression {
         /// The expression to match.
         expression: Box<Expression>,
         /// The different matching cases.
-        arms: Vec<(Pattern, Option<Expression>, Expression)>,
+        arms: Vec<(Pattern, Option<Expression>, Vec<Statement>, Expression)>,
         /// Expression type.
         typing: Option<Type>,
         /// Expression location.
@@ -97,8 +84,12 @@ pub enum Expression {
         option: Box<Expression>,
         /// The expression when present.
         present: Box<Expression>,
+        /// The body of present case when normalized.
+        present_body: Vec<Statement>,
         /// The default expression.
         default: Box<Expression>,
+        /// The body of present case when normalized.
+        default_body: Vec<Statement>,
         /// Expression type.
         typing: Option<Type>,
         /// Expression location.

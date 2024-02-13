@@ -1,8 +1,4 @@
-use std::collections::HashMap;
-
-use crate::ast::typedef::Typedef;
-use crate::common::{context::Context, location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
+use crate::common::location::Location;
 use crate::hir::{expression::Expression, statement::Statement};
 
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -15,7 +11,7 @@ pub struct Function {
     /// Function's statements.
     pub statements: Vec<Statement>,
     /// Function's returned expression and its type.
-    pub returned: (Type, Expression),
+    pub returned: Expression,
     /// Function location.
     pub location: Location,
 }
