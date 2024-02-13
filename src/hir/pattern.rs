@@ -11,8 +11,8 @@ use std::fmt::{self, Display};
 pub enum Pattern {
     /// Identifier pattern, gives a name to the matching expression.
     Identifier {
-        /// Identifier name.
-        name: String,
+        /// Identifier.
+        id: usize,
         /// Pattern location.
         location: Location,
     },

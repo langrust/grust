@@ -22,8 +22,12 @@ pub mod memory;
 /// HIR [Dependencies](crate::hir::dependencies::Dependencies) module.
 pub mod dependencies;
 
-/// HIR [Signal](crate::hir::signal::Signal) module.
-pub mod signal;
+pub mod expression;
+/// HIR [Function](crate::hir::function::Function) module.
+pub mod function;
+pub mod pattern;
+pub mod statement;
+pub mod typedef;
 
 /// HIR [OnceCell](crate::hir::once_cell::OnceCell) module.
 pub mod once_cell;

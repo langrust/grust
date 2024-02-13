@@ -107,3 +107,5 @@ pub mod hir;
 pub mod lir;
 /// LanGRust parser module.
 pub mod parser;
+/// LanGRust symbol table module.
+pub mod symbol_table;

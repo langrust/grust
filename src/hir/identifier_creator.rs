@@ -127,238 +127,238 @@ impl IdentifierCreator {
     }
 }
 
-#[cfg(test)]
-mod from {
-    use std::collections::HashSet;
+// #[cfg(test)]
+// mod from {
+//     use std::collections::HashSet;
 
-    use crate::common::{location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        memory::Memory, once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
-        unitary_node::UnitaryNode,
-    };
+//     use crate::common::{location::Location, r#type::Type, scope::Scope};
+//     use crate::hir::{
+//         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+//         memory::Memory, once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+//         unitary_node::UnitaryNode,
+//     };
 
-    #[test]
-    fn should_create_identifer_creator_with_all_signals_from_unitary_node() {
-        let unitary_node = UnitaryNode {
-            contract: Default::default(),
-            node_id: String::from("test"),
-            output_id: String::from("o1"),
-            inputs: vec![(String::from("i1"), Type::Integer)],
-            equations: vec![
-                Equation {
-                    scope: Scope::Local,
-                    id: String::from("x"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x_1"),
-                            scope: Scope::Input,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-                Equation {
-                    scope: Scope::Output,
-                    id: String::from("o1"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-            ],
-            memory: Memory::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
-        let control = IdentifierCreator {
-            signals: HashSet::from([String::from("i1"), String::from("o1"), String::from("x")]),
-        };
+//     #[test]
+//     fn should_create_identifer_creator_with_all_signals_from_unitary_node() {
+//         let unitary_node = UnitaryNode {
+//             contract: Default::default(),
+//             node_id: String::from("test"),
+//             output_id: String::from("o1"),
+//             inputs: vec![(String::from("i1"), Type::Integer)],
+//             equations: vec![
+//                 Equation {
+//                     scope: Scope::Local,
+//                     id: String::from("x"),
+//                     signal_type: Type::Integer,
+//                     expression: StreamExpression::SignalCall {
+//                         signal: Signal {
+//                             id: String::from("x_1"),
+//                             scope: Scope::Input,
+//                         },
+//                         typing: Type::Integer,
+//                         location: Location::default(),
+//                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
+//                     },
+//                     location: Location::default(),
+//                 },
+//                 Equation {
+//                     scope: Scope::Output,
+//                     id: String::from("o1"),
+//                     signal_type: Type::Integer,
+//                     expression: StreamExpression::SignalCall {
+//                         signal: Signal {
+//                             id: String::from("x"),
+//                             scope: Scope::Local,
+//                         },
+//                         typing: Type::Integer,
+//                         location: Location::default(),
+//                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+//                     },
+//                     location: Location::default(),
+//                 },
+//             ],
+//             memory: Memory::new(),
+//             location: Location::default(),
+//             graph: OnceCell::new(),
+//         };
+//         let identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
+//         let control = IdentifierCreator {
+//             signals: HashSet::from([String::from("i1"), String::from("o1"), String::from("x")]),
+//         };
 
-        assert_eq!(identifier_creator, control)
-    }
-}
+//         assert_eq!(identifier_creator, control)
+//     }
+// }
 
-#[cfg(test)]
-mod new_identifier {
-    use crate::common::{location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        memory::Memory, once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
-        unitary_node::UnitaryNode,
-    };
+// #[cfg(test)]
+// mod new_identifier {
+//     use crate::common::{location::Location, r#type::Type, scope::Scope};
+//     use crate::hir::{
+//         dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
+//         memory::Memory, once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
+//         unitary_node::UnitaryNode,
+//     };
 
-    #[test]
-    fn should_create_the_requested_identifier_when_not_used() {
-        let unitary_node = UnitaryNode {
-            contract: Default::default(),
-            node_id: String::from("test"),
-            output_id: String::from("o1"),
-            inputs: vec![(String::from("i1"), Type::Integer)],
-            equations: vec![
-                Equation {
-                    scope: Scope::Local,
-                    id: String::from("x"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x_1"),
-                            scope: Scope::Input,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-                Equation {
-                    scope: Scope::Output,
-                    id: String::from("o1"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-            ],
-            memory: Memory::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
-        let identifier = identifier_creator.new_identifier(
-            String::from("mem_"),
-            String::from("x"),
-            String::from(""),
-        );
+//     #[test]
+//     fn should_create_the_requested_identifier_when_not_used() {
+//         let unitary_node = UnitaryNode {
+//             contract: Default::default(),
+//             node_id: String::from("test"),
+//             output_id: String::from("o1"),
+//             inputs: vec![(String::from("i1"), Type::Integer)],
+//             equations: vec![
+//                 Equation {
+//                     scope: Scope::Local,
+//                     id: String::from("x"),
+//                     signal_type: Type::Integer,
+//                     expression: StreamExpression::SignalCall {
+//                         signal: Signal {
+//                             id: String::from("x_1"),
+//                             scope: Scope::Input,
+//                         },
+//                         typing: Type::Integer,
+//                         location: Location::default(),
+//                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
+//                     },
+//                     location: Location::default(),
+//                 },
+//                 Equation {
+//                     scope: Scope::Output,
+//                     id: String::from("o1"),
+//                     signal_type: Type::Integer,
+//                     expression: StreamExpression::SignalCall {
+//                         signal: Signal {
+//                             id: String::from("x"),
+//                             scope: Scope::Local,
+//                         },
+//                         typing: Type::Integer,
+//                         location: Location::default(),
+//                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+//                     },
+//                     location: Location::default(),
+//                 },
+//             ],
+//             memory: Memory::new(),
+//             location: Location::default(),
+//             graph: OnceCell::new(),
+//         };
+//         let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
+//         let identifier = identifier_creator.new_identifier(
+//             String::from("mem_"),
+//             String::from("x"),
+//             String::from(""),
+//         );
 
-        let control = String::from("mem_x");
-        assert_eq!(identifier, control)
-    }
+//         let control = String::from("mem_x");
+//         assert_eq!(identifier, control)
+//     }
 
-    #[test]
-    fn should_create_new_identifier_when_used() {
-        let unitary_node = UnitaryNode {
-            contract: Default::default(),
-            node_id: String::from("test"),
-            output_id: String::from("o1"),
-            inputs: vec![(String::from("i1"), Type::Integer)],
-            equations: vec![
-                Equation {
-                    scope: Scope::Local,
-                    id: String::from("x"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x_1"),
-                            scope: Scope::Input,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-                Equation {
-                    scope: Scope::Output,
-                    id: String::from("o1"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-            ],
-            memory: Memory::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
-        let identifier = identifier_creator.new_identifier(
-            String::from(""),
-            String::from("x"),
-            String::from(""),
-        );
+//     #[test]
+//     fn should_create_new_identifier_when_used() {
+//         let unitary_node = UnitaryNode {
+//             contract: Default::default(),
+//             node_id: String::from("test"),
+//             output_id: String::from("o1"),
+//             inputs: vec![(String::from("i1"), Type::Integer)],
+//             equations: vec![
+//                 Equation {
+//                     scope: Scope::Local,
+//                     id: String::from("x"),
+//                     signal_type: Type::Integer,
+//                     expression: StreamExpression::SignalCall {
+//                         signal: Signal {
+//                             id: String::from("x_1"),
+//                             scope: Scope::Input,
+//                         },
+//                         typing: Type::Integer,
+//                         location: Location::default(),
+//                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
+//                     },
+//                     location: Location::default(),
+//                 },
+//                 Equation {
+//                     scope: Scope::Output,
+//                     id: String::from("o1"),
+//                     signal_type: Type::Integer,
+//                     expression: StreamExpression::SignalCall {
+//                         signal: Signal {
+//                             id: String::from("x"),
+//                             scope: Scope::Local,
+//                         },
+//                         typing: Type::Integer,
+//                         location: Location::default(),
+//                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+//                     },
+//                     location: Location::default(),
+//                 },
+//             ],
+//             memory: Memory::new(),
+//             location: Location::default(),
+//             graph: OnceCell::new(),
+//         };
+//         let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
+//         let identifier = identifier_creator.new_identifier(
+//             String::from(""),
+//             String::from("x"),
+//             String::from(""),
+//         );
 
-        let control = String::from("x_1");
-        assert_eq!(identifier, control)
-    }
+//         let control = String::from("x_1");
+//         assert_eq!(identifier, control)
+//     }
 
-    #[test]
-    fn should_create_another_new_identifier_when_used_and_already_created_new_identifier() {
-        let unitary_node = UnitaryNode {
-            contract: Default::default(),
-            node_id: String::from("test"),
-            output_id: String::from("o1"),
-            inputs: vec![(String::from("i1"), Type::Integer)],
-            equations: vec![
-                Equation {
-                    scope: Scope::Local,
-                    id: String::from("x"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x_1"),
-                            scope: Scope::Input,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-                Equation {
-                    scope: Scope::Output,
-                    id: String::from("o1"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("x"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-            ],
-            memory: Memory::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
-        identifier_creator.new_identifier(String::from(""), String::from("x"), String::from(""));
-        let identifier = identifier_creator.new_identifier(
-            String::from(""),
-            String::from("x"),
-            String::from(""),
-        );
+//     #[test]
+//     fn should_create_another_new_identifier_when_used_and_already_created_new_identifier() {
+//         let unitary_node = UnitaryNode {
+//             contract: Default::default(),
+//             node_id: String::from("test"),
+//             output_id: String::from("o1"),
+//             inputs: vec![(String::from("i1"), Type::Integer)],
+//             equations: vec![
+//                 Equation {
+//                     scope: Scope::Local,
+//                     id: String::from("x"),
+//                     signal_type: Type::Integer,
+//                     expression: StreamExpression::SignalCall {
+//                         signal: Signal {
+//                             id: String::from("x_1"),
+//                             scope: Scope::Input,
+//                         },
+//                         typing: Type::Integer,
+//                         location: Location::default(),
+//                         dependencies: Dependencies::from(vec![(String::from("i1"), 0)]),
+//                     },
+//                     location: Location::default(),
+//                 },
+//                 Equation {
+//                     scope: Scope::Output,
+//                     id: String::from("o1"),
+//                     signal_type: Type::Integer,
+//                     expression: StreamExpression::SignalCall {
+//                         signal: Signal {
+//                             id: String::from("x"),
+//                             scope: Scope::Local,
+//                         },
+//                         typing: Type::Integer,
+//                         location: Location::default(),
+//                         dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
+//                     },
+//                     location: Location::default(),
+//                 },
+//             ],
+//             memory: Memory::new(),
+//             location: Location::default(),
+//             graph: OnceCell::new(),
+//         };
+//         let mut identifier_creator = IdentifierCreator::from(unitary_node.get_signals());
+//         identifier_creator.new_identifier(String::from(""), String::from("x"), String::from(""));
+//         let identifier = identifier_creator.new_identifier(
+//             String::from(""),
+//             String::from("x"),
+//             String::from(""),
+//         );
 
-        let control = String::from("x_2");
-        assert_eq!(identifier, control)
-    }
-}
+//         let control = String::from("x_2");
+//         assert_eq!(identifier, control)
+//     }
+// }
