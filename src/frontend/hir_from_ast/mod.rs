@@ -10,3 +10,9 @@ pub mod node;
 pub mod pattern;
 /// HIR StreamExpression construction from AST StreamExpression
 pub mod stream_expression;
+/// HIR Expression construction from AST Expression
+pub mod expression;
+/// HIR Function construction from AST Function
+pub mod function;
+/// HIR Statement construction from AST Statement
+pub mod statement;

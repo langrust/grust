@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-
-use crate::ast::{expression::Expression, typedef::Typedef};
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
+use crate::common::location::Location;
+use crate::hir::expression::Expression;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust statement AST.
+/// LanGRust statement HIR.
 pub struct Statement {
     /// Identifier of the element.
     pub id: usize,

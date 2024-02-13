@@ -12,3 +12,6 @@ pub mod normalizing;
 
 /// LIR construction from HIR.
 pub mod lir_from_hir;
+
+/// Typing analysis from HIR.
+pub mod typing_analysis;

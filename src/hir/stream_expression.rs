@@ -1,6 +1,7 @@
-use crate::ast::{expression::Expression, pattern::Pattern};
 use crate::common::{constant::Constant, location::Location, r#type::Type};
-use crate::hir::{dependencies::Dependencies, equation::Equation};
+use crate::hir::{
+    dependencies::Dependencies, equation::Equation, expression::Expression, pattern::Pattern,
+};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust stream expression HIR.
@@ -10,7 +11,7 @@ pub enum StreamExpression {
         /// The constant.
         constant: Constant,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -21,7 +22,7 @@ pub enum StreamExpression {
         /// Signal's id in Symbol Table.
         id: usize,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -34,7 +35,7 @@ pub enum StreamExpression {
         /// The buffered expression.
         expression: Box<StreamExpression>,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -47,7 +48,7 @@ pub enum StreamExpression {
         /// The inputs to the expression.
         inputs: Vec<StreamExpression>,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -62,7 +63,7 @@ pub enum StreamExpression {
         /// Output signal's id in Symbol Table.
         output_id: usize,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -79,7 +80,7 @@ pub enum StreamExpression {
         /// The inputs to the expression.
         inputs: Vec<(usize, StreamExpression)>,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -92,7 +93,7 @@ pub enum StreamExpression {
         /// The fields associated with their expressions.
         fields: Vec<(String, StreamExpression)>,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -103,7 +104,7 @@ pub enum StreamExpression {
         /// The elements inside the array.
         elements: Vec<StreamExpression>,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -121,7 +122,7 @@ pub enum StreamExpression {
             StreamExpression,
         )>,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -142,7 +143,7 @@ pub enum StreamExpression {
         /// The default stream expression.
         default: Box<StreamExpression>,
         /// Stream Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -155,7 +156,7 @@ pub enum StreamExpression {
         /// The field to access.
         field: String,
         /// Stream expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -168,7 +169,7 @@ pub enum StreamExpression {
         /// The element to access.
         element_number: usize,
         /// Stream expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -181,7 +182,7 @@ pub enum StreamExpression {
         /// The function expression.
         function_expression: Expression,
         /// Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -196,7 +197,7 @@ pub enum StreamExpression {
         /// The function expression.
         function_expression: Expression,
         /// Stream expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Stream expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -209,7 +210,7 @@ pub enum StreamExpression {
         /// The function expression.
         function_expression: Expression,
         /// Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
         /// Stream expression dependencies.
@@ -220,7 +221,7 @@ pub enum StreamExpression {
         /// The array expressions.
         arrays: Vec<StreamExpression>,
         /// Expression type.
-        typing: Type,
+        typing: Option<Type>,
         /// Expression location.
         location: Location,
         /// Stream expression dependencies.
