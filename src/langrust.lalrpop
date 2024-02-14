@@ -52,7 +52,7 @@ ID: String = {
 };
 
 /// Catches basic types
-pub basicType: Type = {
+basicType: Type = {
     "int" => Type::Integer,
     "float" => Type::Float,
     "bool" => Type::Boolean,
@@ -66,6 +66,15 @@ pub basicType: Type = {
     <t: basicType> "?" => Type::Option(Box::new(t)),
     <id:ID> => Type::NotDefinedYet(id),
 };
+
+/// Catches all types
+pub completeType: Type = {
+    <t1: basicType> "->" <t2: completeType> => match t1 {
+        Type::Tuple(v_t) => Type::Abstract(v_t, Box::new(t2)),
+        _ => Type::Abstract(vec![t1], Box::new(t2)),
+    },
+    <t: basicType> => t,
+}
 
 /// Catches signals' scopes
 scope: Scope = {
@@ -509,7 +518,7 @@ pub expression: Expression = {
         }
     },
     // catches typed abstractions as expressions
-    <start:@L> "|" <ids: hash<ID, basicType>> "|" <e: expression> <end:@R> => {
+    <start:@L> "|" <ids: hash<ID, completeType>> "|" <e: expression> <end:@R> => {
         Expression::TypedAbstraction {
             inputs: ids,
             expression: Box::new(e),
@@ -522,7 +531,7 @@ pub expression: Expression = {
 
 /// Catches `let` statement
 pub statement: Statement = {
-    <start:@L> "let" <id: ID> ":" <t: basicType> "=" <e: expression> ";" <end:@R> => {
+    <start:@L> "let" <id: ID> ":" <t: completeType> "=" <e: expression> ";" <end:@R> => {
         Statement {
             id,
             element_type: t,
@@ -779,7 +788,7 @@ pub streamExpression: StreamExpression = {
 
 /// Catches equation
 pub equation: Equation = {
-    <start:@L> <s: scope> <id: ID> ":" <t: basicType> "=" <e: streamExpression> ";" <end:@R> => {
+    <start:@L> <s: scope> <id: ID> ":" <t: completeType> "=" <e: streamExpression> ";" <end:@R> => {
         Equation {
             scope: s,
             id,
@@ -801,7 +810,7 @@ pub userType: Typedef = {
         }
     },
     // catches structure definition
-    <start:@L> "struct" <id: ID> "{" <fields: hash<ID, basicType>> "}" <end:@R> => {
+    <start:@L> "struct" <id: ID> "{" <fields: hash<ID, completeType>> "}" <end:@R> => {
         Typedef::Structure {
             id,
             fields,
@@ -809,7 +818,7 @@ pub userType: Typedef = {
         }
     },
     // catches array definition
-    <start:@L> "array" <id: ID> "[" <t: basicType> ";" <n: r"\d+"> "]" <end:@R> => {
+    <start:@L> "array" <id: ID> "[" <t: completeType> ";" <n: r"\d+"> "]" <end:@R> => {
         Typedef::Array {
             id,
             array_type: t,
@@ -821,7 +830,7 @@ pub userType: Typedef = {
 
 /// Catches function
 pub function: Function = {
-    <start:@L> "function" <n: ID> "(" <i: hash<ID, basicType>> ")" "->" <t: basicType> "{" <s: statement*> "return" <e: expression> ";" "}" <end:@R> => {
+    <start:@L> "function" <n: ID> "(" <i: hash<ID, completeType>> ")" "->" <t: completeType> "{" <s: statement*> "return" <e: expression> ";" "}" <end:@R> => {
         Function {
             id: n,
             inputs: i,
@@ -830,7 +839,7 @@ pub function: Function = {
             location: Location{ file_id, range: start..end },
         }
     },
-    <start:@L> "function" <n: ID> "()" "->" <t: basicType> "{" <s: statement*> "return" <e: expression> ";" "}" <end:@R> => {
+    <start:@L> "function" <n: ID> "()" "->" <t: completeType> "{" <s: statement*> "return" <e: expression> ";" "}" <end:@R> => {
         Function {
             id: n,
             inputs: vec![],
@@ -843,7 +852,7 @@ pub function: Function = {
 
 /// Catches node
 pub node: Node = {
-    <start:@L> "node" <n: ID> "(" <i: hash<ID, basicType>> ")" <c: contract> "{" <e: equation+> "}" <end:@R> => {
+    <start:@L> "node" <n: ID> "(" <i: hash<ID, completeType>> ")" <c: contract> "{" <e: equation+> "}" <end:@R> => {
         Node {
             id: n,
             is_component: false,
@@ -867,7 +876,7 @@ pub node: Node = {
 
 /// Catches component
 pub component: Node = {
-    <start:@L> "component" <id: ID> "(" <i: hash<ID, basicType>> ")"<c: contract>  "{" <e: equation+> "}"  <end:@R> => {
+    <start:@L> "component" <id: ID> "(" <i: hash<ID, completeType>> ")"<c: contract>  "{" <e: equation+> "}"  <end:@R> => {
         Node {
             id,
             is_component: true,
