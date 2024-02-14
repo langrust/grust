@@ -983,48 +983,67 @@ mod langrust_ast_constructs {
         let file_id7 = files.add("option_test.gr", "int?");
         let file_id8 = files.add("undefined_type_test.gr", "Color");
         let file_id9 = files.add("tuple_type_test.gr", "(int, Color)");
+        let file_id10 = files.add("function_type_test1.gr", "(int, Color) -> bool");
+        let file_id11 = files.add("function_type_test2.gr", "int -> bool");
 
-        let basic_type = langrust::basicTypeParser::new()
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
-        assert_eq!(basic_type, Type::Integer);
-        let basic_type = langrust::basicTypeParser::new()
+        assert_eq!(complete_type, Type::Integer);
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
-        assert_eq!(basic_type, Type::Float);
-        let basic_type = langrust::basicTypeParser::new()
+        assert_eq!(complete_type, Type::Float);
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id3, &files.source(file_id3).unwrap())
             .unwrap();
-        assert_eq!(basic_type, Type::Boolean);
-        let basic_type = langrust::basicTypeParser::new()
+        assert_eq!(complete_type, Type::Boolean);
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id4, &files.source(file_id4).unwrap())
             .unwrap();
-        assert_eq!(basic_type, Type::String);
-        let basic_type = langrust::basicTypeParser::new()
+        assert_eq!(complete_type, Type::String);
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
-        assert_eq!(basic_type, Type::Unit);
-        let basic_type = langrust::basicTypeParser::new()
+        assert_eq!(complete_type, Type::Unit);
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
-        assert_eq!(basic_type, Type::Array(Box::new(Type::Integer), 3));
-        let basic_type = langrust::basicTypeParser::new()
+        assert_eq!(complete_type, Type::Array(Box::new(Type::Integer), 3));
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id7, &files.source(file_id7).unwrap())
             .unwrap();
-        assert_eq!(basic_type, Type::Option(Box::new(Type::Integer)));
-        let basic_type = langrust::basicTypeParser::new()
+        assert_eq!(complete_type, Type::Option(Box::new(Type::Integer)));
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
-        assert_eq!(basic_type, Type::NotDefinedYet(String::from("Color")));
-        let basic_type = langrust::basicTypeParser::new()
+        assert_eq!(complete_type, Type::NotDefinedYet(String::from("Color")));
+        let complete_type = langrust::completeTypeParser::new()
             .parse(file_id9, &files.source(file_id9).unwrap())
             .unwrap();
         assert_eq!(
-            basic_type,
+            complete_type,
             Type::Tuple(vec![
                 Type::Integer,
                 Type::NotDefinedYet(String::from("Color"))
             ])
+        );
+        let complete_type = langrust::completeTypeParser::new()
+            .parse(file_id10, &files.source(file_id10).unwrap())
+            .unwrap();
+        assert_eq!(
+            complete_type,
+            Type::Abstract(
+                vec![Type::Integer, Type::NotDefinedYet(String::from("Color"))],
+                Box::new(Type::Boolean)
+            )
+        );
+        let complete_type = langrust::completeTypeParser::new()
+            .parse(file_id11, &files.source(file_id11).unwrap())
+            .unwrap();
+        assert_eq!(
+            complete_type,
+            Type::Abstract(vec![Type::Integer], Box::new(Type::Boolean))
         );
     }
 
