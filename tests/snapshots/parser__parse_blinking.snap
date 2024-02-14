@@ -15,29 +15,29 @@ functions:
       - Boolean
       - Application:
           function_expression:
-            Call:
+            Identifier:
               id: if_then_else
               typing: ~
               location: ~
           inputs:
-            - Call:
+            - Identifier:
                 id: t
                 typing: ~
                 location: ~
             - Application:
                 function_expression:
-                  Call:
+                  Identifier:
                     id: "!"
                     typing: ~
                     location: ~
                 inputs:
-                  - Call:
+                  - Identifier:
                       id: b
                       typing: ~
                       location: ~
                 typing: ~
                 location: ~
-            - Call:
+            - Identifier:
                 id: b
                 typing: ~
                 location: ~
@@ -60,7 +60,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: if_then_else
                   typing: ~
                   location: ~
@@ -76,14 +76,14 @@ nodes:
                     location: ~
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing: ~
                         location: ~
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: (_)
                               typing: ~
                               location: ~
@@ -116,7 +116,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: if_then_else
                   typing: ~
                   location: ~
@@ -157,7 +157,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: if_then_else
                   typing: ~
                   location: ~
@@ -168,7 +168,7 @@ nodes:
                     location: ~
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing: ~
                         location: ~
@@ -224,21 +224,21 @@ nodes:
               expression:
                 FunctionApplication:
                   function_expression:
-                    Call:
+                    Identifier:
                       id: (_)
                       typing: ~
                       location: ~
                   inputs:
                     - FunctionApplication:
                         function_expression:
-                          Call:
+                          Identifier:
                             id: " == "
                             typing: ~
                             location: ~
                         inputs:
                           - FunctionApplication:
                               function_expression:
-                                Call:
+                                Identifier:
                                   id: " + "
                                   typing: ~
                                   location: ~
@@ -272,7 +272,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: xor
                   typing: ~
                   location: ~

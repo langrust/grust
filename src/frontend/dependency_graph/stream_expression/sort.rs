@@ -65,7 +65,7 @@ mod compute_sort_dependencies {
                 location: Location::default(),
                 dependencies: Dependencies::new(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],

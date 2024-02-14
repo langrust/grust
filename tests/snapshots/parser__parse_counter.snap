@@ -20,7 +20,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: if_then_else
                   typing: ~
                   location: ~
@@ -36,14 +36,14 @@ nodes:
                     location: ~
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing: ~
                         location: ~
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: (_)
                               typing: ~
                               location: ~
@@ -76,7 +76,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: if_then_else
                   typing: ~
                   location: ~
@@ -123,14 +123,14 @@ component:
                   expression:
                     FunctionApplication:
                       function_expression:
-                        Call:
+                        Identifier:
                           id: (_)
                           typing: ~
                           location: ~
                       inputs:
                         - FunctionApplication:
                             function_expression:
-                              Call:
+                              Identifier:
                                 id: " > "
                                 typing: ~
                                 location: ~
@@ -169,7 +169,7 @@ component:
             expression:
               FunctionApplication:
                 function_expression:
-                  Call:
+                  Identifier:
                     id: "!"
                     typing: ~
                     location: ~

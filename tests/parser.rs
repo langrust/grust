@@ -69,7 +69,7 @@ mod langrust_ast_constructs {
                             Statement {
                                 id: String::from("x"),
                                 element_type: Type::Integer,
-                                expression: Expression::Call {
+                                expression: Expression::Identifier {
                                     id: String::from("i"),
                                     typing: None,
                                     location: Location::default(),
@@ -79,7 +79,7 @@ mod langrust_ast_constructs {
                             Statement {
                                 id: String::from("o"),
                                 element_type: Type::Integer,
-                                expression: Expression::Call {
+                                expression: Expression::Identifier {
                                     id: String::from("x"),
                                     typing: None,
                                     location: Location::default(),
@@ -89,7 +89,7 @@ mod langrust_ast_constructs {
                         ],
                         returned: (
                             Type::Integer,
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("o"),
                                 typing: None,
                                 location: Location::default(),
@@ -104,7 +104,7 @@ mod langrust_ast_constructs {
                             Statement {
                                 id: String::from("x"),
                                 element_type: Type::Integer,
-                                expression: Expression::Call {
+                                expression: Expression::Identifier {
                                     id: String::from("i"),
                                     typing: None,
                                     location: Location::default(),
@@ -114,7 +114,7 @@ mod langrust_ast_constructs {
                             Statement {
                                 id: String::from("o"),
                                 element_type: Type::Integer,
-                                expression: Expression::Call {
+                                expression: Expression::Identifier {
                                     id: String::from("x"),
                                     typing: None,
                                     location: Location::default(),
@@ -124,7 +124,7 @@ mod langrust_ast_constructs {
                         ],
                         returned: (
                             Type::Integer,
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("o"),
                                 typing: None,
                                 location: Location::default(),
@@ -282,7 +282,7 @@ mod langrust_ast_constructs {
                             Statement {
                                 id: String::from("x"),
                                 element_type: Type::Integer,
-                                expression: Expression::Call {
+                                expression: Expression::Identifier {
                                     id: String::from("i"),
                                     typing: None,
                                     location: Location::default(),
@@ -292,7 +292,7 @@ mod langrust_ast_constructs {
                             Statement {
                                 id: String::from("o"),
                                 element_type: Type::Integer,
-                                expression: Expression::Call {
+                                expression: Expression::Identifier {
                                     id: String::from("x"),
                                     typing: None,
                                     location: Location::default(),
@@ -302,7 +302,7 @@ mod langrust_ast_constructs {
                         ],
                         returned: (
                             Type::Integer,
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("o"),
                                 typing: None,
                                 location: Location::default(),
@@ -317,7 +317,7 @@ mod langrust_ast_constructs {
                             Statement {
                                 id: String::from("x"),
                                 element_type: Type::Integer,
-                                expression: Expression::Call {
+                                expression: Expression::Identifier {
                                     id: String::from("i"),
                                     typing: None,
                                     location: Location::default(),
@@ -327,7 +327,7 @@ mod langrust_ast_constructs {
                             Statement {
                                 id: String::from("o"),
                                 element_type: Type::Integer,
-                                expression: Expression::Call {
+                                expression: Expression::Identifier {
                                     id: String::from("x"),
                                     typing: None,
                                     location: Location::default(),
@@ -337,7 +337,7 @@ mod langrust_ast_constructs {
                         ],
                         returned: (
                             Type::Integer,
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("o"),
                                 typing: None,
                                 location: Location::default(),
@@ -650,7 +650,7 @@ mod langrust_ast_constructs {
                     Statement {
                         id: String::from("x"),
                         element_type: Type::Integer,
-                        expression: Expression::Call {
+                        expression: Expression::Identifier {
                             id: String::from("i"),
                             typing: None,
                             location: Location::default(),
@@ -660,7 +660,7 @@ mod langrust_ast_constructs {
                     Statement {
                         id: String::from("o"),
                         element_type: Type::Integer,
-                        expression: Expression::Call {
+                        expression: Expression::Identifier {
                             id: String::from("x"),
                             typing: None,
                             location: Location::default(),
@@ -670,7 +670,7 @@ mod langrust_ast_constructs {
                 ],
                 returned: (
                     Type::Integer,
-                    Expression::Call {
+                    Expression::Identifier {
                         id: String::from("o"),
                         typing: None,
                         location: Location::default(),
@@ -771,7 +771,7 @@ mod langrust_ast_constructs {
                                 location: Location::default()
                             },
                             Some(StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: BinaryOperator::Low.to_string(),
                                     typing: None,
                                     location: Location::default()
@@ -792,7 +792,7 @@ mod langrust_ast_constructs {
                                 location: Location::default()
                             }),
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: UnaryOperator::Neg.to_string(),
                                     typing: None,
                                     location: Location::default()
@@ -861,7 +861,7 @@ mod langrust_ast_constructs {
                 id: String::from("compare"),
                 element_type: Type::Integer,
                 expression: Expression::Match {
-                    expression: Box::new(Expression::Call {
+                    expression: Box::new(Expression::Identifier {
                         id: String::from("a"),
                         typing: None,
                         location: Location::default()
@@ -915,13 +915,13 @@ mod langrust_ast_constructs {
                                 location: Location::default()
                             },
                             Some(Expression::Application {
-                                function_expression: Box::new(Expression::Call {
+                                function_expression: Box::new(Expression::Identifier {
                                     id: BinaryOperator::Low.to_string(),
                                     typing: None,
                                     location: Location::default()
                                 }),
                                 inputs: vec![
-                                    Expression::Call {
+                                    Expression::Identifier {
                                         id: String::from("x"),
                                         typing: None,
                                         location: Location::default()
@@ -936,7 +936,7 @@ mod langrust_ast_constructs {
                                 location: Location::default()
                             }),
                             Expression::Application {
-                                function_expression: Box::new(Expression::Call {
+                                function_expression: Box::new(Expression::Identifier {
                                     id: UnaryOperator::Neg.to_string(),
                                     typing: None,
                                     location: Location::default()
@@ -1213,7 +1213,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: UnaryOperator::Brackets.to_string(),
                     typing: None,
                     location: Location::default()
@@ -1233,7 +1233,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: UnaryOperator::Neg.to_string(),
                     typing: None,
                     location: Location::default()
@@ -1253,14 +1253,14 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: BinaryOperator::Sub.to_string(),
                     typing: None,
                     location: Location::default()
                 },
                 inputs: vec![
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: BinaryOperator::Mul.to_string(),
                             typing: None,
                             location: Location::default()
@@ -1296,13 +1296,13 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("sqrt"),
                     typing: None,
                     location: Location::default()
                 },
                 inputs: vec![StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: BinaryOperator::Mul.to_string(),
                         typing: None,
                         location: Location::default()
@@ -1332,7 +1332,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: OtherOperator::Print.to_string(),
                     typing: None,
                     location: Location::default()
@@ -1378,7 +1378,7 @@ mod langrust_ast_constructs {
             StreamExpression::FollowedBy {
                 constant: Constant::Integer(0),
                 expression: Box::new(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: BinaryOperator::Add.to_string(),
                         typing: None,
                         location: Location::default()
@@ -1408,7 +1408,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: OtherOperator::IfThenElse.to_string(),
                     typing: None,
                     location: Location::default()
@@ -1629,7 +1629,7 @@ mod langrust_ast_constructs {
                             location: Location::default()
                         },
                         Some(StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: BinaryOperator::Low.to_string(),
                                 typing: None,
                                 location: Location::default()
@@ -1650,7 +1650,7 @@ mod langrust_ast_constructs {
                             location: Location::default()
                         }),
                         StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: UnaryOperator::Neg.to_string(),
                                 typing: None,
                                 location: Location::default()
@@ -1707,7 +1707,7 @@ mod langrust_ast_constructs {
                     typing: None,
                     location: Location::default()
                 }),
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("f"),
                     typing: None,
                     location: Location::default()
@@ -1735,18 +1735,18 @@ mod langrust_ast_constructs {
                 function_expression: Expression::Abstraction {
                     inputs: vec![String::from("sum"), String::from("x")],
                     expression: Box::new(Expression::Application {
-                        function_expression: Box::new(Expression::Call {
+                        function_expression: Box::new(Expression::Identifier {
                             id: BinaryOperator::Add.to_string(),
                             typing: None,
                             location: Location::default()
                         }),
                         inputs: vec![
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("x"),
                                 typing: None,
                                 location: Location::default()
                             },
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("sum"),
                                 typing: None,
                                 location: Location::default()
@@ -1776,18 +1776,18 @@ mod langrust_ast_constructs {
                 function_expression: Expression::Abstraction {
                     inputs: vec![String::from("a"), String::from("b")],
                     expression: Box::new(Expression::Application {
-                        function_expression: Box::new(Expression::Call {
+                        function_expression: Box::new(Expression::Identifier {
                             id: BinaryOperator::Sub.to_string(),
                             typing: None,
                             location: Location::default()
                         }),
                         inputs: vec![
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("a"),
                                 typing: None,
                                 location: Location::default()
                             },
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("b"),
                                 typing: None,
                                 location: Location::default()
@@ -1888,7 +1888,7 @@ mod langrust_ast_constructs {
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Call {
+            Expression::Identifier {
                 id: String::from("x"),
                 typing: None,
                 location: Location::default()
@@ -1900,7 +1900,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Application {
-                function_expression: Box::new(Expression::Call {
+                function_expression: Box::new(Expression::Identifier {
                     id: UnaryOperator::Brackets.to_string(),
                     typing: None,
                     location: Location::default()
@@ -1920,7 +1920,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Application {
-                function_expression: Box::new(Expression::Call {
+                function_expression: Box::new(Expression::Identifier {
                     id: UnaryOperator::Neg.to_string(),
                     typing: None,
                     location: Location::default()
@@ -1940,14 +1940,14 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Application {
-                function_expression: Box::new(Expression::Call {
+                function_expression: Box::new(Expression::Identifier {
                     id: BinaryOperator::Sub.to_string(),
                     typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![
                     Expression::Application {
-                        function_expression: Box::new(Expression::Call {
+                        function_expression: Box::new(Expression::Identifier {
                             id: BinaryOperator::Mul.to_string(),
                             typing: None,
                             location: Location::default()
@@ -1983,20 +1983,20 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Application {
-                function_expression: Box::new(Expression::Call {
+                function_expression: Box::new(Expression::Identifier {
                     id: String::from("sqrt"),
                     typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![Expression::Application {
-                    function_expression: Box::new(Expression::Call {
+                    function_expression: Box::new(Expression::Identifier {
                         id: BinaryOperator::Sub.to_string(),
                         typing: None,
                         location: Location::default()
                     }),
                     inputs: vec![
                         Expression::Application {
-                            function_expression: Box::new(Expression::Call {
+                            function_expression: Box::new(Expression::Identifier {
                                 id: BinaryOperator::Mul.to_string(),
                                 typing: None,
                                 location: Location::default()
@@ -2035,7 +2035,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Application {
-                function_expression: Box::new(Expression::Call {
+                function_expression: Box::new(Expression::Identifier {
                     id: OtherOperator::Print.to_string(),
                     typing: None,
                     location: Location::default()
@@ -2057,18 +2057,18 @@ mod langrust_ast_constructs {
             Expression::Abstraction {
                 inputs: vec![String::from("x"), String::from("y")],
                 expression: Box::new(Expression::Application {
-                    function_expression: Box::new(Expression::Call {
+                    function_expression: Box::new(Expression::Identifier {
                         id: BinaryOperator::Add.to_string(),
                         typing: None,
                         location: Location::default()
                     }),
                     inputs: vec![
-                        Expression::Call {
+                        Expression::Identifier {
                             id: String::from("x"),
                             typing: None,
                             location: Location::default()
                         },
-                        Expression::Call {
+                        Expression::Identifier {
                             id: String::from("y"),
                             typing: None,
                             location: Location::default()
@@ -2092,18 +2092,18 @@ mod langrust_ast_constructs {
                     (String::from("y"), Type::Integer)
                 ],
                 expression: Box::new(Expression::Application {
-                    function_expression: Box::new(Expression::Call {
+                    function_expression: Box::new(Expression::Identifier {
                         id: BinaryOperator::Add.to_string(),
                         typing: None,
                         location: Location::default()
                     }),
                     inputs: vec![
-                        Expression::Call {
+                        Expression::Identifier {
                             id: String::from("x"),
                             typing: None,
                             location: Location::default()
                         },
-                        Expression::Call {
+                        Expression::Identifier {
                             id: String::from("y"),
                             typing: None,
                             location: Location::default()
@@ -2122,23 +2122,23 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Application {
-                function_expression: Box::new(Expression::Call {
+                function_expression: Box::new(Expression::Identifier {
                     id: OtherOperator::IfThenElse.to_string(),
                     typing: None,
                     location: Location::default()
                 }),
                 inputs: vec![
-                    Expression::Call {
+                    Expression::Identifier {
                         id: String::from("b"),
                         typing: None,
                         location: Location::default()
                     },
-                    Expression::Call {
+                    Expression::Identifier {
                         id: String::from("x"),
                         typing: None,
                         location: Location::default()
                     },
-                    Expression::Call {
+                    Expression::Identifier {
                         id: String::from("y"),
                         typing: None,
                         location: Location::default()
@@ -2238,12 +2238,12 @@ mod langrust_ast_constructs {
         assert_eq!(
             Expression::When {
                 id: String::from("a"),
-                option: Box::new(Expression::Call {
+                option: Box::new(Expression::Identifier {
                     id: String::from("x"),
                     typing: None,
                     location: Location::default()
                 }),
-                present: Box::new(Expression::Call {
+                present: Box::new(Expression::Identifier {
                     id: String::from("a"),
                     typing: None,
                     location: Location::default()
@@ -2264,12 +2264,12 @@ mod langrust_ast_constructs {
         assert_eq!(
             Expression::When {
                 id: String::from("a"),
-                option: Box::new(Expression::Call {
+                option: Box::new(Expression::Identifier {
                     id: String::from("a"),
                     typing: None,
                     location: Location::default()
                 }),
-                present: Box::new(Expression::Call {
+                present: Box::new(Expression::Identifier {
                     id: String::from("a"),
                     typing: None,
                     location: Location::default()
@@ -2289,7 +2289,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Match {
-                expression: Box::new(Expression::Call {
+                expression: Box::new(Expression::Identifier {
                     id: String::from("a"),
                     typing: None,
                     location: Location::default()
@@ -2343,13 +2343,13 @@ mod langrust_ast_constructs {
                             location: Location::default()
                         },
                         Some(Expression::Application {
-                            function_expression: Box::new(Expression::Call {
+                            function_expression: Box::new(Expression::Identifier {
                                 id: BinaryOperator::Low.to_string(),
                                 typing: None,
                                 location: Location::default()
                             }),
                             inputs: vec![
-                                Expression::Call {
+                                Expression::Identifier {
                                     id: String::from("x"),
                                     typing: None,
                                     location: Location::default()
@@ -2364,7 +2364,7 @@ mod langrust_ast_constructs {
                             location: Location::default()
                         }),
                         Expression::Application {
-                            function_expression: Box::new(Expression::Call {
+                            function_expression: Box::new(Expression::Identifier {
                                 id: UnaryOperator::Neg.to_string(),
                                 typing: None,
                                 location: Location::default()
@@ -2400,7 +2400,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::FieldAccess {
-                expression: Box::new(Expression::Call {
+                expression: Box::new(Expression::Identifier {
                     id: String::from("p"),
                     typing: None,
                     location: Location::default()
@@ -2416,12 +2416,12 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Map {
-                expression: Box::new(Expression::Call {
+                expression: Box::new(Expression::Identifier {
                     id: String::from("x"),
                     typing: None,
                     location: Location::default()
                 }),
-                function_expression: Box::new(Expression::Call {
+                function_expression: Box::new(Expression::Identifier {
                     id: String::from("f"),
                     typing: None,
                     location: Location::default()
@@ -2436,7 +2436,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Fold {
-                expression: Box::new(Expression::Call {
+                expression: Box::new(Expression::Identifier {
                     id: "l".to_string(),
                     typing: None,
                     location: Location::default()
@@ -2449,18 +2449,18 @@ mod langrust_ast_constructs {
                 function_expression: Box::new(Expression::Abstraction {
                     inputs: vec![String::from("sum"), String::from("x")],
                     expression: Box::new(Expression::Application {
-                        function_expression: Box::new(Expression::Call {
+                        function_expression: Box::new(Expression::Identifier {
                             id: BinaryOperator::Add.to_string(),
                             typing: None,
                             location: Location::default()
                         }),
                         inputs: vec![
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("x"),
                                 typing: None,
                                 location: Location::default()
                             },
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("sum"),
                                 typing: None,
                                 location: Location::default()
@@ -2482,7 +2482,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::Sort {
-                expression: Box::new(Expression::Call {
+                expression: Box::new(Expression::Identifier {
                     id: "l".to_string(),
                     typing: None,
                     location: Location::default()
@@ -2490,18 +2490,18 @@ mod langrust_ast_constructs {
                 function_expression: Box::new(Expression::Abstraction {
                     inputs: vec![String::from("a"), String::from("b")],
                     expression: Box::new(Expression::Application {
-                        function_expression: Box::new(Expression::Call {
+                        function_expression: Box::new(Expression::Identifier {
                             id: BinaryOperator::Sub.to_string(),
                             typing: None,
                             location: Location::default()
                         }),
                         inputs: vec![
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("a"),
                                 typing: None,
                                 location: Location::default()
                             },
-                            Expression::Call {
+                            Expression::Identifier {
                                 id: String::from("b"),
                                 typing: None,
                                 location: Location::default()
@@ -2524,12 +2524,12 @@ mod langrust_ast_constructs {
         assert_eq!(
             Expression::Zip {
                 arrays: vec![
-                    Expression::Call {
+                    Expression::Identifier {
                         id: "a".to_string(),
                         typing: None,
                         location: Location::default()
                     },
-                    Expression::Call {
+                    Expression::Identifier {
                         id: "b".to_string(),
                         typing: None,
                         location: Location::default()
@@ -2545,7 +2545,7 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             Expression::TupleElementAccess {
-                expression: Box::new(Expression::Call {
+                expression: Box::new(Expression::Identifier {
                     id: "my_tuple".to_string(),
                     typing: None,
                     location: Location::default()

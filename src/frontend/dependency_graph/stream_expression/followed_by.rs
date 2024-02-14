@@ -66,7 +66,7 @@ mod compute_followed_by_dependencies {
         let stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Float(0.0),
             expression: Box::new(StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("add_one"),
                     typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                     location: Location::default(),

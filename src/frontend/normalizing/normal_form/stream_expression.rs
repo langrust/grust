@@ -563,7 +563,7 @@ mod normal_form {
         };
 
         let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
@@ -594,7 +594,7 @@ mod normal_form {
                         (
                             format!("y"),
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],
@@ -680,7 +680,7 @@ mod normal_form {
 
         // x: int = 1 + x_2;
         let control = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
@@ -724,7 +724,7 @@ mod normal_form {
         };
 
         let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
@@ -755,7 +755,7 @@ mod normal_form {
                         (
                             format!("y"),
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],
@@ -801,7 +801,7 @@ mod normal_form {
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("*2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -883,7 +883,7 @@ mod normal_form {
         };
 
         let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
@@ -914,7 +914,7 @@ mod normal_form {
                         (
                             format!("y"),
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],

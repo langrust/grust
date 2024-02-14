@@ -80,7 +80,7 @@ mod compute_array_dependencies {
                     dependencies: Dependencies::new(),
                 },
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),

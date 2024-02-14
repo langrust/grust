@@ -84,7 +84,7 @@ mod compute_fold_dependencies {
                 location: Location::default(),
                 dependencies: Dependencies::new(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],

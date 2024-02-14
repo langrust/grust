@@ -1019,7 +1019,7 @@ RustASTProject {
                                                     colon_token: Some(
                                                         Colon,
                                                     ),
-                                                    expr: Expr::Call {
+                                                    expr: Expr::Identifier {
                                                         attrs: [],
                                                         func: Expr::Path {
                                                             attrs: [],

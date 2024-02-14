@@ -152,7 +152,7 @@ mod compute_node_application_dependencies {
                         expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(1),
                             expression: Box::new(StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("+"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer, Type::Integer],
@@ -211,7 +211,7 @@ mod compute_node_application_dependencies {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),

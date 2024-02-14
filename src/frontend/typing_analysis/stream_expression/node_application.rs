@@ -124,7 +124,7 @@ mod typing_node_application {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: None,
                         location: Location::default(),
@@ -151,7 +151,7 @@ mod typing_node_application {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -217,7 +217,7 @@ mod typing_node_application {
             node: String::from("my_component"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: None,
                         location: Location::default(),
@@ -281,7 +281,7 @@ mod typing_node_application {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: None,
                         location: Location::default(),

@@ -68,70 +68,70 @@ impl UnitaryNode {
 //         signal::Signal, stream_expression::StreamExpression, unitary_node::UnitaryNode,
 //     };
 
-//     #[test]
-//     fn should_return_all_signals_from_unitary_node() {
-//         let equation = Equation {
-//             scope: Scope::Output,
-//             id: String::from("x"),
-//             signal_type: Type::Integer,
-//             expression: StreamExpression::FunctionApplication {
-//                 function_expression: Expression::Call {
-//                     id: String::from("+"),
-//                     typing: Some(Type::Abstract(
-//                         vec![Type::Integer, Type::Integer],
-//                         Box::new(Type::Integer),
-//                     )),
-//                     location: Location::default(),
-//                 },
-//                 inputs: vec![
-//                     StreamExpression::SignalCall {
-//                         signal: Signal {
-//                             id: String::from("s"),
-//                             scope: Scope::Input,
-//                         },
-//                         typing: Type::Integer,
-//                         location: Location::default(),
-//                         dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
-//                     },
-//                     StreamExpression::FollowedBy {
-//                         constant: Constant::Integer(0),
-//                         expression: Box::new(StreamExpression::SignalCall {
-//                             signal: Signal {
-//                                 id: String::from("v"),
-//                                 scope: Scope::Input,
-//                             },
-//                             typing: Type::Integer,
-//                             location: Location::default(),
-//                             dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-//                         }),
-//                         typing: Type::Integer,
-//                         location: Location::default(),
-//                         dependencies: Dependencies::from(vec![(String::from("v"), 1)]),
-//                     },
-//                 ],
-//                 typing: Type::Integer,
-//                 location: Location::default(),
-//                 dependencies: Dependencies::from(vec![
-//                     (String::from("s"), 0),
-//                     (String::from("v"), 1),
-//                 ]),
-//             },
-//             location: Location::default(),
-//         };
-//         let unitary_node = UnitaryNode {
-//             contract: Default::default(),
-//             node_id: String::from("test"),
-//             output_id: String::from("x"),
-//             inputs: vec![
-//                 (String::from("s"), Type::Integer),
-//                 (String::from("v"), Type::Integer),
-//             ],
-//             equations: vec![equation],
-//             memory: Memory::new(),
-//             location: Location::default(),
-//             graph: OnceCell::new(),
-//         };
-//         let mut signals = unitary_node.get_signals();
+    #[test]
+    fn should_return_all_signals_from_unitary_node() {
+        let equation = Equation {
+            scope: Scope::Output,
+            id: String::from("x"),
+            signal_type: Type::Integer,
+            expression: StreamExpression::FunctionApplication {
+                function_expression: Expression::Identifier {
+                    id: String::from("+"),
+                    typing: Some(Type::Abstract(
+                        vec![Type::Integer, Type::Integer],
+                        Box::new(Type::Integer),
+                    )),
+                    location: Location::default(),
+                },
+                inputs: vec![
+                    StreamExpression::SignalCall {
+                        signal: Signal {
+                            id: String::from("s"),
+                            scope: Scope::Input,
+                        },
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
+                    },
+                    StreamExpression::FollowedBy {
+                        constant: Constant::Integer(0),
+                        expression: Box::new(StreamExpression::SignalCall {
+                            signal: Signal {
+                                id: String::from("v"),
+                                scope: Scope::Input,
+                            },
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
+                        }),
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::from(vec![(String::from("v"), 1)]),
+                    },
+                ],
+                typing: Type::Integer,
+                location: Location::default(),
+                dependencies: Dependencies::from(vec![
+                    (String::from("s"), 0),
+                    (String::from("v"), 1),
+                ]),
+            },
+            location: Location::default(),
+        };
+        let unitary_node = UnitaryNode {
+            contract: Default::default(),
+            node_id: String::from("test"),
+            output_id: String::from("x"),
+            inputs: vec![
+                (String::from("s"), Type::Integer),
+                (String::from("v"), Type::Integer),
+            ],
+            equations: vec![equation],
+            memory: Memory::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        let mut signals = unitary_node.get_signals();
 
 //         let mut control = vec![String::from("x"), String::from("s"), String::from("v")];
 //         assert_eq!(signals.len(), control.len());

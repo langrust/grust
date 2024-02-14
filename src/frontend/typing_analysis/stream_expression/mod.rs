@@ -815,7 +815,7 @@ mod typing {
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -829,7 +829,7 @@ mod typing {
             location: Location::default(),
         };
         let control = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
@@ -870,7 +870,7 @@ mod typing {
         let user_types_context = HashMap::new();
 
         let mut stream_expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -1080,7 +1080,7 @@ mod typing {
                     },
                     None,
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("add_one"),
                             typing: None,
                             location: Location::default(),
@@ -1155,7 +1155,7 @@ mod typing {
                     },
                     None,
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -1206,7 +1206,7 @@ mod typing {
         let mut stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Integer(0),
             expression: Box::new(StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("add_one"),
                     typing: None,
                     location: Location::default(),
@@ -1225,7 +1225,7 @@ mod typing {
         let control = StreamExpression::FollowedBy {
             constant: Constant::Integer(0),
             expression: Box::new(StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("add_one"),
                     typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                     location: Location::default(),
@@ -1271,7 +1271,7 @@ mod typing {
         let mut stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Float(0.0),
             expression: Box::new(StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("add_one"),
                     typing: None,
                     location: Location::default(),
@@ -1328,7 +1328,7 @@ mod typing {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: None,
                         location: Location::default(),
@@ -1355,7 +1355,7 @@ mod typing {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -1421,7 +1421,7 @@ mod typing {
             node: String::from("my_component"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: None,
                         location: Location::default(),
@@ -1485,7 +1485,7 @@ mod typing {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: None,
                         location: Location::default(),
@@ -1712,7 +1712,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -1726,7 +1726,7 @@ mod typing {
                 typing: Some(Type::Array(Box::new(Type::Integer), 3)),
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
                 location: Location::default(),
@@ -1767,7 +1767,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -1806,7 +1806,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -1850,7 +1850,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
@@ -1869,7 +1869,7 @@ mod typing {
                 typing: Some(Type::Integer),
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -1918,7 +1918,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
@@ -1962,7 +1962,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
@@ -2006,7 +2006,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
@@ -2045,7 +2045,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: None,
                 location: Location::default(),
@@ -2059,7 +2059,7 @@ mod typing {
                 typing: Some(Type::Array(Box::new(Type::Integer), 3)),
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -2103,7 +2103,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: None,
                 location: Location::default(),
@@ -2142,7 +2142,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: None,
                 location: Location::default(),
@@ -2181,7 +2181,7 @@ mod typing {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: None,
                 location: Location::default(),

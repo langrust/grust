@@ -359,7 +359,7 @@ RustASTProject {
                                                     colon_token: Some(
                                                         Colon,
                                                     ),
-                                                    expr: Expr::Call {
+                                                    expr: Expr::Identifier {
                                                         attrs: [],
                                                         func: Expr::Path {
                                                             attrs: [],
@@ -722,7 +722,7 @@ RustASTProject {
                                         init: Some(
                                             LocalInit {
                                                 eq_token: Eq,
-                                                expr: Expr::Call {
+                                                expr: Expr::Identifier {
                                                     attrs: [],
                                                     func: Expr::Path {
                                                         attrs: [],

@@ -67,7 +67,7 @@ mod replace_by_context {
             (
                 String::from("y"),
                 Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),

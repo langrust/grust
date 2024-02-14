@@ -211,7 +211,7 @@ mod normalize {
                         id: String::from("o1"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -256,7 +256,7 @@ mod normalize {
                         id: String::from("o2"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("2*"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -397,7 +397,7 @@ mod normalize {
                         id: String::from("y"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("1+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],
@@ -410,7 +410,7 @@ mod normalize {
                                 signal: String::from("o2"),
                                 inputs: vec![
                                     StreamExpression::FunctionApplication {
-                                        function_expression: Expression::Call {
+                                        function_expression: Expression::Identifier {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
                                                 vec![Type::Integer],
@@ -438,7 +438,7 @@ mod normalize {
                                         )]),
                                     },
                                     StreamExpression::FunctionApplication {
-                                        function_expression: Expression::Call {
+                                        function_expression: Expression::Identifier {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
                                                 vec![Type::Integer],
@@ -551,7 +551,7 @@ mod normalize {
                         id: String::from("o1"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -596,7 +596,7 @@ mod normalize {
                         id: String::from("o2"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("2*"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -733,7 +733,7 @@ mod normalize {
                         id: String::from("y"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("1+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],
@@ -746,7 +746,7 @@ mod normalize {
                                 signal: String::from("o2"),
                                 inputs: vec![
                                     StreamExpression::FunctionApplication {
-                                        function_expression: Expression::Call {
+                                        function_expression: Expression::Identifier {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
                                                 vec![Type::Integer],
@@ -774,7 +774,7 @@ mod normalize {
                                         )]),
                                     },
                                     StreamExpression::FunctionApplication {
-                                        function_expression: Expression::Call {
+                                        function_expression: Expression::Identifier {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
                                                 vec![Type::Integer],
@@ -876,7 +876,7 @@ mod normalize {
                 id: String::from("o1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("+"),
                         typing: Some(Type::Abstract(
                             vec![Type::Integer, Type::Integer],
@@ -934,7 +934,7 @@ mod normalize {
                 id: String::from("o2"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("2*"),
                         typing: Some(Type::Abstract(
                             vec![Type::Integer, Type::Integer],
@@ -985,7 +985,7 @@ mod normalize {
                         id: String::from("o1"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -1030,7 +1030,7 @@ mod normalize {
                         id: String::from("o2"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("2*"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -1186,7 +1186,7 @@ mod normalize {
                     id: String::from("x_1"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -1240,7 +1240,7 @@ mod normalize {
                     id: String::from("y"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("1+"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -1417,7 +1417,7 @@ mod normalize {
                         id: String::from("y"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("1+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],
@@ -1430,7 +1430,7 @@ mod normalize {
                                 signal: String::from("o2"),
                                 inputs: vec![
                                     StreamExpression::FunctionApplication {
-                                        function_expression: Expression::Call {
+                                        function_expression: Expression::Identifier {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
                                                 vec![Type::Integer],
@@ -1458,7 +1458,7 @@ mod normalize {
                                         )]),
                                     },
                                     StreamExpression::FunctionApplication {
-                                        function_expression: Expression::Call {
+                                        function_expression: Expression::Identifier {
                                             id: String::from("-1"),
                                             typing: Some(Type::Abstract(
                                                 vec![Type::Integer],

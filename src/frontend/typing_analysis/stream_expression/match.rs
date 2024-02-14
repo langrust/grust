@@ -184,7 +184,7 @@ mod typing_match {
                     },
                     None,
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("add_one"),
                             typing: None,
                             location: Location::default(),
@@ -259,7 +259,7 @@ mod typing_match {
                     },
                     None,
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],

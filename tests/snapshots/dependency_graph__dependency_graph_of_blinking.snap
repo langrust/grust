@@ -15,7 +15,7 @@ functions:
       - Boolean
       - Application:
           function_expression:
-            Call:
+            Identifier:
               id: if_then_else
               typing:
                 Abstract:
@@ -25,13 +25,13 @@ functions:
                   - Boolean
               location: ~
           inputs:
-            - Call:
+            - Identifier:
                 id: t
                 typing: Boolean
                 location: ~
             - Application:
                 function_expression:
-                  Call:
+                  Identifier:
                     id: "!"
                     typing:
                       Abstract:
@@ -39,13 +39,13 @@ functions:
                         - Boolean
                     location: ~
                 inputs:
-                  - Call:
+                  - Identifier:
                       id: b
                       typing: Boolean
                       location: ~
                 typing: Boolean
                 location: ~
-            - Call:
+            - Identifier:
                 id: b
                 typing: Boolean
                 location: ~
@@ -68,7 +68,7 @@ nodes:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: if_then_else
                 typing:
                   Abstract:
@@ -112,7 +112,7 @@ nodes:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: if_then_else
                 typing:
                   Abstract:
@@ -139,7 +139,7 @@ nodes:
                   dependencies: []
               - FunctionApplication:
                   function_expression:
-                    Call:
+                    Identifier:
                       id: " + "
                       typing:
                         Abstract:
@@ -150,7 +150,7 @@ nodes:
                   inputs:
                     - FunctionApplication:
                         function_expression:
-                          Call:
+                          Identifier:
                             id: (_)
                             typing:
                               Abstract:
@@ -289,7 +289,7 @@ nodes:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: xor
                 typing:
                   Abstract:
@@ -344,7 +344,7 @@ nodes:
             expression:
               FunctionApplication:
                 function_expression:
-                  Call:
+                  Identifier:
                     id: (_)
                     typing:
                       Abstract:
@@ -354,7 +354,7 @@ nodes:
                 inputs:
                   - FunctionApplication:
                       function_expression:
-                        Call:
+                        Identifier:
                           id: " == "
                           typing:
                             Abstract:
@@ -365,7 +365,7 @@ nodes:
                       inputs:
                         - FunctionApplication:
                             function_expression:
-                              Call:
+                              Identifier:
                                 id: " + "
                                 typing:
                                   Abstract:
@@ -432,7 +432,7 @@ nodes:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: if_then_else
                 typing:
                   Abstract:
@@ -453,7 +453,7 @@ nodes:
                       - 0
               - FunctionApplication:
                   function_expression:
-                    Call:
+                    Identifier:
                       id: " + "
                       typing:
                         Abstract:

@@ -95,7 +95,7 @@ mod typing_map {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -109,7 +109,7 @@ mod typing_map {
                 typing: Some(Type::Array(Box::new(Type::Integer), 3)),
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
                 location: Location::default(),
@@ -150,7 +150,7 @@ mod typing_map {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),
@@ -189,7 +189,7 @@ mod typing_map {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: None,
                 location: Location::default(),

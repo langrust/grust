@@ -55,7 +55,7 @@ mod lir_from_hir {
             statements: vec![ASTStatement {
                 id: format!("o"),
                 expression: ASTExpression::Application {
-                    function_expression: Box::new(ASTExpression::Call {
+                    function_expression: Box::new(ASTExpression::Identifier {
                         id: format!(" + "),
                         typing: Some(Type::Abstract(
                             vec![Type::Integer, Type::Integer],
@@ -64,12 +64,12 @@ mod lir_from_hir {
                         location: Location::default(),
                     }),
                     inputs: vec![
-                        ASTExpression::Call {
+                        ASTExpression::Identifier {
                             id: format!("x"),
                             typing: Some(Type::Integer),
                             location: Location::default(),
                         },
-                        ASTExpression::Call {
+                        ASTExpression::Identifier {
                             id: format!("y"),
                             typing: Some(Type::Integer),
                             location: Location::default(),
@@ -83,7 +83,7 @@ mod lir_from_hir {
             }],
             returned: (
                 Type::Integer,
-                ASTExpression::Call {
+                ASTExpression::Identifier {
                     id: format!("o"),
                     typing: Some(Type::Integer),
                     location: Location::default(),

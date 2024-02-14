@@ -41,33 +41,145 @@ pub fn hir_from_ast(
             symbol_table.restore_context(outputs.values());
             symbol_table.restore_context(locals.values());
 
-            let unscheduled_equations = equations
-                .into_iter()
-                .map(|(signal, equation)| {
-                    let id = symbol_table.get_signal_id(
-                        &signal,
-                        true,
-                        equation.location.clone(),
-                        errors,
-                    )?;
-                    Ok((id, equation_hir_from_ast(equation, symbol_table, errors)?))
-                })
-                .collect::<Vec<Result<_, _>>>()
-                .into_iter()
-                .collect::<Result<HashMap<_, _>, _>>()?;
-            let contract = contract_hir_from_ast(contract, symbol_table, errors)?;
+    HIRNode {
+        id,
+        is_component,
+        inputs,
+        unscheduled_equations: equations
+            .into_iter()
+            .map(|(signal, equation)| (signal, equation_hir_from_ast(equation, &signals_context)))
+            .collect(),
+        unitary_nodes: HashMap::new(),
+        contract: contract_hir_from_ast(contract, &signals_context),
+        location,
+        graph: OnceCell::new(),
+    }
+}
 
-            symbol_table.global();
+#[cfg(test)]
+mod hir_from_ast {
 
-            Ok(HIRNode {
-                id,
-                unscheduled_equations,
-                unitary_nodes: HashMap::new(),
-                contract,
-                location,
-                graph: OnceCell::new(),
-            })
-        }
-        _ => unreachable!(),
+    use std::collections::HashMap;
+
+    use crate::ast::{
+        equation::Equation, expression::Expression, node::Node, stream_expression::StreamExpression,
+    };
+    use crate::common::{location::Location, r#type::Type, scope::Scope};
+    use crate::frontend::hir_from_ast::node::hir_from_ast;
+    use crate::hir::{
+        dependencies::Dependencies, equation::Equation as HIREquation, node::Node as HIRNode,
+        once_cell::OnceCell, signal::Signal,
+        stream_expression::StreamExpression as HIRStreamExpression,
+    };
+
+    #[test]
+    fn should_construct_hir_structure_from_typed_ast() {
+        let ast_expression = StreamExpression::FunctionApplication {
+            function_expression: Expression::Identifier {
+                id: String::from("f"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::SignalCall {
+                id: String::from("i"),
+                typing: Some(Type::Integer),
+                location: Location::default(),
+            }],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let ast_equation = Equation {
+            id: String::from("o"),
+            scope: Scope::Output,
+            signal_type: Type::Integer,
+            expression: ast_expression,
+            location: Location::default(),
+        };
+        let ast_node = Node {
+            contract: Default::default(),
+            id: String::from("my_node"),
+            is_component: false,
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![(String::from("o"), ast_equation)],
+            location: Location::default(),
+        };
+        let hir_node = hir_from_ast(ast_node);
+
+        let control = HIRNode {
+            contract: Default::default(),
+            id: String::from("my_node"),
+            is_component: false,
+            inputs: vec![(String::from("i"), Type::Integer)],
+            unscheduled_equations: HashMap::from([(
+                String::from("o"),
+                HIREquation {
+                    id: String::from("o"),
+                    scope: Scope::Output,
+                    signal_type: Type::Integer,
+                    expression: HIRStreamExpression::FunctionApplication {
+                        function_expression: Expression::Identifier {
+                            id: String::from("f"),
+                            typing: Some(Type::Abstract(
+                                vec![Type::Integer],
+                                Box::new(Type::Integer),
+                            )),
+                            location: Location::default(),
+                        },
+                        inputs: vec![HIRStreamExpression::SignalCall {
+                            signal: Signal {
+                                id: String::from("i"),
+                                scope: Scope::Input,
+                            },
+                            typing: Type::Integer,
+                            location: Location::default(),
+                            dependencies: Dependencies::new(),
+                        }],
+                        typing: Type::Integer,
+                        location: Location::default(),
+                        dependencies: Dependencies::new(),
+                    },
+                    location: Location::default(),
+                },
+            )]),
+            unitary_nodes: HashMap::new(),
+            location: Location::default(),
+            graph: OnceCell::new(),
+        };
+        assert_eq!(hir_node, control);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_with_untyped_ast() {
+        let ast_expression = StreamExpression::FunctionApplication {
+            function_expression: Expression::Identifier {
+                id: String::from("f"),
+                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
+                location: Location::default(),
+            },
+            inputs: vec![StreamExpression::SignalCall {
+                id: String::from("i"),
+                typing: None,
+                location: Location::default(),
+            }],
+            typing: Some(Type::Integer),
+            location: Location::default(),
+        };
+        let ast_equation = Equation {
+            id: String::from("o"),
+            scope: Scope::Output,
+            signal_type: Type::Integer,
+            expression: ast_expression,
+            location: Location::default(),
+        };
+        let ast_node = Node {
+            contract: Default::default(),
+            id: String::from("my_node"),
+            is_component: false,
+            inputs: vec![(String::from("i"), Type::Integer)],
+            equations: vec![(String::from("o"), ast_equation)],
+            location: Location::default(),
+        };
+        let _ = hir_from_ast(ast_node);
     }
 }

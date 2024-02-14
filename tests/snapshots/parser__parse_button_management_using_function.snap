@@ -31,7 +31,7 @@ functions:
         expression:
           Match:
             expression:
-              Call:
+              Identifier:
                 id: button_state
                 typing: ~
                 location: ~
@@ -58,16 +58,16 @@ functions:
                     location: ~
                 - Application:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " >= "
                         typing: ~
                         location: ~
                     inputs:
-                      - Call:
+                      - Identifier:
                           id: counter
                           typing: ~
                           location: ~
-                      - Call:
+                      - Identifier:
                           id: reset_limit_1
                           typing: ~
                           location: ~
@@ -95,7 +95,7 @@ functions:
         location: ~
     returned:
       - NotDefinedYet: ResetState
-      - Call:
+      - Identifier:
           id: result
           typing: ~
           location: ~
@@ -116,7 +116,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: if_then_else
                   typing: ~
                   location: ~
@@ -132,14 +132,14 @@ nodes:
                     location: ~
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing: ~
                         location: ~
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: (_)
                               typing: ~
                               location: ~
@@ -191,7 +191,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: reset_state_management
                   typing: ~
                   location: ~
@@ -249,7 +249,7 @@ nodes:
                   - ~
                   - FunctionApplication:
                       function_expression:
-                        Call:
+                        Identifier:
                           id: " >= "
                           typing: ~
                           location: ~
@@ -260,7 +260,7 @@ nodes:
                             location: ~
                         - FunctionApplication:
                             function_expression:
-                              Call:
+                              Identifier:
                                 id: " + "
                                 typing: ~
                                 location: ~
@@ -307,21 +307,21 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: " && "
                   typing: ~
                   location: ~
               inputs:
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: (_)
                         typing: ~
                         location: ~
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " == "
                               typing: ~
                               location: ~
@@ -343,7 +343,7 @@ nodes:
                     location: ~
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: (_)
                         typing: ~
                         location: ~
@@ -354,7 +354,7 @@ nodes:
                           expression:
                             FunctionApplication:
                               function_expression:
-                                Call:
+                                Identifier:
                                   id: " == "
                                   typing: ~
                                   location: ~

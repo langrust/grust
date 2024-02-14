@@ -332,7 +332,7 @@ mod replace_by_context {
             id: String::from("z"),
             scope: Scope::Local,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -382,7 +382,7 @@ mod replace_by_context {
             (
                 String::from("y"),
                 Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -416,7 +416,7 @@ mod replace_by_context {
             id: String::from("c"),
             scope: Scope::Local,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -435,7 +435,7 @@ mod replace_by_context {
                         dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                     },
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("/2"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -498,7 +498,7 @@ mod inline_when_needed {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -655,7 +655,7 @@ mod inline_when_needed {
                     (
                         format!("i"),
                         StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],
@@ -711,7 +711,7 @@ mod inline_when_needed {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -845,7 +845,7 @@ mod inline_when_needed {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -993,7 +993,7 @@ mod inline_when_needed {
                     (
                         format!("i"),
                         StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],
@@ -1049,7 +1049,7 @@ mod inline_when_needed {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -1147,7 +1147,7 @@ mod inline_when_needed {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -1157,7 +1157,7 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -1219,7 +1219,7 @@ mod inline_when_needed {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -1361,7 +1361,7 @@ mod inline_when_needed {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -1376,7 +1376,7 @@ mod inline_when_needed {
                         (
                             format!("i"),
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],
@@ -1439,7 +1439,7 @@ mod inline_when_needed {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -1537,7 +1537,7 @@ mod inline_when_needed {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -1547,7 +1547,7 @@ mod inline_when_needed {
                 },
                 inputs: vec![
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -1599,7 +1599,7 @@ mod inline_when_needed {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -1639,7 +1639,7 @@ mod inline_when_needed {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -1792,7 +1792,7 @@ mod inline_when_needed {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -1807,7 +1807,7 @@ mod inline_when_needed {
                         (
                             format!("i"),
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],
@@ -1870,7 +1870,7 @@ mod inline_when_needed {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -1968,7 +1968,7 @@ mod inline_when_needed {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -1983,7 +1983,7 @@ mod inline_when_needed {
                         inputs: vec![(
                             format!("i"),
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],
@@ -2041,7 +2041,7 @@ mod inline_when_needed {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -2097,7 +2097,7 @@ mod inline_when_needed_reccursive {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -2254,7 +2254,7 @@ mod inline_when_needed_reccursive {
                     (
                         format!("i"),
                         StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],
@@ -2310,7 +2310,7 @@ mod inline_when_needed_reccursive {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -2444,7 +2444,7 @@ mod inline_when_needed_reccursive {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -2592,7 +2592,7 @@ mod inline_when_needed_reccursive {
                     (
                         format!("i"),
                         StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],
@@ -2648,7 +2648,7 @@ mod inline_when_needed_reccursive {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -2746,7 +2746,7 @@ mod inline_when_needed_reccursive {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -2756,7 +2756,7 @@ mod inline_when_needed_reccursive {
                 },
                 inputs: vec![
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -2818,7 +2818,7 @@ mod inline_when_needed_reccursive {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -2961,7 +2961,7 @@ mod inline_when_needed_reccursive {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -2976,7 +2976,7 @@ mod inline_when_needed_reccursive {
                         (
                             format!("i"),
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("*2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],
@@ -3039,7 +3039,7 @@ mod inline_when_needed_reccursive {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -3137,7 +3137,7 @@ mod inline_when_needed_reccursive {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -3147,7 +3147,7 @@ mod inline_when_needed_reccursive {
                 },
                 inputs: vec![
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -3199,7 +3199,7 @@ mod inline_when_needed_reccursive {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("1+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -3239,7 +3239,7 @@ mod inline_when_needed_reccursive {
             id: String::from("o"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -3392,7 +3392,7 @@ mod inline_when_needed_reccursive {
                     (
                         format!("i"),
                         StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],
@@ -3448,7 +3448,7 @@ mod inline_when_needed_reccursive {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -3569,7 +3569,7 @@ mod inline_when_needed_reccursive {
                 id: String::from("x"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("+"),
                         typing: Some(Type::Abstract(
                             vec![Type::Integer, Type::Integer],
@@ -3579,7 +3579,7 @@ mod inline_when_needed_reccursive {
                     },
                     inputs: vec![
                         StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("*2"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer],

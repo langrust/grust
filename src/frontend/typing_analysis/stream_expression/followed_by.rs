@@ -70,7 +70,7 @@ mod typing_constant {
         let mut stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Integer(0),
             expression: Box::new(StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("add_one"),
                     typing: None,
                     location: Location::default(),
@@ -89,7 +89,7 @@ mod typing_constant {
         let control = StreamExpression::FollowedBy {
             constant: Constant::Integer(0),
             expression: Box::new(StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("add_one"),
                     typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                     location: Location::default(),
@@ -135,7 +135,7 @@ mod typing_constant {
         let mut stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Float(0.0),
             expression: Box::new(StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("add_one"),
                     typing: None,
                     location: Location::default(),

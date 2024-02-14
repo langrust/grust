@@ -98,7 +98,7 @@ mod typing_sort {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: None,
                 location: Location::default(),
@@ -112,7 +112,7 @@ mod typing_sort {
                 typing: Some(Type::Array(Box::new(Type::Integer), 3)),
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -156,7 +156,7 @@ mod typing_sort {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: None,
                 location: Location::default(),
@@ -195,7 +195,7 @@ mod typing_sort {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: None,
                 location: Location::default(),
@@ -234,7 +234,7 @@ mod typing_sort {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: None,
                 location: Location::default(),
