@@ -316,14 +316,10 @@ term: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches function applications as expressions
-    <start:@L> <fun_name: ID> <end_fun:@R> "(" <v_expr: list<expression>> ")" <end:@R> => {
+    // catches applications as expressions
+    <start:@L> <fun_expr: term> "(" <v_expr: list<expression>> ")" <end:@R> => {
         Expression::Application {
-            function_expression: Box::new(Expression::Identifier {
-                id: fun_name,
-                typing: None,
-                location: Location{ file_id, range: start..end_fun }
-            }),
+            function_expression: Box::new(fun_expr),
             inputs: v_expr,
             typing: None,
             location: Location{ file_id, range: start..end },
