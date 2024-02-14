@@ -71,7 +71,7 @@ mod schedule {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -128,7 +128,7 @@ mod schedule {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -138,7 +138,7 @@ mod schedule {
                 },
                 inputs: vec![
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -239,7 +239,7 @@ mod schedule {
                 inputs: vec![(
                     format!("i"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -296,7 +296,7 @@ mod schedule {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -306,7 +306,7 @@ mod schedule {
                 },
                 inputs: vec![
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("*2"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],

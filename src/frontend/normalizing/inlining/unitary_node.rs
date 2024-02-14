@@ -210,7 +210,7 @@ mod instantiate_equations_and_memory {
                     id: String::from("j"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("+1"),
                             typing: Some(Type::Integer),
                             location: Location::default(),
@@ -282,7 +282,7 @@ mod instantiate_equations_and_memory {
                 id: String::from("j_1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("+1"),
                         typing: Some(Type::Integer),
                         location: Location::default(),
@@ -360,7 +360,7 @@ mod instantiate_equations_and_memory {
                     id: String::from("j"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("+1"),
                             typing: Some(Type::Integer),
                             location: Location::default(),
@@ -435,7 +435,7 @@ mod instantiate_equations_and_memory {
                 id: String::from("j_1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("+1"),
                         typing: Some(Type::Integer),
                         location: Location::default(),
@@ -486,7 +486,7 @@ mod instantiate_equations_and_memory {
             format!("mem_o"),
             Constant::Integer(0),
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+1"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -553,7 +553,7 @@ mod instantiate_equations_and_memory {
             format!("mem_o"),
             Constant::Integer(0),
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+1"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -597,7 +597,7 @@ mod instantiate_equations_and_memory {
             format!("mem_o"),
             Constant::Integer(0),
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+1"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -667,7 +667,7 @@ mod instantiate_equations_and_memory {
             format!("mem_o"),
             Constant::Integer(0),
             StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+1"),
                     typing: Some(Type::Integer),
                     location: Location::default(),

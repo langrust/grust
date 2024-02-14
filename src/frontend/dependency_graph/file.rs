@@ -149,7 +149,7 @@ mod generate_dependency_graphs {
             statements: vec![Statement {
                 id: String::from("x"),
                 element_type: Type::Integer,
-                expression: Expression::Call {
+                expression: Expression::Identifier {
                     id: String::from("i"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -158,7 +158,7 @@ mod generate_dependency_graphs {
             }],
             returned: (
                 Type::Integer,
-                Expression::Call {
+                Expression::Identifier {
                     id: String::from("x"),
                     typing: Some(Type::Integer),
                     location: Location::default(),

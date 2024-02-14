@@ -522,7 +522,7 @@ impl std::fmt::Display for Error {
             Error::UnknownField { .. } => write!(f, "Unknown Field"),
             Error::MissingField { .. } => write!(f, "Missing Field"),
             Error::IndexOutOfBounds { .. } => write!(f, "Index Out Of Bounds"),
-            Error::ComponentCall { .. } => write!(f, "Component Call"),
+            Error::ComponentCall { .. } => write!(f, "Component Identifier"),
             Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
             Error::IncompatiblePattern { .. } => write!(f, "Incompatible Pattern"),

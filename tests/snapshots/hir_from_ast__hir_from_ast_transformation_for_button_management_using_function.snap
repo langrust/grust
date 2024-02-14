@@ -31,7 +31,7 @@ functions:
         expression:
           Match:
             expression:
-              Call:
+              Identifier:
                 id: button_state
                 typing:
                   Enumeration: Button
@@ -60,7 +60,7 @@ functions:
                     location: ~
                 - Application:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " >= "
                         typing:
                           Abstract:
@@ -69,11 +69,11 @@ functions:
                             - Boolean
                         location: ~
                     inputs:
-                      - Call:
+                      - Identifier:
                           id: counter
                           typing: Integer
                           location: ~
-                      - Call:
+                      - Identifier:
                           id: reset_limit_1
                           typing: Integer
                           location: ~
@@ -104,7 +104,7 @@ functions:
         location: ~
     returned:
       - Enumeration: ResetState
-      - Call:
+      - Identifier:
           id: result
           typing:
             Enumeration: ResetState
@@ -126,7 +126,7 @@ nodes:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: if_then_else
                 typing:
                   Abstract:
@@ -151,7 +151,7 @@ nodes:
                   dependencies: ~
               - FunctionApplication:
                   function_expression:
-                    Call:
+                    Identifier:
                       id: " + "
                       typing:
                         Abstract:
@@ -162,7 +162,7 @@ nodes:
                   inputs:
                     - FunctionApplication:
                         function_expression:
-                          Call:
+                          Identifier:
                             id: (_)
                             typing:
                               Abstract:
@@ -255,7 +255,7 @@ nodes:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: " && "
                 typing:
                   Abstract:
@@ -266,7 +266,7 @@ nodes:
             inputs:
               - FunctionApplication:
                   function_expression:
-                    Call:
+                    Identifier:
                       id: (_)
                       typing:
                         Abstract:
@@ -276,7 +276,7 @@ nodes:
                   inputs:
                     - FunctionApplication:
                         function_expression:
-                          Call:
+                          Identifier:
                             id: " == "
                             typing:
                               Abstract:
@@ -310,7 +310,7 @@ nodes:
                   dependencies: ~
               - FunctionApplication:
                   function_expression:
-                    Call:
+                    Identifier:
                       id: (_)
                       typing:
                         Abstract:
@@ -324,7 +324,7 @@ nodes:
                         expression:
                           FunctionApplication:
                             function_expression:
-                              Call:
+                              Identifier:
                                 id: " == "
                                 typing:
                                   Abstract:
@@ -411,7 +411,7 @@ nodes:
                 - []
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " >= "
                         typing:
                           Abstract:
@@ -429,7 +429,7 @@ nodes:
                           dependencies: ~
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " + "
                               typing:
                                 Abstract:
@@ -470,7 +470,7 @@ nodes:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: reset_state_management
                 typing:
                   Abstract:

@@ -114,7 +114,7 @@ mod typing_fold {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
@@ -133,7 +133,7 @@ mod typing_fold {
                 typing: Some(Type::Integer),
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -182,7 +182,7 @@ mod typing_fold {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
@@ -226,7 +226,7 @@ mod typing_fold {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: None,
                 location: Location::default(),
@@ -270,7 +270,7 @@ mod typing_fold {
                 typing: None,
                 location: Location::default(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: None,
                 location: Location::default(),

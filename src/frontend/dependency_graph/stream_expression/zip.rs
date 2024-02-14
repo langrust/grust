@@ -78,7 +78,7 @@ mod compute_zip_dependencies {
                     dependencies: Dependencies::new(),
                 },
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(
                             vec![Type::Array(Box::new(Type::Integer), 3)],

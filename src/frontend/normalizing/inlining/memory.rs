@@ -327,7 +327,7 @@ mod replace_by_context {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("+"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
@@ -378,7 +378,7 @@ mod replace_by_context {
             (
                 String::from("y"),
                 Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("/2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -415,7 +415,7 @@ mod replace_by_context {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("+"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
@@ -434,7 +434,7 @@ mod replace_by_context {
                                 dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                             },
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("/2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],
@@ -634,7 +634,7 @@ mod combine {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("+"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
@@ -653,7 +653,7 @@ mod combine {
                                 dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                             },
                             StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("/2"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer],
@@ -693,7 +693,7 @@ mod combine {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("+"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
@@ -742,7 +742,7 @@ mod combine {
                         typing: Type::Integer,
                         initial_value: Constant::Integer(0),
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -761,7 +761,7 @@ mod combine {
                                     dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
                                 },
                                 StreamExpression::FunctionApplication {
-                                    function_expression: Expression::Call {
+                                    function_expression: Expression::Identifier {
                                         id: String::from("/2"),
                                         typing: Some(Type::Abstract(
                                             vec![Type::Integer],
@@ -801,7 +801,7 @@ mod combine {
                         typing: Type::Integer,
                         initial_value: Constant::Integer(0),
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],

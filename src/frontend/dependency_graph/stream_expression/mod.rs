@@ -164,7 +164,7 @@ mod compute_dependencies {
                     dependencies: Dependencies::new(),
                 },
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -248,7 +248,7 @@ mod compute_dependencies {
         let stream_expression = StreamExpression::FollowedBy {
             constant: Constant::Float(0.0),
             expression: Box::new(StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("add_one"),
                     typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                     location: Location::default(),
@@ -294,7 +294,7 @@ mod compute_dependencies {
         let mut errors = vec![];
 
         let stream_expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
@@ -400,7 +400,7 @@ mod compute_dependencies {
                     None,
                     vec![],
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -523,7 +523,7 @@ mod compute_dependencies {
                     None,
                     vec![],
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("add_one"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -612,7 +612,7 @@ mod compute_dependencies {
                         expression: StreamExpression::FollowedBy {
                             constant: Constant::Integer(1),
                             expression: Box::new(StreamExpression::FunctionApplication {
-                                function_expression: Expression::Call {
+                                function_expression: Expression::Identifier {
                                     id: String::from("+"),
                                     typing: Some(Type::Abstract(
                                         vec![Type::Integer, Type::Integer],
@@ -671,7 +671,7 @@ mod compute_dependencies {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -1010,7 +1010,7 @@ mod compute_dependencies {
                 location: Location::default(),
                 dependencies: Dependencies::new(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
                 location: Location::default(),
@@ -1059,7 +1059,7 @@ mod compute_dependencies {
                 location: Location::default(),
                 dependencies: Dependencies::new(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("sum"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -1105,7 +1105,7 @@ mod compute_dependencies {
                 location: Location::default(),
                 dependencies: Dependencies::new(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("diff"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -1153,7 +1153,7 @@ mod compute_dependencies {
                     dependencies: Dependencies::new(),
                 },
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("f"),
                         typing: Some(Type::Abstract(
                             vec![Type::Array(Box::new(Type::Integer), 3)],

@@ -20,7 +20,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: if_then_else
                   typing:
                     Abstract:
@@ -41,7 +41,7 @@ nodes:
                     location: ~
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing:
                           Abstract:
@@ -52,7 +52,7 @@ nodes:
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: (_)
                               typing:
                                 Abstract:
@@ -88,7 +88,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: if_then_else
                   typing:
                     Abstract:
@@ -140,7 +140,7 @@ component:
                   expression:
                     FunctionApplication:
                       function_expression:
-                        Call:
+                        Identifier:
                           id: (_)
                           typing:
                             Abstract:
@@ -150,7 +150,7 @@ component:
                       inputs:
                         - FunctionApplication:
                             function_expression:
-                              Call:
+                              Identifier:
                                 id: " > "
                                 typing:
                                   Abstract:
@@ -193,7 +193,7 @@ component:
             expression:
               FunctionApplication:
                 function_expression:
-                  Call:
+                  Identifier:
                     id: "!"
                     typing:
                       Abstract:

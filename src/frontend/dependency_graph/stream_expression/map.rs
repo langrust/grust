@@ -65,7 +65,7 @@ mod compute_map_dependencies {
                 location: Location::default(),
                 dependencies: Dependencies::new(),
             }),
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
                 location: Location::default(),

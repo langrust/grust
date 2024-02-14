@@ -117,7 +117,7 @@ mod normal_form {
                     id: String::from("o"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("*"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
@@ -170,7 +170,7 @@ mod normal_form {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -240,7 +240,7 @@ mod normal_form {
                     id: String::from("x"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("1+"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
@@ -261,7 +261,7 @@ mod normal_form {
                                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                                 },
                                 StreamExpression::FunctionApplication {
-                                    function_expression: Expression::Call {
+                                    function_expression: Expression::Identifier {
                                         id: String::from("*2"),
                                         typing: Some(Type::Abstract(
                                             vec![Type::Integer],
@@ -319,7 +319,7 @@ mod normal_form {
                         id: String::from("x"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("1+"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -349,7 +349,7 @@ mod normal_form {
                                     (
                                         format!("y"),
                                         StreamExpression::FunctionApplication {
-                                            function_expression: Expression::Call {
+                                            function_expression: Expression::Identifier {
                                                 id: String::from("*2"),
                                                 typing: Some(Type::Abstract(
                                                     vec![Type::Integer],
@@ -409,7 +409,7 @@ mod normal_form {
             statements: vec![Statement {
                 id: String::from("x"),
                 element_type: Type::Integer,
-                expression: Expression::Call {
+                expression: Expression::Identifier {
                     id: String::from("i"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -418,7 +418,7 @@ mod normal_form {
             }],
             returned: (
                 Type::Integer,
-                Expression::Call {
+                Expression::Identifier {
                     id: String::from("x"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -453,7 +453,7 @@ mod normal_form {
                     id: String::from("o"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("*"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
@@ -506,7 +506,7 @@ mod normal_form {
                         id: String::from("o"),
                         signal_type: Type::Integer,
                         expression: StreamExpression::FunctionApplication {
-                            function_expression: Expression::Call {
+                            function_expression: Expression::Identifier {
                                 id: String::from("*"),
                                 typing: Some(Type::Abstract(
                                     vec![Type::Integer, Type::Integer],
@@ -573,7 +573,7 @@ mod normal_form {
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("*2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -641,7 +641,7 @@ mod normal_form {
                 id: String::from("x"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("1+"),
                         typing: Some(Type::Abstract(
                             vec![Type::Integer, Type::Integer],
@@ -693,7 +693,7 @@ mod normal_form {
                     id: String::from("x"),
                     signal_type: Type::Integer,
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("1+"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],
@@ -714,7 +714,7 @@ mod normal_form {
                                     dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
                                 },
                                 StreamExpression::FunctionApplication {
-                                    function_expression: Expression::Call {
+                                    function_expression: Expression::Identifier {
                                         id: String::from("*2"),
                                         typing: Some(Type::Abstract(
                                             vec![Type::Integer],
@@ -767,7 +767,7 @@ mod normal_form {
             statements: vec![Statement {
                 id: String::from("x"),
                 element_type: Type::Integer,
-                expression: Expression::Call {
+                expression: Expression::Identifier {
                     id: String::from("i"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -776,7 +776,7 @@ mod normal_form {
             }],
             returned: (
                 Type::Integer,
-                Expression::Call {
+                Expression::Identifier {
                     id: String::from("x"),
                     typing: Some(Type::Integer),
                     location: Location::default(),

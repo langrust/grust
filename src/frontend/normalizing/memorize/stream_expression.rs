@@ -292,7 +292,7 @@ mod memorize {
         let mut memory = Memory::new();
 
         let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -354,7 +354,7 @@ mod memorize {
         assert_eq!(memory, control);
 
         let control = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("+"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],

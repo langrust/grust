@@ -67,7 +67,7 @@ mod compute_function_application_dependencies {
         let mut errors = vec![];
 
         let stream_expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Call {
+            function_expression: Expression::Identifier {
                 id: String::from("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),

@@ -162,7 +162,7 @@ mod change_node_application_into_unitary_node_application {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("-1"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -205,7 +205,7 @@ mod change_node_application_into_unitary_node_application {
                 (
                     format!("x"),
                     StreamExpression::FunctionApplication {
-                        function_expression: Expression::Call {
+                        function_expression: Expression::Identifier {
                             id: String::from("-1"),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer],
@@ -267,7 +267,7 @@ mod change_node_application_into_unitary_node_application {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("-1"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -345,7 +345,7 @@ mod change_node_application_into_unitary_node_application {
             node: String::from("my_node"),
             inputs: vec![
                 StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("-1"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),

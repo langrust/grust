@@ -117,7 +117,7 @@ mod lir_from_hir {
                     typing: Type::Integer,
                     initial_value: Constant::Integer(0),
                     expression: StreamExpression::FunctionApplication {
-                        function_expression: ASTExpression::Call {
+                        function_expression: ASTExpression::Identifier {
                             id: format!(" + "),
                             typing: Some(Type::Abstract(
                                 vec![Type::Integer, Type::Integer],

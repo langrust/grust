@@ -26,16 +26,16 @@ functions:
         expression:
           Application:
             function_expression:
-              Call:
+              Identifier:
                 id: " > "
                 typing: ~
                 location: ~
             inputs:
-              - Call:
+              - Identifier:
                   id: a
                   typing: ~
                   location: ~
-              - Call:
+              - Identifier:
                   id: b
                   typing: ~
                   location: ~
@@ -47,20 +47,20 @@ functions:
         expression:
           Application:
             function_expression:
-              Call:
+              Identifier:
                 id: if_then_else
                 typing: ~
                 location: ~
             inputs:
-              - Call:
+              - Identifier:
                   id: test
                   typing: ~
                   location: ~
-              - Call:
+              - Identifier:
                   id: b
                   typing: ~
                   location: ~
-              - Call:
+              - Identifier:
                   id: a
                   typing: ~
                   location: ~
@@ -69,7 +69,7 @@ functions:
         location: ~
     returned:
       - Float
-      - Call:
+      - Identifier:
           id: result
           typing: ~
           location: ~
@@ -106,14 +106,14 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: min
                   typing: ~
                   location: ~
               inputs:
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing: ~
                         location: ~
@@ -124,7 +124,7 @@ nodes:
                           location: ~
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " * "
                               typing: ~
                               location: ~
@@ -180,21 +180,21 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: " / "
                   typing: ~
                   location: ~
               inputs:
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: (_)
                         typing: ~
                         location: ~
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " - "
                               typing: ~
                               location: ~
@@ -312,21 +312,21 @@ component:
                 - ~
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing: ~
                         location: ~
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " + "
                               typing: ~
                               location: ~
                           inputs:
                             - FunctionApplication:
                                 function_expression:
-                                  Call:
+                                  Identifier:
                                     id: " * "
                                     typing: ~
                                     location: ~
@@ -343,7 +343,7 @@ component:
                                 location: ~
                             - FunctionApplication:
                                 function_expression:
-                                  Call:
+                                  Identifier:
                                     id: " * "
                                     typing: ~
                                     location: ~
@@ -362,7 +362,7 @@ component:
                           location: ~
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " * "
                               typing: ~
                               location: ~
@@ -389,7 +389,7 @@ component:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: " - "
                 typing: ~
                 location: ~

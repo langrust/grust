@@ -95,7 +95,7 @@ mod memorize {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -162,7 +162,7 @@ mod memorize {
             id: String::from("x"),
             signal_type: Type::Integer,
             expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Call {
+                function_expression: Expression::Identifier {
                     id: String::from("+"),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -250,7 +250,7 @@ mod memorize {
                 id: String::from("x_1"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("*2"),
                         typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                         location: Location::default(),
@@ -318,7 +318,7 @@ mod memorize {
                 id: String::from("x"),
                 signal_type: Type::Integer,
                 expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Call {
+                    function_expression: Expression::Identifier {
                         id: String::from("+"),
                         typing: Some(Type::Abstract(
                             vec![Type::Integer, Type::Integer],

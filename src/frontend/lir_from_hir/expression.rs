@@ -19,13 +19,13 @@ use crate::{
 pub fn lir_from_hir(expression: Expression) -> LIRExpression {
     match expression {
         Expression::Constant { constant, .. } => LIRExpression::Literal { literal: constant },
-        Expression::Call { id, .. } => LIRExpression::Identifier { identifier: id },
+        Expression::Identifier { id, .. } => LIRExpression::Identifier { identifier: id },
         Expression::Application {
             function_expression,
             mut inputs,
             ..
         } => match *function_expression {
-            Expression::Call { id, .. } if OtherOperator::IfThenElse.to_string() == id => {
+            Expression::Identifier { id, .. } if OtherOperator::IfThenElse.to_string() == id => {
                 assert!(inputs.len() == 3);
                 let else_branch = lir_from_hir(inputs.pop().unwrap());
                 let then_branch = lir_from_hir(inputs.pop().unwrap());
@@ -160,7 +160,7 @@ impl Expression {
     /// Get imports induced by expression.
     pub fn get_imports(&self) -> Vec<Import> {
         match self {
-            Expression::Call { .. } => vec![],
+            Expression::Identifier { .. } => vec![],
             Expression::Constant { constant, .. } => constant.get_imports(),
             Expression::Application {
                 function_expression,
@@ -172,7 +172,7 @@ impl Expression {
                     .flat_map(Expression::get_imports)
                     .collect::<Vec<_>>();
                 let mut function_import = match function_expression.as_ref() {
-                    Expression::Call { id, .. }
+                    Expression::Identifier { id, .. }
                         if !(BinaryOperator::iter().any(|binary| &binary.to_string() == id)
                             || UnaryOperator::iter().any(|unary| &unary.to_string() == id)
                             || OtherOperator::iter().any(|other| &other.to_string() == id)) =>
@@ -323,7 +323,7 @@ mod lir_from_hir {
 
     #[test]
     fn should_transform_ast_call_into_lir_identifier() {
-        let expression = ASTExpression::Call {
+        let expression = ASTExpression::Identifier {
             id: format!("x"),
             typing: Some(Type::Integer),
             location: Location::default(),
@@ -337,7 +337,7 @@ mod lir_from_hir {
     #[test]
     fn should_transform_ast_application_into_lir_function_call() {
         let expression = ASTExpression::Application {
-            function_expression: Box::new(ASTExpression::Call {
+            function_expression: Box::new(ASTExpression::Identifier {
                 id: format!(" + "),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -346,7 +346,7 @@ mod lir_from_hir {
                 location: Location::default(),
             }),
             inputs: vec![
-                ASTExpression::Call {
+                ASTExpression::Identifier {
                     id: format!("x"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -379,7 +379,7 @@ mod lir_from_hir {
     #[test]
     fn should_transform_ast_application_of_if_then_else_into_lir_if_then_else() {
         let expression = ASTExpression::Application {
-            function_expression: Box::new(ASTExpression::Call {
+            function_expression: Box::new(ASTExpression::Identifier {
                 id: OtherOperator::IfThenElse.to_string(),
                 typing: Some(Type::Abstract(
                     vec![Type::Boolean, Type::Integer, Type::Integer],
@@ -388,12 +388,12 @@ mod lir_from_hir {
                 location: Location::default(),
             }),
             inputs: vec![
-                ASTExpression::Call {
+                ASTExpression::Identifier {
                     id: format!("test"),
                     typing: Some(Type::Boolean),
                     location: Location::default(),
                 },
-                ASTExpression::Call {
+                ASTExpression::Identifier {
                     id: format!("x"),
                     typing: Some(Type::Integer),
                     location: Location::default(),
@@ -436,7 +436,7 @@ mod lir_from_hir {
             fields: vec![
                 (
                     format!("x"),
-                    ASTExpression::Call {
+                    ASTExpression::Identifier {
                         id: format!("x"),
                         typing: Some(Type::Integer),
                         location: Location::default(),
@@ -477,7 +477,7 @@ mod lir_from_hir {
     #[test]
     fn should_transform_ast_array_into_lir_array() {
         let expression = ASTExpression::Array {
-            elements: vec![ASTExpression::Call {
+            elements: vec![ASTExpression::Identifier {
                 id: format!("x"),
                 typing: Some(Type::Integer),
                 location: Location::default(),
@@ -496,7 +496,7 @@ mod lir_from_hir {
     #[test]
     fn should_transform_ast_match_into_lir_match() {
         let expression = ASTExpression::Match {
-            expression: Box::new(ASTExpression::Call {
+            expression: Box::new(ASTExpression::Identifier {
                 id: format!("p"),
                 typing: Some(Type::Integer),
                 location: Location::default(),
@@ -524,7 +524,7 @@ mod lir_from_hir {
                         location: Location::default(),
                     },
                     None,
-                    ASTExpression::Call {
+                    ASTExpression::Identifier {
                         id: format!("x"),
                         typing: Some(Type::Integer),
                         location: Location::default(),
@@ -594,13 +594,13 @@ mod lir_from_hir {
     fn should_transform_ast_when_into_lir_match() {
         let expression = ASTExpression::When {
             id: format!("x"),
-            option: Box::new(ASTExpression::Call {
+            option: Box::new(ASTExpression::Identifier {
                 id: format!("x"),
                 typing: Some(Type::Integer),
                 location: Location::default(),
             }),
             present: Box::new(ASTExpression::Application {
-                function_expression: Box::new(ASTExpression::Call {
+                function_expression: Box::new(ASTExpression::Identifier {
                     id: format!(" + "),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -609,7 +609,7 @@ mod lir_from_hir {
                     location: Location::default(),
                 }),
                 inputs: vec![
-                    ASTExpression::Call {
+                    ASTExpression::Identifier {
                         id: format!("x"),
                         typing: Some(Type::Integer),
                         location: Location::default(),
@@ -678,7 +678,7 @@ mod lir_from_hir {
         let expression = ASTExpression::TypedAbstraction {
             inputs: vec![(format!("x"), Type::Integer)],
             expression: Box::new(ASTExpression::Application {
-                function_expression: Box::new(ASTExpression::Call {
+                function_expression: Box::new(ASTExpression::Identifier {
                     id: format!(" + "),
                     typing: Some(Type::Abstract(
                         vec![Type::Integer, Type::Integer],
@@ -687,7 +687,7 @@ mod lir_from_hir {
                     location: Location::default(),
                 }),
                 inputs: vec![
-                    ASTExpression::Call {
+                    ASTExpression::Identifier {
                         id: format!("x"),
                         typing: Some(Type::Integer),
                         location: Location::default(),
@@ -727,7 +727,7 @@ mod lir_from_hir {
     #[test]
     fn should_transform_ast_field_access_into_lir_field_access() {
         let expression = ASTExpression::FieldAccess {
-            expression: Box::new(ASTExpression::Call {
+            expression: Box::new(ASTExpression::Identifier {
                 id: format!("p"),
                 typing: Some(Type::Structure("Point".to_string())),
                 location: Location::default(),
@@ -748,12 +748,12 @@ mod lir_from_hir {
     #[test]
     fn should_transform_ast_map_into_lir_map() {
         let expression = ASTExpression::Map {
-            expression: Box::new(ASTExpression::Call {
+            expression: Box::new(ASTExpression::Identifier {
                 id: format!("a"),
                 typing: Some(Type::Array(Box::new(Type::Integer), 3)),
                 location: Location::default(),
             }),
-            function_expression: Box::new(ASTExpression::Call {
+            function_expression: Box::new(ASTExpression::Identifier {
                 id: format!("f"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Float))),
                 location: Location::default(),
@@ -775,7 +775,7 @@ mod lir_from_hir {
     #[test]
     fn should_transform_ast_fold_into_lir_fold() {
         let expression = ASTExpression::Fold {
-            expression: Box::new(ASTExpression::Call {
+            expression: Box::new(ASTExpression::Identifier {
                 id: format!("a"),
                 typing: Some(Type::Array(Box::new(Type::Integer), 3)),
                 location: Location::default(),
@@ -785,7 +785,7 @@ mod lir_from_hir {
                 typing: Some(Type::Integer),
                 location: Location::default(),
             }),
-            function_expression: Box::new(ASTExpression::Call {
+            function_expression: Box::new(ASTExpression::Identifier {
                 id: format!("sum"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -813,12 +813,12 @@ mod lir_from_hir {
     #[test]
     fn should_transform_ast_sort_into_lir_sort() {
         let expression = ASTExpression::Sort {
-            expression: Box::new(ASTExpression::Call {
+            expression: Box::new(ASTExpression::Identifier {
                 id: format!("a"),
                 typing: Some(Type::Array(Box::new(Type::Integer), 3)),
                 location: Location::default(),
             }),
-            function_expression: Box::new(ASTExpression::Call {
+            function_expression: Box::new(ASTExpression::Identifier {
                 id: format!("diff"),
                 typing: Some(Type::Abstract(
                     vec![Type::Integer, Type::Integer],
@@ -844,12 +844,12 @@ mod lir_from_hir {
     fn should_transform_ast_zip_into_lir_zip() {
         let expression = ASTExpression::Zip {
             arrays: vec![
-                ASTExpression::Call {
+                ASTExpression::Identifier {
                     id: String::from("a"),
                     typing: Some(Type::Array(Box::new(Type::Integer), 3)),
                     location: Location::default(),
                 },
-                ASTExpression::Call {
+                ASTExpression::Identifier {
                     id: String::from("b"),
                     typing: Some(Type::Array(Box::new(Type::Float), 3)),
                     location: Location::default(),
@@ -886,12 +886,12 @@ mod get_imports {
     #[test]
     fn should_get_function_import_from_function_call_expression() {
         let expression = Expression::Application {
-            function_expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Identifier {
                 id: format!("my_function"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
             }),
-            inputs: vec![Expression::Call {
+            inputs: vec![Expression::Identifier {
                 id: format!("x"),
                 typing: Some(Type::Integer),
                 location: Location::default(),
@@ -906,12 +906,12 @@ mod get_imports {
     #[test]
     fn should_not_import_builtin_functions() {
         let expression = Expression::Application {
-            function_expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Identifier {
                 id: UnaryOperator::Neg.to_string(),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
             }),
-            inputs: vec![Expression::Call {
+            inputs: vec![Expression::Identifier {
                 id: format!("x"),
 
                 typing: Some(Type::Integer),
@@ -927,18 +927,18 @@ mod get_imports {
     #[test]
     fn should_not_duplicate_imports() {
         let expression = Expression::Application {
-            function_expression: Box::new(Expression::Call {
+            function_expression: Box::new(Expression::Identifier {
                 id: format!("my_function"),
                 typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                 location: Location::default(),
             }),
             inputs: vec![Expression::Application {
-                function_expression: Box::new(Expression::Call {
+                function_expression: Box::new(Expression::Identifier {
                     id: format!("my_function"),
                     typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
                     location: Location::default(),
                 }),
-                inputs: vec![Expression::Call {
+                inputs: vec![Expression::Identifier {
                     id: format!("x"),
 
                     typing: Some(Type::Integer),

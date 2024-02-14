@@ -26,7 +26,7 @@ functions:
         expression:
           Application:
             function_expression:
-              Call:
+              Identifier:
                 id: " > "
                 typing:
                   Abstract:
@@ -35,11 +35,11 @@ functions:
                     - Boolean
                 location: ~
             inputs:
-              - Call:
+              - Identifier:
                   id: a
                   typing: Float
                   location: ~
-              - Call:
+              - Identifier:
                   id: b
                   typing: Float
                   location: ~
@@ -51,7 +51,7 @@ functions:
         expression:
           Application:
             function_expression:
-              Call:
+              Identifier:
                 id: if_then_else
                 typing:
                   Abstract:
@@ -61,15 +61,15 @@ functions:
                     - Float
                 location: ~
             inputs:
-              - Call:
+              - Identifier:
                   id: test
                   typing: Boolean
                   location: ~
-              - Call:
+              - Identifier:
                   id: b
                   typing: Float
                   location: ~
-              - Call:
+              - Identifier:
                   id: a
                   typing: Float
                   location: ~
@@ -78,7 +78,7 @@ functions:
         location: ~
     returned:
       - Float
-      - Call:
+      - Identifier:
           id: result
           typing: Float
           location: ~
@@ -115,7 +115,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: min
                   typing:
                     Abstract:
@@ -126,7 +126,7 @@ nodes:
               inputs:
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing:
                           Abstract:
@@ -141,7 +141,7 @@ nodes:
                           location: ~
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " * "
                               typing:
                                 Abstract:
@@ -201,7 +201,7 @@ nodes:
           expression:
             FunctionApplication:
               function_expression:
-                Call:
+                Identifier:
                   id: " / "
                   typing:
                     Abstract:
@@ -212,7 +212,7 @@ nodes:
               inputs:
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: (_)
                         typing:
                           Abstract:
@@ -222,7 +222,7 @@ nodes:
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " - "
                               typing:
                                 Abstract:
@@ -346,7 +346,7 @@ component:
                 - ~
                 - FunctionApplication:
                     function_expression:
-                      Call:
+                      Identifier:
                         id: " + "
                         typing:
                           Abstract:
@@ -357,7 +357,7 @@ component:
                     inputs:
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " + "
                               typing:
                                 Abstract:
@@ -368,7 +368,7 @@ component:
                           inputs:
                             - FunctionApplication:
                                 function_expression:
-                                  Call:
+                                  Identifier:
                                     id: " * "
                                     typing:
                                       Abstract:
@@ -389,7 +389,7 @@ component:
                                 location: ~
                             - FunctionApplication:
                                 function_expression:
-                                  Call:
+                                  Identifier:
                                     id: " * "
                                     typing:
                                       Abstract:
@@ -412,7 +412,7 @@ component:
                           location: ~
                       - FunctionApplication:
                           function_expression:
-                            Call:
+                            Identifier:
                               id: " * "
                               typing:
                                 Abstract:
@@ -443,7 +443,7 @@ component:
         expression:
           FunctionApplication:
             function_expression:
-              Call:
+              Identifier:
                 id: " - "
                 typing:
                   Abstract:
