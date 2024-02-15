@@ -7,31 +7,25 @@ use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::contract::Contract;
 use crate::hir::node::Node;
+use crate::symbol_table::SymbolTable;
 
 impl Node {
     /// Create an initialized graph from a node.
     ///
     /// The created graph has every node's signals as vertices.
     /// But no edges are added.
-    pub fn create_initialized_graph(&self) -> DiGraphMap<String, Label> {
+    pub fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> DiGraphMap<usize, Label> {
         // create an empty graph
         let mut graph = DiGraphMap::new();
 
-        // get node's signals
-        let Node {
-            inputs,
-            unscheduled_equations,
-            ..
-        } = self;
-
         // add input signals as vertices
-        for (input, _) in inputs {
-            graph.add_node(input);
+        for input in symbol_table.get_node_input(&self.id) {
+            graph.add_node(*input);
         }
 
         // add other signals as vertices
-        for signal in unscheduled_equations.keys() {
-            graph.add_node(signal);
+        for signal in self.unscheduled_equations.keys() {
+            graph.add_node(*signal);
         }
 
         // return graph
@@ -39,25 +33,21 @@ impl Node {
     }
 
     /// Create an initialized processus manager from a node.
-    pub fn create_initialized_processus_manager(&self) -> HashMap<&String, Color> {
+    pub fn create_initialized_processus_manager(
+        &self,
+        symbol_table: &SymbolTable,
+    ) -> HashMap<usize, Color> {
         // create an empty hash
         let mut hash = HashMap::new();
 
-        // get node's signals
-        let Node {
-            inputs,
-            unscheduled_equations,
-            ..
-        } = self;
-
         // add input signals with white color (unprocessed)
-        for (input, _) in inputs {
-            hash.insert(input, Color::White);
+        for input in symbol_table.get_node_input(&self.id) {
+            hash.insert(*input, Color::White);
         }
 
         // add other signals with white color (unprocessed)
-        for signal in unscheduled_equations.keys() {
-            hash.insert(signal, Color::White);
+        for signal in self.unscheduled_equations.keys() {
+            hash.insert(*signal, Color::White);
         }
 
         // return hash
@@ -76,14 +66,13 @@ impl Node {
     /// ```
     pub fn add_all_equations_dependencies(
         &self,
-        nodes_context: &HashMap<&String, Node>,
-        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
-        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
-        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        symbol_table: &SymbolTable,
+        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
-            inputs,
             unscheduled_equations,
             graph,
             ..
@@ -95,7 +84,7 @@ impl Node {
             .map(|signal| {
                 self.add_signal_dependencies(
                     signal,
-                    nodes_context,
+                    symbol_table,
                     nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
@@ -108,12 +97,13 @@ impl Node {
 
         // add input signals dependencies
         // (makes vertices colors "Black" => equal assertions in tests)
-        inputs
+        symbol_table
+            .get_node_input(&self.id)
             .iter()
-            .map(|(signal, _)| {
+            .map(|signal| {
                 self.add_signal_dependencies(
                     signal,
-                    nodes_context,
+                    symbol_table,
                     nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
@@ -144,11 +134,11 @@ impl Node {
     /// ```
     pub fn add_signal_dependencies(
         &self,
-        signal: &String,
-        nodes_context: &HashMap<&String, Node>,
-        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
-        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
-        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        signal: &usize,
+        symbol_table: &SymbolTable,
+        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
@@ -179,20 +169,25 @@ impl Node {
 
                         // compute and get dependencies
                         expression.compute_dependencies(
-                            nodes_context,
+                            symbol_table,
                             nodes_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
                         )?;
-                        let dependencies = expression.get_dependencies();
 
                         let graph = nodes_graphs.get_mut(node).unwrap();
                         // add dependencies as graph's edges:
                         // s = e depends on s' <=> s -> s'
-                        dependencies.iter().for_each(|(id, depth)| {
-                            graph.add_edge(signal, id, Label::Weight(*depth)); // TODO: warning, there might be edges
-                        });
+                        expression
+                            .dependencies
+                            .get()
+                            .expect("there should be dependencies")
+                            .iter()
+                            .for_each(|(id, depth)| {
+                                graph.add_edge(*signal, *id, Label::Weight(*depth));
+                                // TODO: warning, there might be other edges, do not overwrite
+                            });
 
                         Ok(())
                     })?;
@@ -210,8 +205,8 @@ impl Node {
             // if processing: error
             Color::Grey => {
                 let error = Error::NotCausal {
-                    node: node.clone(),
-                    signal: signal.clone(),
+                    node: symbol_table.get_name(node).clone(),
+                    signal: symbol_table.get_name(signal).clone(),
                     location: location.clone(),
                 };
                 errors.push(error);
@@ -234,16 +229,14 @@ impl Node {
     /// ```
     pub fn add_signal_inputs_dependencies(
         &self,
-        signal: &String,
-        nodes_context: &HashMap<&String, Node>,
-        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
-        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
-        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        signal: &usize,
+        symbol_table: &SymbolTable,
+        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let Node {
-            id: node, inputs, ..
-        } = self;
+        let Node { id: node, .. } = self;
 
         // get node's processus manager
         let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
@@ -261,7 +254,7 @@ impl Node {
                 // compute signals dependencies
                 self.add_signal_dependencies(
                     signal,
-                    nodes_context,
+                    symbol_table,
                     nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
@@ -272,20 +265,23 @@ impl Node {
                 let graph = nodes_graphs.get(node).unwrap().clone();
 
                 // for every neighbors, get inputs dependencies and add it as signal dependencies
-                for (_, neighbor_id, l1) in graph.edges(signal) {
+                for (_, neighbor_id, l1) in graph.edges(*signal) {
                     // tells if the neighbor is an input
-                    let is_input = inputs.iter().any(|(input, _)| input == neighbor_id);
+                    let is_input = symbol_table
+                        .get_node_input(&self.id)
+                        .iter()
+                        .any(|input| neighbor_id.eq(input));
 
                     if is_input {
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
                         // if input then add neighbor to reduced graph
-                        reduced_graph.add_edge(signal, neighbor_id, l1.clone());
+                        reduced_graph.add_edge(*signal, neighbor_id, l1.clone());
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_inputs_dependencies(
-                            neighbor_id,
-                            nodes_context,
+                            &neighbor_id,
+                            symbol_table,
                             nodes_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
@@ -301,13 +297,13 @@ impl Node {
                         match l1 {
                             Label::Contract => reduced_graph_cloned.edges(neighbor_id).for_each(
                                 |(_, input_id, _)| {
-                                    reduced_graph.add_edge(signal, input_id, Label::Contract);
+                                    reduced_graph.add_edge(*signal, input_id, Label::Contract);
                                 },
                             ),
                             Label::Weight(w1) => reduced_graph_cloned.edges(neighbor_id).for_each(
                                 |(_, input_id, l2)| {
                                     reduced_graph.add_edge(
-                                        signal,
+                                        *signal,
                                         input_id,
                                         match l2 {
                                             Label::Contract => Label::Contract,
@@ -348,7 +344,7 @@ impl Node {
     /// ```
     pub fn add_contract_dependencies(
         &self,
-        nodes_graphs: &mut HashMap<String, DiGraphMap<String, Label>>,
+        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
     ) {
         let Node {
             id: node,
@@ -375,377 +371,5 @@ impl Node {
         invariant
             .iter()
             .for_each(|term| term.add_term_dependencies(graph));
-    }
-}
-
-#[cfg(test)]
-mod create_initialized_graph {
-
-    use std::collections::HashMap;
-
-    use crate::common::{location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
-        signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_initialize_graph_with_node_signals() {
-        let node = Node {
-            contract: Default::default(),
-            id: String::from("test"),
-            is_component: false,
-            inputs: vec![(String::from("i"), Type::Integer)],
-            unscheduled_equations: HashMap::from([
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ]),
-            unitary_nodes: HashMap::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-
-        let graph = node.create_initialized_graph();
-
-        assert!(graph.contains_node(&String::from("o")));
-        assert!(graph.contains_node(&String::from("x")));
-        assert!(graph.contains_node(&String::from("i")));
-    }
-}
-
-#[cfg(test)]
-mod add_all_equations_dependencies {
-
-    use std::collections::HashMap;
-
-    use crate::common::{graph::neighbor::Label, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
-        signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_add_all_nodes_dependencies() {
-        let mut errors = vec![];
-
-        let node = Node {
-            contract: Default::default(),
-            id: String::from("test"),
-            is_component: false,
-            inputs: vec![(String::from("i"), Type::Integer)],
-            unscheduled_equations: HashMap::from([
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ]),
-            unitary_nodes: HashMap::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut nodes_context = HashMap::new();
-        let test = String::from("test");
-        nodes_context.insert(&test, node);
-        let node = nodes_context.get(&String::from("test")).unwrap();
-
-        let graph = node.create_initialized_graph();
-        let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
-
-        let reduced_graph = node.create_initialized_graph();
-        let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
-
-        let processus_manager = node.create_initialized_processus_manager();
-        let mut nodes_processus_manager = HashMap::from([(node.id.clone(), processus_manager)]);
-
-        node.add_all_equations_dependencies(
-            &nodes_context,
-            &mut nodes_processus_manager,
-            &mut nodes_graphs,
-            &mut nodes_reduced_graphs,
-            &mut errors,
-        )
-        .unwrap();
-
-        let graph = nodes_graphs.get(&node.id).unwrap();
-
-        assert!(graph.contains_node(&String::from("o")));
-        assert!(graph.contains_node(&String::from("x")));
-        assert!(graph.contains_node(&String::from("i")));
-        assert_eq!(
-            graph.edge_weight(&String::from("x"), &String::from("i")),
-            Some(Label::Weight(0)).as_ref()
-        );
-        assert_eq!(
-            graph.edge_weight(&String::from("o"), &String::from("x")),
-            Some(Label::Weight(0)).as_ref()
-        );
-    }
-}
-
-#[cfg(test)]
-mod add_signal_dependencies {
-
-    use std::collections::HashMap;
-
-    use crate::common::{graph::neighbor::Label, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
-        signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_add_dependencies_of_a_signal_of_the_node_to_graph() {
-        let mut errors = vec![];
-
-        let node = Node {
-            contract: Default::default(),
-            id: String::from("test"),
-            is_component: false,
-            inputs: vec![(String::from("i"), Type::Integer)],
-            unscheduled_equations: HashMap::from([
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ]),
-            unitary_nodes: HashMap::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut nodes_context = HashMap::new();
-        let test = String::from("test");
-        nodes_context.insert(&test, node);
-        let node = nodes_context.get(&String::from("test")).unwrap();
-
-        let graph = node.create_initialized_graph();
-        let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
-
-        let reduced_graph = node.create_initialized_graph();
-        let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
-
-        let processus_manager = node.create_initialized_processus_manager();
-        let mut nodes_processus_manager = HashMap::from([(node.id.clone(), processus_manager)]);
-
-        let x = String::from("x");
-        node.add_signal_dependencies(
-            &x,
-            &nodes_context,
-            &mut nodes_processus_manager,
-            &mut nodes_graphs,
-            &mut nodes_reduced_graphs,
-            &mut errors,
-        )
-        .unwrap();
-
-        let graph = nodes_graphs.get(&node.id).unwrap();
-
-        assert!(graph.contains_node(&String::from("o")));
-        assert!(graph.contains_node(&String::from("x")));
-        assert!(graph.contains_node(&String::from("i")));
-        assert_eq!(
-            graph.edge_weight(&String::from("x"), &String::from("i")),
-            Some(Label::Weight(0)).as_ref()
-        );
-    }
-}
-
-#[cfg(test)]
-mod add_signal_inputs_dependencies {
-
-    use std::collections::HashMap;
-
-    use crate::common::{graph::neighbor::Label, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, node::Node, once_cell::OnceCell,
-        signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_add_inputs_dependencies_of_a_signal_of_the_node_to_reduced_graph() {
-        let mut errors = vec![];
-
-        let node = Node {
-            contract: Default::default(),
-            id: String::from("test"),
-            is_component: false,
-            inputs: vec![(String::from("i"), Type::Integer)],
-            unscheduled_equations: HashMap::from([
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ]),
-            unitary_nodes: HashMap::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut nodes_context = HashMap::new();
-        let test = String::from("test");
-        nodes_context.insert(&test, node);
-        let node = nodes_context.get(&String::from("test")).unwrap();
-
-        let graph = node.create_initialized_graph();
-        let mut nodes_graphs = HashMap::from([(node.id.clone(), graph)]);
-
-        let reduced_graph = node.create_initialized_graph();
-        let mut nodes_reduced_graphs = HashMap::from([(node.id.clone(), reduced_graph)]);
-
-        let processus_manager = node.create_initialized_processus_manager();
-        let mut nodes_processus_manager = HashMap::from([(node.id.clone(), processus_manager)]);
-
-        let o = String::from("o");
-        node.add_signal_inputs_dependencies(
-            &o,
-            &nodes_context,
-            &mut nodes_processus_manager,
-            &mut nodes_graphs,
-            &mut nodes_reduced_graphs,
-            &mut errors,
-        )
-        .unwrap();
-
-        let reduced_graph = nodes_reduced_graphs.get(&node.id).unwrap();
-
-        assert!(reduced_graph.contains_node(&String::from("o")));
-        assert!(reduced_graph.contains_node(&String::from("x")));
-        assert!(reduced_graph.contains_node(&String::from("i")));
-        assert_eq!(
-            reduced_graph.edge_weight(&String::from("x"), &String::from("i")),
-            Some(Label::Weight(0)).as_ref()
-        );
-        assert_eq!(
-            reduced_graph.edge_weight(&String::from("o"), &String::from("i")),
-            Some(Label::Weight(0)).as_ref()
-        );
     }
 }

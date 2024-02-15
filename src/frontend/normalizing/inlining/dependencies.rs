@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::hir::{dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression};
+use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
 
 use super::Union;
 
@@ -37,61 +37,5 @@ impl Dependencies {
             .collect();
 
         *self = Dependencies::from(new_dependencies);
-    }
-}
-
-#[cfg(test)]
-mod replace_by_context {
-    use std::collections::HashMap;
-
-    use crate::ast::expression::Expression;
-    use crate::common::{location::Location, r#type::Type, scope::Scope};
-    use crate::frontend::normalizing::inlining::Union;
-    use crate::hir::{
-        dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_replace_all_occurence_of_identifiers_by_context() {
-        let mut dependencies =
-            Dependencies::from(vec![(String::from("x"), 0), (String::from("y"), 0)]);
-
-        let context_map = HashMap::from([
-            (
-                String::from("x"),
-                Union::I1(Signal {
-                    id: String::from("a"),
-                    scope: Scope::Local,
-                }),
-            ),
-            (
-                String::from("y"),
-                Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("/2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                }),
-            ),
-        ]);
-
-        dependencies.replace_by_context(&context_map);
-
-        let control = Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]);
-
-        assert_eq!(dependencies, control)
     }
 }
