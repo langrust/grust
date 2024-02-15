@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use crate::error::{Error, TerminationError};
-use crate::hir::{statement::Statement, typedef::Typedef};
-use crate::symbol_table::{SymbolKind, SymbolTable};
+use crate::hir::statement::Statement;
+use crate::symbol_table::SymbolTable;
 
 impl Statement {
     /// [Type] the statement.
@@ -23,7 +21,7 @@ impl Statement {
     /// let elements_context = HashMap::new();
     /// let user_types_context = HashMap::new();
     ///
-    /// let mut expression = Expression::Constant {
+    /// let mut expression = ExpressionKind::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: None,
     ///     location: Location::default(),
@@ -40,7 +38,6 @@ impl Statement {
     pub fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
-        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Statement {
@@ -49,17 +46,9 @@ impl Statement {
             location,
         } = self;
 
-        expression.typing(symbol_table, user_types_context, errors)?;
+        expression.typing(symbol_table, errors)?;
         let expression_type = expression.get_type().unwrap();
-
-        let symbol = symbol_table
-            .get_symbol(id)
-            .expect("there should be a symbol");
-        match symbol.kind() {
-            SymbolKind::Identifier { typing } => {
-                expression_type.eq_check(typing, location.clone(), errors)
-            }
-            _ => unreachable!(),
-        }
+        symbol_table.set_type(id, expression_type.clone());
+        Ok(())
     }
 }

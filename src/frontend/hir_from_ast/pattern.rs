@@ -1,59 +1,97 @@
-use crate::ast::pattern::Pattern;
-use crate::common::scope::Scope;
+use crate::ast::pattern::{Pattern, PatternKind};
 use crate::error::{Error, TerminationError};
-use crate::hir::pattern::Pattern as HIRPattern;
+use crate::hir::pattern::{Pattern as HIRPattern, PatternKind as HIRPatternKind};
 use crate::symbol_table::SymbolTable;
 
 /// Transform AST pattern into HIR pattern.
 pub fn hir_from_ast(
     pattern: Pattern,
-    stream: bool,
     symbol_table: &mut SymbolTable,
     errors: &mut Vec<Error>,
 ) -> Result<HIRPattern, TerminationError> {
-    match pattern {
-        Pattern::Constant { constant, location } => Ok(HIRPattern::Constant { constant, location }),
-        Pattern::Identifier { name, location } => {
-            let id = if stream {
-                symbol_table.insert_signal(name, Scope::Local, true, location.clone(), errors)?
-            } else {
-                symbol_table.insert_identifier(name, true, location.clone(), errors)?
-            };
-            Ok(HIRPattern::Identifier { id, location })
+    let Pattern { kind, location } = pattern;
+    match kind {
+        PatternKind::Constant { constant } => Ok(HIRPattern {
+            kind: HIRPatternKind::Constant { constant },
+            typing: None,
+            location,
+        }),
+        PatternKind::Identifier { name } => {
+            let id = symbol_table.insert_identifier(name, None, true, location.clone(), errors)?;
+            Ok(HIRPattern {
+                kind: HIRPatternKind::Identifier { id },
+                typing: None,
+                location,
+            })
         }
-        Pattern::Structure {
-            name,
-            fields,
-            location,
-        } => Ok(HIRPattern::Structure {
-            name,
-            fields: fields
-                .into_iter()
-                .map(|(field_name, pattern)| {
-                    Ok((
-                        field_name,
-                        hir_from_ast(pattern, stream, symbol_table, errors)?,
-                    ))
-                })
-                .collect::<Vec<Result<_, _>>>()
-                .into_iter()
-                .collect::<Result<Vec<_>, _>>()?,
+        PatternKind::Structure { name, fields } => {
+            let id = symbol_table.get_identifier_id(&name, false, location, errors)?;
+            Ok(HIRPattern {
+                kind: HIRPatternKind::Structure {
+                    id,
+                    fields: fields
+                        .into_iter()
+                        .map(|(field_name, pattern)| {
+                            symbol_table.local();
+                            let id = symbol_table.insert_identifier(
+                                name,
+                                None,
+                                true,
+                                location.clone(),
+                                errors,
+                            )?;
+                            let pattern = hir_from_ast(pattern, symbol_table, errors)?;
+                            symbol_table.global();
+                            Ok((id, pattern))
+                        })
+                        .collect::<Vec<Result<_, _>>>()
+                        .into_iter()
+                        .collect::<Result<Vec<_>, _>>()?,
+                },
+                typing: None,
+                location,
+            })
+        }
+        PatternKind::Enumeration {
+            enum_name,
+            elem_name,
+        } => {
+            let enum_id = symbol_table.get_identifier_id(&enum_name, false, location, errors)?;
+            let elem_id = symbol_table.get_identifier_id(&elem_name, false, location, errors)?;
+            Ok(HIRPattern {
+                kind: HIRPatternKind::Enumeration { enum_id, elem_id },
+                typing: None,
+                location,
+            })
+        }
+        PatternKind::Tuple { elements } => Ok(HIRPattern {
+            kind: HIRPatternKind::Tuple {
+                elements: elements
+                    .into_iter()
+                    .map(|pattern| hir_from_ast(pattern, symbol_table, errors))
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?,
+            },
+            typing: None,
             location,
         }),
-        Pattern::Tuple { elements, location } => Ok(HIRPattern::Tuple {
-            elements: elements
-                .into_iter()
-                .map(|pattern| hir_from_ast(pattern, stream, symbol_table, errors))
-                .collect::<Vec<Result<_, _>>>()
-                .into_iter()
-                .collect::<Result<Vec<_>, _>>()?,
+        PatternKind::Some { pattern } => Ok(HIRPattern {
+            kind: HIRPatternKind::Some {
+                pattern: Box::new(hir_from_ast(*pattern, symbol_table, errors)?),
+            },
+            typing: None,
             location,
         }),
-        Pattern::Some { pattern, location } => Ok(HIRPattern::Some {
-            pattern: Box::new(hir_from_ast(*pattern, stream, symbol_table, errors)?),
+        PatternKind::None => Ok(HIRPattern {
+            kind: HIRPatternKind::None,
+            typing: None,
             location,
         }),
-        Pattern::None { location } => Ok(HIRPattern::None { location }),
-        Pattern::Default { location } => Ok(HIRPattern::Default { location }),
+        PatternKind::Default => Ok(HIRPattern {
+            kind: HIRPatternKind::Default,
+            typing: None,
+            location,
+        }),
     }
 }

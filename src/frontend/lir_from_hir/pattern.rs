@@ -1,118 +1,42 @@
-use itertools::Itertools;
+use crate::{
+    hir::pattern::{Pattern, PatternKind},
+    lir::pattern::Pattern as LIRPattern,
+    symbol_table::SymbolTable,
+};
 
-use crate::{ast::pattern::Pattern, lir::item::node_file::import::Import};
-
-impl Pattern {
-    /// Get imports induced by pattern.
-    pub fn get_imports(&self) -> Vec<Import> {
-        match self {
-            Pattern::Constant { constant, .. } => constant.get_imports(),
-            Pattern::Structure { name, fields, .. } => {
-                let mut imports = fields
-                    .iter()
-                    .flat_map(|(_, pattern)| pattern.get_imports())
-                    .collect::<Vec<_>>();
-                imports.push(Import::Structure(name.clone()));
-                imports.into_iter().unique().collect()
-            }
-            Pattern::Tuple { elements, .. } => elements
-                .iter()
-                .flat_map(|pattern| pattern.get_imports())
-                .collect::<Vec<_>>(),
-            Pattern::Some { pattern, .. } => pattern.get_imports(),
-            Pattern::Identifier { .. } | Pattern::None { .. } | Pattern::Default { .. } => vec![],
-        }
-    }
-}
-
-#[cfg(test)]
-mod get_imports {
-    use crate::{
-        ast::pattern::Pattern,
-        common::{constant::Constant, location::Location},
-        lir::item::node_file::import::Import,
-    };
-
-    #[test]
-    fn should_get_enumeration_import_from_constant_enumeration_pattern() {
-        let pattern = Pattern::Constant {
-            constant: Constant::Enumeration(format!("Color"), format!("Blue")),
-            location: Location::default(),
-        };
-        let control = vec![Import::Enumeration(format!("Color"))];
-        assert_eq!(pattern.get_imports(), control)
-    }
-
-    #[test]
-    fn should_get_structure_import_from_structure_pattern() {
-        let pattern = Pattern::Structure {
-            name: format!("Point"),
-            fields: vec![
-                (
-                    format!("x"),
-                    Pattern::Identifier {
-                        name: format!("x"),
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    format!("y"),
-                    Pattern::Default {
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-        let control = vec![Import::Structure(format!("Point"))];
-        assert_eq!(pattern.get_imports(), control)
-    }
-
-    #[test]
-    fn should_not_duplicate_imports() {
-        let pattern = Pattern::Structure {
-            name: format!("Foo"),
-            fields: vec![
-                (
-                    format!("x"),
-                    Pattern::Structure {
-                        name: format!("Foo"),
-                        fields: vec![
-                            (
-                                format!("x"),
-                                Pattern::Identifier {
-                                    name: format!("x"),
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                format!("y"),
-                                Pattern::Constant {
-                                    constant: Constant::Enumeration(
-                                        format!("Color"),
-                                        format!("Blue"),
-                                    ),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    format!("y"),
-                    Pattern::Constant {
-                        constant: Constant::Enumeration(format!("Color"), format!("Blue")),
-                        location: Location::default(),
-                    },
-                ),
-            ],
-            location: Location::default(),
-        };
-        let control = vec![
-            Import::Enumeration(format!("Color")),
-            Import::Structure(format!("Foo")),
-        ];
-        assert_eq!(pattern.get_imports(), control)
+/// Transform HIR pattern into LIR item.
+pub fn lir_from_hir(pattern: Pattern, symbol_table: &SymbolTable) -> LIRPattern {
+    match pattern.kind {
+        PatternKind::Identifier { id } => LIRPattern::Identifier {
+            name: symbol_table.get_name(&id).clone(),
+        },
+        PatternKind::Constant { constant } => LIRPattern::Literal { literal: constant },
+        PatternKind::Structure { id, fields } => LIRPattern::Structure {
+            name: symbol_table.get_name(&id).clone(),
+            fields: fields
+                .into_iter()
+                .map(|(id, pattern)| {
+                    (
+                        symbol_table.get_name(&id).clone(),
+                        lir_from_hir(pattern, symbol_table),
+                    )
+                })
+                .collect(),
+        },
+        PatternKind::Enumeration { enum_id, elem_id } => LIRPattern::Enumeration {
+            enum_name: symbol_table.get_name(&enum_id).clone(),
+            elem_name: symbol_table.get_name(&elem_id).clone(),
+        },
+        PatternKind::Tuple { elements } => LIRPattern::Tuple {
+            elements: elements
+                .into_iter()
+                .map(|element| lir_from_hir(element, symbol_table))
+                .collect(),
+        },
+        PatternKind::Some { pattern } => LIRPattern::Some {
+            pattern: Box::new(lir_from_hir(*pattern, symbol_table)),
+        },
+        PatternKind::None => LIRPattern::None,
+        PatternKind::Default => LIRPattern::Default,
     }
 }

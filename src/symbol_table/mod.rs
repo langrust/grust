@@ -7,12 +7,9 @@ use crate::{
 
 #[derive(Clone)]
 pub enum SymbolKind {
-    Signal {
-        scope: Scope,
-        typing: Type,
-    },
     Identifier {
-        typing: Type,
+        scope: Scope,
+        typing: Option<Type>,
     },
     Function {
         inputs_typing: Vec<Type>,
@@ -28,11 +25,24 @@ pub enum SymbolKind {
         /// Node's local signals.
         locals: HashMap<String, usize>,
     },
+    Structure {
+        /// The structure's fields: a field has an identifier and a type.
+        fields: Vec<usize>,
+    },
+    Enumeration {
+        /// The enumeration's elements.
+        elements: Vec<usize>,
+    },
+    Array {
+        /// The array's type.
+        array_type: Type,
+        /// The array's size.
+        size: usize,
+    },
 }
 impl PartialEq for SymbolKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Signal { .. }, Self::Signal { .. }) => true,
             (Self::Identifier { .. }, Self::Identifier { .. }) => true,
             (Self::Function { .. }, Self::Function { .. }) => true,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
@@ -61,10 +71,12 @@ impl Symbol {
 
     fn hash_as_string(&self) -> String {
         match self.kind {
-            SymbolKind::Signal { .. } => format!("signal_{}", self.name),
             SymbolKind::Identifier { .. } => format!("identifier_{}", self.name),
             SymbolKind::Function { .. } => format!("function_{}", self.name),
             SymbolKind::Node { .. } => format!("node_{}", self.name),
+            SymbolKind::Structure { fields } => format!("struct_{}", self.name),
+            SymbolKind::Enumeration { elements } => format!("enum_{}", self.name),
+            SymbolKind::Array { array_type, size } => format!("array_{}", self.name),
         }
     }
 }
@@ -186,13 +198,13 @@ impl SymbolTable {
         &mut self,
         name: String,
         scope: Scope,
-        typing: Type,
+        typing: Option<Type>,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
-            kind: SymbolKind::Signal { scope, typing },
+            kind: SymbolKind::Identifier { scope, typing },
             name,
         };
 
@@ -202,13 +214,16 @@ impl SymbolTable {
     pub fn insert_identifier(
         &mut self,
         name: String,
-        typing: Type,
+        typing: Option<Type>,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
-            kind: SymbolKind::Identifier { typing },
+            kind: SymbolKind::Identifier {
+                scope: Scope::Local,
+                typing,
+            },
             name,
         };
 
@@ -259,6 +274,55 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    pub fn insert_struct(
+        &mut self,
+        name: String,
+        fields: Vec<usize>,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::Structure { fields },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
+    pub fn insert_enum(
+        &mut self,
+        name: String,
+        elements: Vec<usize>,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::Enumeration { elements },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
+    pub fn insert_array(
+        &mut self,
+        name: String,
+        array_type: Type,
+        size: usize,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::Array { array_type, size },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
     pub fn restore_context<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
         ids.for_each(|id| {
             let symbol = self.get_symbol(id).unwrap().clone();
@@ -272,6 +336,48 @@ impl SymbolTable {
 
     pub fn get_symbol_mut(&mut self, id: &usize) -> Option<&mut Symbol> {
         self.table.get_mut(id)
+    }
+
+    pub fn get_type(&self, id: &usize) -> &Type {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Identifier { typing, .. } => typing.as_ref().expect("should be typed"),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_output_type(&self, id: &usize) -> &Type {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Function { output_typing, .. } => output_typing,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn set_type(&mut self, id: &usize, new_type: Type) {
+        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        match &mut symbol.kind {
+            SymbolKind::Identifier { ref mut typing, .. } => {
+                if typing.is_some() {
+                    panic!("a symbol type can not be modified")
+                }
+                *typing = Some(new_type)
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_name(&self, id: &usize) -> &String {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        &symbol.name
+    }
+
+    pub fn get_scope(&self, id: &usize) -> &Scope {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Identifier { scope, .. } => scope,
+            _ => unreachable!(),
+        }
     }
 
     pub fn get_identifier_id(

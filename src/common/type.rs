@@ -1,8 +1,6 @@
-use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use crate::ast::typedef::Typedef;
-use crate::common::{context::Context, location::Location};
+use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 
 /// LanGrust type system.
@@ -39,9 +37,9 @@ pub enum Type {
     /// Option type, if `n = some(1)` then `n: int?`
     Option(Box<Type>),
     /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
-    Enumeration(String),
+    Enumeration { name: String, id: usize },
     /// User defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
-    Structure(String),
+    Structure { name: String, id: usize },
     /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
     NotDefinedYet(String),
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
@@ -50,6 +48,8 @@ pub enum Type {
     Polymorphism(fn(Vec<Type>, Location) -> Result<Type, Error>),
     /// Tuple type, if `z = zip(a, b)` with `a: [int; 5]` and `b: [float; 5]` then `z: [(int, float); 5]`
     Tuple(Vec<Type>),
+    /// Match any type.
+    Any,
 }
 impl serde::Serialize for Type {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -71,11 +71,11 @@ impl serde::Serialize for Type {
             Type::Option(option_type) => {
                 serializer.serialize_newtype_variant("Type", 6, "Option", option_type)
             }
-            Type::Enumeration(enumeration_name) => {
-                serializer.serialize_newtype_variant("Type", 7, "Enumeration", enumeration_name)
+            Type::Enumeration { name, .. } => {
+                serializer.serialize_newtype_variant("Type", 7, "Enumeration", name)
             }
-            Type::Structure(structure_name) => {
-                serializer.serialize_newtype_variant("Type", 8, "Structure", structure_name)
+            Type::Structure { name, .. } => {
+                serializer.serialize_newtype_variant("Type", 8, "Structure", name)
             }
             Type::NotDefinedYet(name) => {
                 serializer.serialize_newtype_variant("Type", 9, "NotDefinedYet", name)
@@ -90,6 +90,7 @@ impl serde::Serialize for Type {
             Type::Tuple(tuple_types) => {
                 serializer.serialize_newtype_variant("Type", 12, "Tuple", tuple_types)
             }
+            Type::Any => serializer.serialize_unit_variant("Type", 0, "Any"),
         }
     }
 }
@@ -103,8 +104,8 @@ impl Display for Type {
             Type::Unit => write!(f, "()"),
             Type::Array(t, n) => write!(f, "[{}; {n}]", *t),
             Type::Option(t) => write!(f, "Option<{}>", *t),
-            Type::Enumeration(enumeration) => write!(f, "{enumeration}"),
-            Type::Structure(structure) => write!(f, "{structure}"),
+            Type::Enumeration { name, .. } => write!(f, "{name}"),
+            Type::Structure { name, .. } => write!(f, "{name}"),
             Type::NotDefinedYet(s) => write!(f, "{s}"),
             Type::Abstract(t1, t2) => write!(
                 f,
@@ -124,6 +125,7 @@ impl Display for Type {
                     .collect::<Vec<_>>()
                     .join(", "),
             ),
+            Type::Any => write!(f, "any"),
         }
     }
 }
@@ -241,84 +243,6 @@ impl Type {
             };
             errors.push(error);
             Err(TerminationError)
-        }
-    }
-
-    /// Determine the type if undefined
-    ///
-    /// # Example
-    /// ```rust
-    /// use std::collections::HashMap;
-    ///
-    /// use grustine::ast::typedef::Typedef;
-    /// use grustine::common::{location::Location, r#type::Type};
-    ///
-    /// let mut errors = vec![];
-    /// let mut user_types_context = HashMap::new();
-    /// user_types_context.insert(
-    ///     String::from("Point"),
-    ///     Typedef::Structure {
-    ///         id: String::from("Point"),
-    ///         fields: vec![
-    ///             (String::from("x"), Type::Integer),
-    ///             (String::from("y"), Type::Integer),
-    ///         ],
-    ///         location: Location::default(),
-    ///     }
-    /// );
-    ///
-    /// let mut my_type = Type::NotDefinedYet(String::from("Point"));
-    ///
-    /// let control = Type::Structure(String::from("Point"));
-    ///
-    /// my_type
-    ///     .resolve_undefined(Location::default(), &user_types_context, &mut errors)
-    ///     .unwrap();
-    ///
-    /// assert_eq!(my_type, control);
-    /// ```
-    pub fn resolve_undefined(
-        &mut self,
-        location: Location,
-        user_types_context: &HashMap<String, Typedef>,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self {
-            Type::NotDefinedYet(name) => {
-                let user_type =
-                    user_types_context.get_user_type_or_error(name, location, errors)?;
-                *self = user_type.into_type();
-                Ok(())
-            }
-            Type::Integer
-            | Type::Float
-            | Type::Boolean
-            | Type::String
-            | Type::Enumeration(_)
-            | Type::Structure(_)
-            | Type::Polymorphism(_)
-            | Type::Unit => Ok(()),
-            Type::Array(element_type, _) => {
-                element_type.resolve_undefined(location, user_types_context, errors)
-            }
-            Type::Option(element_type) => {
-                element_type.resolve_undefined(location, user_types_context, errors)
-            }
-            Type::Abstract(inputs_type, output_type) => {
-                inputs_type
-                    .iter_mut()
-                    .map(|input_type| {
-                        input_type.resolve_undefined(location.clone(), user_types_context, errors)
-                    })
-                    .collect::<Result<_, _>>()?;
-                output_type.resolve_undefined(location, user_types_context, errors)
-            }
-            Type::Tuple(tuple_types) => tuple_types
-                .iter_mut()
-                .map(|tuple_type| {
-                    tuple_type.resolve_undefined(location.clone(), user_types_context, errors)
-                })
-                .collect::<Result<_, _>>(),
         }
     }
 
@@ -461,96 +385,6 @@ mod apply {
         let control = Type::Abstract(vec![Type::Integer, Type::Integer], Box::new(Type::Boolean));
 
         assert_eq!(polymorphic_type, control);
-    }
-}
-
-#[cfg(test)]
-mod resolve_undefined {
-    use std::collections::HashMap;
-
-    use crate::ast::typedef::Typedef;
-    use crate::common::{location::Location, r#type::Type};
-
-    #[test]
-    fn should_determine_undefined_type_when_in_context() {
-        let mut errors = vec![];
-        let mut user_types_context = HashMap::new();
-        user_types_context.insert(
-            String::from("Point"),
-            Typedef::Structure {
-                id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
-                location: Location::default(),
-            },
-        );
-
-        let mut my_type = Type::NotDefinedYet(String::from("Point"));
-
-        let control = Type::Structure(String::from("Point"));
-
-        my_type
-            .resolve_undefined(Location::default(), &user_types_context, &mut errors)
-            .unwrap();
-
-        assert_eq!(my_type, control);
-    }
-
-    #[test]
-    fn should_resolve_undefined_type_recursively_when_in_context() {
-        let mut errors = vec![];
-        let mut user_types_context = HashMap::new();
-        user_types_context.insert(
-            String::from("Point"),
-            Typedef::Structure {
-                id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
-                location: Location::default(),
-            },
-        );
-
-        let mut my_type = Type::Option(Box::new(Type::NotDefinedYet(String::from("Point"))));
-
-        let control = Type::Option(Box::new(Type::Structure(String::from("Point"))));
-
-        my_type
-            .resolve_undefined(Location::default(), &user_types_context, &mut errors)
-            .unwrap();
-
-        assert_eq!(my_type, control);
-    }
-
-    #[test]
-    fn should_leave_already_resolved_types_unchanged() {
-        let mut errors = vec![];
-        let user_types_context = HashMap::new();
-
-        let mut my_type = Type::Integer;
-
-        let control = Type::Integer;
-
-        my_type
-            .resolve_undefined(Location::default(), &user_types_context, &mut errors)
-            .unwrap();
-
-        assert_eq!(my_type, control);
-    }
-
-    #[test]
-    fn should_raise_error_for_undefined_type_when_not_in_context() {
-        let mut errors = vec![];
-        let user_types_context = HashMap::new();
-
-        let mut my_type = Type::NotDefinedYet(String::from("Point"));
-
-        my_type
-            .resolve_undefined(Location::default(), &user_types_context, &mut errors)
-            .unwrap_err();
     }
 }
 

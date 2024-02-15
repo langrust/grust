@@ -1,6 +1,7 @@
 use crate::{
     hir::file::File,
     lir::{item::Item, project::Project},
+    symbol_table::SymbolTable,
 };
 
 use super::{
@@ -9,7 +10,7 @@ use super::{
 };
 
 /// Transform HIR file into LIR project.
-pub fn lir_from_hir(file: File) -> Project {
+pub fn lir_from_hir(file: File, symbol_table: &SymbolTable) -> Project {
     let File {
         typedefs,
         functions,
@@ -18,18 +19,25 @@ pub fn lir_from_hir(file: File) -> Project {
         ..
     } = file;
 
-    let mut typedefs = typedefs.into_iter().map(typedef_lir_from_hir).collect();
+    let mut typedefs = typedefs
+        .into_iter()
+        .map(|typedef| typedef_lir_from_hir(typedef, symbol_table))
+        .collect();
     let mut functions = functions
         .into_iter()
-        .map(function_lir_from_hir)
+        .map(|function| function_lir_from_hir(function, symbol_table))
         .map(Item::Function)
         .collect();
     let mut nodes = nodes
         .into_iter()
-        .flat_map(|node| node_lir_from_hir(node).into_iter().map(Item::NodeFile))
+        .flat_map(|node| {
+            node_lir_from_hir(node, symbol_table)
+                .into_iter()
+                .map(Item::NodeFile)
+        })
         .collect();
     let mut component = component.map_or(vec![], |component| {
-        node_lir_from_hir(component)
+        node_lir_from_hir(component, symbol_table)
             .into_iter()
             .map(Item::NodeFile)
             .collect()

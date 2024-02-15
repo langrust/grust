@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use crate::error::{Error, TerminationError};
-use crate::hir::{function::Function, typedef::Typedef};
+use crate::hir::function::Function;
 use crate::symbol_table::{SymbolKind, SymbolTable};
 
 impl Function {
@@ -29,7 +27,7 @@ impl Function {
     ///         Statement {
     ///             id: String::from("x"),
     ///             element_type: Type::Integer,
-    ///             expression: Expression::Call {
+    ///             expression: ExpressionKind::Identifier {
     ///                 id: String::from("i"),
     ///                 typing: None,
     ///                 location: Location::default(),
@@ -39,7 +37,7 @@ impl Function {
     ///     ],
     ///     returned: (
     ///         Type::Integer,
-    ///         Expression::Call {
+    ///         ExpressionKind::Identifier {
     ///             id: String::from("x"),
     ///             typing: None,
     ///             location: Location::default(),
@@ -53,7 +51,6 @@ impl Function {
     pub fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
-        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Function {
@@ -68,13 +65,13 @@ impl Function {
         // type all statements
         statements
             .iter_mut()
-            .map(|statement| statement.typing(symbol_table, user_types_context, errors))
+            .map(|statement| statement.typing(symbol_table, errors))
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
 
         // type returned expression
-        returned.typing(symbol_table, user_types_context, errors)?;
+        returned.typing(symbol_table, errors)?;
 
         // check returned type
         let symbol = symbol_table

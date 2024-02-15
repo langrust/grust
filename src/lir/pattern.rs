@@ -1,31 +1,31 @@
-use crate::common::{constant::Constant, location::Location, r#type::Type};
+use crate::common::constant::Constant;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust matching pattern HIR.
-pub enum PatternKind {
+/// LanGRust matching pattern LIR (resemble to the AST).
+pub enum Pattern {
     /// Identifier pattern, gives a name to the matching expression.
     Identifier {
         /// Identifier.
-        id: usize,
+        name: String,
     },
-    /// Constant pattern, matches le given constant.
-    Constant {
-        /// The matching constant.
-        constant: Constant,
+    /// Literal pattern, matches the given literal (constant).
+    Literal {
+        /// The matching literal (constant).
+        literal: Constant,
     },
     /// Structure pattern that matches the structure and its fields.
     Structure {
         /// The structure id.
-        id: usize,
+        name: String,
         /// The structure fields with the corresponding patterns to match.
-        fields: Vec<(usize, Pattern)>,
+        fields: Vec<(String, Pattern)>,
     },
     /// Enumeration pattern.
     Enumeration {
-        /// The enumeration type id.
-        enum_id: usize,
-        /// The element id.
-        elem_id: usize,
+        /// The enumeration type name.
+        enum_name: String,
+        /// The element name.
+        elem_name: String,
     },
     /// Tuple pattern that matches tuples.
     Tuple {
@@ -41,22 +41,4 @@ pub enum PatternKind {
     None,
     /// The default pattern that matches anything.
     Default,
-}
-
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-pub struct Pattern {
-    /// Pattern kind.
-    pub kind: PatternKind,
-    /// Pattern type.
-    pub typing: Option<Type>,
-    /// Pattern location.
-    pub location: Location,
-}
-impl Pattern {
-    pub fn get_type(&self) -> Option<&Type> {
-        self.typing.as_ref()
-    }
-    pub fn get_type_mut(&mut self) -> Option<&mut Type> {
-        self.typing.as_mut()
-    }
 }

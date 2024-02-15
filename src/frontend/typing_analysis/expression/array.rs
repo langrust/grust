@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
-use crate::hir::{expression::Expression, typedef::Typedef};
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
+use crate::hir::expression::{Expression, ExpressionKind};
 use crate::symbol_table::SymbolTable;
 
 impl Expression {
@@ -10,20 +8,15 @@ impl Expression {
     pub fn typing_array(
         &mut self,
         symbol_table: &mut SymbolTable,
-        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        match self {
+        match self.kind {
             // an array is composed of `n` elements of the same type `t` and
             // its type is `[t; n]`
-            Expression::Array {
-                elements,
-                typing,
-                location,
-            } => {
+            ExpressionKind::Array { ref mut elements } => {
                 if elements.len() == 0 {
                     let error = Error::ExpectInput {
-                        location: location.clone(),
+                        location: self.location.clone(),
                     };
                     errors.push(error);
                     return Err(TerminationError);
@@ -31,9 +24,7 @@ impl Expression {
 
                 elements
                     .iter_mut()
-                    .map(|element| {
-                        element.typing(symbol_table, user_types_context, errors)
-                    })
+                    .map(|element| element.typing(symbol_table, errors))
                     .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
                     .collect::<Result<(), TerminationError>>()?;
@@ -43,7 +34,7 @@ impl Expression {
                     .iter()
                     .map(|element| {
                         let element_type = element.get_type().unwrap();
-                        element_type.eq_check(first_type, location.clone(), errors)
+                        element_type.eq_check(first_type, self.location.clone(), errors)
                     })
                     .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
@@ -51,7 +42,7 @@ impl Expression {
 
                 let array_type = Type::Array(Box::new(first_type.clone()), elements.len());
 
-                *typing = Some(array_type);
+                self.typing = Some(array_type);
                 Ok(())
             }
             _ => unreachable!(),

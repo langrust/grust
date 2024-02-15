@@ -17,8 +17,7 @@ pub fn hir_from_ast(
         location,
     } = statement;
 
-    let id = symbol_table.insert_identifier(id, true, location, errors)?;
-    // TODO: add type to signal in symbol table
+    let id = symbol_table.insert_identifier(id, None, true, location, errors)?;
 
     Ok(HIRStatement {
         id,

@@ -1,29 +1,18 @@
-use std::collections::HashMap;
-
-use crate::ast::{pattern::Pattern, typedef::Typedef};
+use crate::ast::pattern::Pattern;
 use crate::common::{constant::Constant, location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust expression AST.
-pub enum Expression {
+pub enum ExpressionKind {
     /// Constant expression.
     Constant {
         /// The constant.
         constant: Constant,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
-    /// Call expression.
-    Call {
+    /// Identifier expression.
+    Identifier {
         /// Element identifier.
         id: String,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Application expression.
     Application {
@@ -31,10 +20,6 @@ pub enum Expression {
         function_expression: Box<Expression>,
         /// The inputs to the expression.
         inputs: Vec<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Abstraction expression.
     Abstraction {
@@ -42,10 +27,6 @@ pub enum Expression {
         inputs: Vec<String>,
         /// The expression abstracted.
         expression: Box<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Abstraction expression with inputs types.
     TypedAbstraction {
@@ -53,10 +34,6 @@ pub enum Expression {
         inputs: Vec<(String, Type)>,
         /// The expression abstracted.
         expression: Box<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Structure expression.
     Structure {
@@ -64,19 +41,18 @@ pub enum Expression {
         name: String,
         /// The fields associated with their expressions.
         fields: Vec<(String, Expression)>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
+    },
+    /// Enumeration expression.
+    Enumeration {
+        /// The enumeration name.
+        enum_name: String,
+        /// The enumeration element.
+        elem_name: String,
     },
     /// Array expression.
     Array {
         /// The elements inside the array.
         elements: Vec<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Pattern matching expression.
     Match {
@@ -84,10 +60,6 @@ pub enum Expression {
         expression: Box<Expression>,
         /// The different matching cases.
         arms: Vec<(Pattern, Option<Expression>, Expression)>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// When present expression.
     When {
@@ -99,10 +71,6 @@ pub enum Expression {
         present: Box<Expression>,
         /// The default expression.
         default: Box<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Field access expression.
     FieldAccess {
@@ -110,10 +78,6 @@ pub enum Expression {
         expression: Box<Expression>,
         /// The field to access.
         field: String,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Tuple element access expression.
     TupleElementAccess {
@@ -121,10 +85,6 @@ pub enum Expression {
         expression: Box<Expression>,
         /// The element to access.
         element_number: usize,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Array map operator expression.
     Map {
@@ -132,10 +92,6 @@ pub enum Expression {
         expression: Box<Expression>,
         /// The function expression.
         function_expression: Box<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Array fold operator expression.
     Fold {
@@ -145,10 +101,6 @@ pub enum Expression {
         initialization_expression: Box<Expression>,
         /// The function expression.
         function_expression: Box<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Array sort operator expression.
     Sort {
@@ -156,18 +108,19 @@ pub enum Expression {
         expression: Box<Expression>,
         /// The function expression.
         function_expression: Box<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
     /// Arrays zip operator expression.
     Zip {
         /// The array expressions.
         arrays: Vec<Expression>,
-        /// Expression type.
-        typing: Option<Type>,
-        /// Expression location.
-        location: Location,
     },
+}
+
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+/// LanGRust expression AST.
+pub struct Expression {
+    /// Expression kind.
+    pub kind: ExpressionKind,
+    /// Expression location.
+    pub location: Location,
 }

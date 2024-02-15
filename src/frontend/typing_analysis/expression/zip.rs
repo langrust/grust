@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
-use crate::hir::{expression::Expression, typedef::Typedef};
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
+use crate::hir::expression::{Expression, ExpressionKind};
 use crate::symbol_table::SymbolTable;
 
 impl Expression {
@@ -10,18 +8,13 @@ impl Expression {
     pub fn typing_zip(
         &mut self,
         symbol_table: &mut SymbolTable,
-        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        match self {
-            Expression::Zip {
-                arrays,
-                typing,
-                location,
-            } => {
+        match self.kind {
+            ExpressionKind::Zip { ref mut arrays } => {
                 if arrays.len() == 0 {
                     let error = Error::ExpectInput {
-                        location: location.clone(),
+                        location: self.location.clone(),
                     };
                     errors.push(error);
                     return Err(TerminationError);
@@ -29,9 +22,7 @@ impl Expression {
 
                 arrays
                     .iter_mut()
-                    .map(|array| {
-                        array.typing(symbol_table, user_types_context, errors)
-                    })
+                    .map(|array| array.typing(symbol_table, errors))
                     .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
                     .collect::<Result<(), TerminationError>>()?;
@@ -41,7 +32,7 @@ impl Expression {
                     ty => {
                         let error = Error::ExpectArray {
                             given_type: ty.clone(),
-                            location: location.clone(),
+                            location: self.location.clone(),
                         };
                         errors.push(error);
                         Err(TerminationError)
@@ -55,7 +46,7 @@ impl Expression {
                             let error = Error::IncompatibleLength {
                                 given_length: *n,
                                 expected_length: *length,
-                                location: location.clone(),
+                                location: self.location.clone(),
                             };
                             errors.push(error);
                             Err(TerminationError)
@@ -63,7 +54,7 @@ impl Expression {
                         ty => {
                             let error = Error::ExpectArray {
                                 given_type: ty.clone(),
-                                location: location.clone(),
+                                location: self.location.clone(),
                             };
                             errors.push(error);
                             Err(TerminationError)
@@ -79,7 +70,7 @@ impl Expression {
                     Type::Array(Box::new(tuple_types.get(0).unwrap().clone()), *length)
                 };
 
-                *typing = Some(array_type);
+                self.typing = Some(array_type);
                 Ok(())
             }
             _ => unreachable!(),

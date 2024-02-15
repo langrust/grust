@@ -7,10 +7,7 @@ use codespan_reporting::{
     },
 };
 
-use crate::{
-    hir::pattern::Pattern,
-    common::{location::Location, r#type::Type},
-};
+use crate::common::{location::Location, r#type::Type};
 
 /// Termination of compilation error.
 #[derive(Debug)]
@@ -121,15 +118,6 @@ pub enum Error {
     IncompatibleType {
         /// given type
         given_type: Type,
-        /// expected type
-        expected_type: Type,
-        /// the error location
-        location: Location,
-    },
-    /// incompatible pattern
-    IncompatiblePattern {
-        /// given pattern
-        given_pattern: Pattern,
         /// expected type
         expected_type: Type,
         /// the error location
@@ -373,16 +361,6 @@ impl Error {
                     format!("expected '{expected_type}' but '{given_type}' was given")
                 ]
             ),
-            Error::IncompatiblePattern { given_pattern, expected_type, location } => Diagnostic::error()
-                .with_message("incompatible pattern")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong pattern type")
-                ])
-                .with_notes(vec![
-                    format!("expected pattern of type '{expected_type}' but '{given_pattern}' was given")
-                ]
-            ),
             Error::IncompatibleInputsNumber { given_inputs_number, expected_inputs_number, location } => Diagnostic::error()
                 .with_message("incompatible number of inputs")
                 .with_labels(vec![
@@ -525,7 +503,6 @@ impl std::fmt::Display for Error {
             Error::ComponentCall { .. } => write!(f, "Component Identifier"),
             Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
-            Error::IncompatiblePattern { .. } => write!(f, "Incompatible Pattern"),
             Error::IncompatibleInputsNumber { .. } => write!(f, "Incompatible Inputs Number"),
             Error::ExpectInput { .. } => write!(f, "Expect Input"),
             Error::ExpectNumber { .. } => write!(f, "Expect Number"),

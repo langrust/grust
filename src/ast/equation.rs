@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-
-use crate::ast::{stream_expression::StreamExpression, typedef::Typedef};
+use crate::ast::stream_expression::StreamExpression;
 use crate::common::{location::Location, r#type::Type, scope::Scope};
-use crate::error::{Error, TerminationError};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust equation AST.

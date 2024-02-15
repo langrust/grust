@@ -27,9 +27,5 @@ pub mod typedef;
 
 /// LIR memory construction from HIR typedef.
 pub mod memory;
-
-/// LIR constant construction from HIR typedef.
-pub mod constant;
-
-/// LIR pattern construction from HIR typedef.
 pub mod pattern;
+pub mod contract;

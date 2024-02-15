@@ -1,49 +1,36 @@
-use std::collections::HashMap;
-
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
-use crate::hir::{expression::Expression, typedef::Typedef};
-use crate::symbol_table::{SymbolKind, SymbolTable};
+use crate::hir::expression::{Expression, ExpressionKind};
+use crate::symbol_table::SymbolTable;
 
 impl Expression {
     /// Add a [Type] to the abstraction expression.
     pub fn typing_abstraction(
         &mut self,
         symbol_table: &mut SymbolTable,
-        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        match self {
+        match self.kind {
             // the type of a typed abstraction is computed by adding inputs to
             // the context and typing the function body expression
-            Expression::Abstraction {
-                inputs,
-                expression,
-                typing,
-                location,
+            ExpressionKind::Abstraction {
+                ref inputs,
+                ref mut expression,
             } => {
                 // type the abstracted expression with the local context
-                expression.typing(symbol_table, user_types_context, errors)?;
+                expression.typing(symbol_table, errors)?;
 
                 // compute abstraction type
                 let input_types = inputs
                     .iter()
-                    .map(|id| {
-                        let symbol = symbol_table
-                            .get_symbol(id)
-                            .expect("there should be a symbol");
-                        match symbol.kind() {
-                            SymbolKind::Identifier { typing } => typing.clone(),
-                            _ => unreachable!(),
-                        }
-                    })
+                    .map(|id| symbol_table.get_type(id).clone())
                     .collect::<Vec<_>>();
                 let abstraction_type = Type::Abstract(
                     input_types,
                     Box::new(expression.get_type().unwrap().clone()),
                 );
 
-                *typing = Some(abstraction_type);
+                self.typing = Some(abstraction_type);
                 Ok(())
             }
             _ => unreachable!(),

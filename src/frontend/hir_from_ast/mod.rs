@@ -16,3 +16,4 @@ pub mod expression;
 pub mod function;
 /// HIR Statement construction from AST Statement
 pub mod statement;
+pub mod typedef;

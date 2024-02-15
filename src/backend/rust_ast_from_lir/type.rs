@@ -10,12 +10,13 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
         Type::Boolean => parse_quote!(bool),
         Type::String => parse_quote!(String),
         Type::Unit => parse_quote!(()),
-        Type::Enumeration(identifier) => {
-            let identifier = Ident::new(&identifier, Span::call_site());
+        Type::Any => parse_quote!(Any), // TODO does it exist
+        Type::Enumeration { name, .. } => {
+            let identifier = Ident::new(&name, Span::call_site());
             parse_quote!(#identifier)
         }
-        Type::Structure(identifier) => {
-            let identifier = Ident::new(&identifier, Span::call_site());
+        Type::Structure { name, .. } => {
+            let identifier = Ident::new(&name, Span::call_site());
             parse_quote!(#identifier)
         }
         Type::Array(element, size) => {
@@ -86,7 +87,10 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_owned_structure_from_lir_structure() {
-        let r#type = Type::Structure(String::from("Point"));
+        let r#type = Type::Structure {
+            name: String::from("Point"),
+            id: 0,
+        };
         let control = parse_quote! { Point };
 
         assert_eq!(rust_ast_from_lir(r#type), control)
@@ -94,7 +98,10 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_owned_enumeration_from_lir_enumeration() {
-        let r#type = Type::Enumeration(String::from("Color"));
+        let r#type = Type::Enumeration {
+            name: String::from("Color"),
+            id: 0,
+        };
         let control = parse_quote! { Color };
 
         assert_eq!(rust_ast_from_lir(r#type), control)
