@@ -66,6 +66,9 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
             let name = format_ident!("{name}");
             parse_quote!(#name { #(#fields),* })
         }
+        Expression::Enumeration { name, element } => {
+            syn::parse_str(&format!("{name}::{element}")).unwrap()
+        }
         Expression::Array { elements } => {
             let elements = elements.into_iter().map(rust_ast_from_lir);
             parse_quote! { [#(#elements),*]}
@@ -307,13 +310,12 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::ast::pattern::Pattern;
     use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir;
     use crate::common::constant::Constant;
-    use crate::common::location::Location;
     use crate::common::r#type::Type;
     use crate::lir::block::Block;
     use crate::lir::expression::{Expression, FieldIdentifier};
+    use crate::lir::pattern::Pattern;
     use crate::lir::statement::Statement;
     use syn::*;
     #[test]
@@ -546,9 +548,9 @@ mod rust_ast_from_lir {
             }),
             arms: vec![
                 (
-                    Pattern::Constant {
-                        constant: Constant::Enumeration(String::from("Color"), format!("Blue")),
-                        location: Location::default(),
+                    Pattern::Enumeration {
+                        enum_name: String::from("Color"),
+                        elem_name: format!("Blue"),
                     },
                     None,
                     Expression::Literal {
@@ -556,9 +558,9 @@ mod rust_ast_from_lir {
                     },
                 ),
                 (
-                    Pattern::Constant {
-                        constant: Constant::Enumeration(String::from("Color"), format!("Green")),
-                        location: Location::default(),
+                    Pattern::Enumeration {
+                        enum_name: String::from("Color"),
+                        elem_name: format!("Green"),
                     },
                     None,
                     Expression::Literal {

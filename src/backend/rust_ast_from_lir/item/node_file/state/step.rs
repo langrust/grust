@@ -5,8 +5,7 @@ use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_as
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
 use crate::common::scope::Scope;
-use crate::hir::contract::{Contract, Term, TermKind};
-use crate::hir::signal::Signal;
+use crate::lir::contract::{Contract, Term};
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
@@ -14,20 +13,19 @@ use syn::parse_quote;
 use syn::*;
 
 fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
-    match term.kind {
-        TermKind::Binary { op, left, right } => {
+    match term {
+        Term::Binary { op, left, right } => {
             let ts_left = term_to_token_stream(*left, prophecy);
             let ts_right = term_to_token_stream(*right, prophecy);
             let ts_op = binary_to_syn(op);
             quote!(#ts_left #ts_op #ts_right)
         }
-        TermKind::Constant { constant } => {
+        Term::Constant { constant } => {
             let s = format!("{constant}");
             s.parse().unwrap()
         }
-        TermKind::Identifier { signal } => {
-            let Signal { id, scope } = signal;
-            let id = Ident::new(&id, Span::call_site());
+        Term::Identifier { name, scope } => {
+            let id = Ident::new(&name, Span::call_site());
             match scope {
                 Scope::Input => {
                     quote!(input.#id)
@@ -53,7 +51,6 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
         requires,
         ensures,
         invariant,
-        ..
     } = step.contract;
     let mut attributes = requires
         .into_iter()

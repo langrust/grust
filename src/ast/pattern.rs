@@ -1,27 +1,17 @@
-use std::collections::HashMap;
-
-use crate::ast::typedef::Typedef;
-use crate::common::{constant::Constant, context::Context, location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-
-use std::fmt::{self, Display};
+use crate::common::{constant::Constant, location::Location};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust matching pattern AST.
-pub enum Pattern {
+pub enum PatternKind {
     /// Identifier pattern, gives a name to the matching expression.
     Identifier {
         /// Identifier name.
         name: String,
-        /// Pattern location.
-        location: Location,
     },
     /// Constant pattern, matches le given constant.
     Constant {
         /// The matching constant.
         constant: Constant,
-        /// Pattern location.
-        location: Location,
     },
     /// Structure pattern that matches the structure and its fields.
     Structure {
@@ -29,31 +19,35 @@ pub enum Pattern {
         name: String,
         /// The structure fields with the corresponding patterns to match.
         fields: Vec<(String, Pattern)>,
-        /// Pattern location.
-        location: Location,
+    },
+    /// Enumeration pattern.
+    Enumeration {
+        /// The enumeration type name.
+        enum_name: String,
+        /// The element name.
+        elem_name: String,
     },
     /// Tuple pattern that matches tuples.
     Tuple {
         /// The elements of the tuple.
         elements: Vec<Pattern>,
-        /// Pattern location.
-        location: Location,
     },
     /// Some pattern that matches when an optional has a value which match the pattern.
     Some {
         /// The pattern matching the value.
         pattern: Box<Pattern>,
-        /// Pattern location.
-        location: Location,
     },
     /// None pattern, matches when the optional does not have a value.
-    None {
-        /// Pattern location.
-        location: Location,
-    },
+    None,
     /// The default pattern that matches anything.
-    Default {
-        /// Pattern location.
-        location: Location,
-    },
+    Default,
+}
+
+#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+/// LanGRust matching pattern AST.
+pub struct Pattern {
+    /// Pattern kind.
+    pub kind: PatternKind,
+    /// Pattern location.
+    pub location: Location,
 }

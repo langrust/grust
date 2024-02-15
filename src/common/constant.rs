@@ -33,8 +33,6 @@ pub enum Constant {
     String(String),
     /// Unit constant
     Unit,
-    /// Enumeration constant
-    Enumeration(String, String),
 }
 impl Constant {
     /// Get the [Type] of the constant.
@@ -53,7 +51,6 @@ impl Constant {
             Constant::Boolean(_) => Type::Boolean,
             Constant::String(_) => Type::String,
             Constant::Unit => Type::Unit,
-            Constant::Enumeration(e, _) => Type::Enumeration(e.clone()),
         }
     }
 }
@@ -65,7 +62,6 @@ impl Display for Constant {
             Constant::Boolean(b) => write!(f, "{b}"),
             Constant::String(s) => write!(f, "\"{s}\""),
             Constant::Unit => write!(f, "()"),
-            Constant::Enumeration(enu, elem) => write!(f, "{enu}::{elem}"),
         }
     }
 }
@@ -96,12 +92,5 @@ mod get_type {
     #[test]
     fn should_return_unit_type_to_unit_constant() {
         assert_eq!(Type::Unit, Constant::Unit.get_type());
-    }
-    #[test]
-    fn should_return_enumeration_type_to_enumeration_constant() {
-        assert_eq!(
-            Type::Enumeration(String::from("Color")),
-            Constant::Enumeration(String::from("Color"), String::from("Yellow")).get_type()
-        );
     }
 }

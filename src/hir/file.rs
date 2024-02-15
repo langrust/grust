@@ -1,6 +1,5 @@
-use crate::ast::typedef::Typedef;
 use crate::common::location::Location;
-use crate::hir::{function::Function, node::Node};
+use crate::hir::{function::Function, node::Node, typedef::Typedef};
 
 #[derive(Debug, PartialEq, serde::Serialize)]
 /// A LanGRust [File] is composed of functions nodes,

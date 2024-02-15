@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
-use crate::hir::{expression::Expression, typedef::Typedef};
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
+use crate::hir::expression::{Expression, ExpressionKind};
 use crate::symbol_table::SymbolTable;
 
 impl Expression {
@@ -10,28 +8,21 @@ impl Expression {
     pub fn typing_sort(
         &mut self,
         symbol_table: &mut SymbolTable,
-        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        match self {
-            Expression::Sort {
-                expression,
-                function_expression,
-                typing,
-                location,
+        match self.kind {
+            ExpressionKind::Sort {
+                ref mut expression,
+                ref mut function_expression,
             } => {
                 // type the expression
-                expression.typing(symbol_table, user_types_context, errors)?;
+                expression.typing(symbol_table, errors)?;
 
                 // verify it is an array
                 match expression.get_type().unwrap() {
                     Type::Array(element_type, size) => {
                         // type the function expression
-                        function_expression.typing(
-                            symbol_table,
-                            user_types_context,
-                            errors,
-                        )?;
+                        function_expression.typing(symbol_table, errors)?;
                         let function_type = function_expression.get_type_mut().unwrap();
 
                         // check it is a sorting function: (element_type, element_type) -> int
@@ -40,17 +31,17 @@ impl Expression {
                                 vec![*element_type.clone(), *element_type.clone()],
                                 Box::new(Type::Integer),
                             ),
-                            location.clone(),
+                            self.location.clone(),
                             errors,
                         )?;
 
-                        *typing = Some(Type::Array(element_type.clone(), *size));
+                        self.typing = Some(Type::Array(element_type.clone(), *size));
                         Ok(())
                     }
                     given_type => {
                         let error = Error::ExpectArray {
                             given_type: given_type.clone(),
-                            location: location.clone(),
+                            location: self.location.clone(),
                         };
                         errors.push(error);
                         Err(TerminationError)

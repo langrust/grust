@@ -1,6 +1,7 @@
 use crate::{
-    ast::function::Function,
+    hir::function::Function,
     lir::{block::Block, item::function::Function as LIRFunction, statement::Statement},
+    symbol_table::SymbolTable,
 };
 
 use super::{
@@ -8,119 +9,44 @@ use super::{
     statement::lir_from_hir as statement_lir_from_hir,
 };
 /// Transform HIR function into LIR function.
-pub fn lir_from_hir(function: Function) -> LIRFunction {
+pub fn lir_from_hir(function: Function, symbol_table: &SymbolTable) -> LIRFunction {
     let Function {
         id,
         inputs,
         statements,
-        returned: (output, last_expression),
+        returned,
         ..
     } = function;
 
+    // TODO: imports
+    // let imports = equations
+    //     .iter()
+    //     .flat_map(|equation| equation.expression.get_imports())
+    //     .unique()
+    //     .collect();
+    
     let mut statements = statements
         .into_iter()
-        .map(statement_lir_from_hir)
+        .map(|statement| statement_lir_from_hir(statement, symbol_table))
         .collect::<Vec<_>>();
     statements.push(Statement::ExpressionLast {
-        expression: expression_lir_from_hir(last_expression),
+        expression: expression_lir_from_hir(returned, symbol_table),
     });
 
+    let inputs = inputs
+        .into_iter()
+        .map(|id| {
+            (
+                symbol_table.get_name(&id).clone(),
+                symbol_table.get_type(&id).clone(),
+            )
+        })
+        .collect();
+
     LIRFunction {
-        name: id,
+        name: symbol_table.get_name(&id).clone(),
         inputs,
-        output,
+        output: symbol_table.get_output_type(&id).clone(),
         body: Block { statements },
-    }
-}
-
-#[cfg(test)]
-mod lir_from_hir {
-    use crate::{
-        ast::{
-            expression::Expression as ASTExpression, function::Function as ASTFunction,
-            statement::Statement as ASTStatement,
-        },
-        common::{location::Location, r#type::Type},
-        frontend::lir_from_hir::function::lir_from_hir,
-        lir::{
-            block::Block, expression::Expression, item::function::Function, statement::Statement,
-        },
-    };
-
-    #[test]
-    fn should_transform_ast_function_definition_into_lir_function_definition() {
-        let function = ASTFunction {
-            id: format!("add"),
-            inputs: vec![(format!("x"), Type::Integer), (format!("y"), Type::Integer)],
-            statements: vec![ASTStatement {
-                id: format!("o"),
-                expression: ASTExpression::Application {
-                    function_expression: Box::new(ASTExpression::Identifier {
-                        id: format!(" + "),
-                        typing: Some(Type::Abstract(
-                            vec![Type::Integer, Type::Integer],
-                            Box::new(Type::Integer),
-                        )),
-                        location: Location::default(),
-                    }),
-                    inputs: vec![
-                        ASTExpression::Identifier {
-                            id: format!("x"),
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        },
-                        ASTExpression::Identifier {
-                            id: format!("y"),
-                            typing: Some(Type::Integer),
-                            location: Location::default(),
-                        },
-                    ],
-                    typing: Some(Type::Integer),
-                    location: Location::default(),
-                },
-                element_type: Type::Integer,
-                location: Location::default(),
-            }],
-            returned: (
-                Type::Integer,
-                ASTExpression::Identifier {
-                    id: format!("o"),
-                    typing: Some(Type::Integer),
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-        let control = Function {
-            name: format!("add"),
-            inputs: vec![(format!("x"), Type::Integer), (format!("y"), Type::Integer)],
-            output: Type::Integer,
-            body: Block {
-                statements: vec![
-                    Statement::Let {
-                        identifier: format!("o"),
-                        expression: Expression::FunctionCall {
-                            function: Box::new(Expression::Identifier {
-                                identifier: format!(" + "),
-                            }),
-                            arguments: vec![
-                                Expression::Identifier {
-                                    identifier: format!("x"),
-                                },
-                                Expression::Identifier {
-                                    identifier: format!("y"),
-                                },
-                            ],
-                        },
-                    },
-                    Statement::ExpressionLast {
-                        expression: Expression::Identifier {
-                            identifier: format!("o"),
-                        },
-                    },
-                ],
-            },
-        };
-        assert_eq!(lir_from_hir(function), control)
     }
 }

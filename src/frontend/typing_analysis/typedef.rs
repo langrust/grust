@@ -193,7 +193,6 @@ impl Typedef {
     /// ```
     pub fn resolve_undefined_types(
         &mut self,
-        user_types_context: &HashMap<String, Typedef>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match self {
@@ -202,7 +201,7 @@ impl Typedef {
             } => fields
                 .iter_mut()
                 .map(|(_, field_type)| {
-                    field_type.resolve_undefined(location.clone(), user_types_context, errors)
+                    field_type.resolve_undefined(location.clone(), errors)
                 })
                 .collect::<Vec<Result<(), TerminationError>>>()
                 .into_iter()
@@ -212,7 +211,7 @@ impl Typedef {
                 array_type,
                 location,
                 ..
-            } => array_type.resolve_undefined(location.clone(), user_types_context, errors),
+            } => array_type.resolve_undefined(location.clone(), errors),
         }
     }
 }

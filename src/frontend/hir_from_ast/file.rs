@@ -2,6 +2,7 @@ use crate::ast::file::File;
 use crate::error::{Error, TerminationError};
 use crate::frontend::hir_from_ast::{
     function::hir_from_ast as function_hir_from_ast, node::hir_from_ast as node_hir_from_ast,
+    typedef::hir_from_ast as typedef_hir_from_ast,
 };
 use crate::hir::file::File as HIRFile;
 use crate::symbol_table::SymbolTable;
@@ -66,8 +67,6 @@ pub fn hir_from_ast(
     //     errors,
     // )?;
 
-
-    
     // let id = symbol_table.insert_function(
     //     id,
     //     is_component,
@@ -80,7 +79,12 @@ pub fn hir_from_ast(
     // )?;
 
     Ok(HIRFile {
-        typedefs,
+        typedefs: typedefs
+            .into_iter()
+            .map(|typedef| typedef_hir_from_ast(typedef, symbol_table, errors))
+            .collect::<Vec<Result<_, _>>>()
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?,
         functions: functions
             .into_iter()
             .map(|function| function_hir_from_ast(function, symbol_table, errors))

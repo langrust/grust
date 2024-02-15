@@ -1,5 +1,5 @@
 use crate::{
-    ast::pattern::Pattern,
+    lir::pattern::Pattern,
     common::{constant::Constant, r#type::Type},
 };
 
@@ -34,6 +34,13 @@ pub enum Expression {
         name: String,
         /// The filled fields.
         fields: Vec<(String, Expression)>,
+    },
+    /// A enumeration literal expression: `Color::Red`.
+    Enumeration {
+        /// The name of the enumeration.
+        name: String,
+        /// The name of the element.
+        element: String,
     },
     /// An array expression: `[1, 2, 3]`.
     Array {

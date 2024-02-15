@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-
-use crate::ast::{expression::Expression, statement::Statement, typedef::Typedef};
-use crate::common::{context::Context, location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
+use crate::ast::{expression::Expression, statement::Statement};
+use crate::common::{location::Location, r#type::Type};
 
 #[derive(Debug, PartialEq, serde::Serialize)]
 /// LanGRust function AST.

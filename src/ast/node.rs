@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-
-use crate::ast::{equation::Equation, typedef::Typedef};
-use crate::common::{context::Context, location::Location, r#type::Type, scope::Scope};
-use crate::error::{Error, TerminationError};
+use crate::ast::equation::Equation;
+use crate::common::{location::Location, r#type::Type};
 
 use super::contract::Contract;
 

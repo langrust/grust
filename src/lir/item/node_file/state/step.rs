@@ -1,7 +1,6 @@
 use crate::{
     common::r#type::Type,
-    hir::contract::Contract,
-    lir::{expression::Expression, statement::Statement},
+    lir::{contract::Contract, expression::Expression, statement::Statement},
 };
 
 /// A step function.

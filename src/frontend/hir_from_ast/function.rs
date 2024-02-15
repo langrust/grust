@@ -26,8 +26,7 @@ pub fn hir_from_ast(
     let inputs = inputs
         .into_iter()
         .map(|(name, typing)| {
-            let id = symbol_table.insert_identifier(name, true, location, errors)?;
-            // TODO: add type to signal in symbol table
+            let id = symbol_table.insert_identifier(name, Some(typing), true, location, errors)?;
             Ok(id)
         })
         .collect::<Vec<Result<_, _>>>()
@@ -43,7 +42,6 @@ pub fn hir_from_ast(
         .into_iter()
         .collect::<Result<Vec<_>, _>>()?;
     let returned = expression_hir_from_ast(returned, symbol_table, errors)?;
-
     symbol_table.global();
 
     Ok(HIRFunction {

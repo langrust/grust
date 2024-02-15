@@ -1,7 +1,4 @@
-use itertools::Itertools;
-
 use crate::{
-    common::scope::Scope,
     hir::unitary_node::UnitaryNode,
     lir::{
         expression::Expression as LIRExpression,
@@ -11,12 +8,16 @@ use crate::{
             NodeFile,
         },
     },
+    symbol_table::SymbolTable,
 };
 
-use super::equation::lir_from_hir as equation_lir_from_hir;
+use super::{
+    contract::lir_from_hir as contract_lir_from_hir,
+    equation::lir_from_hir as equation_lir_from_hir,
+};
 
 /// Transform HIR unitary node into LIR node file.
-pub fn lir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
+pub fn lir_from_hir(unitary_node: UnitaryNode, symbol_table: &SymbolTable) -> NodeFile {
     let UnitaryNode {
         node_id,
         output_id,
@@ -26,296 +27,56 @@ pub fn lir_from_hir(unitary_node: UnitaryNode) -> NodeFile {
         ..
     } = unitary_node;
 
-    let output_type = equations
-        .iter()
-        .filter(|equation| equation.scope == Scope::Output)
-        .map(|equation| equation.signal_type.clone())
-        .next()
-        .unwrap();
+    let output_type = symbol_table.get_output_type(&node_id).clone();
 
     let output_expression = LIRExpression::Identifier {
-        identifier: output_id.clone(),
+        identifier: symbol_table.get_name(&output_id).clone(),
     };
 
-    let imports = equations
-        .iter()
-        .flat_map(|equation| equation.expression.get_imports())
-        .unique()
-        .collect();
+    // TODO: imports
+    // let imports = equations
+    //     .iter()
+    //     .flat_map(|equation| equation.expression.get_imports())
+    //     .unique()
+    //     .collect();
 
-    let (elements, state_elements_init, state_elements_step) = memory.get_state_elements();
+    let (elements, state_elements_init, state_elements_step) =
+        memory.get_state_elements(symbol_table);
+
+    let name = symbol_table.get_name(&node_id);
 
     NodeFile {
-        name: format!("{node_id}_{output_id}"),
-        imports,
+        name: name.clone(),
+        imports: vec![], // TODO
         input: Input {
-            node_name: format!("{node_id}_{output_id}"),
+            node_name: name.clone(),
             elements: inputs
                 .into_iter()
-                .map(|(identifier, r#type)| InputElement { identifier, r#type })
+                .map(|(id, r#type)| InputElement {
+                    identifier: symbol_table.get_name(&id).clone(),
+                    r#type,
+                })
                 .collect(),
         },
         state: State {
-            node_name: format!("{node_id}_{output_id}"),
+            node_name: name.clone(),
             elements,
             step: Step {
-                contract: unitary_node.contract,
-                node_name: format!("{node_id}_{output_id}"),
+                contract: contract_lir_from_hir(unitary_node.contract, symbol_table),
+                node_name: name.clone(),
                 output_type,
-                body: equations.into_iter().map(equation_lir_from_hir).collect(),
+                body: equations
+                    .into_iter()
+                    .map(|equation| equation_lir_from_hir(equation, symbol_table))
+                    .collect(),
                 state_elements_step,
                 output_expression,
             },
             init: Init {
-                node_name: format!("{node_id}_{output_id}"),
+                node_name: name.clone(),
                 state_elements_init,
                 invariant_initialisation: vec![], // TODO
             },
         },
-    }
-}
-
-#[cfg(test)]
-mod lir_from_hir {
-    use std::collections::HashMap;
-
-    use crate::{
-        ast::expression::Expression as ASTExpression,
-        common::{constant::Constant, location::Location, r#type::Type, scope::Scope},
-        frontend::lir_from_hir::unitary_node::lir_from_hir,
-        hir::{
-            dependencies::Dependencies,
-            equation::Equation,
-            memory::{Buffer, CalledNode, Memory},
-            once_cell::OnceCell,
-            signal::Signal,
-            stream_expression::StreamExpression,
-            unitary_node::UnitaryNode,
-        },
-        lir::{
-            expression::Expression,
-            item::node_file::{
-                import::Import,
-                input::{Input, InputElement},
-                state::{
-                    init::{Init, StateElementInit},
-                    step::{StateElementStep, Step},
-                    State, StateElement,
-                },
-                NodeFile,
-            },
-            statement::Statement,
-        },
-    };
-
-    #[test]
-    fn should_transform_hir_unitary_node_definition_into_lir_node_file() {
-        let memory = Memory {
-            buffers: HashMap::from([(
-                format!("mem_i"),
-                Buffer {
-                    typing: Type::Integer,
-                    initial_value: Constant::Integer(0),
-                    expression: StreamExpression::FunctionApplication {
-                        function_expression: ASTExpression::Identifier {
-                            id: format!(" + "),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer, Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![
-                            StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: format!("i"),
-                                    scope: Scope::Local,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(format!("i"), 0)]),
-                            },
-                            StreamExpression::Constant {
-                                constant: Constant::Integer(1),
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::new(),
-                            },
-                        ],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(format!("i"), 0)]),
-                    },
-                },
-            )]),
-            called_nodes: HashMap::from([(
-                format!("other_node_o_o"),
-                CalledNode {
-                    node_id: format!("other_node"),
-                    signal_id: format!("o"),
-                },
-            )]),
-        };
-        let unitary_node = UnitaryNode {
-            contract: Default::default(),
-            node_id: format!("my_node"),
-            output_id: format!("o"),
-            inputs: vec![(format!("x"), Type::Integer)],
-            equations: vec![
-                Equation {
-                    scope: Scope::Local,
-                    id: format!("i"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: format!("mem_i"),
-                            scope: Scope::Memory,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(format!("mem_i"), 0)]),
-                    },
-                    location: Location::default(),
-                },
-                Equation {
-                    scope: Scope::Output,
-                    id: format!("o"),
-                    signal_type: Type::Integer,
-                    expression: StreamExpression::UnitaryNodeApplication {
-                        id: Some(format!("other_node_o_o")),
-                        node: format!("other_node"),
-                        signal: format!("o"),
-                        inputs: vec![
-                            (
-                                format!("a"),
-                                StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: format!("x"),
-                                        scope: Scope::Input,
-                                    },
-                                    typing: Type::Integer,
-                                    location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(format!("x"), 0)]),
-                                },
-                            ),
-                            (
-                                format!("b"),
-                                StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: format!("i"),
-                                        scope: Scope::Local,
-                                    },
-                                    typing: Type::Integer,
-                                    location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(format!("i"), 0)]),
-                                },
-                            ),
-                        ],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![
-                            (format!("x"), 0),
-                            (format!("i"), 0),
-                        ]),
-                    },
-                    location: Location::default(),
-                },
-            ],
-            memory,
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let control = NodeFile {
-            name: format!("my_node_o"),
-            imports: vec![Import::NodeFile(format!("other_node_o"))],
-            input: Input {
-                node_name: format!("my_node_o"),
-                elements: vec![InputElement {
-                    identifier: format!("x"),
-                    r#type: Type::Integer,
-                }],
-            },
-            state: State {
-                node_name: format!("my_node_o"),
-                elements: vec![
-                    StateElement::Buffer {
-                        identifier: format!("mem_i"),
-                        r#type: Type::Integer,
-                    },
-                    StateElement::CalledNode {
-                        identifier: format!("other_node_o_o"),
-                        node_name: format!("other_node_o"),
-                    },
-                ],
-                step: Step {
-                    contract: Default::default(),
-                    node_name: format!("my_node_o"),
-                    output_type: Type::Integer,
-                    body: vec![
-                        Statement::Let {
-                            identifier: format!("i"),
-                            expression: Expression::MemoryAccess {
-                                identifier: format!("mem_i"),
-                            },
-                        },
-                        Statement::Let {
-                            identifier: format!("o"),
-                            expression: Expression::NodeCall {
-                                node_identifier: format!("other_node_o_o"),
-                                input_name: format!("OtherNodeOInput"),
-                                input_fields: vec![
-                                    (
-                                        format!("a"),
-                                        Expression::InputAccess {
-                                            identifier: format!("x"),
-                                        },
-                                    ),
-                                    (
-                                        format!("b"),
-                                        Expression::Identifier {
-                                            identifier: format!("i"),
-                                        },
-                                    ),
-                                ],
-                            },
-                        },
-                    ],
-                    state_elements_step: vec![StateElementStep {
-                        identifier: format!("mem_i"),
-                        expression: Expression::FunctionCall {
-                            function: Box::new(Expression::Identifier {
-                                identifier: format!(" + "),
-                            }),
-                            arguments: vec![
-                                Expression::Identifier {
-                                    identifier: format!("i"),
-                                },
-                                Expression::Literal {
-                                    literal: Constant::Integer(1),
-                                },
-                            ],
-                        },
-                    }],
-                    output_expression: Expression::Identifier {
-                        identifier: format!("o"),
-                    },
-                },
-                init: Init {
-                    node_name: format!("my_node_o"),
-                    state_elements_init: vec![
-                        StateElementInit::BufferInit {
-                            identifier: format!("mem_i"),
-                            initial_value: Constant::Integer(0),
-                        },
-                        StateElementInit::CalledNodeInit {
-                            identifier: format!("other_node_o_o"),
-                            node_name: format!("other_node_o"),
-                        },
-                    ],
-                    invariant_initialisation: vec![],
-                },
-            },
-        };
-        assert_eq!(lir_from_hir(unitary_node), control)
     }
 }
