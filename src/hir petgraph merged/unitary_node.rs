@@ -1,6 +1,6 @@
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::{graph::neighbor::Label, location::Location};
+use crate::common::{graph::neighbor::Label, location::Location, r#type::Type};
 use crate::hir::{contract::Contract, equation::Equation, memory::Memory, once_cell::OnceCell};
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -13,7 +13,7 @@ pub struct UnitaryNode {
     /// Output signal identifier.
     pub output_id: usize,
     /// Unitary node's inputs identifiers and their types.
-    pub inputs: Vec<usize>,
+    pub inputs: Vec<(usize, Type)>,
     /// Unitary node's equations.
     pub equations: Vec<Equation>,
     /// Unitary node's memory.
@@ -21,7 +21,7 @@ pub struct UnitaryNode {
     /// Mother node location.
     pub location: Location,
     /// Unitary node dependency graph.
-    pub graph: OnceCell<DiGraphMap<usize, Label>>,
+    pub graph: OnceCell<DiGraphMap<String, Label>>,
     /// Unitary node contracts.
     pub contract: Contract,
 }
@@ -43,7 +43,7 @@ impl UnitaryNode {
     /// Return vector of unitary node's signals.
     pub fn get_signals(&self) -> Vec<usize> {
         let mut signals = vec![];
-        self.inputs.iter().for_each(|signal| {
+        self.inputs.iter().for_each(|(signal, _)| {
             signals.push(signal.clone());
         });
         self.equations.iter().for_each(|equation| {
@@ -69,7 +69,7 @@ impl UnitaryNode {
     }
 
     fn eq_oncecell_graph(&self, other: &UnitaryNode) -> bool {
-        fn eq_graph(graph: &DiGraphMap<usize, Label>, other: &DiGraphMap<usize, Label>) -> bool {
+        fn eq_graph(graph: &DiGraphMap<String, Label>, other: &DiGraphMap<String, Label>) -> bool {
             let graph_nodes = graph.nodes();
             let other_nodes = other.nodes();
             let graph_edges = graph.all_edges();

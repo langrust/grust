@@ -33,7 +33,7 @@ impl UnitaryNode {
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<usize, Label>>,
     ) {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals());
 

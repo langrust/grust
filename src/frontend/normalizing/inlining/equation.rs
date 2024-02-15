@@ -100,7 +100,7 @@ impl Equation {
         &self,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
-        graph: &mut DiGraphMap<String, Label>,
+        graph: &mut DiGraphMap<usize, Label>,
         nodes: &HashMap<String, Node>,
     ) -> Vec<Equation> {
         let mut new_equations = self.inline_when_needed(memory, identifier_creator, graph, nodes);
@@ -121,7 +121,7 @@ impl Equation {
         &self,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
-        graph: &DiGraphMap<String, Label>,
+        graph: &DiGraphMap<usize, Label>,
         nodes: &HashMap<String, Node>,
     ) -> Vec<Equation> {
         match &self.expression {

@@ -46,7 +46,7 @@ impl Node {
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<usize, Label>>,
     ) {
         self.unitary_nodes
             .values_mut()

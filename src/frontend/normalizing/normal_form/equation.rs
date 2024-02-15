@@ -32,7 +32,7 @@ impl Equation {
     /// ```
     pub fn normal_form(
         self,
-        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
     ) -> Vec<Equation> {
         let Equation {

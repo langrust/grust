@@ -1,7 +1,12 @@
-use petgraph::graphmap::DiGraphMap;
 use std::collections::HashMap;
 
-use crate::common::{graph::neighbor::Label, location::Location, serialize::ordered_map};
+use petgraph::graphmap::DiGraphMap;
+
+use crate::common::{
+    graph::{color::Color, Graph},
+    location::Location,
+    serialize::ordered_map,
+};
 use crate::hir::{
     contract::Contract, equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode,
 };
@@ -16,44 +21,24 @@ pub struct Node {
     pub unscheduled_equations: HashMap<usize, Equation>,
     /// Unitary output nodes generated from this node.
     #[serde(serialize_with = "ordered_map")]
-    pub unitary_nodes: HashMap<usize, UnitaryNode>,
+    pub unitary_nodes: HashMap<String, UnitaryNode>,
     /// Node's contract.
     pub contract: Contract,
     /// Node location.
     pub location: Location,
     /// Node dependency graph.
-    pub graph: OnceCell<DiGraphMap<usize, Label>>,
+    pub graph: OnceCell<DiGraphMap<String, Label>>,
 }
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
+            && self.is_component == other.is_component
+            && self.inputs == other.inputs
             && self.unscheduled_equations == other.unscheduled_equations
             && self.unitary_nodes == other.unitary_nodes
             && self.contract == other.contract
             && self.location == other.location
             && self.eq_oncecell_graph(other)
-    }
-}
-
-impl Node {
-    fn eq_oncecell_graph(&self, other: &Node) -> bool {
-        fn eq_graph(graph: &DiGraphMap<usize, Label>, other: &DiGraphMap<usize, Label>) -> bool {
-            let graph_nodes = graph.nodes();
-            let other_nodes = other.nodes();
-            let graph_edges = graph.all_edges();
-            let other_edges = other.all_edges();
-            graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
-        }
-
-        self.graph.get().map_or_else(
-            || other.graph.get().is_none(),
-            |graph| {
-                other
-                    .graph
-                    .get()
-                    .map_or(false, |other| eq_graph(graph, other))
-            },
-        )
     }
 }

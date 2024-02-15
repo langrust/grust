@@ -31,7 +31,7 @@ impl StreamExpression {
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
     ) -> Vec<Equation> {
         match self {
@@ -380,7 +380,7 @@ impl StreamExpression {
     /// ```
     pub fn into_signal_call(
         &mut self,
-        nodes_reduced_graphs: &HashMap<String, DiGraphMap<String, Label>>,
+        nodes_reduced_graphs: &HashMap<String, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
     ) -> Vec<Equation> {
         match self {

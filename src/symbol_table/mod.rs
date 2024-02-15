@@ -380,6 +380,14 @@ impl SymbolTable {
         }
     }
 
+    pub fn get_node_input(&self, id: &usize) -> &Vec<usize> {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Node { inputs, .. } => inputs,
+            _ => unreachable!(),
+        }
+    }
+
     pub fn get_identifier_id(
         &self,
         name: &String,

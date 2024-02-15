@@ -2,12 +2,13 @@ use std::collections::HashMap;
 
 use crate::error::{Error, TerminationError};
 use crate::hir::file::File;
-use crate::hir::node::Node;
+use crate::symbol_table::SymbolTable;
 
 impl File {
     /// Generate dependency graph for every nodes/component.
     pub fn generate_dependency_graphs(
         &self,
+        symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let File {
@@ -23,10 +24,10 @@ impl File {
         nodes
             .iter()
             .map(|node| {
-                let graph = node.create_initialized_graph();
+                let graph = node.create_initialized_graph(symbol_table);
                 nodes_graphs.insert(node.id.clone(), graph.clone());
                 nodes_reduced_graphs.insert(node.id.clone(), graph);
-                let processus_manager = node.create_initialized_processus_manager();
+                let processus_manager = node.create_initialized_processus_manager(symbol_table);
                 nodes_processus_manager.insert(node.id.clone(), processus_manager);
                 Ok(())
             })
@@ -36,23 +37,13 @@ impl File {
 
         // optional component's graph initialization
         component.as_ref().map_or(Ok(()), |component| {
-            let graph = component.create_initialized_graph();
+            let graph = component.create_initialized_graph(symbol_table);
             nodes_graphs.insert(component.id.clone(), graph.clone());
             nodes_reduced_graphs.insert(component.id.clone(), graph);
-            let processus_manager = component.create_initialized_processus_manager();
+            let processus_manager = component.create_initialized_processus_manager(symbol_table);
             nodes_processus_manager.insert(component.id.clone(), processus_manager);
             Ok(())
         })?;
-
-        // creates nodes context: nodes dictionary
-        let nodes_context = nodes
-            .iter()
-            .map(|node| {
-                let node_cloned = node.clone();
-                let Node { id, .. } = node;
-                (id, node_cloned)
-            })
-            .collect::<HashMap<_, _>>();
 
         // every nodes complete their equations and contract dependency graphs
         nodes
@@ -60,7 +51,7 @@ impl File {
             .map(|node| {
                 node.add_contract_dependencies(&mut nodes_graphs);
                 node.add_all_equations_dependencies(
-                    &nodes_context,
+                    symbol_table,
                     &mut nodes_processus_manager,
                     &mut nodes_graphs,
                     &mut nodes_reduced_graphs,
@@ -75,7 +66,7 @@ impl File {
         component.as_ref().map_or(Ok(()), |component| {
             component.add_contract_dependencies(&mut nodes_graphs);
             component.add_all_equations_dependencies(
-                &nodes_context,
+                symbol_table,
                 &mut nodes_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
@@ -84,119 +75,5 @@ impl File {
         })?;
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod generate_dependency_graphs {
-    use std::collections::HashMap;
-
-    use crate::ast::{expression::Expression, function::Function, statement::Statement};
-    use crate::common::graph::neighbor::Label;
-    use crate::common::{location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, file::File, node::Node,
-        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_generate_dependency_graphs_for_all_nodes() {
-        let mut errors = vec![];
-
-        let node = Node {
-            contract: Default::default(),
-            id: String::from("test"),
-            is_component: false,
-            inputs: vec![(String::from("i"), Type::Integer)],
-            unscheduled_equations: HashMap::from([
-                (
-                    String::from("o"),
-                    Equation {
-                        scope: Scope::Output,
-                        id: String::from("o"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-                (
-                    String::from("x"),
-                    Equation {
-                        scope: Scope::Local,
-                        id: String::from("x"),
-                        signal_type: Type::Integer,
-                        expression: StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("i"),
-                                scope: Scope::Input,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::new(),
-                        },
-                        location: Location::default(),
-                    },
-                ),
-            ]),
-            unitary_nodes: HashMap::new(),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-
-        let function = Function {
-            id: String::from("test"),
-            inputs: vec![(String::from("i"), Type::Integer)],
-            statements: vec![Statement {
-                id: String::from("x"),
-                element_type: Type::Integer,
-                expression: Expression::Identifier {
-                    id: String::from("i"),
-                    typing: Some(Type::Integer),
-                    location: Location::default(),
-                },
-                location: Location::default(),
-            }],
-            returned: (
-                Type::Integer,
-                Expression::Identifier {
-                    id: String::from("x"),
-                    typing: Some(Type::Integer),
-                    location: Location::default(),
-                },
-            ),
-            location: Location::default(),
-        };
-
-        let file = File {
-            typedefs: vec![],
-            functions: vec![function],
-            nodes: vec![node],
-            component: None,
-            location: Location::default(),
-        };
-
-        file.generate_dependency_graphs(&mut errors).unwrap();
-
-        let graph = file.nodes.get(0).unwrap().graph.get().unwrap();
-
-        assert!(graph.contains_node(&String::from("o")));
-        assert!(graph.contains_node(&String::from("x")));
-        assert!(graph.contains_node(&String::from("i")));
-        assert_eq!(
-            graph.edge_weight(&String::from("x"), &String::from("i")),
-            Some(Label::Weight(0)).as_ref()
-        );
-        assert_eq!(
-            graph.edge_weight(&String::from("o"), &String::from("x")),
-            Some(Label::Weight(0)).as_ref()
-        );
     }
 }

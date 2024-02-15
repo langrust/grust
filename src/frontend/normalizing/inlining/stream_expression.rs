@@ -323,7 +323,7 @@ impl StreamExpression {
         signal_id: &String,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
-        graph: &DiGraphMap<String, Label>,
+        graph: &DiGraphMap<usize, Label>,
         nodes: &HashMap<String, Node>,
     ) -> Vec<Equation> {
         match self {

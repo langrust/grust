@@ -52,9 +52,9 @@ pub fn lir_from_hir(unitary_node: UnitaryNode, symbol_table: &SymbolTable) -> No
             node_name: name.clone(),
             elements: inputs
                 .into_iter()
-                .map(|(id, r#type)| InputElement {
+                .map(|id| InputElement {
                     identifier: symbol_table.get_name(&id).clone(),
-                    r#type,
+                    r#type: symbol_table.get_type(&id).clone(),
                 })
                 .collect(),
         },
