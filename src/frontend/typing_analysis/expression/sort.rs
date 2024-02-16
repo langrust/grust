@@ -1,16 +1,21 @@
-use crate::common::r#type::Type;
+use crate::common::{location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
-use crate::hir::expression::{Expression, ExpressionKind};
+use crate::frontend::typing_analysis::TypeAnalysis;
+use crate::hir::expression::ExpressionKind;
 use crate::symbol_table::SymbolTable;
 
-impl Expression {
+impl<E> ExpressionKind<E>
+where
+    E: TypeAnalysis,
+{
     /// Add a [Type] to the sort expression.
     pub fn typing_sort(
         &mut self,
+        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Type, TerminationError> {
+        match self {
             ExpressionKind::Sort {
                 ref mut expression,
                 ref mut function_expression,
@@ -31,17 +36,16 @@ impl Expression {
                                 vec![*element_type.clone(), *element_type.clone()],
                                 Box::new(Type::Integer),
                             ),
-                            self.location.clone(),
+                            location.clone(),
                             errors,
                         )?;
 
-                        self.typing = Some(Type::Array(element_type.clone(), *size));
-                        Ok(())
+                        Ok(Type::Array(element_type.clone(), *size))
                     }
                     given_type => {
                         let error = Error::ExpectArray {
                             given_type: given_type.clone(),
-                            location: self.location.clone(),
+                            location: location.clone(),
                         };
                         errors.push(error);
                         Err(TerminationError)

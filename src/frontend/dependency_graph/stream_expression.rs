@@ -34,7 +34,7 @@ impl StreamExpression {
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        match self.kind {
+        match &self.kind {
             StreamExpressionKind::FollowedBy { ref expression, .. } => {
                 // propagate dependencies computation
                 expression.compute_dependencies(
@@ -48,9 +48,7 @@ impl StreamExpression {
                 // set dependencies with the memory delay
                 self.dependencies.set(
                     expression
-                        .dependencies
-                        .get()
-                        .expect("there should be dependencies")
+                        .get_dependencies()
                         .clone()
                         .into_iter()
                         .map(|(id, depth)| (id, depth + 1))
@@ -111,9 +109,7 @@ impl StreamExpression {
                                     match label {
                                         Label::Contract => Ok(vec![]), // TODO: do we loose the CREUSOT dependence with the input?
                                         Label::Weight(weight) => Ok(input_expression
-                                            .dependencies
-                                            .get()
-                                            .expect("there should be dependencies")
+                                            .get_dependencies()
                                             .clone()
                                             .into_iter()
                                             .map(|(id, depth)| (id, depth + weight))
@@ -129,13 +125,16 @@ impl StreamExpression {
 
                 Ok(())
             }
-            StreamExpressionKind::Expression { expression } => expression.compute_dependencies(
-                symbol_table,
-                nodes_processus_manager,
-                nodes_graphs,
-                nodes_reduced_graphs,
-                errors,
-            ),
+            StreamExpressionKind::Expression { expression } => {
+                self.dependencies.set(expression.compute_dependencies(
+                    symbol_table,
+                    nodes_processus_manager,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?);
+                Ok(())
+            }
             StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
         }
     }

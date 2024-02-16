@@ -28,7 +28,7 @@ impl Node {
     /// to the application of the unitary node `my_node(v).o2`
     pub fn change_node_application_into_unitary_node_application(&mut self) {
         self.unitary_nodes.values_mut().for_each(|unitary_node| {
-            unitary_node.equations.iter_mut().for_each(|equation| {
+            unitary_node.statements.iter_mut().for_each(|equation| {
                 equation
                     .expression
                     .change_node_application_into_unitary_node_application()
@@ -61,7 +61,7 @@ impl Node {
         let used_signals = outputs
             .into_iter()
             .map(|output| self.add_unitary_node(output, symbol_table, creusot_contract))
-            .flat_map(|subgraph| subgraph.nodes())
+            .flat_map(|subgraph| subgraph.nodes().collect::<Vec<_>>())
             .collect::<Vec<_>>();
 
         // check that every signals are used
@@ -130,8 +130,8 @@ impl Node {
             .map(|input| input.clone())
             .collect::<Vec<_>>();
 
-        // retrieve equations from useful signals
-        let equations = subgraph
+        // retrieve statements from useful signals
+        let statements = subgraph
             .nodes()
             .filter_map(|signal| unscheduled_equations.get(&signal))
             .cloned()
@@ -164,7 +164,7 @@ impl Node {
             node_id: node.clone(),
             output_id: output.clone(),
             inputs: unitary_node_inputs,
-            equations,
+            statements,
             memory: Memory::new(),
             location: location.clone(),
             graph: OnceCell::new(),

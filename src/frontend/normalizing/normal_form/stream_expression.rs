@@ -3,11 +3,13 @@ use std::collections::HashMap;
 use petgraph::graphmap::DiGraphMap;
 
 use crate::common::graph::neighbor::Label;
-use crate::common::scope::Scope;
+use crate::hir::expression::ExpressionKind;
+use crate::hir::stream_expression::StreamExpressionKind;
 use crate::hir::{
-    dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-    signal::Signal, stream_expression::StreamExpression,
+    dependencies::Dependencies, identifier_creator::IdentifierCreator, statement::Statement,
+    stream_expression::StreamExpression,
 };
+use crate::symbol_table::SymbolTable;
 
 impl StreamExpression {
     /// Change HIR expression into a normal form.
@@ -31,19 +33,18 @@ impl StreamExpression {
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &HashMap<String, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
-    ) -> Vec<Equation> {
-        match self {
-            StreamExpression::FollowedBy {
-                expression,
-                ref mut dependencies,
-                ..
+        symbol_table: &mut SymbolTable,
+    ) -> Vec<Statement<StreamExpression>> {
+        match self.kind {
+            StreamExpressionKind::FollowedBy {
+                ref mut expression, ..
             } => {
-                let new_equations =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
+                let new_statements =
+                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
-                *dependencies = Dependencies::from(
+                self.dependencies = Dependencies::from(
                     expression
                         .get_dependencies()
                         .iter()
@@ -51,67 +52,43 @@ impl StreamExpression {
                         .collect(),
                 );
 
-                new_equations
+                new_statements
             }
-            StreamExpression::FunctionApplication {
-                inputs,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = inputs
-                    .iter_mut()
-                    .flat_map(|expression| {
-                        expression.normal_form(nodes_reduced_graphs, identifier_creator)
-                    })
-                    .collect();
-
-                *dependencies = Dependencies::from(
-                    inputs
-                        .iter()
-                        .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
-                );
-
-                new_equations
-            }
-            StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::UnitaryNodeApplication {
-                ref mut id,
-                ref node,
-                ref signal,
+            StreamExpressionKind::NodeApplication { .. } => unreachable!(),
+            StreamExpressionKind::UnitaryNodeApplication {
+                node_id,
                 ref mut inputs,
-                ref mut dependencies,
-                ..
+                output_id,
             } => {
-                let mut new_equations = inputs
+                let mut new_statements = inputs
                     .iter_mut()
                     .flat_map(|(_, expression)| {
-                        expression.into_signal_call(nodes_reduced_graphs, identifier_creator)
+                        expression.into_signal_call(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        )
                     })
                     .collect::<Vec<_>>();
 
-                let fresh_id = identifier_creator.new_identifier(
+                let fresh_name = identifier_creator.new_identifier(
                     String::from(""),
                     String::from("x"),
                     String::from(""),
                 );
-
-                // set the identifier to the node state
-                *id = Some(identifier_creator.new_identifier(
-                    node.clone(),
-                    signal.clone(),
-                    fresh_id.clone(),
-                ));
+                let fresh_id = symbol_table
+                    .insert_identifier(fresh_name, todo!(), true, todo!(), todo!())
+                    .expect("this function should not fail");
 
                 // change dependencies to be the sum of inputs dependencies
-                let reduced_graph = nodes_reduced_graphs.get(node).unwrap();
-                *dependencies = Dependencies::from(
+                let reduced_graph = nodes_reduced_graphs.get(&node_id).unwrap();
+                self.dependencies = Dependencies::from(
                     inputs
                         .iter()
                         .flat_map(|(input_id, expression)| {
-                            reduced_graph
-                                .edge_weight(signal, input_id)
-                                .map_or(vec![], |label| {
+                            reduced_graph.edge_weight(output_id, *input_id).map_or(
+                                vec![],
+                                |label| {
                                     match label {
                                         Label::Contract => vec![], // TODO: do we loose the CREUSOT dependence with the input?
                                         Label::Weight(weight) => expression
@@ -121,253 +98,302 @@ impl StreamExpression {
                                             .map(|(id, depth)| (id, depth + weight))
                                             .collect(),
                                     }
-                                })
+                                },
+                            )
                         })
                         .collect(),
                 );
 
                 let typing = self.get_type().clone();
-                let location = self.get_location().clone();
+                let location = self.location.clone();
 
-                let unitary_node_application_equation = Equation {
-                    scope: Scope::Local,
-                    signal_type: typing.clone(),
+                let unitary_node_application_statement = Statement {
+                    id: fresh_id.clone(),
                     location: location.clone(),
                     expression: self.clone(),
-                    id: fresh_id.clone(),
                 };
 
-                *self = StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: fresh_id.clone(),
-                        scope: Scope::Local,
-                    },
-                    typing,
-                    location,
-                    dependencies: Dependencies::from(vec![(fresh_id, 0)]),
+                self.kind = StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Identifier { id: fresh_id },
                 };
+                self.dependencies = Dependencies::from(vec![(fresh_id, 0)]);
 
-                new_equations.push(unitary_node_application_equation);
+                new_statements.push(unitary_node_application_statement);
 
-                new_equations
+                new_statements
             }
-            StreamExpression::Structure {
-                fields,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = fields
-                    .iter_mut()
-                    .flat_map(|(_, expression)| {
-                        expression.normal_form(nodes_reduced_graphs, identifier_creator)
-                    })
-                    .collect();
-
-                *dependencies = Dependencies::from(
-                    fields
-                        .iter()
-                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                        .collect(),
-                );
-
-                new_equations
-            }
-            StreamExpression::Array {
-                elements,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = elements
-                    .iter_mut()
-                    .flat_map(|expression| {
-                        expression.normal_form(nodes_reduced_graphs, identifier_creator)
-                    })
-                    .collect();
-
-                *dependencies = Dependencies::from(
-                    elements
-                        .iter()
-                        .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
-                );
-
-                new_equations
-            }
-            StreamExpression::Match {
-                expression,
-                arms,
-                ref mut dependencies,
-                ..
-            } => {
-                let mut equations =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
-                let mut expression_dependencies = expression.get_dependencies().clone();
-
-                arms.iter_mut()
-                    .for_each(|(pattern, bound, body, matched_expression)| {
-                        // get local signals defined in pattern
-                        let local_signals = pattern.local_identifiers();
-
-                        // remove identifiers created by the pattern from the dependencies
-                        let (mut bound_equations, mut bound_dependencies) =
-                            bound.as_mut().map_or((vec![], vec![]), |expression| {
-                                (
-                                    expression
-                                        .normal_form(nodes_reduced_graphs, identifier_creator),
-                                    expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .filter(|(signal, _)| !local_signals.contains(signal))
-                                        .collect(),
+            StreamExpressionKind::Expression { ref mut expression } => {
+                match expression {
+                    ExpressionKind::Application { ref mut inputs, .. } => {
+                        let new_statements = inputs
+                            .iter_mut()
+                            .flat_map(|expression| {
+                                expression.normal_form(
+                                    nodes_reduced_graphs,
+                                    identifier_creator,
+                                    symbol_table,
                                 )
-                            });
-                        equations.append(&mut bound_equations);
-                        expression_dependencies.append(&mut bound_dependencies);
-
-                        let mut matched_expression_equations = matched_expression
-                            .normal_form(nodes_reduced_graphs, identifier_creator);
-                        let mut matched_expression_dependencies = matched_expression
-                            .get_dependencies()
-                            .clone()
-                            .into_iter()
-                            .filter(|(signal, _)| !local_signals.contains(signal))
+                            })
                             .collect();
-                        body.append(&mut matched_expression_equations);
-                        expression_dependencies.append(&mut matched_expression_dependencies)
-                    });
 
-                *dependencies = Dependencies::from(expression_dependencies);
+                        self.dependencies = Dependencies::from(
+                            inputs
+                                .iter()
+                                .flat_map(|expression| expression.get_dependencies().clone())
+                                .collect(),
+                        );
 
-                equations
+                        new_statements
+                    }
+
+                    ExpressionKind::Structure { fields, .. } => {
+                        let new_statements = fields
+                            .iter_mut()
+                            .flat_map(|(_, expression)| {
+                                expression.normal_form(
+                                    nodes_reduced_graphs,
+                                    identifier_creator,
+                                    symbol_table,
+                                )
+                            })
+                            .collect();
+
+                        self.dependencies = Dependencies::from(
+                            fields
+                                .iter()
+                                .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                                .collect(),
+                        );
+
+                        new_statements
+                    }
+                    ExpressionKind::Array { elements, .. } => {
+                        let new_statements = elements
+                            .iter_mut()
+                            .flat_map(|expression| {
+                                expression.normal_form(
+                                    nodes_reduced_graphs,
+                                    identifier_creator,
+                                    symbol_table,
+                                )
+                            })
+                            .collect();
+
+                        self.dependencies = Dependencies::from(
+                            elements
+                                .iter()
+                                .flat_map(|expression| expression.get_dependencies().clone())
+                                .collect(),
+                        );
+
+                        new_statements
+                    }
+                    ExpressionKind::Match {
+                        expression, arms, ..
+                    } => {
+                        let mut statements = expression.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+                        let mut expression_dependencies = expression.get_dependencies().clone();
+
+                        arms.iter_mut()
+                            .for_each(|(pattern, bound, body, matched_expression)| {
+                                // get local signals defined in pattern
+                                let local_signals = pattern.local_identifiers();
+
+                                // remove identifiers created by the pattern from the dependencies
+                                let (mut bound_statements, mut bound_dependencies) =
+                                    bound.as_mut().map_or((vec![], vec![]), |expression| {
+                                        (
+                                            expression.normal_form(
+                                                nodes_reduced_graphs,
+                                                identifier_creator,
+                                                symbol_table,
+                                            ),
+                                            expression
+                                                .get_dependencies()
+                                                .clone()
+                                                .into_iter()
+                                                .filter(|(signal, _)| {
+                                                    !local_signals.contains(signal)
+                                                })
+                                                .collect(),
+                                        )
+                                    });
+                                statements.append(&mut bound_statements);
+                                expression_dependencies.append(&mut bound_dependencies);
+
+                                let mut matched_expression_statements = matched_expression
+                                    .normal_form(
+                                        nodes_reduced_graphs,
+                                        identifier_creator,
+                                        symbol_table,
+                                    );
+                                let mut matched_expression_dependencies = matched_expression
+                                    .get_dependencies()
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(signal, _)| !local_signals.contains(signal))
+                                    .collect();
+                                body.append(&mut matched_expression_statements);
+                                expression_dependencies.append(&mut matched_expression_dependencies)
+                            });
+
+                        self.dependencies = Dependencies::from(expression_dependencies);
+
+                        statements
+                    }
+                    ExpressionKind::When {
+                        option,
+                        present_body,
+                        present,
+                        default_body,
+                        default,
+                        ..
+                    } => {
+                        let new_statements = option.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+                        let mut option_dependencies = option.get_dependencies().clone();
+
+                        let mut present_statements = present.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+                        let mut present_dependencies = present.get_dependencies().clone();
+                        present_body.append(&mut present_statements);
+                        option_dependencies.append(&mut present_dependencies);
+
+                        let mut default_statements = default.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+                        let mut default_dependencies = default.get_dependencies().clone();
+                        default_body.append(&mut default_statements);
+                        option_dependencies.append(&mut default_dependencies);
+
+                        self.dependencies = Dependencies::from(option_dependencies);
+
+                        new_statements
+                    }
+                    ExpressionKind::FieldAccess { expression, .. } => {
+                        let new_statements = expression.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+
+                        self.dependencies =
+                            Dependencies::from(expression.get_dependencies().clone());
+
+                        new_statements
+                    }
+                    ExpressionKind::TupleElementAccess { expression, .. } => {
+                        let new_statements = expression.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+
+                        self.dependencies =
+                            Dependencies::from(expression.get_dependencies().clone());
+
+                        new_statements
+                    }
+                    ExpressionKind::Map { expression, .. } => {
+                        let new_statements = expression.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+
+                        self.dependencies =
+                            Dependencies::from(expression.get_dependencies().clone());
+
+                        new_statements
+                    }
+                    ExpressionKind::Fold {
+                        expression,
+                        initialization_expression,
+                        ..
+                    } => {
+                        let mut new_statements = expression.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+                        let mut initialization_statements = initialization_expression.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+                        new_statements.append(&mut initialization_statements);
+
+                        // get matched expressions dependencies
+                        let mut expression_dependencies = expression.get_dependencies().clone();
+                        let mut initialization_expression_dependencies =
+                            expression.get_dependencies().clone();
+                        expression_dependencies.append(&mut initialization_expression_dependencies);
+
+                        // push all dependencies in arms dependencies
+                        self.dependencies = Dependencies::from(expression_dependencies);
+
+                        new_statements
+                    }
+                    ExpressionKind::Sort { expression, .. } => {
+                        let new_statements = expression.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            symbol_table,
+                        );
+
+                        self.dependencies =
+                            Dependencies::from(expression.get_dependencies().clone());
+
+                        new_statements
+                    }
+                    ExpressionKind::Zip { arrays, .. } => {
+                        let new_statements = arrays
+                            .iter_mut()
+                            .flat_map(|array| {
+                                array.normal_form(
+                                    nodes_reduced_graphs,
+                                    identifier_creator,
+                                    symbol_table,
+                                )
+                            })
+                            .collect();
+
+                        self.dependencies = Dependencies::from(
+                            arrays
+                                .iter()
+                                .flat_map(|array| array.get_dependencies().clone())
+                                .collect(),
+                        );
+
+                        new_statements
+                    }
+                    ExpressionKind::Constant { .. } | ExpressionKind::Identifier { .. } => {
+                        vec![]
+                    }
+                    ExpressionKind::Abstraction { inputs, expression } => todo!(),
+                    ExpressionKind::Enumeration { enum_id, elem_id } => todo!(),
+                }
             }
-            StreamExpression::When {
-                option,
-                present_body,
-                present,
-                default_body,
-                default,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = option.normal_form(nodes_reduced_graphs, identifier_creator);
-                let mut option_dependencies = option.get_dependencies().clone();
-
-                let mut present_equations =
-                    present.normal_form(nodes_reduced_graphs, identifier_creator);
-                let mut present_dependencies = present.get_dependencies().clone();
-                present_body.append(&mut present_equations);
-                option_dependencies.append(&mut present_dependencies);
-
-                let mut default_equations =
-                    default.normal_form(nodes_reduced_graphs, identifier_creator);
-                let mut default_dependencies = default.get_dependencies().clone();
-                default_body.append(&mut default_equations);
-                option_dependencies.append(&mut default_dependencies);
-
-                *dependencies = Dependencies::from(option_dependencies);
-
-                new_equations
-            }
-            StreamExpression::FieldAccess {
-                expression,
-                dependencies,
-                ..
-            } => {
-                let new_equations =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
-
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
-
-                new_equations
-            }
-            StreamExpression::TupleElementAccess {
-                expression,
-                dependencies,
-                ..
-            } => {
-                let new_equations =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
-
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
-
-                new_equations
-            }
-            StreamExpression::Map {
-                expression,
-                dependencies,
-                ..
-            } => {
-                let new_equations =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
-
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
-
-                new_equations
-            }
-            StreamExpression::Fold {
-                expression,
-                initialization_expression,
-                ref mut dependencies,
-                ..
-            } => {
-                let mut new_equations =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
-                let mut initialization_equations =
-                    initialization_expression.normal_form(nodes_reduced_graphs, identifier_creator);
-                new_equations.append(&mut initialization_equations);
-
-                // get matched expressions dependencies
-                let mut expression_dependencies = expression.get_dependencies().clone();
-                let mut initialization_expression_dependencies =
-                    expression.get_dependencies().clone();
-                expression_dependencies.append(&mut initialization_expression_dependencies);
-
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-
-                new_equations
-            }
-            StreamExpression::Sort {
-                expression,
-                dependencies,
-                ..
-            } => {
-                let new_equations =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator);
-
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
-
-                new_equations
-            }
-            StreamExpression::Zip {
-                arrays,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = arrays
-                    .iter_mut()
-                    .flat_map(|array| array.normal_form(nodes_reduced_graphs, identifier_creator))
-                    .collect();
-
-                *dependencies = Dependencies::from(
-                    arrays
-                        .iter()
-                        .flat_map(|array| array.get_dependencies().clone())
-                        .collect(),
-                );
-
-                new_equations
-            }
-            StreamExpression::Constant { .. } | StreamExpression::SignalCall { .. } => vec![],
         }
     }
 
     /// Change HIR expression into a signal call.
     ///
     /// If the expression is not a signal call, then normalize the expression,
-    /// create an equation with the normalized expression and change current
-    /// expression into a call to the equation.
+    /// create an statement with the normalized expression and change current
+    /// expression into a call to the statement.
     ///
     /// # Example
     ///
@@ -380,585 +406,43 @@ impl StreamExpression {
     /// ```
     pub fn into_signal_call(
         &mut self,
-        nodes_reduced_graphs: &HashMap<String, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
-    ) -> Vec<Equation> {
-        match self {
-            StreamExpression::SignalCall { .. } => vec![],
+        symbol_table: &mut SymbolTable,
+    ) -> Vec<Statement<StreamExpression>> {
+        match self.kind {
+            StreamExpressionKind::Expression {
+                expression: ExpressionKind::Identifier { .. },
+            } => vec![],
             _ => {
-                let mut equations = self.normal_form(nodes_reduced_graphs, identifier_creator);
+                let mut statements =
+                    self.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
                 let typing = self.get_type().clone();
-                let location = self.get_location().clone();
+                let location = self.location.clone();
 
-                let fresh_id = identifier_creator.new_identifier(
+                let fresh_name = identifier_creator.new_identifier(
                     String::from(""),
                     String::from("x"),
                     String::from(""),
                 );
+                let fresh_id = symbol_table
+                    .insert_identifier(fresh_name, todo!(), true, todo!(), todo!())
+                    .expect("this function should not fail");
 
-                let new_equation = Equation {
-                    scope: Scope::Local,
-                    signal_type: typing.clone(),
+                let new_statement = Statement {
+                    id: fresh_id.clone(),
                     location: location.clone(),
                     expression: self.clone(),
-                    id: fresh_id.clone(),
                 };
 
-                *self = StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: fresh_id.clone(),
-                        scope: Scope::Local,
-                    },
-                    typing,
-                    location,
-                    dependencies: Dependencies::from(vec![(fresh_id, 0)]),
+                self.kind = StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Identifier { id: fresh_id },
                 };
+                self.dependencies = Dependencies::from(vec![(fresh_id, 0)]);
 
-                equations.push(new_equation);
-                equations
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod into_signal_call {
-    use std::collections::{HashMap, HashSet};
-
-    use petgraph::graphmap::GraphMap;
-
-    use crate::common::graph::neighbor::Label;
-    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_leave_signal_call_unchanged() {
-        let mut graph = GraphMap::new();
-        graph.add_node(String::from("x"));
-        graph.add_node(String::from("y"));
-        graph.add_node(String::from("o"));
-        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
-        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
-        let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
-        let mut identifier_creator = IdentifierCreator {
-            signals: HashSet::new(),
-        };
-
-        let mut expression = StreamExpression::SignalCall {
-            signal: Signal {
-                id: String::from("x"),
-                scope: Scope::Input,
-            },
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-        };
-        let equations = expression.into_signal_call(&nodes_reduced_graphs, &mut identifier_creator);
-
-        let control = StreamExpression::SignalCall {
-            signal: Signal {
-                id: String::from("x"),
-                scope: Scope::Input,
-            },
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-        };
-        assert!(equations.is_empty());
-        assert_eq!(expression, control)
-    }
-
-    #[test]
-    fn should_create_signal_call_from_other_expression() {
-        let mut graph = GraphMap::new();
-        graph.add_node(String::from("x"));
-        graph.add_node(String::from("y"));
-        graph.add_node(String::from("o"));
-        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
-        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
-        let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
-        let mut identifier_creator = IdentifierCreator {
-            signals: HashSet::from([String::from("x")]),
-        };
-
-        let mut expression = StreamExpression::FollowedBy {
-            constant: Constant::Integer(0),
-            expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("x"),
-                    scope: Scope::Input,
-                },
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-            }),
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
-        };
-        let equations = expression.into_signal_call(&nodes_reduced_graphs, &mut identifier_creator);
-
-        let control = Equation {
-            scope: Scope::Local,
-            id: String::from("x_1"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::FollowedBy {
-                constant: Constant::Integer(0),
-                expression: Box::new(StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x"),
-                        scope: Scope::Input,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                }),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
-            },
-            location: Location::default(),
-        };
-        assert_eq!(equations[0], control);
-
-        let control = StreamExpression::SignalCall {
-            signal: Signal {
-                id: String::from("x_1"),
-                scope: Scope::Local,
-            },
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
-        };
-        assert_eq!(expression, control)
-    }
-}
-
-#[cfg(test)]
-mod normal_form {
-    use std::collections::{HashMap, HashSet};
-
-    use petgraph::graphmap::GraphMap;
-
-    use crate::ast::expression::Expression;
-    use crate::common::graph::neighbor::Label;
-    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_change_node_applications_to_be_root_expressions() {
-        let mut graph = GraphMap::new();
-        graph.add_node(String::from("x"));
-        graph.add_node(String::from("y"));
-        graph.add_node(String::from("o"));
-        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
-        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
-        let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
-        // x: int = 1 + my_node(s, v*2).o;
-        let mut identifier_creator = IdentifierCreator {
-            signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
-        };
-
-        let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("+"),
-                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                location: Location::default(),
-            },
-            inputs: vec![
-                StreamExpression::Constant {
-                    constant: Constant::Integer(1),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![]),
-                },
-                StreamExpression::UnitaryNodeApplication {
-                    id: None,
-                    node: String::from("my_node"),
-                    inputs: vec![
-                        (
-                            format!("x"),
-                            StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("s"),
-                                    scope: Scope::Input,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
-                            },
-                        ),
-                        (
-                            format!("y"),
-                            StreamExpression::FunctionApplication {
-                                function_expression: Expression::Identifier {
-                                    id: String::from("*2"),
-                                    typing: Some(Type::Abstract(
-                                        vec![Type::Integer],
-                                        Box::new(Type::Integer),
-                                    )),
-                                    location: Location::default(),
-                                },
-                                inputs: vec![StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("v"),
-                                        scope: Scope::Input,
-                                    },
-                                    typing: Type::Integer,
-                                    location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                                }],
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                            },
-                        ),
-                    ],
-                    signal: String::from("o"),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![
-                        (String::from("s"), 0),
-                        (String::from("v"), 0),
-                    ]),
-                },
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
-        };
-        let equations = expression.normal_form(&nodes_reduced_graphs, &mut identifier_creator);
-
-        // x_2: int = my_node(s, x_1).o;
-        let control = Equation {
-            scope: Scope::Local,
-            id: String::from("x_2"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_node_o_x_2")),
-                node: String::from("my_node"),
-                inputs: vec![
-                    (
-                        format!("x"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("s"),
-                                scope: Scope::Input,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
-                        },
-                    ),
-                    (
-                        format!("y"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x_1"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
-                        },
-                    ),
-                ],
-                signal: String::from("o"),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("s"), 0),
-                    (String::from("x_1"), 0),
-                ]),
-            },
-            location: Location::default(),
-        };
-        assert_eq!(*equations.get(1).unwrap(), control);
-
-        // x: int = 1 + x_2;
-        let control = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("+"),
-                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                location: Location::default(),
-            },
-            inputs: vec![
-                StreamExpression::Constant {
-                    constant: Constant::Integer(1),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![]),
-                },
-                StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x_2"),
-                        scope: Scope::Local,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("x_2"), 0)]),
-                },
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x_2"), 0)]),
-        };
-        assert_eq!(expression, control)
-    }
-
-    #[test]
-    fn should_change_inputs_expressions_to_be_signal_calls() {
-        let mut graph = GraphMap::new();
-        graph.add_node(String::from("x"));
-        graph.add_node(String::from("y"));
-        graph.add_node(String::from("o"));
-        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
-        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
-        let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
-        // x: int = 1 + my_node(s, v*2).o;
-        let mut identifier_creator = IdentifierCreator {
-            signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
-        };
-
-        let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("+"),
-                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                location: Location::default(),
-            },
-            inputs: vec![
-                StreamExpression::Constant {
-                    constant: Constant::Integer(1),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![]),
-                },
-                StreamExpression::UnitaryNodeApplication {
-                    id: None,
-                    node: String::from("my_node"),
-                    inputs: vec![
-                        (
-                            format!("x"),
-                            StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("v"),
-                                    scope: Scope::Input,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
-                            },
-                        ),
-                        (
-                            format!("y"),
-                            StreamExpression::FunctionApplication {
-                                function_expression: Expression::Identifier {
-                                    id: String::from("*2"),
-                                    typing: Some(Type::Abstract(
-                                        vec![Type::Integer],
-                                        Box::new(Type::Integer),
-                                    )),
-                                    location: Location::default(),
-                                },
-                                inputs: vec![StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("v"),
-                                        scope: Scope::Input,
-                                    },
-                                    typing: Type::Integer,
-                                    location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                                }],
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                            },
-                        ),
-                    ],
-                    signal: String::from("o"),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![
-                        (String::from("s"), 0),
-                        (String::from("v"), 0),
-                    ]),
-                },
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
-        };
-        let equations = expression.normal_form(&nodes_reduced_graphs, &mut identifier_creator);
-
-        // x_1: int = v*2;
-        // x_2: int = my_node(s, x_1).o;
-        let control = vec![
-            Equation {
-                scope: Scope::Local,
-                id: String::from("x_1"),
-                signal_type: Type::Integer,
-                expression: StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("*2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("v"),
-                            scope: Scope::Input,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                },
-                location: Location::default(),
-            },
-            Equation {
-                scope: Scope::Local,
-                id: String::from("x_2"),
-                signal_type: Type::Integer,
-                expression: StreamExpression::UnitaryNodeApplication {
-                    id: Some(format!("my_node_o_x_2")),
-                    node: String::from("my_node"),
-                    inputs: vec![
-                        (
-                            format!("x"),
-                            StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("v"),
-                                    scope: Scope::Input,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
-                            },
-                        ),
-                        (
-                            format!("y"),
-                            StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("x_1"),
-                                    scope: Scope::Local,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("x_1"), 0)]),
-                            },
-                        ),
-                    ],
-                    signal: String::from("o"),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![
-                        (String::from("s"), 0),
-                        (String::from("x_1"), 0),
-                    ]),
-                },
-                location: Location::default(),
-            },
-        ];
-        assert_eq!(equations, control)
-    }
-
-    #[test]
-    fn should_set_identifier_to_node_state_in_unitary_node_application() {
-        let mut graph = GraphMap::new();
-        graph.add_node(String::from("x"));
-        graph.add_node(String::from("y"));
-        graph.add_node(String::from("o"));
-        graph.add_edge(String::from("o"), String::from("x"), Label::Weight(0));
-        graph.add_edge(String::from("o"), String::from("y"), Label::Weight(0));
-        let nodes_reduced_graphs = HashMap::from([(format!("my_node"), graph)]);
-        // x: int = 1 + my_node(s, v*2).o;
-        let mut identifier_creator = IdentifierCreator {
-            signals: HashSet::from([String::from("x"), String::from("s"), String::from("v")]),
-        };
-
-        let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("+"),
-                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                location: Location::default(),
-            },
-            inputs: vec![
-                StreamExpression::Constant {
-                    constant: Constant::Integer(1),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![]),
-                },
-                StreamExpression::UnitaryNodeApplication {
-                    id: None,
-                    node: String::from("my_node"),
-                    inputs: vec![
-                        (
-                            format!("x"),
-                            StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("v"),
-                                    scope: Scope::Input,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("s"), 0)]),
-                            },
-                        ),
-                        (
-                            format!("y"),
-                            StreamExpression::FunctionApplication {
-                                function_expression: Expression::Identifier {
-                                    id: String::from("*2"),
-                                    typing: Some(Type::Abstract(
-                                        vec![Type::Integer],
-                                        Box::new(Type::Integer),
-                                    )),
-                                    location: Location::default(),
-                                },
-                                inputs: vec![StreamExpression::SignalCall {
-                                    signal: Signal {
-                                        id: String::from("v"),
-                                        scope: Scope::Input,
-                                    },
-                                    typing: Type::Integer,
-                                    location: Location::default(),
-                                    dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                                }],
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                            },
-                        ),
-                    ],
-                    signal: String::from("o"),
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![
-                        (String::from("s"), 0),
-                        (String::from("v"), 0),
-                    ]),
-                },
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("s"), 0), (String::from("v"), 0)]),
-        };
-        let equations = expression.normal_form(&nodes_reduced_graphs, &mut identifier_creator);
-
-        for Equation { expression, .. } in equations {
-            if let StreamExpression::UnitaryNodeApplication { id, .. } = expression {
-                assert!(id.is_some())
+                statements.push(new_statement);
+                statements
             }
         }
     }

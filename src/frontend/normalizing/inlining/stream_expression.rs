@@ -5,9 +5,15 @@ use petgraph::{algo::has_path_connecting, graphmap::DiGraphMap};
 use crate::{
     common::{graph::neighbor::Label, scope::Scope},
     hir::{
-        dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-        memory::Memory, node::Node, signal::Signal, stream_expression::StreamExpression,
+        dependencies::Dependencies,
+        expression::ExpressionKind,
+        identifier_creator::IdentifierCreator,
+        memory::Memory,
+        node::Node,
+        statement::Statement,
+        stream_expression::{StreamExpression, StreamExpressionKind},
     },
+    symbol_table::SymbolTable,
 };
 
 use super::Union;
@@ -27,33 +33,214 @@ impl StreamExpression {
     /// `a + b/2`.
     pub fn replace_by_context(
         &mut self,
-        context_map: &HashMap<String, Union<Signal, StreamExpression>>,
+        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
     ) {
-        match self {
-            StreamExpression::Constant { .. } => (),
-            StreamExpression::SignalCall {
-                ref mut signal,
-                ref mut dependencies,
-                ..
-            } => {
-                if let Some(element) = context_map.get(&signal.id) {
-                    match element {
-                        Union::I1(new_signal) => {
-                            *signal = new_signal.clone();
-                            *dependencies = Dependencies::from(vec![(new_signal.id.clone(), 0)]);
+        match self.kind {
+            StreamExpressionKind::Expression { ref mut expression } => {
+                match expression {
+                    ExpressionKind::Constant { .. } => (),
+                    ExpressionKind::Identifier { ref mut id } => {
+                        if let Some(element) = context_map.get(id) {
+                            match element {
+                                Union::I1(new_id) => {
+                                    *id = *new_id;
+                                    self.dependencies = Dependencies::from(vec![(*new_id, 0)]);
+                                }
+                                Union::I2(new_expression) => *self = new_expression.clone(),
+                            }
                         }
-                        Union::I2(new_expression) => *self = new_expression.clone(),
                     }
+                    ExpressionKind::Application { ref mut inputs, .. } => {
+                        inputs
+                            .iter_mut()
+                            .for_each(|expression| expression.replace_by_context(context_map));
+
+                        self.dependencies = Dependencies::from(
+                            inputs
+                                .iter()
+                                .flat_map(|expression| expression.get_dependencies().clone())
+                                .collect(),
+                        );
+                    }
+                    ExpressionKind::Structure { ref mut fields, .. } => {
+                        fields
+                            .iter_mut()
+                            .for_each(|(_, expression)| expression.replace_by_context(context_map));
+
+                        self.dependencies = Dependencies::from(
+                            fields
+                                .iter()
+                                .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                                .collect(),
+                        );
+                    }
+                    ExpressionKind::Array {
+                        ref mut elements, ..
+                    } => {
+                        elements
+                            .iter_mut()
+                            .for_each(|expression| expression.replace_by_context(context_map));
+
+                        self.dependencies = Dependencies::from(
+                            elements
+                                .iter()
+                                .flat_map(|expression| expression.get_dependencies().clone())
+                                .collect(),
+                        );
+                    }
+                    ExpressionKind::Match {
+                        ref mut expression,
+                        ref mut arms,
+                        ..
+                    } => {
+                        expression.replace_by_context(context_map);
+                        let mut expression_dependencies = expression.get_dependencies().clone();
+
+                        arms.iter_mut()
+                            .for_each(|(pattern, bound, body, matched_expression)| {
+                                let local_signals = pattern.local_identifiers();
+
+                                // remove identifiers created by the pattern from the context
+                                let context_map = context_map
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(key, _)| !local_signals.contains(key))
+                                    .collect();
+
+                                if let Some(expression) = bound.as_mut() {
+                                    expression.replace_by_context(&context_map);
+                                    let mut bound_dependencies = expression
+                                        .get_dependencies()
+                                        .clone()
+                                        .into_iter()
+                                        .filter(|(signal, _)| !local_signals.contains(signal))
+                                        .collect();
+                                    expression_dependencies.append(&mut bound_dependencies);
+                                };
+
+                                assert!(body.is_empty());
+                                // body.iter_mut().for_each(|statement| {
+                                //     statement.expression.replace_by_context(&context_map)
+                                // });
+
+                                matched_expression.replace_by_context(&context_map);
+                                let mut matched_expression_dependencies = matched_expression
+                                    .get_dependencies()
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(signal, _)| !local_signals.contains(signal))
+                                    .collect::<Vec<(usize, usize)>>();
+                                expression_dependencies
+                                    .append(&mut matched_expression_dependencies);
+                            });
+
+                        self.dependencies = Dependencies::from(expression_dependencies);
+                    }
+                    ExpressionKind::When {
+                        ref mut option,
+                        ref mut present_body,
+                        ref mut present,
+                        ref mut default_body,
+                        ref mut default,
+                        ..
+                    } => {
+                        option.replace_by_context(context_map);
+                        let mut option_dependencies = option.get_dependencies().clone();
+
+                        assert!(present_body.is_empty());
+                        // present_body
+                        //     .iter_mut()
+                        //     .for_each(|statement| statement.expression.replace_by_context(context_map));
+
+                        present.replace_by_context(context_map);
+                        let mut present_dependencies = present.get_dependencies().clone();
+
+                        assert!(default_body.is_empty());
+                        // default_body
+                        //     .iter_mut()
+                        //     .for_each(|statement| statement.expression.replace_by_context(context_map));
+
+                        default.replace_by_context(context_map);
+                        let mut default_dependencies = default.get_dependencies().clone();
+
+                        option_dependencies.append(&mut present_dependencies);
+                        option_dependencies.append(&mut default_dependencies);
+                        self.dependencies = Dependencies::from(option_dependencies);
+                    }
+                    ExpressionKind::FieldAccess {
+                        ref mut expression, ..
+                    } => {
+                        expression.replace_by_context(context_map);
+                        // get matched expression dependencies
+                        let expression_dependencies = expression.get_dependencies().clone();
+                        // push all dependencies in arms dependencies
+                        self.dependencies = Dependencies::from(expression_dependencies);
+                    }
+                    ExpressionKind::TupleElementAccess {
+                        ref mut expression, ..
+                    } => {
+                        expression.replace_by_context(context_map);
+                        // get matched expression dependencies
+                        let expression_dependencies = expression.get_dependencies().clone();
+                        // push all dependencies in arms dependencies
+                        self.dependencies = Dependencies::from(expression_dependencies);
+                    }
+                    ExpressionKind::Map {
+                        ref mut expression, ..
+                    } => {
+                        expression.replace_by_context(context_map);
+                        // get matched expression dependencies
+                        let expression_dependencies = expression.get_dependencies().clone();
+                        // push all dependencies in arms dependencies
+                        self.dependencies = Dependencies::from(expression_dependencies);
+                    }
+                    ExpressionKind::Fold {
+                        ref mut expression,
+                        ref mut initialization_expression,
+                        ..
+                    } => {
+                        expression.replace_by_context(context_map);
+                        initialization_expression.replace_by_context(context_map);
+                        // get matched expressions dependencies
+                        let mut expression_dependencies = expression.get_dependencies().clone();
+                        let mut initialization_expression_dependencies =
+                            expression.get_dependencies().clone();
+                        expression_dependencies.append(&mut initialization_expression_dependencies);
+
+                        // push all dependencies in arms dependencies
+                        self.dependencies = Dependencies::from(expression_dependencies);
+                    }
+                    ExpressionKind::Sort {
+                        ref mut expression, ..
+                    } => {
+                        expression.replace_by_context(context_map);
+                        // get matched expression dependencies
+                        let expression_dependencies = expression.get_dependencies().clone();
+                        // push all dependencies in arms dependencies
+                        self.dependencies = Dependencies::from(expression_dependencies);
+                    }
+                    ExpressionKind::Zip { ref mut arrays, .. } => {
+                        arrays
+                            .iter_mut()
+                            .for_each(|array| array.replace_by_context(context_map));
+
+                        self.dependencies = Dependencies::from(
+                            arrays
+                                .iter()
+                                .flat_map(|array| array.get_dependencies().clone())
+                                .collect(),
+                        );
+                    }
+                    ExpressionKind::Abstraction { inputs, expression } => todo!(),
+                    ExpressionKind::Enumeration { enum_id, elem_id } => todo!(),
                 }
             }
-            StreamExpression::FollowedBy {
-                expression,
-                ref mut dependencies,
-                ..
+            StreamExpressionKind::FollowedBy {
+                ref mut expression, ..
             } => {
                 expression.replace_by_context(context_map);
 
-                *dependencies = Dependencies::from(
+                self.dependencies = Dependencies::from(
                     expression
                         .get_dependencies()
                         .iter()
@@ -61,246 +248,41 @@ impl StreamExpression {
                         .collect(),
                 );
             }
-            StreamExpression::FunctionApplication {
-                inputs,
-                ref mut dependencies,
-                ..
-            } => {
-                inputs
-                    .iter_mut()
-                    .for_each(|expression| expression.replace_by_context(context_map));
-
-                *dependencies = Dependencies::from(
-                    inputs
-                        .iter()
-                        .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
-                );
-            }
-            StreamExpression::UnitaryNodeApplication {
-                id,
-                inputs,
-                ref mut dependencies,
+            StreamExpressionKind::UnitaryNodeApplication {
+                ref mut node_id,
+                ref mut inputs,
                 ..
             } => {
                 // replace the id of the called node
-                if let Some(id) = id.as_mut() {
-                    if let Some(element) = context_map.get(id) {
-                        match element {
-                            Union::I1(Signal { id: new_id, .. })
-                            | Union::I2(StreamExpression::SignalCall {
-                                signal: Signal { id: new_id, .. },
-                                ..
-                            }) => {
-                                *id = new_id.clone();
-                            }
-                            Union::I2(_) => unreachable!(),
+                if let Some(element) = context_map.get(node_id) {
+                    match element {
+                        Union::I1(new_id)
+                        | Union::I2(StreamExpression {
+                            kind:
+                                StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Identifier { id: new_id },
+                                },
+                            ..
+                        }) => {
+                            *node_id = new_id.clone();
                         }
+                        Union::I2(_) => unreachable!(),
                     }
-                };
+                }
 
                 inputs
                     .iter_mut()
                     .for_each(|(_, expression)| expression.replace_by_context(context_map));
 
                 // change dependencies to be the sum of inputs dependencies
-                *dependencies = Dependencies::from(
+                self.dependencies = Dependencies::from(
                     inputs
                         .iter()
                         .flat_map(|(_, expression)| expression.get_dependencies().clone())
                         .collect(),
                 );
             }
-            StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::Structure {
-                fields,
-                ref mut dependencies,
-                ..
-            } => {
-                fields
-                    .iter_mut()
-                    .for_each(|(_, expression)| expression.replace_by_context(context_map));
-
-                *dependencies = Dependencies::from(
-                    fields
-                        .iter()
-                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                        .collect(),
-                );
-            }
-            StreamExpression::Array {
-                elements,
-                ref mut dependencies,
-                ..
-            } => {
-                elements
-                    .iter_mut()
-                    .for_each(|expression| expression.replace_by_context(context_map));
-
-                *dependencies = Dependencies::from(
-                    elements
-                        .iter()
-                        .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
-                );
-            }
-            StreamExpression::Match {
-                expression,
-                arms,
-                ref mut dependencies,
-                ..
-            } => {
-                expression.replace_by_context(context_map);
-                let mut expression_dependencies = expression.get_dependencies().clone();
-
-                arms.iter_mut()
-                    .for_each(|(pattern, bound, body, matched_expression)| {
-                        let local_signals = pattern.local_identifiers();
-
-                        // remove identifiers created by the pattern from the context
-                        let context_map = context_map
-                            .clone()
-                            .into_iter()
-                            .filter(|(key, _)| !local_signals.contains(key))
-                            .collect();
-
-                        if let Some(expression) = bound.as_mut() {
-                            expression.replace_by_context(&context_map);
-                            let mut bound_dependencies = expression
-                                .get_dependencies()
-                                .clone()
-                                .into_iter()
-                                .filter(|(signal, _)| !local_signals.contains(signal))
-                                .collect();
-                            expression_dependencies.append(&mut bound_dependencies);
-                        };
-
-                        assert!(body.is_empty());
-                        // body.iter_mut().for_each(|equation| {
-                        //     equation.expression.replace_by_context(&context_map)
-                        // });
-
-                        matched_expression.replace_by_context(&context_map);
-                        let mut matched_expression_dependencies = matched_expression
-                            .get_dependencies()
-                            .clone()
-                            .into_iter()
-                            .filter(|(signal, _)| !local_signals.contains(signal))
-                            .collect::<Vec<(String, usize)>>();
-                        expression_dependencies.append(&mut matched_expression_dependencies);
-                    });
-
-                *dependencies = Dependencies::from(expression_dependencies);
-            }
-            StreamExpression::When {
-                option,
-                present_body,
-                present,
-                default_body,
-                default,
-                ref mut dependencies,
-                ..
-            } => {
-                option.replace_by_context(context_map);
-                let mut option_dependencies = option.get_dependencies().clone();
-
-                assert!(present_body.is_empty());
-                // present_body
-                //     .iter_mut()
-                //     .for_each(|equation| equation.expression.replace_by_context(context_map));
-
-                present.replace_by_context(context_map);
-                let mut present_dependencies = present.get_dependencies().clone();
-
-                assert!(default_body.is_empty());
-                // default_body
-                //     .iter_mut()
-                //     .for_each(|equation| equation.expression.replace_by_context(context_map));
-
-                default.replace_by_context(context_map);
-                let mut default_dependencies = default.get_dependencies().clone();
-
-                option_dependencies.append(&mut present_dependencies);
-                option_dependencies.append(&mut default_dependencies);
-                *dependencies = Dependencies::from(option_dependencies);
-            }
-            StreamExpression::FieldAccess {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                expression.replace_by_context(context_map);
-                // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-            }
-            StreamExpression::TupleElementAccess {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                expression.replace_by_context(context_map);
-                // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-            }
-            StreamExpression::Map {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                expression.replace_by_context(context_map);
-                // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-            }
-            StreamExpression::Fold {
-                expression,
-                initialization_expression,
-                ref mut dependencies,
-                ..
-            } => {
-                expression.replace_by_context(context_map);
-                initialization_expression.replace_by_context(context_map);
-                // get matched expressions dependencies
-                let mut expression_dependencies = expression.get_dependencies().clone();
-                let mut initialization_expression_dependencies =
-                    expression.get_dependencies().clone();
-                expression_dependencies.append(&mut initialization_expression_dependencies);
-
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-            }
-            StreamExpression::Sort {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                expression.replace_by_context(context_map);
-                // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-            }
-            StreamExpression::Zip {
-                arrays,
-                ref mut dependencies,
-                ..
-            } => {
-                arrays
-                    .iter_mut()
-                    .for_each(|array| array.replace_by_context(context_map));
-
-                *dependencies = Dependencies::from(
-                    arrays
-                        .iter()
-                        .flat_map(|array| array.get_dependencies().clone())
-                        .collect(),
-                );
-            }
+            StreamExpressionKind::NodeApplication { .. } => unreachable!(),
         }
     }
 
@@ -320,25 +302,42 @@ impl StreamExpression {
     /// before knowing the input.
     pub fn inline_when_needed(
         &mut self,
-        signal_id: &String,
+        signal_id: usize,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         graph: &DiGraphMap<usize, Label>,
-        nodes: &HashMap<String, Node>,
-    ) -> Vec<Equation> {
-        match self {
-            StreamExpression::UnitaryNodeApplication {
-                id,
-                node,
-                inputs,
-                signal,
-                typing,
-                location,
-                ref mut dependencies,
-                ..
+        symbol_table: &mut SymbolTable,
+        nodes: &HashMap<usize, Node>,
+    ) -> Vec<Statement<StreamExpression>> {
+        match &mut self.kind {
+            StreamExpressionKind::Expression { .. } => vec![],
+            StreamExpressionKind::FollowedBy {
+                ref mut expression, ..
+            } => {
+                let new_statements = expression.inline_when_needed(
+                    signal_id,
+                    memory,
+                    identifier_creator,
+                    graph,
+                    symbol_table,
+                    nodes,
+                );
+                self.dependencies = Dependencies::from(
+                    expression
+                        .get_dependencies()
+                        .iter()
+                        .map(|(id, depth)| (id.clone(), depth + 1))
+                        .collect(),
+                );
+                new_statements
+            }
+            StreamExpressionKind::UnitaryNodeApplication {
+                node_id,
+                ref mut inputs,
+                output_id,
             } => {
                 // inline potential node calls in the inputs
-                let mut new_equations = inputs
+                let mut new_statements = inputs
                     .iter_mut()
                     .flat_map(|(_, expression)| {
                         expression.inline_when_needed(
@@ -346,6 +345,7 @@ impl StreamExpression {
                             memory,
                             identifier_creator,
                             graph,
+                            symbol_table,
                             nodes,
                         )
                     })
@@ -356,39 +356,38 @@ impl StreamExpression {
 
                 // then node call must be inlined
                 if should_inline {
-                    let called_node = nodes.get(node).unwrap();
-                    let called_unitary_node = called_node.unitary_nodes.get(signal).unwrap();
+                    let called_node = nodes.get(&node_id).unwrap();
+                    let called_unitary_node = called_node.unitary_nodes.get(&signal_id).unwrap();
 
-                    // get equations and memory from called node, with corresponding inputs
-                    let (mut retrieved_equations, retrieved_memory) = called_unitary_node
-                        .instantiate_equations_and_memory(identifier_creator, inputs, None);
+                    // get statements and memory from called node, with corresponding inputs
+                    let (mut retrieved_statements, retrieved_memory) = called_unitary_node
+                        .instantiate_statements_and_memory(
+                            identifier_creator,
+                            inputs,
+                            None,
+                            symbol_table,
+                        );
 
                     // remove called node from memory
-                    memory.remove_called_node(id.as_ref().unwrap());
+                    memory.remove_called_node(&node_id);
 
                     // change the expression to a signal call to the output signal
-                    let typing = typing.clone();
-                    let location = location.clone();
-                    retrieved_equations.iter_mut().for_each(|equation| {
-                        if equation.scope == Scope::Output {
-                            *self = StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: equation.id.clone(),
-                                    scope: Scope::Local,
-                                },
-                                typing: typing.clone(),
-                                location: location.clone(),
-                                dependencies: Dependencies::from(vec![(equation.id.clone(), 0)]),
+                    retrieved_statements.iter_mut().for_each(|statement| {
+                        let scope = symbol_table.get_scope(&statement.id);
+                        if scope == &Scope::Output {
+                            self.kind = StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier { id: statement.id },
                             };
-                            equation.scope = Scope::Local
+                            self.dependencies = Dependencies::from(vec![(statement.id.clone(), 0)]);
+                            symbol_table.set_scope(&statement.id, Scope::Local);
                         }
                     });
 
-                    new_equations.append(&mut retrieved_equations);
+                    new_statements.append(&mut retrieved_statements);
                     memory.combine(retrieved_memory);
                 } else {
                     // change dependencies to be the sum of inputs dependencies
-                    *dependencies = Dependencies::from(
+                    self.dependencies = Dependencies::from(
                         inputs
                             .iter()
                             .flat_map(|(_, expression)| expression.get_dependencies().clone())
@@ -396,1772 +395,9 @@ impl StreamExpression {
                     );
                 }
 
-                new_equations
+                new_statements
             }
-            StreamExpression::Constant { .. } => vec![],
-            StreamExpression::SignalCall { .. } => vec![],
-            StreamExpression::FollowedBy {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    nodes,
-                );
-                *dependencies = Dependencies::from(
-                    expression
-                        .get_dependencies()
-                        .iter()
-                        .map(|(id, depth)| (id.clone(), depth + 1))
-                        .collect(),
-                );
-                new_equations
-            }
-            StreamExpression::FunctionApplication {
-                inputs,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = inputs
-                    .iter_mut()
-                    .flat_map(|expression| {
-                        expression.inline_when_needed(
-                            signal_id,
-                            memory,
-                            identifier_creator,
-                            graph,
-                            nodes,
-                        )
-                    })
-                    .collect();
-                *dependencies = Dependencies::from(
-                    inputs
-                        .iter()
-                        .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
-                );
-                new_equations
-            }
-            StreamExpression::NodeApplication { .. } => unreachable!(),
-            StreamExpression::Structure {
-                fields,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = fields
-                    .iter_mut()
-                    .flat_map(|(_, expression)| {
-                        expression.inline_when_needed(
-                            signal_id,
-                            memory,
-                            identifier_creator,
-                            graph,
-                            nodes,
-                        )
-                    })
-                    .collect();
-                *dependencies = Dependencies::from(
-                    fields
-                        .iter()
-                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                        .collect(),
-                );
-                new_equations
-            }
-            StreamExpression::Array {
-                elements,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = elements
-                    .iter_mut()
-                    .flat_map(|expression| {
-                        expression.inline_when_needed(
-                            signal_id,
-                            memory,
-                            identifier_creator,
-                            graph,
-                            nodes,
-                        )
-                    })
-                    .collect();
-                *dependencies = Dependencies::from(
-                    elements
-                        .iter()
-                        .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
-                );
-                new_equations
-            }
-            StreamExpression::Match {
-                expression,
-                arms,
-                ref mut dependencies,
-                ..
-            } => {
-                let mut new_equations = expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    nodes,
-                );
-
-                let mut other_new_equations = arms
-                    .iter_mut()
-                    .flat_map(|(_, bound, body, expression)| {
-                        assert!(body.is_empty());
-                        let mut new_equations_bound = bound
-                            .as_mut()
-                            .map(|expression| {
-                                expression.inline_when_needed(
-                                    signal_id,
-                                    memory,
-                                    identifier_creator,
-                                    graph,
-                                    nodes,
-                                )
-                            })
-                            .unwrap_or_default();
-                        let mut new_equations_expression = expression.inline_when_needed(
-                            signal_id,
-                            memory,
-                            identifier_creator,
-                            graph,
-                            nodes,
-                        );
-                        new_equations_bound.append(&mut new_equations_expression);
-                        new_equations_bound
-                    })
-                    .collect::<Vec<_>>();
-
-                new_equations.append(&mut other_new_equations);
-
-                // get arms dependencies
-                let mut arms_dependencies = arms
-                    .iter()
-                    .flat_map(|(pattern, bound, _, arm_expression)| {
-                        // get local signals defined in pattern
-                        let local_signals = pattern.local_identifiers();
-
-                        // get arm expression dependencies
-                        let mut arm_dependencies = arm_expression
-                            .get_dependencies()
-                            .clone()
-                            .into_iter()
-                            .filter(|(signal, _)| !local_signals.contains(signal))
-                            .collect::<Vec<(String, usize)>>();
-
-                        // get bound dependencies
-                        let mut bound_dependencies =
-                            bound.as_ref().map_or(vec![], |bound_expression| {
-                                bound_expression
-                                    .get_dependencies()
-                                    .clone()
-                                    .into_iter()
-                                    .filter(|(signal, _)| !local_signals.contains(signal))
-                                    .collect()
-                            });
-
-                        // push all dependencies in arm dependencies
-                        arm_dependencies.append(&mut bound_dependencies);
-
-                        // return arm dependencies
-                        arm_dependencies
-                    })
-                    .collect::<Vec<(String, usize)>>();
-
-                // get matched expression dependencies
-                let mut expression_dependencies = expression.get_dependencies().clone();
-
-                // push all dependencies in arms dependencies
-                arms_dependencies.append(&mut expression_dependencies);
-                *dependencies = Dependencies::from(arms_dependencies);
-
-                new_equations
-            }
-            StreamExpression::When {
-                option,
-                present_body,
-                present,
-                default_body,
-                default,
-                ref mut dependencies,
-                ..
-            } => {
-                assert!(present_body.is_empty());
-                assert!(default_body.is_empty());
-
-                let mut new_equations_option =
-                    option.inline_when_needed(signal_id, memory, identifier_creator, graph, nodes);
-                let mut new_equations_present =
-                    present.inline_when_needed(signal_id, memory, identifier_creator, graph, nodes);
-                let mut new_equations_default =
-                    default.inline_when_needed(signal_id, memory, identifier_creator, graph, nodes);
-                new_equations_option.append(&mut new_equations_present);
-                new_equations_option.append(&mut new_equations_default);
-
-                // get option expression dependencies
-                let mut option_dependencies = option.get_dependencies().clone();
-                // get present expression dependencies
-                let mut present_dependencies = present.get_dependencies().clone();
-                // get default expression dependencies
-                let mut default_dependencies = default.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                option_dependencies.append(&mut present_dependencies);
-                option_dependencies.append(&mut default_dependencies);
-                *dependencies = Dependencies::from(option_dependencies);
-
-                new_equations_option
-            }
-            StreamExpression::FieldAccess {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    nodes,
-                );
-                // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-
-                new_equations
-            }
-            StreamExpression::TupleElementAccess {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    nodes,
-                );
-                // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-
-                new_equations
-            }
-            StreamExpression::Map {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    nodes,
-                );
-                // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-
-                new_equations
-            }
-            StreamExpression::Fold {
-                expression,
-                initialization_expression,
-                ref mut dependencies,
-                ..
-            } => {
-                let mut new_equations = expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    nodes,
-                );
-                let mut initialization_equations = initialization_expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    nodes,
-                );
-                new_equations.append(&mut initialization_equations);
-
-                // get matched expressions dependencies
-                let mut expression_dependencies = expression.get_dependencies().clone();
-                let mut initialization_expression_dependencies =
-                    expression.get_dependencies().clone();
-                expression_dependencies.append(&mut initialization_expression_dependencies);
-
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-
-                new_equations
-            }
-            StreamExpression::Sort {
-                expression,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    nodes,
-                );
-                // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
-
-                new_equations
-            }
-            StreamExpression::Zip {
-                arrays,
-                ref mut dependencies,
-                ..
-            } => {
-                let new_equations = arrays
-                    .iter_mut()
-                    .flat_map(|array| {
-                        array.inline_when_needed(
-                            signal_id,
-                            memory,
-                            identifier_creator,
-                            graph,
-                            nodes,
-                        )
-                    })
-                    .collect();
-                *dependencies = Dependencies::from(
-                    arrays
-                        .iter()
-                        .flat_map(|array| array.get_dependencies().clone())
-                        .collect(),
-                );
-                new_equations
-            }
+            StreamExpressionKind::NodeApplication { .. } => unreachable!(),
         }
-    }
-}
-
-#[cfg(test)]
-mod replace_by_context {
-    use std::collections::HashMap;
-
-    use crate::ast::{expression::Expression, pattern::Pattern};
-    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::frontend::normalizing::inlining::Union;
-    use crate::hir::{
-        dependencies::Dependencies, signal::Signal, stream_expression::StreamExpression,
-    };
-
-    #[test]
-    fn should_replace_all_occurence_of_identifiers_in_expression_by_context() {
-        let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![
-                StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x"),
-                        scope: Scope::Local,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                },
-                StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("y"),
-                        scope: Scope::Local,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                },
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x"), 0), (String::from("y"), 0)]),
-        };
-
-        let context_map = HashMap::from([
-            (
-                String::from("x"),
-                Union::I1(Signal {
-                    id: String::from("a"),
-                    scope: Scope::Local,
-                }),
-            ),
-            (
-                String::from("y"),
-                Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("/2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                }),
-            ),
-        ]);
-
-        expression.replace_by_context(&context_map);
-
-        let control = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![
-                StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("a"),
-                        scope: Scope::Local,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
-                },
-                StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("/2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                },
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]),
-        };
-
-        assert_eq!(expression, control)
-    }
-
-    #[test]
-    fn should_replace_all_occurence_of_identifiers_in_dependencies_by_context() {
-        let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![
-                StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("x"),
-                        scope: Scope::Local,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                },
-                StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("y"),
-                        scope: Scope::Local,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                },
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x"), 0), (String::from("y"), 0)]),
-        };
-
-        let context_map = HashMap::from([
-            (
-                String::from("x"),
-                Union::I1(Signal {
-                    id: String::from("a"),
-                    scope: Scope::Local,
-                }),
-            ),
-            (
-                String::from("y"),
-                Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("/2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                }),
-            ),
-        ]);
-
-        expression.replace_by_context(&context_map);
-
-        let control = Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]);
-
-        assert_eq!(expression.get_dependencies(), control.get().unwrap())
-    }
-
-    #[test]
-    fn should_not_replace_occurence_of_identifiers_in_branches_when_introduced_by_pattern() {
-        let mut expression = StreamExpression::Match {
-            expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
-                typing: Type::Structure(String::from("Point")),
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
-            }),
-            arms: vec![
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Constant {
-                                    constant: Constant::Integer(0),
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    vec![],
-                    StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("y"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                    },
-                ),
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Default {
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    vec![],
-                    StreamExpression::FunctionApplication {
-                        function_expression: Expression::Identifier {
-                            id: String::from("add_one"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                    },
-                ),
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
-        };
-
-        let context_map = HashMap::from([
-            (
-                String::from("y"),
-                Union::I1(Signal {
-                    id: String::from("a"),
-                    scope: Scope::Local,
-                }),
-            ),
-            (
-                String::from("x"),
-                Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("/2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                }),
-            ),
-        ]);
-
-        expression.replace_by_context(&context_map);
-
-        let control = StreamExpression::Match {
-            expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
-                typing: Type::Structure(String::from("Point")),
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
-            }),
-            arms: vec![
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Constant {
-                                    constant: Constant::Integer(0),
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    vec![],
-                    StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("y"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                    },
-                ),
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Default {
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    vec![],
-                    StreamExpression::FunctionApplication {
-                        function_expression: Expression::Identifier {
-                            id: String::from("add_one"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                    },
-                ),
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
-        };
-
-        assert_eq!(expression, control)
-    }
-
-    #[test]
-    fn should_replace_occurence_of_identifiers_in_branches_when_not_introduced_by_pattern() {
-        let mut expression = StreamExpression::Match {
-            expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
-                typing: Type::Structure(String::from("Point")),
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
-            }),
-            arms: vec![
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Constant {
-                                    constant: Constant::Integer(0),
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("z"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    vec![],
-                    StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("y"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                    },
-                ),
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Default {
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    vec![],
-                    StreamExpression::FunctionApplication {
-                        function_expression: Expression::Identifier {
-                            id: String::from("add_one"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                    },
-                ),
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("p"), 0), (String::from("y"), 0)]),
-        };
-
-        let context_map = HashMap::from([
-            (
-                String::from("y"),
-                Union::I1(Signal {
-                    id: String::from("a"),
-                    scope: Scope::Local,
-                }),
-            ),
-            (
-                String::from("x"),
-                Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("/2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                }),
-            ),
-        ]);
-
-        expression.replace_by_context(&context_map);
-
-        let control = StreamExpression::Match {
-            expression: Box::new(StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("p"),
-                    scope: Scope::Local,
-                },
-                typing: Type::Structure(String::from("Point")),
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("p"), 0)]),
-            }),
-            arms: vec![
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Constant {
-                                    constant: Constant::Integer(0),
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("z"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    vec![],
-                    StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("a"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
-                    },
-                ),
-                (
-                    Pattern::Structure {
-                        name: String::from("Point"),
-                        fields: vec![
-                            (
-                                String::from("x"),
-                                Pattern::Default {
-                                    location: Location::default(),
-                                },
-                            ),
-                            (
-                                String::from("y"),
-                                Pattern::Identifier {
-                                    name: String::from("y"),
-                                    location: Location::default(),
-                                },
-                            ),
-                        ],
-                        location: Location::default(),
-                    },
-                    None,
-                    vec![],
-                    StreamExpression::FunctionApplication {
-                        function_expression: Expression::Identifier {
-                            id: String::from("add_one"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                    },
-                ),
-            ],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("p"), 0), (String::from("a"), 0)]),
-        };
-
-        assert_eq!(expression, control)
-    }
-
-    #[test]
-    fn should_refactor_unitary_application_dependencies_to_input_dependencies() {
-        // 1 + my_node(x, y).o // depending on [x: 1; y: 0]
-        let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("1+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_node_o_x")),
-                node: String::from("my_node"),
-                signal: String::from("o"),
-                inputs: vec![
-                    (
-                        format!("i"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                        },
-                    ),
-                    (
-                        format!("j"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                        },
-                    ),
-                ],
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("x"), 1),
-                    (String::from("y"), 0),
-                ]),
-            }],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x"), 1), (String::from("y"), 0)]),
-        };
-
-        let context_map = HashMap::from([
-            (
-                String::from("x"),
-                Union::I1(Signal {
-                    id: String::from("a"),
-                    scope: Scope::Local,
-                }),
-            ),
-            (
-                String::from("y"),
-                Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("/2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                }),
-            ),
-        ]);
-
-        expression.replace_by_context(&context_map);
-
-        // 1 + my_node(a, b/2).o // depending on [a: 0; b: 0]
-        let control = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("1+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_node_o_x")),
-                node: String::from("my_node"),
-                signal: String::from("o"),
-                inputs: vec![
-                    (
-                        format!("i"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("a"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
-                        },
-                    ),
-                    (
-                        format!("j"),
-                        StreamExpression::FunctionApplication {
-                            function_expression: Expression::Identifier {
-                                id: String::from("/2"),
-                                typing: Some(Type::Abstract(
-                                    vec![Type::Integer],
-                                    Box::new(Type::Integer),
-                                )),
-                                location: Location::default(),
-                            },
-                            inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("b"),
-                                    scope: Scope::Local,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                            }],
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                        },
-                    ),
-                ],
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("a"), 0),
-                    (String::from("b"), 0),
-                ]),
-            }],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]),
-        };
-
-        assert_eq!(expression, control)
-    }
-
-    #[test]
-    fn should_replace_the_id_of_called_node_when_already_used() {
-        // 1 + my_node(x, y).o
-        let mut expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("1+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_node_o_x")),
-                node: String::from("my_node"),
-                signal: String::from("o"),
-                inputs: vec![
-                    (
-                        format!("i"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                        },
-                    ),
-                    (
-                        format!("j"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("y"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("y"), 0)]),
-                        },
-                    ),
-                ],
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("x"), 1),
-                    (String::from("y"), 0),
-                ]),
-            }],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("x"), 1), (String::from("y"), 0)]),
-        };
-
-        let context_map = HashMap::from([
-            (
-                String::from("x"),
-                Union::I1(Signal {
-                    id: String::from("a"),
-                    scope: Scope::Local,
-                }),
-            ),
-            (
-                String::from("y"),
-                Union::I2(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: String::from("/2"),
-                        typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                        location: Location::default(),
-                    },
-                    inputs: vec![StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("b"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                    }],
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                }),
-            ),
-            (
-                format!("my_node_o_x"),
-                Union::I1(Signal {
-                    id: String::from("my_node_o_x1"),
-                    scope: Scope::Memory,
-                }),
-            ),
-        ]);
-
-        expression.replace_by_context(&context_map);
-
-        // 1 + my_node(a, b/2).o
-        let control = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("1+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_node_o_x1")),
-                node: String::from("my_node"),
-                signal: String::from("o"),
-                inputs: vec![
-                    (
-                        format!("i"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("a"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("a"), 0)]),
-                        },
-                    ),
-                    (
-                        format!("j"),
-                        StreamExpression::FunctionApplication {
-                            function_expression: Expression::Identifier {
-                                id: String::from("/2"),
-                                typing: Some(Type::Abstract(
-                                    vec![Type::Integer],
-                                    Box::new(Type::Integer),
-                                )),
-                                location: Location::default(),
-                            },
-                            inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("b"),
-                                    scope: Scope::Local,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                            }],
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("b"), 0)]),
-                        },
-                    ),
-                ],
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("a"), 0),
-                    (String::from("b"), 0),
-                ]),
-            }],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("a"), 0), (String::from("b"), 0)]),
-        };
-
-        assert_eq!(expression, control)
-    }
-}
-
-#[cfg(test)]
-mod inline_when_needed {
-
-    use petgraph::graphmap::GraphMap;
-
-    use crate::ast::expression::Expression;
-    use crate::common::graph::neighbor::Label;
-    use crate::common::{constant::Constant, location::Location, r#type::Type, scope::Scope};
-    use crate::hir::identifier_creator::IdentifierCreator;
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation, memory::Memory, node::Node,
-        once_cell::OnceCell, signal::Signal, stream_expression::StreamExpression,
-        unitary_node::UnitaryNode,
-    };
-    use std::collections::HashMap;
-
-    #[test]
-    fn should_inline_node_calls_when_inputs_depends_on_outputs() {
-        let mut nodes = HashMap::new();
-
-        // node my_node(i: int, j: int) {
-        //     out o: int = i + (0 fby j);
-        // }
-        let my_node_equation = Equation {
-            scope: Scope::Output,
-            id: String::from("o"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: String::from("+"),
-                    typing: Some(Type::Abstract(
-                        vec![Type::Integer, Type::Integer],
-                        Box::new(Type::Integer),
-                    )),
-                    location: Location::default(),
-                },
-                inputs: vec![
-                    StreamExpression::SignalCall {
-                        signal: Signal {
-                            id: String::from("i"),
-                            scope: Scope::Local,
-                        },
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
-                    },
-                    StreamExpression::FollowedBy {
-                        constant: Constant::Integer(0),
-                        expression: Box::new(StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("j"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("j"), 0)]),
-                        }),
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("j"), 1)]),
-                    },
-                ],
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("i"), 0),
-                    (String::from("j"), 1),
-                ]),
-            },
-            location: Location::default(),
-        };
-        let my_node = Node {
-            contract: Default::default(),
-            id: String::from("my_node"),
-            is_component: false,
-            inputs: vec![
-                (String::from("i"), Type::Integer),
-                (String::from("j"), Type::Integer),
-            ],
-            unscheduled_equations: HashMap::from([(String::from("o"), my_node_equation.clone())]),
-            unitary_nodes: HashMap::from([(
-                String::from("o"),
-                UnitaryNode {
-                    contract: Default::default(),
-                    node_id: String::from("my_node"),
-                    output_id: String::from("o"),
-                    inputs: vec![
-                        (String::from("i"), Type::Integer),
-                        (String::from("j"), Type::Integer),
-                    ],
-                    equations: vec![my_node_equation],
-                    memory: Memory::new(),
-                    location: Location::default(),
-                    graph: OnceCell::new(),
-                },
-            )]),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut graph = GraphMap::new();
-        graph.add_node(String::from("o"));
-        graph.add_node(String::from("i"));
-        graph.add_node(String::from("j"));
-        graph.add_edge(String::from("o"), String::from("i"), Label::Weight(0));
-        graph.add_edge(String::from("o"), String::from("j"), Label::Weight(1));
-        my_node.graph.set(graph).unwrap();
-        nodes.insert(String::from("my_node"), my_node);
-
-        // node other_node(i: int) {
-        //     out o: int = 0 fby i;
-        // }
-        let other_node_equation = Equation {
-            scope: Scope::Output,
-            id: String::from("o"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::FollowedBy {
-                constant: Constant::Integer(0),
-                expression: Box::new(StreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("i"),
-                        scope: Scope::Local,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::from(vec![(String::from("i"), 0)]),
-                }),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("i"), 1)]),
-            },
-            location: Location::default(),
-        };
-        let other_node = Node {
-            contract: Default::default(),
-            id: String::from("other_node"),
-            is_component: false,
-            inputs: vec![(String::from("i"), Type::Integer)],
-            unscheduled_equations: HashMap::from([(
-                String::from("o"),
-                other_node_equation.clone(),
-            )]),
-            unitary_nodes: HashMap::from([(
-                String::from("o"),
-                UnitaryNode {
-                    contract: Default::default(),
-                    node_id: String::from("other_node"),
-                    output_id: String::from("o"),
-                    inputs: vec![(String::from("i"), Type::Integer)],
-                    equations: vec![other_node_equation],
-                    memory: Memory::new(),
-                    location: Location::default(),
-                    graph: OnceCell::new(),
-                },
-            )]),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut graph = GraphMap::new();
-        graph.add_node(String::from("o"));
-        graph.add_node(String::from("i"));
-        graph.add_edge(String::from("o"), String::from("i"), Label::Weight(1));
-        other_node.graph.set(graph).unwrap();
-        nodes.insert(String::from("other_node"), other_node);
-
-        // x: int = 1 + my_node(v*2, x).o
-        let mut expression_1 = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("1+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("my_node_o_x")),
-                node: String::from("my_node"),
-                inputs: vec![
-                    (
-                        format!("i"),
-                        StreamExpression::FunctionApplication {
-                            function_expression: Expression::Identifier {
-                                id: String::from("*2"),
-                                typing: Some(Type::Abstract(
-                                    vec![Type::Integer],
-                                    Box::new(Type::Integer),
-                                )),
-                                location: Location::default(),
-                            },
-                            inputs: vec![StreamExpression::SignalCall {
-                                signal: Signal {
-                                    id: String::from("v"),
-                                    scope: Scope::Local,
-                                },
-                                typing: Type::Integer,
-                                location: Location::default(),
-                                dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                            }],
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                        },
-                    ),
-                    (
-                        format!("j"),
-                        StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                        },
-                    ),
-                ],
-                signal: String::from("o"),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("v"), 0),
-                    (String::from("x"), 1),
-                ]),
-            }],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("v"), 0), (String::from("x"), 1)]),
-        };
-        let equation_1 = Equation {
-            scope: Scope::Local,
-            id: String::from("x"),
-            signal_type: Type::Integer,
-            expression: expression_1.clone(),
-            location: Location::default(),
-        };
-        // out y: int = other_node(x-1).o
-        let equation_2 = Equation {
-            scope: Scope::Output,
-            id: String::from("y"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::UnitaryNodeApplication {
-                id: Some(format!("other_node_o_y")),
-                node: String::from("other_node"),
-                inputs: vec![(
-                    format!("i"),
-                    StreamExpression::FunctionApplication {
-                        function_expression: Expression::Identifier {
-                            id: String::from("-1"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                    },
-                )],
-                signal: String::from("o"),
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
-            },
-            location: Location::default(),
-        };
-        // node test(v: int) {
-        //     x: int = my_node(v*2, x).o
-        //     out y: int = other_node(x-1).o
-        // }
-        let mut memory = Memory::new();
-        memory.add_called_node(format!("my_node_o_x"), format!("my_node"), format!("o"));
-        memory.add_called_node(
-            format!("other_node_o_y"),
-            format!("other_node"),
-            format!("o"),
-        );
-        let mut node = Node {
-            contract: Default::default(),
-            id: String::from("test"),
-            is_component: false,
-            inputs: vec![(String::from("v"), Type::Integer)],
-            unscheduled_equations: HashMap::from([
-                (String::from("x"), equation_1.clone()),
-                (String::from("y"), equation_2.clone()),
-            ]),
-            unitary_nodes: HashMap::from([(
-                String::from("y"),
-                UnitaryNode {
-                    contract: Default::default(),
-                    node_id: String::from("test"),
-                    output_id: String::from("y"),
-                    inputs: vec![(String::from("v"), Type::Integer)],
-                    equations: vec![equation_1.clone(), equation_2.clone()],
-                    memory,
-                    location: Location::default(),
-                    graph: OnceCell::new(),
-                },
-            )]),
-            location: Location::default(),
-            graph: OnceCell::new(),
-        };
-        let mut graph = GraphMap::new();
-        graph.add_node(String::from("v"));
-        graph.add_node(String::from("x"));
-        graph.add_node(String::from("y"));
-        graph.add_edge(String::from("x"), String::from("v"), Label::Weight(0));
-        graph.add_edge(String::from("x"), String::from("x"), Label::Weight(1));
-        graph.add_edge(String::from("y"), String::from("x"), Label::Weight(1));
-        node.graph.set(graph.clone()).unwrap();
-        nodes.insert(String::from("test"), node.clone());
-
-        let mut identifier_creator = IdentifierCreator::from(
-            node.unitary_nodes
-                .get(&String::from("y"))
-                .unwrap()
-                .get_signals(),
-        );
-        let new_equations = expression_1.inline_when_needed(
-            &String::from("x"),
-            &mut node
-                .unitary_nodes
-                .get_mut(&String::from("y"))
-                .unwrap()
-                .memory,
-            &mut identifier_creator,
-            &mut graph,
-            &nodes,
-        );
-
-        // o: int = v*2 + 0 fby x
-        let control = vec![Equation {
-            scope: Scope::Local,
-            id: String::from("o"),
-            signal_type: Type::Integer,
-            expression: StreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: String::from("+"),
-                    typing: Some(Type::Abstract(
-                        vec![Type::Integer, Type::Integer],
-                        Box::new(Type::Integer),
-                    )),
-                    location: Location::default(),
-                },
-                inputs: vec![
-                    StreamExpression::FunctionApplication {
-                        function_expression: Expression::Identifier {
-                            id: String::from("*2"),
-                            typing: Some(Type::Abstract(
-                                vec![Type::Integer],
-                                Box::new(Type::Integer),
-                            )),
-                            location: Location::default(),
-                        },
-                        inputs: vec![StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("v"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                        }],
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("v"), 0)]),
-                    },
-                    StreamExpression::FollowedBy {
-                        constant: Constant::Integer(0),
-                        expression: Box::new(StreamExpression::SignalCall {
-                            signal: Signal {
-                                id: String::from("x"),
-                                scope: Scope::Local,
-                            },
-                            typing: Type::Integer,
-                            location: Location::default(),
-                            dependencies: Dependencies::from(vec![(String::from("x"), 0)]),
-                        }),
-                        typing: Type::Integer,
-                        location: Location::default(),
-                        dependencies: Dependencies::from(vec![(String::from("x"), 1)]),
-                    },
-                ],
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![
-                    (String::from("v"), 0),
-                    (String::from("x"), 1),
-                ]),
-            },
-            location: Location::default(),
-        }];
-        assert_eq!(new_equations, control);
-        // x: int = 1 + o
-        let control = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("1+"),
-                typing: Some(Type::Abstract(
-                    vec![Type::Integer, Type::Integer],
-                    Box::new(Type::Integer),
-                )),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::SignalCall {
-                signal: Signal {
-                    id: String::from("o"),
-                    scope: Scope::Local,
-                },
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
-            }],
-            typing: Type::Integer,
-            location: Location::default(),
-            dependencies: Dependencies::from(vec![(String::from("o"), 0)]),
-        };
-        assert_eq!(expression_1, control);
     }
 }

@@ -1,11 +1,13 @@
 use crate::common::{constant::Constant, location::Location, r#type::Type};
-use crate::hir::{dependencies::Dependencies, expression::Expression};
+use crate::hir::{dependencies::Dependencies, expression::ExpressionKind};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust stream expression kind AST.
 pub enum StreamExpressionKind {
     /// Expression.
-    Expression { expression: Expression },
+    Expression {
+        expression: ExpressionKind<StreamExpression>,
+    },
     /// Initialized buffer stream expression.
     FollowedBy {
         /// The initialization constant.
@@ -51,5 +53,10 @@ impl StreamExpression {
     }
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         self.typing.as_mut()
+    }
+    pub fn get_dependencies(&self) -> &Vec<(usize, usize)> {
+        self.dependencies
+            .get()
+            .expect("there should be dependencies")
     }
 }

@@ -1,16 +1,21 @@
-use crate::common::r#type::Type;
+use crate::common::{location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
-use crate::hir::expression::{Expression, ExpressionKind};
+use crate::frontend::typing_analysis::TypeAnalysis;
+use crate::hir::expression::ExpressionKind;
 use crate::symbol_table::SymbolTable;
 
-impl Expression {
+impl<E> ExpressionKind<E>
+where
+    E: TypeAnalysis,
+{
     /// Add a [Type] to the when expression.
     pub fn typing_when(
         &mut self,
+        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Type, TerminationError> {
+        match self {
             // the type of a when expression is the type of both the default and
             // the present expressions
             ExpressionKind::When {
@@ -32,13 +37,13 @@ impl Expression {
                         let present_type = present.get_type().unwrap();
                         let default_type = default.get_type().unwrap();
 
-                        self.typing = Some(present_type.clone());
-                        default_type.eq_check(present_type, self.location.clone(), errors)
+                        default_type.eq_check(present_type, location.clone(), errors)?;
+                        Ok(present_type.clone())
                     }
                     _ => {
                         let error = Error::ExpectOption {
                             given_type: option_type.clone(),
-                            location: self.location.clone(),
+                            location: location.clone(),
                         };
                         errors.push(error);
                         Err(TerminationError)

@@ -1,6 +1,6 @@
 use crate::{
-    lir::pattern::Pattern,
     common::{constant::Constant, r#type::Type},
+    lir::pattern::Pattern,
 };
 
 use super::block::Block;

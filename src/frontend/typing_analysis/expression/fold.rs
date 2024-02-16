@@ -1,16 +1,21 @@
-use crate::common::r#type::Type;
+use crate::common::{location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
-use crate::hir::expression::{Expression, ExpressionKind};
+use crate::frontend::typing_analysis::TypeAnalysis;
+use crate::hir::expression::ExpressionKind;
 use crate::symbol_table::SymbolTable;
 
-impl Expression {
+impl<E> ExpressionKind<E>
+where
+    E: TypeAnalysis,
+{
     /// Add a [Type] to the fold expression.
     pub fn typing_fold(
         &mut self,
+        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Type, TerminationError> {
+        match self {
             ExpressionKind::Fold {
                 ref mut expression,
                 ref mut initialization_expression,
@@ -33,20 +38,19 @@ impl Expression {
                         // apply the function type to the type of the initialization and array's elements
                         let new_type = function_type.apply(
                             vec![initialization_type.clone(), *element_type.clone()],
-                            self.location.clone(),
+                            location.clone(),
                             errors,
                         )?;
 
                         // check the new type is equal to the initialization type
-                        new_type.eq_check(initialization_type, self.location.clone(), errors)?;
+                        new_type.eq_check(initialization_type, location.clone(), errors)?;
 
-                        self.typing = Some(new_type);
-                        Ok(())
+                        Ok(new_type)
                     }
                     given_type => {
                         let error = Error::ExpectArray {
                             given_type: given_type.clone(),
-                            location: self.location.clone(),
+                            location: location.clone(),
                         };
                         errors.push(error);
                         Err(TerminationError)

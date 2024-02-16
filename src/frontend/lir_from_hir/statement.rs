@@ -1,14 +1,22 @@
 use crate::{
-    hir::statement::Statement, lir::statement::Statement as LIRStatement, symbol_table::SymbolTable,
+    hir::statement::Statement,
+    lir::{expression::Expression as LIRExpression, statement::Statement as LIRStatement},
+    symbol_table::SymbolTable,
 };
 
-use super::expression::lir_from_hir as expression_lir_from_hir;
+use super::LIRFromHIR;
 
-/// Transform HIR statement into LIR statement.
-pub fn lir_from_hir(statement: Statement, symbol_table: &SymbolTable) -> LIRStatement {
-    let Statement { id, expression, .. } = statement;
-    LIRStatement::Let {
-        identifier: symbol_table.get_name(&id).clone(),
-        expression: expression_lir_from_hir(expression, symbol_table),
+impl<E> LIRFromHIR for Statement<E>
+where
+    E: LIRFromHIR<LIR = LIRExpression>,
+{
+    type LIR = LIRStatement;
+
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+        let Statement { id, expression, .. } = self;
+        LIRStatement::Let {
+            identifier: symbol_table.get_name(&id).clone(),
+            expression: expression.lir_from_hir(symbol_table),
+        }
     }
 }

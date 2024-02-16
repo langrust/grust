@@ -59,4 +59,22 @@ impl Pattern {
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         self.typing.as_mut()
     }
+    pub fn local_identifiers(&self) -> Vec<usize> {
+        match &self.kind {
+            PatternKind::Identifier { id } => vec![*id],
+            PatternKind::Constant { .. }
+            | PatternKind::Enumeration { .. }
+            | PatternKind::None
+            | PatternKind::Default => vec![],
+            PatternKind::Structure { fields, .. } => fields
+                .iter()
+                .flat_map(|(_, pattern)| pattern.local_identifiers())
+                .collect(),
+            PatternKind::Tuple { elements } => elements
+                .iter()
+                .flat_map(|pattern| pattern.local_identifiers())
+                .collect(),
+            PatternKind::Some { pattern } => pattern.local_identifiers(),
+        }
+    }
 }

@@ -1,11 +1,13 @@
-use crate::ast::expression::Expression;
+use crate::ast::expression::ExpressionKind;
 use crate::common::{constant::Constant, location::Location};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust stream expression kind AST.
 pub enum StreamExpressionKind {
     /// Expression.
-    Expression { expression: Expression },
+    Expression {
+        expression: ExpressionKind<StreamExpression>,
+    },
     /// Initialized buffer stream expression.
     FollowedBy {
         /// The initialization constant.

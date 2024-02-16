@@ -1,9 +1,10 @@
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
+use crate::frontend::typing_analysis::TypeAnalysis;
 use crate::hir::pattern::{Pattern, PatternKind};
 use crate::symbol_table::SymbolTable;
 
-impl Pattern {
+impl TypeAnalysis for Pattern {
     /// Check if `self` pattern matches the expected [Type]
     ///
     /// # Example
@@ -57,7 +58,7 @@ impl Pattern {
     /// assert_eq!(elements_context[&y], Type::Integer);
     /// assert!(errors.is_empty());
     /// ```
-    pub fn typing(
+    fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
@@ -89,6 +90,13 @@ impl Pattern {
                 self.typing = Some(Type::Structure {
                     name: symbol_table.get_name(id).clone(),
                     id: *id,
+                });
+                Ok(())
+            }
+            PatternKind::Enumeration { ref enum_id, .. } => {
+                self.typing = Some(Type::Enumeration {
+                    name: symbol_table.get_name(enum_id).clone(),
+                    id: *enum_id,
                 });
                 Ok(())
             }

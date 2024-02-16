@@ -3,7 +3,7 @@ use crate::hir::{dependencies::Dependencies, pattern::Pattern, statement::Statem
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust expression AST.
-pub enum ExpressionKind {
+pub enum ExpressionKind<E> {
     /// Constant expression.
     Constant {
         /// The constant.
@@ -17,23 +17,23 @@ pub enum ExpressionKind {
     /// Application expression.
     Application {
         /// The expression applied.
-        function_expression: Box<Expression>,
+        function_expression: Box<E>,
         /// The inputs to the expression.
-        inputs: Vec<Expression>,
+        inputs: Vec<E>,
     },
     /// Abstraction expression.
     Abstraction {
         /// The inputs to the abstraction.
         inputs: Vec<usize>,
         /// The expression abstracted.
-        expression: Box<Expression>,
+        expression: Box<E>,
     },
     /// Structure expression.
     Structure {
         /// The structure id.
         id: usize,
         /// The fields associated with their expressions.
-        fields: Vec<(usize, Expression)>,
+        fields: Vec<(usize, E)>,
     },
     /// Enumeration expression.
     Enumeration {
@@ -45,78 +45,78 @@ pub enum ExpressionKind {
     /// Array expression.
     Array {
         /// The elements inside the array.
-        elements: Vec<Expression>,
+        elements: Vec<E>,
     },
     /// Pattern matching expression.
     Match {
         /// The expression to match.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The different matching cases.
-        arms: Vec<(Pattern, Option<Expression>, Vec<Statement>, Expression)>,
+        arms: Vec<(Pattern, Option<E>, Vec<Statement<E>>, E)>,
     },
     /// When present expression.
     When {
         /// The identifier of the value when present
         id: usize,
         /// The optional expression.
-        option: Box<Expression>,
+        option: Box<E>,
         /// The expression when present.
-        present: Box<Expression>,
+        present: Box<E>,
         /// The body of present case when normalized.
-        present_body: Vec<Statement>,
+        present_body: Vec<Statement<E>>,
         /// The default expression.
-        default: Box<Expression>,
+        default: Box<E>,
         /// The body of present case when normalized.
-        default_body: Vec<Statement>,
+        default_body: Vec<Statement<E>>,
     },
     /// Field access expression.
     FieldAccess {
         /// The structure expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The field to access.
         field: String, // can not be a usize because we don't know the structure type
     },
     /// Tuple element access expression.
     TupleElementAccess {
         /// The tuple expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The element to access.
         element_number: usize,
     },
     /// Array map operator expression.
     Map {
         /// The array expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The function expression.
-        function_expression: Box<Expression>,
+        function_expression: Box<E>,
     },
     /// Array fold operator expression.
     Fold {
         /// The array expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The initialization expression.
-        initialization_expression: Box<Expression>,
+        initialization_expression: Box<E>,
         /// The function expression.
-        function_expression: Box<Expression>,
+        function_expression: Box<E>,
     },
     /// Array sort operator expression.
     Sort {
         /// The array expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The function expression.
-        function_expression: Box<Expression>,
+        function_expression: Box<E>,
     },
     /// Arrays zip operator expression.
     Zip {
         /// The array expressions.
-        arrays: Vec<Expression>,
+        arrays: Vec<E>,
     },
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Expression {
     /// Expression kind.
-    pub kind: ExpressionKind,
+    pub kind: ExpressionKind<Expression>,
     /// Expression type.
     pub typing: Option<Type>,
     /// Expression location.
@@ -131,5 +131,10 @@ impl Expression {
     }
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         self.typing.as_mut()
+    }
+    pub fn get_dependencies(&self) -> &Vec<(usize, usize)> {
+        self.dependencies
+            .get()
+            .expect("there should be dependencies")
     }
 }

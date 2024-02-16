@@ -7,9 +7,6 @@ pub mod node;
 /// HIR [StreamExpression](crate::hir::stream_expression::StreamExpression) module.
 pub mod stream_expression;
 
-/// HIR [Equation](crate::hir::equation::Equation) module.
-pub mod equation;
-
 /// HIR [UnitaryNode](crate::hir::unitary_node::UnitaryNode) module.
 pub mod unitary_node;
 

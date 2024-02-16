@@ -180,9 +180,7 @@ impl Node {
                         // add dependencies as graph's edges:
                         // s = e depends on s' <=> s -> s'
                         expression
-                            .dependencies
-                            .get()
-                            .expect("there should be dependencies")
+                            .get_dependencies()
                             .iter()
                             .for_each(|(id, depth)| {
                                 graph.add_edge(*signal, *id, Label::Weight(*depth));

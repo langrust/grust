@@ -4,49 +4,50 @@ use crate::{
     symbol_table::SymbolTable,
 };
 
-use super::{
-    expression::lir_from_hir as expression_lir_from_hir,
-    statement::lir_from_hir as statement_lir_from_hir,
-};
-/// Transform HIR function into LIR function.
-pub fn lir_from_hir(function: Function, symbol_table: &SymbolTable) -> LIRFunction {
-    let Function {
-        id,
-        inputs,
-        statements,
-        returned,
-        ..
-    } = function;
+use super::LIRFromHIR;
 
-    // TODO: imports
-    // let imports = equations
-    //     .iter()
-    //     .flat_map(|equation| equation.expression.get_imports())
-    //     .unique()
-    //     .collect();
-    
-    let mut statements = statements
-        .into_iter()
-        .map(|statement| statement_lir_from_hir(statement, symbol_table))
-        .collect::<Vec<_>>();
-    statements.push(Statement::ExpressionLast {
-        expression: expression_lir_from_hir(returned, symbol_table),
-    });
+impl LIRFromHIR for Function {
+    type LIR = LIRFunction;
 
-    let inputs = inputs
-        .into_iter()
-        .map(|id| {
-            (
-                symbol_table.get_name(&id).clone(),
-                symbol_table.get_type(&id).clone(),
-            )
-        })
-        .collect();
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+        let Function {
+            id,
+            inputs,
+            statements,
+            returned,
+            ..
+        } = self;
 
-    LIRFunction {
-        name: symbol_table.get_name(&id).clone(),
-        inputs,
-        output: symbol_table.get_output_type(&id).clone(),
-        body: Block { statements },
+        // TODO: imports
+        // let imports = equations
+        //     .iter()
+        //     .flat_map(|equation| equation.expression.get_imports())
+        //     .unique()
+        //     .collect();
+
+        let mut statements = statements
+            .into_iter()
+            .map(|statement| statement.lir_from_hir(symbol_table))
+            .collect::<Vec<_>>();
+        statements.push(Statement::ExpressionLast {
+            expression: returned.lir_from_hir(symbol_table),
+        });
+
+        let inputs = inputs
+            .into_iter()
+            .map(|id| {
+                (
+                    symbol_table.get_name(&id).clone(),
+                    symbol_table.get_type(&id).clone(),
+                )
+            })
+            .collect();
+
+        LIRFunction {
+            name: symbol_table.get_name(&id).clone(),
+            inputs,
+            output: symbol_table.get_output_type(&id).clone(),
+            body: Block { statements },
+        }
     }
 }

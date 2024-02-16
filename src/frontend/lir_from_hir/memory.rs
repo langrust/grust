@@ -1,11 +1,12 @@
 use itertools::Itertools;
 
 use crate::{
-    frontend::lir_from_hir::stream_expression::lir_from_hir as stream_expression_lir_from_hir,
     hir::memory::{Buffer, CalledNode, Memory},
     lir::item::node_file::state::{init::StateElementInit, step::StateElementStep, StateElement},
     symbol_table::SymbolTable,
 };
+
+use super::LIRFromHIR;
 
 impl Memory {
     /// Get state elements from memory.
@@ -46,7 +47,7 @@ impl Memory {
                     });
                     steps.push(StateElementStep {
                         identifier: name.clone(),
-                        expression: stream_expression_lir_from_hir(expression, symbol_table),
+                        expression: expression.lir_from_hir(symbol_table),
                     });
                 },
             );

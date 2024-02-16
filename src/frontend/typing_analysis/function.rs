@@ -1,8 +1,9 @@
 use crate::error::{Error, TerminationError};
+use crate::frontend::typing_analysis::TypeAnalysis;
 use crate::hir::function::Function;
 use crate::symbol_table::{SymbolKind, SymbolTable};
 
-impl Function {
+impl TypeAnalysis for Function {
     /// [Type] the function.
     ///
     /// # Example
@@ -48,14 +49,13 @@ impl Function {
     ///
     /// function.typing(&global_context, &user_types_context, &mut errors).unwrap();
     /// ```
-    pub fn typing(
+    fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Function {
             id,
-            inputs,
             statements,
             returned,
             location,
