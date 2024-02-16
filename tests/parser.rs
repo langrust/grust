@@ -1,7 +1,6 @@
-use codespan_reporting::files::{Files, SimpleFiles};
+use codespan_reporting::files::SimpleFiles;
 
-use grustine::ast::file::File;
-use grustine::parser::langrust;
+use grustine::parsing;
 
 #[cfg(test)]
 mod langrust_ast_constructs {
@@ -2607,9 +2606,7 @@ fn parse_counter() {
         std::fs::read_to_string("tests/fixture/counter.gr").expect("unkown file"),
     );
 
-    let file: File = langrust::fileParser::new()
-        .parse(counter_id, &files.source(counter_id).unwrap())
-        .unwrap();
+    let file = parsing(counter_id, &mut files);
 
     insta::assert_yaml_snapshot!(file);
 }
@@ -2623,9 +2620,7 @@ fn parse_blinking() {
         std::fs::read_to_string("tests/fixture/blinking.gr").expect("unkown file"),
     );
 
-    let file: File = langrust::fileParser::new()
-        .parse(blinking_id, &files.source(blinking_id).unwrap())
-        .unwrap();
+    let file = parsing(blinking_id, &mut files);
 
     insta::assert_yaml_snapshot!(file);
 }
@@ -2639,9 +2634,7 @@ fn parse_button_management() {
         std::fs::read_to_string("tests/fixture/button_management.gr").expect("unkown file"),
     );
 
-    let file: File = langrust::fileParser::new()
-        .parse(blinking_id, &files.source(blinking_id).unwrap())
-        .unwrap();
+    let file = parsing(blinking_id, &mut files);
 
     insta::assert_yaml_snapshot!(file);
 }
@@ -2656,9 +2649,7 @@ fn parse_button_management_condition_match() {
             .expect("unkown file"),
     );
 
-    let file: File = langrust::fileParser::new()
-        .parse(blinking_id, &files.source(blinking_id).unwrap())
-        .unwrap();
+    let file = parsing(blinking_id, &mut files);
 
     insta::assert_yaml_snapshot!(file);
 }
@@ -2673,9 +2664,7 @@ fn parse_button_management_using_function() {
             .expect("unkown file"),
     );
 
-    let file: File = langrust::fileParser::new()
-        .parse(blinking_id, &files.source(blinking_id).unwrap())
-        .unwrap();
+    let file = parsing(blinking_id, &mut files);
 
     insta::assert_yaml_snapshot!(file);
 }
@@ -2689,9 +2678,7 @@ fn parse_pid() {
         std::fs::read_to_string("tests/fixture/pid.gr").expect("unkown file"),
     );
 
-    let file: File = langrust::fileParser::new()
-        .parse(pid_id, &files.source(pid_id).unwrap())
-        .unwrap();
+    let file = parsing(pid_id, &mut files);
 
     insta::assert_yaml_snapshot!(file);
 }
