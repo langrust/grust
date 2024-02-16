@@ -86,6 +86,16 @@
 //! [critical systems]: https://en.wikipedia.org/wiki/Critical_system
 //! [Lustre]: https://en.wikipedia.org/wiki/Lustre_(programming_language)
 
+use ast::file::File as ASTFile;
+use backend::rust_ast_from_lir::project::{rust_ast_from_lir as rust_from_lir, RustASTProject};
+use codespan_reporting::files::{Files, SimpleFiles};
+use error::TerminationError;
+use frontend::{hir_from_ast::HIRFromAST, lir_from_hir::LIRFromHIR, typing_analysis::TypeAnalysis};
+use hir::file::File as HIRFile;
+use lir::project::Project as LIRProject;
+use parser::langrust;
+use symbol_table::SymbolTable;
+
 #[macro_use]
 extern crate lalrpop_util;
 extern crate codespan_reporting;
@@ -109,3 +119,140 @@ pub mod lir;
 pub mod parser;
 /// LanGRust symbol table module.
 pub mod symbol_table;
+
+pub fn parsing(file_id: usize, files: &mut SimpleFiles<&str, String>) -> ASTFile {
+    langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap()
+}
+
+pub fn hir_from_ast(
+    file_id: usize,
+    files: &mut SimpleFiles<&str, String>,
+) -> Result<HIRFile, TerminationError> {
+    let mut symbol_table = SymbolTable::new();
+    let mut errors = vec![];
+
+    let ast = langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap();
+    ast.hir_from_ast(&mut symbol_table, &mut errors)
+}
+pub fn typing(
+    file_id: usize,
+    files: &mut SimpleFiles<&str, String>,
+) -> Result<HIRFile, TerminationError> {
+    let mut symbol_table = SymbolTable::new();
+    let mut errors = vec![];
+
+    let ast = langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap();
+    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    hir.typing(&mut symbol_table, &mut errors)?;
+    Ok(hir)
+}
+pub fn dependency_graph(
+    file_id: usize,
+    files: &mut SimpleFiles<&str, String>,
+) -> Result<HIRFile, TerminationError> {
+    let mut symbol_table = SymbolTable::new();
+    let mut errors = vec![];
+
+    let ast = langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap();
+    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    hir.typing(&mut symbol_table, &mut errors).unwrap();
+    hir.generate_dependency_graphs(&symbol_table, &mut errors)?;
+    Ok(hir)
+}
+pub fn causality_analysis(
+    file_id: usize,
+    files: &mut SimpleFiles<&str, String>,
+) -> Result<(), TerminationError> {
+    let mut symbol_table = SymbolTable::new();
+    let mut errors = vec![];
+
+    let ast = langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap();
+    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    hir.typing(&mut symbol_table, &mut errors).unwrap();
+    hir.generate_dependency_graphs(&symbol_table, &mut errors)
+        .unwrap();
+    hir.causality_analysis(&symbol_table, &mut errors)
+}
+pub fn normalizing(
+    file_id: usize,
+    files: &mut SimpleFiles<&str, String>,
+) -> Result<HIRFile, TerminationError> {
+    let mut symbol_table = SymbolTable::new();
+    let mut errors = vec![];
+
+    let ast = langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap();
+    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    hir.typing(&mut symbol_table, &mut errors).unwrap();
+    hir.generate_dependency_graphs(&symbol_table, &mut errors)
+        .unwrap();
+    hir.causality_analysis(&symbol_table, &mut errors).unwrap();
+    hir.normalize(&mut symbol_table, &mut errors)?;
+    Ok(hir)
+}
+pub fn lir_from_hir(file_id: usize, files: &mut SimpleFiles<&str, String>) -> LIRProject {
+    let mut symbol_table = SymbolTable::new();
+    let mut errors = vec![];
+
+    let ast = langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap();
+    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    hir.typing(&mut symbol_table, &mut errors).unwrap();
+    hir.generate_dependency_graphs(&symbol_table, &mut errors)
+        .unwrap();
+    hir.causality_analysis(&symbol_table, &mut errors).unwrap();
+    hir.normalize(&mut symbol_table, &mut errors).unwrap();
+    hir.lir_from_hir(&symbol_table)
+}
+pub fn rust_ast_from_lir(file_id: usize, files: &mut SimpleFiles<&str, String>) -> RustASTProject {
+    let mut symbol_table = SymbolTable::new();
+    let mut errors = vec![];
+
+    let ast = langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap();
+    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    hir.typing(&mut symbol_table, &mut errors).unwrap();
+    hir.generate_dependency_graphs(&symbol_table, &mut errors)
+        .unwrap();
+    hir.causality_analysis(&symbol_table, &mut errors).unwrap();
+    hir.normalize(&mut symbol_table, &mut errors).unwrap();
+    rust_from_lir(hir.lir_from_hir(&symbol_table))
+}
+pub fn generate_rust_project<P>(
+    file_id: usize,
+    files: &mut SimpleFiles<&str, String>,
+    parent_path: P,
+) where
+    P: AsRef<std::path::Path>,
+{
+    let mut symbol_table = SymbolTable::new();
+    let mut errors = vec![];
+
+    let ast = langrust::fileParser::new()
+        .parse(file_id, &files.source(file_id).unwrap())
+        .unwrap();
+    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    hir.typing(&mut symbol_table, &mut errors).unwrap();
+    hir.generate_dependency_graphs(&symbol_table, &mut errors)
+        .unwrap();
+    hir.causality_analysis(&symbol_table, &mut errors).unwrap();
+    hir.normalize(&mut symbol_table, &mut errors).unwrap();
+
+    let mut project = rust_from_lir(hir.lir_from_hir(&symbol_table));
+    project.set_parent(parent_path);
+
+    project.generate()
+}
