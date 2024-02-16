@@ -1,16 +1,21 @@
-use crate::common::r#type::Type;
+use crate::common::{location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
-use crate::hir::expression::{Expression, ExpressionKind};
+use crate::frontend::typing_analysis::TypeAnalysis;
+use crate::hir::expression::ExpressionKind;
 use crate::symbol_table::{SymbolKind, SymbolTable};
 
-impl Expression {
+impl<E> ExpressionKind<E>
+where
+    E: TypeAnalysis,
+{
     /// Add a [Type] to the field access expression.
     pub fn typing_field_access(
         &mut self,
+        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Type, TerminationError> {
+        match self {
             ExpressionKind::FieldAccess {
                 ref mut expression,
                 ref field,
@@ -20,7 +25,7 @@ impl Expression {
                 match expression.get_type().unwrap() {
                     Type::Structure { name, id } => {
                         let symbol = symbol_table
-                            .get_symbol(id)
+                            .get_symbol(&id)
                             .expect("there should be a symbole");
                         match symbol.kind() {
                             SymbolKind::Structure { fields } => {
@@ -33,13 +38,12 @@ impl Expression {
                                     .map(|id| symbol_table.get_type(id).clone())
                                     .next();
                                 if let Some(field_type) = option_field_type {
-                                    self.typing = Some(field_type);
-                                    Ok(())
+                                    Ok(field_type)
                                 } else {
                                     let error = Error::UnknownField {
                                         structure_name: name.clone(),
                                         field_name: field.clone(),
-                                        location: self.location.clone(),
+                                        location: location.clone(),
                                     };
                                     errors.push(error);
                                     Err(TerminationError)
@@ -51,7 +55,7 @@ impl Expression {
                     given_type => {
                         let error = Error::ExpectStructure {
                             given_type: given_type.clone(),
-                            location: self.location.clone(),
+                            location: location.clone(),
                         };
                         errors.push(error);
                         Err(TerminationError)

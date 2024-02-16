@@ -11,72 +11,72 @@ use crate::{
     symbol_table::SymbolTable,
 };
 
-use super::{
-    contract::lir_from_hir as contract_lir_from_hir,
-    equation::lir_from_hir as equation_lir_from_hir,
-};
+use super::LIRFromHIR;
 
-/// Transform HIR unitary node into LIR node file.
-pub fn lir_from_hir(unitary_node: UnitaryNode, symbol_table: &SymbolTable) -> NodeFile {
-    let UnitaryNode {
-        node_id,
-        output_id,
-        inputs,
-        equations,
-        memory,
-        ..
-    } = unitary_node;
+impl LIRFromHIR for UnitaryNode {
+    type LIR = NodeFile;
 
-    let output_type = symbol_table.get_output_type(&node_id).clone();
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+        let UnitaryNode {
+            node_id,
+            output_id,
+            inputs,
+            statements,
+            memory,
+            ..
+        } = self;
 
-    let output_expression = LIRExpression::Identifier {
-        identifier: symbol_table.get_name(&output_id).clone(),
-    };
+        let output_type = symbol_table.get_output_type(&node_id).clone();
 
-    // TODO: imports
-    // let imports = equations
-    //     .iter()
-    //     .flat_map(|equation| equation.expression.get_imports())
-    //     .unique()
-    //     .collect();
+        let output_expression = LIRExpression::Identifier {
+            identifier: symbol_table.get_name(&output_id).clone(),
+        };
 
-    let (elements, state_elements_init, state_elements_step) =
-        memory.get_state_elements(symbol_table);
+        // TODO: imports
+        // let imports = statements
+        //     .iter()
+        //     .flat_map(|equation| equation.expression.get_imports())
+        //     .unique()
+        //     .collect();
 
-    let name = symbol_table.get_name(&node_id);
+        let (elements, state_elements_init, state_elements_step) =
+            memory.get_state_elements(symbol_table);
 
-    NodeFile {
-        name: name.clone(),
-        imports: vec![], // TODO
-        input: Input {
-            node_name: name.clone(),
-            elements: inputs
-                .into_iter()
-                .map(|id| InputElement {
-                    identifier: symbol_table.get_name(&id).clone(),
-                    r#type: symbol_table.get_type(&id).clone(),
-                })
-                .collect(),
-        },
-        state: State {
-            node_name: name.clone(),
-            elements,
-            step: Step {
-                contract: contract_lir_from_hir(unitary_node.contract, symbol_table),
+        let name = symbol_table.get_name(&node_id);
+
+        NodeFile {
+            name: name.clone(),
+            imports: vec![], // TODO
+            input: Input {
                 node_name: name.clone(),
-                output_type,
-                body: equations
+                elements: inputs
                     .into_iter()
-                    .map(|equation| equation_lir_from_hir(equation, symbol_table))
+                    .map(|id| InputElement {
+                        identifier: symbol_table.get_name(&id).clone(),
+                        r#type: symbol_table.get_type(&id).clone(),
+                    })
                     .collect(),
-                state_elements_step,
-                output_expression,
             },
-            init: Init {
+            state: State {
                 node_name: name.clone(),
-                state_elements_init,
-                invariant_initialisation: vec![], // TODO
+                elements,
+                step: Step {
+                    contract: self.contract.lir_from_hir(symbol_table),
+                    node_name: name.clone(),
+                    output_type,
+                    body: statements
+                        .into_iter()
+                        .map(|equation| equation.lir_from_hir(symbol_table))
+                        .collect(),
+                    state_elements_step,
+                    output_expression,
+                },
+                init: Init {
+                    node_name: name.clone(),
+                    state_elements_init,
+                    invariant_initialisation: vec![], // TODO
+                },
             },
-        },
+        }
     }
 }

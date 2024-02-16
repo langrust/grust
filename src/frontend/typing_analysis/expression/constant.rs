@@ -1,17 +1,16 @@
+use crate::common::r#type::Type;
 use crate::{
-    error::{Error, TerminationError},
-    hir::expression::{Expression, ExpressionKind},
-    symbol_table::SymbolTable,
+    error::TerminationError, frontend::typing_analysis::TypeAnalysis,
+    hir::expression::ExpressionKind,
 };
 
-impl Expression {
+impl<E> ExpressionKind<E>
+where
+    E: TypeAnalysis,
+{
     /// Add a [Type] to the constant expression.
-    pub fn typing_constant(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    pub fn typing_constant(&mut self) -> Result<Type, TerminationError> {
+        match self {
             // typing a constant expression consist of getting the type of the constant
             ExpressionKind::Constant { ref constant } => {
                 let constant_type = constant.get_type();
@@ -22,7 +21,7 @@ impl Expression {
                 //         _ => {
                 //             let error = Error::UnknownEnumeration {
                 //                 name: type_id.clone(),
-                //                 location: self.location.clone(),
+                //                 location: location.clone(),
                 //             };
                 //             errors.push(error);
                 //             return Err(TerminationError);
@@ -30,8 +29,7 @@ impl Expression {
                 //     },
                 //     _ => (),
                 // }
-                self.typing = Some(constant_type);
-                Ok(())
+                Ok(constant_type)
             }
             _ => unreachable!(),
         }

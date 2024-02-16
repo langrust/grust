@@ -1,13 +1,12 @@
 use crate::common::location::Location;
-use crate::hir::expression::Expression;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust statement HIR.
-pub struct Statement {
+pub struct Statement<E> {
     /// Identifier of the element.
     pub id: usize,
     /// The expression defining the element.
-    pub expression: Expression,
+    pub expression: E,
     /// Statement location.
     pub location: Location,
 }

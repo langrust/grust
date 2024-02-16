@@ -9,7 +9,7 @@ pub struct Function {
     /// Function's inputs identifiers and their types.
     pub inputs: Vec<usize>,
     /// Function's statements.
-    pub statements: Vec<Statement>,
+    pub statements: Vec<Statement<Expression>>,
     /// Function's returned expression and its type.
     pub returned: Expression,
     /// Function location.

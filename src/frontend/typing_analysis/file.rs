@@ -1,8 +1,9 @@
 use crate::error::{Error, TerminationError};
+use crate::frontend::typing_analysis::TypeAnalysis;
 use crate::hir::file::File;
 use crate::symbol_table::SymbolTable;
 
-impl File {
+impl TypeAnalysis for File {
     /// [Type] the entire file.
     ///
     /// # Example
@@ -88,13 +89,12 @@ impl File {
     ///
     /// file.typing(&mut errors).unwrap();
     /// ```
-    pub fn typing(
+    fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let File {
-            typedefs,
             functions,
             nodes,
             component,

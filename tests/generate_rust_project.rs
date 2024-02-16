@@ -421,7 +421,10 @@ fn generate_rust_project_for_map_int_to_float() {
     );
 
     let mut file: File = langrust::fileParser::new()
-        .parse(map_int_to_float_id, &files.source(map_int_to_float_id).unwrap())
+        .parse(
+            map_int_to_float_id,
+            &files.source(map_int_to_float_id).unwrap(),
+        )
         .unwrap();
     file.typing(&mut errors);
     display(&errors, &files);

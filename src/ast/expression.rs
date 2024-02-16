@@ -3,7 +3,7 @@ use crate::common::{constant::Constant, location::Location, r#type::Type};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust expression AST.
-pub enum ExpressionKind {
+pub enum ExpressionKind<E> {
     /// Constant expression.
     Constant {
         /// The constant.
@@ -17,30 +17,30 @@ pub enum ExpressionKind {
     /// Application expression.
     Application {
         /// The expression applied.
-        function_expression: Box<Expression>,
+        function_expression: Box<E>,
         /// The inputs to the expression.
-        inputs: Vec<Expression>,
+        inputs: Vec<E>,
     },
     /// Abstraction expression.
     Abstraction {
         /// The inputs to the abstraction.
         inputs: Vec<String>,
         /// The expression abstracted.
-        expression: Box<Expression>,
+        expression: Box<E>,
     },
     /// Abstraction expression with inputs types.
     TypedAbstraction {
         /// The inputs to the abstraction.
         inputs: Vec<(String, Type)>,
         /// The expression abstracted.
-        expression: Box<Expression>,
+        expression: Box<E>,
     },
     /// Structure expression.
     Structure {
         /// The structure name.
         name: String,
         /// The fields associated with their expressions.
-        fields: Vec<(String, Expression)>,
+        fields: Vec<(String, E)>,
     },
     /// Enumeration expression.
     Enumeration {
@@ -52,67 +52,67 @@ pub enum ExpressionKind {
     /// Array expression.
     Array {
         /// The elements inside the array.
-        elements: Vec<Expression>,
+        elements: Vec<E>,
     },
     /// Pattern matching expression.
     Match {
         /// The expression to match.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The different matching cases.
-        arms: Vec<(Pattern, Option<Expression>, Expression)>,
+        arms: Vec<(Pattern, Option<E>, E)>,
     },
     /// When present expression.
     When {
         /// The identifier of the value when present
         id: String,
         /// The optional expression.
-        option: Box<Expression>,
+        option: Box<E>,
         /// The expression when present.
-        present: Box<Expression>,
+        present: Box<E>,
         /// The default expression.
-        default: Box<Expression>,
+        default: Box<E>,
     },
     /// Field access expression.
     FieldAccess {
         /// The structure expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The field to access.
         field: String,
     },
     /// Tuple element access expression.
     TupleElementAccess {
         /// The tuple expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The element to access.
         element_number: usize,
     },
     /// Array map operator expression.
     Map {
         /// The array expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The function expression.
-        function_expression: Box<Expression>,
+        function_expression: Box<E>,
     },
     /// Array fold operator expression.
     Fold {
         /// The array expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The initialization expression.
-        initialization_expression: Box<Expression>,
+        initialization_expression: Box<E>,
         /// The function expression.
-        function_expression: Box<Expression>,
+        function_expression: Box<E>,
     },
     /// Array sort operator expression.
     Sort {
         /// The array expression.
-        expression: Box<Expression>,
+        expression: Box<E>,
         /// The function expression.
-        function_expression: Box<Expression>,
+        function_expression: Box<E>,
     },
     /// Arrays zip operator expression.
     Zip {
         /// The array expressions.
-        arrays: Vec<Expression>,
+        arrays: Vec<E>,
     },
 }
 
@@ -120,7 +120,7 @@ pub enum ExpressionKind {
 /// LanGRust expression AST.
 pub struct Expression {
     /// Expression kind.
-    pub kind: ExpressionKind,
+    pub kind: ExpressionKind<Expression>,
     /// Expression location.
     pub location: Location,
 }

@@ -70,13 +70,13 @@ impl Symbol {
     }
 
     fn hash_as_string(&self) -> String {
-        match self.kind {
+        match &self.kind {
             SymbolKind::Identifier { .. } => format!("identifier_{}", self.name),
             SymbolKind::Function { .. } => format!("function_{}", self.name),
             SymbolKind::Node { .. } => format!("node_{}", self.name),
-            SymbolKind::Structure { fields } => format!("struct_{}", self.name),
-            SymbolKind::Enumeration { elements } => format!("enum_{}", self.name),
-            SymbolKind::Array { array_type, size } => format!("array_{}", self.name),
+            SymbolKind::Structure { .. } => format!("struct_{}", self.name),
+            SymbolKind::Enumeration { .. } => format!("enum_{}", self.name),
+            SymbolKind::Array { .. } => format!("array_{}", self.name),
         }
     }
 }
@@ -162,11 +162,13 @@ impl SymbolTable {
     }
 
     pub fn local(&mut self) {
-        self.known_symbols = self.known_symbols.create_local_context();
+        let prev = std::mem::take(&mut self.known_symbols);
+        self.known_symbols = prev.create_local_context();
     }
 
     pub fn global(&mut self) {
-        self.known_symbols = self.known_symbols.get_global_context();
+        let prev = std::mem::take(&mut self.known_symbols);
+        self.known_symbols = prev.get_global_context();
     }
 
     fn insert_symbol(
@@ -372,10 +374,23 @@ impl SymbolTable {
         &symbol.name
     }
 
+    pub fn set_name(&mut self, id: &usize, new_name: String) {
+        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        symbol.name = new_name;
+    }
+
     pub fn get_scope(&self, id: &usize) -> &Scope {
         let symbol = self.get_symbol(id).expect("expect symbol");
         match symbol.kind() {
             SymbolKind::Identifier { scope, .. } => scope,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn set_scope(&mut self, id: &usize, new_scope: Scope) {
+        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        match symbol.kind {
+            SymbolKind::Identifier { ref mut scope, .. } => *scope = new_scope,
             _ => unreachable!(),
         }
     }

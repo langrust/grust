@@ -1,16 +1,20 @@
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
-use crate::hir::expression::{Expression, ExpressionKind};
+use crate::frontend::typing_analysis::TypeAnalysis;
+use crate::hir::expression::ExpressionKind;
 use crate::symbol_table::SymbolTable;
 
-impl Expression {
+impl<E> ExpressionKind<E>
+where
+    E: TypeAnalysis,
+{
     /// Add a [Type] to the abstraction expression.
     pub fn typing_abstraction(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Type, TerminationError> {
+        match self {
             // the type of a typed abstraction is computed by adding inputs to
             // the context and typing the function body expression
             ExpressionKind::Abstraction {
@@ -30,8 +34,7 @@ impl Expression {
                     Box::new(expression.get_type().unwrap().clone()),
                 );
 
-                self.typing = Some(abstraction_type);
-                Ok(())
+                Ok(abstraction_type)
             }
             _ => unreachable!(),
         }

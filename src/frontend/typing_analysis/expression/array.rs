@@ -1,22 +1,27 @@
-use crate::common::r#type::Type;
+use crate::common::{location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
-use crate::hir::expression::{Expression, ExpressionKind};
+use crate::frontend::typing_analysis::TypeAnalysis;
+use crate::hir::expression::ExpressionKind;
 use crate::symbol_table::SymbolTable;
 
-impl Expression {
+impl<E> ExpressionKind<E>
+where
+    E: TypeAnalysis,
+{
     /// Add a [Type] to the array expression.
     pub fn typing_array(
         &mut self,
+        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Type, TerminationError> {
+        match self {
             // an array is composed of `n` elements of the same type `t` and
             // its type is `[t; n]`
             ExpressionKind::Array { ref mut elements } => {
                 if elements.len() == 0 {
                     let error = Error::ExpectInput {
-                        location: self.location.clone(),
+                        location: location.clone(),
                     };
                     errors.push(error);
                     return Err(TerminationError);
@@ -34,7 +39,7 @@ impl Expression {
                     .iter()
                     .map(|element| {
                         let element_type = element.get_type().unwrap();
-                        element_type.eq_check(first_type, self.location.clone(), errors)
+                        element_type.eq_check(first_type, location.clone(), errors)
                     })
                     .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
@@ -42,8 +47,7 @@ impl Expression {
 
                 let array_type = Type::Array(Box::new(first_type.clone()), elements.len());
 
-                self.typing = Some(array_type);
-                Ok(())
+                Ok(array_type)
             }
             _ => unreachable!(),
         }

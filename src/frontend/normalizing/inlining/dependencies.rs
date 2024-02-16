@@ -19,14 +19,14 @@ impl Dependencies {
     /// on `x` and `y` will depends on `a` and `b`.
     pub fn replace_by_context(
         &mut self,
-        context_map: &HashMap<String, Union<Signal, StreamExpression>>,
+        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
     ) {
         let new_dependencies = self
             .get()
             .unwrap()
             .iter()
             .flat_map(|(id, depth)| match context_map.get(id) {
-                Some(Union::I1(Signal { id: new_id, .. })) => vec![(new_id.clone(), *depth)],
+                Some(Union::I1(new_id)) => vec![(*new_id, *depth)],
                 Some(Union::I2(expression)) => expression
                     .get_dependencies()
                     .iter()

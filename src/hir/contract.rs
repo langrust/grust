@@ -43,3 +43,9 @@ pub struct Contract {
     /// Invariant clauses to prove
     pub invariant: Vec<Term>,
 }
+
+impl Contract {
+    pub fn substitution(&mut self, id: usize, new_id: usize) {
+        todo!()
+    }
+}

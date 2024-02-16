@@ -5,20 +5,20 @@ use petgraph::graphmap::DiGraphMap;
 use crate::common::graph::color::Color;
 use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
-use crate::hir::{node::Node, expression::{Expression, ExpressionKind}};
+use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
 use crate::symbol_table::SymbolTable;
 
-impl Expression {
+impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of a when stream expression.
     pub fn compute_when_dependencies(
         &self,
         symbol_table: &SymbolTable,
-        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
-        nodes_graphs: &mut HashMap<String, DiGraphMap<usize, Label>>,
-        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<usize, Label>>,
+        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Vec<(usize, usize)>, TerminationError> {
+        match self {
             // dependencies of when are dependencies of the optional expression
             // plus present and default expressions (without the new local signal)
             ExpressionKind::When {
@@ -30,7 +30,7 @@ impl Expression {
             } => {
                 // get dependencies of optional expression
                 option.compute_dependencies(
-                    nodes_context,
+                    symbol_table,
                     nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
@@ -40,7 +40,7 @@ impl Expression {
 
                 // get dependencies of present expression without local signal
                 present.compute_dependencies(
-                    nodes_context,
+                    symbol_table,
                     nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
@@ -55,7 +55,7 @@ impl Expression {
 
                 // get dependencies of default expression without local signal
                 default.compute_dependencies(
-                    nodes_context,
+                    symbol_table,
                     nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
@@ -71,12 +71,9 @@ impl Expression {
                 // push all dependencies in optional dependencies
                 option_dependencies.append(&mut present_dependencies);
                 option_dependencies.append(&mut default_dependencies);
-                self.dependencies.set(option_dependencies);
-
-                Ok(())
+                Ok(option_dependencies)
             }
             _ => unreachable!(),
         }
     }
 }
-

@@ -3,7 +3,8 @@ use std::collections::HashMap;
 
 use crate::common::{graph::neighbor::Label, location::Location, serialize::ordered_map};
 use crate::hir::{
-    contract::Contract, equation::Equation, once_cell::OnceCell, unitary_node::UnitaryNode,
+    contract::Contract, once_cell::OnceCell, statement::Statement,
+    stream_expression::StreamExpression, unitary_node::UnitaryNode,
 };
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -13,7 +14,7 @@ pub struct Node {
     pub id: usize,
     /// Node's unscheduled equations.    
     #[serde(serialize_with = "ordered_map")]
-    pub unscheduled_equations: HashMap<usize, Equation>,
+    pub unscheduled_equations: HashMap<usize, Statement<StreamExpression>>,
     /// Unitary output nodes generated from this node.
     #[serde(serialize_with = "ordered_map")]
     pub unitary_nodes: HashMap<usize, UnitaryNode>,

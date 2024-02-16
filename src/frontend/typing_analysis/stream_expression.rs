@@ -1,8 +1,10 @@
+use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
+use crate::frontend::typing_analysis::TypeAnalysis;
 use crate::hir::stream_expression::{StreamExpression, StreamExpressionKind};
 use crate::symbol_table::SymbolTable;
 
-impl StreamExpression {
+impl TypeAnalysis for StreamExpression {
     /// Add a [Type] to the stream expression.
     ///
     /// # Example
@@ -24,7 +26,7 @@ impl StreamExpression {
     /// };
     /// stream_expression.typing(&nodes_context, &signals_context, &global_context, &user_types_context, &mut errors).unwrap();
     /// ```
-    pub fn typing(
+    fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
@@ -47,9 +49,9 @@ impl StreamExpression {
             }
 
             StreamExpressionKind::NodeApplication {
-                ref node_id,
                 ref mut inputs,
                 ref output_id,
+                ..
             } => {
                 // type all inputs and check their types
                 inputs
@@ -57,7 +59,7 @@ impl StreamExpression {
                     .map(|(id, input)| {
                         input.typing(symbol_table, errors)?;
 
-                        let input_type = input.typing.unwrap();
+                        let input_type = input.typing.as_ref().unwrap();
                         let expected_type = symbol_table.get_type(id);
                         input_type.eq_check(expected_type, self.location.clone(), errors)
                     })
@@ -73,8 +75,18 @@ impl StreamExpression {
             }
 
             StreamExpressionKind::Expression { ref mut expression } => {
-                expression.typing(symbol_table, errors)
+                self.typing = Some(expression.typing(&self.location, symbol_table, errors)?);
+                Ok(())
             }
+            StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
         }
+    }
+
+    fn get_type(&self) -> Option<&Type> {
+        self.typing.as_ref()
+    }
+
+    fn get_type_mut(&mut self) -> Option<&mut Type> {
+        self.typing.as_mut()
     }
 }

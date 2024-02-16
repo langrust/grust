@@ -5,26 +5,24 @@ use petgraph::graphmap::DiGraphMap;
 use crate::common::graph::color::Color;
 use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
-use crate::hir::{node::Node, expression::{Expression, ExpressionKind}};
+use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
 use crate::symbol_table::SymbolTable;
 
-impl Expression {
+impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of a match stream expression.
     pub fn compute_match_dependencies(
         &self,
         symbol_table: &SymbolTable,
-        nodes_processus_manager: &mut HashMap<String, HashMap<&String, Color>>,
-        nodes_graphs: &mut HashMap<String, DiGraphMap<usize, Label>>,
-        nodes_reduced_graphs: &mut HashMap<String, DiGraphMap<usize, Label>>,
+        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Vec<(usize, usize)>, TerminationError> {
+        match self {
             // dependencies of match are dependencies of matched expression and
             // dependencies of arms (without new signals defined in patterns)
             ExpressionKind::Match {
-                expression,
-                arms,
-                ..
+                expression, arms, ..
             } => {
                 // compute arms dependencies
                 let mut arms_dependencies = arms
@@ -35,7 +33,7 @@ impl Expression {
 
                         // get arm expression dependencies
                         arm_expression.compute_dependencies(
-                            nodes_context,
+                            symbol_table,
                             nodes_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
@@ -46,13 +44,13 @@ impl Expression {
                             .clone()
                             .into_iter()
                             .filter(|(signal, _)| !local_signals.contains(signal))
-                            .collect::<Vec<(String, usize)>>();
+                            .collect::<Vec<(usize, usize)>>();
 
                         // get bound dependencies
                         let mut bound_dependencies =
                             bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
                                 bound_expression.compute_dependencies(
-                                    nodes_context,
+                                    symbol_table,
                                     nodes_processus_manager,
                                     nodes_graphs,
                                     nodes_reduced_graphs,
@@ -73,14 +71,14 @@ impl Expression {
                         // return arm dependencies
                         Ok(arm_dependencies)
                     })
-                    .collect::<Result<Vec<Vec<(String, usize)>>, TerminationError>>()?
+                    .collect::<Result<Vec<Vec<(usize, usize)>>, TerminationError>>()?
                     .into_iter()
                     .flatten()
-                    .collect::<Vec<(String, usize)>>();
+                    .collect::<Vec<(usize, usize)>>();
 
                 // get matched expression dependencies
                 expression.compute_dependencies(
-                    nodes_context,
+                    symbol_table,
                     nodes_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
@@ -88,14 +86,10 @@ impl Expression {
                 )?;
                 let mut expression_dependencies = expression.get_dependencies().clone();
 
-                // push all dependencies in arms dependencies
                 arms_dependencies.append(&mut expression_dependencies);
-                self.dependencies.set(arms_dependencies);
-
-                Ok(())
+                Ok(arms_dependencies)
             }
             _ => unreachable!(),
         }
     }
 }
-

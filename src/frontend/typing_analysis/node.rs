@@ -1,8 +1,9 @@
 use crate::error::{Error, TerminationError};
+use crate::frontend::typing_analysis::TypeAnalysis;
 use crate::hir::node::Node;
 use crate::symbol_table::SymbolTable;
 
-impl Node {
+impl TypeAnalysis for Node {
     /// [Type] the node.
     ///
     /// # Example
@@ -70,15 +71,13 @@ impl Node {
     ///
     /// node.typing(&nodes_context, &global_context, &user_types_context, &mut errors).unwrap();
     /// ```
-    pub fn typing(
+    fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
-            id,
             unscheduled_equations,
-            location,
             ..
         } = self;
 

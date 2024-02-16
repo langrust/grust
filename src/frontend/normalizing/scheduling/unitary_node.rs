@@ -3,7 +3,7 @@ use petgraph::algo::toposort;
 use crate::{common::graph::neighbor::Label, hir::unitary_node::UnitaryNode};
 
 impl UnitaryNode {
-    /// Schedule equations.
+    /// Schedule statements.
     ///
     /// # Example.
     ///
@@ -39,16 +39,16 @@ impl UnitaryNode {
 
         let schedule = toposort(&subgraph, None).unwrap();
 
-        let scheduled_equations = schedule
+        let scheduled_statements = schedule
             .into_iter()
             .filter_map(|signal_id| {
-                self.equations
+                self.statements
                     .iter()
                     .position(|equation| equation.id == signal_id)
             })
-            .map(|index| self.equations.get(index).unwrap().clone())
+            .map(|index| self.statements.get(index).unwrap().clone())
             .collect();
 
-        self.equations = scheduled_equations;
+        self.statements = scheduled_statements;
     }
 }

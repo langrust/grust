@@ -1,156 +1,35 @@
 use crate::ast::equation::Equation;
 use crate::error::{Error, TerminationError};
-use crate::frontend::hir_from_ast::stream_expression::hir_from_ast as stream_expression_hir_from_ast;
-use crate::hir::equation::Equation as HIREquation;
+use crate::hir::{
+    statement::Statement as HIRStatement,
+    stream_expression::StreamExpression as HIRStreamExpression,
+};
 use crate::symbol_table::SymbolTable;
 
-/// Transform AST equations into HIR equations.
-pub fn hir_from_ast(
-    equation: Equation,
-    symbol_table: &mut SymbolTable,
-    errors: &mut Vec<Error>,
-) -> Result<HIREquation, TerminationError> {
-    let Equation {
-        scope,
-        id,
-        signal_type,
-        expression,
-        location,
-    } = equation;
+use super::HIRFromAST;
 
-    let id = symbol_table.get_signal_id(&id, true, location, errors)?;
+impl HIRFromAST for Equation {
+    type HIR = HIRStatement<HIRStreamExpression>;
 
-    Ok(HIREquation {
-        id,
-        expression: stream_expression_hir_from_ast(expression, symbol_table, errors)?,
-        location,
-    }
-}
+    fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<Self::HIR, TerminationError> {
+        let Equation {
+            scope,
+            id,
+            signal_type,
+            expression,
+            location,
+        } = self;
 
-#[cfg(test)]
-mod hir_from_ast {
-    use std::collections::HashMap;
+        let id = symbol_table.get_signal_id(&id, true, location.clone(), errors)?;
 
-    use crate::ast::{
-        equation::Equation, expression::Expression, stream_expression::StreamExpression,
-    };
-    use crate::common::{location::Location, r#type::Type, scope::Scope};
-    use crate::frontend::hir_from_ast::equation::hir_from_ast;
-    use crate::hir::{
-        dependencies::Dependencies, equation::Equation as HIREquation, signal::Signal,
-        stream_expression::StreamExpression as HIRStreamExpression,
-    };
-
-    #[test]
-    fn should_construct_hir_structure_from_typed_ast() {
-        let ast_expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("f"),
-                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::SignalCall {
-                id: String::from("i"),
-                typing: Some(Type::Integer),
-                location: Location::default(),
-            }],
-            typing: Some(Type::Integer),
-            location: Location::default(),
-        };
-        let ast_equation = Equation {
-            id: String::from("o"),
-            scope: Scope::Output,
-            signal_type: Type::Integer,
-            expression: ast_expression,
-            location: Location::default(),
-        };
-        let signals_context =
-            HashMap::from([(format!("i"), Scope::Input), (format!("o"), Scope::Output)]);
-        let hir_equation = hir_from_ast(ast_equation, &signals_context);
-
-        let control = HIREquation {
-            id: String::from("o"),
-            scope: Scope::Output,
-            signal_type: Type::Integer,
-            expression: HIRStreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: String::from("f"),
-                    typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                    location: Location::default(),
-                },
-                inputs: vec![HIRStreamExpression::SignalCall {
-                    signal: Signal {
-                        id: String::from("i"),
-                        scope: Scope::Input,
-                    },
-                    typing: Type::Integer,
-                    location: Location::default(),
-                    dependencies: Dependencies::new(),
-                }],
-                typing: Type::Integer,
-                location: Location::default(),
-                dependencies: Dependencies::new(),
-            },
-            location: Location::default(),
-        };
-        assert_eq!(hir_equation, control);
-    }
-
-    #[test]
-    #[should_panic]
-    fn should_panic_with_untyped_ast() {
-        let ast_expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("f"),
-                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::SignalCall {
-                id: String::from("i"),
-                typing: None,
-                location: Location::default(),
-            }],
-            typing: Some(Type::Integer),
-            location: Location::default(),
-        };
-        let ast_equation = Equation {
-            id: String::from("o"),
-            scope: Scope::Output,
-            signal_type: Type::Integer,
-            expression: ast_expression,
-            location: Location::default(),
-        };
-        let signals_context =
-            HashMap::from([(format!("i"), Scope::Input), (format!("o"), Scope::Output)]);
-        let _ = hir_from_ast(ast_equation, &signals_context);
-    }
-
-    #[test]
-    #[should_panic]
-    fn should_panic_with_unknown_signal() {
-        let ast_expression = StreamExpression::FunctionApplication {
-            function_expression: Expression::Identifier {
-                id: String::from("f"),
-                typing: Some(Type::Abstract(vec![Type::Integer], Box::new(Type::Integer))),
-                location: Location::default(),
-            },
-            inputs: vec![StreamExpression::SignalCall {
-                id: String::from("i"),
-                typing: Some(Type::Integer),
-                location: Location::default(),
-            }],
-            typing: Some(Type::Integer),
-            location: Location::default(),
-        };
-        let ast_equation = Equation {
-            id: String::from("o"),
-            scope: Scope::Output,
-            signal_type: Type::Integer,
-            expression: ast_expression,
-            location: Location::default(),
-        };
-        let signals_context =
-            HashMap::from([(format!("j"), Scope::Input), (format!("o"), Scope::Output)]);
-        let _ = hir_from_ast(ast_equation, &signals_context);
+        Ok(HIRStatement {
+            id,
+            expression: expression.hir_from_ast(symbol_table, errors)?,
+            location,
+        })
     }
 }

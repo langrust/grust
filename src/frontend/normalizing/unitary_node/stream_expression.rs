@@ -19,10 +19,10 @@ impl StreamExpression {
     /// The application of the node `my_node(g-1, v).o2` is changed
     /// to the application of the unitary node `my_node(v).o2`
     pub fn change_node_application_into_unitary_node_application(&mut self) {
-        match self.kind {
-            StreamExpressionKind::FollowedBy { mut expression, .. } => {
-                expression.change_node_application_into_unitary_node_application()
-            }
+        match &mut self.kind {
+            StreamExpressionKind::FollowedBy {
+                ref mut expression, ..
+            } => expression.change_node_application_into_unitary_node_application(),
             StreamExpressionKind::NodeApplication {
                 node_id,
                 inputs,
@@ -46,7 +46,7 @@ impl StreamExpression {
                 self.kind = StreamExpressionKind::UnitaryNodeApplication {
                     node_id: unitary_node_id,
                     inputs,
-                    output_id,
+                    output_id: *output_id,
                 };
             }
             StreamExpressionKind::Expression { .. } => (),

@@ -1,24 +1,15 @@
-use crate::{
-    error::TerminationError,
-    hir::{signal::Signal, expression::{Expression, ExpressionKind}},
-};
-use crate::symbol_table::SymbolTable;
+use crate::error::TerminationError;
+use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
 
-impl Expression {
+impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of a signal call.
-    pub fn compute_signal_call_dependencies(&self) -> Result<(), TerminationError> {
-        match self.kind {
+    pub fn compute_signal_call_dependencies(
+        &self,
+    ) -> Result<Vec<(usize, usize)>, TerminationError> {
+        match self {
             // signal call depends on called signal with depth of 0
-            ExpressionKind::Identifier {
-                id,
-                ..
-            } => {
-                self.dependencies.set(vec![(id.clone(), 0)]);
-
-                Ok(())
-            }
+            ExpressionKind::Identifier { id, .. } => Ok(vec![(*id, 0)]),
             _ => unreachable!(),
         }
     }
 }
-

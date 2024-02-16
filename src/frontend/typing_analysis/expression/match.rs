@@ -1,16 +1,21 @@
-use crate::common::r#type::Type;
+use crate::common::{location::Location, r#type::Type};
 use crate::error::{Error, TerminationError};
-use crate::hir::expression::{Expression, ExpressionKind};
+use crate::frontend::typing_analysis::TypeAnalysis;
+use crate::hir::expression::ExpressionKind;
 use crate::symbol_table::SymbolTable;
 
-impl Expression {
+impl<E> ExpressionKind<E>
+where
+    E: TypeAnalysis,
+{
     /// Add a [Type] to the match expression.
     pub fn typing_match(
         &mut self,
+        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Type, TerminationError> {
+        match self {
             // the type of a match expression is the type of all branches expressions
             ExpressionKind::Match {
                 ref mut expression,
@@ -19,6 +24,8 @@ impl Expression {
                 expression.typing(symbol_table, errors)?;
 
                 let expression_type = expression.get_type().unwrap();
+                // TODO: check it matches pattern type
+
                 arms.iter_mut()
                     .map(|(pattern, optional_test_expression, _, arm_expression)| {
                         let optional_test_expression_typing_test = optional_test_expression
@@ -27,7 +34,7 @@ impl Expression {
                                 expression.typing(symbol_table, errors)?;
                                 expression.get_type().unwrap().eq_check(
                                     &Type::Boolean,
-                                    self.location.clone(),
+                                    location.clone(),
                                     errors,
                                 )
                             });
@@ -46,15 +53,14 @@ impl Expression {
                 arms.iter()
                     .map(|(_, _, _, arm_expression)| {
                         let arm_expression_type = arm_expression.get_type().unwrap();
-                        arm_expression_type.eq_check(first_type, self.location.clone(), errors)
+                        arm_expression_type.eq_check(first_type, location.clone(), errors)
                     })
                     .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
                     .collect::<Result<(), TerminationError>>()?;
 
                 // todo: patterns should be exhaustive
-                self.typing = Some(first_type.clone());
-                Ok(())
+                Ok(first_type.clone())
             }
             _ => unreachable!(),
         }

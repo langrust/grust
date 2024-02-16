@@ -163,9 +163,9 @@ impl File {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         self.generate_unitary_nodes(symbol_table, true, errors)?; // check that all signals are used
-        self.normal_form();
-        self.memorize();
-        self.inline_when_needed();
+        self.normal_form(symbol_table);
+        self.memorize(symbol_table);
+        self.inline_when_needed(symbol_table);
         self.schedule();
         Ok(())
     }

@@ -5,7 +5,7 @@ use petgraph::graphmap::DiGraphMap;
 use crate::common::graph::color::Color;
 use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
-use crate::hir::expression::{Expression, ExpressionKind};
+use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
 use crate::symbol_table::SymbolTable;
 
 mod application;
@@ -22,7 +22,7 @@ mod tuple_element_access;
 mod when;
 mod zip;
 
-impl Expression {
+impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of a stream expression.
     ///
     /// # Example
@@ -46,8 +46,8 @@ impl Expression {
         nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        match self.kind {
+    ) -> Result<Vec<(usize, usize)>, TerminationError> {
+        match self {
             ExpressionKind::Constant { .. } => self.compute_constant_dependencies(),
             ExpressionKind::Identifier { .. } => self.compute_signal_call_dependencies(),
             ExpressionKind::Application { .. } => self.compute_function_application_dependencies(
@@ -128,6 +128,8 @@ impl Expression {
                 nodes_reduced_graphs,
                 errors,
             ),
+            ExpressionKind::Abstraction { inputs, expression } => todo!(),
+            ExpressionKind::Enumeration { enum_id, elem_id } => todo!(),
         }
     }
 }
