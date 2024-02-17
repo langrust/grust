@@ -7,8 +7,10 @@ mod langrust_ast_constructs {
     use codespan_reporting::files::{Files, SimpleFiles};
 
     use grustine::ast::{
-        equation::Equation, expression::Expression, file::File, function::Function, node::Node,
-        statement::Statement, stream_expression::StreamExpression, typedef::Typedef,
+        expression::{Expression, ExpressionKind},
+        pattern::{Pattern, PatternKind},
+        stream_expression::{StreamExpression, StreamExpressionKind},
+        typedef::{Typedef, TypedefKind},
     };
     use grustine::common::{
         constant::Constant,
@@ -16,455 +18,8 @@ mod langrust_ast_constructs {
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         pattern::Pattern,
         r#type::Type,
-        scope::Scope,
     };
     use grustine::parser::langrust;
-
-    #[test]
-    fn file_parser() {
-        let mut files = SimpleFiles::new();
-
-        let module_test_id = files.add(
-            "module_test.gr",
-            "function test(i: int) -> int {let x: int = i; let o: int = x; return o;} 
-                node test(i: int){out o: int = x; x: int = i;}
-                enum Color { Red, Blue, Green, Yellow }
-                node test(i: int){out o: int = x; x: int = i;}
-                function test(i: int) -> int {let x: int = i; let o: int = x; return o;}
-                node test(i: int){out o: int = x; x: int = i;}",
-        );
-        let program_test_id = files.add(
-            "program_test.gr",
-            "node test(i: int){out o: int = x; x: int = i;} 
-                component test(i: int){out o: int = x; x: int = i;}
-                array Matrix [[int; 3]; 3]
-                node test(i: int){out o: int = x; x: int = i;}
-                function test(i: int) -> int {let x: int = i; let o: int = x; return o;}
-                struct Point {x: int, y: int, }
-                function test(i: int) -> int {let x: int = i; let o: int = x; return o;}",
-        );
-
-        let file = langrust::fileParser::new()
-            .parse(module_test_id, &files.source(module_test_id).unwrap())
-            .unwrap();
-        assert_eq!(
-            file,
-            File {
-                typedefs: vec![Typedef::Enumeration {
-                    id: String::from("Color"),
-                    elements: vec![
-                        String::from("Red"),
-                        String::from("Blue"),
-                        String::from("Green"),
-                        String::from("Yellow"),
-                    ],
-                    location: Location::default(),
-                }],
-                functions: vec![
-                    Function {
-                        id: String::from("test"),
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        statements: vec![
-                            Statement {
-                                id: String::from("x"),
-                                element_type: Type::Integer,
-                                expression: Expression::Identifier {
-                                    id: String::from("i"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            },
-                            Statement {
-                                id: String::from("o"),
-                                element_type: Type::Integer,
-                                expression: Expression::Identifier {
-                                    id: String::from("x"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            },
-                        ],
-                        returned: (
-                            Type::Integer,
-                            Expression::Identifier {
-                                id: String::from("o"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                        ),
-                        location: Location::default(),
-                    },
-                    Function {
-                        id: String::from("test"),
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        statements: vec![
-                            Statement {
-                                id: String::from("x"),
-                                element_type: Type::Integer,
-                                expression: Expression::Identifier {
-                                    id: String::from("i"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            },
-                            Statement {
-                                id: String::from("o"),
-                                element_type: Type::Integer,
-                                expression: Expression::Identifier {
-                                    id: String::from("x"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            },
-                        ],
-                        returned: (
-                            Type::Integer,
-                            Expression::Identifier {
-                                id: String::from("o"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                        ),
-                        location: Location::default(),
-                    }
-                ],
-                nodes: vec![
-                    Node {
-                        contract: Default::default(),
-                        id: String::from("test"),
-                        is_component: false,
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        equations: vec![
-                            (
-                                String::from("o"),
-                                Equation {
-                                    scope: Scope::Output,
-                                    id: String::from("o"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("x"),
-                                Equation {
-                                    scope: Scope::Local,
-                                    id: String::from("x"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            )
-                        ],
-                        location: Location::default(),
-                    },
-                    Node {
-                        contract: Default::default(),
-                        id: String::from("test"),
-                        is_component: false,
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        equations: vec![
-                            (
-                                String::from("o"),
-                                Equation {
-                                    scope: Scope::Output,
-                                    id: String::from("o"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("x"),
-                                Equation {
-                                    scope: Scope::Local,
-                                    id: String::from("x"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            )
-                        ],
-                        location: Location::default(),
-                    },
-                    Node {
-                        contract: Default::default(),
-
-                        id: String::from("test"),
-                        is_component: false,
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        equations: vec![
-                            (
-                                String::from("o"),
-                                Equation {
-                                    scope: Scope::Output,
-                                    id: String::from("o"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("x"),
-                                Equation {
-                                    scope: Scope::Local,
-                                    id: String::from("x"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            )
-                        ],
-                        location: Location::default(),
-                    }
-                ],
-                component: None,
-                location: Location::default()
-            },
-        );
-
-        let file = langrust::fileParser::new()
-            .parse(program_test_id, &files.source(program_test_id).unwrap())
-            .unwrap();
-        assert_eq!(
-            file,
-            File {
-                typedefs: vec![
-                    Typedef::Array {
-                        id: String::from("Matrix"),
-                        array_type: Type::Array(Box::new(Type::Integer), 3),
-                        size: 3,
-                        location: Location::default(),
-                    },
-                    Typedef::Structure {
-                        id: String::from("Point"),
-                        fields: vec![
-                            (String::from("x"), Type::Integer),
-                            (String::from("y"), Type::Integer),
-                        ],
-                        location: Location::default(),
-                    }
-                ],
-                functions: vec![
-                    Function {
-                        id: String::from("test"),
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        statements: vec![
-                            Statement {
-                                id: String::from("x"),
-                                element_type: Type::Integer,
-                                expression: Expression::Identifier {
-                                    id: String::from("i"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            },
-                            Statement {
-                                id: String::from("o"),
-                                element_type: Type::Integer,
-                                expression: Expression::Identifier {
-                                    id: String::from("x"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            },
-                        ],
-                        returned: (
-                            Type::Integer,
-                            Expression::Identifier {
-                                id: String::from("o"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                        ),
-                        location: Location::default(),
-                    },
-                    Function {
-                        id: String::from("test"),
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        statements: vec![
-                            Statement {
-                                id: String::from("x"),
-                                element_type: Type::Integer,
-                                expression: Expression::Identifier {
-                                    id: String::from("i"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            },
-                            Statement {
-                                id: String::from("o"),
-                                element_type: Type::Integer,
-                                expression: Expression::Identifier {
-                                    id: String::from("x"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            },
-                        ],
-                        returned: (
-                            Type::Integer,
-                            Expression::Identifier {
-                                id: String::from("o"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                        ),
-                        location: Location::default(),
-                    }
-                ],
-                nodes: vec![
-                    Node {
-                        contract: Default::default(),
-
-                        id: String::from("test"),
-                        is_component: false,
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        equations: vec![
-                            (
-                                String::from("o"),
-                                Equation {
-                                    scope: Scope::Output,
-                                    id: String::from("o"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("x"),
-                                Equation {
-                                    scope: Scope::Local,
-                                    id: String::from("x"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            )
-                        ],
-                        location: Location::default(),
-                    },
-                    Node {
-                        contract: Default::default(),
-
-                        id: String::from("test"),
-                        is_component: false,
-                        inputs: vec![(String::from("i"), Type::Integer)],
-                        equations: vec![
-                            (
-                                String::from("o"),
-                                Equation {
-                                    scope: Scope::Output,
-                                    id: String::from("o"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            ),
-                            (
-                                String::from("x"),
-                                Equation {
-                                    scope: Scope::Local,
-                                    id: String::from("x"),
-                                    signal_type: Type::Integer,
-                                    expression: StreamExpression::SignalCall {
-                                        id: String::from("i"),
-                                        typing: None,
-                                        location: Location::default(),
-                                    },
-                                    location: Location::default(),
-                                }
-                            )
-                        ],
-                        location: Location::default(),
-                    }
-                ],
-                component: Some(Node {
-                    contract: Default::default(),
-
-                    id: String::from("test"),
-                    is_component: true,
-                    inputs: vec![(String::from("i"), Type::Integer)],
-                    equations: vec![
-                        (
-                            String::from("o"),
-                            Equation {
-                                scope: Scope::Output,
-                                id: String::from("o"),
-                                signal_type: Type::Integer,
-                                expression: StreamExpression::SignalCall {
-                                    id: String::from("x"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            }
-                        ),
-                        (
-                            String::from("x"),
-                            Equation {
-                                scope: Scope::Local,
-                                id: String::from("x"),
-                                signal_type: Type::Integer,
-                                expression: StreamExpression::SignalCall {
-                                    id: String::from("i"),
-                                    typing: None,
-                                    location: Location::default(),
-                                },
-                                location: Location::default(),
-                            }
-                        )
-                    ],
-                    location: Location::default(),
-                }),
-                location: Location::default()
-            },
-        );
-    }
 
     #[test]
     fn user_types_parser() {
@@ -479,12 +34,14 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             user_type,
-            Typedef::Structure {
+            Typedef {
                 id: String::from("Point"),
-                fields: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer),
-                ],
+                kind: TypedefKind::Structure {
+                    fields: vec![
+                        (String::from("x"), Type::Integer),
+                        (String::from("y"), Type::Integer),
+                    ]
+                },
                 location: Location::default(),
             }
         );
@@ -493,14 +50,16 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             user_type,
-            Typedef::Enumeration {
+            Typedef {
                 id: String::from("Color"),
-                elements: vec![
-                    String::from("Red"),
-                    String::from("Blue"),
-                    String::from("Green"),
-                    String::from("Yellow"),
-                ],
+                kind: TypedefKind::Enumeration {
+                    elements: vec![
+                        String::from("Red"),
+                        String::from("Blue"),
+                        String::from("Green"),
+                        String::from("Yellow"),
+                    ]
+                },
                 location: Location::default(),
             }
         );
@@ -509,464 +68,14 @@ mod langrust_ast_constructs {
             .unwrap();
         assert_eq!(
             user_type,
-            Typedef::Array {
+            Typedef {
                 id: String::from("Matrix"),
-                array_type: Type::Array(Box::new(Type::Integer), 3),
-                size: 3,
+                kind: TypedefKind::Array {
+                    array_type: Type::Array(Box::new(Type::Integer), 3),
+                    size: 3
+                },
                 location: Location::default(),
             }
-        );
-    }
-
-    #[test]
-    fn component_parser() {
-        let mut files = SimpleFiles::new();
-
-        let component_test_id = files.add(
-            "component_test.gr",
-            "component test(i: int){out o: int = x; x: int = i;}",
-        );
-
-        let component = langrust::componentParser::new()
-            .parse(component_test_id, &files.source(component_test_id).unwrap())
-            .unwrap();
-        assert_eq!(
-            component,
-            Node {
-                contract: Default::default(),
-
-                id: String::from("test"),
-                is_component: true,
-                inputs: vec![(String::from("i"), Type::Integer)],
-                equations: vec![
-                    (
-                        String::from("o"),
-                        Equation {
-                            scope: Scope::Output,
-                            id: String::from("o"),
-                            signal_type: Type::Integer,
-                            expression: StreamExpression::SignalCall {
-                                id: String::from("x"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                            location: Location::default(),
-                        }
-                    ),
-                    (
-                        String::from("x"),
-                        Equation {
-                            scope: Scope::Local,
-                            id: String::from("x"),
-                            signal_type: Type::Integer,
-                            expression: StreamExpression::SignalCall {
-                                id: String::from("i"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                            location: Location::default(),
-                        }
-                    )
-                ],
-                location: Location::default(),
-            },
-        );
-    }
-
-    #[test]
-    fn node_parser() {
-        let mut files = SimpleFiles::new();
-
-        let node_test_id = files.add(
-            "node_test.gr",
-            "node test(i: int){out o: int = x; x: int = i;}",
-        );
-
-        let node = langrust::nodeParser::new()
-            .parse(node_test_id, &files.source(node_test_id).unwrap())
-            .unwrap();
-        assert_eq!(
-            node,
-            Node {
-                contract: Default::default(),
-
-                id: String::from("test"),
-                is_component: false,
-                inputs: vec![(String::from("i"), Type::Integer)],
-                equations: vec![
-                    (
-                        String::from("o"),
-                        Equation {
-                            scope: Scope::Output,
-                            id: String::from("o"),
-                            signal_type: Type::Integer,
-                            expression: StreamExpression::SignalCall {
-                                id: String::from("x"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                            location: Location::default(),
-                        }
-                    ),
-                    (
-                        String::from("x"),
-                        Equation {
-                            scope: Scope::Local,
-                            id: String::from("x"),
-                            signal_type: Type::Integer,
-                            expression: StreamExpression::SignalCall {
-                                id: String::from("i"),
-                                typing: None,
-                                location: Location::default(),
-                            },
-                            location: Location::default(),
-                        }
-                    )
-                ],
-                location: Location::default(),
-            },
-        );
-    }
-
-    #[test]
-    fn function_parser() {
-        let mut files = SimpleFiles::new();
-
-        let function_test_id = files.add(
-            "function_test.gr",
-            "function test(i: int) -> int {let x: int = i; let o: int = x; return o;}",
-        );
-
-        let function = langrust::functionParser::new()
-            .parse(function_test_id, &files.source(function_test_id).unwrap())
-            .unwrap();
-        assert_eq!(
-            function,
-            Function {
-                id: String::from("test"),
-                inputs: vec![(String::from("i"), Type::Integer)],
-                statements: vec![
-                    Statement {
-                        id: String::from("x"),
-                        element_type: Type::Integer,
-                        expression: Expression::Identifier {
-                            id: String::from("i"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                    Statement {
-                        id: String::from("o"),
-                        element_type: Type::Integer,
-                        expression: Expression::Identifier {
-                            id: String::from("x"),
-                            typing: None,
-                            location: Location::default(),
-                        },
-                        location: Location::default(),
-                    },
-                ],
-                returned: (
-                    Type::Integer,
-                    Expression::Identifier {
-                        id: String::from("o"),
-                        typing: None,
-                        location: Location::default(),
-                    },
-                ),
-                location: Location::default(),
-            },
-        );
-    }
-
-    #[test]
-    fn equation() {
-        let mut files = SimpleFiles::new();
-        let file_id1 = files.add("equation_test.gr", "c: Color = Color.Yellow;");
-        let file_id2 = files
-            .add(
-                "equation_match_test.gr",
-                "out compare: int = match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 };"
-            );
-
-        let equation = langrust::equationParser::new()
-            .parse(file_id1, &files.source(file_id1).unwrap())
-            .unwrap();
-        assert_eq!(
-            Equation {
-                scope: Scope::Local,
-                id: String::from("c"),
-                signal_type: Type::NotDefinedYet(String::from("Color")),
-                expression: StreamExpression::Constant {
-                    constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
-                    typing: None,
-                    location: Location::default()
-                },
-                location: Location::default(),
-            },
-            equation
-        );
-        let equation = langrust::equationParser::new()
-            .parse(file_id2, &files.source(file_id2).unwrap())
-            .unwrap();
-        assert_eq!(
-            Equation {
-                scope: Scope::Output,
-                id: String::from("compare"),
-                signal_type: Type::Integer,
-                expression: StreamExpression::Match {
-                    expression: Box::new(StreamExpression::SignalCall {
-                        id: String::from("a"),
-                        typing: None,
-                        location: Location::default()
-                    }),
-                    arms: vec![
-                        (
-                            Pattern::Structure {
-                                name: String::from("Point"),
-                                fields: vec![
-                                    (
-                                        String::from("x"),
-                                        Pattern::Constant {
-                                            constant: Constant::Integer(0),
-                                            location: Location::default()
-                                        }
-                                    ),
-                                    (
-                                        String::from("y"),
-                                        Pattern::Default {
-                                            location: Location::default()
-                                        }
-                                    )
-                                ],
-                                location: Location::default()
-                            },
-                            None,
-                            StreamExpression::Constant {
-                                constant: Constant::Integer(0),
-                                typing: None,
-                                location: Location::default()
-                            }
-                        ),
-                        (
-                            Pattern::Structure {
-                                name: String::from("Point"),
-                                fields: vec![
-                                    (
-                                        String::from("x"),
-                                        Pattern::Identifier {
-                                            name: String::from("x"),
-                                            location: Location::default()
-                                        }
-                                    ),
-                                    (
-                                        String::from("y"),
-                                        Pattern::Default {
-                                            location: Location::default()
-                                        }
-                                    )
-                                ],
-                                location: Location::default()
-                            },
-                            Some(StreamExpression::FunctionApplication {
-                                function_expression: Expression::Identifier {
-                                    id: BinaryOperator::Low.to_string(),
-                                    typing: None,
-                                    location: Location::default()
-                                },
-                                inputs: vec![
-                                    StreamExpression::SignalCall {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default()
-                                    },
-                                    StreamExpression::Constant {
-                                        constant: Constant::Integer(0),
-                                        typing: None,
-                                        location: Location::default()
-                                    }
-                                ],
-                                typing: None,
-                                location: Location::default()
-                            }),
-                            StreamExpression::FunctionApplication {
-                                function_expression: Expression::Identifier {
-                                    id: UnaryOperator::Neg.to_string(),
-                                    typing: None,
-                                    location: Location::default()
-                                },
-                                inputs: vec![StreamExpression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default()
-                                }],
-                                typing: None,
-                                location: Location::default()
-                            }
-                        ),
-                        (
-                            Pattern::Default {
-                                location: Location::default()
-                            },
-                            None,
-                            StreamExpression::Constant {
-                                constant: Constant::Integer(1),
-                                typing: None,
-                                location: Location::default()
-                            }
-                        )
-                    ],
-                    typing: None,
-                    location: Location::default()
-                },
-                location: Location::default(),
-            },
-            equation
-        );
-    }
-
-    #[test]
-    fn statement() {
-        let mut files = SimpleFiles::new();
-        let file_id1 = files.add("statement_test.gr", "let c: Color = Color.Yellow;");
-        let file_id2 = files
-            .add(
-                "statement_match_test.gr",
-                "let compare: int = match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 };"
-            );
-
-        let statement = langrust::statementParser::new()
-            .parse(file_id1, &files.source(file_id1).unwrap())
-            .unwrap();
-        assert_eq!(
-            Statement {
-                id: String::from("c"),
-                element_type: Type::NotDefinedYet(String::from("Color")),
-                expression: Expression::Constant {
-                    constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
-                    typing: None,
-                    location: Location::default()
-                },
-                location: Location::default(),
-            },
-            statement
-        );
-        let statement = langrust::statementParser::new()
-            .parse(file_id2, &files.source(file_id2).unwrap())
-            .unwrap();
-        assert_eq!(
-            Statement {
-                id: String::from("compare"),
-                element_type: Type::Integer,
-                expression: Expression::Match {
-                    expression: Box::new(Expression::Identifier {
-                        id: String::from("a"),
-                        typing: None,
-                        location: Location::default()
-                    }),
-                    arms: vec![
-                        (
-                            Pattern::Structure {
-                                name: String::from("Point"),
-                                fields: vec![
-                                    (
-                                        String::from("x"),
-                                        Pattern::Constant {
-                                            constant: Constant::Integer(0),
-                                            location: Location::default()
-                                        }
-                                    ),
-                                    (
-                                        String::from("y"),
-                                        Pattern::Default {
-                                            location: Location::default()
-                                        }
-                                    )
-                                ],
-                                location: Location::default()
-                            },
-                            None,
-                            Expression::Constant {
-                                constant: Constant::Integer(0),
-                                typing: None,
-                                location: Location::default()
-                            }
-                        ),
-                        (
-                            Pattern::Structure {
-                                name: String::from("Point"),
-                                fields: vec![
-                                    (
-                                        String::from("x"),
-                                        Pattern::Identifier {
-                                            name: String::from("x"),
-                                            location: Location::default()
-                                        }
-                                    ),
-                                    (
-                                        String::from("y"),
-                                        Pattern::Default {
-                                            location: Location::default()
-                                        }
-                                    )
-                                ],
-                                location: Location::default()
-                            },
-                            Some(Expression::Application {
-                                function_expression: Box::new(Expression::Identifier {
-                                    id: BinaryOperator::Low.to_string(),
-                                    typing: None,
-                                    location: Location::default()
-                                }),
-                                inputs: vec![
-                                    Expression::Identifier {
-                                        id: String::from("x"),
-                                        typing: None,
-                                        location: Location::default()
-                                    },
-                                    Expression::Constant {
-                                        constant: Constant::Integer(0),
-                                        typing: None,
-                                        location: Location::default()
-                                    }
-                                ],
-                                typing: None,
-                                location: Location::default()
-                            }),
-                            Expression::Application {
-                                function_expression: Box::new(Expression::Identifier {
-                                    id: UnaryOperator::Neg.to_string(),
-                                    typing: None,
-                                    location: Location::default()
-                                }),
-                                inputs: vec![Expression::Constant {
-                                    constant: Constant::Integer(1),
-                                    typing: None,
-                                    location: Location::default()
-                                }],
-                                typing: None,
-                                location: Location::default()
-                            }
-                        ),
-                        (
-                            Pattern::Default {
-                                location: Location::default()
-                            },
-                            None,
-                            Expression::Constant {
-                                constant: Constant::Integer(1),
-                                typing: None,
-                                location: Location::default()
-                            }
-                        )
-                    ],
-                    typing: None,
-                    location: Location::default()
-                },
-                location: Location::default(),
-            },
-            statement
         );
     }
 
@@ -1050,7 +159,7 @@ mod langrust_ast_constructs {
     fn pattern() {
         let mut files = SimpleFiles::new();
         let file_id1 = files.add("identifier_test.gr", "x");
-        let file_id2 = files.add("constant_test.gr", "Color.Yellow");
+        let file_id2 = files.add("constant_test.gr", "3");
         let file_id3 = files.add("structure_test.gr", "Point { x: 0, y: _}");
         let file_id4 = files.add("some_test.gr", "some(value)");
         let file_id5 = files.add("none_test.gr", "none");
@@ -1061,8 +170,10 @@ mod langrust_ast_constructs {
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
         assert_eq!(
-            Pattern::Identifier {
-                name: String::from("x"),
+            Pattern {
+                kind: PatternKind::Identifier {
+                    name: String::from("x")
+                },
                 location: Location::default()
             },
             pattern
@@ -1071,8 +182,10 @@ mod langrust_ast_constructs {
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
         assert_eq!(
-            Pattern::Constant {
-                constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
+            Pattern {
+                kind: PatternKind::Constant {
+                    constant: Constant::Integer(3)
+                },
                 location: Location::default()
             },
             pattern
@@ -1081,23 +194,28 @@ mod langrust_ast_constructs {
             .parse(file_id3, &files.source(file_id3).unwrap())
             .unwrap();
         assert_eq!(
-            Pattern::Structure {
-                name: String::from("Point"),
-                fields: vec![
-                    (
-                        String::from("x"),
-                        Pattern::Constant {
-                            constant: Constant::Integer(0),
-                            location: Location::default()
-                        }
-                    ),
-                    (
-                        String::from("y"),
-                        Pattern::Default {
-                            location: Location::default()
-                        }
-                    )
-                ],
+            Pattern {
+                kind: PatternKind::Structure {
+                    name: String::from("Point"),
+                    fields: vec![
+                        (
+                            String::from("x"),
+                            Pattern {
+                                kind: PatternKind::Constant {
+                                    constant: Constant::Integer(0)
+                                },
+                                location: Location::default()
+                            }
+                        ),
+                        (
+                            String::from("y"),
+                            Pattern {
+                                kind: PatternKind::Default,
+                                location: Location::default()
+                            }
+                        )
+                    ]
+                },
                 location: Location::default()
             },
             pattern
@@ -1106,11 +224,15 @@ mod langrust_ast_constructs {
             .parse(file_id4, &files.source(file_id4).unwrap())
             .unwrap();
         assert_eq!(
-            Pattern::Some {
-                pattern: Box::new(Pattern::Identifier {
-                    name: String::from("value"),
-                    location: Location::default()
-                }),
+            Pattern {
+                kind: PatternKind::Some {
+                    pattern: Box::new(Pattern {
+                        kind: PatternKind::Identifier {
+                            name: String::from("value")
+                        },
+                        location: Location::default()
+                    })
+                },
                 location: Location::default()
             },
             pattern
@@ -1119,7 +241,8 @@ mod langrust_ast_constructs {
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
         assert_eq!(
-            Pattern::None {
+            Pattern {
+                kind: PatternKind::None,
                 location: Location::default()
             },
             pattern
@@ -1128,7 +251,8 @@ mod langrust_ast_constructs {
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
         assert_eq!(
-            Pattern::Default {
+            Pattern {
+                kind: PatternKind::Default,
                 location: Location::default()
             },
             pattern
@@ -1137,16 +261,19 @@ mod langrust_ast_constructs {
             .parse(file_id7, &files.source(file_id7).unwrap())
             .unwrap();
         assert_eq!(
-            Pattern::Tuple {
-                elements: vec![
-                    Pattern::Identifier {
-                        name: format!("x"),
-                        location: Location::default()
-                    },
-                    Pattern::Default {
-                        location: Location::default()
-                    }
-                ],
+            Pattern {
+                kind: PatternKind::Tuple {
+                    elements: vec![
+                        Pattern {
+                            kind: PatternKind::Identifier { name: format!("x") },
+                            location: Location::default()
+                        },
+                        Pattern {
+                            kind: PatternKind::Default,
+                            location: Location::default()
+                        }
+                    ]
+                },
                 location: Location::default()
             },
             pattern
@@ -1156,13 +283,12 @@ mod langrust_ast_constructs {
     #[test]
     fn stream_expression() {
         let mut files = SimpleFiles::new();
-        let file_id1 = files.add("constant_test.gr", "Color.Yellow");
-        let file_id2 = files.add("signal_call_test.gr", "x");
+        let file_id1 = files.add("constant_test.gr", "3");
+        let file_id2 = files.add("identifier_test.gr", "x");
         let file_id3 = files.add("brackets_test.gr", "(3)");
         let file_id4 = files.add("unary_test.gr", "-3");
         let file_id5 = files.add("binary_test.gr", "4*5-3");
         let file_id6 = files.add("function_application_test.gr", "sqrt(x*y)");
-        let file_id7 = files.add("print_test.gr", "print(\"Hello world\")");
         let file_id8 = files.add(
             "node_application_test.gr",
             "my_node(my_input1, my_input2).my_signal",
@@ -1189,9 +315,12 @@ mod langrust_ast_constructs {
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Constant {
-                constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
-                typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Constant {
+                        constant: Constant::Integer(3)
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1200,9 +329,12 @@ mod langrust_ast_constructs {
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::SignalCall {
-                id: String::from("x"),
-                typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Identifier {
+                        id: String::from("x")
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1211,18 +343,27 @@ mod langrust_ast_constructs {
             .parse(file_id3, &files.source(file_id3).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: UnaryOperator::Brackets.to_string(),
-                    typing: None,
-                    location: Location::default()
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Application {
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: UnaryOperator::Brackets.to_string()
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        inputs: vec![StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Constant {
+                                    constant: Constant::Integer(3)
+                                }
+                            },
+                            location: Location::default()
+                        },]
+                    }
                 },
-                inputs: vec![StreamExpression::Constant {
-                    constant: Constant::Integer(3),
-                    typing: None,
-                    location: Location::default()
-                },],
-                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1231,18 +372,27 @@ mod langrust_ast_constructs {
             .parse(file_id4, &files.source(file_id4).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: UnaryOperator::Neg.to_string(),
-                    typing: None,
-                    location: Location::default()
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Application {
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: UnaryOperator::Neg.to_string()
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        inputs: vec![StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Constant {
+                                    constant: Constant::Integer(3)
+                                }
+                            },
+                            location: Location::default()
+                        },]
+                    }
                 },
-                inputs: vec![StreamExpression::Constant {
-                    constant: Constant::Integer(3),
-                    typing: None,
-                    location: Location::default()
-                },],
-                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1251,41 +401,62 @@ mod langrust_ast_constructs {
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: BinaryOperator::Sub.to_string(),
-                    typing: None,
-                    location: Location::default()
-                },
-                inputs: vec![
-                    StreamExpression::FunctionApplication {
-                        function_expression: Expression::Identifier {
-                            id: BinaryOperator::Mul.to_string(),
-                            typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Application {
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: BinaryOperator::Sub.to_string()
+                                }
+                            },
                             location: Location::default()
-                        },
+                        }),
                         inputs: vec![
-                            StreamExpression::Constant {
-                                constant: Constant::Integer(4),
-                                typing: None,
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Application {
+                                        function_expression: Box::new(StreamExpression {
+                                            kind: StreamExpressionKind::Expression {
+                                                expression: ExpressionKind::Identifier {
+                                                    id: BinaryOperator::Mul.to_string()
+                                                }
+                                            },
+                                            location: Location::default()
+                                        }),
+                                        inputs: vec![
+                                            StreamExpression {
+                                                kind: StreamExpressionKind::Expression {
+                                                    expression: ExpressionKind::Constant {
+                                                        constant: Constant::Integer(4)
+                                                    }
+                                                },
+                                                location: Location::default()
+                                            },
+                                            StreamExpression {
+                                                kind: StreamExpressionKind::Expression {
+                                                    expression: ExpressionKind::Constant {
+                                                        constant: Constant::Integer(5)
+                                                    }
+                                                },
+                                                location: Location::default()
+                                            },
+                                        ]
+                                    }
+                                },
                                 location: Location::default()
                             },
-                            StreamExpression::Constant {
-                                constant: Constant::Integer(5),
-                                typing: None,
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Integer(3)
+                                    }
+                                },
                                 location: Location::default()
                             },
-                        ],
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::Constant {
-                        constant: Constant::Integer(3),
-                        typing: None,
-                        location: Location::default()
-                    },
-                ],
-                typing: None,
+                        ]
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1294,54 +465,52 @@ mod langrust_ast_constructs {
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: String::from("sqrt"),
-                    typing: None,
-                    location: Location::default()
-                },
-                inputs: vec![StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: BinaryOperator::Mul.to_string(),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    inputs: vec![
-                        StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Application {
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("sqrt")
+                                }
+                            },
                             location: Location::default()
-                        },
-                        StreamExpression::SignalCall {
-                            id: String::from("y"),
-                            typing: None,
+                        }),
+                        inputs: vec![StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Application {
+                                    function_expression: Box::new(StreamExpression {
+                                        kind: StreamExpressionKind::Expression {
+                                            expression: ExpressionKind::Identifier {
+                                                id: BinaryOperator::Mul.to_string()
+                                            }
+                                        },
+                                        location: Location::default()
+                                    }),
+                                    inputs: vec![
+                                        StreamExpression {
+                                            kind: StreamExpressionKind::Expression {
+                                                expression: ExpressionKind::Identifier {
+                                                    id: String::from("x")
+                                                }
+                                            },
+                                            location: Location::default()
+                                        },
+                                        StreamExpression {
+                                            kind: StreamExpressionKind::Expression {
+                                                expression: ExpressionKind::Identifier {
+                                                    id: String::from("y")
+                                                }
+                                            },
+                                            location: Location::default()
+                                        },
+                                    ]
+                                }
+                            },
                             location: Location::default()
-                        },
-                    ],
-                    typing: None,
-                    location: Location::default()
-                },],
-                typing: None,
-                location: Location::default()
-            },
-            stream_expression
-        );
-        let stream_expression = langrust::streamExpressionParser::new()
-            .parse(file_id7, &files.source(file_id7).unwrap())
-            .unwrap();
-        assert_eq!(
-            StreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: OtherOperator::Print.to_string(),
-                    typing: None,
-                    location: Location::default()
+                        },]
+                    }
                 },
-                inputs: vec![StreamExpression::Constant {
-                    constant: Constant::String(String::from("Hello world")),
-                    typing: None,
-                    location: Location::default()
-                }],
-                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1350,22 +519,29 @@ mod langrust_ast_constructs {
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::NodeApplication {
-                node: String::from("my_node"),
-                inputs: vec![
-                    StreamExpression::SignalCall {
-                        id: String::from("my_input1"),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::SignalCall {
-                        id: String::from("my_input2"),
-                        typing: None,
-                        location: Location::default()
-                    }
-                ],
-                signal: String::from("my_signal"),
-                typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::NodeApplication {
+                    node: String::from("my_node"),
+                    inputs: vec![
+                        StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("my_input1")
+                                }
+                            },
+                            location: Location::default()
+                        },
+                        StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("my_input2")
+                                }
+                            },
+                            location: Location::default()
+                        }
+                    ],
+                    signal: String::from("my_signal")
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1374,30 +550,43 @@ mod langrust_ast_constructs {
             .parse(file_id9, &files.source(file_id9).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::FollowedBy {
-                constant: Constant::Integer(0),
-                expression: Box::new(StreamExpression::FunctionApplication {
-                    function_expression: Expression::Identifier {
-                        id: BinaryOperator::Add.to_string(),
-                        typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::FollowedBy {
+                    constant: Constant::Integer(0),
+                    expression: Box::new(StreamExpression {
+                        kind: StreamExpressionKind::Expression {
+                            expression: ExpressionKind::Application {
+                                function_expression: Box::new(StreamExpression {
+                                    kind: StreamExpressionKind::Expression {
+                                        expression: ExpressionKind::Identifier {
+                                            id: BinaryOperator::Add.to_string()
+                                        }
+                                    },
+                                    location: Location::default()
+                                }),
+                                inputs: vec![
+                                    StreamExpression {
+                                        kind: StreamExpressionKind::Expression {
+                                            expression: ExpressionKind::Identifier {
+                                                id: String::from("x")
+                                            }
+                                        },
+                                        location: Location::default()
+                                    },
+                                    StreamExpression {
+                                        kind: StreamExpressionKind::Expression {
+                                            expression: ExpressionKind::Constant {
+                                                constant: Constant::Integer(1)
+                                            }
+                                        },
+                                        location: Location::default()
+                                    },
+                                ]
+                            }
+                        },
                         location: Location::default()
-                    },
-                    inputs: vec![
-                        StreamExpression::SignalCall {
-                            id: String::from("x"),
-                            typing: None,
-                            location: Location::default()
-                        },
-                        StreamExpression::Constant {
-                            constant: Constant::Integer(1),
-                            typing: None,
-                            location: Location::default()
-                        },
-                    ],
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+                    })
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1406,30 +595,45 @@ mod langrust_ast_constructs {
             .parse(file_id10, &files.source(file_id10).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::FunctionApplication {
-                function_expression: Expression::Identifier {
-                    id: OtherOperator::IfThenElse.to_string(),
-                    typing: None,
-                    location: Location::default()
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Application {
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: OtherOperator::IfThenElse.to_string()
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        inputs: vec![
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Identifier {
+                                        id: String::from("b")
+                                    }
+                                },
+                                location: Location::default()
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Identifier {
+                                        id: String::from("x")
+                                    }
+                                },
+                                location: Location::default()
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Identifier {
+                                        id: String::from("y")
+                                    }
+                                },
+                                location: Location::default()
+                            },
+                        ]
+                    }
                 },
-                inputs: vec![
-                    StreamExpression::SignalCall {
-                        id: String::from("b"),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::SignalCall {
-                        id: String::from("x"),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::SignalCall {
-                        id: String::from("y"),
-                        typing: None,
-                        location: Location::default()
-                    },
-                ],
-                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1438,27 +642,36 @@ mod langrust_ast_constructs {
             .parse(file_id11, &files.source(file_id11).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Structure {
-                name: String::from("Point"),
-                fields: vec![
-                    (
-                        String::from("x"),
-                        StreamExpression::Constant {
-                            constant: Constant::Integer(3),
-                            typing: None,
-                            location: Location::default()
-                        }
-                    ),
-                    (
-                        String::from("y"),
-                        StreamExpression::Constant {
-                            constant: Constant::Integer(0),
-                            typing: None,
-                            location: Location::default()
-                        }
-                    )
-                ],
-                typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                StreamExpression {
+                                    kind: StreamExpressionKind::Expression {
+                                        expression: ExpressionKind::Constant {
+                                            constant: Constant::Integer(3)
+                                        }
+                                    },
+                                    location: Location::default()
+                                }
+                            ),
+                            (
+                                String::from("y"),
+                                StreamExpression {
+                                    kind: StreamExpressionKind::Expression {
+                                        expression: ExpressionKind::Constant {
+                                            constant: Constant::Integer(0)
+                                        }
+                                    },
+                                    location: Location::default()
+                                }
+                            )
+                        ]
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1467,25 +680,37 @@ mod langrust_ast_constructs {
             .parse(file_id12, &files.source(file_id12).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Array {
-                elements: vec![
-                    StreamExpression::Constant {
-                        constant: Constant::Integer(1),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::Constant {
-                        constant: Constant::Integer(2),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::Constant {
-                        constant: Constant::Integer(3),
-                        typing: None,
-                        location: Location::default()
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Array {
+                        elements: vec![
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Integer(1)
+                                    }
+                                },
+                                location: Location::default()
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Integer(2)
+                                    }
+                                },
+                                location: Location::default()
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Integer(3)
+                                    }
+                                },
+                                location: Location::default()
+                            }
+                        ]
                     }
-                ],
-                typing: None,
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1494,25 +719,37 @@ mod langrust_ast_constructs {
             .parse(file_id13, &files.source(file_id13).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Array {
-                elements: vec![
-                    StreamExpression::Constant {
-                        constant: Constant::Float(0.01),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::Constant {
-                        constant: Constant::Float(0.01),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::Constant {
-                        constant: Constant::Float(0.01),
-                        typing: None,
-                        location: Location::default()
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Array {
+                        elements: vec![
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Float(0.01)
+                                    }
+                                },
+                                location: Location::default()
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Float(0.01)
+                                    }
+                                },
+                                location: Location::default()
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Float(0.01)
+                                    }
+                                },
+                                location: Location::default()
+                            }
+                        ]
                     }
-                ],
-                typing: None,
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1521,24 +758,36 @@ mod langrust_ast_constructs {
             .parse(file_id14, &files.source(file_id14).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::When {
-                id: String::from("a"),
-                option: Box::new(StreamExpression::SignalCall {
-                    id: String::from("x"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                present: Box::new(StreamExpression::SignalCall {
-                    id: String::from("a"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                default: Box::new(StreamExpression::Constant {
-                    constant: Constant::Integer(0),
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::When {
+                        id: String::from("a"),
+                        option: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("x")
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        present: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("a")
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        default: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Constant {
+                                    constant: Constant::Integer(0)
+                                }
+                            },
+                            location: Location::default()
+                        })
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1547,24 +796,36 @@ mod langrust_ast_constructs {
             .parse(file_id15, &files.source(file_id15).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::When {
-                id: String::from("a"),
-                option: Box::new(StreamExpression::SignalCall {
-                    id: String::from("a"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                present: Box::new(StreamExpression::SignalCall {
-                    id: String::from("a"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                default: Box::new(StreamExpression::Constant {
-                    constant: Constant::Integer(0),
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::When {
+                        id: String::from("a"),
+                        option: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("a")
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        present: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("a")
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        default: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Constant {
+                                    constant: Constant::Integer(0)
+                                }
+                            },
+                            location: Location::default()
+                        })
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1573,109 +834,153 @@ mod langrust_ast_constructs {
             .parse(file_id16, &files.source(file_id16).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Match {
-                expression: Box::new(StreamExpression::SignalCall {
-                    id: String::from("a"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                arms: vec![
-                    (
-                        Pattern::Structure {
-                            name: String::from("Point"),
-                            fields: vec![
-                                (
-                                    String::from("x"),
-                                    Pattern::Constant {
-                                        constant: Constant::Integer(0),
-                                        location: Location::default()
-                                    }
-                                ),
-                                (
-                                    String::from("y"),
-                                    Pattern::Default {
-                                        location: Location::default()
-                                    }
-                                )
-                            ],
-                            location: Location::default()
-                        },
-                        None,
-                        StreamExpression::Constant {
-                            constant: Constant::Integer(0),
-                            typing: None,
-                            location: Location::default()
-                        }
-                    ),
-                    (
-                        Pattern::Structure {
-                            name: String::from("Point"),
-                            fields: vec![
-                                (
-                                    String::from("x"),
-                                    Pattern::Identifier {
-                                        name: String::from("x"),
-                                        location: Location::default()
-                                    }
-                                ),
-                                (
-                                    String::from("y"),
-                                    Pattern::Default {
-                                        location: Location::default()
-                                    }
-                                )
-                            ],
-                            location: Location::default()
-                        },
-                        Some(StreamExpression::FunctionApplication {
-                            function_expression: Expression::Identifier {
-                                id: BinaryOperator::Low.to_string(),
-                                typing: None,
-                                location: Location::default()
-                            },
-                            inputs: vec![
-                                StreamExpression::SignalCall {
-                                    id: String::from("x"),
-                                    typing: None,
-                                    location: Location::default()
-                                },
-                                StreamExpression::Constant {
-                                    constant: Constant::Integer(0),
-                                    typing: None,
-                                    location: Location::default()
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Match {
+                        expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("a")
                                 }
-                            ],
-                            typing: None,
+                            },
                             location: Location::default()
                         }),
-                        StreamExpression::FunctionApplication {
-                            function_expression: Expression::Identifier {
-                                id: UnaryOperator::Neg.to_string(),
-                                typing: None,
-                                location: Location::default()
-                            },
-                            inputs: vec![StreamExpression::Constant {
-                                constant: Constant::Integer(1),
-                                typing: None,
-                                location: Location::default()
-                            }],
-                            typing: None,
-                            location: Location::default()
-                        }
-                    ),
-                    (
-                        Pattern::Default {
-                            location: Location::default()
-                        },
-                        None,
-                        StreamExpression::Constant {
-                            constant: Constant::Integer(1),
-                            typing: None,
-                            location: Location::default()
-                        }
-                    )
-                ],
-                typing: None,
+                        arms: vec![
+                            (
+                                Pattern {
+                                    kind: PatternKind::Structure {
+                                        name: String::from("Point"),
+                                        fields: vec![
+                                            (
+                                                String::from("x"),
+                                                Pattern {
+                                                    kind: PatternKind::Constant {
+                                                        constant: Constant::Integer(0)
+                                                    },
+                                                    location: Location::default()
+                                                }
+                                            ),
+                                            (
+                                                String::from("y"),
+                                                Pattern {
+                                                    kind: PatternKind::Default,
+                                                    location: Location::default()
+                                                }
+                                            )
+                                        ]
+                                    },
+                                    location: Location::default()
+                                },
+                                None,
+                                StreamExpression {
+                                    kind: StreamExpressionKind::Expression {
+                                        expression: ExpressionKind::Constant {
+                                            constant: Constant::Integer(0)
+                                        }
+                                    },
+                                    location: Location::default()
+                                }
+                            ),
+                            (
+                                Pattern {
+                                    kind: PatternKind::Structure {
+                                        name: String::from("Point"),
+                                        fields: vec![
+                                            (
+                                                String::from("x"),
+                                                Pattern {
+                                                    kind: PatternKind::Identifier {
+                                                        name: String::from("x")
+                                                    },
+                                                    location: Location::default()
+                                                }
+                                            ),
+                                            (
+                                                String::from("y"),
+                                                Pattern {
+                                                    kind: PatternKind::Default,
+                                                    location: Location::default()
+                                                }
+                                            )
+                                        ]
+                                    },
+                                    location: Location::default()
+                                },
+                                Some(StreamExpression {
+                                    kind: StreamExpressionKind::Expression {
+                                        expression: ExpressionKind::Application {
+                                            function_expression: Box::new(StreamExpression {
+                                                kind: StreamExpressionKind::Expression {
+                                                    expression: ExpressionKind::Identifier {
+                                                        id: BinaryOperator::Low.to_string()
+                                                    }
+                                                },
+                                                location: Location::default()
+                                            }),
+                                            inputs: vec![
+                                                StreamExpression {
+                                                    kind: StreamExpressionKind::Expression {
+                                                        expression: ExpressionKind::Identifier {
+                                                            id: String::from("x"),
+                                                        }
+                                                    },
+                                                    location: Location::default()
+                                                },
+                                                StreamExpression {
+                                                    kind: StreamExpressionKind::Expression {
+                                                        expression: ExpressionKind::Constant {
+                                                            constant: Constant::Integer(0),
+                                                        }
+                                                    },
+                                                    location: Location::default()
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    location: Location::default()
+                                }),
+                                StreamExpression {
+                                    kind: StreamExpressionKind::Expression {
+                                        expression: ExpressionKind::Application {
+                                            function_expression: Box::new(StreamExpression {
+                                                kind: StreamExpressionKind::Expression {
+                                                    expression: ExpressionKind::Identifier {
+                                                        id: UnaryOperator::Neg.to_string()
+                                                    }
+                                                },
+                                                location: Location::default()
+                                            }),
+                                            inputs: vec![StreamExpression {
+                                                kind: StreamExpressionKind::Expression {
+                                                    expression: ExpressionKind::Constant {
+                                                        constant: Constant::Integer(1)
+                                                    }
+                                                },
+                                                location: Location::default()
+                                            }]
+                                        }
+                                    },
+                                    location: Location::default()
+                                }
+                            ),
+                            (
+                                Pattern {
+                                    kind: PatternKind::Default,
+                                    location: Location::default()
+                                },
+                                None,
+                                StreamExpression {
+                                    kind: StreamExpressionKind::Expression {
+                                        expression: ExpressionKind::Constant {
+                                            constant: Constant::Integer(1)
+                                        }
+                                    },
+                                    location: Location::default()
+                                }
+                            )
+                        ]
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1684,14 +989,20 @@ mod langrust_ast_constructs {
             .parse(file_id17, &files.source(file_id17).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::FieldAccess {
-                expression: Box::new(StreamExpression::SignalCall {
-                    id: String::from("p"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                field: "x".to_string(),
-                typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::FieldAccess {
+                        expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("p")
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        field: "x".to_string()
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1700,18 +1011,27 @@ mod langrust_ast_constructs {
             .parse(file_id18, &files.source(file_id18).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Map {
-                expression: Box::new(StreamExpression::SignalCall {
-                    id: String::from("x"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                function_expression: Expression::Identifier {
-                    id: String::from("f"),
-                    typing: None,
-                    location: Location::default()
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Map {
+                        expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("x")
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: String::from("f")
+                                }
+                            },
+                            location: Location::default()
+                        })
+                    }
                 },
-                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1720,44 +1040,70 @@ mod langrust_ast_constructs {
             .parse(file_id19, &files.source(file_id19).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Fold {
-                expression: Box::new(StreamExpression::SignalCall {
-                    id: "l".to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                initialization_expression: Box::new(StreamExpression::Constant {
-                    constant: Constant::Integer(0),
-                    typing: None,
-                    location: Location::default()
-                }),
-                function_expression: Expression::Abstraction {
-                    inputs: vec![String::from("sum"), String::from("x")],
-                    expression: Box::new(Expression::Application {
-                        function_expression: Box::new(Expression::Identifier {
-                            id: BinaryOperator::Add.to_string(),
-                            typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Fold {
+                        expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: "l".to_string()
+                                }
+                            },
                             location: Location::default()
                         }),
-                        inputs: vec![
-                            Expression::Identifier {
-                                id: String::from("x"),
-                                typing: None,
-                                location: Location::default()
+                        initialization_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Constant {
+                                    constant: Constant::Integer(0)
+                                }
                             },
-                            Expression::Identifier {
-                                id: String::from("sum"),
-                                typing: None,
-                                location: Location::default()
+                            location: Location::default()
+                        }),
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Abstraction {
+                                    inputs: vec![String::from("sum"), String::from("x")],
+                                    expression: Box::new(StreamExpression {
+                                        kind: StreamExpressionKind::Expression {
+                                            expression: ExpressionKind::Application {
+                                                function_expression: Box::new(StreamExpression {
+                                                    kind: StreamExpressionKind::Expression {
+                                                        expression: ExpressionKind::Identifier {
+                                                            id: BinaryOperator::Add.to_string()
+                                                        }
+                                                    },
+                                                    location: Location::default()
+                                                }),
+                                                inputs: vec![
+                                                    StreamExpression {
+                                                        kind: StreamExpressionKind::Expression {
+                                                            expression:
+                                                                ExpressionKind::Identifier {
+                                                                    id: String::from("x")
+                                                                }
+                                                        },
+                                                        location: Location::default()
+                                                    },
+                                                    StreamExpression {
+                                                        kind: StreamExpressionKind::Expression {
+                                                            expression:
+                                                                ExpressionKind::Identifier {
+                                                                    id: String::from("sum")
+                                                                }
+                                                        },
+                                                        location: Location::default()
+                                                    },
+                                                ]
+                                            }
+                                        },
+                                        location: Location::default()
+                                    })
+                                }
                             },
-                        ],
-                        typing: None,
-                        location: Location::default()
-                    }),
-                    typing: None,
-                    location: Location::default()
+                            location: Location::default()
+                        })
+                    }
                 },
-                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1766,39 +1112,62 @@ mod langrust_ast_constructs {
             .parse(file_id20, &files.source(file_id20).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Sort {
-                expression: Box::new(StreamExpression::SignalCall {
-                    id: "l".to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                function_expression: Expression::Abstraction {
-                    inputs: vec![String::from("a"), String::from("b")],
-                    expression: Box::new(Expression::Application {
-                        function_expression: Box::new(Expression::Identifier {
-                            id: BinaryOperator::Sub.to_string(),
-                            typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Sort {
+                        expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: "l".to_string()
+                                }
+                            },
                             location: Location::default()
                         }),
-                        inputs: vec![
-                            Expression::Identifier {
-                                id: String::from("a"),
-                                typing: None,
-                                location: Location::default()
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Abstraction {
+                                    inputs: vec![String::from("a"), String::from("b")],
+                                    expression: Box::new(StreamExpression {
+                                        kind: StreamExpressionKind::Expression {
+                                            expression: ExpressionKind::Application {
+                                                function_expression: Box::new(StreamExpression {
+                                                    kind: StreamExpressionKind::Expression {
+                                                        expression: ExpressionKind::Identifier {
+                                                            id: BinaryOperator::Sub.to_string()
+                                                        }
+                                                    },
+                                                    location: Location::default()
+                                                }),
+                                                inputs: vec![
+                                                    StreamExpression {
+                                                        kind: StreamExpressionKind::Expression {
+                                                            expression:
+                                                                ExpressionKind::Identifier {
+                                                                    id: String::from("a")
+                                                                }
+                                                        },
+                                                        location: Location::default()
+                                                    },
+                                                    StreamExpression {
+                                                        kind: StreamExpressionKind::Expression {
+                                                            expression:
+                                                                ExpressionKind::Identifier {
+                                                                    id: String::from("b")
+                                                                }
+                                                        },
+                                                        location: Location::default()
+                                                    },
+                                                ]
+                                            }
+                                        },
+                                        location: Location::default()
+                                    })
+                                }
                             },
-                            Expression::Identifier {
-                                id: String::from("b"),
-                                typing: None,
-                                location: Location::default()
-                            },
-                        ],
-                        typing: None,
-                        location: Location::default()
-                    }),
-                    typing: None,
-                    location: Location::default()
+                            location: Location::default()
+                        })
+                    }
                 },
-                typing: None,
                 location: Location::default()
             },
             stream_expression
@@ -1807,20 +1176,29 @@ mod langrust_ast_constructs {
             .parse(file_id21, &files.source(file_id21).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::Zip {
-                arrays: vec![
-                    StreamExpression::SignalCall {
-                        id: "a".to_string(),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    StreamExpression::SignalCall {
-                        id: "b".to_string(),
-                        typing: None,
-                        location: Location::default()
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Zip {
+                        arrays: vec![
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Identifier {
+                                        id: "a".to_string()
+                                    }
+                                },
+                                location: Location::default()
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Identifier {
+                                        id: "b".to_string()
+                                    }
+                                },
+                                location: Location::default()
+                            }
+                        ]
                     }
-                ],
-                typing: None,
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1829,14 +1207,20 @@ mod langrust_ast_constructs {
             .parse(file_id22, &files.source(file_id22).unwrap())
             .unwrap();
         assert_eq!(
-            StreamExpression::TupleElementAccess {
-                expression: Box::new(StreamExpression::SignalCall {
-                    id: "my_tuple".to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                element_number: 0,
-                typing: None,
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::TupleElementAccess {
+                        expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: "my_tuple".to_string()
+                                }
+                            },
+                            location: Location::default()
+                        }),
+                        element_number: 0
+                    }
+                },
                 location: Location::default()
             },
             stream_expression
@@ -1846,13 +1230,12 @@ mod langrust_ast_constructs {
     #[test]
     fn expression() {
         let mut files = SimpleFiles::new();
-        let file_id1 = files.add("constant_test.gr", "Color.Yellow");
-        let file_id2 = files.add("element_call_test.gr", "x");
+        let file_id1 = files.add("constant_test.gr", "3");
+        let file_id2 = files.add("identifier_test.gr", "x");
         let file_id3 = files.add("brackets_test.gr", "(3)");
         let file_id4 = files.add("unary_test.gr", "-3");
         let file_id5 = files.add("binary_test.gr", "4*5-3");
         let file_id6 = files.add("function_application_test.gr", "sqrt(4*5-3)");
-        let file_id7 = files.add("print_test.gr", "print(\"Hello world\")");
         let file_id8 = files.add("abstraction_test.gr", "|x, y| x + y");
         let file_id9 = files.add("typed_abstraction_test.gr", "|x: int, y: int| x + y");
         let file_id10 = files.add("ifthenelse_test.gr", "if b then x else y");
@@ -1866,7 +1249,7 @@ mod langrust_ast_constructs {
             "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
         );
         let file_id17 = files.add("field_access_test.gr", "p::x");
-        let file_id18 = files.add("map_test.gr", "x.map(f)");
+        let file_id18 = files.add("map_test.gr", "l.map(f)");
         let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
         let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
         let file_id21 = files.add("zip_test.gr", "zip(a,b)");
@@ -1876,9 +1259,10 @@ mod langrust_ast_constructs {
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Constant {
-                constant: Constant::Enumeration(String::from("Color"), String::from("Yellow")),
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Constant {
+                    constant: Constant::Integer(3)
+                },
                 location: Location::default()
             },
             expression
@@ -1887,9 +1271,10 @@ mod langrust_ast_constructs {
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Identifier {
-                id: String::from("x"),
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Identifier {
+                    id: String::from("x")
+                },
                 location: Location::default()
             },
             expression
@@ -1898,18 +1283,21 @@ mod langrust_ast_constructs {
             .parse(file_id3, &files.source(file_id3).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Application {
-                function_expression: Box::new(Expression::Identifier {
-                    id: UnaryOperator::Brackets.to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                inputs: vec![Expression::Constant {
-                    constant: Constant::Integer(3),
-                    typing: None,
-                    location: Location::default()
-                },],
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Application {
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: UnaryOperator::Brackets.to_string()
+                        },
+                        location: Location::default()
+                    }),
+                    inputs: vec![Expression {
+                        kind: ExpressionKind::Constant {
+                            constant: Constant::Integer(3)
+                        },
+                        location: Location::default()
+                    },]
+                },
                 location: Location::default()
             },
             expression
@@ -1918,18 +1306,21 @@ mod langrust_ast_constructs {
             .parse(file_id4, &files.source(file_id4).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Application {
-                function_expression: Box::new(Expression::Identifier {
-                    id: UnaryOperator::Neg.to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                inputs: vec![Expression::Constant {
-                    constant: Constant::Integer(3),
-                    typing: None,
-                    location: Location::default()
-                },],
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Application {
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: UnaryOperator::Neg.to_string()
+                        },
+                        location: Location::default()
+                    }),
+                    inputs: vec![Expression {
+                        kind: ExpressionKind::Constant {
+                            constant: Constant::Integer(3)
+                        },
+                        location: Location::default()
+                    },]
+                },
                 location: Location::default()
             },
             expression
@@ -1938,41 +1329,48 @@ mod langrust_ast_constructs {
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Application {
-                function_expression: Box::new(Expression::Identifier {
-                    id: BinaryOperator::Sub.to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                inputs: vec![
-                    Expression::Application {
-                        function_expression: Box::new(Expression::Identifier {
-                            id: BinaryOperator::Mul.to_string(),
-                            typing: None,
+            Expression {
+                kind: ExpressionKind::Application {
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: BinaryOperator::Sub.to_string()
+                        },
+                        location: Location::default()
+                    }),
+                    inputs: vec![
+                        Expression {
+                            kind: ExpressionKind::Application {
+                                function_expression: Box::new(Expression {
+                                    kind: ExpressionKind::Identifier {
+                                        id: BinaryOperator::Mul.to_string()
+                                    },
+                                    location: Location::default()
+                                }),
+                                inputs: vec![
+                                    Expression {
+                                        kind: ExpressionKind::Constant {
+                                            constant: Constant::Integer(4)
+                                        },
+                                        location: Location::default()
+                                    },
+                                    Expression {
+                                        kind: ExpressionKind::Constant {
+                                            constant: Constant::Integer(5)
+                                        },
+                                        location: Location::default()
+                                    },
+                                ]
+                            },
                             location: Location::default()
-                        }),
-                        inputs: vec![
-                            Expression::Constant {
-                                constant: Constant::Integer(4),
-                                typing: None,
-                                location: Location::default()
+                        },
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Integer(3)
                             },
-                            Expression::Constant {
-                                constant: Constant::Integer(5),
-                                typing: None,
-                                location: Location::default()
-                            },
-                        ],
-                        typing: None,
-                        location: Location::default()
-                    },
-                    Expression::Constant {
-                        constant: Constant::Integer(3),
-                        typing: None,
-                        location: Location::default()
-                    },
-                ],
-                typing: None,
+                            location: Location::default()
+                        },
+                    ]
+                },
                 location: Location::default()
             },
             expression
@@ -1981,70 +1379,59 @@ mod langrust_ast_constructs {
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Application {
-                function_expression: Box::new(Expression::Identifier {
-                    id: String::from("sqrt"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                inputs: vec![Expression::Application {
-                    function_expression: Box::new(Expression::Identifier {
-                        id: BinaryOperator::Sub.to_string(),
-                        typing: None,
+            Expression {
+                kind: ExpressionKind::Application {
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("sqrt")
+                        },
                         location: Location::default()
                     }),
-                    inputs: vec![
-                        Expression::Application {
-                            function_expression: Box::new(Expression::Identifier {
-                                id: BinaryOperator::Mul.to_string(),
-                                typing: None,
+                    inputs: vec![Expression {
+                        kind: ExpressionKind::Application {
+                            function_expression: Box::new(Expression {
+                                kind: ExpressionKind::Identifier {
+                                    id: BinaryOperator::Sub.to_string()
+                                },
                                 location: Location::default()
                             }),
                             inputs: vec![
-                                Expression::Constant {
-                                    constant: Constant::Integer(4),
-                                    typing: None,
+                                Expression {
+                                    kind: ExpressionKind::Application {
+                                        function_expression: Box::new(Expression {
+                                            kind: ExpressionKind::Identifier {
+                                                id: BinaryOperator::Mul.to_string()
+                                            },
+                                            location: Location::default()
+                                        }),
+                                        inputs: vec![
+                                            Expression {
+                                                kind: ExpressionKind::Constant {
+                                                    constant: Constant::Integer(4),
+                                                },
+                                                location: Location::default()
+                                            },
+                                            Expression {
+                                                kind: ExpressionKind::Constant {
+                                                    constant: Constant::Integer(5),
+                                                },
+                                                location: Location::default()
+                                            },
+                                        ]
+                                    },
                                     location: Location::default()
                                 },
-                                Expression::Constant {
-                                    constant: Constant::Integer(5),
-                                    typing: None,
+                                Expression {
+                                    kind: ExpressionKind::Constant {
+                                        constant: Constant::Integer(3)
+                                    },
                                     location: Location::default()
                                 },
-                            ],
-                            typing: None,
-                            location: Location::default()
+                            ]
                         },
-                        Expression::Constant {
-                            constant: Constant::Integer(3),
-                            typing: None,
-                            location: Location::default()
-                        },
-                    ],
-                    typing: None,
-                    location: Location::default()
-                }],
-                typing: None,
-                location: Location::default()
-            },
-            expression
-        );
-        let expression = langrust::expressionParser::new()
-            .parse(file_id7, &files.source(file_id7).unwrap())
-            .unwrap();
-        assert_eq!(
-            Expression::Application {
-                function_expression: Box::new(Expression::Identifier {
-                    id: OtherOperator::Print.to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                inputs: vec![Expression::Constant {
-                    constant: Constant::String(String::from("Hello world")),
-                    typing: None,
-                    location: Location::default()
-                }],
-                typing: None,
+                        location: Location::default()
+                    }]
+                },
                 location: Location::default()
             },
             expression
@@ -2053,30 +1440,35 @@ mod langrust_ast_constructs {
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Abstraction {
-                inputs: vec![String::from("x"), String::from("y")],
-                expression: Box::new(Expression::Application {
-                    function_expression: Box::new(Expression::Identifier {
-                        id: BinaryOperator::Add.to_string(),
-                        typing: None,
+            Expression {
+                kind: ExpressionKind::Abstraction {
+                    inputs: vec![String::from("x"), String::from("y")],
+                    expression: Box::new(Expression {
+                        kind: ExpressionKind::Application {
+                            function_expression: Box::new(Expression {
+                                kind: ExpressionKind::Identifier {
+                                    id: BinaryOperator::Add.to_string()
+                                },
+                                location: Location::default()
+                            }),
+                            inputs: vec![
+                                Expression {
+                                    kind: ExpressionKind::Identifier {
+                                        id: String::from("x")
+                                    },
+                                    location: Location::default()
+                                },
+                                Expression {
+                                    kind: ExpressionKind::Identifier {
+                                        id: String::from("y")
+                                    },
+                                    location: Location::default()
+                                },
+                            ]
+                        },
                         location: Location::default()
-                    }),
-                    inputs: vec![
-                        Expression::Identifier {
-                            id: String::from("x"),
-                            typing: None,
-                            location: Location::default()
-                        },
-                        Expression::Identifier {
-                            id: String::from("y"),
-                            typing: None,
-                            location: Location::default()
-                        },
-                    ],
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+                    })
+                },
                 location: Location::default()
             },
             expression
@@ -2085,33 +1477,38 @@ mod langrust_ast_constructs {
             .parse(file_id9, &files.source(file_id9).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::TypedAbstraction {
-                inputs: vec![
-                    (String::from("x"), Type::Integer),
-                    (String::from("y"), Type::Integer)
-                ],
-                expression: Box::new(Expression::Application {
-                    function_expression: Box::new(Expression::Identifier {
-                        id: BinaryOperator::Add.to_string(),
-                        typing: None,
-                        location: Location::default()
-                    }),
+            Expression {
+                kind: ExpressionKind::TypedAbstraction {
                     inputs: vec![
-                        Expression::Identifier {
-                            id: String::from("x"),
-                            typing: None,
-                            location: Location::default()
-                        },
-                        Expression::Identifier {
-                            id: String::from("y"),
-                            typing: None,
-                            location: Location::default()
-                        },
+                        (String::from("x"), Type::Integer),
+                        (String::from("y"), Type::Integer)
                     ],
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+                    expression: Box::new(Expression {
+                        kind: ExpressionKind::Application {
+                            function_expression: Box::new(Expression {
+                                kind: ExpressionKind::Identifier {
+                                    id: BinaryOperator::Add.to_string()
+                                },
+                                location: Location::default()
+                            }),
+                            inputs: vec![
+                                Expression {
+                                    kind: ExpressionKind::Identifier {
+                                        id: String::from("x")
+                                    },
+                                    location: Location::default()
+                                },
+                                Expression {
+                                    kind: ExpressionKind::Identifier {
+                                        id: String::from("y")
+                                    },
+                                    location: Location::default()
+                                },
+                            ]
+                        },
+                        location: Location::default()
+                    })
+                },
                 location: Location::default()
             },
             expression
@@ -2120,30 +1517,35 @@ mod langrust_ast_constructs {
             .parse(file_id10, &files.source(file_id10).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Application {
-                function_expression: Box::new(Expression::Identifier {
-                    id: OtherOperator::IfThenElse.to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                inputs: vec![
-                    Expression::Identifier {
-                        id: String::from("b"),
-                        typing: None,
+            Expression {
+                kind: ExpressionKind::Application {
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: OtherOperator::IfThenElse.to_string()
+                        },
                         location: Location::default()
-                    },
-                    Expression::Identifier {
-                        id: String::from("x"),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    Expression::Identifier {
-                        id: String::from("y"),
-                        typing: None,
-                        location: Location::default()
-                    },
-                ],
-                typing: None,
+                    }),
+                    inputs: vec![
+                        Expression {
+                            kind: ExpressionKind::Identifier {
+                                id: String::from("b")
+                            },
+                            location: Location::default()
+                        },
+                        Expression {
+                            kind: ExpressionKind::Identifier {
+                                id: String::from("x")
+                            },
+                            location: Location::default()
+                        },
+                        Expression {
+                            kind: ExpressionKind::Identifier {
+                                id: String::from("y")
+                            },
+                            location: Location::default()
+                        },
+                    ]
+                },
                 location: Location::default()
             },
             expression
@@ -2152,27 +1554,30 @@ mod langrust_ast_constructs {
             .parse(file_id11, &files.source(file_id11).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Structure {
-                name: String::from("Point"),
-                fields: vec![
-                    (
-                        String::from("x"),
-                        Expression::Constant {
-                            constant: Constant::Integer(3),
-                            typing: None,
-                            location: Location::default()
-                        }
-                    ),
-                    (
-                        String::from("y"),
-                        Expression::Constant {
-                            constant: Constant::Integer(0),
-                            typing: None,
-                            location: Location::default()
-                        }
-                    )
-                ],
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Structure {
+                    name: String::from("Point"),
+                    fields: vec![
+                        (
+                            String::from("x"),
+                            Expression {
+                                kind: ExpressionKind::Constant {
+                                    constant: Constant::Integer(3)
+                                },
+                                location: Location::default()
+                            }
+                        ),
+                        (
+                            String::from("y"),
+                            Expression {
+                                kind: ExpressionKind::Constant {
+                                    constant: Constant::Integer(0)
+                                },
+                                location: Location::default()
+                            }
+                        )
+                    ]
+                },
                 location: Location::default()
             },
             expression
@@ -2181,25 +1586,29 @@ mod langrust_ast_constructs {
             .parse(file_id12, &files.source(file_id12).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Array {
-                elements: vec![
-                    Expression::Constant {
-                        constant: Constant::Integer(1),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    Expression::Constant {
-                        constant: Constant::Integer(2),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    Expression::Constant {
-                        constant: Constant::Integer(3),
-                        typing: None,
-                        location: Location::default()
-                    }
-                ],
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Array {
+                    elements: vec![
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Integer(1)
+                            },
+                            location: Location::default()
+                        },
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Integer(2)
+                            },
+                            location: Location::default()
+                        },
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Integer(3)
+                            },
+                            location: Location::default()
+                        }
+                    ]
+                },
                 location: Location::default()
             },
             expression
@@ -2208,25 +1617,29 @@ mod langrust_ast_constructs {
             .parse(file_id13, &files.source(file_id13).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Array {
-                elements: vec![
-                    Expression::Constant {
-                        constant: Constant::Float(0.01),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    Expression::Constant {
-                        constant: Constant::Float(0.01),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    Expression::Constant {
-                        constant: Constant::Float(0.01),
-                        typing: None,
-                        location: Location::default()
-                    }
-                ],
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Array {
+                    elements: vec![
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Float(0.01)
+                            },
+                            location: Location::default()
+                        },
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Float(0.01)
+                            },
+                            location: Location::default()
+                        },
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Float(0.01)
+                            },
+                            location: Location::default()
+                        }
+                    ]
+                },
                 location: Location::default()
             },
             expression
@@ -2235,24 +1648,28 @@ mod langrust_ast_constructs {
             .parse(file_id14, &files.source(file_id14).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::When {
-                id: String::from("a"),
-                option: Box::new(Expression::Identifier {
-                    id: String::from("x"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                present: Box::new(Expression::Identifier {
+            Expression {
+                kind: ExpressionKind::When {
                     id: String::from("a"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                default: Box::new(Expression::Constant {
-                    constant: Constant::Integer(0),
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+                    option: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("x")
+                        },
+                        location: Location::default()
+                    }),
+                    present: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("a")
+                        },
+                        location: Location::default()
+                    }),
+                    default: Box::new(Expression {
+                        kind: ExpressionKind::Constant {
+                            constant: Constant::Integer(0)
+                        },
+                        location: Location::default()
+                    })
+                },
                 location: Location::default()
             },
             expression
@@ -2261,24 +1678,28 @@ mod langrust_ast_constructs {
             .parse(file_id15, &files.source(file_id15).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::When {
-                id: String::from("a"),
-                option: Box::new(Expression::Identifier {
+            Expression {
+                kind: ExpressionKind::When {
                     id: String::from("a"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                present: Box::new(Expression::Identifier {
-                    id: String::from("a"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                default: Box::new(Expression::Constant {
-                    constant: Constant::Integer(0),
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+                    option: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("a")
+                        },
+                        location: Location::default()
+                    }),
+                    present: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("a")
+                        },
+                        location: Location::default()
+                    }),
+                    default: Box::new(Expression {
+                        kind: ExpressionKind::Constant {
+                            constant: Constant::Integer(0)
+                        },
+                        location: Location::default()
+                    })
+                },
                 location: Location::default()
             },
             expression
@@ -2287,109 +1708,131 @@ mod langrust_ast_constructs {
             .parse(file_id16, &files.source(file_id16).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Match {
-                expression: Box::new(Expression::Identifier {
-                    id: String::from("a"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                arms: vec![
-                    (
-                        Pattern::Structure {
-                            name: String::from("Point"),
-                            fields: vec![
-                                (
-                                    String::from("x"),
-                                    Pattern::Constant {
-                                        constant: Constant::Integer(0),
-                                        location: Location::default()
-                                    }
-                                ),
-                                (
-                                    String::from("y"),
-                                    Pattern::Default {
-                                        location: Location::default()
-                                    }
-                                )
-                            ],
-                            location: Location::default()
+            Expression {
+                kind: ExpressionKind::Match {
+                    expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("a")
                         },
-                        None,
-                        Expression::Constant {
-                            constant: Constant::Integer(0),
-                            typing: None,
-                            location: Location::default()
-                        }
-                    ),
-                    (
-                        Pattern::Structure {
-                            name: String::from("Point"),
-                            fields: vec![
-                                (
-                                    String::from("x"),
-                                    Pattern::Identifier {
-                                        name: String::from("x"),
-                                        location: Location::default()
-                                    }
-                                ),
-                                (
-                                    String::from("y"),
-                                    Pattern::Default {
-                                        location: Location::default()
-                                    }
-                                )
-                            ],
-                            location: Location::default()
-                        },
-                        Some(Expression::Application {
-                            function_expression: Box::new(Expression::Identifier {
-                                id: BinaryOperator::Low.to_string(),
-                                typing: None,
-                                location: Location::default()
-                            }),
-                            inputs: vec![
-                                Expression::Identifier {
-                                    id: String::from("x"),
-                                    typing: None,
-                                    location: Location::default()
+                        location: Location::default()
+                    }),
+                    arms: vec![
+                        (
+                            Pattern {
+                                kind: PatternKind::Structure {
+                                    name: String::from("Point"),
+                                    fields: vec![
+                                        (
+                                            String::from("x"),
+                                            Pattern {
+                                                kind: PatternKind::Constant {
+                                                    constant: Constant::Integer(0),
+                                                },
+                                                location: Location::default()
+                                            }
+                                        ),
+                                        (
+                                            String::from("y"),
+                                            Pattern {
+                                                kind: PatternKind::Default,
+                                                location: Location::default()
+                                            }
+                                        )
+                                    ],
                                 },
-                                Expression::Constant {
-                                    constant: Constant::Integer(0),
-                                    typing: None,
-                                    location: Location::default()
-                                }
-                            ],
-                            typing: None,
-                            location: Location::default()
-                        }),
-                        Expression::Application {
-                            function_expression: Box::new(Expression::Identifier {
-                                id: UnaryOperator::Neg.to_string(),
-                                typing: None,
+                                location: Location::default()
+                            },
+                            None,
+                            Expression {
+                                kind: ExpressionKind::Constant {
+                                    constant: Constant::Integer(0)
+                                },
+                                location: Location::default()
+                            }
+                        ),
+                        (
+                            Pattern {
+                                kind: PatternKind::Structure {
+                                    name: String::from("Point"),
+                                    fields: vec![
+                                        (
+                                            String::from("x"),
+                                            Pattern {
+                                                kind: PatternKind::Identifier {
+                                                    name: String::from("x")
+                                                },
+                                                location: Location::default()
+                                            }
+                                        ),
+                                        (
+                                            String::from("y"),
+                                            Pattern {
+                                                kind: PatternKind::Default,
+                                                location: Location::default()
+                                            }
+                                        )
+                                    ]
+                                },
+                                location: Location::default()
+                            },
+                            Some(Expression {
+                                kind: ExpressionKind::Application {
+                                    function_expression: Box::new(Expression {
+                                        kind: ExpressionKind::Identifier {
+                                            id: BinaryOperator::Low.to_string()
+                                        },
+                                        location: Location::default()
+                                    }),
+                                    inputs: vec![
+                                        Expression {
+                                            kind: ExpressionKind::Identifier {
+                                                id: String::from("x"),
+                                            },
+                                            location: Location::default()
+                                        },
+                                        Expression {
+                                            kind: ExpressionKind::Constant {
+                                                constant: Constant::Integer(0),
+                                            },
+                                            location: Location::default()
+                                        }
+                                    ]
+                                },
                                 location: Location::default()
                             }),
-                            inputs: vec![Expression::Constant {
-                                constant: Constant::Integer(1),
-                                typing: None,
+                            Expression {
+                                kind: ExpressionKind::Application {
+                                    function_expression: Box::new(Expression {
+                                        kind: ExpressionKind::Identifier {
+                                            id: UnaryOperator::Neg.to_string()
+                                        },
+                                        location: Location::default()
+                                    }),
+                                    inputs: vec![Expression {
+                                        kind: ExpressionKind::Constant {
+                                            constant: Constant::Integer(1)
+                                        },
+                                        location: Location::default()
+                                    }]
+                                },
                                 location: Location::default()
-                            }],
-                            typing: None,
-                            location: Location::default()
-                        }
-                    ),
-                    (
-                        Pattern::Default {
-                            location: Location::default()
-                        },
-                        None,
-                        Expression::Constant {
-                            constant: Constant::Integer(1),
-                            typing: None,
-                            location: Location::default()
-                        }
-                    )
-                ],
-                typing: None,
+                            }
+                        ),
+                        (
+                            Pattern {
+                                kind: PatternKind::Default,
+                                location: Location::default()
+                            },
+                            None,
+                            Expression {
+                                kind: ExpressionKind::Constant {
+                                    constant: Constant::Integer(1)
+                                },
+                                location: Location::default()
+                            }
+                        )
+                    ]
+                },
                 location: Location::default()
             },
             expression
@@ -2398,14 +1841,16 @@ mod langrust_ast_constructs {
             .parse(file_id17, &files.source(file_id17).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::FieldAccess {
-                expression: Box::new(Expression::Identifier {
-                    id: String::from("p"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                field: "x".to_string(),
-                typing: None,
+            Expression {
+                kind: ExpressionKind::FieldAccess {
+                    expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("p")
+                        },
+                        location: Location::default()
+                    }),
+                    field: "x".to_string()
+                },
                 location: Location::default()
             },
             expression
@@ -2414,18 +1859,21 @@ mod langrust_ast_constructs {
             .parse(file_id18, &files.source(file_id18).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Map {
-                expression: Box::new(Expression::Identifier {
-                    id: String::from("x"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                function_expression: Box::new(Expression::Identifier {
-                    id: String::from("f"),
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Map {
+                    expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("l")
+                        },
+                        location: Location::default()
+                    }),
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: String::from("f")
+                        },
+                        location: Location::default()
+                    })
+                },
                 location: Location::default()
             },
             expression
@@ -2434,44 +1882,52 @@ mod langrust_ast_constructs {
             .parse(file_id19, &files.source(file_id19).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Fold {
-                expression: Box::new(Expression::Identifier {
-                    id: "l".to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                initialization_expression: Box::new(Expression::Constant {
-                    constant: Constant::Integer(0),
-                    typing: None,
-                    location: Location::default()
-                }),
-                function_expression: Box::new(Expression::Abstraction {
-                    inputs: vec![String::from("sum"), String::from("x")],
-                    expression: Box::new(Expression::Application {
-                        function_expression: Box::new(Expression::Identifier {
-                            id: BinaryOperator::Add.to_string(),
-                            typing: None,
-                            location: Location::default()
-                        }),
-                        inputs: vec![
-                            Expression::Identifier {
-                                id: String::from("x"),
-                                typing: None,
-                                location: Location::default()
-                            },
-                            Expression::Identifier {
-                                id: String::from("sum"),
-                                typing: None,
-                                location: Location::default()
-                            },
-                        ],
-                        typing: None,
+            Expression {
+                kind: ExpressionKind::Fold {
+                    expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: "l".to_string()
+                        },
                         location: Location::default()
                     }),
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+                    initialization_expression: Box::new(Expression {
+                        kind: ExpressionKind::Constant {
+                            constant: Constant::Integer(0)
+                        },
+                        location: Location::default()
+                    }),
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Abstraction {
+                            inputs: vec![String::from("sum"), String::from("x")],
+                            expression: Box::new(Expression {
+                                kind: ExpressionKind::Application {
+                                    function_expression: Box::new(Expression {
+                                        kind: ExpressionKind::Identifier {
+                                            id: BinaryOperator::Add.to_string()
+                                        },
+                                        location: Location::default()
+                                    }),
+                                    inputs: vec![
+                                        Expression {
+                                            kind: ExpressionKind::Identifier {
+                                                id: String::from("x")
+                                            },
+                                            location: Location::default()
+                                        },
+                                        Expression {
+                                            kind: ExpressionKind::Identifier {
+                                                id: String::from("sum")
+                                            },
+                                            location: Location::default()
+                                        },
+                                    ]
+                                },
+                                location: Location::default()
+                            })
+                        },
+                        location: Location::default()
+                    })
+                },
                 location: Location::default()
             },
             expression
@@ -2480,39 +1936,46 @@ mod langrust_ast_constructs {
             .parse(file_id20, &files.source(file_id20).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Sort {
-                expression: Box::new(Expression::Identifier {
-                    id: "l".to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                function_expression: Box::new(Expression::Abstraction {
-                    inputs: vec![String::from("a"), String::from("b")],
-                    expression: Box::new(Expression::Application {
-                        function_expression: Box::new(Expression::Identifier {
-                            id: BinaryOperator::Sub.to_string(),
-                            typing: None,
-                            location: Location::default()
-                        }),
-                        inputs: vec![
-                            Expression::Identifier {
-                                id: String::from("a"),
-                                typing: None,
-                                location: Location::default()
-                            },
-                            Expression::Identifier {
-                                id: String::from("b"),
-                                typing: None,
-                                location: Location::default()
-                            },
-                        ],
-                        typing: None,
+            Expression {
+                kind: ExpressionKind::Sort {
+                    expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: "l".to_string()
+                        },
                         location: Location::default()
                     }),
-                    typing: None,
-                    location: Location::default()
-                }),
-                typing: None,
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Abstraction {
+                            inputs: vec![String::from("a"), String::from("b")],
+                            expression: Box::new(Expression {
+                                kind: ExpressionKind::Application {
+                                    function_expression: Box::new(Expression {
+                                        kind: ExpressionKind::Identifier {
+                                            id: BinaryOperator::Sub.to_string()
+                                        },
+                                        location: Location::default()
+                                    }),
+                                    inputs: vec![
+                                        Expression {
+                                            kind: ExpressionKind::Identifier {
+                                                id: String::from("a")
+                                            },
+                                            location: Location::default()
+                                        },
+                                        Expression {
+                                            kind: ExpressionKind::Identifier {
+                                                id: String::from("b")
+                                            },
+                                            location: Location::default()
+                                        },
+                                    ]
+                                },
+                                location: Location::default()
+                            })
+                        },
+                        location: Location::default()
+                    })
+                },
                 location: Location::default()
             },
             expression
@@ -2521,20 +1984,23 @@ mod langrust_ast_constructs {
             .parse(file_id21, &files.source(file_id21).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::Zip {
-                arrays: vec![
-                    Expression::Identifier {
-                        id: "a".to_string(),
-                        typing: None,
-                        location: Location::default()
-                    },
-                    Expression::Identifier {
-                        id: "b".to_string(),
-                        typing: None,
-                        location: Location::default()
-                    }
-                ],
-                typing: None,
+            Expression {
+                kind: ExpressionKind::Zip {
+                    arrays: vec![
+                        Expression {
+                            kind: ExpressionKind::Identifier {
+                                id: "a".to_string()
+                            },
+                            location: Location::default()
+                        },
+                        Expression {
+                            kind: ExpressionKind::Identifier {
+                                id: "b".to_string()
+                            },
+                            location: Location::default()
+                        }
+                    ]
+                },
                 location: Location::default()
             },
             expression
@@ -2543,14 +2009,16 @@ mod langrust_ast_constructs {
             .parse(file_id22, &files.source(file_id22).unwrap())
             .unwrap();
         assert_eq!(
-            Expression::TupleElementAccess {
-                expression: Box::new(Expression::Identifier {
-                    id: "my_tuple".to_string(),
-                    typing: None,
-                    location: Location::default()
-                }),
-                element_number: 0,
-                typing: None,
+            Expression {
+                kind: ExpressionKind::TupleElementAccess {
+                    expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier {
+                            id: "my_tuple".to_string()
+                        },
+                        location: Location::default()
+                    }),
+                    element_number: 0
+                },
                 location: Location::default()
             },
             expression
@@ -2565,7 +2033,6 @@ mod langrust_ast_constructs {
         let file_id3 = files.add("int_test.gr", "3");
         let file_id4 = files.add("float_test.gr", "3.540");
         let file_id5 = files.add("string_test.gr", "\"Hello world\"");
-        let file_id6 = files.add("enum_test.gr", "Color.Yellow");
 
         let constant = langrust::constantParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -2587,13 +2054,6 @@ mod langrust_ast_constructs {
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
         assert_eq!(Constant::String(String::from("Hello world")), constant);
-        let constant = langrust::constantParser::new()
-            .parse(file_id6, &files.source(file_id6).unwrap())
-            .unwrap();
-        assert_eq!(
-            Constant::Enumeration(String::from("Color"), String::from("Yellow")),
-            constant
-        );
     }
 }
 
