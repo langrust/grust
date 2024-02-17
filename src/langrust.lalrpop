@@ -305,6 +305,10 @@ contract: Contract = {
     }
 };
 
+allExpression: Expression = {
+    <expr: expression> => expr,
+};
+
 /// Catches all LanGrust expressions
 pub expression: Expression = {
     // catches constant as expressions
@@ -326,23 +330,8 @@ pub expression: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches brackets as expressions
-    <start:@L> "(" <e: expression> ")" <end:@R> => {
-        Expression {
-            kind: ExpressionKind::Application {
-                function_expression: Box::new(Expression {
-                    kind: ExpressionKind::Identifier{
-                        id: UnaryOperator::Brackets.to_string(),
-                    },
-                    location: Location{ file_id, range: start..end }
-                }),
-                inputs: vec![e],
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
     // catches applications as expressions
-    <start:@L> <fun_expr: expression> "(" <v_expr: list<expression>> ")" <end:@R> => {
+    <start:@L> <fun_expr: expression> "(" <v_expr: list<allExpression>> ")" <end:@R> => {
         Expression {
             kind: ExpressionKind::Application {
                 function_expression: Box::new(fun_expr),
@@ -351,43 +340,8 @@ pub expression: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches pattern matching as expressions
-    "match" "(" <expr: expression> ")" "{"
-    <start:@L> <v_arm: list<arm<expression>>> "}" <end:@R> => {
-        Expression {
-            kind: ExpressionKind::Match {
-                expression: Box::new(expr),
-                arms: v_arm,
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches print applications as expressions
-    <start:@L> "print" "(" <e: expression> ")" <end:@R> => {
-            Expression {
-                kind: ExpressionKind::Application {
-                function_expression: Box::new(Expression {
-                    kind: ExpressionKind::Identifier {
-                            id: OtherOperator::Print.to_string(),
-                    },
-                    location: Location{ file_id, range: start..end }
-                }),
-                inputs: vec![e],
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches array zipping as expressions
-    <start:@L> "zip" "(" <v_expr: list<expression>> ")" <end:@R> => {
-            Expression {
-                kind: ExpressionKind::Zip {
-                arrays: v_expr,
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
     // catches array mapping as expressions
-    <start:@L> <a: expression> ".map" "(" <f: expression> ")" <end:@R> => {
+    <start:@L> <a: expression> ".map" "(" <f: allExpression> ")" <end:@R> => {
             Expression {
                 kind: ExpressionKind::Map {
                 expression: Box::new(a),
@@ -397,7 +351,7 @@ pub expression: Expression = {
         }
     },
     // catches array sorting as expressions
-    <start:@L> <a: expression> ".sort" "(" <f: expression> ")" <end:@R> => {
+    <start:@L> <a: expression> ".sort" "(" <f: allExpression> ")" <end:@R> => {
             Expression {
                 kind: ExpressionKind::Sort {
                 expression: Box::new(a),
@@ -407,40 +361,12 @@ pub expression: Expression = {
         }
     },
     // catches array folding as expressions
-    <start:@L> <a: expression> ".fold" "(" <e: expression> "," <f: expression> ")" <end:@R> => {
+    <start:@L> <a: expression> ".fold" "(" <e: allExpression> "," <f: allExpression> ")" <end:@R> => {
             Expression {
                 kind: ExpressionKind::Fold {
                 expression: Box::new(a),
                 initialization_expression: Box::new(e),
                 function_expression: Box::new(f),
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches structure definition as expressions
-    <start:@L> <name: ID> "{" <fields: hash<ID, expression>> "}" <end:@R> => {
-            Expression {
-                kind: ExpressionKind::Structure {
-                name,
-                fields,
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches array definition as expressions
-    <start:@L> "[" <v_expr: list<expression>> "]" <end:@R> => {
-            Expression {
-                kind: ExpressionKind::Array {
-                elements: v_expr,
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches unified array definition as expressions
-    <start:@L> "[" <e: expression> ";" <n: r"\d+"> "]" <end:@R> => {
-            Expression {
-                kind: ExpressionKind::Array {
-                elements: vec![e; usize::from_str(n).unwrap()],
             },
             location: Location{ file_id, range: start..end }
         }
@@ -615,6 +541,84 @@ pub expression: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
+    // catches brackets as expressions
+    <start:@L> "(" <e: expression> ")" <end:@R> => {
+        Expression {
+            kind: ExpressionKind::Application {
+                function_expression: Box::new(Expression {
+                    kind: ExpressionKind::Identifier{
+                        id: UnaryOperator::Brackets.to_string(),
+                    },
+                    location: Location{ file_id, range: start..end }
+                }),
+                inputs: vec![e],
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches pattern matching as expressions
+    "match" "(" <expr: expression> ")" "{"
+    <start:@L> <v_arm: list<arm<expression>>> "}" <end:@R> => {
+        Expression {
+            kind: ExpressionKind::Match {
+                expression: Box::new(expr),
+                arms: v_arm,
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches print applications as expressions
+    <start:@L> "print" "(" <e: expression> ")" <end:@R> => {
+            Expression {
+                kind: ExpressionKind::Application {
+                function_expression: Box::new(Expression {
+                    kind: ExpressionKind::Identifier {
+                            id: OtherOperator::Print.to_string(),
+                    },
+                    location: Location{ file_id, range: start..end }
+                }),
+                inputs: vec![e],
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches array zipping as expressions
+    <start:@L> "zip" "(" <v_expr: list<expression>> ")" <end:@R> => {
+            Expression {
+                kind: ExpressionKind::Zip {
+                arrays: v_expr,
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches structure definition as expressions
+    <start:@L> <name: ID> "{" <fields: hash<ID, expression>> "}" <end:@R> => {
+            Expression {
+                kind: ExpressionKind::Structure {
+                name,
+                fields,
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches array definition as expressions
+    <start:@L> "[" <v_expr: list<expression>> "]" <end:@R> => {
+            Expression {
+                kind: ExpressionKind::Array {
+                elements: v_expr,
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches unified array definition as expressions
+    <start:@L> "[" <e: expression> ";" <n: r"\d+"> "]" <end:@R> => {
+            Expression {
+                kind: ExpressionKind::Array {
+                elements: vec![e; usize::from_str(n).unwrap()],
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
 };
 
 /// Catches `let` statement
@@ -629,6 +633,9 @@ pub statement: Statement = {
     }
 };
 
+allStreamExpression: StreamExpression = {
+    <expr: streamExpression> => expr,
+}
 
 /// Catches all LanGrust stream expressions
 pub streamExpression: StreamExpression = {
@@ -644,38 +651,6 @@ pub streamExpression: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches brackets as expressions
-    <start:@L> "(" <e: streamExpression> ")" <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::Expression {
-                expression: ExpressionKind::Application {
-                    function_expression: Box::new(StreamExpression {
-                        kind: StreamExpressionKind::Expression {
-                            expression: ExpressionKind::Identifier {
-                                id: UnaryOperator::Brackets.to_string(),
-                            },
-                        },
-                        location: Location{ file_id, range: start..end }
-                    }),
-                    inputs: vec![e],
-                }
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches applications as expressions
-    <start:@L> <fun_expr: streamExpression> "(" <v_expr: list<streamExpression>> ")" <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::Expression {
-                expression: ExpressionKind::Application {
-                    function_expression: Box::new(fun_expr),
-                    inputs: v_expr,
-                }
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    #[precedence(level="1")]
     // catches identifier as expressions
     <start:@L> <id: ID> <end:@R> => {
         StreamExpression {
@@ -687,62 +662,21 @@ pub streamExpression: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches node applications as stream expressions
-    <start:@L> <node: ID> "(" <v_expr: list<streamExpression>> ")." <signal: ID> <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::NodeApplication {
-                node,
-                inputs: v_expr,
-                signal,
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches pattern matching as expressions
-    <start:@L> "match" "(" <expr: streamExpression> ")" "{"
-    <v_arm: list<arm<streamExpression>>> "}" <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::Expression {
-                expression: ExpressionKind::Match {
-                    expression: Box::new(expr),
-                    arms: v_arm,
-                }
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches print applications as expressions
-    <start:@L> "print" "(" <e: streamExpression> ")" <end:@R> => {
+    #[precedence(level="1")]
+    // catches applications as expressions
+    <start:@L> <fun_expr: streamExpression> "(" <v_expr: list<allStreamExpression>> ")" <end:@R> => {
         StreamExpression {
             kind: StreamExpressionKind::Expression {
                 expression: ExpressionKind::Application {
-                    function_expression: Box::new(StreamExpression {
-                        kind: StreamExpressionKind::Expression {
-                            expression: ExpressionKind::Identifier {
-                                id: OtherOperator::Print.to_string(),
-                            },
-                        },
-                        location: Location{ file_id, range: start..end }
-                    }),
-                    inputs: vec![e],
-                }
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches array zipping as expressions
-    <start:@L> "zip" "(" <v_expr: list<streamExpression>> ")" <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::Expression {
-                expression: ExpressionKind::Zip {
-                    arrays: v_expr,
+                    function_expression: Box::new(fun_expr),
+                    inputs: v_expr,
                 }
             },
             location: Location{ file_id, range: start..end }
         }
     },
     // catches array mapping as expressions
-    <start:@L> <a: streamExpression> ".map" "(" <f: streamExpression> ")" <end:@R> => {
+    <start:@L> <a: streamExpression> ".map" "(" <f: allStreamExpression> ")" <end:@R> => {
         StreamExpression {
             kind: StreamExpressionKind::Expression {
                 expression: ExpressionKind::Map {
@@ -754,7 +688,7 @@ pub streamExpression: StreamExpression = {
         }
     },
     // catches array sorting as expressions
-    <start:@L> <a: streamExpression> ".sort" "(" <f: streamExpression> ")" <end:@R> => {
+    <start:@L> <a: streamExpression> ".sort" "(" <f: allStreamExpression> ")" <end:@R> => {
         StreamExpression {
             kind: StreamExpressionKind::Expression {
                 expression: ExpressionKind::Sort {
@@ -766,47 +700,13 @@ pub streamExpression: StreamExpression = {
         }
     },
     // catches array folding as expressions
-    <start:@L> <a: streamExpression> ".fold" "(" <e: streamExpression> "," <f: streamExpression> ")" <end:@R> => {
+    <start:@L> <a: streamExpression> ".fold" "(" <e: allStreamExpression> "," <f: allStreamExpression> ")" <end:@R> => {
         StreamExpression {
             kind: StreamExpressionKind::Expression {
                 expression: ExpressionKind::Fold {
                     expression: Box::new(a),
                     initialization_expression: Box::new(e),
                     function_expression: Box::new(f),
-                }
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches structure definition as expressions
-    <start:@L> <name: ID> "{" <fields: hash<ID, streamExpression>> "}" <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::Expression {
-                expression: ExpressionKind::Structure {
-                    name,
-                    fields,
-                }
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches array definition as expressions
-    <start:@L> "[" <v_expr: list<streamExpression>> "]" <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::Expression {
-                expression: ExpressionKind::Array {
-                    elements: v_expr,
-                }
-            },
-            location: Location{ file_id, range: start..end }
-        }
-    },
-    // catches unified array definition as expressions
-    <start:@L> "[" <e: streamExpression> ";" <n: r"\d+"> "]" <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::Expression {
-                expression: ExpressionKind::Array {
-                    elements: vec![e; usize::from_str(n).unwrap()],
                 }
             },
             location: Location{ file_id, range: start..end }
@@ -1026,6 +926,113 @@ pub streamExpression: StreamExpression = {
             kind: StreamExpressionKind::FollowedBy {
                 constant: c,
                 expression: Box::new(e),
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches brackets as expressions
+    <start:@L> "(" <e: streamExpression> ")" <end:@R> => {
+        StreamExpression {
+            kind: StreamExpressionKind::Expression {
+                expression: ExpressionKind::Application {
+                    function_expression: Box::new(StreamExpression {
+                        kind: StreamExpressionKind::Expression {
+                            expression: ExpressionKind::Identifier {
+                                id: UnaryOperator::Brackets.to_string(),
+                            },
+                        },
+                        location: Location{ file_id, range: start..end }
+                    }),
+                    inputs: vec![e],
+                }
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches node applications as stream expressions
+    <start:@L> <node: ID> "(" <v_expr: list<streamExpression>> ")." <signal: ID> <end:@R> => {
+        StreamExpression {
+            kind: StreamExpressionKind::NodeApplication {
+                node,
+                inputs: v_expr,
+                signal,
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches pattern matching as expressions
+    <start:@L> "match" "(" <expr: streamExpression> ")" "{"
+    <v_arm: list<arm<streamExpression>>> "}" <end:@R> => {
+        StreamExpression {
+            kind: StreamExpressionKind::Expression {
+                expression: ExpressionKind::Match {
+                    expression: Box::new(expr),
+                    arms: v_arm,
+                }
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches print applications as expressions
+    <start:@L> "print" "(" <e: streamExpression> ")" <end:@R> => {
+        StreamExpression {
+            kind: StreamExpressionKind::Expression {
+                expression: ExpressionKind::Application {
+                    function_expression: Box::new(StreamExpression {
+                        kind: StreamExpressionKind::Expression {
+                            expression: ExpressionKind::Identifier {
+                                id: OtherOperator::Print.to_string(),
+                            },
+                        },
+                        location: Location{ file_id, range: start..end }
+                    }),
+                    inputs: vec![e],
+                }
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches array zipping as expressions
+    <start:@L> "zip" "(" <v_expr: list<streamExpression>> ")" <end:@R> => {
+        StreamExpression {
+            kind: StreamExpressionKind::Expression {
+                expression: ExpressionKind::Zip {
+                    arrays: v_expr,
+                }
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches structure definition as expressions
+    <start:@L> <name: ID> "{" <fields: hash<ID, streamExpression>> "}" <end:@R> => {
+        StreamExpression {
+            kind: StreamExpressionKind::Expression {
+                expression: ExpressionKind::Structure {
+                    name,
+                    fields,
+                }
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches array definition as expressions
+    <start:@L> "[" <v_expr: list<streamExpression>> "]" <end:@R> => {
+        StreamExpression {
+            kind: StreamExpressionKind::Expression {
+                expression: ExpressionKind::Array {
+                    elements: v_expr,
+                }
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches unified array definition as expressions
+    <start:@L> "[" <e: streamExpression> ";" <n: r"\d+"> "]" <end:@R> => {
+        StreamExpression {
+            kind: StreamExpressionKind::Expression {
+                expression: ExpressionKind::Array {
+                    elements: vec![e; usize::from_str(n).unwrap()],
+                }
             },
             location: Location{ file_id, range: start..end }
         }
