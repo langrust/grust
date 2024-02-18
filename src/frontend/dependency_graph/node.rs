@@ -21,7 +21,7 @@ impl Node {
         let mut graph = DiGraphMap::new();
 
         // add input signals as vertices
-        for input in symbol_table.get_node_input(&self.id) {
+        for input in symbol_table.get_node_inputs(&self.id) {
             graph.add_node(*input);
         }
 
@@ -43,7 +43,7 @@ impl Node {
         let mut hash = HashMap::new();
 
         // add input signals with white color (unprocessed)
-        for input in symbol_table.get_node_input(&self.id) {
+        for input in symbol_table.get_node_inputs(&self.id) {
             hash.insert(*input, Color::White);
         }
 
@@ -103,7 +103,7 @@ impl Node {
 
         // add input signals dependencies
         symbol_table
-            .get_node_input(&self.id)
+            .get_node_inputs(&self.id)
             .iter()
             .map(|signal| {
                 self.add_signal_dependencies(
@@ -281,7 +281,7 @@ impl Node {
                 for (_, neighbor_id, l1) in graph.edges(*signal) {
                     // tells if the neighbor is an input
                     let is_input = symbol_table
-                        .get_node_input(&self.id)
+                        .get_node_inputs(&self.id)
                         .iter()
                         .any(|input| neighbor_id.eq(input));
 

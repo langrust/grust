@@ -98,21 +98,15 @@ impl UnitaryNode {
             .collect::<HashMap<_, _>>();
 
         // add output to context
-        let same_output = new_output_signal.map_or(false, |new_output_signal| {
-            if self.output_id != new_output_signal {
-                // TODO: I don't think it is necessary to test because they are different
-                context_map.insert(self.output_id, Union::I1(new_output_signal));
-                false
-            } else {
-                true
-            }
+
+        new_output_signal.map(|new_output_signal| {
+            let output_id = *symbol_table.get_unitary_node_output_id(&self.unitary_node_id);
+            context_map.insert(output_id, Union::I1(new_output_signal));
         });
 
         // add identifiers of the inlined statements to the context
         self.statements.iter().for_each(|statement| {
-            if !same_output || (statement.id != self.output_id) {
-                statement.add_necessary_renaming(identifier_creator, &mut context_map, symbol_table)
-            }
+            statement.add_necessary_renaming(identifier_creator, &mut context_map, symbol_table)
         });
         // add identifiers of the inlined memory to the context
         self.memory
