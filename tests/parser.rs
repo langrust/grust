@@ -2109,7 +2109,7 @@ fn parse_counter() {
 
     let counter_id = files.add(
         "counter.gr",
-        std::fs::read_to_string("tests/fixture/counter.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/parser/counter.gr").expect("unkown file"),
     );
 
     let file = parsing(counter_id, &mut files);
@@ -2123,7 +2123,7 @@ fn parse_blinking() {
 
     let blinking_id = files.add(
         "blinking.gr",
-        std::fs::read_to_string("tests/fixture/blinking.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/parser/blinking.gr").expect("unkown file"),
     );
 
     let file = parsing(blinking_id, &mut files);
@@ -2137,7 +2137,7 @@ fn parse_button_management() {
 
     let blinking_id = files.add(
         "button_management.gr",
-        std::fs::read_to_string("tests/fixture/button_management.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/parser/button_management.gr").expect("unkown file"),
     );
 
     let file = parsing(blinking_id, &mut files);
@@ -2151,7 +2151,7 @@ fn parse_button_management_condition_match() {
 
     let blinking_id = files.add(
         "button_management_condition_match.gr",
-        std::fs::read_to_string("tests/fixture/button_management_condition_match.gr")
+        std::fs::read_to_string("tests/fixture/parser/button_management_condition_match.gr")
             .expect("unkown file"),
     );
 
@@ -2166,7 +2166,7 @@ fn parse_button_management_using_function() {
 
     let blinking_id = files.add(
         "button_management_using_function.gr",
-        std::fs::read_to_string("tests/fixture/button_management_using_function.gr")
+        std::fs::read_to_string("tests/fixture/parser/button_management_using_function.gr")
             .expect("unkown file"),
     );
 
@@ -2181,7 +2181,7 @@ fn parse_pid() {
 
     let pid_id = files.add(
         "pid.gr",
-        std::fs::read_to_string("tests/fixture/pid.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/parser/pid.gr").expect("unkown file"),
     );
 
     let file = parsing(pid_id, &mut files);
