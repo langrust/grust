@@ -3,16 +3,17 @@ source: tests/parser.rs
 expression: file
 ---
 typedefs:
-  - Structure:
-      id: GainPID
-      fields:
-        - - k_p
-          - Float
-        - - k_i
-          - Float
-        - - k_d
-          - Float
-      location: ~
+  - id: GainPID
+    kind:
+      Structure:
+        fields:
+          - - k_p
+            - Float
+          - - k_i
+            - Float
+          - - k_d
+            - Float
+    location: ~
 functions:
   - id: min
     inputs:
@@ -24,55 +25,55 @@ functions:
       - id: test
         element_type: Boolean
         expression:
-          Application:
-            function_expression:
-              Identifier:
-                id: " > "
-                typing: ~
+          kind:
+            Application:
+              function_expression:
+                kind:
+                  Identifier:
+                    id: " > "
                 location: ~
-            inputs:
-              - Identifier:
-                  id: a
-                  typing: ~
+              inputs:
+                - kind:
+                    Identifier:
+                      id: a
                   location: ~
-              - Identifier:
-                  id: b
-                  typing: ~
+                - kind:
+                    Identifier:
+                      id: b
                   location: ~
-            typing: ~
-            location: ~
+          location: ~
         location: ~
       - id: result
         element_type: Float
         expression:
-          Application:
-            function_expression:
-              Identifier:
-                id: if_then_else
-                typing: ~
+          kind:
+            Application:
+              function_expression:
+                kind:
+                  Identifier:
+                    id: if_then_else
                 location: ~
-            inputs:
-              - Identifier:
-                  id: test
-                  typing: ~
+              inputs:
+                - kind:
+                    Identifier:
+                      id: test
                   location: ~
-              - Identifier:
-                  id: b
-                  typing: ~
+                - kind:
+                    Identifier:
+                      id: b
                   location: ~
-              - Identifier:
-                  id: a
-                  typing: ~
+                - kind:
+                    Identifier:
+                      id: a
                   location: ~
-            typing: ~
-            location: ~
+          location: ~
         location: ~
     returned:
       - Float
-      - Identifier:
-          id: result
-          typing: ~
-          location: ~
+      - kind:
+          Identifier:
+            id: result
+        location: ~
     location: ~
 nodes:
   - id: integrate
@@ -88,82 +89,105 @@ nodes:
           id: prev_i
           signal_type: Float
           expression:
-            FollowedBy:
-              constant:
-                Float: 0
-              expression:
-                SignalCall:
-                  id: i
-                  typing: ~
+            kind:
+              FollowedBy:
+                constant:
+                  Float: 0
+                expression:
+                  kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: i
                   location: ~
-              typing: ~
-              location: ~
+            location: ~
           location: ~
       - - i
         - scope: Output
           id: i
           signal_type: Float
           expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: min
-                  typing: ~
-                  location: ~
-              inputs:
-                - FunctionApplication:
+            kind:
+              Expression:
+                expression:
+                  Application:
                     function_expression:
-                      Identifier:
-                        id: " + "
-                        typing: ~
-                        location: ~
-                    inputs:
-                      - SignalCall:
-                          id: prev_i
-                          typing: ~
-                          location: ~
-                      - FunctionApplication:
-                          function_expression:
+                      kind:
+                        Expression:
+                          expression:
                             Identifier:
-                              id: " * "
-                              typing: ~
-                              location: ~
-                          inputs:
-                            - SignalCall:
-                                id: x
-                                typing: ~
-                                location: ~
-                            - SignalCall:
-                                id: dt
-                                typing: ~
-                                location: ~
-                          typing: ~
-                          location: ~
-                    typing: ~
-                    location: ~
-                - SignalCall:
-                    id: MAX_INTEGRALE
-                    typing: ~
-                    location: ~
-              typing: ~
-              location: ~
+                              id: min
+                      location: ~
+                    inputs:
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: " + "
+                                  location: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Identifier:
+                                            id: prev_i
+                                    location: ~
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: " * "
+                                              location: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: x
+                                                location: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: dt
+                                                location: ~
+                                    location: ~
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: MAX_INTEGRALE
+                        location: ~
+            location: ~
           location: ~
       - - MAX_INTEGRALE
         - scope: Local
           id: MAX_INTEGRALE
           signal_type: Float
           expression:
-            Constant:
-              constant:
-                Float: 1000
-              typing: ~
-              location: ~
+            kind:
+              Expression:
+                expression:
+                  Constant:
+                    constant:
+                      Float: 1000
+            location: ~
           location: ~
     contract:
       requires: []
       ensures: []
       invariant: []
-      assert: []
     location: ~
   - id: derive
     is_component: false
@@ -178,67 +202,86 @@ nodes:
           id: d
           signal_type: Float
           expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: " / "
-                  typing: ~
-                  location: ~
-              inputs:
-                - FunctionApplication:
+            kind:
+              Expression:
+                expression:
+                  Application:
                     function_expression:
-                      Identifier:
-                        id: (_)
-                        typing: ~
-                        location: ~
-                    inputs:
-                      - FunctionApplication:
-                          function_expression:
+                      kind:
+                        Expression:
+                          expression:
                             Identifier:
-                              id: " - "
-                              typing: ~
-                              location: ~
-                          inputs:
-                            - SignalCall:
-                                id: x
-                                typing: ~
-                                location: ~
-                            - SignalCall:
-                                id: prev_x
-                                typing: ~
-                                location: ~
-                          typing: ~
-                          location: ~
-                    typing: ~
-                    location: ~
-                - SignalCall:
-                    id: dt
-                    typing: ~
-                    location: ~
-              typing: ~
-              location: ~
+                              id: " / "
+                      location: ~
+                    inputs:
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: (_)
+                                  location: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: " - "
+                                              location: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: x
+                                                location: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: prev_x
+                                                location: ~
+                                    location: ~
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: dt
+                        location: ~
+            location: ~
           location: ~
       - - prev_x
         - scope: Local
           id: prev_x
           signal_type: Float
           expression:
-            FollowedBy:
-              constant:
-                Float: 0
-              expression:
-                SignalCall:
-                  id: x
-                  typing: ~
+            kind:
+              FollowedBy:
+                constant:
+                  Float: 0
+                expression:
+                  kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: x
                   location: ~
-              typing: ~
-              location: ~
+            location: ~
           location: ~
     contract:
       requires: []
       ensures: []
       invariant: []
-      assert: []
     location: ~
 component:
   id: pid
@@ -257,199 +300,303 @@ component:
         signal_type:
           NotDefinedYet: GainPID
         expression:
-          Structure:
-            name: GainPID
-            fields:
-              - - k_p
-                - Constant:
-                    constant:
-                      Float: 0.2
-                    typing: ~
-                    location: ~
-              - - k_i
-                - Constant:
-                    constant:
-                      Float: 1.5
-                    typing: ~
-                    location: ~
-              - - k_d
-                - Constant:
-                    constant:
-                      Float: 6
-                    typing: ~
-                    location: ~
-            typing: ~
-            location: ~
+          kind:
+            Expression:
+              expression:
+                Structure:
+                  name: GainPID
+                  fields:
+                    - - k_p
+                      - kind:
+                          Expression:
+                            expression:
+                              Constant:
+                                constant:
+                                  Float: 0.2
+                        location: ~
+                    - - k_i
+                      - kind:
+                          Expression:
+                            expression:
+                              Constant:
+                                constant:
+                                  Float: 1.5
+                        location: ~
+                    - - k_d
+                      - kind:
+                          Expression:
+                            expression:
+                              Constant:
+                                constant:
+                                  Float: 6
+                        location: ~
+          location: ~
         location: ~
     - - u
       - scope: Output
         id: u
         signal_type: Float
         expression:
-          Match:
-            expression:
-              SignalCall:
-                id: gain
-                typing: ~
-                location: ~
-            arms:
-              - - Structure:
-                    name: GainPID
-                    fields:
-                      - - k_p
-                        - Identifier:
-                            name: k_p
-                            location: ~
-                      - - k_i
-                        - Identifier:
-                            name: k_i
-                            location: ~
-                      - - k_d
-                        - Identifier:
-                            name: k_d
-                            location: ~
+          kind:
+            Expression:
+              expression:
+                Match:
+                  expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Application:
+                            function_expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: (_)
+                              location: ~
+                            inputs:
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: gain
+                                location: ~
                     location: ~
-                - ~
-                - FunctionApplication:
-                    function_expression:
-                      Identifier:
-                        id: " + "
-                        typing: ~
+                  arms:
+                    - - kind:
+                          Structure:
+                            name: GainPID
+                            fields:
+                              - - k_p
+                                - kind:
+                                    Identifier:
+                                      name: k_p
+                                  location: ~
+                              - - k_i
+                                - kind:
+                                    Identifier:
+                                      name: k_i
+                                  location: ~
+                              - - k_d
+                                - kind:
+                                    Identifier:
+                                      name: k_d
+                                  location: ~
                         location: ~
-                    inputs:
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: " + "
-                              typing: ~
-                              location: ~
-                          inputs:
-                            - FunctionApplication:
+                      - ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
                                 function_expression:
-                                  Identifier:
-                                    id: " * "
-                                    typing: ~
-                                    location: ~
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: " + "
+                                  location: ~
                                 inputs:
-                                  - SignalCall:
-                                      id: k_p
-                                      typing: ~
-                                      location: ~
-                                  - SignalCall:
-                                      id: e
-                                      typing: ~
-                                      location: ~
-                                typing: ~
-                                location: ~
-                            - FunctionApplication:
-                                function_expression:
-                                  Identifier:
-                                    id: " * "
-                                    typing: ~
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: " + "
+                                              location: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Application:
+                                                        function_expression:
+                                                          kind:
+                                                            Expression:
+                                                              expression:
+                                                                Identifier:
+                                                                  id: " * "
+                                                          location: ~
+                                                        inputs:
+                                                          - kind:
+                                                              Expression:
+                                                                expression:
+                                                                  Identifier:
+                                                                    id: k_p
+                                                            location: ~
+                                                          - kind:
+                                                              Expression:
+                                                                expression:
+                                                                  Identifier:
+                                                                    id: e
+                                                            location: ~
+                                                location: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Application:
+                                                        function_expression:
+                                                          kind:
+                                                            Expression:
+                                                              expression:
+                                                                Identifier:
+                                                                  id: " * "
+                                                          location: ~
+                                                        inputs:
+                                                          - kind:
+                                                              Expression:
+                                                                expression:
+                                                                  Identifier:
+                                                                    id: k_i
+                                                            location: ~
+                                                          - kind:
+                                                              Expression:
+                                                                expression:
+                                                                  Identifier:
+                                                                    id: e_i
+                                                            location: ~
+                                                location: ~
                                     location: ~
-                                inputs:
-                                  - SignalCall:
-                                      id: k_i
-                                      typing: ~
-                                      location: ~
-                                  - SignalCall:
-                                      id: e_i
-                                      typing: ~
-                                      location: ~
-                                typing: ~
-                                location: ~
-                          typing: ~
-                          location: ~
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: " * "
-                              typing: ~
-                              location: ~
-                          inputs:
-                            - SignalCall:
-                                id: k_d
-                                typing: ~
-                                location: ~
-                            - SignalCall:
-                                id: e_d
-                                typing: ~
-                                location: ~
-                          typing: ~
-                          location: ~
-                    typing: ~
-                    location: ~
-            typing: ~
-            location: ~
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: " * "
+                                              location: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: k_d
+                                                location: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: e_d
+                                                location: ~
+                                    location: ~
+                        location: ~
+          location: ~
         location: ~
     - - e
       - scope: Local
         id: e
         signal_type: Float
         expression:
-          FunctionApplication:
-            function_expression:
-              Identifier:
-                id: " - "
-                typing: ~
-                location: ~
-            inputs:
-              - SignalCall:
-                  id: v_c
-                  typing: ~
-                  location: ~
-              - SignalCall:
-                  id: v
-                  typing: ~
-                  location: ~
-            typing: ~
-            location: ~
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: " - "
+                    location: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: v_c
+                      location: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: v
+                      location: ~
+          location: ~
         location: ~
     - - e_i
       - scope: Local
         id: e_i
         signal_type: Float
         expression:
-          NodeApplication:
-            node: integrate
-            inputs:
-              - SignalCall:
-                  id: e
-                  typing: ~
-                  location: ~
-              - SignalCall:
-                  id: dt
-                  typing: ~
-                  location: ~
-            signal: i
-            typing: ~
-            location: ~
+          kind:
+            Expression:
+              expression:
+                FieldAccess:
+                  expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Application:
+                            function_expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: integrate
+                              location: ~
+                            inputs:
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: e
+                                location: ~
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: dt
+                                location: ~
+                    location: ~
+                  field: i
+          location: ~
         location: ~
     - - e_d
       - scope: Local
         id: e_d
         signal_type: Float
         expression:
-          NodeApplication:
-            node: derive
-            inputs:
-              - SignalCall:
-                  id: e
-                  typing: ~
-                  location: ~
-              - SignalCall:
-                  id: dt
-                  typing: ~
-                  location: ~
-            signal: d
-            typing: ~
-            location: ~
+          kind:
+            Expression:
+              expression:
+                FieldAccess:
+                  expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Application:
+                            function_expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: derive
+                              location: ~
+                            inputs:
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: e
+                                location: ~
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: dt
+                                location: ~
+                    location: ~
+                  field: d
+          location: ~
         location: ~
   contract:
     requires: []
     ensures: []
     invariant: []
-    assert: []
   location: ~
 location: ~
 

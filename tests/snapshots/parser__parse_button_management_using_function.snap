@@ -3,18 +3,20 @@ source: tests/parser.rs
 expression: file
 ---
 typedefs:
-  - Enumeration:
-      id: Button
-      elements:
-        - Released
-        - Pressed
-      location: ~
-  - Enumeration:
-      id: ResetState
-      elements:
-        - InProgress
-        - Confirmed
-      location: ~
+  - id: Button
+    kind:
+      Enumeration:
+        elements:
+          - Released
+          - Pressed
+    location: ~
+  - id: ResetState
+    kind:
+      Enumeration:
+        elements:
+          - InProgress
+          - Confirmed
+    location: ~
 functions:
   - id: reset_state_management
     inputs:
@@ -29,76 +31,77 @@ functions:
         element_type:
           NotDefinedYet: ResetState
         expression:
-          Match:
-            expression:
-              Identifier:
-                id: button_state
-                typing: ~
-                location: ~
-            arms:
-              - - Constant:
-                    constant:
-                      Enumeration:
-                        - Button
-                        - Released
-                    location: ~
-                - ~
-                - Constant:
-                    constant:
-                      Enumeration:
-                        - ResetState
-                        - Confirmed
-                    typing: ~
-                    location: ~
-              - - Constant:
-                    constant:
-                      Enumeration:
-                        - Button
-                        - Pressed
-                    location: ~
-                - Application:
+          kind:
+            Match:
+              expression:
+                kind:
+                  Application:
                     function_expression:
-                      Identifier:
-                        id: " >= "
-                        typing: ~
-                        location: ~
+                      kind:
+                        Identifier:
+                          id: (_)
+                      location: ~
                     inputs:
-                      - Identifier:
-                          id: counter
-                          typing: ~
-                          location: ~
-                      - Identifier:
-                          id: reset_limit_1
-                          typing: ~
-                          location: ~
-                    typing: ~
-                    location: ~
-                - Constant:
-                    constant:
+                      - kind:
+                          Identifier:
+                            id: button_state
+                        location: ~
+                location: ~
+              arms:
+                - - kind:
                       Enumeration:
-                        - ResetState
-                        - InProgress
-                    typing: ~
+                        enum_name: Button
+                        elem_name: Released
                     location: ~
-              - - Default:
-                    location: ~
-                - ~
-                - Constant:
-                    constant:
+                  - ~
+                  - kind:
                       Enumeration:
-                        - ResetState
-                        - Confirmed
-                    typing: ~
+                        enum_name: ResetState
+                        elem_name: Confirmed
                     location: ~
-            typing: ~
-            location: ~
+                - - kind:
+                      Enumeration:
+                        enum_name: Button
+                        elem_name: Pressed
+                    location: ~
+                  - kind:
+                      Application:
+                        function_expression:
+                          kind:
+                            Identifier:
+                              id: " >= "
+                          location: ~
+                        inputs:
+                          - kind:
+                              Identifier:
+                                id: counter
+                            location: ~
+                          - kind:
+                              Identifier:
+                                id: reset_limit_1
+                            location: ~
+                    location: ~
+                  - kind:
+                      Enumeration:
+                        enum_name: ResetState
+                        elem_name: InProgress
+                    location: ~
+                - - kind: Default
+                    location: ~
+                  - ~
+                  - kind:
+                      Enumeration:
+                        enum_name: ResetState
+                        elem_name: Confirmed
+                    location: ~
+          location: ~
         location: ~
     returned:
       - NotDefinedYet: ResetState
-      - Identifier:
-          id: result
-          typing: ~
-          location: ~
+      - kind:
+          Identifier:
+            id: result
+        location: ~
     location: ~
 nodes:
   - id: counter
@@ -114,62 +117,81 @@ nodes:
           id: o
           signal_type: Integer
           expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: if_then_else
-                  typing: ~
-                  location: ~
-              inputs:
-                - SignalCall:
-                    id: res
-                    typing: ~
-                    location: ~
-                - Constant:
-                    constant:
-                      Integer: 0
-                    typing: ~
-                    location: ~
-                - FunctionApplication:
+            kind:
+              Expression:
+                expression:
+                  Application:
                     function_expression:
-                      Identifier:
-                        id: " + "
-                        typing: ~
-                        location: ~
-                    inputs:
-                      - FunctionApplication:
-                          function_expression:
+                      kind:
+                        Expression:
+                          expression:
                             Identifier:
-                              id: (_)
-                              typing: ~
-                              location: ~
-                          inputs:
-                            - FollowedBy:
+                              id: if_then_else
+                      location: ~
+                    inputs:
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: res
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Constant:
                                 constant:
                                   Integer: 0
-                                expression:
-                                  SignalCall:
-                                    id: o
-                                    typing: ~
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: " + "
+                                  location: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: (_)
+                                              location: ~
+                                            inputs:
+                                              - kind:
+                                                  FollowedBy:
+                                                    constant:
+                                                      Integer: 0
+                                                    expression:
+                                                      kind:
+                                                        Expression:
+                                                          expression:
+                                                            Identifier:
+                                                              id: o
+                                                      location: ~
+                                                location: ~
                                     location: ~
-                                typing: ~
-                                location: ~
-                          typing: ~
-                          location: ~
-                      - SignalCall:
-                          id: inc
-                          typing: ~
-                          location: ~
-                    typing: ~
-                    location: ~
-              typing: ~
-              location: ~
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Identifier:
+                                            id: inc
+                                    location: ~
+                        location: ~
+            location: ~
           location: ~
     contract:
       requires: []
       ensures: []
       invariant: []
-      assert: []
     location: ~
   - id: reset_button
     is_component: false
@@ -189,201 +211,283 @@ nodes:
           signal_type:
             NotDefinedYet: ResetState
           expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: reset_state_management
-                  typing: ~
-                  location: ~
-              inputs:
-                - SignalCall:
-                    id: button_state
-                    typing: ~
-                    location: ~
-                - SignalCall:
-                    id: counter
-                    typing: ~
-                    location: ~
-                - SignalCall:
-                    id: reset_limit_1
-                    typing: ~
-                    location: ~
-              typing: ~
-              location: ~
+            kind:
+              Expression:
+                expression:
+                  Application:
+                    function_expression:
+                      kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: reset_state_management
+                      location: ~
+                    inputs:
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: button_state
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: counter
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: reset_limit_1
+                        location: ~
+            location: ~
           location: ~
       - - user_reset_request
         - scope: Output
           id: user_reset_request
           signal_type: Boolean
           expression:
-            Match:
-              expression:
-                SignalCall:
-                  id: button_state
-                  typing: ~
-                  location: ~
-              arms:
-                - - Constant:
-                      constant:
-                        Enumeration:
-                          - Button
-                          - Released
-                      location: ~
-                  - ~
-                  - FollowedBy:
-                      constant:
-                        Boolean: false
-                      expression:
-                        SignalCall:
-                          id: user_reset_request
-                          typing: ~
-                          location: ~
-                      typing: ~
-                      location: ~
-                - - Constant:
-                      constant:
-                        Enumeration:
-                          - Button
-                          - Pressed
-                      location: ~
-                  - ~
-                  - FunctionApplication:
-                      function_expression:
-                        Identifier:
-                          id: " >= "
-                          typing: ~
-                          location: ~
-                      inputs:
-                        - SignalCall:
-                            id: counter
-                            typing: ~
-                            location: ~
-                        - FunctionApplication:
-                            function_expression:
-                              Identifier:
-                                id: " + "
-                                typing: ~
+            kind:
+              Expression:
+                expression:
+                  Match:
+                    expression:
+                      kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: (_)
                                 location: ~
-                            inputs:
-                              - SignalCall:
-                                  id: reset_limit_1
-                                  typing: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: button_state
                                   location: ~
-                              - SignalCall:
-                                  id: reset_limit_2
-                                  typing: ~
-                                  location: ~
-                            typing: ~
-                            location: ~
-                      typing: ~
                       location: ~
-              typing: ~
-              location: ~
+                    arms:
+                      - - kind:
+                            Enumeration:
+                              enum_name: Button
+                              elem_name: Released
+                          location: ~
+                        - ~
+                        - kind:
+                            FollowedBy:
+                              constant:
+                                Boolean: false
+                              expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: user_reset_request
+                                location: ~
+                          location: ~
+                      - - kind:
+                            Enumeration:
+                              enum_name: Button
+                              elem_name: Pressed
+                          location: ~
+                        - ~
+                        - kind:
+                            Expression:
+                              expression:
+                                Application:
+                                  function_expression:
+                                    kind:
+                                      Expression:
+                                        expression:
+                                          Identifier:
+                                            id: " >= "
+                                    location: ~
+                                  inputs:
+                                    - kind:
+                                        Expression:
+                                          expression:
+                                            Identifier:
+                                              id: counter
+                                      location: ~
+                                    - kind:
+                                        Expression:
+                                          expression:
+                                            Application:
+                                              function_expression:
+                                                kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: " + "
+                                                location: ~
+                                              inputs:
+                                                - kind:
+                                                    Expression:
+                                                      expression:
+                                                        Identifier:
+                                                          id: reset_limit_1
+                                                  location: ~
+                                                - kind:
+                                                    Expression:
+                                                      expression:
+                                                        Identifier:
+                                                          id: reset_limit_2
+                                                  location: ~
+                                      location: ~
+                          location: ~
+            location: ~
           location: ~
       - - counter
         - scope: Local
           id: counter
           signal_type: Integer
           expression:
-            NodeApplication:
-              node: counter
-              inputs:
-                - SignalCall:
-                    id: res
-                    typing: ~
-                    location: ~
-                - SignalCall:
-                    id: period
-                    typing: ~
-                    location: ~
-              signal: o
-              typing: ~
-              location: ~
+            kind:
+              Expression:
+                expression:
+                  FieldAccess:
+                    expression:
+                      kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: counter
+                                location: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: res
+                                  location: ~
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: period
+                                  location: ~
+                      location: ~
+                    field: o
+            location: ~
           location: ~
       - - res
         - scope: Local
           id: res
           signal_type: Boolean
           expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: " && "
-                  typing: ~
-                  location: ~
-              inputs:
-                - FunctionApplication:
+            kind:
+              Expression:
+                expression:
+                  Application:
                     function_expression:
-                      Identifier:
-                        id: (_)
-                        typing: ~
-                        location: ~
-                    inputs:
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: " == "
-                              typing: ~
-                              location: ~
-                          inputs:
-                            - SignalCall:
-                                id: button_state
-                                typing: ~
-                                location: ~
-                            - Constant:
-                                constant:
-                                  Enumeration:
-                                    - Button
-                                    - Pressed
-                                typing: ~
-                                location: ~
-                          typing: ~
-                          location: ~
-                    typing: ~
-                    location: ~
-                - FunctionApplication:
-                    function_expression:
-                      Identifier:
-                        id: (_)
-                        typing: ~
-                        location: ~
-                    inputs:
-                      - FollowedBy:
-                          constant:
-                            Boolean: true
+                      kind:
+                        Expression:
                           expression:
-                            FunctionApplication:
-                              function_expression:
-                                Identifier:
-                                  id: " == "
-                                  typing: ~
+                            Identifier:
+                              id: " && "
+                      location: ~
+                    inputs:
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: (_)
                                   location: ~
-                              inputs:
-                                - SignalCall:
-                                    id: button_state
-                                    typing: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: " == "
+                                              location: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: button_state
+                                                location: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Enumeration:
+                                                        enum_name: Button
+                                                        elem_name: Pressed
+                                                location: ~
                                     location: ~
-                                - Constant:
-                                    constant:
-                                      Enumeration:
-                                        - Button
-                                        - Released
-                                    typing: ~
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: (_)
+                                  location: ~
+                                inputs:
+                                  - kind:
+                                      FollowedBy:
+                                        constant:
+                                          Boolean: true
+                                        expression:
+                                          kind:
+                                            Expression:
+                                              expression:
+                                                Application:
+                                                  function_expression:
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Identifier:
+                                                            id: " == "
+                                                    location: ~
+                                                  inputs:
+                                                    - kind:
+                                                        Expression:
+                                                          expression:
+                                                            Identifier:
+                                                              id: button_state
+                                                      location: ~
+                                                    - kind:
+                                                        Expression:
+                                                          expression:
+                                                            Enumeration:
+                                                              enum_name: Button
+                                                              elem_name: Released
+                                                      location: ~
+                                          location: ~
                                     location: ~
-                              typing: ~
-                              location: ~
-                          typing: ~
-                          location: ~
-                    typing: ~
-                    location: ~
-              typing: ~
-              location: ~
+                        location: ~
+            location: ~
           location: ~
     contract:
       requires: []
       ensures: []
       invariant: []
-      assert: []
     location: ~
 component: ~
 location: ~
