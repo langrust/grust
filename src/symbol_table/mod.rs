@@ -403,6 +403,14 @@ impl SymbolTable {
         }
     }
 
+    pub fn is_node(&self, name: &String, local: bool) -> bool {
+        let symbol_hash = format!("node_{name}");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => true,
+            None => false,
+        }
+    }
+
     pub fn get_identifier_id(
         &self,
         name: &String,
