@@ -289,6 +289,7 @@ mod langrust_ast_constructs {
         let file_id4 = files.add("unary_test.gr", "-3");
         let file_id5 = files.add("binary_test.gr", "4*5-3");
         let file_id6 = files.add("function_application_test.gr", "sqrt(x*y)");
+        let file_id7 = files.add("enumeration_test.gr", "Color::Yellow");
         let file_id8 = files.add(
             "node_application_test.gr",
             "my_node(my_input1, my_input2).my_signal",
@@ -302,14 +303,14 @@ mod langrust_ast_constructs {
         let file_id15 = files.add("when_test.gr", "when a then a else 0");
         let file_id16 = files.add(
             "match_test.gr",
-            "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
+            "match a { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
         );
-        let file_id17 = files.add("field_access_test.gr", "p::x");
+        let file_id17 = files.add("field_access_test.gr", "p.x");
         let file_id18 = files.add("map_test.gr", "x.map(f)");
         let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
         let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
         let file_id21 = files.add("zip_test.gr", "zip(a,b)");
-        let file_id22 = files.add("tuple_element_access_test.gr", "my_tuple::0");
+        let file_id22 = files.add("tuple_element_access_test.gr", "my_tuple.0");
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -516,31 +517,62 @@ mod langrust_ast_constructs {
             stream_expression
         );
         let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id7, &files.source(file_id7).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Enumeration {
+                        enum_name: String::from("Color"),
+                        elem_name: String::from("Yellow"),
+                    }
+                },
+                location: Location::default()
+            },
+            stream_expression
+        );
+        let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
         assert_eq!(
             StreamExpression {
-                kind: StreamExpressionKind::NodeApplication {
-                    node: String::from("my_node"),
-                    inputs: vec![
-                        StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::FieldAccess {
+                        expression: Box::new(StreamExpression {
                             kind: StreamExpressionKind::Expression {
-                                expression: ExpressionKind::Identifier {
-                                    id: String::from("my_input1")
+                                expression: ExpressionKind::Application {
+                                    function_expression: Box::new(StreamExpression {
+                                        kind: StreamExpressionKind::Expression {
+                                            expression: ExpressionKind::Identifier {
+                                                id: String::from("my_node")
+                                            }
+                                        },
+                                        location: Location::default()
+                                    }),
+                                    inputs: vec![
+                                        StreamExpression {
+                                            kind: StreamExpressionKind::Expression {
+                                                expression: ExpressionKind::Identifier {
+                                                    id: String::from("my_input1")
+                                                }
+                                            },
+                                            location: Location::default()
+                                        },
+                                        StreamExpression {
+                                            kind: StreamExpressionKind::Expression {
+                                                expression: ExpressionKind::Identifier {
+                                                    id: String::from("my_input2")
+                                                }
+                                            },
+                                            location: Location::default()
+                                        }
+                                    ]
                                 }
                             },
-                            location: Location::default()
-                        },
-                        StreamExpression {
-                            kind: StreamExpressionKind::Expression {
-                                expression: ExpressionKind::Identifier {
-                                    id: String::from("my_input2")
-                                }
-                            },
-                            location: Location::default()
-                        }
-                    ],
-                    signal: String::from("my_signal")
+                            location: Location::default(),
+                        }),
+                        field: String::from("my_signal"),
+                    }
                 },
                 location: Location::default()
             },
@@ -1236,6 +1268,7 @@ mod langrust_ast_constructs {
         let file_id4 = files.add("unary_test.gr", "-3");
         let file_id5 = files.add("binary_test.gr", "4*5-3");
         let file_id6 = files.add("function_application_test.gr", "sqrt(4*5-3)");
+        let file_id7 = files.add("enumeration_test.gr", "Color::Yellow");
         let file_id8 = files.add("abstraction_test.gr", "|x, y| x + y");
         let file_id9 = files.add("typed_abstraction_test.gr", "|x: int, y: int| x + y");
         let file_id10 = files.add("ifthenelse_test.gr", "if b then x else y");
@@ -1246,14 +1279,14 @@ mod langrust_ast_constructs {
         let file_id15 = files.add("when_test.gr", "when a then a else 0");
         let file_id16 = files.add(
             "match_test.gr",
-            "match (a) { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
+            "match a { Point {x: 0, y: _} => 0, Point {x: x, y: _} if x < 0 => -1, _ => 1 }",
         );
-        let file_id17 = files.add("field_access_test.gr", "p::x");
+        let file_id17 = files.add("field_access_test.gr", "p.x");
         let file_id18 = files.add("map_test.gr", "l.map(f)");
         let file_id19 = files.add("fold_test.gr", "l.fold(0, |sum, x| x + sum)");
         let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
         let file_id21 = files.add("zip_test.gr", "zip(a,b)");
-        let file_id22 = files.add("tuple_element_access_test.gr", "my_tuple::0");
+        let file_id22 = files.add("tuple_element_access_test.gr", "my_tuple.0");
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1431,6 +1464,19 @@ mod langrust_ast_constructs {
                         },
                         location: Location::default()
                     }]
+                },
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id7, &files.source(file_id7).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression {
+                kind: ExpressionKind::Enumeration {
+                    enum_name: String::from("Color"),
+                    elem_name: String::from("Yellow"),
                 },
                 location: Location::default()
             },

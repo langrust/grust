@@ -6,6 +6,7 @@ use crate::common::{constant::Constant, location::Location};
 pub enum StreamExpressionKind {
     /// Expression.
     Expression {
+        // The expression kind.
         expression: ExpressionKind<StreamExpression>,
     },
     /// Initialized buffer stream expression.
@@ -14,15 +15,6 @@ pub enum StreamExpressionKind {
         constant: Constant,
         /// The buffered expression.
         expression: Box<StreamExpression>,
-    },
-    /// Node application stream expression.
-    NodeApplication {
-        /// The node applied.
-        node: String,
-        /// The inputs to the expression.
-        inputs: Vec<StreamExpression>,
-        /// The signal retrieved.
-        signal: String,
     },
 }
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
