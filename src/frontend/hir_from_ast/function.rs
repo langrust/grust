@@ -24,12 +24,12 @@ impl HIRFromAST for Function {
         } = self;
 
         let id = symbol_table.get_function_id(&id, false, location.clone(), errors)?;
-        
+
         // insert function output type in symbol table
-        let output_typing =
-            self.returned
-                .0
-                .hir_from_ast(&location, symbol_table, errors)?;
+        let output_typing = self
+            .returned
+            .0
+            .hir_from_ast(&location, symbol_table, errors)?;
         symbol_table.set_function_output_type(&id, output_typing);
 
         // create local context with all signals
@@ -84,7 +84,7 @@ impl Function {
             .collect::<Result<Vec<_>, _>>()?;
 
         symbol_table.global();
-        
+
         let _ = symbol_table.insert_function(
             self.id.clone(),
             inputs,

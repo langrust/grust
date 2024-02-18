@@ -20,6 +20,7 @@ pub enum SymbolKind {
     Function {
         inputs: Vec<usize>,
         output_typing: Option<Type>,
+        typing: Option<Type>,
     },
     Node {
         /// Is true when the node is a component.
@@ -285,6 +286,7 @@ impl SymbolTable {
             kind: SymbolKind::Function {
                 inputs,
                 output_typing,
+                typing: None,
             },
             name,
         };
@@ -367,13 +369,19 @@ impl SymbolTable {
 
     fn restore_context_from<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
         ids.for_each(|id| {
-            let symbol = self.get_symbol(id).expect("expect symbol").clone();
+            let symbol = self
+                .get_symbol(id)
+                .expect(&format!("expect symbol for {id}"))
+                .clone();
             self.known_symbols.add_symbol(symbol, *id);
         })
     }
 
     pub fn restore_context(&mut self, id: &usize) {
-        let symbol = self.get_symbol(id).expect("expect symbol").clone();
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"))
+            .clone();
         match symbol.kind() {
             SymbolKind::Function { inputs, .. } => {
                 self.restore_context_from(inputs.iter());
@@ -401,15 +409,24 @@ impl SymbolTable {
     }
 
     pub fn get_type(&self, id: &usize) -> &Type {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Identifier { typing, .. } => typing.as_ref().expect("should be typed"),
+            SymbolKind::Identifier { typing, .. } => typing
+                .as_ref()
+                .expect(&format!("{} should be typed", symbol.name)),
+            SymbolKind::Function { typing, .. } => typing
+                .as_ref()
+                .expect(&format!("{} should be typed", symbol.name)),
             _ => unreachable!(),
         }
     }
 
     pub fn get_function_output_type(&self, id: &usize) -> &Type {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function { output_typing, .. } => {
                 output_typing.as_ref().expect("expect type")
@@ -419,7 +436,9 @@ impl SymbolTable {
     }
 
     pub fn set_type(&mut self, id: &usize, new_type: Type) {
-        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol_mut(id)
+            .expect(&format!("expect symbol for {id}"));
         match &mut symbol.kind {
             SymbolKind::Identifier { ref mut typing, .. } => {
                 if typing.is_some() {
@@ -432,17 +451,23 @@ impl SymbolTable {
     }
 
     pub fn get_name(&self, id: &usize) -> &String {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         &symbol.name
     }
 
     pub fn set_name(&mut self, id: &usize, new_name: String) {
-        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol_mut(id)
+            .expect(&format!("expect symbol for {id}"));
         symbol.name = new_name;
     }
 
     pub fn get_scope(&self, id: &usize) -> &Scope {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier { scope, .. } => scope,
             _ => unreachable!(),
@@ -450,7 +475,9 @@ impl SymbolTable {
     }
 
     pub fn set_scope(&mut self, id: &usize, new_scope: Scope) {
-        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol_mut(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind {
             SymbolKind::Identifier { ref mut scope, .. } => *scope = new_scope,
             _ => unreachable!(),
@@ -458,7 +485,9 @@ impl SymbolTable {
     }
 
     pub fn get_node_input(&self, id: &usize) -> &Vec<usize> {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { inputs, .. } => inputs,
             _ => unreachable!(),
@@ -466,7 +495,9 @@ impl SymbolTable {
     }
 
     pub fn get_function_input(&self, id: &usize) -> &Vec<usize> {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function { inputs, .. } => inputs,
             _ => unreachable!(),
@@ -474,23 +505,40 @@ impl SymbolTable {
     }
 
     pub fn set_function_output_type(&mut self, id: &usize, new_type: Type) {
-        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        let inputs_type = match &symbol.kind {
+            SymbolKind::Function { ref inputs, .. } => inputs
+                .iter()
+                .map(|id| self.get_type(id).clone())
+                .collect::<Vec<_>>(),
+            _ => unreachable!(),
+        };
+
+        let symbol = self
+            .get_symbol_mut(id)
+            .expect(&format!("expect symbol for {id}"));
         match &mut symbol.kind {
             SymbolKind::Function {
                 ref mut output_typing,
+                ref mut typing,
                 ..
             } => {
                 if output_typing.is_some() {
                     panic!("a symbol type can not be modified")
                 }
-                *output_typing = Some(new_type)
+                *output_typing = Some(new_type.clone());
+                *typing = Some(Type::Abstract(inputs_type, Box::new(new_type)))
             }
             _ => unreachable!(),
         }
     }
 
     pub fn get_struct_fields(&self, id: &usize) -> &Vec<usize> {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Structure { fields, .. } => fields,
             _ => unreachable!(),
@@ -498,7 +546,9 @@ impl SymbolTable {
     }
 
     pub fn get_enum_elements(&self, id: &usize) -> &Vec<usize> {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Enumeration { elements, .. } => elements,
             _ => unreachable!(),
@@ -514,7 +564,9 @@ impl SymbolTable {
     }
 
     pub fn set_array_type(&mut self, id: &usize, new_type: Type) {
-        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol_mut(id)
+            .expect(&format!("expect symbol for {id}"));
         match &mut symbol.kind {
             SymbolKind::Array {
                 ref mut array_type, ..
@@ -529,7 +581,9 @@ impl SymbolTable {
     }
 
     pub fn get_array(&self, id: &usize) -> Type {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Array { array_type, size } => Type::Array(
                 Box::new(array_type.as_ref().expect("expect type").clone()),
@@ -540,7 +594,9 @@ impl SymbolTable {
     }
 
     pub fn get_array_type(&self, id: &usize) -> &Type {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Array { array_type, .. } => array_type.as_ref().expect("expect type"),
             _ => unreachable!(),
@@ -548,7 +604,9 @@ impl SymbolTable {
     }
 
     pub fn get_array_size(&self, id: &usize) -> usize {
-        let symbol = self.get_symbol(id).expect("expect symbol");
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Array { size, .. } => *size,
             _ => unreachable!(),
@@ -650,7 +708,7 @@ impl SymbolTable {
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
-                let error = Error::UnknownElement {
+                let error = Error::UnknownType {
                     name: name.to_string(),
                     location,
                 };
@@ -671,7 +729,7 @@ impl SymbolTable {
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
-                let error = Error::UnknownElement {
+                let error = Error::UnknownType {
                     name: name.to_string(),
                     location,
                 };
@@ -692,7 +750,7 @@ impl SymbolTable {
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
-                let error = Error::UnknownElement {
+                let error = Error::UnknownType {
                     name: name.to_string(),
                     location,
                 };

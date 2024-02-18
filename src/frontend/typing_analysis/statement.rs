@@ -7,16 +7,25 @@ impl<E> TypeAnalysis for Statement<E>
 where
     E: TypeAnalysis,
 {
+    // precondition: identifiers associated with statement is already typed
+    // postcondition: expression associated with statement is typed and checked
     fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let Statement { id, expression, .. } = self;
+        let Statement {
+            id,
+            expression,
+            location,
+        } = self;
 
         expression.typing(symbol_table, errors)?;
         let expression_type = expression.get_type().unwrap();
-        symbol_table.set_type(id, expression_type.clone());
+
+        let expected_type = symbol_table.get_type(id);
+        expression_type.eq_check(expected_type, location.clone(), errors)?;
+
         Ok(())
     }
 }

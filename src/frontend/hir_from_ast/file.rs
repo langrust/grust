@@ -80,7 +80,8 @@ impl File {
             .collect::<Result<Vec<_>, _>>()?;
         self.component
             .as_ref()
-            .map(|node| node.store(symbol_table, errors)).transpose()?;
+            .map(|node| node.store(symbol_table, errors))
+            .transpose()?;
         Ok(())
     }
 }
