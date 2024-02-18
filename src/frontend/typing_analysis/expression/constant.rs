@@ -14,21 +14,6 @@ where
             // typing a constant expression consist of getting the type of the constant
             ExpressionKind::Constant { ref constant } => {
                 let constant_type = constant.get_type();
-                // TODO : faire expression enumeration
-                // match &constant_type {
-                //     Type::Enumeration(type_id) => match user_types_context.get(type_id) {
-                //         Some(Typedef::Enumeration { .. }) => (),
-                //         _ => {
-                //             let error = Error::UnknownEnumeration {
-                //                 name: type_id.clone(),
-                //                 location: location.clone(),
-                //             };
-                //             errors.push(error);
-                //             return Err(TerminationError);
-                //         }
-                //     },
-                //     _ => (),
-                // }
                 Ok(constant_type)
             }
             _ => unreachable!(),

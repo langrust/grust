@@ -27,7 +27,7 @@ component pid(v_c: float, v: float, dt: float) {
         k_i: 1.5,
         k_d: 6.0,
     };
-    out u: float = gain.k_p * e + gain.k_i * e_i + gain.k_d * e_d;
+    out u: float = gain::k_p * e + gain::k_i * e_i + gain::k_d * e_d;
     e: float = v_c - v;
     e_i: float = integrate(e, dt).i;
     e_d: float = derive(e, dt).d;

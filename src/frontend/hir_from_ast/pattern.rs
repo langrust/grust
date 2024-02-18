@@ -33,25 +33,46 @@ impl HIRFromAST for Pattern {
             }
             PatternKind::Structure { name, fields } => {
                 let id = symbol_table.get_struct_id(&name, false, location.clone(), errors)?;
-                let field_ids = symbol_table
+                let mut field_ids = symbol_table
                     .get_struct_fields(&id)
                     .clone()
                     .into_iter()
                     .map(|id| (symbol_table.get_name(&id).clone(), id))
                     .collect::<HashMap<_, _>>();
 
-                if field_ids.len() != fields.len() {
-                    todo!("error: not all fields are defined")
-                }
-
                 let fields = fields
                     .into_iter()
                     .map(|(field_name, pattern)| {
-                        let id = field_ids
-                            .get(&field_name)
-                            .map_or_else(|| todo!("error: unknown field"), |id| Ok(id))?;
+                        let id = field_ids.remove(&field_name).map_or_else(
+                            || {
+                                let error = Error::UnknownField {
+                                    structure_name: name.clone(),
+                                    field_name: field_name.clone(),
+                                    location: location.clone(),
+                                };
+                                errors.push(error);
+                                Err(TerminationError)
+                            },
+                            |id| Ok(id),
+                        )?;
                         let pattern = pattern.hir_from_ast(symbol_table, errors)?;
-                        Ok((*id, pattern))
+                        Ok((id, pattern))
+                    })
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                // check if there are no missing fields
+                field_ids
+                    .keys()
+                    .map(|field_name| {
+                        let error = Error::MissingField {
+                            structure_name: name.clone(),
+                            field_name: field_name.clone(),
+                            location: location.clone(),
+                        };
+                        errors.push(error);
+                        Err::<(), TerminationError>(TerminationError)
                     })
                     .collect::<Vec<Result<_, _>>>()
                     .into_iter()

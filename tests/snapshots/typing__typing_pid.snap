@@ -3,56 +3,57 @@ source: tests/typing.rs
 expression: file
 ---
 typedefs:
-  - Structure:
-      id: GainPID
-      fields:
-        - - k_p
-          - Float
-        - - k_i
-          - Float
-        - - k_d
-          - Float
-      location: ~
+  - id: 20
+    kind:
+      Structure:
+        fields:
+          - 17
+          - 18
+          - 19
+    location: ~
 functions:
-  - id: min
-    inputs:
-      - - a
-        - Float
-      - - b
-        - Float
+  - id: 23
     statements:
-      - id: test
-        element_type: Boolean
+      - id: 44
         expression:
-          Application:
-            function_expression:
-              Identifier:
-                id: " > "
+          kind:
+            Application:
+              function_expression:
+                kind:
+                  Identifier:
+                    id: 13
                 typing:
                   Abstract:
                     - - Float
                       - Float
                     - Boolean
                 location: ~
-            inputs:
-              - Identifier:
-                  id: a
+                dependencies: ~
+              inputs:
+                - kind:
+                    Identifier:
+                      id: 21
                   typing: Float
                   location: ~
-              - Identifier:
-                  id: b
+                  dependencies: ~
+                - kind:
+                    Identifier:
+                      id: 22
                   typing: Float
                   location: ~
-            typing: Boolean
-            location: ~
+                  dependencies: ~
+          typing: Boolean
+          location: ~
+          dependencies: ~
         location: ~
-      - id: result
-        element_type: Float
+      - id: 45
         expression:
-          Application:
-            function_expression:
-              Identifier:
-                id: if_then_else
+          kind:
+            Application:
+              function_expression:
+                kind:
+                  Identifier:
+                    id: 15
                 typing:
                   Abstract:
                     - - Boolean
@@ -60,454 +61,676 @@ functions:
                       - Float
                     - Float
                 location: ~
-            inputs:
-              - Identifier:
-                  id: test
+                dependencies: ~
+              inputs:
+                - kind:
+                    Identifier:
+                      id: 44
                   typing: Boolean
                   location: ~
-              - Identifier:
-                  id: b
+                  dependencies: ~
+                - kind:
+                    Identifier:
+                      id: 22
                   typing: Float
                   location: ~
-              - Identifier:
-                  id: a
+                  dependencies: ~
+                - kind:
+                    Identifier:
+                      id: 21
                   typing: Float
                   location: ~
-            typing: Float
-            location: ~
-        location: ~
-    returned:
-      - Float
-      - Identifier:
-          id: result
+                  dependencies: ~
           typing: Float
           location: ~
+          dependencies: ~
+        location: ~
+    returned:
+      kind:
+        Identifier:
+          id: 45
+      typing: Float
+      location: ~
+      dependencies: ~
     location: ~
 nodes:
-  - id: integrate
-    is_component: false
-    inputs:
-      - - x
-        - Float
-      - - dt
-        - Float
-    equations:
-      - - prev_i
-        - scope: Local
-          id: prev_i
-          signal_type: Float
-          expression:
+  - id: 29
+    unscheduled_equations:
+      26:
+        id: 26
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 23
+                    typing:
+                      Abstract:
+                        - - Float
+                          - Float
+                        - Float
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 5
+                                typing:
+                                  Abstract:
+                                    - - Float
+                                      - Float
+                                    - Float
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 27
+                                  typing: Float
+                                  location: ~
+                                  dependencies: ~
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 3
+                                            typing:
+                                              Abstract:
+                                                - - Float
+                                                  - Float
+                                                - Float
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 24
+                                              typing: Float
+                                              location: ~
+                                              dependencies: ~
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 25
+                                              typing: Float
+                                              location: ~
+                                              dependencies: ~
+                                  typing: Float
+                                  location: ~
+                                  dependencies: ~
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 28
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+          typing: Float
+          location: ~
+          dependencies: ~
+        location: ~
+      27:
+        id: 27
+        expression:
+          kind:
             FollowedBy:
               constant:
                 Float: 0
               expression:
-                SignalCall:
-                  id: i
-                  typing: Float
-                  location: ~
-              typing: Float
-              location: ~
-          location: ~
-      - - i
-        - scope: Output
-          id: i
-          signal_type: Float
-          expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: min
-                  typing:
-                    Abstract:
-                      - - Float
-                        - Float
-                      - Float
-                  location: ~
-              inputs:
-                - FunctionApplication:
-                    function_expression:
+                kind:
+                  Expression:
+                    expression:
                       Identifier:
-                        id: " + "
-                        typing:
-                          Abstract:
-                            - - Float
-                              - Float
-                            - Float
-                        location: ~
-                    inputs:
-                      - SignalCall:
-                          id: prev_i
-                          typing: Float
-                          location: ~
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: " * "
-                              typing:
-                                Abstract:
-                                  - - Float
-                                    - Float
-                                  - Float
-                              location: ~
-                          inputs:
-                            - SignalCall:
-                                id: x
-                                typing: Float
-                                location: ~
-                            - SignalCall:
-                                id: dt
-                                typing: Float
-                                location: ~
-                          typing: Float
-                          location: ~
-                    typing: Float
-                    location: ~
-                - SignalCall:
-                    id: MAX_INTEGRALE
-                    typing: Float
-                    location: ~
-              typing: Float
-              location: ~
+                        id: 26
+                typing: Float
+                location: ~
+                dependencies: ~
+          typing: Float
           location: ~
-      - - MAX_INTEGRALE
-        - scope: Local
-          id: MAX_INTEGRALE
-          signal_type: Float
-          expression:
-            Constant:
-              constant:
-                Float: 1000
-              typing: Float
-              location: ~
+          dependencies: ~
+        location: ~
+      28:
+        id: 28
+        expression:
+          kind:
+            Expression:
+              expression:
+                Constant:
+                  constant:
+                    Float: 1000
+          typing: Float
           location: ~
+          dependencies: ~
+        location: ~
+    unitary_nodes: {}
     contract:
       requires: []
       ensures: []
       invariant: []
-      assert: []
     location: ~
-  - id: derive
-    is_component: false
-    inputs:
-      - - x
-        - Float
-      - - dt
-        - Float
-    equations:
-      - - d
-        - scope: Output
-          id: d
-          signal_type: Float
-          expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: " / "
-                  typing:
-                    Abstract:
-                      - - Float
+    graph: ~
+  - id: 34
+    unscheduled_equations:
+      32:
+        id: 32
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 4
+                    typing:
+                      Abstract:
+                        - - Float
+                          - Float
                         - Float
-                      - Float
-                  location: ~
-              inputs:
-                - FunctionApplication:
-                    function_expression:
-                      Identifier:
-                        id: (_)
-                        typing:
-                          Abstract:
-                            - - Float
-                            - Float
-                        location: ~
-                    inputs:
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: " - "
-                              typing:
-                                Abstract:
-                                  - - Float
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 2
+                                typing:
+                                  Abstract:
+                                    - - Float
                                     - Float
-                                  - Float
-                              location: ~
-                          inputs:
-                            - SignalCall:
-                                id: x
-                                typing: Float
                                 location: ~
-                            - SignalCall:
-                                id: prev_x
-                                typing: Float
-                                location: ~
-                          typing: Float
-                          location: ~
-                    typing: Float
-                    location: ~
-                - SignalCall:
-                    id: dt
-                    typing: Float
-                    location: ~
-              typing: Float
-              location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 6
+                                            typing:
+                                              Abstract:
+                                                - - Float
+                                                  - Float
+                                                - Float
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 30
+                                              typing: Float
+                                              location: ~
+                                              dependencies: ~
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 33
+                                              typing: Float
+                                              location: ~
+                                              dependencies: ~
+                                  typing: Float
+                                  location: ~
+                                  dependencies: ~
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 31
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+          typing: Float
           location: ~
-      - - prev_x
-        - scope: Local
-          id: prev_x
-          signal_type: Float
-          expression:
+          dependencies: ~
+        location: ~
+      33:
+        id: 33
+        expression:
+          kind:
             FollowedBy:
               constant:
                 Float: 0
               expression:
-                SignalCall:
-                  id: x
-                  typing: Float
-                  location: ~
-              typing: Float
-              location: ~
+                kind:
+                  Expression:
+                    expression:
+                      Identifier:
+                        id: 30
+                typing: Float
+                location: ~
+                dependencies: ~
+          typing: Float
           location: ~
+          dependencies: ~
+        location: ~
+    unitary_nodes: {}
     contract:
       requires: []
       ensures: []
       invariant: []
-      assert: []
     location: ~
+    graph: ~
 component:
-  id: pid
-  is_component: true
-  inputs:
-    - - v_c
-      - Float
-    - - v
-      - Float
-    - - dt
-      - Float
-  equations:
-    - - gain
-      - scope: Local
-        id: gain
-        signal_type:
-          Structure: GainPID
-        expression:
-          Structure:
-            name: GainPID
-            fields:
-              - - k_p
-                - Constant:
-                    constant:
-                      Float: 0.2
-                    typing: Float
-                    location: ~
-              - - k_i
-                - Constant:
-                    constant:
-                      Float: 1.5
-                    typing: Float
-                    location: ~
-              - - k_d
-                - Constant:
-                    constant:
-                      Float: 6
-                    typing: Float
-                    location: ~
-            typing:
-              Structure: GainPID
-            location: ~
-        location: ~
-    - - u
-      - scope: Output
-        id: u
-        signal_type: Float
-        expression:
-          Match:
+  id: 43
+  unscheduled_equations:
+    38:
+      id: 38
+      expression:
+        kind:
+          Expression:
             expression:
-              SignalCall:
-                id: gain
-                typing:
-                  Structure: GainPID
-                location: ~
-            arms:
-              - - Structure:
-                    name: GainPID
-                    fields:
-                      - - k_p
-                        - Identifier:
-                            name: k_p
-                            location: ~
-                      - - k_i
-                        - Identifier:
-                            name: k_i
-                            location: ~
-                      - - k_d
-                        - Identifier:
-                            name: k_d
-                            location: ~
-                    location: ~
-                - ~
-                - FunctionApplication:
-                    function_expression:
-                      Identifier:
-                        id: " + "
-                        typing:
-                          Abstract:
-                            - - Float
-                              - Float
-                            - Float
-                        location: ~
-                    inputs:
-                      - FunctionApplication:
+              Match:
+                expression:
+                  kind:
+                    Expression:
+                      expression:
+                        Application:
                           function_expression:
-                            Identifier:
-                              id: " + "
-                              typing:
-                                Abstract:
-                                  - - Float
-                                    - Float
-                                  - Float
-                              location: ~
-                          inputs:
-                            - FunctionApplication:
-                                function_expression:
+                            kind:
+                              Expression:
+                                expression:
                                   Identifier:
-                                    id: " * "
-                                    typing:
-                                      Abstract:
-                                        - - Float
-                                          - Float
-                                        - Float
-                                    location: ~
-                                inputs:
-                                  - SignalCall:
-                                      id: k_p
-                                      typing: Float
-                                      location: ~
-                                  - SignalCall:
-                                      id: e
-                                      typing: Float
-                                      location: ~
-                                typing: Float
-                                location: ~
-                            - FunctionApplication:
-                                function_expression:
-                                  Identifier:
-                                    id: " * "
-                                    typing:
-                                      Abstract:
-                                        - - Float
-                                          - Float
-                                        - Float
-                                    location: ~
-                                inputs:
-                                  - SignalCall:
-                                      id: k_i
-                                      typing: Float
-                                      location: ~
-                                  - SignalCall:
-                                      id: e_i
-                                      typing: Float
-                                      location: ~
-                                typing: Float
-                                location: ~
-                          typing: Float
-                          location: ~
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: " * "
-                              typing:
-                                Abstract:
-                                  - - Float
-                                    - Float
-                                  - Float
-                              location: ~
+                                    id: 2
+                            typing:
+                              Abstract:
+                                - - Structure: GainPID
+                                - Structure: GainPID
+                            location: ~
+                            dependencies: ~
                           inputs:
-                            - SignalCall:
-                                id: k_d
+                            - kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: 39
+                              typing:
+                                Structure: GainPID
+                              location: ~
+                              dependencies: ~
+                  typing:
+                    Structure: GainPID
+                  location: ~
+                  dependencies: ~
+                arms:
+                  - - kind:
+                        Structure:
+                          id: 20
+                          fields:
+                            - - 17
+                              - kind:
+                                  Identifier:
+                                    id: 46
                                 typing: Float
                                 location: ~
-                            - SignalCall:
-                                id: e_d
+                            - - 18
+                              - kind:
+                                  Identifier:
+                                    id: 47
                                 typing: Float
                                 location: ~
-                          typing: Float
-                          location: ~
+                            - - 19
+                              - kind:
+                                  Identifier:
+                                    id: 48
+                                typing: Float
+                                location: ~
+                      typing:
+                        Structure: GainPID
+                      location: ~
+                    - ~
+                    - []
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 5
+                                typing:
+                                  Abstract:
+                                    - - Float
+                                      - Float
+                                    - Float
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 5
+                                            typing:
+                                              Abstract:
+                                                - - Float
+                                                  - Float
+                                                - Float
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Application:
+                                                      function_expression:
+                                                        kind:
+                                                          Expression:
+                                                            expression:
+                                                              Identifier:
+                                                                id: 3
+                                                        typing:
+                                                          Abstract:
+                                                            - - Float
+                                                              - Float
+                                                            - Float
+                                                        location: ~
+                                                        dependencies: ~
+                                                      inputs:
+                                                        - kind:
+                                                            Expression:
+                                                              expression:
+                                                                Identifier:
+                                                                  id: 46
+                                                          typing: Float
+                                                          location: ~
+                                                          dependencies: ~
+                                                        - kind:
+                                                            Expression:
+                                                              expression:
+                                                                Identifier:
+                                                                  id: 40
+                                                          typing: Float
+                                                          location: ~
+                                                          dependencies: ~
+                                              typing: Float
+                                              location: ~
+                                              dependencies: ~
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Application:
+                                                      function_expression:
+                                                        kind:
+                                                          Expression:
+                                                            expression:
+                                                              Identifier:
+                                                                id: 3
+                                                        typing:
+                                                          Abstract:
+                                                            - - Float
+                                                              - Float
+                                                            - Float
+                                                        location: ~
+                                                        dependencies: ~
+                                                      inputs:
+                                                        - kind:
+                                                            Expression:
+                                                              expression:
+                                                                Identifier:
+                                                                  id: 47
+                                                          typing: Float
+                                                          location: ~
+                                                          dependencies: ~
+                                                        - kind:
+                                                            Expression:
+                                                              expression:
+                                                                Identifier:
+                                                                  id: 41
+                                                          typing: Float
+                                                          location: ~
+                                                          dependencies: ~
+                                              typing: Float
+                                              location: ~
+                                              dependencies: ~
+                                  typing: Float
+                                  location: ~
+                                  dependencies: ~
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 3
+                                            typing:
+                                              Abstract:
+                                                - - Float
+                                                  - Float
+                                                - Float
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 48
+                                              typing: Float
+                                              location: ~
+                                              dependencies: ~
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 42
+                                              typing: Float
+                                              location: ~
+                                              dependencies: ~
+                                  typing: Float
+                                  location: ~
+                                  dependencies: ~
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+        typing: Float
+        location: ~
+        dependencies: ~
+      location: ~
+    39:
+      id: 39
+      expression:
+        kind:
+          Expression:
+            expression:
+              Structure:
+                id: 20
+                fields:
+                  - - 17
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Float: 0.2
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+                  - - 18
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Float: 1.5
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+                  - - 19
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Float: 6
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+        typing:
+          Structure: GainPID
+        location: ~
+        dependencies: ~
+      location: ~
+    40:
+      id: 40
+      expression:
+        kind:
+          Expression:
+            expression:
+              Application:
+                function_expression:
+                  kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 6
+                  typing:
+                    Abstract:
+                      - - Float
+                        - Float
+                      - Float
+                  location: ~
+                  dependencies: ~
+                inputs:
+                  - kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 35
                     typing: Float
                     location: ~
-            typing: Float
-            location: ~
+                    dependencies: ~
+                  - kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 36
+                    typing: Float
+                    location: ~
+                    dependencies: ~
+        typing: Float
         location: ~
-    - - e
-      - scope: Local
-        id: e
-        signal_type: Float
-        expression:
-          FunctionApplication:
-            function_expression:
-              Identifier:
-                id: " - "
-                typing:
-                  Abstract:
-                    - - Float
-                      - Float
-                    - Float
-                location: ~
-            inputs:
-              - SignalCall:
-                  id: v_c
-                  typing: Float
-                  location: ~
-              - SignalCall:
-                  id: v
-                  typing: Float
-                  location: ~
-            typing: Float
-            location: ~
-        location: ~
-    - - e_i
-      - scope: Local
-        id: e_i
-        signal_type: Float
-        expression:
+        dependencies: ~
+      location: ~
+    41:
+      id: 41
+      expression:
+        kind:
           NodeApplication:
-            node: integrate
+            node_id: 29
             inputs:
-              - SignalCall:
-                  id: e
+              - - 24
+                - kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 40
                   typing: Float
                   location: ~
-              - SignalCall:
-                  id: dt
+                  dependencies: ~
+              - - 25
+                - kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 37
                   typing: Float
                   location: ~
-            signal: i
-            typing: Float
-            location: ~
+                  dependencies: ~
+            output_id: 26
+        typing: Float
         location: ~
-    - - e_d
-      - scope: Local
-        id: e_d
-        signal_type: Float
-        expression:
+        dependencies: ~
+      location: ~
+    42:
+      id: 42
+      expression:
+        kind:
           NodeApplication:
-            node: derive
+            node_id: 34
             inputs:
-              - SignalCall:
-                  id: e
+              - - 30
+                - kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 40
                   typing: Float
                   location: ~
-              - SignalCall:
-                  id: dt
+                  dependencies: ~
+              - - 31
+                - kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 37
                   typing: Float
                   location: ~
-            signal: d
-            typing: Float
-            location: ~
+                  dependencies: ~
+            output_id: 32
+        typing: Float
         location: ~
+        dependencies: ~
+      location: ~
+  unitary_nodes: {}
   contract:
     requires: []
     ensures: []
     invariant: []
-    assert: []
   location: ~
+  graph: ~
 location: ~
 

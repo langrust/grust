@@ -24,10 +24,12 @@ where
                 expression.typing(symbol_table, errors)?;
 
                 let expression_type = expression.get_type().unwrap();
-                // TODO: check it matches pattern type
 
                 arms.iter_mut()
                     .map(|(pattern, optional_test_expression, _, arm_expression)| {
+                        // check it matches pattern type
+                        pattern.typing(expression_type, symbol_table, errors)?;
+
                         let optional_test_expression_typing_test = optional_test_expression
                             .as_mut()
                             .map_or(Ok(()), |expression| {

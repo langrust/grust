@@ -3,448 +3,647 @@ source: tests/typing.rs
 expression: file
 ---
 typedefs:
-  - Enumeration:
-      id: Button
-      elements:
-        - Released
-        - Pressed
-      location: ~
-  - Enumeration:
-      id: ResetState
-      elements:
-        - InProgress
-        - Confirmed
-      location: ~
+  - id: 19
+    kind:
+      Enumeration:
+        elements:
+          - 17
+          - 18
+    location: ~
+  - id: 22
+    kind:
+      Enumeration:
+        elements:
+          - 20
+          - 21
+    location: ~
 functions:
-  - id: reset_state_management
-    inputs:
-      - - button_state
-        - Enumeration: Button
-      - - counter
-        - Integer
-      - - reset_limit_1
-        - Integer
+  - id: 26
     statements:
-      - id: result
-        element_type:
-          Enumeration: ResetState
+      - id: 40
         expression:
-          Match:
-            expression:
-              Identifier:
-                id: button_state
+          kind:
+            Match:
+              expression:
+                kind:
+                  Application:
+                    function_expression:
+                      kind:
+                        Identifier:
+                          id: 2
+                      typing:
+                        Abstract:
+                          - - Enumeration: Button
+                          - Enumeration: Button
+                      location: ~
+                      dependencies: ~
+                    inputs:
+                      - kind:
+                          Identifier:
+                            id: 23
+                        typing:
+                          Enumeration: Button
+                        location: ~
+                        dependencies: ~
                 typing:
                   Enumeration: Button
                 location: ~
-            arms:
-              - - Constant:
-                    constant:
+                dependencies: ~
+              arms:
+                - - kind:
                       Enumeration:
-                        - Button
-                        - Released
-                    location: ~
-                - ~
-                - Constant:
-                    constant:
-                      Enumeration:
-                        - ResetState
-                        - Confirmed
-                    typing:
-                      Enumeration: ResetState
-                    location: ~
-              - - Constant:
-                    constant:
-                      Enumeration:
-                        - Button
-                        - Pressed
-                    location: ~
-                - Application:
-                    function_expression:
-                      Identifier:
-                        id: " >= "
-                        typing:
-                          Abstract:
-                            - - Integer
-                              - Integer
-                            - Boolean
-                        location: ~
-                    inputs:
-                      - Identifier:
-                          id: counter
-                          typing: Integer
-                          location: ~
-                      - Identifier:
-                          id: reset_limit_1
-                          typing: Integer
-                          location: ~
-                    typing: Boolean
-                    location: ~
-                - Constant:
-                    constant:
-                      Enumeration:
-                        - ResetState
-                        - InProgress
-                    typing:
-                      Enumeration: ResetState
-                    location: ~
-              - - Default:
-                    location: ~
-                - ~
-                - Constant:
-                    constant:
-                      Enumeration:
-                        - ResetState
-                        - Confirmed
-                    typing:
-                      Enumeration: ResetState
-                    location: ~
-            typing:
-              Enumeration: ResetState
-            location: ~
-        location: ~
-    returned:
-      - Enumeration: ResetState
-      - Identifier:
-          id: result
-          typing:
-            Enumeration: ResetState
-          location: ~
-    location: ~
-nodes:
-  - id: counter
-    is_component: false
-    inputs:
-      - - res
-        - Boolean
-      - - inc
-        - Integer
-    equations:
-      - - o
-        - scope: Output
-          id: o
-          signal_type: Integer
-          expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: if_then_else
-                  typing:
-                    Abstract:
-                      - - Boolean
-                        - Integer
-                        - Integer
-                      - Integer
-                  location: ~
-              inputs:
-                - SignalCall:
-                    id: res
-                    typing: Boolean
-                    location: ~
-                - Constant:
-                    constant:
-                      Integer: 0
-                    typing: Integer
-                    location: ~
-                - FunctionApplication:
-                    function_expression:
-                      Identifier:
-                        id: " + "
-                        typing:
-                          Abstract:
-                            - - Integer
-                              - Integer
-                            - Integer
-                        location: ~
-                    inputs:
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: (_)
-                              typing:
-                                Abstract:
-                                  - - Integer
-                                  - Integer
-                              location: ~
-                          inputs:
-                            - FollowedBy:
-                                constant:
-                                  Integer: 0
-                                expression:
-                                  SignalCall:
-                                    id: o
-                                    typing: Integer
-                                    location: ~
-                                typing: Integer
-                                location: ~
-                          typing: Integer
-                          location: ~
-                      - SignalCall:
-                          id: inc
-                          typing: Integer
-                          location: ~
-                    typing: Integer
-                    location: ~
-              typing: Integer
-              location: ~
-          location: ~
-    contract:
-      requires: []
-      ensures: []
-      invariant: []
-      assert: []
-    location: ~
-  - id: reset_button
-    is_component: false
-    inputs:
-      - - button_state
-        - Enumeration: Button
-      - - period
-        - Integer
-      - - reset_limit_1
-        - Integer
-      - - reset_limit_2
-        - Integer
-    equations:
-      - - user_reset_request_state
-        - scope: Output
-          id: user_reset_request_state
-          signal_type:
-            Enumeration: ResetState
-          expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: reset_state_management
-                  typing:
-                    Abstract:
-                      - - Enumeration: Button
-                        - Integer
-                        - Integer
-                      - Enumeration: ResetState
-                  location: ~
-              inputs:
-                - SignalCall:
-                    id: button_state
+                        enum_id: 19
+                        elem_id: 17
                     typing:
                       Enumeration: Button
                     location: ~
-                - SignalCall:
-                    id: counter
-                    typing: Integer
-                    location: ~
-                - SignalCall:
-                    id: reset_limit_1
-                    typing: Integer
-                    location: ~
-              typing:
-                Enumeration: ResetState
-              location: ~
-          location: ~
-      - - user_reset_request
-        - scope: Output
-          id: user_reset_request
-          signal_type: Boolean
-          expression:
-            Match:
-              expression:
-                SignalCall:
-                  id: button_state
-                  typing:
-                    Enumeration: Button
-                  location: ~
-              arms:
-                - - Constant:
-                      constant:
-                        Enumeration:
-                          - Button
-                          - Released
-                      location: ~
                   - ~
-                  - FollowedBy:
-                      constant:
-                        Boolean: false
-                      expression:
-                        SignalCall:
-                          id: user_reset_request
-                          typing: Boolean
-                          location: ~
-                      typing: Boolean
-                      location: ~
-                - - Constant:
-                      constant:
-                        Enumeration:
-                          - Button
-                          - Pressed
-                      location: ~
-                  - ~
-                  - FunctionApplication:
-                      function_expression:
-                        Identifier:
-                          id: " >= "
+                  - []
+                  - kind:
+                      Enumeration:
+                        enum_id: 22
+                        elem_id: 21
+                    typing:
+                      Enumeration: ResetState
+                    location: ~
+                    dependencies: ~
+                - - kind:
+                      Enumeration:
+                        enum_id: 19
+                        elem_id: 18
+                    typing:
+                      Enumeration: Button
+                    location: ~
+                  - kind:
+                      Application:
+                        function_expression:
+                          kind:
+                            Identifier:
+                              id: 11
                           typing:
                             Abstract:
                               - - Integer
                                 - Integer
                               - Boolean
                           location: ~
-                      inputs:
-                        - SignalCall:
-                            id: counter
+                          dependencies: ~
+                        inputs:
+                          - kind:
+                              Identifier:
+                                id: 24
                             typing: Integer
                             location: ~
-                        - FunctionApplication:
-                            function_expression:
+                            dependencies: ~
+                          - kind:
                               Identifier:
-                                id: " + "
+                                id: 25
+                            typing: Integer
+                            location: ~
+                            dependencies: ~
+                    typing: Boolean
+                    location: ~
+                    dependencies: ~
+                  - []
+                  - kind:
+                      Enumeration:
+                        enum_id: 22
+                        elem_id: 20
+                    typing:
+                      Enumeration: ResetState
+                    location: ~
+                    dependencies: ~
+                - - kind: Default
+                    typing: ~
+                    location: ~
+                  - ~
+                  - []
+                  - kind:
+                      Enumeration:
+                        enum_id: 22
+                        elem_id: 21
+                    typing:
+                      Enumeration: ResetState
+                    location: ~
+                    dependencies: ~
+          typing:
+            Enumeration: ResetState
+          location: ~
+          dependencies: ~
+        location: ~
+    returned:
+      kind:
+        Identifier:
+          id: 40
+      typing:
+        Enumeration: ResetState
+      location: ~
+      dependencies: ~
+    location: ~
+nodes:
+  - id: 30
+    unscheduled_equations:
+      29:
+        id: 29
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 15
+                    typing:
+                      Abstract:
+                        - - Boolean
+                          - Integer
+                          - Integer
+                        - Integer
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 27
+                      typing: Boolean
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Integer: 0
+                      typing: Integer
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 5
                                 typing:
                                   Abstract:
                                     - - Integer
                                       - Integer
                                     - Integer
                                 location: ~
-                            inputs:
-                              - SignalCall:
-                                  id: reset_limit_1
-                                  typing: Integer
-                                  location: ~
-                              - SignalCall:
-                                  id: reset_limit_2
-                                  typing: Integer
-                                  location: ~
-                            typing: Integer
-                            location: ~
-                      typing: Boolean
-                      location: ~
-              typing: Boolean
-              location: ~
-          location: ~
-      - - counter
-        - scope: Local
-          id: counter
-          signal_type: Integer
-          expression:
-            NodeApplication:
-              node: counter
-              inputs:
-                - SignalCall:
-                    id: res
-                    typing: Boolean
-                    location: ~
-                - SignalCall:
-                    id: period
-                    typing: Integer
-                    location: ~
-              signal: o
-              typing: Integer
-              location: ~
-          location: ~
-      - - res
-        - scope: Local
-          id: res
-          signal_type: Boolean
-          expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: " && "
-                  typing:
-                    Abstract:
-                      - - Boolean
-                        - Boolean
-                      - Boolean
-                  location: ~
-              inputs:
-                - FunctionApplication:
-                    function_expression:
-                      Identifier:
-                        id: (_)
-                        typing:
-                          Abstract:
-                            - - Boolean
-                            - Boolean
-                        location: ~
-                    inputs:
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: " == "
-                              typing:
-                                Abstract:
-                                  - - Enumeration: Button
-                                    - Enumeration: Button
-                                  - Boolean
-                              location: ~
-                          inputs:
-                            - SignalCall:
-                                id: button_state
-                                typing:
-                                  Enumeration: Button
-                                location: ~
-                            - Constant:
-                                constant:
-                                  Enumeration:
-                                    - Button
-                                    - Pressed
-                                typing:
-                                  Enumeration: Button
-                                location: ~
-                          typing: Boolean
-                          location: ~
-                    typing: Boolean
-                    location: ~
-                - FunctionApplication:
-                    function_expression:
-                      Identifier:
-                        id: (_)
-                        typing:
-                          Abstract:
-                            - - Boolean
-                            - Boolean
-                        location: ~
-                    inputs:
-                      - FollowedBy:
-                          constant:
-                            Boolean: true
-                          expression:
-                            FunctionApplication:
-                              function_expression:
-                                Identifier:
-                                  id: " == "
-                                  typing:
-                                    Abstract:
-                                      - - Enumeration: Button
-                                        - Enumeration: Button
-                                      - Boolean
-                                  location: ~
+                                dependencies: ~
                               inputs:
-                                - SignalCall:
-                                    id: button_state
-                                    typing:
-                                      Enumeration: Button
-                                    location: ~
-                                - Constant:
-                                    constant:
-                                      Enumeration:
-                                        - Button
-                                        - Released
-                                    typing:
-                                      Enumeration: Button
-                                    location: ~
-                              typing: Boolean
-                              location: ~
-                          typing: Boolean
-                          location: ~
-                    typing: Boolean
-                    location: ~
-              typing: Boolean
-              location: ~
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 2
+                                            typing:
+                                              Abstract:
+                                                - - Integer
+                                                - Integer
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                FollowedBy:
+                                                  constant:
+                                                    Integer: 0
+                                                  expression:
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Identifier:
+                                                            id: 29
+                                                    typing: Integer
+                                                    location: ~
+                                                    dependencies: ~
+                                              typing: Integer
+                                              location: ~
+                                              dependencies: ~
+                                  typing: Integer
+                                  location: ~
+                                  dependencies: ~
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 28
+                                  typing: Integer
+                                  location: ~
+                                  dependencies: ~
+                      typing: Integer
+                      location: ~
+                      dependencies: ~
+          typing: Integer
           location: ~
+          dependencies: ~
+        location: ~
+    unitary_nodes: {}
     contract:
       requires: []
       ensures: []
       invariant: []
-      assert: []
     location: ~
+    graph: ~
+  - id: 39
+    unscheduled_equations:
+      35:
+        id: 35
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 26
+                    typing:
+                      Abstract:
+                        - - Enumeration: Button
+                          - Integer
+                          - Integer
+                        - Enumeration: ResetState
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 31
+                      typing:
+                        Enumeration: Button
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 37
+                      typing: Integer
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 33
+                      typing: Integer
+                      location: ~
+                      dependencies: ~
+          typing:
+            Enumeration: ResetState
+          location: ~
+          dependencies: ~
+        location: ~
+      36:
+        id: 36
+        expression:
+          kind:
+            Expression:
+              expression:
+                Match:
+                  expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Application:
+                            function_expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: 2
+                              typing:
+                                Abstract:
+                                  - - Enumeration: Button
+                                  - Enumeration: Button
+                              location: ~
+                              dependencies: ~
+                            inputs:
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 31
+                                typing:
+                                  Enumeration: Button
+                                location: ~
+                                dependencies: ~
+                    typing:
+                      Enumeration: Button
+                    location: ~
+                    dependencies: ~
+                  arms:
+                    - - kind:
+                          Enumeration:
+                            enum_id: 19
+                            elem_id: 17
+                        typing:
+                          Enumeration: Button
+                        location: ~
+                      - ~
+                      - []
+                      - kind:
+                          FollowedBy:
+                            constant:
+                              Boolean: false
+                            expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: 36
+                              typing: Boolean
+                              location: ~
+                              dependencies: ~
+                        typing: Boolean
+                        location: ~
+                        dependencies: ~
+                    - - kind:
+                          Enumeration:
+                            enum_id: 19
+                            elem_id: 18
+                        typing:
+                          Enumeration: Button
+                        location: ~
+                      - ~
+                      - []
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 11
+                                  typing:
+                                    Abstract:
+                                      - - Integer
+                                        - Integer
+                                      - Boolean
+                                  location: ~
+                                  dependencies: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Identifier:
+                                            id: 37
+                                    typing: Integer
+                                    location: ~
+                                    dependencies: ~
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 5
+                                              typing:
+                                                Abstract:
+                                                  - - Integer
+                                                    - Integer
+                                                  - Integer
+                                              location: ~
+                                              dependencies: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: 33
+                                                typing: Integer
+                                                location: ~
+                                                dependencies: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: 34
+                                                typing: Integer
+                                                location: ~
+                                                dependencies: ~
+                                    typing: Integer
+                                    location: ~
+                                    dependencies: ~
+                        typing: Boolean
+                        location: ~
+                        dependencies: ~
+          typing: Boolean
+          location: ~
+          dependencies: ~
+        location: ~
+      37:
+        id: 37
+        expression:
+          kind:
+            NodeApplication:
+              node_id: 30
+              inputs:
+                - - 27
+                  - kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 38
+                    typing: Boolean
+                    location: ~
+                    dependencies: ~
+                - - 28
+                  - kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 32
+                    typing: Integer
+                    location: ~
+                    dependencies: ~
+              output_id: 29
+          typing: Integer
+          location: ~
+          dependencies: ~
+        location: ~
+      38:
+        id: 38
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 7
+                    typing:
+                      Abstract:
+                        - - Boolean
+                          - Boolean
+                        - Boolean
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 2
+                                typing:
+                                  Abstract:
+                                    - - Boolean
+                                    - Boolean
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 9
+                                            typing:
+                                              Abstract:
+                                                - - Enumeration: Button
+                                                  - Enumeration: Button
+                                                - Boolean
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 31
+                                              typing:
+                                                Enumeration: Button
+                                              location: ~
+                                              dependencies: ~
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Enumeration:
+                                                      enum_id: 19
+                                                      elem_id: 18
+                                              typing:
+                                                Enumeration: Button
+                                              location: ~
+                                              dependencies: ~
+                                  typing: Boolean
+                                  location: ~
+                                  dependencies: ~
+                      typing: Boolean
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 2
+                                typing:
+                                  Abstract:
+                                    - - Boolean
+                                    - Boolean
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    FollowedBy:
+                                      constant:
+                                        Boolean: true
+                                      expression:
+                                        kind:
+                                          Expression:
+                                            expression:
+                                              Application:
+                                                function_expression:
+                                                  kind:
+                                                    Expression:
+                                                      expression:
+                                                        Identifier:
+                                                          id: 9
+                                                  typing:
+                                                    Abstract:
+                                                      - - Enumeration: Button
+                                                        - Enumeration: Button
+                                                      - Boolean
+                                                  location: ~
+                                                  dependencies: ~
+                                                inputs:
+                                                  - kind:
+                                                      Expression:
+                                                        expression:
+                                                          Identifier:
+                                                            id: 31
+                                                    typing:
+                                                      Enumeration: Button
+                                                    location: ~
+                                                    dependencies: ~
+                                                  - kind:
+                                                      Expression:
+                                                        expression:
+                                                          Enumeration:
+                                                            enum_id: 19
+                                                            elem_id: 17
+                                                    typing:
+                                                      Enumeration: Button
+                                                    location: ~
+                                                    dependencies: ~
+                                        typing: Boolean
+                                        location: ~
+                                        dependencies: ~
+                                  typing: Boolean
+                                  location: ~
+                                  dependencies: ~
+                      typing: Boolean
+                      location: ~
+                      dependencies: ~
+          typing: Boolean
+          location: ~
+          dependencies: ~
+        location: ~
+    unitary_nodes: {}
+    contract:
+      requires: []
+      ensures: []
+      invariant: []
+    location: ~
+    graph: ~
 component: ~
 location: ~
 

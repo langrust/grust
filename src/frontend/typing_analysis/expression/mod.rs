@@ -53,7 +53,7 @@ where
             ExpressionKind::TupleElementAccess { .. } => {
                 self.typing_tuple_element_access(location, symbol_table, errors)
             }
-            ExpressionKind::Enumeration { .. } => todo!(),
+            ExpressionKind::Enumeration { .. } => self.typing_enumeration(symbol_table),
         }
     }
 }
