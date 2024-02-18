@@ -9,6 +9,8 @@ use crate::hir::contract::Contract;
 use crate::hir::node::Node;
 use crate::symbol_table::SymbolTable;
 
+use super::add_edge;
+
 impl Node {
     /// Create an initialized graph from a node.
     ///
@@ -67,7 +69,9 @@ impl Node {
     pub fn add_all_equations_dependencies(
         &self,
         symbol_table: &SymbolTable,
+        nodes_context: &HashMap<usize, Node>,
         nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
         nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
@@ -85,7 +89,9 @@ impl Node {
                 self.add_signal_dependencies(
                     signal,
                     symbol_table,
+                    nodes_context,
                     nodes_processus_manager,
+                    nodes_reduced_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -96,7 +102,6 @@ impl Node {
             .collect::<Result<(), TerminationError>>()?;
 
         // add input signals dependencies
-        // (makes vertices colors "Black" => equal assertions in tests)
         symbol_table
             .get_node_input(&self.id)
             .iter()
@@ -104,7 +109,9 @@ impl Node {
                 self.add_signal_dependencies(
                     signal,
                     symbol_table,
+                    nodes_context,
                     nodes_processus_manager,
+                    nodes_reduced_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -136,7 +143,9 @@ impl Node {
         &self,
         signal: &usize,
         symbol_table: &SymbolTable,
+        nodes_context: &HashMap<usize, Node>,
         nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
         nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
@@ -170,7 +179,9 @@ impl Node {
                         // compute and get dependencies
                         expression.compute_dependencies(
                             symbol_table,
+                            nodes_context,
                             nodes_processus_manager,
+                            nodes_reduced_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
@@ -183,8 +194,8 @@ impl Node {
                             .get_dependencies()
                             .iter()
                             .for_each(|(id, depth)| {
-                                graph.add_edge(*signal, *id, Label::Weight(*depth));
-                                // TODO: warning, there might be other edges, do not overwrite
+                                // if there was another edge, keep the most important label
+                                add_edge(graph, *signal, *id, Label::Weight(*depth))
                             });
 
                         Ok(())
@@ -229,7 +240,9 @@ impl Node {
         &self,
         signal: &usize,
         symbol_table: &SymbolTable,
+        nodes_context: &HashMap<usize, Node>,
         nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
         nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
@@ -237,7 +250,7 @@ impl Node {
         let Node { id: node, .. } = self;
 
         // get node's processus manager
-        let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
+        let processus_manager = nodes_reduced_processus_manager.get_mut(node).unwrap();
         // get signal's color
         let color = processus_manager
             .get_mut(signal)
@@ -253,7 +266,9 @@ impl Node {
                 self.add_signal_dependencies(
                     signal,
                     symbol_table,
+                    nodes_context,
                     nodes_processus_manager,
+                    nodes_reduced_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -274,13 +289,15 @@ impl Node {
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
                         // if input then add neighbor to reduced graph
-                        reduced_graph.add_edge(*signal, neighbor_id, l1.clone());
+                        add_edge(reduced_graph, *signal, neighbor_id, l1.clone());
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_inputs_dependencies(
                             &neighbor_id,
                             symbol_table,
+                            nodes_context,
                             nodes_processus_manager,
+                            nodes_reduced_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
@@ -295,12 +312,13 @@ impl Node {
                         match l1 {
                             Label::Contract => reduced_graph_cloned.edges(neighbor_id).for_each(
                                 |(_, input_id, _)| {
-                                    reduced_graph.add_edge(*signal, input_id, Label::Contract);
+                                    add_edge(reduced_graph, *signal, input_id, Label::Contract);
                                 },
                             ),
                             Label::Weight(w1) => reduced_graph_cloned.edges(neighbor_id).for_each(
                                 |(_, input_id, l2)| {
-                                    reduced_graph.add_edge(
+                                    add_edge(
+                                        reduced_graph,
                                         *signal,
                                         input_id,
                                         match l2 {
@@ -315,7 +333,7 @@ impl Node {
                 }
 
                 // get node's processus manager
-                let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
+                let processus_manager = nodes_reduced_processus_manager.get_mut(node).unwrap();
                 // get signal's color
                 let color = processus_manager
                     .get_mut(signal)

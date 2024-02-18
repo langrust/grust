@@ -5,9 +5,13 @@ use petgraph::graphmap::DiGraphMap;
 use crate::common::graph::color::Color;
 use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
-use crate::hir::stream_expression::StreamExpressionKind;
-use crate::hir::{node::Node, stream_expression::StreamExpression};
+use crate::hir::{
+    node::Node,
+    stream_expression::{StreamExpression, StreamExpressionKind},
+};
 use crate::symbol_table::SymbolTable;
+
+use super::add_edge;
 
 impl StreamExpression {
     /// Compute dependencies of a stream expression.
@@ -29,7 +33,9 @@ impl StreamExpression {
     pub fn compute_dependencies(
         &self,
         symbol_table: &SymbolTable,
+        nodes_context: &HashMap<usize, Node>,
         nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
+        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
         nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
@@ -39,7 +45,9 @@ impl StreamExpression {
                 // propagate dependencies computation
                 expression.compute_dependencies(
                     symbol_table,
+                    nodes_context,
                     nodes_processus_manager,
+                    nodes_reduced_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -63,17 +71,20 @@ impl StreamExpression {
                 ref output_id,
             } => {
                 // get called node
-                let node: Node = todo!("get node");
+                let node = nodes_context.get(node_id).expect("there should be a node");
 
                 // create local reduced graphs (because only complete for the called signal)
                 let mut local_nodes_reduced_graphs = nodes_reduced_graphs.clone();
-                // let mut local_nodes_processus_manager = nodes_processus_manager.clone(); // TODO: see if this is important
+                let mut local_nodes_reduced_processus_manager =
+                    nodes_reduced_processus_manager.clone(); // TODO: see if this is important
 
                 // add dependencies to inputs in the local graphs
                 node.add_signal_inputs_dependencies(
                     output_id,
                     symbol_table,
+                    nodes_context,
                     nodes_processus_manager,
+                    &mut local_nodes_reduced_processus_manager,
                     nodes_graphs,
                     &mut local_nodes_reduced_graphs,
                     errors,
@@ -87,7 +98,7 @@ impl StreamExpression {
                 local_reduced_graph
                     .edges(*output_id)
                     .for_each(|(_, id, label)| {
-                        reduced_graph.add_edge(*output_id, id, label.clone());
+                        add_edge(reduced_graph, *output_id, id, label.clone());
                     });
 
                 // function "dependencies to inputs" and "input expressions's dependencies"
@@ -98,7 +109,9 @@ impl StreamExpression {
                         .map(|(input_id, input_expression)| {
                             input_expression.compute_dependencies(
                                 symbol_table,
+                                nodes_context,
                                 nodes_processus_manager,
+                                nodes_reduced_processus_manager,
                                 nodes_graphs,
                                 nodes_reduced_graphs,
                                 errors,
@@ -128,7 +141,9 @@ impl StreamExpression {
             StreamExpressionKind::Expression { expression } => {
                 self.dependencies.set(expression.compute_dependencies(
                     symbol_table,
+                    nodes_context,
                     nodes_processus_manager,
+                    nodes_reduced_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
