@@ -14,6 +14,8 @@ use super::HIRFromAST;
 impl HIRFromAST for StreamExpression {
     type HIR = HIRStreamExpression;
 
+    // precondition: identifiers are stored in symbol table
+    // postcondition: construct HIR stream expression and check identifiers good use
     fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,

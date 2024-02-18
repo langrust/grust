@@ -89,7 +89,7 @@
 use ast::file::File as ASTFile;
 use backend::rust_ast_from_lir::project::{rust_ast_from_lir as rust_from_lir, RustASTProject};
 use codespan_reporting::files::{Files, SimpleFiles};
-use error::TerminationError;
+use error::Error;
 use frontend::{hir_from_ast::HIRFromAST, lir_from_hir::LIRFromHIR, typing_analysis::TypeAnalysis};
 use hir::file::File as HIRFile;
 use lir::project::Project as LIRProject;
@@ -129,7 +129,7 @@ pub fn parsing(file_id: usize, files: &mut SimpleFiles<&str, String>) -> ASTFile
 pub fn hir_from_ast(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
-) -> Result<HIRFile, TerminationError> {
+) -> Result<HIRFile, Vec<Error>> {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
@@ -137,11 +137,12 @@ pub fn hir_from_ast(
         .parse(file_id, &files.source(file_id).unwrap())
         .unwrap();
     ast.hir_from_ast(&mut symbol_table, &mut errors)
+        .map_err(|_| errors)
 }
 pub fn typing(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
-) -> Result<HIRFile, TerminationError> {
+) -> Result<HIRFile, Vec<Error>> {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
@@ -149,13 +150,14 @@ pub fn typing(
         .parse(file_id, &files.source(file_id).unwrap())
         .unwrap();
     let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
-    hir.typing(&mut symbol_table, &mut errors)?;
+    hir.typing(&mut symbol_table, &mut errors)
+        .map_err(|_| errors)?;
     Ok(hir)
 }
 pub fn dependency_graph(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
-) -> Result<HIRFile, TerminationError> {
+) -> Result<HIRFile, Vec<Error>> {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
@@ -164,13 +166,14 @@ pub fn dependency_graph(
         .unwrap();
     let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
     hir.typing(&mut symbol_table, &mut errors).unwrap();
-    hir.generate_dependency_graphs(&symbol_table, &mut errors)?;
+    hir.generate_dependency_graphs(&symbol_table, &mut errors)
+        .map_err(|_| errors)?;
     Ok(hir)
 }
 pub fn causality_analysis(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
-) -> Result<(), TerminationError> {
+) -> Result<(), Vec<Error>> {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
@@ -182,11 +185,12 @@ pub fn causality_analysis(
     hir.generate_dependency_graphs(&symbol_table, &mut errors)
         .unwrap();
     hir.causality_analysis(&symbol_table, &mut errors)
+        .map_err(|_| errors)
 }
 pub fn normalizing(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
-) -> Result<HIRFile, TerminationError> {
+) -> Result<HIRFile, Vec<Error>> {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
@@ -198,7 +202,8 @@ pub fn normalizing(
     hir.generate_dependency_graphs(&symbol_table, &mut errors)
         .unwrap();
     hir.causality_analysis(&symbol_table, &mut errors).unwrap();
-    hir.normalize(&mut symbol_table, &mut errors)?;
+    hir.normalize(&mut symbol_table, &mut errors)
+        .map_err(|_| errors)?;
     Ok(hir)
 }
 pub fn lir_from_hir(file_id: usize, files: &mut SimpleFiles<&str, String>) -> LIRProject {

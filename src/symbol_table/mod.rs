@@ -1,7 +1,13 @@
 use std::collections::HashMap;
+use strum::IntoEnumIterator;
 
 use crate::{
-    common::{location::Location, r#type::Type, scope::Scope},
+    common::{
+        location::Location,
+        operator::{BinaryOperator, OtherOperator, UnaryOperator},
+        r#type::Type,
+        scope::Scope,
+    },
     error::{Error, TerminationError},
 };
 
@@ -12,8 +18,8 @@ pub enum SymbolKind {
         typing: Option<Type>,
     },
     Function {
-        inputs_typing: Vec<Type>,
-        output_typing: Type,
+        inputs: Vec<usize>,
+        output_typing: Option<Type>,
     },
     Node {
         /// Is true when the node is a component.
@@ -35,7 +41,7 @@ pub enum SymbolKind {
     },
     Array {
         /// The array's type.
-        array_type: Type,
+        array_type: Option<Type>,
         /// The array's size.
         size: usize,
     },
@@ -161,6 +167,40 @@ impl SymbolTable {
         }
     }
 
+    pub fn initialize(&mut self) {
+        // initialize with unary, binary and other operators
+        UnaryOperator::iter().for_each(|op| {
+            self.insert_identifier(
+                op.to_string(),
+                Some(op.get_type()),
+                false,
+                Location::default(),
+                &mut vec![],
+            )
+            .unwrap();
+        });
+        BinaryOperator::iter().for_each(|op| {
+            self.insert_identifier(
+                op.to_string(),
+                Some(op.get_type()),
+                false,
+                Location::default(),
+                &mut vec![],
+            )
+            .unwrap();
+        });
+        OtherOperator::iter().for_each(|op| {
+            self.insert_identifier(
+                op.to_string(),
+                Some(op.get_type()),
+                false,
+                Location::default(),
+                &mut vec![],
+            )
+            .unwrap();
+        });
+    }
+
     pub fn local(&mut self) {
         let prev = std::mem::take(&mut self.known_symbols);
         self.known_symbols = prev.create_local_context();
@@ -235,15 +275,15 @@ impl SymbolTable {
     pub fn insert_function(
         &mut self,
         name: String,
-        inputs_typing: Vec<Type>,
-        output_typing: Type,
+        inputs: Vec<usize>,
+        output_typing: Option<Type>,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
             kind: SymbolKind::Function {
-                inputs_typing,
+                inputs,
                 output_typing,
             },
             name,
@@ -311,7 +351,7 @@ impl SymbolTable {
     pub fn insert_array(
         &mut self,
         name: String,
-        array_type: Type,
+        array_type: Option<Type>,
         size: usize,
         local: bool,
         location: Location,
@@ -325,11 +365,31 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
-    pub fn restore_context<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
+    fn restore_context_from<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
         ids.for_each(|id| {
-            let symbol = self.get_symbol(id).unwrap().clone();
+            let symbol = self.get_symbol(id).expect("expect symbol").clone();
             self.known_symbols.add_symbol(symbol, *id);
         })
+    }
+
+    pub fn restore_context(&mut self, id: &usize) {
+        let symbol = self.get_symbol(id).expect("expect symbol").clone();
+        match symbol.kind() {
+            SymbolKind::Function { inputs, .. } => {
+                self.restore_context_from(inputs.iter());
+            }
+            SymbolKind::Node {
+                inputs,
+                outputs,
+                locals,
+                ..
+            } => {
+                self.restore_context_from(inputs.iter());
+                self.restore_context_from(outputs.values());
+                self.restore_context_from(locals.values());
+            }
+            _ => unreachable!(),
+        }
     }
 
     pub fn get_symbol(&self, id: &usize) -> Option<&Symbol> {
@@ -348,10 +408,12 @@ impl SymbolTable {
         }
     }
 
-    pub fn get_output_type(&self, id: &usize) -> &Type {
+    pub fn get_function_output_type(&self, id: &usize) -> &Type {
         let symbol = self.get_symbol(id).expect("expect symbol");
         match symbol.kind() {
-            SymbolKind::Function { output_typing, .. } => output_typing,
+            SymbolKind::Function { output_typing, .. } => {
+                output_typing.as_ref().expect("expect type")
+            }
             _ => unreachable!(),
         }
     }
@@ -403,11 +465,93 @@ impl SymbolTable {
         }
     }
 
+    pub fn get_function_input(&self, id: &usize) -> &Vec<usize> {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Function { inputs, .. } => inputs,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn set_function_output_type(&mut self, id: &usize, new_type: Type) {
+        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        match &mut symbol.kind {
+            SymbolKind::Function {
+                ref mut output_typing,
+                ..
+            } => {
+                if output_typing.is_some() {
+                    panic!("a symbol type can not be modified")
+                }
+                *output_typing = Some(new_type)
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_struct_fields(&self, id: &usize) -> &Vec<usize> {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Structure { fields, .. } => fields,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_enum_elements(&self, id: &usize) -> &Vec<usize> {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Enumeration { elements, .. } => elements,
+            _ => unreachable!(),
+        }
+    }
+
     pub fn is_node(&self, name: &String, local: bool) -> bool {
         let symbol_hash = format!("node_{name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => true,
+            Some(_) => true,
             None => false,
+        }
+    }
+
+    pub fn set_array_type(&mut self, id: &usize, new_type: Type) {
+        let symbol = self.get_symbol_mut(id).expect("expect symbol");
+        match &mut symbol.kind {
+            SymbolKind::Array {
+                ref mut array_type, ..
+            } => {
+                if array_type.is_some() {
+                    panic!("a symbol type can not be modified")
+                }
+                *array_type = Some(new_type)
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_array(&self, id: &usize) -> Type {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Array { array_type, size } => Type::Array(
+                Box::new(array_type.as_ref().expect("expect type").clone()),
+                *size,
+            ),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_array_type(&self, id: &usize) -> &Type {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Array { array_type, .. } => array_type.as_ref().expect("expect type"),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_array_size(&self, id: &usize) -> usize {
+        let symbol = self.get_symbol(id).expect("expect symbol");
+        match symbol.kind() {
+            SymbolKind::Array { size, .. } => *size,
+            _ => unreachable!(),
         }
     }
 
@@ -460,7 +604,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("signal_{name}");
+        let symbol_hash = format!("identifier_{name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
@@ -486,6 +630,69 @@ impl SymbolTable {
             Some(id) => Ok(*id),
             None => {
                 let error = Error::UnknownNode {
+                    name: name.to_string(),
+                    location,
+                };
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    pub fn get_struct_id(
+        &self,
+        name: &String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol_hash = format!("struct_{name}");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(*id),
+            None => {
+                let error = Error::UnknownElement {
+                    name: name.to_string(),
+                    location,
+                };
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    pub fn get_enum_id(
+        &self,
+        name: &String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol_hash = format!("enum_{name}");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(*id),
+            None => {
+                let error = Error::UnknownElement {
+                    name: name.to_string(),
+                    location,
+                };
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    pub fn get_array_id(
+        &self,
+        name: &String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol_hash = format!("array_{name}");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(*id),
+            None => {
+                let error = Error::UnknownElement {
                     name: name.to_string(),
                     location,
                 };

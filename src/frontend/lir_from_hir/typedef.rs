@@ -17,8 +17,8 @@ impl LIRFromHIR for Typedef {
                     .into_iter()
                     .map(|id| {
                         (
-                            symbol_table.get_name(&self.id).clone(),
-                            symbol_table.get_type(&self.id).clone(),
+                            symbol_table.get_name(&id).clone(),
+                            symbol_table.get_type(&id).clone(),
                         )
                     })
                     .collect(),
@@ -30,12 +30,10 @@ impl LIRFromHIR for Typedef {
                     .map(|id| symbol_table.get_name(&id).clone())
                     .collect(),
             }),
-            TypedefKind::Array {
-                array_type, size, ..
-            } => Item::ArrayAlias(ArrayAlias {
+            TypedefKind::Array => Item::ArrayAlias(ArrayAlias {
                 name: symbol_table.get_name(&self.id).clone(),
-                array_type,
-                size,
+                array_type: symbol_table.get_array_type(&self.id).clone(),
+                size: symbol_table.get_array_size(&self.id),
             }),
         }
     }

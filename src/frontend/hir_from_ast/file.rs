@@ -13,6 +13,12 @@ impl HIRFromAST for File {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<Self::HIR, TerminationError> {
+        // initialize symbol table with builtin operators
+        symbol_table.initialize();
+
+        // store elements in symbol table
+        self.store(symbol_table, errors)?;
+
         let File {
             typedefs,
             functions,
@@ -20,63 +26,6 @@ impl HIRFromAST for File {
             component,
             location,
         } = self;
-
-        // TODO: this is supposed to be in another function in order to call nodes in any order
-        // let inputs = inputs
-        //     .into_iter()
-        //     .map(|(name, typing)| {
-        //         let id = symbol_table.insert_signal(name, Scope::Input, true, location, errors)?;
-        //         // TODO: add type to signal in symbol table
-        //         Ok(id)
-        //     })
-        //     .collect::<Vec<Result<_, _>>>()
-        //     .into_iter()
-        //     .collect::<Result<Vec<_>, _>>()?;
-        // let outputs = equations
-        //     .into_iter()
-        //     .filter(|(name, equation)| Scope::Output == equation.scope)
-        //     .map(|(name, equation)| {
-        //         let id =
-        //             symbol_table.insert_signal(name.clone(), Scope::Output, true, location, errors)?;
-        //         // TODO: add type to signal in symbol table
-        //         Ok((name, id))
-        //     })
-        //     .collect::<Vec<Result<_, _>>>()
-        //     .into_iter()
-        //     .collect::<Result<HashMap<_, _>, _>>()?;
-        // let locals = equations
-        //     .into_iter()
-        //     .filter(|(name, equation)| Scope::Local == equation.scope)
-        //     .map(|(name, equation)| {
-        //         let id =
-        //             symbol_table.insert_signal(name.clone(), Scope::Local, true, location, errors)?;
-        //         // TODO: add type to signal in symbol table
-        //         Ok((name, id))
-        //     })
-        //     .collect::<Vec<Result<_, _>>>()
-        //     .into_iter()
-        //     .collect::<Result<HashMap<_, _>, _>>()?;
-        // let id = symbol_table.insert_node(
-        //     id,
-        //     is_component,
-        //     false,
-        //     inputs,
-        //     outputs,
-        //     locals,
-        //     location,
-        //     errors,
-        // )?;
-
-        // let id = symbol_table.insert_function(
-        //     id,
-        //     is_component,
-        //     false,
-        //     inputs,
-        //     outputs,
-        //     locals,
-        //     location,
-        //     errors,
-        // )?;
 
         Ok(HIRFile {
             typedefs: typedefs
@@ -102,5 +51,36 @@ impl HIRFromAST for File {
                 .transpose()?,
             location,
         })
+    }
+}
+
+impl File {
+    fn store(
+        &self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), TerminationError> {
+        self.typedefs
+            .iter()
+            .map(|typedef| typedef.store(symbol_table, errors))
+            .collect::<Vec<Result<_, _>>>()
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+        self.functions
+            .iter()
+            .map(|function| function.store(symbol_table, errors))
+            .collect::<Vec<Result<_, _>>>()
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+        self.nodes
+            .iter()
+            .map(|node| node.store(symbol_table, errors))
+            .collect::<Vec<Result<_, _>>>()
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+        self.component
+            .as_ref()
+            .map(|node| node.store(symbol_table, errors)).transpose()?;
+        Ok(())
     }
 }

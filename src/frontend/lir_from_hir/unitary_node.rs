@@ -26,7 +26,8 @@ impl LIRFromHIR for UnitaryNode {
             ..
         } = self;
 
-        let output_type = symbol_table.get_output_type(&node_id).clone();
+        // TODO: is this `get_function_output_type` only for function ?
+        let output_type = symbol_table.get_function_output_type(&node_id).clone();
 
         let output_expression = LIRExpression::Identifier {
             identifier: symbol_table.get_name(&output_id).clone(),

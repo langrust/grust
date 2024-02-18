@@ -12,7 +12,6 @@ impl LIRFromHIR for Function {
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         let Function {
             id,
-            inputs,
             statements,
             returned,
             ..
@@ -33,12 +32,13 @@ impl LIRFromHIR for Function {
             expression: returned.lir_from_hir(symbol_table),
         });
 
-        let inputs = inputs
+        let inputs = symbol_table
+            .get_function_input(&id)
             .into_iter()
             .map(|id| {
                 (
-                    symbol_table.get_name(&id).clone(),
-                    symbol_table.get_type(&id).clone(),
+                    symbol_table.get_name(id).clone(),
+                    symbol_table.get_type(id).clone(),
                 )
             })
             .collect();
@@ -46,7 +46,7 @@ impl LIRFromHIR for Function {
         LIRFunction {
             name: symbol_table.get_name(&id).clone(),
             inputs,
-            output: symbol_table.get_output_type(&id).clone(),
+            output: symbol_table.get_function_output_type(&id).clone(),
             body: Block { statements },
         }
     }
