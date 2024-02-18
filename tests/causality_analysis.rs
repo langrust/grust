@@ -1,153 +1,120 @@
-use codespan_reporting::files::{Files, SimpleFiles};
+use codespan_reporting::files::SimpleFiles;
 
-use grustine::ast::file::File;
+use grustine::causality_analysis;
 use grustine::error::display;
-use grustine::frontend::hir_from_ast::file::hir_from_ast;
-use grustine::parser::langrust;
 
 #[test]
 fn causality_analysis_of_counter() {
     let mut files = SimpleFiles::new();
-    let mut errors = vec![];
 
     let counter_id = files.add(
         "counter.gr",
-        std::fs::read_to_string("tests/fixture/counter.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/causality_analysis/success/counter.gr")
+            .expect("unkown file"),
     );
 
-    let mut file: File = langrust::fileParser::new()
-        .parse(counter_id, &files.source(counter_id).unwrap())
-        .unwrap();
-    file.typing(&mut errors).unwrap();
-    let file = hir_from_ast(file);
-    file.generate_dependency_graphs(&mut errors).unwrap();
-
-    file.causality_analysis(&mut errors).unwrap();
+    match causality_analysis(counter_id, &mut files) {
+        Ok(()) => (),
+        Err(errors) => display(&errors, &files),
+    }
 }
 
 #[test]
 fn causality_analysis_of_blinking() {
     let mut files = SimpleFiles::new();
-    let mut errors = vec![];
 
     let blinking_id = files.add(
         "blinking.gr",
-        std::fs::read_to_string("tests/fixture/blinking.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/causality_analysis/success/blinking.gr")
+            .expect("unkown file"),
     );
 
-    let mut file: File = langrust::fileParser::new()
-        .parse(blinking_id, &files.source(blinking_id).unwrap())
-        .unwrap();
-    file.typing(&mut errors).unwrap();
-    let file = hir_from_ast(file);
-    file.generate_dependency_graphs(&mut errors).unwrap();
-
-    file.causality_analysis(&mut errors).unwrap();
+    match causality_analysis(blinking_id, &mut files) {
+        Ok(()) => (),
+        Err(errors) => display(&errors, &files),
+    }
 }
 
 #[test]
 fn causality_analysis_of_button_management() {
     let mut files = SimpleFiles::new();
-    let mut errors = vec![];
 
-    let blinking_id = files.add(
+    let button_management_id = files.add(
         "button_management.gr",
-        std::fs::read_to_string("tests/fixture/button_management.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/causality_analysis/success/button_management.gr")
+            .expect("unkown file"),
     );
 
-    let mut file: File = langrust::fileParser::new()
-        .parse(blinking_id, &files.source(blinking_id).unwrap())
-        .unwrap();
-    file.typing(&mut errors).unwrap();
-    let file = hir_from_ast(file);
-    file.generate_dependency_graphs(&mut errors).unwrap();
-
-    file.causality_analysis(&mut errors).unwrap();
+    match causality_analysis(button_management_id, &mut files) {
+        Ok(()) => (),
+        Err(errors) => display(&errors, &files),
+    }
 }
 
 #[test]
 fn causality_analysis_of_button_management_condition_match() {
     let mut files = SimpleFiles::new();
-    let mut errors = vec![];
 
-    let blinking_id = files.add(
+    let button_management_condition_match_id = files.add(
         "button_management_condition_match.gr",
-        std::fs::read_to_string("tests/fixture/button_management_condition_match.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string(
+            "tests/fixture/causality_analysis/success/button_management_condition_match.gr",
+        )
+        .expect("unkown file"),
     );
 
-    let mut file: File = langrust::fileParser::new()
-        .parse(blinking_id, &files.source(blinking_id).unwrap())
-        .unwrap();
-    file.typing(&mut errors).unwrap();
-    let file = hir_from_ast(file);
-    file.generate_dependency_graphs(&mut errors).unwrap();
-
-    file.causality_analysis(&mut errors).unwrap();
+    match causality_analysis(button_management_condition_match_id, &mut files) {
+        Ok(()) => (),
+        Err(errors) => display(&errors, &files),
+    }
 }
 
 #[test]
 fn causality_analysis_of_button_management_using_function() {
     let mut files = SimpleFiles::new();
-    let mut errors = vec![];
 
-    let blinking_id = files.add(
+    let button_management_using_function_id = files.add(
         "button_management_using_function.gr",
-        std::fs::read_to_string("tests/fixture/button_management_using_function.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string(
+            "tests/fixture/causality_analysis/success/button_management_using_function.gr",
+        )
+        .expect("unkown file"),
     );
 
-    let mut file: File = langrust::fileParser::new()
-        .parse(blinking_id, &files.source(blinking_id).unwrap())
-        .unwrap();
-    file.typing(&mut errors).unwrap();
-    let file = hir_from_ast(file);
-    file.generate_dependency_graphs(&mut errors).unwrap();
-
-    file.causality_analysis(&mut errors).unwrap();
+    match causality_analysis(button_management_using_function_id, &mut files) {
+        Ok(()) => (),
+        Err(errors) => display(&errors, &files),
+    }
 }
 
 #[test]
 fn causality_analysis_of_pid() {
     let mut files = SimpleFiles::new();
-    let mut errors = vec![];
 
     let pid_id = files.add(
         "pid.gr",
-        std::fs::read_to_string("tests/fixture/pid.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/causality_analysis/success/pid.gr")
+            .expect("unkown file"),
     );
 
-    let mut file: File = langrust::fileParser::new()
-        .parse(pid_id, &files.source(pid_id).unwrap())
-        .unwrap();
-    file.typing(&mut errors).unwrap();
-    let file = hir_from_ast(file);
-    file.generate_dependency_graphs(&mut errors).unwrap();
-
-    file.causality_analysis(&mut errors).unwrap();
+    match causality_analysis(pid_id, &mut files) {
+        Ok(()) => (),
+        Err(errors) => display(&errors, &files),
+    }
 }
 
 #[test]
 fn error_when_typing_counter_not_causal() {
     let mut files = SimpleFiles::new();
-    let mut errors = vec![];
 
     let counter_not_causal_id = files.add(
         "counter_not_causal.gr",
-        std::fs::read_to_string("tests/fixture/counter_not_causal.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/causality_analysis/error/counter_not_causal.gr")
+            .expect("unkown file"),
     );
 
-    let mut file: File = langrust::fileParser::new()
-        .parse(
-            counter_not_causal_id,
-            &files.source(counter_not_causal_id).unwrap(),
-        )
-        .unwrap();
-    file.typing(&mut errors).unwrap();
-    let file = hir_from_ast(file);
-    file.generate_dependency_graphs(&mut errors).unwrap();
-
-    file.causality_analysis(&mut errors).unwrap_err();
-
-    display(&errors, &files);
+    match causality_analysis(counter_not_causal_id, &mut files) {
+        Ok(()) => (),
+        Err(errors) => display(&errors, &files),
+    }
 }
