@@ -5,6 +5,8 @@ use crate::{
     hir::contract::{Term, TermKind},
 };
 
+use super::add_edge;
+
 impl Term {
     /// Compute dependencies of a term.
     pub fn compute_dependencies(&self) -> Vec<usize> {
@@ -27,8 +29,8 @@ impl Term {
         dependencies.iter().for_each(|id1| {
             dependencies.iter().for_each(|id2| {
                 if id1 != id2 {
-                    node_graph.add_edge(*id1, *id2, Label::Contract);
-                    node_graph.add_edge(*id2, *id1, Label::Contract);
+                    add_edge(node_graph, *id1, *id2, Label::Contract);
+                    add_edge(node_graph, *id2, *id1, Label::Contract);
                 }
             })
         })

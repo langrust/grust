@@ -9,7 +9,7 @@ where
     E: TypeAnalysis,
 {
     /// Add a [Type] to the call expression.
-    pub fn typing_call(
+    pub fn typing_identifier(
         &mut self,
         symbol_table: &mut SymbolTable,
     ) -> Result<Type, TerminationError> {

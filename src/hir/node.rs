@@ -1,7 +1,11 @@
 use petgraph::graphmap::DiGraphMap;
 use std::collections::HashMap;
 
-use crate::common::{graph::neighbor::Label, location::Location, serialize::ordered_map};
+use crate::common::{
+    graph::neighbor::Label,
+    location::Location,
+    serialize::{ordered_graph, ordered_map},
+};
 use crate::hir::{
     contract::Contract, once_cell::OnceCell, statement::Statement,
     stream_expression::StreamExpression, unitary_node::UnitaryNode,
@@ -23,6 +27,7 @@ pub struct Node {
     /// Node location.
     pub location: Location,
     /// Node dependency graph.
+    #[serde(serialize_with = "ordered_graph")]
     pub graph: OnceCell<DiGraphMap<usize, Label>>,
 }
 

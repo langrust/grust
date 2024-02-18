@@ -7,11 +7,11 @@ use crate::symbol_table::SymbolTable;
 mod abstraction;
 mod application;
 mod array;
-mod call;
 mod constant;
 mod enumeration;
 mod field_access;
 mod fold;
+mod identifier;
 mod map;
 mod r#match;
 mod sort;
@@ -32,7 +32,7 @@ where
     ) -> Result<Type, TerminationError> {
         match self {
             ExpressionKind::Constant { .. } => self.typing_constant(),
-            ExpressionKind::Identifier { .. } => self.typing_call(symbol_table),
+            ExpressionKind::Identifier { .. } => self.typing_identifier(symbol_table),
             ExpressionKind::Application { .. } => {
                 self.typing_application(location, symbol_table, errors)
             }
