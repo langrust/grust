@@ -116,7 +116,7 @@ impl Node {
             .expect("node dependency graph should be computed");
         let mut subgraph = graph.clone();
         graph.nodes().for_each(|id| {
-            let has_path = has_path_connecting(graph, id, output, None); // TODO: contrary?
+            let has_path = has_path_connecting(graph, output, id, None); // TODO: contrary?
             if !has_path {
                 subgraph.remove_node(id);
             }
@@ -124,7 +124,7 @@ impl Node {
 
         // get useful inputs (in application order)
         let unitary_node_inputs = symbol_table
-            .get_node_input(&node)
+            .get_node_inputs(&node)
             .iter()
             .filter(|id| subgraph.contains_node(**id))
             .map(|input| input.clone())
@@ -157,13 +157,23 @@ impl Node {
             invariant: retrieve_terms(invariant),
         };
 
+        let unitary_node_name = format!(
+            "{}_{}",
+            symbol_table.get_name(node),
+            symbol_table.get_name(&output),
+        );
+        let unitary_node_id = symbol_table.insert_unitary_node(
+            unitary_node_name,
+            symbol_table.is_component(node),
+            *node,
+            unitary_node_inputs,
+            output,
+        );
+
         // construct unitary node
         let unitary_node = UnitaryNode {
-            unitary_node_id: todo!(),
+            unitary_node_id,
             contract,
-            node_id: node.clone(),
-            output_id: output.clone(),
-            inputs: unitary_node_inputs,
             statements,
             memory: Memory::new(),
             location: location.clone(),

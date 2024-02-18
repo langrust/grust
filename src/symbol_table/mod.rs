@@ -19,18 +19,28 @@ pub enum SymbolKind {
     },
     Function {
         inputs: Vec<usize>,
-        output_typing: Option<Type>,
+        output_type: Option<Type>,
         typing: Option<Type>,
     },
     Node {
         /// Is true when the node is a component.
         is_component: bool,
-        /// Node's input signals.
+        /// Node's input identifiers.
         inputs: Vec<usize>,
-        /// Node's output signals.
+        /// Node's output identifiers.
         outputs: HashMap<String, usize>,
-        /// Node's local signals.
+        /// Node's local identifiers.
         locals: HashMap<String, usize>,
+    },
+    UnitaryNode {
+        /// Is true when the node is a component.
+        is_component: bool,
+        /// Mother node identifier.
+        mother_node: usize,
+        /// Node's input identifiers.
+        inputs: Vec<usize>,
+        /// Node's output identifier.
+        output: usize,
     },
     Structure {
         /// The structure's fields: a field has an identifier and a type.
@@ -78,12 +88,13 @@ impl Symbol {
 
     fn hash_as_string(&self) -> String {
         match &self.kind {
-            SymbolKind::Identifier { .. } => format!("identifier_{}", self.name),
-            SymbolKind::Function { .. } => format!("function_{}", self.name),
-            SymbolKind::Node { .. } => format!("node_{}", self.name),
-            SymbolKind::Structure { .. } => format!("struct_{}", self.name),
-            SymbolKind::Enumeration { .. } => format!("enum_{}", self.name),
-            SymbolKind::Array { .. } => format!("array_{}", self.name),
+            SymbolKind::Identifier { .. } => format!("identifier {}", self.name),
+            SymbolKind::Function { .. } => format!("function {}", self.name),
+            SymbolKind::Node { .. } => format!("node {}", self.name),
+            SymbolKind::UnitaryNode { .. } => format!("unitary_node {}", self.name),
+            SymbolKind::Structure { .. } => format!("struct {}", self.name),
+            SymbolKind::Enumeration { .. } => format!("enum {}", self.name),
+            SymbolKind::Array { .. } => format!("array {}", self.name),
         }
     }
 }
@@ -277,7 +288,7 @@ impl SymbolTable {
         &mut self,
         name: String,
         inputs: Vec<usize>,
-        output_typing: Option<Type>,
+        output_type: Option<Type>,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
@@ -285,7 +296,7 @@ impl SymbolTable {
         let symbol = Symbol {
             kind: SymbolKind::Function {
                 inputs,
-                output_typing,
+                output_type,
                 typing: None,
             },
             name,
@@ -367,6 +378,28 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    pub fn insert_unitary_node(
+        &mut self,
+        name: String,
+        is_component: bool,
+        mother_node: usize,
+        inputs: Vec<usize>,
+        output: usize,
+    ) -> usize {
+        let symbol = Symbol {
+            kind: SymbolKind::UnitaryNode {
+                is_component,
+                mother_node,
+                inputs,
+                output,
+            },
+            name,
+        };
+
+        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            .expect("you should not fail")
+    }
+
     fn restore_context_from<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
         ids.for_each(|id| {
             let symbol = self
@@ -428,9 +461,37 @@ impl SymbolTable {
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Function { output_typing, .. } => {
-                output_typing.as_ref().expect("expect type")
-            }
+            SymbolKind::Function { output_type, .. } => output_type.as_ref().expect("expect type"),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_unitary_node_output_type(&self, id: &usize) -> &Type {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::UnitaryNode { output, .. } => self.get_type(output),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_unitary_node_output_name(&self, id: &usize) -> &String {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::UnitaryNode { output, .. } => self.get_name(output),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_unitary_node_output_id(&self, id: &usize) -> &usize {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::UnitaryNode { output, .. } => output,
             _ => unreachable!(),
         }
     }
@@ -484,12 +545,22 @@ impl SymbolTable {
         }
     }
 
-    pub fn get_node_input(&self, id: &usize) -> &Vec<usize> {
+    pub fn get_node_inputs(&self, id: &usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { inputs, .. } => inputs,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn is_component(&self, id: &usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Node { is_component, .. } => *is_component,
             _ => unreachable!(),
         }
     }
@@ -521,14 +592,14 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match &mut symbol.kind {
             SymbolKind::Function {
-                ref mut output_typing,
+                ref mut output_type,
                 ref mut typing,
                 ..
             } => {
-                if output_typing.is_some() {
+                if output_type.is_some() {
                     panic!("a symbol type can not be modified")
                 }
-                *output_typing = Some(new_type.clone());
+                *output_type = Some(new_type.clone());
                 *typing = Some(Type::Abstract(inputs_type, Box::new(new_type)))
             }
             _ => unreachable!(),
@@ -556,7 +627,7 @@ impl SymbolTable {
     }
 
     pub fn is_node(&self, name: &String, local: bool) -> bool {
-        let symbol_hash = format!("node_{name}");
+        let symbol_hash = format!("node {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(_) => true,
             None => false,
@@ -620,7 +691,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("identifier_{name}");
+        let symbol_hash = format!("identifier {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
@@ -641,7 +712,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("function_{name}");
+        let symbol_hash = format!("function {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
@@ -662,7 +733,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("identifier_{name}");
+        let symbol_hash = format!("identifier {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
@@ -683,7 +754,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("node_{name}");
+        let symbol_hash = format!("node {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
@@ -704,7 +775,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("struct_{name}");
+        let symbol_hash = format!("struct {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
@@ -725,7 +796,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("enum_{name}");
+        let symbol_hash = format!("enum {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {
@@ -746,7 +817,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("array_{name}");
+        let symbol_hash = format!("array {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(*id),
             None => {

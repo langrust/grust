@@ -12,12 +12,6 @@ use crate::symbol_table::SymbolTable;
 pub struct UnitaryNode {
     /// The unitary node id in Symbol Table.
     pub unitary_node_id: usize,
-    /// Mother node identifier.
-    pub node_id: usize,
-    /// Output signal identifier.
-    pub output_id: usize,
-    /// Unitary node's inputs identifiers and their types.
-    pub inputs: Vec<usize>,
     /// Unitary node's statements.
     pub statements: Vec<Statement<StreamExpression>>,
     /// Unitary node's memory.
@@ -32,10 +26,7 @@ pub struct UnitaryNode {
 
 impl PartialEq for UnitaryNode {
     fn eq(&self, other: &Self) -> bool {
-        self.node_id == other.node_id
-            && self.output_id == other.output_id
-            && self.inputs == other.inputs
-            && self.statements == other.statements
+        self.statements == other.statements
             && self.memory == other.memory
             && self.location == other.location
             && self.eq_oncecell_graph(other)
@@ -47,9 +38,6 @@ impl UnitaryNode {
     /// Return vector of unitary node's signals id.
     pub fn get_signals_id(&self) -> Vec<usize> {
         let mut signals = vec![];
-        self.inputs.iter().for_each(|signal| {
-            signals.push(signal.clone());
-        });
         self.statements.iter().for_each(|equation| {
             signals.push(equation.id.clone());
         });
@@ -59,9 +47,6 @@ impl UnitaryNode {
     /// Return vector of unitary node's signals name.
     pub fn get_signals_name(&self, symbol_table: &SymbolTable) -> Vec<String> {
         let mut signals = vec![];
-        self.inputs.iter().for_each(|id| {
-            signals.push(symbol_table.get_name(id).clone());
-        });
         self.statements.iter().for_each(|equation| {
             signals.push(symbol_table.get_name(&equation.id).clone());
         });
@@ -70,10 +55,7 @@ impl UnitaryNode {
 
     /// Tells if two unscheduled unitary nodes are equal.
     pub fn eq_unscheduled(&self, other: &UnitaryNode) -> bool {
-        self.node_id == other.node_id
-            && self.output_id == other.output_id
-            && self.inputs == other.inputs
-            && self.statements.len() == other.statements.len()
+        self.statements.len() == other.statements.len()
             && self.statements.iter().all(|equation| {
                 other
                     .statements

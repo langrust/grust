@@ -18,19 +18,21 @@ impl LIRFromHIR for UnitaryNode {
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         let UnitaryNode {
-            node_id,
-            output_id,
-            inputs,
+            unitary_node_id,
             statements,
             memory,
             ..
         } = self;
 
-        // TODO: is this `get_function_output_type` only for function ?
-        let output_type = symbol_table.get_function_output_type(&node_id).clone();
+        let inputs = symbol_table.get_node_inputs(&unitary_node_id);
+        let output_type = symbol_table
+            .get_unitary_node_output_type(&unitary_node_id)
+            .clone();
 
         let output_expression = LIRExpression::Identifier {
-            identifier: symbol_table.get_name(&output_id).clone(),
+            identifier: symbol_table
+                .get_unitary_node_output_name(&unitary_node_id)
+                .clone(),
         };
 
         // TODO: imports
@@ -43,7 +45,7 @@ impl LIRFromHIR for UnitaryNode {
         let (elements, state_elements_init, state_elements_step) =
             memory.get_state_elements(symbol_table);
 
-        let name = symbol_table.get_name(&node_id);
+        let name = symbol_table.get_name(&unitary_node_id);
 
         NodeFile {
             name: name.clone(),
