@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ast::expression::{Expression, ExpressionKind};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
@@ -13,6 +15,8 @@ impl<E> ExpressionKind<E>
 where
     E: HIRFromAST,
 {
+    // precondition: identifiers are stored in symbol table
+    // postcondition: construct HIR expression kind and check identifiers good use
     pub fn hir_from_ast(
         self,
         location: &Location,
@@ -22,7 +26,11 @@ where
         match self {
             ExpressionKind::Constant { constant } => Ok(HIRExpressionKind::Constant { constant }),
             ExpressionKind::Identifier { id } => {
-                let id = symbol_table.get_identifier_id(&id, false, location.clone(), errors)?;
+                let id = symbol_table
+                    .get_identifier_id(&id, false, location.clone(), &mut vec![])
+                    .or_else(|_| {
+                        symbol_table.get_function_id(&id, false, location.clone(), errors)
+                    })?;
                 Ok(HIRExpressionKind::Identifier { id })
             }
             ExpressionKind::Application {
@@ -40,35 +48,45 @@ where
                     .collect::<Result<Vec<_>, _>>()?,
             }),
             ExpressionKind::Structure { name, fields } => {
-                let id = symbol_table.get_identifier_id(&name, false, location.clone(), errors)?;
-                // TODO check fields are all in structure
-                Ok(HIRExpressionKind::Structure {
-                    id,
-                    fields: fields
-                        .into_iter()
-                        .map(|(field, expression)| {
-                            let id = symbol_table.get_identifier_id(
-                                &field,
-                                false,
-                                location.clone(),
-                                errors,
-                            )?;
-                            let expression = expression.hir_from_ast(symbol_table, errors)?;
-                            Ok((id, expression))
-                        })
-                        .collect::<Vec<Result<_, _>>>()
-                        .into_iter()
-                        .collect::<Result<Vec<_>, _>>()?,
-                })
+                let id = symbol_table.get_struct_id(&name, false, location.clone(), errors)?;
+                let field_ids = symbol_table
+                    .get_struct_fields(&id)
+                    .clone()
+                    .into_iter()
+                    .map(|id| (symbol_table.get_name(&id).clone(), id))
+                    .collect::<HashMap<_, _>>();
+
+                if field_ids.len() != fields.len() {
+                    todo!("error: not all fields are defined")
+                }
+
+                let fields = fields
+                    .into_iter()
+                    .map(|(field, expression)| {
+                        let id = field_ids
+                            .get(&field)
+                            .map_or_else(|| todo!("error: unknown field"), |id| Ok(id))?;
+                        let expression = expression.hir_from_ast(symbol_table, errors)?;
+                        Ok((*id, expression))
+                    })
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
+                
+                Ok(HIRExpressionKind::Structure { id, fields })
             }
             ExpressionKind::Enumeration {
                 enum_name,
                 elem_name,
             } => {
                 let enum_id =
-                    symbol_table.get_identifier_id(&enum_name, false, location.clone(), errors)?;
-                let elem_id =
-                    symbol_table.get_identifier_id(&elem_name, false, location.clone(), errors)?;
+                    symbol_table.get_enum_id(&enum_name, false, location.clone(), errors)?;
+                let elem_id = symbol_table.get_identifier_id(
+                    &format!("{enum_name}::{elem_name}"),
+                    false,
+                    location.clone(),
+                    errors,
+                )?;
                 // TODO check elem is in enum
                 Ok(HIRExpressionKind::Enumeration { enum_id, elem_id })
             }
@@ -181,6 +199,8 @@ where
 impl HIRFromAST for Expression {
     type HIR = HIRExpression;
 
+    // precondition: identifiers are stored in symbol table
+    // postcondition: construct HIR expression and check identifiers good use
     fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,

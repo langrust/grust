@@ -1,7 +1,7 @@
 use crate::error::{Error, TerminationError};
 use crate::frontend::typing_analysis::TypeAnalysis;
 use crate::hir::function::Function;
-use crate::symbol_table::{SymbolKind, SymbolTable};
+use crate::symbol_table::SymbolTable;
 
 impl TypeAnalysis for Function {
     /// [Type] the function.
@@ -74,17 +74,10 @@ impl TypeAnalysis for Function {
         returned.typing(symbol_table, errors)?;
 
         // check returned type
-        let symbol = symbol_table
-            .get_symbol(id)
-            .expect("there should be a symbol");
-        match symbol.kind() {
-            SymbolKind::Function { output_typing, .. } => {
-                returned
-                    .get_type()
-                    .unwrap()
-                    .eq_check(output_typing, location.clone(), errors)
-            }
-            _ => unreachable!(),
-        }
+        let expected_type = symbol_table.get_function_output_type(id);
+        returned
+            .get_type()
+            .unwrap()
+            .eq_check(expected_type, location.clone(), errors)
     }
 }

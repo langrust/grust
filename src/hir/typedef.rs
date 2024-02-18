@@ -14,12 +14,7 @@ pub enum TypedefKind {
         elements: Vec<usize>,
     },
     /// Represents an array definition.
-    Array {
-        /// The array's type.
-        array_type: Type,
-        /// The array's size.
-        size: usize,
-    },
+    Array,
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]

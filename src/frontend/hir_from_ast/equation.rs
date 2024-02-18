@@ -11,17 +11,18 @@ use super::HIRFromAST;
 impl HIRFromAST for Equation {
     type HIR = HIRStatement<HIRStreamExpression>;
 
+    // precondition: equation's signal is already stored in symbol table
+    // postcondition: construct HIR equation and check identifiers good use
     fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<Self::HIR, TerminationError> {
         let Equation {
-            scope,
             id,
-            signal_type,
             expression,
             location,
+            ..
         } = self;
 
         let id = symbol_table.get_signal_id(&id, true, location.clone(), errors)?;

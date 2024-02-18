@@ -5,255 +5,284 @@ expression: file
 typedefs: []
 functions: []
 nodes:
-  - id: counter
-    is_component: false
-    inputs:
-      - - res
-        - Boolean
-      - - tick
-        - Boolean
+  - id: 21
     unscheduled_equations:
-      inc:
-        scope: Local
-        id: inc
-        signal_type: Integer
+      19:
+        id: 19
         expression:
-          FunctionApplication:
-            function_expression:
-              Identifier:
-                id: if_then_else
-                typing:
-                  Abstract:
-                    - - Boolean
-                      - Integer
-                      - Integer
-                    - Integer
-                location: ~
-            inputs:
-              - SignalCall:
-                  signal:
-                    id: tick
-                    scope: Input
-                  typing: Boolean
-                  location: ~
-                  dependencies: ~
-              - Constant:
-                  constant:
-                    Integer: 1
-                  typing: Integer
-                  location: ~
-                  dependencies: ~
-              - Constant:
-                  constant:
-                    Integer: 0
-                  typing: Integer
-                  location: ~
-                  dependencies: ~
-            typing: Integer
-            location: ~
-            dependencies: ~
-        location: ~
-      o:
-        scope: Output
-        id: o
-        signal_type: Integer
-        expression:
-          FunctionApplication:
-            function_expression:
-              Identifier:
-                id: if_then_else
-                typing:
-                  Abstract:
-                    - - Boolean
-                      - Integer
-                      - Integer
-                    - Integer
-                location: ~
-            inputs:
-              - SignalCall:
-                  signal:
-                    id: res
-                    scope: Input
-                  typing: Boolean
-                  location: ~
-                  dependencies: ~
-              - Constant:
-                  constant:
-                    Integer: 0
-                  typing: Integer
-                  location: ~
-                  dependencies: ~
-              - FunctionApplication:
+          kind:
+            Expression:
+              expression:
+                Application:
                   function_expression:
-                    Identifier:
-                      id: " + "
-                      typing:
-                        Abstract:
-                          - - Integer
-                            - Integer
-                          - Integer
-                      location: ~
-                  inputs:
-                    - FunctionApplication:
-                        function_expression:
+                    kind:
+                      Expression:
+                        expression:
                           Identifier:
-                            id: (_)
-                            typing:
-                              Abstract:
-                                - - Integer
-                                - Integer
-                            location: ~
-                        inputs:
-                          - FollowedBy:
+                            id: 15
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 17
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
                               constant:
                                 Integer: 0
-                              expression:
-                                SignalCall:
-                                  signal:
-                                    id: o
-                                    scope: Output
-                                  typing: Integer
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 5
+                                typing: ~
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 2
+                                            typing: ~
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                FollowedBy:
+                                                  constant:
+                                                    Integer: 0
+                                                  expression:
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Identifier:
+                                                            id: 19
+                                                    typing: ~
+                                                    location: ~
+                                                    dependencies: ~
+                                              typing: ~
+                                              location: ~
+                                              dependencies: ~
+                                  typing: ~
                                   location: ~
                                   dependencies: ~
-                              typing: Integer
-                              location: ~
-                              dependencies: ~
-                        typing: Integer
-                        location: ~
-                        dependencies: ~
-                    - SignalCall:
-                        signal:
-                          id: inc
-                          scope: Local
-                        typing: Integer
-                        location: ~
-                        dependencies: ~
-                  typing: Integer
-                  location: ~
-                  dependencies: ~
-            typing: Integer
-            location: ~
-            dependencies: ~
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 20
+                                  typing: ~
+                                  location: ~
+                                  dependencies: ~
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+          typing: ~
+          location: ~
+          dependencies: ~
+        location: ~
+      20:
+        id: 20
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 15
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 18
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Integer: 1
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Integer: 0
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+          typing: ~
+          location: ~
+          dependencies: ~
         location: ~
     unitary_nodes: {}
     contract:
       requires: []
       ensures: []
       invariant: []
-      assert: []
     location: ~
     graph: ~
 component:
-  id: main
-  is_component: true
-  inputs: []
+  id: 24
   unscheduled_equations:
-    half:
-      scope: Local
-      id: half
-      signal_type: Boolean
+    22:
+      id: 22
       expression:
-        FollowedBy:
-          constant:
-            Boolean: true
-          expression:
-            FunctionApplication:
-              function_expression:
-                Identifier:
-                  id: "!"
-                  typing:
-                    Abstract:
-                      - - Boolean
-                      - Boolean
-                  location: ~
-              inputs:
-                - SignalCall:
-                    signal:
-                      id: half
-                      scope: Local
-                    typing: Boolean
-                    location: ~
-                    dependencies: ~
-              typing: Boolean
-              location: ~
-              dependencies: ~
-          typing: Boolean
-          location: ~
-          dependencies: ~
-      location: ~
-    y:
-      scope: Output
-      id: y
-      signal_type: Integer
-      expression:
-        NodeApplication:
-          node: counter
-          inputs:
-            - FollowedBy:
-                constant:
-                  Boolean: false
-                expression:
-                  FunctionApplication:
-                    function_expression:
-                      Identifier:
-                        id: (_)
-                        typing:
-                          Abstract:
-                            - - Boolean
-                            - Boolean
+        kind:
+          NodeApplication:
+            node_id: 21
+            inputs:
+              - - 17
+                - kind:
+                    FollowedBy:
+                      constant:
+                        Boolean: false
+                      expression:
+                        kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 2
+                                  typing: ~
+                                  location: ~
+                                  dependencies: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 13
+                                              typing: ~
+                                              location: ~
+                                              dependencies: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: 22
+                                                typing: ~
+                                                location: ~
+                                                dependencies: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Constant:
+                                                        constant:
+                                                          Integer: 35
+                                                typing: ~
+                                                location: ~
+                                                dependencies: ~
+                                    typing: ~
+                                    location: ~
+                                    dependencies: ~
+                        typing: ~
                         location: ~
-                    inputs:
-                      - FunctionApplication:
-                          function_expression:
-                            Identifier:
-                              id: " > "
-                              typing:
-                                Abstract:
-                                  - - Integer
-                                    - Integer
-                                  - Boolean
-                              location: ~
-                          inputs:
-                            - SignalCall:
-                                signal:
-                                  id: y
-                                  scope: Output
-                                typing: Integer
-                                location: ~
-                                dependencies: ~
-                            - Constant:
-                                constant:
-                                  Integer: 35
-                                typing: Integer
-                                location: ~
-                                dependencies: ~
-                          typing: Boolean
+                        dependencies: ~
+                  typing: ~
+                  location: ~
+                  dependencies: ~
+              - - 18
+                - kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 23
+                  typing: ~
+                  location: ~
+                  dependencies: ~
+            output_id: 19
+        typing: ~
+        location: ~
+        dependencies: ~
+      location: ~
+    23:
+      id: 23
+      expression:
+        kind:
+          FollowedBy:
+            constant:
+              Boolean: true
+            expression:
+              kind:
+                Expression:
+                  expression:
+                    Application:
+                      function_expression:
+                        kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: 1
+                        typing: ~
+                        location: ~
+                        dependencies: ~
+                      inputs:
+                        - kind:
+                            Expression:
+                              expression:
+                                Identifier:
+                                  id: 23
+                          typing: ~
                           location: ~
                           dependencies: ~
-                    typing: Boolean
-                    location: ~
-                    dependencies: ~
-                typing: Boolean
-                location: ~
-                dependencies: ~
-            - SignalCall:
-                signal:
-                  id: half
-                  scope: Local
-                typing: Boolean
-                location: ~
-                dependencies: ~
-          signal: o
-          typing: Integer
-          location: ~
-          dependencies: ~
+              typing: ~
+              location: ~
+              dependencies: ~
+        typing: ~
+        location: ~
+        dependencies: ~
       location: ~
   unitary_nodes: {}
   contract:
     requires: []
     ensures: []
     invariant: []
-    assert: []
   location: ~
   graph: ~
 location: ~

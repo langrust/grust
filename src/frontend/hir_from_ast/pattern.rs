@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ast::pattern::{Pattern, PatternKind};
 use crate::error::{Error, TerminationError};
 use crate::hir::pattern::{Pattern as HIRPattern, PatternKind as HIRPatternKind};
@@ -30,29 +32,33 @@ impl HIRFromAST for Pattern {
                 })
             }
             PatternKind::Structure { name, fields } => {
-                let id = symbol_table.get_identifier_id(&name, false, location.clone(), errors)?;
+                let id = symbol_table.get_struct_id(&name, false, location.clone(), errors)?;
+                let field_ids = symbol_table
+                    .get_struct_fields(&id)
+                    .clone()
+                    .into_iter()
+                    .map(|id| (symbol_table.get_name(&id).clone(), id))
+                    .collect::<HashMap<_, _>>();
+
+                if field_ids.len() != fields.len() {
+                    todo!("error: not all fields are defined")
+                }
+
+                let fields = fields
+                    .into_iter()
+                    .map(|(field_name, pattern)| {
+                        let id = field_ids
+                            .get(&field_name)
+                            .map_or_else(|| todo!("error: unknown field"), |id| Ok(id))?;
+                        let pattern = pattern.hir_from_ast(symbol_table, errors)?;
+                        Ok((*id, pattern))
+                    })
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
+
                 Ok(HIRPattern {
-                    kind: HIRPatternKind::Structure {
-                        id,
-                        fields: fields
-                            .into_iter()
-                            .map(|(field_name, pattern)| {
-                                symbol_table.local();
-                                let id = symbol_table.insert_identifier(
-                                    field_name,
-                                    None,
-                                    true,
-                                    location.clone(),
-                                    errors,
-                                )?;
-                                let pattern = pattern.hir_from_ast(symbol_table, errors)?;
-                                symbol_table.global();
-                                Ok((id, pattern))
-                            })
-                            .collect::<Vec<Result<_, _>>>()
-                            .into_iter()
-                            .collect::<Result<Vec<_>, _>>()?,
-                    },
+                    kind: HIRPatternKind::Structure { id, fields },
                     typing: None,
                     location,
                 })
@@ -62,9 +68,13 @@ impl HIRFromAST for Pattern {
                 elem_name,
             } => {
                 let enum_id =
-                    symbol_table.get_identifier_id(&enum_name, false, location.clone(), errors)?;
-                let elem_id =
-                    symbol_table.get_identifier_id(&elem_name, false, location.clone(), errors)?;
+                    symbol_table.get_enum_id(&enum_name, false, location.clone(), errors)?;
+                let elem_id = symbol_table.get_identifier_id(
+                    &format!("{enum_name}::{elem_name}"),
+                    false,
+                    location.clone(),
+                    errors,
+                )?;
                 Ok(HIRPattern {
                     kind: HIRPatternKind::Enumeration { enum_id, elem_id },
                     typing: None,

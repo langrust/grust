@@ -8,6 +8,8 @@ use super::HIRFromAST;
 impl HIRFromAST for Statement {
     type HIR = HIRStatement<HIRExpression>;
 
+    // precondition: NOTHING is in symbol table
+    // postcondition: construct HIR statement and check identifiers good use
     fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
@@ -20,7 +22,9 @@ impl HIRFromAST for Statement {
             location,
         } = self;
 
-        let id = symbol_table.insert_identifier(id, None, true, location.clone(), errors)?;
+        let typing = element_type.hir_from_ast(&location, symbol_table, errors)?;
+        let id =
+            symbol_table.insert_identifier(id, Some(typing), true, location.clone(), errors)?;
 
         Ok(HIRStatement {
             id,

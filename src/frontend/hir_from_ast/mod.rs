@@ -21,12 +21,13 @@ pub mod pattern;
 pub mod statement;
 /// HIR StreamExpression construction from AST StreamExpression
 pub mod stream_expression;
+pub mod r#type;
 pub mod typedef;
 
 pub trait HIRFromAST {
     type HIR;
 
-    /// Transforms AST into HIR.
+    /// Transforms AST into HIR and check identifiers good use.
     fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
