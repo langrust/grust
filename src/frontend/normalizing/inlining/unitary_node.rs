@@ -39,15 +39,14 @@ impl UnitaryNode {
     ) {
         // create identifier creator containing the signals
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
-        // get graph
-        let graph = self.graph.get_mut().unwrap();
+
         // compute new statements for the unitary node
         let mut new_statements: Vec<Statement<StreamExpression>> = vec![];
         self.statements.iter().for_each(|statement| {
             let mut retrieved_statements = statement.inline_when_needed_reccursive(
                 &mut self.memory,
                 &mut identifier_creator,
-                graph,
+                &mut self.graph,
                 symbol_table,
                 nodes,
             );
@@ -98,9 +97,8 @@ impl UnitaryNode {
             .collect::<HashMap<_, _>>();
 
         // add output to context
-
         new_output_signal.map(|new_output_signal| {
-            let output_id = *symbol_table.get_unitary_node_output_id(&self.unitary_node_id);
+            let output_id = *symbol_table.get_unitary_node_output_id(&self.id);
             context_map.insert(output_id, Union::I1(new_output_signal));
         });
 
@@ -148,6 +146,6 @@ impl UnitaryNode {
                 }
             },
         );
-        self.graph = OnceCell::from(graph);
+        self.graph = graph;
     }
 }

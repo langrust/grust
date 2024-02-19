@@ -27,15 +27,13 @@ impl UnitaryNode {
     /// }
     /// ```
     pub fn schedule(&mut self) {
-        let graph = self
-            .graph
-            .get()
-            .expect("node dependency graph should be computed");
-        let mut subgraph = graph.clone();
-        graph.all_edges().for_each(|(from, to, label)| match label {
-            Label::Weight(0) => (),
-            _ => assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
-        });
+        let mut subgraph = self.graph.clone();
+        self.graph
+            .all_edges()
+            .for_each(|(from, to, label)| match label {
+                Label::Weight(0) => (),
+                _ => assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
+            });
 
         let schedule = toposort(&subgraph, None).unwrap();
 

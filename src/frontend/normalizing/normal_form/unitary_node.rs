@@ -65,6 +65,6 @@ impl UnitaryNode {
                 }
             },
         );
-        self.graph.set(graph).unwrap();
+        self.graph = graph;
     }
 }

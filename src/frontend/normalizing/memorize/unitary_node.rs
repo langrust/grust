@@ -3,8 +3,8 @@ use petgraph::graphmap::GraphMap;
 use crate::{
     common::graph::neighbor::Label,
     hir::{
-        identifier_creator::IdentifierCreator, memory::Memory, once_cell::OnceCell,
-        statement::Statement, unitary_node::UnitaryNode,
+        identifier_creator::IdentifierCreator, memory::Memory, statement::Statement,
+        unitary_node::UnitaryNode,
     },
     symbol_table::SymbolTable,
 };
@@ -78,6 +78,6 @@ impl UnitaryNode {
                 }
             },
         );
-        self.graph = OnceCell::from(graph);
+        self.graph = graph;
     }
 }

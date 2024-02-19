@@ -58,15 +58,19 @@ impl File {
         let mut nodes_reduced_graphs = HashMap::new();
         // get every nodes' graphs
         self.nodes.iter().for_each(|node| {
-            assert!(nodes_reduced_graphs
-                .insert(node.id.clone(), node.graph.get().unwrap().clone())
-                .is_none())
+            node.unitary_nodes.values().for_each(|unitary_node| {
+                assert!(nodes_reduced_graphs
+                    .insert(unitary_node.id.clone(), unitary_node.graph.clone())
+                    .is_none())
+            })
         });
         // get optional component's graph
         if let Some(component) = self.component.as_ref() {
-            assert!(nodes_reduced_graphs
-                .insert(component.id.clone(), component.graph.get().unwrap().clone())
-                .is_none())
+            component.unitary_nodes.values().for_each(|unitary_node| {
+                assert!(nodes_reduced_graphs
+                    .insert(unitary_node.id.clone(), unitary_node.graph.clone())
+                    .is_none())
+            })
         };
 
         self.nodes
