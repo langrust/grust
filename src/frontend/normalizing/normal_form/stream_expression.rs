@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use petgraph::graphmap::DiGraphMap;
 
 use crate::common::graph::neighbor::Label;
+use crate::common::scope::Scope;
 use crate::hir::expression::ExpressionKind;
 use crate::hir::stream_expression::StreamExpressionKind;
 use crate::hir::{
@@ -71,15 +72,6 @@ impl StreamExpression {
                     })
                     .collect::<Vec<_>>();
 
-                let fresh_name = identifier_creator.new_identifier(
-                    String::from(""),
-                    String::from("x"),
-                    String::from(""),
-                );
-                let fresh_id = symbol_table
-                    .insert_identifier(fresh_name, todo!(), true, todo!(), todo!())
-                    .expect("this function should not fail");
-
                 // change dependencies to be the sum of inputs dependencies
                 let reduced_graph = nodes_reduced_graphs.get(&node_id).unwrap();
                 self.dependencies = Dependencies::from(
@@ -104,22 +96,30 @@ impl StreamExpression {
                         .collect(),
                 );
 
-                let typing = self.get_type().clone();
-                let location = self.location.clone();
+                // create fresh identifier for the new statement
+                let fresh_name = identifier_creator.new_identifier(
+                    String::from(""),
+                    String::from("x"),
+                    String::from(""),
+                );
+                let typing = self.get_type().cloned();
+                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing);
 
+                // create statement for unitary node call
                 let unitary_node_application_statement = Statement {
-                    id: fresh_id.clone(),
-                    location: location.clone(),
+                    id: fresh_id,
+                    location: self.location.clone(),
                     expression: self.clone(),
                 };
+                new_statements.push(unitary_node_application_statement);
 
+                // change current expression be an identifier to the statement of the unitary node call
                 self.kind = StreamExpressionKind::Expression {
                     expression: ExpressionKind::Identifier { id: fresh_id },
                 };
                 self.dependencies = Dependencies::from(vec![(fresh_id, 0)]);
 
-                new_statements.push(unitary_node_application_statement);
-
+                // return new additional statements
                 new_statements
             }
             StreamExpressionKind::Expression { ref mut expression } => {
@@ -379,11 +379,12 @@ impl StreamExpression {
 
                         new_statements
                     }
-                    ExpressionKind::Constant { .. } | ExpressionKind::Identifier { .. } => {
+                    ExpressionKind::Constant { .. }
+                    | ExpressionKind::Identifier { .. }
+                    | ExpressionKind::Enumeration { .. }
+                    | ExpressionKind::Abstraction { .. } => {
                         vec![]
                     }
-                    ExpressionKind::Abstraction { inputs, expression } => todo!(),
-                    ExpressionKind::Enumeration { enum_id, elem_id } => todo!(),
                 }
             }
         }
@@ -418,30 +419,30 @@ impl StreamExpression {
                 let mut statements =
                     self.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
-                let typing = self.get_type().clone();
-                let location = self.location.clone();
-
+                // create fresh identifier for the new statement
                 let fresh_name = identifier_creator.new_identifier(
                     String::from(""),
                     String::from("x"),
                     String::from(""),
                 );
-                let fresh_id = symbol_table
-                    .insert_identifier(fresh_name, todo!(), true, todo!(), todo!())
-                    .expect("this function should not fail");
+                let typing = self.get_type().cloned();
+                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing);
 
+                // create statement for the expression
                 let new_statement = Statement {
-                    id: fresh_id.clone(),
-                    location: location.clone(),
+                    id: fresh_id,
+                    location: self.location.clone(),
                     expression: self.clone(),
                 };
+                statements.push(new_statement);
 
+                // change current expression be an identifier to the statement of the expression
                 self.kind = StreamExpressionKind::Expression {
                     expression: ExpressionKind::Identifier { id: fresh_id },
                 };
                 self.dependencies = Dependencies::from(vec![(fresh_id, 0)]);
 
-                statements.push(new_statement);
+                // return new additional statements
                 statements
             }
         }

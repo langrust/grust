@@ -5,6 +5,7 @@ use petgraph::graphmap::DiGraphMap;
 use crate::{
     common::graph::neighbor::Label,
     hir::{
+        dependencies::Dependencies,
         identifier_creator::IdentifierCreator,
         statement::Statement,
         stream_expression::{StreamExpression, StreamExpressionKind},
@@ -62,7 +63,29 @@ impl Statement<StreamExpression> {
                     })
                     .collect::<Vec<_>>();
 
-                // TODO: change dependencies to be the sum of inputs dependencies?
+                // change dependencies to be the sum of inputs dependencies
+                let reduced_graph = nodes_reduced_graphs.get(&node_id).unwrap();
+                expression.dependencies = Dependencies::from(
+                    inputs
+                        .iter()
+                        .flat_map(|(input_id, expression)| {
+                            reduced_graph.edge_weight(output_id, *input_id).map_or(
+                                vec![],
+                                |label| {
+                                    match label {
+                                        Label::Contract => vec![], // TODO: do we loose the CREUSOT dependence with the input?
+                                        Label::Weight(weight) => expression
+                                            .get_dependencies()
+                                            .clone()
+                                            .into_iter()
+                                            .map(|(id, depth)| (id, depth + weight))
+                                            .collect(),
+                                    }
+                                },
+                            )
+                        })
+                        .collect(),
+                );
 
                 new_statements
             }

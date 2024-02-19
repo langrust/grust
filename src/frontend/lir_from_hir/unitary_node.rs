@@ -18,20 +18,20 @@ impl LIRFromHIR for UnitaryNode {
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         let UnitaryNode {
-            unitary_node_id,
+            id,
             statements,
             memory,
             ..
         } = self;
 
-        let inputs = symbol_table.get_node_inputs(&unitary_node_id);
+        let inputs = symbol_table.get_node_inputs(&id);
         let output_type = symbol_table
-            .get_unitary_node_output_type(&unitary_node_id)
+            .get_unitary_node_output_type(&id)
             .clone();
 
         let output_expression = LIRExpression::Identifier {
             identifier: symbol_table
-                .get_unitary_node_output_name(&unitary_node_id)
+                .get_unitary_node_output_name(&id)
                 .clone(),
         };
 
@@ -45,7 +45,7 @@ impl LIRFromHIR for UnitaryNode {
         let (elements, state_elements_init, state_elements_step) =
             memory.get_state_elements(symbol_table);
 
-        let name = symbol_table.get_name(&unitary_node_id);
+        let name = symbol_table.get_name(&id);
 
         NodeFile {
             name: name.clone(),

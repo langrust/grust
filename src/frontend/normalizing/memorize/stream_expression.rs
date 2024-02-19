@@ -38,25 +38,25 @@ impl StreamExpression {
                 constant,
                 expression,
             } => {
+                // create fresh identifier for the new memory buffer
                 let name = symbol_table.get_name(&signal_id);
                 let memory_name = identifier_creator.new_identifier(
                     String::from("mem"),
                     name.clone(),
                     String::from(""),
                 );
-                // TODO maybe add this function of the identifier creator
-                let memory_id = symbol_table
-                    .insert_signal(
-                        memory_name,
-                        Scope::Memory,
-                        self.typing.clone(),
-                        true,
-                        todo!(),
-                        todo!(),
-                    )
-                    .expect("this function should not raise errors");
+                let typing = self.typing.clone();
+                let memory_id =
+                    symbol_table.insert_fresh_signal(memory_name, Scope::Memory, typing);
+
+                // add buffer to memory
                 memory.add_buffer(memory_id, constant.clone(), *expression.clone());
+                
+                // replace signal id by memory id in contract
+                // (Creusot only has access to function input and output in its contract)
                 contract.substitution(signal_id, memory_id);
+                
+                // replace fby expression by a call to buffer
                 self.kind = StreamExpressionKind::Expression {
                     expression: ExpressionKind::Identifier { id: memory_id },
                 };

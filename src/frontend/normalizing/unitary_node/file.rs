@@ -57,11 +57,11 @@ impl File {
         })?;
 
         // change node application to unitary node application
-        self.nodes
-            .iter_mut()
-            .for_each(|node| node.change_node_application_into_unitary_node_application());
+        self.nodes.iter_mut().for_each(|node| {
+            node.change_node_application_into_unitary_node_application(symbol_table)
+        });
         if let Some(component) = self.component.as_mut() {
-            component.change_node_application_into_unitary_node_application()
+            component.change_node_application_into_unitary_node_application(symbol_table)
         };
 
         Ok(())

@@ -45,7 +45,40 @@ pub struct Contract {
 }
 
 impl Contract {
-    pub fn substitution(&mut self, id: usize, new_id: usize) {
-        todo!()
+    pub fn substitution(&mut self, old_id: usize, new_id: usize) {
+        self.requires
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
+        self.ensures
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
+        self.invariant
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
+    }
+}
+
+mod term {
+    use super::{Term, TermKind};
+
+    impl Term {
+        pub fn substitution(&mut self, old_id: usize, new_id: usize) {
+            match &mut self.kind {
+                TermKind::Constant { .. } => (),
+                TermKind::Identifier { ref mut id } => {
+                    if *id == old_id {
+                        *id = new_id
+                    }
+                }
+                TermKind::Binary {
+                    ref mut left,
+                    ref mut right,
+                    ..
+                } => {
+                    left.substitution(old_id, new_id);
+                    right.substitution(old_id, new_id);
+                }
+            }
+        }
     }
 }

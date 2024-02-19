@@ -1,4 +1,7 @@
-use crate::hir::stream_expression::{StreamExpression, StreamExpressionKind};
+use crate::{
+    hir::stream_expression::{StreamExpression, StreamExpressionKind},
+    symbol_table::SymbolTable,
+};
 
 impl StreamExpression {
     /// Change node application expressions into unitary node application.
@@ -18,25 +21,33 @@ impl StreamExpression {
     ///
     /// The application of the node `my_node(g-1, v).o2` is changed
     /// to the application of the unitary node `my_node(v).o2`
-    pub fn change_node_application_into_unitary_node_application(&mut self) {
+    pub fn change_node_application_into_unitary_node_application(
+        &mut self,
+        symbol_table: &SymbolTable,
+    ) {
         match &mut self.kind {
             StreamExpressionKind::FollowedBy {
                 ref mut expression, ..
-            } => expression.change_node_application_into_unitary_node_application(),
+            } => expression.change_node_application_into_unitary_node_application(symbol_table),
             StreamExpressionKind::NodeApplication {
                 node_id,
                 inputs,
                 output_id,
             } => {
-                let unitary_node_id: usize = todo!("get id from symbol table");
-                let used_inputs: Vec<&bool> = todo!("get used inputs from symbol table");
+                let unitary_node_id = symbol_table.get_unitary_node_id(
+                    symbol_table.get_name(node_id),
+                    symbol_table.get_name(output_id),
+                );
+                let used_inputs = symbol_table.get_unitary_node_used_inputs(&unitary_node_id);
 
                 let inputs = inputs
                     .iter_mut()
                     .zip(used_inputs)
-                    .filter_map(|(expression, used)| {
-                        if *used {
-                            Some(expression.clone())
+                    .filter_map(|((input_id, expression), used)| {
+                        expression
+                            .change_node_application_into_unitary_node_application(symbol_table);
+                        if used {
+                            Some((*input_id, expression.clone()))
                         } else {
                             None
                         }

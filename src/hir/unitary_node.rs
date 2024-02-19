@@ -2,8 +2,7 @@ use petgraph::graphmap::DiGraphMap;
 
 use crate::common::{graph::neighbor::Label, location::Location};
 use crate::hir::{
-    contract::Contract, memory::Memory, once_cell::OnceCell, statement::Statement,
-    stream_expression::StreamExpression,
+    contract::Contract, memory::Memory, statement::Statement, stream_expression::StreamExpression,
 };
 use crate::symbol_table::SymbolTable;
 
@@ -11,7 +10,7 @@ use crate::symbol_table::SymbolTable;
 /// LanGRust unitary node HIR.
 pub struct UnitaryNode {
     /// The unitary node id in Symbol Table.
-    pub unitary_node_id: usize,
+    pub id: usize,
     /// Unitary node's statements.
     pub statements: Vec<Statement<StreamExpression>>,
     /// Unitary node's memory.
@@ -19,7 +18,7 @@ pub struct UnitaryNode {
     /// Mother node location.
     pub location: Location,
     /// Unitary node dependency graph.
-    pub graph: OnceCell<DiGraphMap<usize, Label>>,
+    pub graph: DiGraphMap<usize, Label>,
     /// Unitary node contracts.
     pub contract: Contract,
 }
@@ -29,7 +28,7 @@ impl PartialEq for UnitaryNode {
         self.statements == other.statements
             && self.memory == other.memory
             && self.location == other.location
-            && self.eq_oncecell_graph(other)
+            && self.eq_graph(other)
             && self.contract == other.contract
     }
 }
@@ -66,23 +65,11 @@ impl UnitaryNode {
             && self.location == other.location
     }
 
-    fn eq_oncecell_graph(&self, other: &UnitaryNode) -> bool {
-        fn eq_graph(graph: &DiGraphMap<usize, Label>, other: &DiGraphMap<usize, Label>) -> bool {
-            let graph_nodes = graph.nodes();
-            let other_nodes = other.nodes();
-            let graph_edges = graph.all_edges();
-            let other_edges = other.all_edges();
-            graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
-        }
-
-        self.graph.get().map_or_else(
-            || other.graph.get().is_none(),
-            |graph| {
-                other
-                    .graph
-                    .get()
-                    .map_or(false, |other| eq_graph(graph, other))
-            },
-        )
+    fn eq_graph(&self, other: &UnitaryNode) -> bool {
+        let graph_nodes = self.graph.nodes();
+        let other_nodes = other.graph.nodes();
+        let graph_edges = self.graph.all_edges();
+        let other_edges = other.graph.all_edges();
+        graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
     }
 }

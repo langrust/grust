@@ -1,10 +1,8 @@
 use petgraph::algo::has_path_connecting;
-use petgraph::graphmap::DiGraphMap;
 
-use crate::common::graph::neighbor::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::contract::Term;
-use crate::hir::{memory::Memory, node::Node, once_cell::OnceCell, unitary_node::UnitaryNode};
+use crate::hir::{memory::Memory, node::Node, unitary_node::UnitaryNode};
 use crate::symbol_table::SymbolTable;
 use crate::{common::scope::Scope, hir::contract::Contract};
 
@@ -26,12 +24,15 @@ impl Node {
     ///
     /// The application of the node `my_node(g-1, v).o2` is changed
     /// to the application of the unitary node `my_node(v).o2`
-    pub fn change_node_application_into_unitary_node_application(&mut self) {
+    pub fn change_node_application_into_unitary_node_application(
+        &mut self,
+        symbol_table: &SymbolTable,
+    ) {
         self.unitary_nodes.values_mut().for_each(|unitary_node| {
             unitary_node.statements.iter_mut().for_each(|equation| {
                 equation
                     .expression
-                    .change_node_application_into_unitary_node_application()
+                    .change_node_application_into_unitary_node_application(symbol_table)
             })
         })
     }
@@ -60,8 +61,7 @@ impl Node {
         // construct unitary node for each output and get used signals
         let used_signals = outputs
             .into_iter()
-            .map(|output| self.add_unitary_node(output, symbol_table, creusot_contract))
-            .flat_map(|subgraph| subgraph.nodes().collect::<Vec<_>>())
+            .flat_map(|output| self.add_unitary_node(output, symbol_table, creusot_contract))
             .collect::<Vec<_>>();
 
         // check that every signals are used
@@ -71,7 +71,7 @@ impl Node {
             .expect("node dependency graph should be computed");
         let unused_signals = graph
             .nodes()
-            .filter(|id| used_signals.contains(id))
+            .filter(|id| !used_signals.contains(id))
             .collect::<Vec<_>>();
         unused_signals
             .into_iter()
@@ -94,7 +94,7 @@ impl Node {
         output: usize,
         symbol_table: &mut SymbolTable,
         creusot_contract: bool,
-    ) -> DiGraphMap<usize, Label> {
+    ) -> Vec<usize> {
         let Node {
             id: node,
             unscheduled_equations,
@@ -157,32 +157,29 @@ impl Node {
             invariant: retrieve_terms(invariant),
         };
 
-        let unitary_node_name = format!(
-            "{}_{}",
-            symbol_table.get_name(node),
-            symbol_table.get_name(&output),
-        );
-        let unitary_node_id = symbol_table.insert_unitary_node(
-            unitary_node_name,
+        let id = symbol_table.insert_unitary_node(
+            symbol_table.get_name(node).clone(),
+            symbol_table.get_name(&output).clone(),
             symbol_table.is_component(node),
             *node,
             unitary_node_inputs,
             output,
         );
 
+        let used_signals = subgraph.nodes().collect::<Vec<_>>();
+
         // construct unitary node
         let unitary_node = UnitaryNode {
-            unitary_node_id,
+            id,
             contract,
             statements,
             memory: Memory::new(),
             location: location.clone(),
-            graph: OnceCell::new(),
+            graph: subgraph,
         };
-
         // insert it in node's storage
         unitary_nodes.insert(output, unitary_node);
 
-        subgraph
+        used_signals
     }
 }

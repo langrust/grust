@@ -380,12 +380,14 @@ impl SymbolTable {
 
     pub fn insert_unitary_node(
         &mut self,
-        name: String,
+        node_name: String,
+        output_name: String,
         is_component: bool,
         mother_node: usize,
         inputs: Vec<usize>,
         output: usize,
     ) -> usize {
+        let name = format!("{node_name}_{output_name}");
         let symbol = Symbol {
             kind: SymbolKind::UnitaryNode {
                 is_component,
@@ -398,6 +400,24 @@ impl SymbolTable {
 
         self.insert_symbol(symbol, false, Location::default(), &mut vec![])
             .expect("you should not fail")
+    }
+
+    pub fn insert_fresh_signal(
+        &mut self,
+        fresh_name: String,
+        scope: Scope,
+        typing: Option<Type>,
+    ) -> usize {
+        let symbol = Symbol {
+            kind: SymbolKind::Identifier {
+                scope,
+                typing,
+            },
+            name: fresh_name,
+        };
+
+        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            .expect("you should not fail") // todo make it local
     }
 
     fn restore_context_from<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
@@ -492,6 +512,26 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::UnitaryNode { output, .. } => output,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_unitary_node_used_inputs(&self, id: &usize) -> Vec<bool> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::UnitaryNode {
+                mother_node,
+                inputs,
+                ..
+            } => {
+                let mother_node_inputs = self.get_node_inputs(mother_node);
+                mother_node_inputs
+                    .iter()
+                    .map(|id| inputs.contains(id))
+                    .collect()
+            }
             _ => unreachable!(),
         }
     }
@@ -829,5 +869,13 @@ impl SymbolTable {
                 Err(TerminationError)
             }
         }
+    }
+
+    pub fn get_unitary_node_id(&self, node_name: &String, output_name: &String) -> usize {
+        let symbol_hash = format!("unitary_node {node_name}_{}", output_name);
+        *self
+            .known_symbols
+            .get_id(&symbol_hash, false)
+            .expect("there should be an unitary node")
     }
 }
