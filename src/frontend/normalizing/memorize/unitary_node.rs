@@ -45,7 +45,9 @@ impl UnitaryNode {
     ///
     /// This example is tested in source.
     pub fn memorize(&mut self, symbol_table: &mut SymbolTable) {
+        // create an IdentifierCreator, a local SymbolTable and Memory
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
+        symbol_table.local();
         let mut memory = Memory::new();
 
         self.statements.iter_mut().for_each(|statement| {
@@ -57,6 +59,8 @@ impl UnitaryNode {
             )
         });
 
+        // drop IdentifierCreator (auto), local SymbolTable and set Memory
+        symbol_table.global();
         self.memory = memory;
 
         // add a dependency graph to the unitary node

@@ -38,7 +38,7 @@ where
                 ..
             } => {
                 if function_expression.is_if_then_else(symbol_table) {
-                    assert!(inputs.len() == 3);
+                    debug_assert_eq!(inputs.len(), 3);
                     let else_branch = inputs.pop().unwrap().lir_from_hir(symbol_table);
                     let then_branch = inputs.pop().unwrap().lir_from_hir(symbol_table);
                     let condition = inputs.pop().unwrap().lir_from_hir(symbol_table);

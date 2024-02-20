@@ -37,7 +37,9 @@ impl UnitaryNode {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         symbol_table: &mut SymbolTable,
     ) {
+        // create an IdentifierCreator and a local SymbolTable
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
+        symbol_table.local();
 
         let UnitaryNode { statements, .. } = self;
 
@@ -48,6 +50,9 @@ impl UnitaryNode {
                 equation.normal_form(nodes_reduced_graphs, &mut identifier_creator, symbol_table)
             })
             .collect();
+        
+        // drop IdentifierCreator (auto) and local SymbolTable
+        symbol_table.global();
 
         // add a dependency graph to the unitary node
         let mut graph = GraphMap::new();

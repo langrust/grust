@@ -5,8 +5,8 @@ use petgraph::graphmap::GraphMap;
 use crate::{
     common::graph::neighbor::Label,
     hir::{
-        identifier_creator::IdentifierCreator, memory::Memory, node::Node, once_cell::OnceCell,
-        statement::Statement, stream_expression::StreamExpression, unitary_node::UnitaryNode,
+        identifier_creator::IdentifierCreator, memory::Memory, statement::Statement,
+        stream_expression::StreamExpression, unitary_node::UnitaryNode,
     },
     symbol_table::SymbolTable,
 };
@@ -34,7 +34,7 @@ impl UnitaryNode {
     /// which can not be computed by a function call.
     pub fn inline_when_needed(
         &mut self,
-        nodes: &HashMap<usize, Node>,
+        unitary_nodes: &HashMap<usize, UnitaryNode>,
         symbol_table: &mut SymbolTable,
     ) {
         // create identifier creator containing the signals
@@ -48,7 +48,7 @@ impl UnitaryNode {
                 &mut identifier_creator,
                 &mut self.graph,
                 symbol_table,
-                nodes,
+                unitary_nodes,
             );
             new_statements.append(&mut retrieved_statements)
         });

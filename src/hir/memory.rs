@@ -101,7 +101,7 @@ impl Memory {
         expression: StreamExpression,
     ) {
         let typing = initial_value.get_type();
-        assert!(self
+        debug_assert!(self
             .buffers
             .insert(
                 memory_id,
@@ -135,7 +135,7 @@ impl Memory {
     /// assert!(memory.buffers.is_empty());
     /// ```
     pub fn add_called_node(&mut self, memory_id: usize, node_id: usize, signal_id: usize) {
-        assert!(self
+        debug_assert!(self
             .called_nodes
             .insert(memory_id, CalledNode { node_id, signal_id })
             .is_none())

@@ -558,13 +558,6 @@ impl SymbolTable {
         &symbol.name
     }
 
-    pub fn set_name(&mut self, id: &usize, new_name: String) {
-        let symbol = self
-            .get_symbol_mut(id)
-            .expect(&format!("expect symbol for {id}"));
-        symbol.name = new_name;
-    }
-
     pub fn get_scope(&self, id: &usize) -> &Scope {
         let symbol = self
             .get_symbol(id)

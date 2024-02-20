@@ -25,7 +25,11 @@ impl File {
         let nodes = self
             .nodes
             .iter()
-            .map(|node| (node.id.clone(), node.clone()))
+            .flat_map(|node| {
+                node.unitary_nodes
+                    .values()
+                    .map(|unitary_node| (unitary_node.id.clone(), unitary_node.clone()))
+            })
             .collect::<HashMap<_, _>>();
         self.nodes
             .iter_mut()
