@@ -27,24 +27,32 @@ impl Memory {
     ) {
         self.buffers.keys().for_each(|id| {
             let name = symbol_table.get_name(id);
-            let new_name =
+            let fresh_name =
                 identifier_creator.new_identifier(String::new(), name.clone(), String::new());
-            if &new_name != name {
-                let new_id = symbol_table
-                    .insert_signal(new_name, Scope::Memory, todo!(), true, todo!(), todo!())
-                    .expect("do another function");
-                assert!(context_map.insert(id.clone(), Union::I1(new_id)).is_none());
+            if &fresh_name != name {
+                // TODO: should we just replace anyway?
+                let scope = symbol_table.get_scope(id).clone(); // supposed to be Scope::Memory
+                debug_assert_eq!(scope, Scope::Memory);
+                let typing = Some(symbol_table.get_type(id).clone());
+                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
+                debug_assert!(context_map
+                    .insert(id.clone(), Union::I1(fresh_id))
+                    .is_none());
             }
         });
         self.called_nodes.keys().for_each(|id| {
             let name = symbol_table.get_name(id);
-            let new_name =
+            let fresh_name =
                 identifier_creator.new_identifier(String::new(), name.clone(), String::new());
-            if &new_name != name {
-                let new_id = symbol_table
-                    .insert_signal(new_name, Scope::Memory, todo!(), true, todo!(), todo!())
-                    .expect("do another function");
-                assert!(context_map.insert(id.clone(), Union::I1(new_id)).is_none());
+            if &fresh_name != name {
+                // TODO: should we just replace anyway?
+                let scope = symbol_table.get_scope(id).clone(); // supposed to be Scope::Memory
+                debug_assert_eq!(scope, Scope::Memory);
+                let typing = Some(symbol_table.get_type(id).clone());
+                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
+                debug_assert!(context_map
+                    .insert(id.clone(), Union::I1(fresh_id))
+                    .is_none());
             }
         })
     }

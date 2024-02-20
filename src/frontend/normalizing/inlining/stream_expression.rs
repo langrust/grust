@@ -9,9 +9,9 @@ use crate::{
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
         memory::Memory,
-        node::Node,
         statement::Statement,
         stream_expression::{StreamExpression, StreamExpressionKind},
+        unitary_node::UnitaryNode,
     },
     symbol_table::SymbolTable,
 };
@@ -38,7 +38,9 @@ impl StreamExpression {
         match self.kind {
             StreamExpressionKind::Expression { ref mut expression } => {
                 match expression {
-                    ExpressionKind::Constant { .. } => (),
+                    ExpressionKind::Constant { .. }
+                    | ExpressionKind::Abstraction { .. }
+                    | ExpressionKind::Enumeration { .. } => (),
                     ExpressionKind::Identifier { ref mut id } => {
                         if let Some(element) = context_map.get(id) {
                             match element {
@@ -118,7 +120,7 @@ impl StreamExpression {
                                     expression_dependencies.append(&mut bound_dependencies);
                                 };
 
-                                assert!(body.is_empty());
+                                debug_assert!(body.is_empty());
                                 // body.iter_mut().for_each(|statement| {
                                 //     statement.expression.replace_by_context(&context_map)
                                 // });
@@ -147,7 +149,7 @@ impl StreamExpression {
                         option.replace_by_context(context_map);
                         let mut option_dependencies = option.get_dependencies().clone();
 
-                        assert!(present_body.is_empty());
+                        debug_assert!(present_body.is_empty());
                         // present_body
                         //     .iter_mut()
                         //     .for_each(|statement| statement.expression.replace_by_context(context_map));
@@ -155,7 +157,7 @@ impl StreamExpression {
                         present.replace_by_context(context_map);
                         let mut present_dependencies = present.get_dependencies().clone();
 
-                        assert!(default_body.is_empty());
+                        debug_assert!(default_body.is_empty());
                         // default_body
                         //     .iter_mut()
                         //     .for_each(|statement| statement.expression.replace_by_context(context_map));
@@ -231,8 +233,6 @@ impl StreamExpression {
                                 .collect(),
                         );
                     }
-                    ExpressionKind::Abstraction { inputs, expression } => todo!(),
-                    ExpressionKind::Enumeration { enum_id, elem_id } => todo!(),
                 }
             }
             StreamExpressionKind::FollowedBy {
@@ -307,7 +307,7 @@ impl StreamExpression {
         identifier_creator: &mut IdentifierCreator,
         graph: &DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        nodes: &HashMap<usize, Node>,
+        unitary_nodes: &HashMap<usize, UnitaryNode>,
     ) -> Vec<Statement<StreamExpression>> {
         match &mut self.kind {
             StreamExpressionKind::Expression { .. } => vec![],
@@ -320,7 +320,7 @@ impl StreamExpression {
                     identifier_creator,
                     graph,
                     symbol_table,
-                    nodes,
+                    unitary_nodes,
                 );
                 self.dependencies = Dependencies::from(
                     expression
@@ -334,7 +334,7 @@ impl StreamExpression {
             StreamExpressionKind::UnitaryNodeApplication {
                 node_id,
                 ref mut inputs,
-                output_id,
+                ..
             } => {
                 // inline potential node calls in the inputs
                 let mut new_statements = inputs
@@ -346,7 +346,7 @@ impl StreamExpression {
                             identifier_creator,
                             graph,
                             symbol_table,
-                            nodes,
+                            unitary_nodes,
                         )
                     })
                     .collect::<Vec<_>>();
@@ -356,8 +356,7 @@ impl StreamExpression {
 
                 // then node call must be inlined
                 if should_inline {
-                    let called_node = nodes.get(&node_id).unwrap();
-                    let called_unitary_node = called_node.unitary_nodes.get(&signal_id).unwrap();
+                    let called_unitary_node = unitary_nodes.get(&node_id).unwrap();
 
                     // get statements and memory from called node, with corresponding inputs
                     let (mut retrieved_statements, retrieved_memory) = called_unitary_node

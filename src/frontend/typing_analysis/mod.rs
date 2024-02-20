@@ -13,9 +13,6 @@ pub mod node;
 /// LanGRust [Function](crate::hir::function::Function) typing analysis module.
 pub mod function;
 
-/// LanGRust global context definition module.
-pub mod global_context;
-
 /// LanGRust [StreamExpression](crate::hir::stream_expression::StreamExpression) typing analysis module.
 pub mod stream_expression;
 

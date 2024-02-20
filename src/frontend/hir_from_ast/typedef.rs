@@ -26,7 +26,7 @@ impl HIRFromAST for Typedef {
                     .iter()
                     .zip(fields)
                     .map(|(id, (name, typing))| {
-                        assert!(name.eq(symbol_table.get_name(id)));
+                        debug_assert_eq!(&name, symbol_table.get_name(id));
                         let typing = typing.hir_from_ast(&location, symbol_table, errors)?;
                         Ok(symbol_table.set_type(id, typing))
                     })

@@ -9,9 +9,9 @@ use crate::{
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
         memory::Memory,
-        node::Node,
         statement::Statement,
         stream_expression::{StreamExpression, StreamExpressionKind},
+        unitary_node::UnitaryNode,
     },
     symbol_table::SymbolTable,
 };
@@ -30,15 +30,16 @@ impl Statement<StreamExpression> {
         context_map: &mut HashMap<usize, Union<usize, StreamExpression>>,
         symbol_table: &mut SymbolTable,
     ) {
+        // create fresh identifier for the new statement
         let name = symbol_table.get_name(&self.id);
-        let new_name =
+        let fresh_name =
             identifier_creator.new_identifier(String::new(), name.clone(), String::new());
-        if &new_name != name {
+        if &fresh_name != name {
+            // TODO: should we just replace anyway?
             let scope = symbol_table.get_scope(&self.id).clone();
-            let new_id = symbol_table
-                .insert_signal(new_name, scope, todo!(), true, todo!(), todo!())
-                .expect("do another function");
-            assert!(context_map.insert(self.id, Union::I1(new_id)).is_none());
+            let typing = Some(symbol_table.get_type(&self.id).clone());
+            let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
+            debug_assert!(context_map.insert(self.id, Union::I1(fresh_id)).is_none());
         }
     }
 
@@ -101,10 +102,15 @@ impl Statement<StreamExpression> {
         identifier_creator: &mut IdentifierCreator,
         graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        nodes: &HashMap<usize, Node>,
+        unitary_nodes: &HashMap<usize, UnitaryNode>,
     ) -> Vec<Statement<StreamExpression>> {
-        let mut new_statements =
-            self.inline_when_needed(memory, identifier_creator, graph, symbol_table, nodes);
+        let mut new_statements = self.inline_when_needed(
+            memory,
+            identifier_creator,
+            graph,
+            symbol_table,
+            unitary_nodes,
+        );
         let mut current_statements = vec![self.clone()];
         while current_statements != new_statements {
             current_statements = new_statements;
@@ -116,7 +122,7 @@ impl Statement<StreamExpression> {
                         identifier_creator,
                         graph,
                         symbol_table,
-                        nodes,
+                        unitary_nodes,
                     )
                 })
                 .collect();
@@ -130,7 +136,7 @@ impl Statement<StreamExpression> {
         identifier_creator: &mut IdentifierCreator,
         graph: &DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        nodes: &HashMap<usize, Node>,
+        unitary_nodes: &HashMap<usize, UnitaryNode>,
     ) -> Vec<Statement<StreamExpression>> {
         match &self.expression.kind {
             StreamExpressionKind::UnitaryNodeApplication {
@@ -150,7 +156,7 @@ impl Statement<StreamExpression> {
                             identifier_creator,
                             graph,
                             symbol_table,
-                            nodes,
+                            unitary_nodes,
                         )
                     })
                     .collect::<Vec<_>>();
@@ -160,8 +166,7 @@ impl Statement<StreamExpression> {
 
                 // then node call must be inlined
                 if should_inline {
-                    let called_node = nodes.get(&node_id).unwrap();
-                    let called_unitary_node = called_node.unitary_nodes.get(&output_id).unwrap();
+                    let called_unitary_node = unitary_nodes.get(&node_id).unwrap();
 
                     // get statements from called node, with corresponding inputs
                     let (mut retrieved_statements, retrieved_memory) = called_unitary_node
@@ -215,7 +220,7 @@ impl Statement<StreamExpression> {
                     identifier_creator,
                     graph,
                     symbol_table,
-                    nodes,
+                    unitary_nodes,
                 );
                 new_statements.push(statement);
                 new_statements

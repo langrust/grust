@@ -50,7 +50,7 @@ impl Node {
         let mut subgraph = graph.clone();
         graph.all_edges().for_each(|(from, to, label)| match label {
             Label::Weight(0) => (),
-            _ => assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
+            _ => debug_assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
         });
 
         // if a schedule exists, then the node is causal

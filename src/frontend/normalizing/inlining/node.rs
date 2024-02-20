@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{hir::node::Node, symbol_table::SymbolTable};
+use crate::{hir::{node::Node, unitary_node::UnitaryNode}, symbol_table::SymbolTable};
 
 impl Node {
     /// Inline node application when it is needed.
@@ -23,11 +23,11 @@ impl Node {
     /// which can not be computed by a function call.
     pub fn inline_when_needed(
         &mut self,
-        nodes: &HashMap<usize, Node>,
+        unitary_nodes: &HashMap<usize, UnitaryNode>,
         symbol_table: &mut SymbolTable,
     ) {
         self.unitary_nodes
             .values_mut()
-            .for_each(|unitary_node| unitary_node.inline_when_needed(nodes, symbol_table))
+            .for_each(|unitary_node| unitary_node.inline_when_needed(unitary_nodes, symbol_table))
     }
 }

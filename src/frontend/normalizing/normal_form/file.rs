@@ -59,7 +59,7 @@ impl File {
         // get every nodes' graphs
         self.nodes.iter().for_each(|node| {
             node.unitary_nodes.values().for_each(|unitary_node| {
-                assert!(nodes_reduced_graphs
+                debug_assert!(nodes_reduced_graphs
                     .insert(unitary_node.id.clone(), unitary_node.graph.clone())
                     .is_none())
             })
@@ -67,7 +67,7 @@ impl File {
         // get optional component's graph
         if let Some(component) = self.component.as_ref() {
             component.unitary_nodes.values().for_each(|unitary_node| {
-                assert!(nodes_reduced_graphs
+                debug_assert!(nodes_reduced_graphs
                     .insert(unitary_node.id.clone(), unitary_node.graph.clone())
                     .is_none())
             })
