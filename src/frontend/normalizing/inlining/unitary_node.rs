@@ -42,16 +42,18 @@ impl UnitaryNode {
 
         // compute new statements for the unitary node
         let mut new_statements: Vec<Statement<StreamExpression>> = vec![];
-        self.statements.iter().for_each(|statement| {
-            let mut retrieved_statements = statement.inline_when_needed_reccursive(
-                &mut self.memory,
-                &mut identifier_creator,
-                &mut self.graph,
-                symbol_table,
-                unitary_nodes,
-            );
-            new_statements.append(&mut retrieved_statements)
-        });
+        std::mem::take(&mut self.statements)
+            .into_iter()
+            .for_each(|statement| {
+                let mut retrieved_statements = statement.inline_when_needed_reccursive(
+                    &mut self.memory,
+                    &mut identifier_creator,
+                    &mut self.graph,
+                    symbol_table,
+                    unitary_nodes,
+                );
+                new_statements.append(&mut retrieved_statements)
+            });
 
         // update node's unitary node
         self.update_statements(&new_statements)
