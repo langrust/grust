@@ -1,19 +1,9 @@
 use std::collections::BTreeMap;
 
-use petgraph::graphmap::DiGraphMap;
-
-use crate::{
-    common::graph::neighbor::Label,
-    hir::{
-        dependencies::Dependencies,
-        expression::ExpressionKind,
-        identifier_creator::IdentifierCreator,
-        memory::Memory,
-        statement::Statement,
-        stream_expression::{StreamExpression, StreamExpressionKind},
-        unitary_node::UnitaryNode,
-    },
-    symbol_table::SymbolTable,
+use crate::hir::{
+    dependencies::Dependencies,
+    expression::ExpressionKind,
+    stream_expression::{StreamExpression, StreamExpressionKind},
 };
 
 use super::Union;
@@ -79,44 +69,6 @@ impl StreamExpression {
             }
             StreamExpressionKind::FollowedBy { .. }
             | StreamExpressionKind::NodeApplication { .. } => unreachable!(),
-        }
-    }
-
-    /// Inline node application when it is needed.
-    ///
-    /// Inlining needed for "shifted causality loop".
-    ///
-    /// # Example:
-    /// ```GR
-    /// node semi_fib(i: int) {
-    ///     out o: int = 0 fby (i + 1 fby i);
-    /// }
-    /// ```
-    /// In this example, if an expression `semi_fib(fib).o` is assigned to the
-    /// signal `fib` there is no causality loop.
-    /// But we need to inline the code, a function can not compute an output
-    /// before knowing the input.
-    pub fn inline_when_needed(
-        &mut self,
-        signal_id: usize,
-        memory: &mut Memory,
-        identifier_creator: &mut IdentifierCreator,
-        graph: &DiGraphMap<usize, Label>,
-        symbol_table: &mut SymbolTable,
-        unitary_nodes: &BTreeMap<usize, UnitaryNode>,
-    ) -> Vec<Statement<StreamExpression>> {
-        match &mut self.kind {
-            StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
-            StreamExpressionKind::FollowedBy { .. } => unreachable!(),
-            StreamExpressionKind::NodeApplication { .. } => unreachable!(),
-            StreamExpressionKind::Expression { expression } => expression.inline_when_needed(
-                signal_id,
-                memory,
-                identifier_creator,
-                graph,
-                symbol_table,
-                unitary_nodes,
-            ),
         }
     }
 }

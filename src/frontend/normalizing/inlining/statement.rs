@@ -5,7 +5,6 @@ use petgraph::{algo::all_simple_paths, graphmap::DiGraphMap};
 use crate::{
     common::graph::neighbor::Label,
     hir::{
-        dependencies::Dependencies,
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
         memory::Memory,
@@ -97,13 +96,14 @@ impl Statement<StreamExpression> {
     /// We need to inline the code, the output `fib` is defined before the input `fib`,
     /// which can not be computed by a function call.
     pub fn inline_when_needed_reccursive(
-        &self,
+        self,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
         unitary_nodes: &BTreeMap<usize, UnitaryNode>,
     ) -> Vec<Statement<StreamExpression>> {
+        let mut current_statements = vec![self.clone()];
         let mut new_statements = self.inline_when_needed(
             memory,
             identifier_creator,
@@ -111,11 +111,11 @@ impl Statement<StreamExpression> {
             symbol_table,
             unitary_nodes,
         );
-        let mut current_statements = vec![self.clone()];
         while current_statements != new_statements {
             current_statements = new_statements;
             new_statements = current_statements
-                .iter()
+                .clone()
+                .into_iter()
                 .flat_map(|statement| {
                     statement.inline_when_needed(
                         memory,
@@ -131,7 +131,7 @@ impl Statement<StreamExpression> {
     }
 
     fn inline_when_needed(
-        &self,
+        self,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         graph: &DiGraphMap<usize, Label>,
@@ -140,40 +140,23 @@ impl Statement<StreamExpression> {
     ) -> Vec<Statement<StreamExpression>> {
         match &self.expression.kind {
             StreamExpressionKind::UnitaryNodeApplication {
-                node_id,
-                inputs,
-                output_id,
+                node_id, inputs, ..
             } => {
-                let mut inputs = inputs.clone();
-
-                // inline potential node calls in the inputs
-                let mut new_statements = inputs
-                    .iter_mut()
-                    .flat_map(|(_, expression)| {
-                        expression.inline_when_needed(
-                            self.id,
-                            memory,
-                            identifier_creator,
-                            graph,
-                            symbol_table,
-                            unitary_nodes,
-                        )
-                    })
-                    .collect::<Vec<_>>();
-
                 // a loop in the graph induces that inputs depends on output
-                let option_path =
-                    all_simple_paths::<Vec<_>, _>(graph, self.id, self.id, 0, None).next(); // TODO: check it is correct
+                // TODO: check it is correct
+                let is_loop = all_simple_paths::<Vec<_>, _>(graph, self.id, self.id, 0, None)
+                    .next()
+                    .is_some();
 
                 // then node call must be inlined
-                if option_path.is_some() {
+                if is_loop {
                     let called_unitary_node = unitary_nodes.get(&node_id).unwrap();
 
                     // get statements from called node, with corresponding inputs
-                    let (mut retrieved_statements, retrieved_memory) = called_unitary_node
+                    let (retrieved_statements, retrieved_memory) = called_unitary_node
                         .instantiate_statements_and_memory(
                             identifier_creator,
-                            &inputs,
+                            inputs,
                             Some(self.id),
                             symbol_table,
                         );
@@ -181,51 +164,14 @@ impl Statement<StreamExpression> {
                     // remove called node from memory
                     memory.remove_called_node(node_id);
 
-                    new_statements.append(&mut retrieved_statements);
                     memory.combine(retrieved_memory);
+                    retrieved_statements
                 } else {
-                    // change dependencies to be the sum of inputs dependencies
-                    let dependencies = Dependencies::from(
-                        inputs
-                            .iter()
-                            .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                            .collect(),
-                    );
-                    // create a copy of the self statement but with
-                    // the new dependencies and new inputs
-                    let statement = Statement {
-                        id: self.id.clone(),
-                        expression: StreamExpression {
-                            kind: StreamExpressionKind::UnitaryNodeApplication {
-                                node_id: *node_id,
-                                inputs,
-                                output_id: *output_id,
-                            },
-                            typing: self.expression.typing.clone(),
-                            location: self.location.clone(),
-                            dependencies,
-                        },
-                        location: self.location.clone(),
-                    };
-                    // push it into the new statements
-                    new_statements.push(statement);
+                    // otherwise, just return self
+                    vec![self]
                 }
-
-                new_statements
             }
-            _ => {
-                let mut statement = self.clone();
-                let mut new_statements = statement.expression.inline_when_needed(
-                    self.id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    symbol_table,
-                    unitary_nodes,
-                );
-                new_statements.push(statement);
-                new_statements
-            }
+            _ => vec![self],
         }
     }
 }
