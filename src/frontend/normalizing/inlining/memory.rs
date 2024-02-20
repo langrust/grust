@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::{
     common::scope::Scope,
@@ -22,7 +22,7 @@ impl Memory {
     pub fn add_necessary_renaming(
         &self,
         identifier_creator: &mut IdentifierCreator,
-        context_map: &mut HashMap<usize, Union<usize, StreamExpression>>,
+        context_map: &mut BTreeMap<usize, Union<usize, StreamExpression>>,
         symbol_table: &mut SymbolTable,
     ) {
         self.buffers.keys().for_each(|id| {
@@ -72,7 +72,7 @@ impl Memory {
     /// with the equation `z = x + y` will return `c = a + b/2`.
     pub fn replace_by_context(
         &self,
-        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
+        context_map: &BTreeMap<usize, Union<usize, StreamExpression>>,
     ) -> Memory {
         let buffers = self
             .buffers

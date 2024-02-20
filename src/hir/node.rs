@@ -1,11 +1,7 @@
 use petgraph::graphmap::DiGraphMap;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-use crate::common::{
-    graph::neighbor::Label,
-    location::Location,
-    serialize::{ordered_graph, ordered_map},
-};
+use crate::common::{graph::neighbor::Label, location::Location, serialize::ordered_graph};
 use crate::hir::{
     contract::Contract, once_cell::OnceCell, statement::Statement,
     stream_expression::StreamExpression, unitary_node::UnitaryNode,
@@ -17,11 +13,9 @@ pub struct Node {
     /// Node identifier.
     pub id: usize,
     /// Node's unscheduled equations.    
-    #[serde(serialize_with = "ordered_map")]
-    pub unscheduled_equations: HashMap<usize, Statement<StreamExpression>>,
+    pub unscheduled_equations: BTreeMap<usize, Statement<StreamExpression>>,
     /// Unitary output nodes generated from this node.
-    #[serde(serialize_with = "ordered_map")]
-    pub unitary_nodes: HashMap<usize, UnitaryNode>,
+    pub unitary_nodes: BTreeMap<usize, UnitaryNode>,
     /// Node's contract.
     pub contract: Contract,
     /// Node location.

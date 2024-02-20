@@ -63,15 +63,15 @@ impl TypeAnalysis for Expression {
     ///
     /// # Example
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::hir::ExpressionKind::Expression;
     /// use grustine::common::{constant::Constant, location::Location};
     ///
     /// let mut errors = vec![];
-    /// let global_context = HashMap::new();
-    /// let elements_context = HashMap::new();
-    /// let user_types_context = HashMap::new();
+    /// let global_context = BTreeMap::new();
+    /// let elements_context = BTreeMap::new();
+    /// let user_types_context = BTreeMap::new();
     /// let mut expression = ExpressionKind::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: None,

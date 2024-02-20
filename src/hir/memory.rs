@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-use crate::common::{constant::Constant, r#type::Type, serialize::ordered_map};
+use crate::common::{constant::Constant, r#type::Type};
 
 use crate::hir::stream_expression::StreamExpression;
 
@@ -11,11 +11,9 @@ use crate::hir::stream_expression::StreamExpression;
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Memory {
     /// Initialized buffers.
-    #[serde(serialize_with = "ordered_map")]
-    pub buffers: HashMap<usize, Buffer>,
+    pub buffers: BTreeMap<usize, Buffer>,
     /// Called unitary nodes' names.
-    #[serde(serialize_with = "ordered_map")]
-    pub called_nodes: HashMap<usize, CalledNode>,
+    pub called_nodes: BTreeMap<usize, CalledNode>,
 }
 
 /// Initialized buffer.
@@ -47,7 +45,7 @@ impl Memory {
     /// Create empty memory.
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::hir::memory::Memory;
     ///
@@ -57,15 +55,15 @@ impl Memory {
     /// ```
     pub fn new() -> Self {
         Memory {
-            buffers: HashMap::new(),
-            called_nodes: HashMap::new(),
+            buffers: BTreeMap::new(),
+            called_nodes: BTreeMap::new(),
         }
     }
 
     /// Add an initial_valueized buffer to memory.
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::common::{
     ///     constant::Constant, location::Location, scope::Scope, r#type::Type
@@ -117,7 +115,7 @@ impl Memory {
     /// Add called node to memory.
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::common::{constant::Constant, r#type::Type, location::Location};
     /// use grustine::hir::{stream_expression::StreamExpression, memory::Memory};

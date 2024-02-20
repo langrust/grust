@@ -1,11 +1,11 @@
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-/// HashMap API handling errors.
+/// BTreeMap API handling errors.
 ///
-/// [Context] trait is an API handling errors related to HashMap:
+/// [Context] trait is an API handling errors related to BTreeMap:
 /// - [Error::UnknownElement](crate::error::Error::UnknownElement)
 pub trait Context {
     /// The type of the elements in the context.
@@ -21,11 +21,11 @@ pub trait Context {
     /// Basic usage:
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::common::{context::Context, location::Location};
     ///
-    /// let mut context = HashMap::new();
+    /// let mut context = BTreeMap::new();
     /// let mut errors = vec![];
     /// let location = Location::default();
     ///
@@ -52,11 +52,11 @@ pub trait Context {
     /// Basic usage:
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::common::{context::Context, location::Location};
     ///
-    /// let mut context = HashMap::new();
+    /// let mut context = BTreeMap::new();
     /// let mut errors = vec![];
     /// let location = Location::default();
     ///
@@ -83,11 +83,11 @@ pub trait Context {
     /// Basic usage:
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::common::{context::Context, location::Location};
     ///
-    /// let mut context = HashMap::new();
+    /// let mut context = BTreeMap::new();
     /// let mut errors = vec![];
     /// let location = Location::default();
     ///
@@ -114,11 +114,11 @@ pub trait Context {
     /// Basic usage:
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     /// use grustine::common::{location::Location, r#type::Type};
     /// use grustine::common::context::Context;
     ///
-    /// let mut context = HashMap::new();
+    /// let mut context = BTreeMap::new();
     /// let mut errors = vec![];
     /// let location = Location::default();
     ///
@@ -145,11 +145,11 @@ pub trait Context {
     /// Basic usage:
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     /// use grustine::common::{location::Location, r#type::Type};
     /// use grustine::common::context::Context;
     ///
-    /// let mut structure_fields = HashMap::new();
+    /// let mut structure_fields = BTreeMap::new();
     /// let mut errors = vec![];
     /// let location = Location::default();
     ///
@@ -178,11 +178,11 @@ pub trait Context {
     /// Basic usage:
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::common::{context::Context, location::Location};
     ///
-    /// let mut context = HashMap::new();
+    /// let mut context = BTreeMap::new();
     /// let mut errors = vec![];
     /// let location = Location::default();
     ///
@@ -210,13 +210,13 @@ pub trait Context {
     /// Basic usage:
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::common::{context::Context, location::Location};
     ///
-    /// let mut context = HashMap::new();
-    /// let mut other_context = HashMap::new();
-    /// let mut other_context_bis = HashMap::new();
+    /// let mut context = BTreeMap::new();
+    /// let mut other_context = BTreeMap::new();
+    /// let mut other_context_bis = BTreeMap::new();
     /// let mut errors = vec![];
     /// let location = Location::default();
     ///
@@ -236,7 +236,7 @@ pub trait Context {
     ) -> Result<(), TerminationError>;
 }
 
-impl<V> Context for HashMap<String, V> {
+impl<V> Context for BTreeMap<String, V> {
     type Item = V;
 
     fn get_element_or_error(
@@ -378,12 +378,12 @@ impl<V> Context for HashMap<String, V> {
 mod get_element_or_error {
     use crate::common::context::Context;
     use crate::common::{location::Location, r#type::Type};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     #[test]
     fn should_get_reference_when_name_in_context() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let mut elements_context = BTreeMap::new();
 
         let name = String::from("x");
         elements_context.insert(name.clone(), Type::Integer);
@@ -400,7 +400,7 @@ mod get_element_or_error {
     #[test]
     fn should_not_add_error_when_name_in_context() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let mut elements_context = BTreeMap::new();
 
         let name = String::from("x");
         elements_context.insert(name.clone(), Type::Integer);
@@ -417,7 +417,7 @@ mod get_element_or_error {
     #[test]
     fn should_raise_and_add_error_when_name_not_in_context() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let mut elements_context = BTreeMap::new();
 
         let name = String::from("x");
         elements_context.insert(name, Type::Integer);
@@ -432,12 +432,12 @@ mod get_element_or_error {
 mod get_field_or_error {
     use crate::common::context::Context;
     use crate::common::{location::Location, r#type::Type};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     #[test]
     fn should_get_reference_when_field_in_structure() {
         let mut errors = vec![];
-        let mut structure_fields = HashMap::new();
+        let mut structure_fields = BTreeMap::new();
 
         let structure_name = String::from("Point");
         structure_fields.insert(String::from("x"), Type::Integer);
@@ -460,7 +460,7 @@ mod get_field_or_error {
     #[test]
     fn should_not_add_error_when_field_in_structure() {
         let mut errors = vec![];
-        let mut structure_fields = HashMap::new();
+        let mut structure_fields = BTreeMap::new();
 
         let structure_name = String::from("Point");
         structure_fields.insert(String::from("x"), Type::Integer);
@@ -483,7 +483,7 @@ mod get_field_or_error {
     #[test]
     fn should_raise_and_add_error_when_field_not_in_structure() {
         let mut errors = vec![];
-        let mut structure_fields = HashMap::new();
+        let mut structure_fields = BTreeMap::new();
 
         let structure_name = String::from("Point");
         structure_fields.insert(String::from("x"), Type::Integer);
@@ -504,12 +504,12 @@ mod get_field_or_error {
 mod insert_unique {
     use crate::common::context::Context;
     use crate::common::{location::Location, r#type::Type};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     #[test]
     fn should_insert_item_when_name_not_in_context() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let mut elements_context = BTreeMap::new();
 
         let name = String::from("x");
         elements_context.insert(name, Type::Integer);
@@ -527,7 +527,7 @@ mod insert_unique {
     #[test]
     fn should_not_add_error_when_name_not_in_context() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let mut elements_context = BTreeMap::new();
 
         let name = String::from("x");
         elements_context.insert(name, Type::Integer);
@@ -549,7 +549,7 @@ mod insert_unique {
     #[test]
     fn should_raise_error_when_name_in_context() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
+        let mut elements_context = BTreeMap::new();
 
         let name = String::from("x");
         elements_context.insert(name, Type::Integer);
@@ -569,13 +569,13 @@ mod insert_unique {
 mod combine_unique {
     use crate::common::context::Context;
     use crate::common::{location::Location, r#type::Type};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     #[test]
     fn should_combine_contexts_when_disjoint() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
-        let mut other_elements_context = HashMap::new();
+        let mut elements_context = BTreeMap::new();
+        let mut other_elements_context = BTreeMap::new();
 
         let name = String::from("x");
         elements_context.insert(name, Type::Integer);
@@ -587,7 +587,7 @@ mod combine_unique {
 
         assert_eq!(
             elements_context,
-            HashMap::from([
+            BTreeMap::from([
                 (String::from("x"), Type::Integer),
                 (String::from("y"), Type::Float)
             ])
@@ -597,8 +597,8 @@ mod combine_unique {
     #[test]
     fn should_raise_error_when_contexts_meet() {
         let mut errors = vec![];
-        let mut elements_context = HashMap::new();
-        let mut other_elements_context = HashMap::new();
+        let mut elements_context = BTreeMap::new();
+        let mut other_elements_context = BTreeMap::new();
 
         let name = String::from("x");
         elements_context.insert(name.clone(), Type::Integer);

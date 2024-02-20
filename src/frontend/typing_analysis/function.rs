@@ -8,7 +8,7 @@ impl TypeAnalysis for Function {
     ///
     /// # Example
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::ast::{
     ///     expression::Expression, function::Function, statement::Statement,
@@ -18,8 +18,8 @@ impl TypeAnalysis for Function {
     /// };
     ///
     /// let mut errors = vec![];
-    /// let global_context = HashMap::new();
-    /// let user_types_context = HashMap::new();
+    /// let global_context = BTreeMap::new();
+    /// let user_types_context = BTreeMap::new();
     ///
     /// let mut function = Function {
     ///     id: String::from("test"),

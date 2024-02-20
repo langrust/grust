@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::{hir::{node::Node, unitary_node::UnitaryNode}, symbol_table::SymbolTable};
 
@@ -23,7 +23,7 @@ impl Node {
     /// which can not be computed by a function call.
     pub fn inline_when_needed(
         &mut self,
-        unitary_nodes: &HashMap<usize, UnitaryNode>,
+        unitary_nodes: &BTreeMap<usize, UnitaryNode>,
         symbol_table: &mut SymbolTable,
     ) {
         self.unitary_nodes

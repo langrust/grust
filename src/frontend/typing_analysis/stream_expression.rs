@@ -9,16 +9,16 @@ impl TypeAnalysis for StreamExpression {
     ///
     /// # Example
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::ast::stream_expression::StreamExpression;
     /// use grustine::common::{constant::Constant, location::Location};
     ///
     /// let mut errors = vec![];
-    /// let nodes_context = HashMap::new();
-    /// let signals_context = HashMap::new();
-    /// let global_context = HashMap::new();
-    /// let user_types_context = HashMap::new();
+    /// let nodes_context = BTreeMap::new();
+    /// let signals_context = BTreeMap::new();
+    /// let global_context = BTreeMap::new();
+    /// let user_types_context = BTreeMap::new();
     /// let mut stream_expression = StreamExpressionKind::Constant {
     ///     constant: Constant::Integer(0),
     ///     typing: None,

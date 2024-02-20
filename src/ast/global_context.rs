@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use strum::IntoEnumIterator;
 
 use crate::common::{
@@ -8,9 +8,9 @@ use crate::common::{
 
 /// Generate the global context.
 ///
-/// The global context is the [HashMap] storing all builtin functions types.
-pub fn generate() -> HashMap<String, Type> {
-    let mut elements_context_global = HashMap::new();
+/// The global context is the [BTreeMap] storing all builtin functions types.
+pub fn generate() -> BTreeMap<String, Type> {
+    let mut elements_context_global = BTreeMap::new();
     add_binary_operators_to_global_context(&mut elements_context_global);
     add_unary_operators_to_global_context(&mut elements_context_global);
     add_other_operators_to_global_context(&mut elements_context_global);
@@ -20,7 +20,7 @@ pub fn generate() -> HashMap<String, Type> {
 /// Add binary operators to the global context.
 ///
 /// Binary operators are builtin functions and must be stored in the global context.
-fn add_binary_operators_to_global_context(elements_context_global: &mut HashMap<String, Type>) {
+fn add_binary_operators_to_global_context(elements_context_global: &mut BTreeMap<String, Type>) {
     BinaryOperator::iter().for_each(
         // for each unary operator, try to insert its type in the context
         // and check with `is_none()` that this operator is uniquely
@@ -36,7 +36,7 @@ fn add_binary_operators_to_global_context(elements_context_global: &mut HashMap<
 /// Add unary operators to the global context.
 ///
 /// Unary operators are builtin functions and must be stored in the global context.
-fn add_unary_operators_to_global_context(elements_context_global: &mut HashMap<String, Type>) {
+fn add_unary_operators_to_global_context(elements_context_global: &mut BTreeMap<String, Type>) {
     UnaryOperator::iter().for_each(
         // for each unary operator, try to insert its type in the context
         // and check with `is_none()` that this operator is uniquely
@@ -52,7 +52,7 @@ fn add_unary_operators_to_global_context(elements_context_global: &mut HashMap<S
 /// Add other operators to the global context.
 ///
 /// Those operators are builtin functions and must be stored in the global context.
-fn add_other_operators_to_global_context(elements_context_global: &mut HashMap<String, Type>) {
+fn add_other_operators_to_global_context(elements_context_global: &mut BTreeMap<String, Type>) {
     OtherOperator::iter().for_each(|operator| {
         debug_assert!(
             // for each operator, try to insert its type in the context

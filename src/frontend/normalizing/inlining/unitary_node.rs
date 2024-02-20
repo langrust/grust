@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use petgraph::graphmap::GraphMap;
 
@@ -34,7 +34,7 @@ impl UnitaryNode {
     /// which can not be computed by a function call.
     pub fn inline_when_needed(
         &mut self,
-        unitary_nodes: &HashMap<usize, UnitaryNode>,
+        unitary_nodes: &BTreeMap<usize, UnitaryNode>,
         symbol_table: &mut SymbolTable,
     ) {
         // create identifier creator containing the signals
@@ -94,7 +94,7 @@ impl UnitaryNode {
         let mut context_map = inputs
             .iter()
             .map(|(input, expression)| (*input, Union::I2(expression.clone())))
-            .collect::<HashMap<_, _>>();
+            .collect::<BTreeMap<_, _>>();
 
         // add output to context
         new_output_signal.map(|new_output_signal| {

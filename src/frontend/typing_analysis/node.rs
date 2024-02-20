@@ -8,7 +8,7 @@ impl TypeAnalysis for Node {
     ///
     /// # Example
     /// ```rust
-    /// use std::collections::HashMap;
+    /// use std::collections::BTreeMap;
     ///
     /// use grustine::ast::{
     ///     equation::Equation, node::Node, node_description::NodeDescription,
@@ -19,18 +19,18 @@ impl TypeAnalysis for Node {
     /// };
     ///
     /// let mut errors = vec![];
-    /// let mut nodes_context = HashMap::new();
+    /// let mut nodes_context = BTreeMap::new();
     /// nodes_context.insert(
     ///     String::from("test"),
     ///     NodeDescription {
     ///         is_component: false,
     ///         inputs: vec![(String::from("i"), Type::Integer)],
-    ///         outputs: HashMap::from([(String::from("o"), Type::Integer)]),
-    ///         locals: HashMap::from([(String::from("x"), Type::Integer)]),
+    ///         outputs: BTreeMap::from([(String::from("o"), Type::Integer)]),
+    ///         locals: BTreeMap::from([(String::from("x"), Type::Integer)]),
     ///     }
     /// );
-    /// let global_context = HashMap::new();
-    /// let user_types_context = HashMap::new();
+    /// let global_context = BTreeMap::new();
+    /// let user_types_context = BTreeMap::new();
     ///
     /// let mut node =Node { assertions: Default::default(), contract: Default::default(),
     ///     id: String::from("test"),
