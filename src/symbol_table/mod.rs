@@ -409,10 +409,7 @@ impl SymbolTable {
         typing: Option<Type>,
     ) -> usize {
         let symbol = Symbol {
-            kind: SymbolKind::Identifier {
-                scope,
-                typing,
-            },
+            kind: SymbolKind::Identifier { scope, typing },
             name: fresh_name,
         };
 
@@ -532,6 +529,16 @@ impl SymbolTable {
                     .map(|id| inputs.contains(id))
                     .collect()
             }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_unitary_node_inputs(&self, id: &usize) -> &Vec<usize> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::UnitaryNode { inputs, .. } => inputs,
             _ => unreachable!(),
         }
     }

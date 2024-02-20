@@ -56,4 +56,20 @@ impl Node {
             },
         )
     }
+    
+    pub fn no_fby(&self) -> bool {
+        self.unitary_nodes
+            .iter()
+            .all(|(_, unitary_node)| unitary_node.no_fby())
+    }
+    pub fn is_normal_form(&self) -> bool {
+        self.unitary_nodes
+            .iter()
+            .all(|(_, unitary_node)| unitary_node.is_normal_form())
+    }
+    pub fn no_node_application(&self) -> bool {
+        self.unitary_nodes
+            .iter()
+            .all(|(_, unitary_node)| unitary_node.no_node_application())
+    }
 }

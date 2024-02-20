@@ -76,8 +76,11 @@ impl File {
         self.nodes
             .iter_mut()
             .for_each(|node| node.normal_form(&nodes_reduced_graphs, symbol_table));
-        self.component.as_mut().map_or((), |component| {
+        if let Some(component) = self.component.as_mut() {
             component.normal_form(&nodes_reduced_graphs, symbol_table)
-        })
+        }
+
+        // Debug: test it is in normal form
+        debug_assert!(self.is_normal_form());
     }
 }

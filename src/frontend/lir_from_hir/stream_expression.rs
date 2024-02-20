@@ -13,9 +13,7 @@ impl LIRFromHIR for StreamExpression {
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         match self.kind {
             StreamExpressionKind::UnitaryNodeApplication {
-                node_id,
-                inputs,
-                output_id,
+                node_id, inputs, ..
             } => {
                 let name = symbol_table.get_name(&node_id).clone();
                 LIRExpression::NodeCall {

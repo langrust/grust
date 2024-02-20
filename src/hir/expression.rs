@@ -138,3 +138,72 @@ impl Expression {
             .expect("there should be dependencies")
     }
 }
+
+impl<E> ExpressionKind<E> {
+    pub fn propagate_predicate<F>(&self, predicate: F) -> bool
+    where
+        F: Fn(&E) -> bool,
+    {
+        match self {
+            ExpressionKind::Constant { .. }
+            | ExpressionKind::Identifier { .. }
+            | ExpressionKind::Abstraction { .. }
+            | ExpressionKind::Enumeration { .. } => true,
+            ExpressionKind::Application {
+                function_expression,
+                inputs,
+            } => {
+                predicate(function_expression)
+                    && inputs.iter().all(|expression| predicate(expression))
+            }
+            ExpressionKind::Structure { fields, .. } => {
+                fields.iter().all(|(_, expression)| predicate(expression))
+            }
+            ExpressionKind::Array { elements } => {
+                elements.iter().all(|expression| predicate(expression))
+            }
+            ExpressionKind::Match { expression, arms } => {
+                predicate(expression)
+                    && arms.iter().all(|(_, option, body, expression)| {
+                        debug_assert!(body.is_empty());
+                        option
+                            .as_ref()
+                            .map_or(true, |expression| predicate(expression))
+                            && predicate(expression)
+                    })
+            }
+            ExpressionKind::When {
+                option,
+                present,
+                present_body,
+                default,
+                default_body,
+                ..
+            } => {
+                debug_assert!(present_body.is_empty());
+                debug_assert!(default_body.is_empty());
+                predicate(option) && predicate(present) && predicate(default)
+            }
+            ExpressionKind::FieldAccess { expression, .. } => predicate(expression),
+            ExpressionKind::TupleElementAccess { expression, .. } => predicate(expression),
+            ExpressionKind::Map {
+                expression,
+                function_expression,
+            } => predicate(expression) && predicate(function_expression),
+            ExpressionKind::Fold {
+                expression,
+                initialization_expression,
+                function_expression,
+            } => {
+                predicate(expression)
+                    && predicate(initialization_expression)
+                    && predicate(function_expression)
+            }
+            ExpressionKind::Sort {
+                expression,
+                function_expression,
+            } => predicate(expression) && predicate(function_expression),
+            ExpressionKind::Zip { arrays } => arrays.iter().all(|expression| predicate(expression)),
+        }
+    }
+}

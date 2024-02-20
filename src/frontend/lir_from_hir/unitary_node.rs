@@ -24,7 +24,7 @@ impl LIRFromHIR for UnitaryNode {
             ..
         } = self;
 
-        let inputs = symbol_table.get_node_inputs(&id);
+        let inputs = symbol_table.get_unitary_node_inputs(&id);
         let output_type = symbol_table
             .get_unitary_node_output_type(&id)
             .clone();
