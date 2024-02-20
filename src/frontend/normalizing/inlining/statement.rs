@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use petgraph::{algo::has_path_connecting, graphmap::DiGraphMap};
 
@@ -27,7 +27,7 @@ impl Statement<StreamExpression> {
     pub fn add_necessary_renaming(
         &self,
         identifier_creator: &mut IdentifierCreator,
-        context_map: &mut HashMap<usize, Union<usize, StreamExpression>>,
+        context_map: &mut BTreeMap<usize, Union<usize, StreamExpression>>,
         symbol_table: &mut SymbolTable,
     ) {
         // create fresh identifier for the new statement
@@ -58,7 +58,7 @@ impl Statement<StreamExpression> {
     /// with the statement `z = x + y` will return `c = a + b/2`.
     pub fn replace_by_context(
         &self,
-        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
+        context_map: &BTreeMap<usize, Union<usize, StreamExpression>>,
     ) -> Statement<StreamExpression> {
         let mut new_statement = self.clone();
         if let Some(element) = context_map.get(&new_statement.id) {
@@ -102,7 +102,7 @@ impl Statement<StreamExpression> {
         identifier_creator: &mut IdentifierCreator,
         graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        unitary_nodes: &HashMap<usize, UnitaryNode>,
+        unitary_nodes: &BTreeMap<usize, UnitaryNode>,
     ) -> Vec<Statement<StreamExpression>> {
         let mut new_statements = self.inline_when_needed(
             memory,
@@ -136,7 +136,7 @@ impl Statement<StreamExpression> {
         identifier_creator: &mut IdentifierCreator,
         graph: &DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        unitary_nodes: &HashMap<usize, UnitaryNode>,
+        unitary_nodes: &BTreeMap<usize, UnitaryNode>,
     ) -> Vec<Statement<StreamExpression>> {
         match &self.expression.kind {
             StreamExpressionKind::UnitaryNodeApplication {

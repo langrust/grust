@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use petgraph::{algo::has_path_connecting, graphmap::DiGraphMap};
 
@@ -33,7 +33,7 @@ impl StreamExpression {
     /// `a + b/2`.
     pub fn replace_by_context(
         &mut self,
-        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
+        context_map: &BTreeMap<usize, Union<usize, StreamExpression>>,
     ) {
         match self.kind {
             StreamExpressionKind::Expression { ref mut expression } => {
@@ -307,7 +307,7 @@ impl StreamExpression {
         identifier_creator: &mut IdentifierCreator,
         graph: &DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        unitary_nodes: &HashMap<usize, UnitaryNode>,
+        unitary_nodes: &BTreeMap<usize, UnitaryNode>,
     ) -> Vec<Statement<StreamExpression>> {
         match &mut self.kind {
             StreamExpressionKind::Expression { .. } => vec![],

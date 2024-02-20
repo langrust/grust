@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use petgraph::graphmap::DiGraphMap;
 
@@ -38,9 +38,9 @@ impl Node {
     pub fn create_initialized_processus_manager(
         &self,
         symbol_table: &SymbolTable,
-    ) -> HashMap<usize, Color> {
+    ) -> BTreeMap<usize, Color> {
         // create an empty hash
-        let mut hash = HashMap::new();
+        let mut hash = BTreeMap::new();
 
         // add input signals with white color (unprocessed)
         for input in symbol_table.get_node_inputs(&self.id) {
@@ -69,11 +69,11 @@ impl Node {
     pub fn add_all_equations_dependencies(
         &self,
         symbol_table: &SymbolTable,
-        nodes_context: &HashMap<usize, Node>,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_context: &BTreeMap<usize, Node>,
+        nodes_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
+        nodes_reduced_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
+        nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
@@ -143,11 +143,11 @@ impl Node {
         &self,
         signal: &usize,
         symbol_table: &SymbolTable,
-        nodes_context: &HashMap<usize, Node>,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_context: &BTreeMap<usize, Node>,
+        nodes_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
+        nodes_reduced_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
+        nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
@@ -240,11 +240,11 @@ impl Node {
         &self,
         signal: &usize,
         symbol_table: &SymbolTable,
-        nodes_context: &HashMap<usize, Node>,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_context: &BTreeMap<usize, Node>,
+        nodes_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
+        nodes_reduced_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
+        nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node { id: node, .. } = self;
@@ -360,7 +360,7 @@ impl Node {
     /// ```
     pub fn add_contract_dependencies(
         &self,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
     ) {
         let Node {
             id: node,

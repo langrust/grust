@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use petgraph::graphmap::DiGraphMap;
 
@@ -13,11 +13,11 @@ impl ExpressionKind<StreamExpression> {
     pub fn compute_tuple_element_access_dependencies(
         &self,
         symbol_table: &SymbolTable,
-        nodes_context: &HashMap<usize, Node>,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        nodes_context: &BTreeMap<usize, Node>,
+        nodes_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
+        nodes_reduced_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
+        nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(usize, usize)>, TerminationError> {
         match self {

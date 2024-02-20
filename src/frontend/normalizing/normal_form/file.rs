@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::{hir::file::File, symbol_table::SymbolTable};
 
@@ -55,7 +55,7 @@ impl File {
     ///
     /// This example is tested in source.
     pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
-        let mut nodes_reduced_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = BTreeMap::new();
         // get every nodes' graphs
         self.nodes.iter().for_each(|node| {
             node.unitary_nodes.values().for_each(|unitary_node| {

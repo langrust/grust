@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -28,9 +28,9 @@ pub enum SymbolKind {
         /// Node's input identifiers.
         inputs: Vec<usize>,
         /// Node's output identifiers.
-        outputs: HashMap<String, usize>,
+        outputs: BTreeMap<String, usize>,
         /// Node's local identifiers.
-        locals: HashMap<String, usize>,
+        locals: BTreeMap<String, usize>,
     },
     UnitaryNode {
         /// Is true when the node is a component.
@@ -100,13 +100,13 @@ impl Symbol {
 }
 
 pub struct Context {
-    current: HashMap<String, usize>,
+    current: BTreeMap<String, usize>,
     global_context: Option<Box<Context>>,
 }
 impl Default for Context {
     fn default() -> Self {
         Self {
-            current: HashMap::new(),
+            current: BTreeMap::new(),
             global_context: None,
         }
     }
@@ -114,7 +114,7 @@ impl Default for Context {
 impl Context {
     fn new() -> Self {
         Self {
-            current: HashMap::new(),
+            current: BTreeMap::new(),
             global_context: None,
         }
     }
@@ -147,7 +147,7 @@ impl Context {
     }
     fn create_local_context(self) -> Context {
         Context {
-            current: HashMap::new(),
+            current: BTreeMap::new(),
             global_context: Some(Box::new(self)),
         }
     }
@@ -157,14 +157,14 @@ impl Context {
 }
 
 pub struct SymbolTable {
-    table: HashMap<usize, Symbol>,
+    table: BTreeMap<usize, Symbol>,
     fresh_id: usize,
     known_symbols: Context,
 }
 impl Default for SymbolTable {
     fn default() -> Self {
         Self {
-            table: HashMap::new(),
+            table: BTreeMap::new(),
             fresh_id: 0,
             known_symbols: Default::default(),
         }
@@ -173,7 +173,7 @@ impl Default for SymbolTable {
 impl SymbolTable {
     pub fn new() -> Self {
         Self {
-            table: HashMap::new(),
+            table: BTreeMap::new(),
             fresh_id: 0,
             known_symbols: Context::new(),
         }
@@ -311,8 +311,8 @@ impl SymbolTable {
         is_component: bool,
         local: bool,
         inputs: Vec<usize>,
-        outputs: HashMap<String, usize>,
-        locals: HashMap<String, usize>,
+        outputs: BTreeMap<String, usize>,
+        locals: BTreeMap<String, usize>,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {

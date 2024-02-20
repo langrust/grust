@@ -7,15 +7,9 @@ pub mod vertex;
 /// [Neighbor] structure and API.
 pub mod neighbor;
 
-/// [Color] enumeration used to identify the processing status of an element.
-pub mod color;
+use std::collections::BTreeMap;
 
-use std::collections::HashMap;
-
-use crate::common::{
-    graph::{color::Color, neighbor::Label, vertex::Vertex},
-    serialize::ordered_map,
-};
+use crate::common::graph::{color::Color, neighbor::Label, vertex::Vertex};
 
 use self::neighbor::Neighbor;
 
@@ -26,8 +20,7 @@ where
     T: serde::Serialize,
 {
     /// Graph's vertices.
-    #[serde(serialize_with = "ordered_map")]
-    vertices: HashMap<String, Vertex<T>>,
+    vertices: BTreeMap<String, Vertex<T>>,
 }
 
 impl<T> Graph<T>
@@ -37,7 +30,7 @@ where
     /// Creates a new graph with no vertices.
     pub fn new() -> Self {
         Graph {
-            vertices: HashMap::new(),
+            vertices: BTreeMap::new(),
         }
     }
 
@@ -359,7 +352,7 @@ impl Graph<Color> {
 
 #[cfg(test)]
 mod new {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use crate::common::graph::Graph;
 
@@ -368,7 +361,7 @@ mod new {
         let graph: Graph<i32> = Graph::new();
 
         let control = Graph {
-            vertices: HashMap::new(),
+            vertices: BTreeMap::new(),
         };
 
         assert_eq!(graph, control)
@@ -377,7 +370,7 @@ mod new {
 
 #[cfg(test)]
 mod add_vertex {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use crate::common::graph::{vertex::Vertex, Graph};
 
@@ -388,7 +381,7 @@ mod add_vertex {
         graph.add_vertex(String::from("v2"), 2);
 
         let control = Graph {
-            vertices: HashMap::from([
+            vertices: BTreeMap::from([
                 (String::from("v1"), Vertex::new(String::from("v1"), 1)),
                 (String::from("v2"), Vertex::new(String::from("v2"), 2)),
             ]),
@@ -404,7 +397,7 @@ mod add_vertex {
         graph.add_vertex(String::from("v1"), 2);
 
         let control = Graph {
-            vertices: HashMap::from([(String::from("v1"), Vertex::new(String::from("v1"), 1))]),
+            vertices: BTreeMap::from([(String::from("v1"), Vertex::new(String::from("v1"), 1))]),
         };
 
         assert_eq!(graph, control)
@@ -505,7 +498,7 @@ mod set_vertex_value {
 
 #[cfg(test)]
 mod add_weighted_edge {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     use crate::common::graph::{neighbor::Label, vertex::Vertex, Graph};
 
@@ -520,7 +513,7 @@ mod add_weighted_edge {
         let v2 = Vertex::new(String::from("v2"), 2);
         v1.add_neighbor(v2.id.clone(), Label::Weight(3));
         let control = Graph {
-            vertices: HashMap::from([(String::from("v1"), v1), (String::from("v2"), v2)]),
+            vertices: BTreeMap::from([(String::from("v1"), v1), (String::from("v2"), v2)]),
         };
 
         assert_eq!(graph, control)
