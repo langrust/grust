@@ -122,7 +122,7 @@ impl Node {
                 )?;
                 let id = symbol_table.insert_signal(
                     name.clone(),
-                    Scope::Output,
+                    Scope::Local,
                     Some(typing),
                     true,
                     equation.location.clone(),
