@@ -9,7 +9,8 @@ fn normalize_counter() {
 
     let counter_id = files.add(
         "counter.gr",
-        std::fs::read_to_string("tests/fixture/normalizing/success/counter.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/normalizing/success/counter.gr")
+            .expect("unkown file"),
     );
 
     match normalizing(counter_id, &mut files) {
@@ -24,7 +25,8 @@ fn normalize_blinking() {
 
     let blinking_id = files.add(
         "blinking.gr",
-        std::fs::read_to_string("tests/fixture/normalizing/success/blinking.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/normalizing/success/blinking.gr")
+            .expect("unkown file"),
     );
 
     match normalizing(blinking_id, &mut files) {
@@ -39,7 +41,8 @@ fn normalize_button_management() {
 
     let button_management_id = files.add(
         "button_management.gr",
-        std::fs::read_to_string("tests/fixture/normalizing/success/button_management.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/normalizing/success/button_management.gr")
+            .expect("unkown file"),
     );
 
     match normalizing(button_management_id, &mut files) {
@@ -54,8 +57,10 @@ fn normalize_button_management_condition_match() {
 
     let button_management_condition_match_id = files.add(
         "button_management_condition_match.gr",
-        std::fs::read_to_string("tests/fixture/normalizing/success/button_management_condition_match.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string(
+            "tests/fixture/normalizing/success/button_management_condition_match.gr",
+        )
+        .expect("unkown file"),
     );
 
     match normalizing(button_management_condition_match_id, &mut files) {
@@ -70,8 +75,10 @@ fn normalize_button_management_using_function() {
 
     let button_management_using_function_id = files.add(
         "button_management_using_function.gr",
-        std::fs::read_to_string("tests/fixture/normalizing/success/button_management_using_function.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string(
+            "tests/fixture/normalizing/success/button_management_using_function.gr",
+        )
+        .expect("unkown file"),
     );
 
     match normalizing(button_management_using_function_id, &mut files) {
@@ -101,7 +108,8 @@ fn error_when_normalize_pid_unused_signal() {
 
     let pid_unused_signal_id = files.add(
         "pid_unused_signal.gr",
-        std::fs::read_to_string("tests/fixture/normalizing/error/pid_unused_signal.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/normalizing/error/pid_unused_signal.gr")
+            .expect("unkown file"),
     );
 
     match normalizing(pid_unused_signal_id, &mut files) {

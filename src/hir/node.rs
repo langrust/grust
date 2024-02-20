@@ -56,7 +56,7 @@ impl Node {
             },
         )
     }
-    
+
     pub fn no_fby(&self) -> bool {
         self.unitary_nodes
             .iter()

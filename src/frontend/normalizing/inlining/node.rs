@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
-use crate::{hir::{node::Node, unitary_node::UnitaryNode}, symbol_table::SymbolTable};
+use crate::{
+    hir::{node::Node, unitary_node::UnitaryNode},
+    symbol_table::SymbolTable,
+};
 
 impl Node {
     /// Inline node application when it is needed.
