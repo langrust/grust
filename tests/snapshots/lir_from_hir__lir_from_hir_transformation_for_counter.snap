@@ -1,6 +1,6 @@
 ---
 source: tests/lir_from_hir.rs
-expression: project
+expression: file
 ---
 items:
   - NodeFile:
@@ -23,27 +23,6 @@ items:
           node_name: counter_o
           output_type: Integer
           body:
-            - Let:
-                identifier: inc
-                expression:
-                  IfThenElse:
-                    condition:
-                      InputAccess:
-                        identifier: tick
-                    then_branch:
-                      statements:
-                        - ExpressionLast:
-                            expression:
-                              Literal:
-                                literal:
-                                  Integer: 1
-                    else_branch:
-                      statements:
-                        - ExpressionLast:
-                            expression:
-                              Literal:
-                                literal:
-                                  Integer: 0
             - Let:
                 identifier: o
                 expression:
@@ -76,6 +55,27 @@ items:
                                             identifier: mem_o
                                   - Identifier:
                                       identifier: inc
+            - Let:
+                identifier: inc
+                expression:
+                  IfThenElse:
+                    condition:
+                      InputAccess:
+                        identifier: tick
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 1
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 0
           state_elements_step:
             - identifier: mem_o
               expression:
@@ -88,7 +88,6 @@ items:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
           node_name: counter_o
           state_elements_init:
@@ -99,8 +98,7 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: main_y
-      imports:
-        - NodeFile: counter_o
+      imports: []
       input:
         node_name: main_y
         elements: []
@@ -108,18 +106,31 @@ items:
         node_name: main_y
         elements:
           - Buffer:
-              identifier: mem_half
-              type: Boolean
-          - Buffer:
               identifier: mem_x
               type: Boolean
+          - Buffer:
+              identifier: mem_half
+              type: Boolean
           - CalledNode:
-              identifier: counter_o_y
-              node_name: counter_o
+              identifier: counter_o
+              node_name: 25_19
         step:
           node_name: main_y
           output_type: Integer
           body:
+            - Let:
+                identifier: y
+                expression:
+                  NodeCall:
+                    node_identifier: counter_o
+                    input_name: CounterOInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: x
+                      - - tick
+                        - Identifier:
+                            identifier: half
             - Let:
                 identifier: half
                 expression:
@@ -130,29 +141,7 @@ items:
                 expression:
                   MemoryAccess:
                     identifier: mem_x
-            - Let:
-                identifier: y
-                expression:
-                  NodeCall:
-                    node_identifier: counter_o_y
-                    input_name: CounterOInput
-                    input_fields:
-                      - - res
-                        - Identifier:
-                            identifier: x
-                      - - tick
-                        - Identifier:
-                            identifier: half
           state_elements_step:
-            - identifier: mem_half
-              expression:
-                FunctionCall:
-                  function:
-                    Identifier:
-                      identifier: "!"
-                  arguments:
-                    - Identifier:
-                        identifier: half
             - identifier: mem_x
               expression:
                 FunctionCall:
@@ -170,6 +159,15 @@ items:
                           - Literal:
                               literal:
                                 Integer: 35
+            - identifier: mem_half
+              expression:
+                FunctionCall:
+                  function:
+                    Identifier:
+                      identifier: "!"
+                  arguments:
+                    - Identifier:
+                        identifier: half
           output_expression:
             Identifier:
               identifier: y
@@ -177,20 +175,19 @@ items:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
           node_name: main_y
           state_elements_init:
             - BufferInit:
-                identifier: mem_half
-                initial_value:
-                  Boolean: true
-            - BufferInit:
                 identifier: mem_x
                 initial_value:
                   Boolean: false
+            - BufferInit:
+                identifier: mem_half
+                initial_value:
+                  Boolean: true
             - CalledNodeInit:
-                identifier: counter_o_y
-                node_name: counter_o
+                identifier: counter_o
+                node_name: 25_19
           invariant_initialisation: []
 
