@@ -483,6 +483,57 @@ impl SymbolTable {
         }
     }
 
+    pub fn get_function_input(&self, id: &usize) -> &Vec<usize> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Function { inputs, .. } => inputs,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn set_function_output_type(&mut self, id: &usize, new_type: Type) {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        let inputs_type = match &symbol.kind {
+            SymbolKind::Function { ref inputs, .. } => inputs
+                .iter()
+                .map(|id| self.get_type(id).clone())
+                .collect::<Vec<_>>(),
+            _ => unreachable!(),
+        };
+
+        let symbol = self
+            .get_symbol_mut(id)
+            .expect(&format!("expect symbol for {id}"));
+        match &mut symbol.kind {
+            SymbolKind::Function {
+                ref mut output_type,
+                ref mut typing,
+                ..
+            } => {
+                if output_type.is_some() {
+                    panic!("a symbol type can not be modified")
+                }
+                *output_type = Some(new_type.clone());
+                *typing = Some(Type::Abstract(inputs_type, Box::new(new_type)))
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn is_function(&self, id: &usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Function { .. } => true,
+            _ => false,
+        }
+    }
+
     pub fn get_unitary_node_output_type(&self, id: &usize) -> &Type {
         let symbol = self
             .get_symbol(id)
@@ -601,47 +652,6 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { is_component, .. } => *is_component,
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn get_function_input(&self, id: &usize) -> &Vec<usize> {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::Function { inputs, .. } => inputs,
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn set_function_output_type(&mut self, id: &usize, new_type: Type) {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        let inputs_type = match &symbol.kind {
-            SymbolKind::Function { ref inputs, .. } => inputs
-                .iter()
-                .map(|id| self.get_type(id).clone())
-                .collect::<Vec<_>>(),
-            _ => unreachable!(),
-        };
-
-        let symbol = self
-            .get_symbol_mut(id)
-            .expect(&format!("expect symbol for {id}"));
-        match &mut symbol.kind {
-            SymbolKind::Function {
-                ref mut output_type,
-                ref mut typing,
-                ..
-            } => {
-                if output_type.is_some() {
-                    panic!("a symbol type can not be modified")
-                }
-                *output_type = Some(new_type.clone());
-                *typing = Some(Type::Abstract(inputs_type, Box::new(new_type)))
-            }
             _ => unreachable!(),
         }
     }

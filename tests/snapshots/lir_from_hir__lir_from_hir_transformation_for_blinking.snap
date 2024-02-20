@@ -1,6 +1,6 @@
 ---
 source: tests/lir_from_hir.rs
-expression: project
+expression: file
 ---
 items:
   - Function:
@@ -57,27 +57,6 @@ items:
           output_type: Integer
           body:
             - Let:
-                identifier: inc
-                expression:
-                  IfThenElse:
-                    condition:
-                      InputAccess:
-                        identifier: tick
-                    then_branch:
-                      statements:
-                        - ExpressionLast:
-                            expression:
-                              Literal:
-                                literal:
-                                  Integer: 1
-                    else_branch:
-                      statements:
-                        - ExpressionLast:
-                            expression:
-                              Literal:
-                                literal:
-                                  Integer: 0
-            - Let:
                 identifier: o
                 expression:
                   IfThenElse:
@@ -109,6 +88,27 @@ items:
                                             identifier: mem_o
                                   - Identifier:
                                       identifier: inc
+            - Let:
+                identifier: inc
+                expression:
+                  IfThenElse:
+                    condition:
+                      InputAccess:
+                        identifier: tick
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 1
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 0
           state_elements_step:
             - identifier: mem_o
               expression:
@@ -121,7 +121,6 @@ items:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
           node_name: counter_o
           state_elements_init:
@@ -132,9 +131,7 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: blinking_status
-      imports:
-        - NodeFile: counter_o
-        - Function: xor
+      imports: []
       input:
         node_name: blinking_status
         elements:
@@ -144,54 +141,18 @@ items:
         node_name: blinking_status
         elements:
           - Buffer:
-              identifier: mem_on_off
-              type: Boolean
-          - Buffer:
               identifier: mem_res
               type: Boolean
+          - Buffer:
+              identifier: mem_on_off
+              type: Boolean
           - CalledNode:
-              identifier: counter_o_counter
-              node_name: counter_o
+              identifier: counter_o
+              node_name: 31_22
         step:
           node_name: blinking_status
           output_type: Integer
           body:
-            - Let:
-                identifier: res
-                expression:
-                  MemoryAccess:
-                    identifier: mem_res
-            - Let:
-                identifier: x
-                expression:
-                  Literal:
-                    literal:
-                      Boolean: true
-            - Let:
-                identifier: counter
-                expression:
-                  NodeCall:
-                    node_identifier: counter_o_counter
-                    input_name: CounterOInput
-                    input_fields:
-                      - - res
-                        - Identifier:
-                            identifier: res
-                      - - tick
-                        - Identifier:
-                            identifier: x
-            - Let:
-                identifier: on_off
-                expression:
-                  FunctionCall:
-                    function:
-                      Identifier:
-                        identifier: xor
-                    arguments:
-                      - Identifier:
-                          identifier: res
-                      - MemoryAccess:
-                          identifier: mem_on_off
             - Let:
                 identifier: status
                 expression:
@@ -220,11 +181,43 @@ items:
                               Literal:
                                 literal:
                                   Integer: 0
+            - Let:
+                identifier: on_off
+                expression:
+                  FunctionCall:
+                    function:
+                      Identifier:
+                        identifier: xor
+                    arguments:
+                      - Identifier:
+                          identifier: res
+                      - MemoryAccess:
+                          identifier: mem_on_off
+            - Let:
+                identifier: counter
+                expression:
+                  NodeCall:
+                    node_identifier: counter_o
+                    input_name: CounterOInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: res
+                      - - tick
+                        - Identifier:
+                            identifier: x
+            - Let:
+                identifier: res
+                expression:
+                  MemoryAccess:
+                    identifier: mem_res
+            - Let:
+                identifier: x
+                expression:
+                  Literal:
+                    literal:
+                      Boolean: true
           state_elements_step:
-            - identifier: mem_on_off
-              expression:
-                Identifier:
-                  identifier: on_off
             - identifier: mem_res
               expression:
                 FunctionCall:
@@ -249,6 +242,10 @@ items:
                                       Integer: 1
                           - InputAccess:
                               identifier: tick_number
+            - identifier: mem_on_off
+              expression:
+                Identifier:
+                  identifier: on_off
           output_expression:
             Identifier:
               identifier: status
@@ -256,20 +253,19 @@ items:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
           node_name: blinking_status
           state_elements_init:
             - BufferInit:
-                identifier: mem_on_off
-                initial_value:
-                  Boolean: true
-            - BufferInit:
                 identifier: mem_res
                 initial_value:
                   Boolean: true
+            - BufferInit:
+                identifier: mem_on_off
+                initial_value:
+                  Boolean: true
             - CalledNodeInit:
-                identifier: counter_o_counter
-                node_name: counter_o
+                identifier: counter_o
+                node_name: 31_22
           invariant_initialisation: []
 

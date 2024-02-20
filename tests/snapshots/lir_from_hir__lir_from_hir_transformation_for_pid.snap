@@ -1,6 +1,6 @@
 ---
 source: tests/lir_from_hir.rs
-expression: project
+expression: file
 ---
 items:
   - Structure:
@@ -59,8 +59,7 @@ items:
                   identifier: result
   - NodeFile:
       name: integrate_i
-      imports:
-        - Function: min
+      imports: []
       input:
         node_name: integrate_i
         elements:
@@ -78,17 +77,6 @@ items:
           node_name: integrate_i
           output_type: Float
           body:
-            - Let:
-                identifier: MAX_INTEGRALE
-                expression:
-                  Literal:
-                    literal:
-                      Float: 1000
-            - Let:
-                identifier: prev_i
-                expression:
-                  MemoryAccess:
-                    identifier: mem_prev_i
             - Let:
                 identifier: i
                 expression:
@@ -115,6 +103,17 @@ items:
                                       identifier: dt
                       - Identifier:
                           identifier: MAX_INTEGRALE
+            - Let:
+                identifier: prev_i
+                expression:
+                  MemoryAccess:
+                    identifier: mem_prev_i
+            - Let:
+                identifier: MAX_INTEGRALE
+                expression:
+                  Literal:
+                    literal:
+                      Float: 1000
           state_elements_step:
             - identifier: mem_prev_i
               expression:
@@ -127,7 +126,6 @@ items:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
           node_name: integrate_i
           state_elements_init:
@@ -157,11 +155,6 @@ items:
           output_type: Float
           body:
             - Let:
-                identifier: prev_x
-                expression:
-                  MemoryAccess:
-                    identifier: mem_prev_x
-            - Let:
                 identifier: d
                 expression:
                   FunctionCall:
@@ -185,6 +178,11 @@ items:
                                       identifier: prev_x
                       - InputAccess:
                           identifier: dt
+            - Let:
+                identifier: prev_x
+                expression:
+                  MemoryAccess:
+                    identifier: mem_prev_x
           state_elements_step:
             - identifier: mem_prev_x
               expression:
@@ -197,7 +195,6 @@ items:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
           node_name: derive_d
           state_elements_init:
@@ -208,10 +205,7 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: pid_u
-      imports:
-        - NodeFile: derive_d
-        - NodeFile: integrate_i
-        - Structure: GainPID
+      imports: []
       input:
         node_name: pid_u
         elements:
@@ -225,78 +219,27 @@ items:
         node_name: pid_u
         elements:
           - CalledNode:
-              identifier: derive_d_e_d
-              node_name: derive_d
+              identifier: integrate_i
+              node_name: 49_26
           - CalledNode:
-              identifier: integrate_i_e_i
-              node_name: integrate_i
+              identifier: derive_d
+              node_name: 50_32
         step:
           node_name: pid_u
           output_type: Float
           body:
             - Let:
-                identifier: e
-                expression:
-                  FunctionCall:
-                    function:
-                      Identifier:
-                        identifier: " - "
-                    arguments:
-                      - InputAccess:
-                          identifier: v_c
-                      - InputAccess:
-                          identifier: v
-            - Let:
-                identifier: e_d
-                expression:
-                  NodeCall:
-                    node_identifier: derive_d_e_d
-                    input_name: DeriveDInput
-                    input_fields:
-                      - - x
-                        - Identifier:
-                            identifier: e
-                      - - dt
-                        - InputAccess:
-                            identifier: dt
-            - Let:
-                identifier: e_i
-                expression:
-                  NodeCall:
-                    node_identifier: integrate_i_e_i
-                    input_name: IntegrateIInput
-                    input_fields:
-                      - - x
-                        - Identifier:
-                            identifier: e
-                      - - dt
-                        - InputAccess:
-                            identifier: dt
-            - Let:
-                identifier: gain
-                expression:
-                  Structure:
-                    name: GainPID
-                    fields:
-                      - - k_p
-                        - Literal:
-                            literal:
-                              Float: 0.2
-                      - - k_i
-                        - Literal:
-                            literal:
-                              Float: 1.5
-                      - - k_d
-                        - Literal:
-                            literal:
-                              Float: 6
-            - Let:
                 identifier: u
                 expression:
                   Match:
                     matched:
-                      Identifier:
-                        identifier: gain
+                      FunctionCall:
+                        function:
+                          Identifier:
+                            identifier: (_)
+                        arguments:
+                          - Identifier:
+                              identifier: gain
                     arms:
                       - - Structure:
                             name: GainPID
@@ -304,16 +247,12 @@ items:
                               - - k_p
                                 - Identifier:
                                     name: k_p
-                                    location: ~
                               - - k_i
                                 - Identifier:
                                     name: k_i
-                                    location: ~
                               - - k_d
                                 - Identifier:
                                     name: k_d
-                                    location: ~
-                            location: ~
                         - ~
                         - FunctionCall:
                             function:
@@ -352,6 +291,62 @@ items:
                                         identifier: k_d
                                     - Identifier:
                                         identifier: e_d
+            - Let:
+                identifier: gain
+                expression:
+                  Structure:
+                    name: GainPID
+                    fields:
+                      - - k_p
+                        - Literal:
+                            literal:
+                              Float: 0.2
+                      - - k_i
+                        - Literal:
+                            literal:
+                              Float: 1.5
+                      - - k_d
+                        - Literal:
+                            literal:
+                              Float: 6
+            - Let:
+                identifier: e_i
+                expression:
+                  NodeCall:
+                    node_identifier: integrate_i
+                    input_name: IntegrateIInput
+                    input_fields:
+                      - - x
+                        - Identifier:
+                            identifier: e
+                      - - dt
+                        - InputAccess:
+                            identifier: dt
+            - Let:
+                identifier: e_d
+                expression:
+                  NodeCall:
+                    node_identifier: derive_d
+                    input_name: DeriveDInput
+                    input_fields:
+                      - - x
+                        - Identifier:
+                            identifier: e
+                      - - dt
+                        - InputAccess:
+                            identifier: dt
+            - Let:
+                identifier: e
+                expression:
+                  FunctionCall:
+                    function:
+                      Identifier:
+                        identifier: " - "
+                    arguments:
+                      - InputAccess:
+                          identifier: v_c
+                      - InputAccess:
+                          identifier: v
           state_elements_step: []
           output_expression:
             Identifier:
@@ -360,15 +355,14 @@ items:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
           node_name: pid_u
           state_elements_init:
             - CalledNodeInit:
-                identifier: derive_d_e_d
-                node_name: derive_d
+                identifier: integrate_i
+                node_name: 49_26
             - CalledNodeInit:
-                identifier: integrate_i_e_i
-                node_name: integrate_i
+                identifier: derive_d
+                node_name: 50_32
           invariant_initialisation: []
 

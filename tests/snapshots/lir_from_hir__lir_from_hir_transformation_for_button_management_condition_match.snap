@@ -1,18 +1,18 @@
 ---
 source: tests/lir_from_hir.rs
-expression: project
+expression: file
 ---
 items:
   - Enumeration:
       name: Button
       elements:
-        - Released
-        - Pressed
+        - "Button::Released"
+        - "Button::Pressed"
   - Enumeration:
       name: ResetState
       elements:
-        - InProgress
-        - Confirmed
+        - "ResetState::InProgress"
+        - "ResetState::Confirmed"
   - NodeFile:
       name: counter_o
       imports: []
@@ -77,7 +77,6 @@ items:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
           node_name: counter_o
           state_elements_init:
@@ -87,10 +86,149 @@ items:
                   Integer: 0
           invariant_initialisation: []
   - NodeFile:
+      name: reset_button_user_reset_request_state
+      imports: []
+      input:
+        node_name: reset_button_user_reset_request_state
+        elements:
+          - identifier: button_state
+            type:
+              Enumeration: Button
+          - identifier: period
+            type: Integer
+          - identifier: reset_limit_1
+            type: Integer
+      state:
+        node_name: reset_button_user_reset_request_state
+        elements:
+          - Buffer:
+              identifier: mem_res
+              type: Boolean
+          - CalledNode:
+              identifier: counter_o
+              node_name: 36_25
+        step:
+          node_name: reset_button_user_reset_request_state
+          output_type:
+            Enumeration: ResetState
+          body:
+            - Let:
+                identifier: user_reset_request_state
+                expression:
+                  Match:
+                    matched:
+                      FunctionCall:
+                        function:
+                          Identifier:
+                            identifier: (_)
+                        arguments:
+                          - InputAccess:
+                              identifier: button_state
+                    arms:
+                      - - Enumeration:
+                            enum_name: Button
+                            elem_name: "Button::Released"
+                        - ~
+                        - Enumeration:
+                            name: ResetState
+                            element: "ResetState::Confirmed"
+                      - - Enumeration:
+                            enum_name: Button
+                            elem_name: "Button::Pressed"
+                        - FunctionCall:
+                            function:
+                              Identifier:
+                                identifier: " >= "
+                            arguments:
+                              - Identifier:
+                                  identifier: counter
+                              - InputAccess:
+                                  identifier: reset_limit_1
+                        - Enumeration:
+                            name: ResetState
+                            element: "ResetState::InProgress"
+                      - - Default
+                        - ~
+                        - Enumeration:
+                            name: ResetState
+                            element: "ResetState::Confirmed"
+            - Let:
+                identifier: counter
+                expression:
+                  NodeCall:
+                    node_identifier: counter_o
+                    input_name: CounterOInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: res
+                      - - inc
+                        - InputAccess:
+                            identifier: period
+            - Let:
+                identifier: res
+                expression:
+                  FunctionCall:
+                    function:
+                      Identifier:
+                        identifier: " && "
+                    arguments:
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " == "
+                                arguments:
+                                  - InputAccess:
+                                      identifier: button_state
+                                  - Enumeration:
+                                      name: Button
+                                      element: "Button::Pressed"
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - MemoryAccess:
+                                identifier: mem_res
+          state_elements_step:
+            - identifier: mem_res
+              expression:
+                FunctionCall:
+                  function:
+                    Identifier:
+                      identifier: " == "
+                  arguments:
+                    - InputAccess:
+                        identifier: button_state
+                    - Enumeration:
+                        name: Button
+                        element: "Button::Released"
+          output_expression:
+            Identifier:
+              identifier: user_reset_request_state
+          contract:
+            requires: []
+            ensures: []
+            invariant: []
+        init:
+          node_name: reset_button_user_reset_request_state
+          state_elements_init:
+            - BufferInit:
+                identifier: mem_res
+                initial_value:
+                  Boolean: true
+            - CalledNodeInit:
+                identifier: counter_o
+                node_name: 36_25
+          invariant_initialisation: []
+  - NodeFile:
       name: reset_button_user_reset_request
-      imports:
-        - Enumeration: Button
-        - NodeFile: counter_o
+      imports: []
       input:
         node_name: reset_button_user_reset_request
         elements:
@@ -113,80 +251,34 @@ items:
               identifier: mem_user_reset_request
               type: Boolean
           - CalledNode:
-              identifier: counter_o_counter
-              node_name: counter_o
+              identifier: counter_o
+              node_name: 36_25
         step:
           node_name: reset_button_user_reset_request
           output_type: Boolean
           body:
             - Let:
-                identifier: res
-                expression:
-                  FunctionCall:
-                    function:
-                      Identifier:
-                        identifier: " && "
-                    arguments:
-                      - FunctionCall:
-                          function:
-                            Identifier:
-                              identifier: (_)
-                          arguments:
-                            - FunctionCall:
-                                function:
-                                  Identifier:
-                                    identifier: " == "
-                                arguments:
-                                  - InputAccess:
-                                      identifier: button_state
-                                  - Literal:
-                                      literal:
-                                        Enumeration:
-                                          - Button
-                                          - Pressed
-                      - FunctionCall:
-                          function:
-                            Identifier:
-                              identifier: (_)
-                          arguments:
-                            - MemoryAccess:
-                                identifier: mem_res
-            - Let:
-                identifier: counter
-                expression:
-                  NodeCall:
-                    node_identifier: counter_o_counter
-                    input_name: CounterOInput
-                    input_fields:
-                      - - res
-                        - Identifier:
-                            identifier: res
-                      - - inc
-                        - InputAccess:
-                            identifier: period
-            - Let:
                 identifier: user_reset_request
                 expression:
                   Match:
                     matched:
-                      InputAccess:
-                        identifier: button_state
+                      FunctionCall:
+                        function:
+                          Identifier:
+                            identifier: (_)
+                        arguments:
+                          - InputAccess:
+                              identifier: button_state
                     arms:
-                      - - Constant:
-                            constant:
-                              Enumeration:
-                                - Button
-                                - Released
-                            location: ~
+                      - - Enumeration:
+                            enum_name: Button
+                            elem_name: "Button::Released"
                         - ~
                         - MemoryAccess:
                             identifier: mem_user_reset_request
-                      - - Constant:
-                            constant:
-                              Enumeration:
-                                - Button
-                                - Pressed
-                            location: ~
+                      - - Enumeration:
+                            enum_name: Button
+                            elem_name: "Button::Pressed"
                         - ~
                         - FunctionCall:
                             function:
@@ -204,78 +296,19 @@ items:
                                         identifier: reset_limit_1
                                     - InputAccess:
                                         identifier: reset_limit_2
-          state_elements_step:
-            - identifier: mem_res
-              expression:
-                FunctionCall:
-                  function:
-                    Identifier:
-                      identifier: " == "
-                  arguments:
-                    - InputAccess:
-                        identifier: button_state
-                    - Literal:
-                        literal:
-                          Enumeration:
-                            - Button
-                            - Released
-            - identifier: mem_user_reset_request
-              expression:
-                Identifier:
-                  identifier: user_reset_request
-          output_expression:
-            Identifier:
-              identifier: user_reset_request
-          contract:
-            requires: []
-            ensures: []
-            invariant: []
-            assert: []
-        init:
-          node_name: reset_button_user_reset_request
-          state_elements_init:
-            - BufferInit:
-                identifier: mem_res
-                initial_value:
-                  Boolean: true
-            - BufferInit:
-                identifier: mem_user_reset_request
-                initial_value:
-                  Boolean: false
-            - CalledNodeInit:
-                identifier: counter_o_counter
-                node_name: counter_o
-          invariant_initialisation: []
-  - NodeFile:
-      name: reset_button_user_reset_request_state
-      imports:
-        - Enumeration: Button
-        - NodeFile: counter_o
-        - Enumeration: ResetState
-      input:
-        node_name: reset_button_user_reset_request_state
-        elements:
-          - identifier: button_state
-            type:
-              Enumeration: Button
-          - identifier: period
-            type: Integer
-          - identifier: reset_limit_1
-            type: Integer
-      state:
-        node_name: reset_button_user_reset_request_state
-        elements:
-          - Buffer:
-              identifier: mem_res
-              type: Boolean
-          - CalledNode:
-              identifier: counter_o_counter
-              node_name: counter_o
-        step:
-          node_name: reset_button_user_reset_request_state
-          output_type:
-            Enumeration: ResetState
-          body:
+            - Let:
+                identifier: counter
+                expression:
+                  NodeCall:
+                    node_identifier: counter_o
+                    input_name: CounterOInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: res
+                      - - inc
+                        - InputAccess:
+                            identifier: period
             - Let:
                 identifier: res
                 expression:
@@ -296,11 +329,9 @@ items:
                                 arguments:
                                   - InputAccess:
                                       identifier: button_state
-                                  - Literal:
-                                      literal:
-                                        Enumeration:
-                                          - Button
-                                          - Pressed
+                                  - Enumeration:
+                                      name: Button
+                                      element: "Button::Pressed"
                       - FunctionCall:
                           function:
                             Identifier:
@@ -308,67 +339,6 @@ items:
                           arguments:
                             - MemoryAccess:
                                 identifier: mem_res
-            - Let:
-                identifier: counter
-                expression:
-                  NodeCall:
-                    node_identifier: counter_o_counter
-                    input_name: CounterOInput
-                    input_fields:
-                      - - res
-                        - Identifier:
-                            identifier: res
-                      - - inc
-                        - InputAccess:
-                            identifier: period
-            - Let:
-                identifier: user_reset_request_state
-                expression:
-                  Match:
-                    matched:
-                      InputAccess:
-                        identifier: button_state
-                    arms:
-                      - - Constant:
-                            constant:
-                              Enumeration:
-                                - Button
-                                - Released
-                            location: ~
-                        - ~
-                        - Literal:
-                            literal:
-                              Enumeration:
-                                - ResetState
-                                - Confirmed
-                      - - Constant:
-                            constant:
-                              Enumeration:
-                                - Button
-                                - Pressed
-                            location: ~
-                        - FunctionCall:
-                            function:
-                              Identifier:
-                                identifier: " >= "
-                            arguments:
-                              - Identifier:
-                                  identifier: counter
-                              - InputAccess:
-                                  identifier: reset_limit_1
-                        - Literal:
-                            literal:
-                              Enumeration:
-                                - ResetState
-                                - InProgress
-                      - - Default:
-                            location: ~
-                        - ~
-                        - Literal:
-                            literal:
-                              Enumeration:
-                                - ResetState
-                                - Confirmed
           state_elements_step:
             - identifier: mem_res
               expression:
@@ -379,28 +349,33 @@ items:
                   arguments:
                     - InputAccess:
                         identifier: button_state
-                    - Literal:
-                        literal:
-                          Enumeration:
-                            - Button
-                            - Released
+                    - Enumeration:
+                        name: Button
+                        element: "Button::Released"
+            - identifier: mem_user_reset_request
+              expression:
+                Identifier:
+                  identifier: user_reset_request
           output_expression:
             Identifier:
-              identifier: user_reset_request_state
+              identifier: user_reset_request
           contract:
             requires: []
             ensures: []
             invariant: []
-            assert: []
         init:
-          node_name: reset_button_user_reset_request_state
+          node_name: reset_button_user_reset_request
           state_elements_init:
             - BufferInit:
                 identifier: mem_res
                 initial_value:
                   Boolean: true
+            - BufferInit:
+                identifier: mem_user_reset_request
+                initial_value:
+                  Boolean: false
             - CalledNodeInit:
-                identifier: counter_o_counter
-                node_name: counter_o
+                identifier: counter_o
+                node_name: 36_25
           invariant_initialisation: []
 

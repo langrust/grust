@@ -24,12 +24,18 @@ where
                 LIRExpression::Literal { literal: constant }
             }
             ExpressionKind::Identifier { id, .. } => {
-                let scope = symbol_table.get_scope(&id);
                 let name = symbol_table.get_name(&id).clone();
-                match scope {
-                    Scope::Input => LIRExpression::InputAccess { identifier: name },
-                    Scope::Memory => LIRExpression::MemoryAccess { identifier: name },
-                    Scope::Output | Scope::Local => LIRExpression::Identifier { identifier: name },
+                if symbol_table.is_function(&id) {
+                    LIRExpression::Identifier { identifier: name }
+                } else {
+                    let scope = symbol_table.get_scope(&id);
+                    match scope {
+                        Scope::Input => LIRExpression::InputAccess { identifier: name },
+                        Scope::Memory => LIRExpression::MemoryAccess { identifier: name },
+                        Scope::Output | Scope::Local => {
+                            LIRExpression::Identifier { identifier: name }
+                        }
+                    }
                 }
             }
             ExpressionKind::Application {
@@ -141,24 +147,21 @@ where
                 present,
                 default,
                 ..
-            } => {
-                let typing = symbol_table.get_type(&id).clone();
-                LIRExpression::Match {
-                    matched: Box::new(option.lir_from_hir(symbol_table)),
-                    arms: vec![
-                        (
-                            Pattern::Some {
-                                pattern: Box::new(Pattern::Identifier {
-                                    name: symbol_table.get_name(&id).clone(),
-                                }),
-                            },
-                            None,
-                            present.lir_from_hir(symbol_table),
-                        ),
-                        (Pattern::None, None, default.lir_from_hir(symbol_table)),
-                    ],
-                }
-            }
+            } => LIRExpression::Match {
+                matched: Box::new(option.lir_from_hir(symbol_table)),
+                arms: vec![
+                    (
+                        Pattern::Some {
+                            pattern: Box::new(Pattern::Identifier {
+                                name: symbol_table.get_name(&id).clone(),
+                            }),
+                        },
+                        None,
+                        present.lir_from_hir(symbol_table),
+                    ),
+                    (Pattern::None, None, default.lir_from_hir(symbol_table)),
+                ],
+            },
             ExpressionKind::FieldAccess {
                 expression, field, ..
             } => LIRExpression::FieldAccess {
@@ -173,9 +176,6 @@ where
                 expression: Box::new(expression.lir_from_hir(symbol_table)),
                 field: FieldIdentifier::Unamed(element_number),
             },
-            ExpressionKind::Abstraction { .. } => {
-                unreachable!()
-            }
             ExpressionKind::Map {
                 expression,
                 function_expression,
