@@ -1,3 +1,8 @@
+node counter(res: bool, tick: bool) {
+    out o: int = if res then 0 else (0 fby o) + inc;
+    inc: int = if tick then 1 else 0;
+}
+
 function xor(t: bool, b: bool) -> bool {
     return if t then !b else b;
 }

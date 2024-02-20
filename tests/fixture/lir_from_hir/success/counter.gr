@@ -4,6 +4,6 @@ node counter(res: bool, tick: bool) {
 }
 
 component main() {
-    out y: int = counter(false fby y, half).o;
+    out y: int = counter(false fby (y > 35), half).o;
     half: bool = true fby !half;
 }
