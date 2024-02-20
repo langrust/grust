@@ -8,7 +8,8 @@ fn lir_from_hir_transformation_for_counter() {
 
     let counter_id = files.add(
         "counter.gr",
-        std::fs::read_to_string("tests/fixture/lir_from_hir/success/counter.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/lir_from_hir/success/counter.gr")
+            .expect("unkown file"),
     );
 
     let file = lir_from_hir(counter_id, &mut files);
@@ -21,7 +22,8 @@ fn lir_from_hir_transformation_for_blinking() {
 
     let blinking_id = files.add(
         "blinking.gr",
-        std::fs::read_to_string("tests/fixture/lir_from_hir/success/blinking.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/lir_from_hir/success/blinking.gr")
+            .expect("unkown file"),
     );
 
     let file = lir_from_hir(blinking_id, &mut files);
@@ -34,7 +36,8 @@ fn lir_from_hir_transformation_for_button_management() {
 
     let button_management_id = files.add(
         "button_management.gr",
-        std::fs::read_to_string("tests/fixture/lir_from_hir/success/button_management.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/lir_from_hir/success/button_management.gr")
+            .expect("unkown file"),
     );
 
     let file = lir_from_hir(button_management_id, &mut files);
@@ -47,8 +50,10 @@ fn lir_from_hir_transformation_for_button_management_condition_match() {
 
     let button_management_condition_match_id = files.add(
         "button_management_condition_match.gr",
-        std::fs::read_to_string("tests/fixture/lir_from_hir/success/button_management_condition_match.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string(
+            "tests/fixture/lir_from_hir/success/button_management_condition_match.gr",
+        )
+        .expect("unkown file"),
     );
 
     let file = lir_from_hir(button_management_condition_match_id, &mut files);
@@ -61,8 +66,10 @@ fn lir_from_hir_transformation_for_button_management_using_function() {
 
     let button_management_using_function_id = files.add(
         "button_management_using_function.gr",
-        std::fs::read_to_string("tests/fixture/lir_from_hir/success/button_management_using_function.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string(
+            "tests/fixture/lir_from_hir/success/button_management_using_function.gr",
+        )
+        .expect("unkown file"),
     );
 
     let file = lir_from_hir(button_management_using_function_id, &mut files);

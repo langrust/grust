@@ -50,7 +50,7 @@ impl UnitaryNode {
                 equation.normal_form(nodes_reduced_graphs, &mut identifier_creator, symbol_table)
             })
             .collect();
-        
+
         // drop IdentifierCreator (auto) and local SymbolTable
         symbol_table.global();
 

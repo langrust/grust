@@ -63,7 +63,7 @@ impl File {
         if let Some(component) = self.component.as_mut() {
             component.change_node_application_into_unitary_node_application(symbol_table)
         };
-        
+
         // Debug: test there is no NodeApplication
         debug_assert!(self.no_node_application());
 

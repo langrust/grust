@@ -25,14 +25,10 @@ impl LIRFromHIR for UnitaryNode {
         } = self;
 
         let inputs = symbol_table.get_unitary_node_inputs(&id);
-        let output_type = symbol_table
-            .get_unitary_node_output_type(&id)
-            .clone();
+        let output_type = symbol_table.get_unitary_node_output_type(&id).clone();
 
         let output_expression = LIRExpression::Identifier {
-            identifier: symbol_table
-                .get_unitary_node_output_name(&id)
-                .clone(),
+            identifier: symbol_table.get_unitary_node_output_name(&id).clone(),
         };
 
         // TODO: imports
