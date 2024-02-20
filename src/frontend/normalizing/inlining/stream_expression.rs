@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use petgraph::{algo::has_path_connecting, graphmap::DiGraphMap};
+use petgraph::{algo::all_simple_paths, graphmap::DiGraphMap};
 
 use crate::{
     common::{graph::neighbor::Label, scope::Scope},
@@ -352,10 +352,11 @@ impl StreamExpression {
                     .collect::<Vec<_>>();
 
                 // a loop in the graph induces that inputs depends on output
-                let should_inline = has_path_connecting(graph, signal_id, signal_id, None); // TODO: check it is correct
+                let option_path =
+                    all_simple_paths::<Vec<_>, _>(graph, signal_id, signal_id, 0, None).next(); // TODO: check it is correct
 
                 // then node call must be inlined
-                if should_inline {
+                if option_path.is_some() {
                     let called_unitary_node = unitary_nodes.get(&node_id).unwrap();
 
                     // get statements and memory from called node, with corresponding inputs

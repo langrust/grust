@@ -1016,127 +1016,37 @@ nodes:
           - id: 33
             expression:
               kind:
-                Expression:
-                  expression:
-                    Application:
-                      function_expression:
-                        kind:
+                UnitaryNodeApplication:
+                  node_id: 36
+                  inputs:
+                    - - 23
+                      - kind:
                           Expression:
                             expression:
                               Identifier:
-                                id: 15
-                        typing:
-                          Abstract:
-                            - - Boolean
-                              - Integer
-                              - Integer
-                            - Integer
+                                id: 34
+                        typing: Boolean
                         location: ~
-                        dependencies: ~
-                      inputs:
-                        - kind:
-                            Expression:
-                              expression:
-                                Identifier:
-                                  id: 34
-                          typing: Boolean
-                          location: ~
-                          dependencies:
-                            - - 34
-                              - 0
-                        - kind:
-                            Expression:
-                              expression:
-                                Constant:
-                                  constant:
-                                    Integer: 0
-                          typing: Integer
-                          location: ~
-                          dependencies: []
-                        - kind:
-                            Expression:
-                              expression:
-                                Application:
-                                  function_expression:
-                                    kind:
-                                      Expression:
-                                        expression:
-                                          Identifier:
-                                            id: 5
-                                    typing:
-                                      Abstract:
-                                        - - Integer
-                                          - Integer
-                                        - Integer
-                                    location: ~
-                                    dependencies: ~
-                                  inputs:
-                                    - kind:
-                                        Expression:
-                                          expression:
-                                            Application:
-                                              function_expression:
-                                                kind:
-                                                  Expression:
-                                                    expression:
-                                                      Identifier:
-                                                        id: 2
-                                                typing:
-                                                  Abstract:
-                                                    - - Integer
-                                                    - Integer
-                                                location: ~
-                                                dependencies: ~
-                                              inputs:
-                                                - kind:
-                                                    FollowedBy:
-                                                      constant:
-                                                        Integer: 0
-                                                      expression:
-                                                        kind:
-                                                          Expression:
-                                                            expression:
-                                                              Identifier:
-                                                                id: 33
-                                                        typing: Integer
-                                                        location: ~
-                                                        dependencies:
-                                                          - - 33
-                                                            - 0
-                                                  typing: Integer
-                                                  location: ~
-                                                  dependencies:
-                                                    - - 33
-                                                      - 1
-                                      typing: Integer
-                                      location: ~
-                                      dependencies:
-                                        - - 33
-                                          - 1
-                                    - kind:
-                                        Expression:
-                                          expression:
-                                            Identifier:
-                                              id: 28
-                                      typing: Integer
-                                      location: ~
-                                      dependencies:
-                                        - - 28
-                                          - 0
-                          typing: Integer
-                          location: ~
-                          dependencies:
-                            - - 33
-                              - 1
-                            - - 28
-                              - 0
+                        dependencies:
+                          - - 34
+                            - 0
+                    - - 24
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: 28
+                        typing: Integer
+                        location: ~
+                        dependencies:
+                          - - 28
+                            - 0
+                  output_id: 25
               typing: Integer
               location: ~
               dependencies:
                 - - 34
                   - 0
-                - - 33
-                  - 1
                 - - 28
                   - 0
             location: ~
@@ -1312,7 +1222,10 @@ nodes:
             location: ~
         memory:
           buffers: {}
-          called_nodes: {}
+          called_nodes:
+            36:
+              node_id: 36
+              signal_id: 25
         location: ~
         graph:
           nodes:
@@ -1340,9 +1253,6 @@ nodes:
             - - 2
               - 0
               - Weight: 0
-            - - 2
-              - 2
-              - Weight: 1
             - - 2
               - 5
               - Weight: 0
@@ -1532,127 +1442,37 @@ nodes:
           - id: 33
             expression:
               kind:
-                Expression:
-                  expression:
-                    Application:
-                      function_expression:
-                        kind:
+                UnitaryNodeApplication:
+                  node_id: 36
+                  inputs:
+                    - - 23
+                      - kind:
                           Expression:
                             expression:
                               Identifier:
-                                id: 15
-                        typing:
-                          Abstract:
-                            - - Boolean
-                              - Integer
-                              - Integer
-                            - Integer
+                                id: 34
+                        typing: Boolean
                         location: ~
-                        dependencies: ~
-                      inputs:
-                        - kind:
-                            Expression:
-                              expression:
-                                Identifier:
-                                  id: 34
-                          typing: Boolean
-                          location: ~
-                          dependencies:
-                            - - 34
-                              - 0
-                        - kind:
-                            Expression:
-                              expression:
-                                Constant:
-                                  constant:
-                                    Integer: 0
-                          typing: Integer
-                          location: ~
-                          dependencies: []
-                        - kind:
-                            Expression:
-                              expression:
-                                Application:
-                                  function_expression:
-                                    kind:
-                                      Expression:
-                                        expression:
-                                          Identifier:
-                                            id: 5
-                                    typing:
-                                      Abstract:
-                                        - - Integer
-                                          - Integer
-                                        - Integer
-                                    location: ~
-                                    dependencies: ~
-                                  inputs:
-                                    - kind:
-                                        Expression:
-                                          expression:
-                                            Application:
-                                              function_expression:
-                                                kind:
-                                                  Expression:
-                                                    expression:
-                                                      Identifier:
-                                                        id: 2
-                                                typing:
-                                                  Abstract:
-                                                    - - Integer
-                                                    - Integer
-                                                location: ~
-                                                dependencies: ~
-                                              inputs:
-                                                - kind:
-                                                    FollowedBy:
-                                                      constant:
-                                                        Integer: 0
-                                                      expression:
-                                                        kind:
-                                                          Expression:
-                                                            expression:
-                                                              Identifier:
-                                                                id: 33
-                                                        typing: Integer
-                                                        location: ~
-                                                        dependencies:
-                                                          - - 33
-                                                            - 0
-                                                  typing: Integer
-                                                  location: ~
-                                                  dependencies:
-                                                    - - 33
-                                                      - 1
-                                      typing: Integer
-                                      location: ~
-                                      dependencies:
-                                        - - 33
-                                          - 1
-                                    - kind:
-                                        Expression:
-                                          expression:
-                                            Identifier:
-                                              id: 28
-                                      typing: Integer
-                                      location: ~
-                                      dependencies:
-                                        - - 28
-                                          - 0
-                          typing: Integer
-                          location: ~
-                          dependencies:
-                            - - 33
-                              - 1
-                            - - 28
-                              - 0
+                        dependencies:
+                          - - 34
+                            - 0
+                    - - 24
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: 28
+                        typing: Integer
+                        location: ~
+                        dependencies:
+                          - - 28
+                            - 0
+                  output_id: 25
               typing: Integer
               location: ~
               dependencies:
                 - - 34
                   - 0
-                - - 33
-                  - 1
                 - - 28
                   - 0
             location: ~
@@ -1828,7 +1648,10 @@ nodes:
             location: ~
         memory:
           buffers: {}
-          called_nodes: {}
+          called_nodes:
+            36:
+              node_id: 36
+              signal_id: 25
         location: ~
         graph:
           nodes:
@@ -1864,531 +1687,8 @@ nodes:
               - 0
               - Weight: 0
             - - 2
-              - 2
-              - Weight: 1
-            - - 2
               - 6
               - Weight: 0
-        contract:
-          requires: []
-          ensures: []
-          invariant: []
-      33:
-        id: 39
-        statements:
-          - id: 33
-            expression:
-              kind:
-                Expression:
-                  expression:
-                    Application:
-                      function_expression:
-                        kind:
-                          Expression:
-                            expression:
-                              Identifier:
-                                id: 15
-                        typing:
-                          Abstract:
-                            - - Boolean
-                              - Integer
-                              - Integer
-                            - Integer
-                        location: ~
-                        dependencies: ~
-                      inputs:
-                        - kind:
-                            Expression:
-                              expression:
-                                Identifier:
-                                  id: 34
-                          typing: Boolean
-                          location: ~
-                          dependencies:
-                            - - 34
-                              - 0
-                        - kind:
-                            Expression:
-                              expression:
-                                Constant:
-                                  constant:
-                                    Integer: 0
-                          typing: Integer
-                          location: ~
-                          dependencies: []
-                        - kind:
-                            Expression:
-                              expression:
-                                Application:
-                                  function_expression:
-                                    kind:
-                                      Expression:
-                                        expression:
-                                          Identifier:
-                                            id: 5
-                                    typing:
-                                      Abstract:
-                                        - - Integer
-                                          - Integer
-                                        - Integer
-                                    location: ~
-                                    dependencies: ~
-                                  inputs:
-                                    - kind:
-                                        Expression:
-                                          expression:
-                                            Application:
-                                              function_expression:
-                                                kind:
-                                                  Expression:
-                                                    expression:
-                                                      Identifier:
-                                                        id: 2
-                                                typing:
-                                                  Abstract:
-                                                    - - Integer
-                                                    - Integer
-                                                location: ~
-                                                dependencies: ~
-                                              inputs:
-                                                - kind:
-                                                    FollowedBy:
-                                                      constant:
-                                                        Integer: 0
-                                                      expression:
-                                                        kind:
-                                                          Expression:
-                                                            expression:
-                                                              Identifier:
-                                                                id: 33
-                                                        typing: Integer
-                                                        location: ~
-                                                        dependencies:
-                                                          - - 33
-                                                            - 0
-                                                  typing: Integer
-                                                  location: ~
-                                                  dependencies:
-                                                    - - 33
-                                                      - 1
-                                      typing: Integer
-                                      location: ~
-                                      dependencies:
-                                        - - 33
-                                          - 1
-                                    - kind:
-                                        Expression:
-                                          expression:
-                                            Identifier:
-                                              id: 28
-                                      typing: Integer
-                                      location: ~
-                                      dependencies:
-                                        - - 28
-                                          - 0
-                          typing: Integer
-                          location: ~
-                          dependencies:
-                            - - 33
-                              - 1
-                            - - 28
-                              - 0
-              typing: Integer
-              location: ~
-              dependencies:
-                - - 34
-                  - 0
-                - - 33
-                  - 1
-                - - 28
-                  - 0
-            location: ~
-          - id: 34
-            expression:
-              kind:
-                Expression:
-                  expression:
-                    Application:
-                      function_expression:
-                        kind:
-                          Expression:
-                            expression:
-                              Identifier:
-                                id: 7
-                        typing:
-                          Abstract:
-                            - - Boolean
-                              - Boolean
-                            - Boolean
-                        location: ~
-                        dependencies: ~
-                      inputs:
-                        - kind:
-                            Expression:
-                              expression:
-                                Application:
-                                  function_expression:
-                                    kind:
-                                      Expression:
-                                        expression:
-                                          Identifier:
-                                            id: 2
-                                    typing:
-                                      Abstract:
-                                        - - Boolean
-                                        - Boolean
-                                    location: ~
-                                    dependencies: ~
-                                  inputs:
-                                    - kind:
-                                        Expression:
-                                          expression:
-                                            Application:
-                                              function_expression:
-                                                kind:
-                                                  Expression:
-                                                    expression:
-                                                      Identifier:
-                                                        id: 9
-                                                typing:
-                                                  Abstract:
-                                                    - - Enumeration: Button
-                                                      - Enumeration: Button
-                                                    - Boolean
-                                                location: ~
-                                                dependencies: ~
-                                              inputs:
-                                                - kind:
-                                                    Expression:
-                                                      expression:
-                                                        Identifier:
-                                                          id: 27
-                                                  typing:
-                                                    Enumeration: Button
-                                                  location: ~
-                                                  dependencies:
-                                                    - - 27
-                                                      - 0
-                                                - kind:
-                                                    Expression:
-                                                      expression:
-                                                        Enumeration:
-                                                          enum_id: 19
-                                                          elem_id: 18
-                                                  typing:
-                                                    Enumeration: Button
-                                                  location: ~
-                                                  dependencies: []
-                                      typing: Boolean
-                                      location: ~
-                                      dependencies:
-                                        - - 27
-                                          - 0
-                          typing: Boolean
-                          location: ~
-                          dependencies:
-                            - - 27
-                              - 0
-                        - kind:
-                            Expression:
-                              expression:
-                                Application:
-                                  function_expression:
-                                    kind:
-                                      Expression:
-                                        expression:
-                                          Identifier:
-                                            id: 2
-                                    typing:
-                                      Abstract:
-                                        - - Boolean
-                                        - Boolean
-                                    location: ~
-                                    dependencies: ~
-                                  inputs:
-                                    - kind:
-                                        FollowedBy:
-                                          constant:
-                                            Boolean: true
-                                          expression:
-                                            kind:
-                                              Expression:
-                                                expression:
-                                                  Application:
-                                                    function_expression:
-                                                      kind:
-                                                        Expression:
-                                                          expression:
-                                                            Identifier:
-                                                              id: 9
-                                                      typing:
-                                                        Abstract:
-                                                          - - Enumeration: Button
-                                                            - Enumeration: Button
-                                                          - Boolean
-                                                      location: ~
-                                                      dependencies: ~
-                                                    inputs:
-                                                      - kind:
-                                                          Expression:
-                                                            expression:
-                                                              Identifier:
-                                                                id: 27
-                                                        typing:
-                                                          Enumeration: Button
-                                                        location: ~
-                                                        dependencies:
-                                                          - - 27
-                                                            - 0
-                                                      - kind:
-                                                          Expression:
-                                                            expression:
-                                                              Enumeration:
-                                                                enum_id: 19
-                                                                elem_id: 17
-                                                        typing:
-                                                          Enumeration: Button
-                                                        location: ~
-                                                        dependencies: []
-                                            typing: Boolean
-                                            location: ~
-                                            dependencies:
-                                              - - 27
-                                                - 0
-                                      typing: Boolean
-                                      location: ~
-                                      dependencies:
-                                        - - 27
-                                          - 1
-                          typing: Boolean
-                          location: ~
-                          dependencies:
-                            - - 27
-                              - 1
-              typing: Boolean
-              location: ~
-              dependencies:
-                - - 27
-                  - 0
-                - - 27
-                  - 1
-            location: ~
-        memory:
-          buffers: {}
-          called_nodes: {}
-        location: ~
-        graph:
-          nodes:
-            - 34
-            - 33
-            - 27
-            - 28
-          node_holes: []
-          edge_property: directed
-          edges:
-            - - 0
-              - 2
-              - Weight: 1
-            - - 1
-              - 0
-              - Weight: 0
-            - - 1
-              - 1
-              - Weight: 1
-            - - 1
-              - 3
-              - Weight: 0
-        contract:
-          requires: []
-          ensures: []
-          invariant: []
-      34:
-        id: 40
-        statements:
-          - id: 34
-            expression:
-              kind:
-                Expression:
-                  expression:
-                    Application:
-                      function_expression:
-                        kind:
-                          Expression:
-                            expression:
-                              Identifier:
-                                id: 7
-                        typing:
-                          Abstract:
-                            - - Boolean
-                              - Boolean
-                            - Boolean
-                        location: ~
-                        dependencies: ~
-                      inputs:
-                        - kind:
-                            Expression:
-                              expression:
-                                Application:
-                                  function_expression:
-                                    kind:
-                                      Expression:
-                                        expression:
-                                          Identifier:
-                                            id: 2
-                                    typing:
-                                      Abstract:
-                                        - - Boolean
-                                        - Boolean
-                                    location: ~
-                                    dependencies: ~
-                                  inputs:
-                                    - kind:
-                                        Expression:
-                                          expression:
-                                            Application:
-                                              function_expression:
-                                                kind:
-                                                  Expression:
-                                                    expression:
-                                                      Identifier:
-                                                        id: 9
-                                                typing:
-                                                  Abstract:
-                                                    - - Enumeration: Button
-                                                      - Enumeration: Button
-                                                    - Boolean
-                                                location: ~
-                                                dependencies: ~
-                                              inputs:
-                                                - kind:
-                                                    Expression:
-                                                      expression:
-                                                        Identifier:
-                                                          id: 27
-                                                  typing:
-                                                    Enumeration: Button
-                                                  location: ~
-                                                  dependencies:
-                                                    - - 27
-                                                      - 0
-                                                - kind:
-                                                    Expression:
-                                                      expression:
-                                                        Enumeration:
-                                                          enum_id: 19
-                                                          elem_id: 18
-                                                  typing:
-                                                    Enumeration: Button
-                                                  location: ~
-                                                  dependencies: []
-                                      typing: Boolean
-                                      location: ~
-                                      dependencies:
-                                        - - 27
-                                          - 0
-                          typing: Boolean
-                          location: ~
-                          dependencies:
-                            - - 27
-                              - 0
-                        - kind:
-                            Expression:
-                              expression:
-                                Application:
-                                  function_expression:
-                                    kind:
-                                      Expression:
-                                        expression:
-                                          Identifier:
-                                            id: 2
-                                    typing:
-                                      Abstract:
-                                        - - Boolean
-                                        - Boolean
-                                    location: ~
-                                    dependencies: ~
-                                  inputs:
-                                    - kind:
-                                        FollowedBy:
-                                          constant:
-                                            Boolean: true
-                                          expression:
-                                            kind:
-                                              Expression:
-                                                expression:
-                                                  Application:
-                                                    function_expression:
-                                                      kind:
-                                                        Expression:
-                                                          expression:
-                                                            Identifier:
-                                                              id: 9
-                                                      typing:
-                                                        Abstract:
-                                                          - - Enumeration: Button
-                                                            - Enumeration: Button
-                                                          - Boolean
-                                                      location: ~
-                                                      dependencies: ~
-                                                    inputs:
-                                                      - kind:
-                                                          Expression:
-                                                            expression:
-                                                              Identifier:
-                                                                id: 27
-                                                        typing:
-                                                          Enumeration: Button
-                                                        location: ~
-                                                        dependencies:
-                                                          - - 27
-                                                            - 0
-                                                      - kind:
-                                                          Expression:
-                                                            expression:
-                                                              Enumeration:
-                                                                enum_id: 19
-                                                                elem_id: 17
-                                                        typing:
-                                                          Enumeration: Button
-                                                        location: ~
-                                                        dependencies: []
-                                            typing: Boolean
-                                            location: ~
-                                            dependencies:
-                                              - - 27
-                                                - 0
-                                      typing: Boolean
-                                      location: ~
-                                      dependencies:
-                                        - - 27
-                                          - 1
-                          typing: Boolean
-                          location: ~
-                          dependencies:
-                            - - 27
-                              - 1
-              typing: Boolean
-              location: ~
-              dependencies:
-                - - 27
-                  - 0
-                - - 27
-                  - 1
-            location: ~
-        memory:
-          buffers: {}
-          called_nodes: {}
-        location: ~
-        graph:
-          nodes:
-            - 34
-            - 27
-          node_holes: []
-          edge_property: directed
-          edges:
-            - - 0
-              - 1
-              - Weight: 1
         contract:
           requires: []
           ensures: []
