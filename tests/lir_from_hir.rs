@@ -12,8 +12,8 @@ fn lir_from_hir_transformation_for_counter() {
             .expect("unkown file"),
     );
 
-    let file = lir_from_hir(counter_id, &mut files);
-    insta::assert_yaml_snapshot!(file)
+    let project = lir_from_hir(counter_id, &mut files);
+    insta::assert_yaml_snapshot!(project)
 }
 
 #[test]
@@ -26,8 +26,8 @@ fn lir_from_hir_transformation_for_blinking() {
             .expect("unkown file"),
     );
 
-    let file = lir_from_hir(blinking_id, &mut files);
-    insta::assert_yaml_snapshot!(file)
+    let project = lir_from_hir(blinking_id, &mut files);
+    insta::assert_yaml_snapshot!(project)
 }
 
 #[test]
@@ -40,8 +40,8 @@ fn lir_from_hir_transformation_for_button_management() {
             .expect("unkown file"),
     );
 
-    let file = lir_from_hir(button_management_id, &mut files);
-    insta::assert_yaml_snapshot!(file)
+    let project = lir_from_hir(button_management_id, &mut files);
+    insta::assert_yaml_snapshot!(project)
 }
 
 #[test]
@@ -56,8 +56,8 @@ fn lir_from_hir_transformation_for_button_management_condition_match() {
         .expect("unkown file"),
     );
 
-    let file = lir_from_hir(button_management_condition_match_id, &mut files);
-    insta::assert_yaml_snapshot!(file)
+    let project = lir_from_hir(button_management_condition_match_id, &mut files);
+    insta::assert_yaml_snapshot!(project)
 }
 
 #[test]
@@ -72,8 +72,8 @@ fn lir_from_hir_transformation_for_button_management_using_function() {
         .expect("unkown file"),
     );
 
-    let file = lir_from_hir(button_management_using_function_id, &mut files);
-    insta::assert_yaml_snapshot!(file)
+    let project = lir_from_hir(button_management_using_function_id, &mut files);
+    insta::assert_yaml_snapshot!(project)
 }
 
 #[test]
@@ -85,6 +85,6 @@ fn lir_from_hir_transformation_for_pid() {
         std::fs::read_to_string("tests/fixture/lir_from_hir/success/pid.gr").expect("unkown file"),
     );
 
-    let file = lir_from_hir(pid_id, &mut files);
-    insta::assert_yaml_snapshot!(file)
+    let project = lir_from_hir(pid_id, &mut files);
+    insta::assert_yaml_snapshot!(project)
 }
