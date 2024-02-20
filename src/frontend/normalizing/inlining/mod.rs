@@ -1,4 +1,5 @@
 mod dependencies;
+mod expression;
 mod file;
 mod memory;
 mod node;

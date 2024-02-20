@@ -59,4 +59,59 @@ impl StreamExpression {
             .get()
             .expect("there should be dependencies")
     }
+
+    pub fn no_fby(&self) -> bool {
+        match &self.kind {
+            StreamExpressionKind::Expression { expression } => {
+                expression.propagate_predicate(StreamExpression::no_fby)
+            }
+            StreamExpressionKind::FollowedBy { .. } => false,
+            StreamExpressionKind::UnitaryNodeApplication { inputs, .. } => {
+                inputs.iter().all(|(_, expression)| expression.no_fby())
+            }
+            StreamExpressionKind::NodeApplication { inputs, .. } => {
+                inputs.iter().all(|(_, expression)| expression.no_fby())
+            }
+        }
+    }
+    pub fn is_normal_form(&self) -> bool {
+        match &self.kind {
+            StreamExpressionKind::Expression { expression } => {
+                expression.propagate_predicate(StreamExpression::no_any_node_application)
+            }
+            StreamExpressionKind::FollowedBy { expression, .. } => {
+                expression.no_any_node_application()
+            }
+            StreamExpressionKind::UnitaryNodeApplication { inputs, .. } => inputs
+                .iter()
+                .all(|(_, expression)| expression.no_any_node_application()),
+            StreamExpressionKind::NodeApplication { inputs, .. } => inputs
+                .iter()
+                .all(|(_, expression)| expression.no_any_node_application()),
+        }
+    }
+    pub fn no_any_node_application(&self) -> bool {
+        match &self.kind {
+            StreamExpressionKind::Expression { expression } => {
+                expression.propagate_predicate(StreamExpression::no_any_node_application)
+            }
+            StreamExpressionKind::FollowedBy { expression, .. } => {
+                expression.no_any_node_application()
+            }
+            StreamExpressionKind::UnitaryNodeApplication { .. } => false,
+            StreamExpressionKind::NodeApplication { .. } => false,
+        }
+    }
+    pub fn no_node_application(&self) -> bool {
+        match &self.kind {
+            StreamExpressionKind::Expression { expression } => {
+                expression.propagate_predicate(StreamExpression::no_node_application)
+            }
+            StreamExpressionKind::FollowedBy { expression, .. } => expression.no_node_application(),
+            StreamExpressionKind::UnitaryNodeApplication { inputs, .. } => inputs
+                .iter()
+                .all(|(_, expression)| expression.no_node_application()),
+            StreamExpressionKind::NodeApplication { .. } => false,
+        }
+    }
 }

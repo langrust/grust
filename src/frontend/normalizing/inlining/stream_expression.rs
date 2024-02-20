@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use petgraph::{algo::all_simple_paths, graphmap::DiGraphMap};
+use petgraph::graphmap::DiGraphMap;
 
 use crate::{
-    common::{graph::neighbor::Label, scope::Scope},
+    common::graph::neighbor::Label,
     hir::{
         dependencies::Dependencies,
         expression::ExpressionKind,
@@ -37,216 +37,11 @@ impl StreamExpression {
     ) {
         match self.kind {
             StreamExpressionKind::Expression { ref mut expression } => {
-                match expression {
-                    ExpressionKind::Constant { .. }
-                    | ExpressionKind::Abstraction { .. }
-                    | ExpressionKind::Enumeration { .. } => (),
-                    ExpressionKind::Identifier { ref mut id } => {
-                        if let Some(element) = context_map.get(id) {
-                            match element {
-                                Union::I1(new_id) => {
-                                    *id = *new_id;
-                                    self.dependencies = Dependencies::from(vec![(*new_id, 0)]);
-                                }
-                                Union::I2(new_expression) => *self = new_expression.clone(),
-                            }
-                        }
-                    }
-                    ExpressionKind::Application { ref mut inputs, .. } => {
-                        inputs
-                            .iter_mut()
-                            .for_each(|expression| expression.replace_by_context(context_map));
-
-                        self.dependencies = Dependencies::from(
-                            inputs
-                                .iter()
-                                .flat_map(|expression| expression.get_dependencies().clone())
-                                .collect(),
-                        );
-                    }
-                    ExpressionKind::Structure { ref mut fields, .. } => {
-                        fields
-                            .iter_mut()
-                            .for_each(|(_, expression)| expression.replace_by_context(context_map));
-
-                        self.dependencies = Dependencies::from(
-                            fields
-                                .iter()
-                                .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                                .collect(),
-                        );
-                    }
-                    ExpressionKind::Array {
-                        ref mut elements, ..
-                    } => {
-                        elements
-                            .iter_mut()
-                            .for_each(|expression| expression.replace_by_context(context_map));
-
-                        self.dependencies = Dependencies::from(
-                            elements
-                                .iter()
-                                .flat_map(|expression| expression.get_dependencies().clone())
-                                .collect(),
-                        );
-                    }
-                    ExpressionKind::Match {
-                        ref mut expression,
-                        ref mut arms,
-                        ..
-                    } => {
-                        expression.replace_by_context(context_map);
-                        let mut expression_dependencies = expression.get_dependencies().clone();
-
-                        arms.iter_mut()
-                            .for_each(|(pattern, bound, body, matched_expression)| {
-                                let local_signals = pattern.local_identifiers();
-
-                                // remove identifiers created by the pattern from the context
-                                let context_map = context_map
-                                    .clone()
-                                    .into_iter()
-                                    .filter(|(key, _)| !local_signals.contains(key))
-                                    .collect();
-
-                                if let Some(expression) = bound.as_mut() {
-                                    expression.replace_by_context(&context_map);
-                                    let mut bound_dependencies = expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .filter(|(signal, _)| !local_signals.contains(signal))
-                                        .collect();
-                                    expression_dependencies.append(&mut bound_dependencies);
-                                };
-
-                                debug_assert!(body.is_empty());
-                                // body.iter_mut().for_each(|statement| {
-                                //     statement.expression.replace_by_context(&context_map)
-                                // });
-
-                                matched_expression.replace_by_context(&context_map);
-                                let mut matched_expression_dependencies = matched_expression
-                                    .get_dependencies()
-                                    .clone()
-                                    .into_iter()
-                                    .filter(|(signal, _)| !local_signals.contains(signal))
-                                    .collect::<Vec<(usize, usize)>>();
-                                expression_dependencies
-                                    .append(&mut matched_expression_dependencies);
-                            });
-
-                        self.dependencies = Dependencies::from(expression_dependencies);
-                    }
-                    ExpressionKind::When {
-                        ref mut option,
-                        ref mut present_body,
-                        ref mut present,
-                        ref mut default_body,
-                        ref mut default,
-                        ..
-                    } => {
-                        option.replace_by_context(context_map);
-                        let mut option_dependencies = option.get_dependencies().clone();
-
-                        debug_assert!(present_body.is_empty());
-                        // present_body
-                        //     .iter_mut()
-                        //     .for_each(|statement| statement.expression.replace_by_context(context_map));
-
-                        present.replace_by_context(context_map);
-                        let mut present_dependencies = present.get_dependencies().clone();
-
-                        debug_assert!(default_body.is_empty());
-                        // default_body
-                        //     .iter_mut()
-                        //     .for_each(|statement| statement.expression.replace_by_context(context_map));
-
-                        default.replace_by_context(context_map);
-                        let mut default_dependencies = default.get_dependencies().clone();
-
-                        option_dependencies.append(&mut present_dependencies);
-                        option_dependencies.append(&mut default_dependencies);
-                        self.dependencies = Dependencies::from(option_dependencies);
-                    }
-                    ExpressionKind::FieldAccess {
-                        ref mut expression, ..
-                    } => {
-                        expression.replace_by_context(context_map);
-                        // get matched expression dependencies
-                        let expression_dependencies = expression.get_dependencies().clone();
-                        // push all dependencies in arms dependencies
-                        self.dependencies = Dependencies::from(expression_dependencies);
-                    }
-                    ExpressionKind::TupleElementAccess {
-                        ref mut expression, ..
-                    } => {
-                        expression.replace_by_context(context_map);
-                        // get matched expression dependencies
-                        let expression_dependencies = expression.get_dependencies().clone();
-                        // push all dependencies in arms dependencies
-                        self.dependencies = Dependencies::from(expression_dependencies);
-                    }
-                    ExpressionKind::Map {
-                        ref mut expression, ..
-                    } => {
-                        expression.replace_by_context(context_map);
-                        // get matched expression dependencies
-                        let expression_dependencies = expression.get_dependencies().clone();
-                        // push all dependencies in arms dependencies
-                        self.dependencies = Dependencies::from(expression_dependencies);
-                    }
-                    ExpressionKind::Fold {
-                        ref mut expression,
-                        ref mut initialization_expression,
-                        ..
-                    } => {
-                        expression.replace_by_context(context_map);
-                        initialization_expression.replace_by_context(context_map);
-                        // get matched expressions dependencies
-                        let mut expression_dependencies = expression.get_dependencies().clone();
-                        let mut initialization_expression_dependencies =
-                            expression.get_dependencies().clone();
-                        expression_dependencies.append(&mut initialization_expression_dependencies);
-
-                        // push all dependencies in arms dependencies
-                        self.dependencies = Dependencies::from(expression_dependencies);
-                    }
-                    ExpressionKind::Sort {
-                        ref mut expression, ..
-                    } => {
-                        expression.replace_by_context(context_map);
-                        // get matched expression dependencies
-                        let expression_dependencies = expression.get_dependencies().clone();
-                        // push all dependencies in arms dependencies
-                        self.dependencies = Dependencies::from(expression_dependencies);
-                    }
-                    ExpressionKind::Zip { ref mut arrays, .. } => {
-                        arrays
-                            .iter_mut()
-                            .for_each(|array| array.replace_by_context(context_map));
-
-                        self.dependencies = Dependencies::from(
-                            arrays
-                                .iter()
-                                .flat_map(|array| array.get_dependencies().clone())
-                                .collect(),
-                        );
-                    }
+                let option_new_expression =
+                    expression.replace_by_context(&mut self.dependencies, context_map);
+                if let Some(new_expression) = option_new_expression {
+                    *self = new_expression;
                 }
-            }
-            StreamExpressionKind::FollowedBy {
-                ref mut expression, ..
-            } => {
-                expression.replace_by_context(context_map);
-
-                self.dependencies = Dependencies::from(
-                    expression
-                        .get_dependencies()
-                        .iter()
-                        .map(|(id, depth)| (id.clone(), *depth + 1))
-                        .collect(),
-                );
             }
             StreamExpressionKind::UnitaryNodeApplication {
                 ref mut node_id,
@@ -282,7 +77,8 @@ impl StreamExpression {
                         .collect(),
                 );
             }
-            StreamExpressionKind::NodeApplication { .. } => unreachable!(),
+            StreamExpressionKind::FollowedBy { .. }
+            | StreamExpressionKind::NodeApplication { .. } => unreachable!(),
         }
     }
 
@@ -310,94 +106,17 @@ impl StreamExpression {
         unitary_nodes: &BTreeMap<usize, UnitaryNode>,
     ) -> Vec<Statement<StreamExpression>> {
         match &mut self.kind {
-            StreamExpressionKind::Expression { .. } => vec![],
-            StreamExpressionKind::FollowedBy {
-                ref mut expression, ..
-            } => {
-                let new_statements = expression.inline_when_needed(
-                    signal_id,
-                    memory,
-                    identifier_creator,
-                    graph,
-                    symbol_table,
-                    unitary_nodes,
-                );
-                self.dependencies = Dependencies::from(
-                    expression
-                        .get_dependencies()
-                        .iter()
-                        .map(|(id, depth)| (id.clone(), depth + 1))
-                        .collect(),
-                );
-                new_statements
-            }
-            StreamExpressionKind::UnitaryNodeApplication {
-                node_id,
-                ref mut inputs,
-                ..
-            } => {
-                // inline potential node calls in the inputs
-                let mut new_statements = inputs
-                    .iter_mut()
-                    .flat_map(|(_, expression)| {
-                        expression.inline_when_needed(
-                            signal_id,
-                            memory,
-                            identifier_creator,
-                            graph,
-                            symbol_table,
-                            unitary_nodes,
-                        )
-                    })
-                    .collect::<Vec<_>>();
-
-                // a loop in the graph induces that inputs depends on output
-                let option_path =
-                    all_simple_paths::<Vec<_>, _>(graph, signal_id, signal_id, 0, None).next(); // TODO: check it is correct
-
-                // then node call must be inlined
-                if option_path.is_some() {
-                    let called_unitary_node = unitary_nodes.get(&node_id).unwrap();
-
-                    // get statements and memory from called node, with corresponding inputs
-                    let (mut retrieved_statements, retrieved_memory) = called_unitary_node
-                        .instantiate_statements_and_memory(
-                            identifier_creator,
-                            inputs,
-                            None,
-                            symbol_table,
-                        );
-
-                    // remove called node from memory
-                    memory.remove_called_node(&node_id);
-
-                    // change the expression to a signal call to the output signal
-                    retrieved_statements.iter_mut().for_each(|statement| {
-                        let scope = symbol_table.get_scope(&statement.id);
-                        if scope == &Scope::Output {
-                            self.kind = StreamExpressionKind::Expression {
-                                expression: ExpressionKind::Identifier { id: statement.id },
-                            };
-                            self.dependencies = Dependencies::from(vec![(statement.id.clone(), 0)]);
-                            symbol_table.set_scope(&statement.id, Scope::Local);
-                        }
-                    });
-
-                    new_statements.append(&mut retrieved_statements);
-                    memory.combine(retrieved_memory);
-                } else {
-                    // change dependencies to be the sum of inputs dependencies
-                    self.dependencies = Dependencies::from(
-                        inputs
-                            .iter()
-                            .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                            .collect(),
-                    );
-                }
-
-                new_statements
-            }
+            StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
+            StreamExpressionKind::FollowedBy { .. } => unreachable!(),
             StreamExpressionKind::NodeApplication { .. } => unreachable!(),
+            StreamExpressionKind::Expression { expression } => expression.inline_when_needed(
+                signal_id,
+                memory,
+                identifier_creator,
+                graph,
+                symbol_table,
+                unitary_nodes,
+            ),
         }
     }
 }

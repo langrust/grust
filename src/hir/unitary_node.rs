@@ -72,4 +72,14 @@ impl UnitaryNode {
         let other_edges = other.graph.all_edges();
         graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
     }
+    
+    pub fn no_fby(&self) -> bool {
+        self.statements.iter().all(|statement| statement.no_fby())
+    }
+    pub fn is_normal_form(&self) -> bool {
+        self.statements.iter().all(|statement| statement.is_normal_form())
+    }
+    pub fn no_node_application(&self) -> bool {
+        self.statements.iter().all(|statement| statement.no_node_application())
+    }
 }

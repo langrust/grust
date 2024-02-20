@@ -33,7 +33,13 @@ impl StreamExpression {
         symbol_table: &mut SymbolTable,
     ) {
         match &mut self.kind {
-            StreamExpressionKind::Expression { .. } => (),
+            StreamExpressionKind::Expression { expression } => expression.memorize(
+                signal_id,
+                identifier_creator,
+                memory,
+                contract,
+                symbol_table,
+            ),
             StreamExpressionKind::FollowedBy {
                 constant,
                 expression,
@@ -51,11 +57,11 @@ impl StreamExpression {
 
                 // add buffer to memory
                 memory.add_buffer(memory_id, constant.clone(), *expression.clone());
-                
+
                 // replace signal id by memory id in contract
                 // (Creusot only has access to function input and output in its contract)
-                contract.substitution(signal_id, memory_id);
-                
+                contract.substitution(signal_id, memory_id); // TODO: I do not think this is true
+
                 // replace fby expression by a call to buffer
                 self.kind = StreamExpressionKind::Expression {
                     expression: ExpressionKind::Identifier { id: memory_id },

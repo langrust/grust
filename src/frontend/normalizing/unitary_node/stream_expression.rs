@@ -26,6 +26,9 @@ impl StreamExpression {
         symbol_table: &SymbolTable,
     ) {
         match &mut self.kind {
+            StreamExpressionKind::Expression { expression } => {
+                expression.change_node_application_into_unitary_node_application(symbol_table)
+            }
             StreamExpressionKind::FollowedBy {
                 ref mut expression, ..
             } => expression.change_node_application_into_unitary_node_application(symbol_table),
@@ -60,7 +63,6 @@ impl StreamExpression {
                     output_id: *output_id,
                 };
             }
-            StreamExpressionKind::Expression { .. } => (),
             StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
         }
     }
