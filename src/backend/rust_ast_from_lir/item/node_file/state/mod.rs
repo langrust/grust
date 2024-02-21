@@ -11,7 +11,7 @@ pub mod init;
 pub mod step;
 
 /// Transform LIR state into RustAST structure and implementation.
-pub fn rust_ast_from_lir(state: State) -> (ItemStruct, ItemImpl) {
+pub fn rust_ast_from_lir(state: State, crates: &mut Vec<String>) -> (ItemStruct, ItemImpl) {
     let fields: Vec<Field> = state
         .elements
         .into_iter()
@@ -39,7 +39,7 @@ pub fn rust_ast_from_lir(state: State) -> (ItemStruct, ItemImpl) {
     );
 
     let init = init_rust_ast_from_lir(state.init);
-    let step = step_rust_ast_from_lir(state.step);
+    let step = step_rust_ast_from_lir(state.step, crates);
     let implementation = parse_quote!(
         impl #name {
             #init

@@ -46,7 +46,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
 }
 
 /// Transform LIR step into RustAST implementation method.
-pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
+pub fn rust_ast_from_lir(step: Step, crates: &mut Vec<String>) -> ImplItemFn {
     let Contract {
         requires,
         ensures,
@@ -121,7 +121,7 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
     let mut statements = step
         .body
         .into_iter()
-        .map(statement_rust_ast_from_lir)
+        .map(|statement| statement_rust_ast_from_lir(statement, crates))
         .collect::<Vec<_>>();
 
     let mut fields_update = step
@@ -140,7 +140,7 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
                         attrs: vec![],
                         left: Box::new(field_acces),
                         eq_token: Default::default(),
-                        right: Box::new(expression_rust_ast_from_lir(expression)),
+                        right: Box::new(expression_rust_ast_from_lir(expression, crates)),
                     }),
                     Some(Default::default()),
                 )
@@ -151,7 +151,10 @@ pub fn rust_ast_from_lir(step: Step) -> ImplItemFn {
     // let output_statement =
     //     Statement::ExpressionLast(expression_rust_ast_from_lir(step.output_expression));
 
-    let output_statement = Stmt::Expr(expression_rust_ast_from_lir(step.output_expression), None);
+    let output_statement = Stmt::Expr(
+        expression_rust_ast_from_lir(step.output_expression, crates),
+        None,
+    );
 
     statements.append(&mut fields_update);
     statements.push(output_statement);
@@ -253,6 +256,6 @@ mod rust_ast_from_lir {
                 o + y
             }
         };
-        assert_eq!(rust_ast_from_lir(init), control)
+        assert_eq!(rust_ast_from_lir(init, &mut vec![]), control)
     }
 }

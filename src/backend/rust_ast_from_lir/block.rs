@@ -2,11 +2,11 @@ use super::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
 use crate::lir::block::Block;
 
 /// Transform LIR block into RustAST block.
-pub fn rust_ast_from_lir(block: Block) -> syn::Block {
+pub fn rust_ast_from_lir(block: Block, crates: &mut Vec<String>) -> syn::Block {
     let stmts = block
         .statements
         .into_iter()
-        .map(statement_rust_ast_from_lir)
+        .map(|statement|statement_rust_ast_from_lir(statement, crates))
         .collect();
     syn::Block {
         stmts,
@@ -46,6 +46,6 @@ mod rust_ast_from_lir {
             x
         });
 
-        assert_eq!(rust_ast_from_lir(block), control)
+        assert_eq!(rust_ast_from_lir(block, &mut vec![]), control)
     }
 }

@@ -8,7 +8,7 @@ use proc_macro2::Span;
 use syn::*;
 
 /// Transform LIR function into RustAST function.
-pub fn rust_ast_from_lir(function: Function) -> Vec<Item> {
+pub fn rust_ast_from_lir(function: Function, crates: &mut Vec<String>) -> Vec<Item> {
     let mut items = function
         .imports
         .into_iter()
@@ -50,7 +50,7 @@ pub fn rust_ast_from_lir(function: Function) -> Vec<Item> {
         attrs: Default::default(),
         vis: Visibility::Public(Default::default()),
         sig,
-        block: Box::new(block_rust_ast_from_lir(function.body)),
+        block: Box::new(block_rust_ast_from_lir(function.body, crates)),
     });
     items.push(item_function);
 
@@ -101,6 +101,6 @@ mod rust_ast_from_lir {
                 a + b
             }
         };
-        assert_eq!(rust_ast_from_lir(function), vec![control])
+        assert_eq!(rust_ast_from_lir(function, &mut vec![]), vec![control])
     }
 }

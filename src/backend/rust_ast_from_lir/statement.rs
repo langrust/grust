@@ -4,7 +4,7 @@ use proc_macro2::Span;
 use syn::*;
 
 /// Transform LIR statement into RustAST statement.
-pub fn rust_ast_from_lir(statement: Statement) -> Stmt {
+pub fn rust_ast_from_lir(statement: Statement, crates: &mut Vec<String>) -> Stmt {
     match statement {
         Statement::Let {
             identifier,
@@ -21,13 +21,13 @@ pub fn rust_ast_from_lir(statement: Statement) -> Stmt {
             }),
             init: Some(LocalInit {
                 eq_token: Default::default(),
-                expr: Box::new(expression_rust_ast_from_lir(expression)),
+                expr: Box::new(expression_rust_ast_from_lir(expression, crates)),
                 diverge: None,
             }),
             semi_token: Default::default(),
         }),
         Statement::ExpressionLast { expression } => {
-            Stmt::Expr(expression_rust_ast_from_lir(expression), None)
+            Stmt::Expr(expression_rust_ast_from_lir(expression, crates), None)
         }
     }
 }
@@ -51,7 +51,7 @@ mod rust_ast_from_lir {
         let control = parse_quote! {
             let x = 1i64;
         };
-        assert_eq!(rust_ast_from_lir(statement), control)
+        assert_eq!(rust_ast_from_lir(statement, &mut vec![]), control)
     }
 
     #[test]
@@ -71,7 +71,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { let o = self.node_state.step(NodeInput { i: 1i64 }); };
-        assert_eq!(rust_ast_from_lir(statement), control)
+        assert_eq!(rust_ast_from_lir(statement, &mut vec![]), control)
     }
 
     #[test]
@@ -83,6 +83,6 @@ mod rust_ast_from_lir {
         };
 
         let control = Stmt::Expr(parse_quote! { 1i64 }, None);
-        assert_eq!(rust_ast_from_lir(statement), control)
+        assert_eq!(rust_ast_from_lir(statement, &mut vec![]), control)
     }
 }

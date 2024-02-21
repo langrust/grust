@@ -10,14 +10,14 @@ pub mod input;
 pub mod state;
 
 /// Transform LIR node_file into RustAST file.
-pub fn rust_ast_from_lir(node_file: NodeFile) -> (String, File) {
+pub fn rust_ast_from_lir(node_file: NodeFile, crates: &mut Vec<String>) -> (String, File) {
     let mut items = node_file
         .imports
         .into_iter()
         .map(|import| Item::Use(import_rust_ast_from_lir(import)))
         .collect::<Vec<_>>();
     let input_structure = input_rust_ast_from_lir(node_file.input);
-    let (state_structure, state_implementation) = state_rust_ast_from_lir(node_file.state);
+    let (state_structure, state_implementation) = state_rust_ast_from_lir(node_file.state, crates);
     items.push(Item::Struct(input_structure));
     items.push(Item::Struct(state_structure));
     items.push(Item::Impl(state_implementation));
