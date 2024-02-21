@@ -4,8 +4,10 @@ use syn::*;
 
 /// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
+
+    let attribute = parse_quote!(#[derive(Clone, Copy, Debug, PartialEq)]);
     ItemEnum {
-        attrs: Default::default(),
+        attrs: vec![attribute],
         vis: Visibility::Public(Default::default()),
         enum_token: Default::default(),
         ident: Ident::new(&enumeration.name, Span::call_site()),
@@ -42,6 +44,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! {
+        #[derive(Clone, Copy, Debug, PartialEq)]
         pub enum Color {
             Blue,
             Red,
