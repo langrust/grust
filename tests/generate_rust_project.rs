@@ -205,6 +205,34 @@ fn generate_rust_project_for_alarm_sort() {
 }
 
 #[test]
+fn generate_rust_project_for_alarm_zip_function() {
+    let mut files = SimpleFiles::new();
+
+    let alarm_zip_function_id = files.add(
+        "alarm_zip_function.gr",
+        std::fs::read_to_string(
+            "tests/fixture/generate_rust_project/success/alarm_zip_function.gr",
+        )
+        .expect("unkown file"),
+    );
+
+    generate_rust_project(alarm_zip_function_id, &mut files, "tests/generated/")
+}
+
+#[test]
+fn generate_rust_project_for_alarm_zip() {
+    let mut files = SimpleFiles::new();
+
+    let alarm_zip_id = files.add(
+        "alarm_zip.gr",
+        std::fs::read_to_string("tests/fixture/generate_rust_project/success/alarm_zip.gr")
+            .expect("unkown file"),
+    );
+
+    generate_rust_project(alarm_zip_id, &mut files, "tests/generated/")
+}
+
+#[test]
 fn generate_rust_project_for_factorial() {
     let mut files = SimpleFiles::new();
 
