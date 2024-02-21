@@ -1,7 +1,8 @@
-use crate::lir::item::node_file::{import::Import, input::Input, state::State};
+use crate::lir::item::{
+    import::Import,
+    node_file::{input::Input, state::State},
+};
 
-/// LIR [Import](crate::lir::item::node_file::import::Import) module.
-pub mod import;
 /// LIR [Input](crate::lir::item::node_file::input::Input) module.
 pub mod input;
 /// LIR [State](crate::lir::item::node_file::state::State) module.
@@ -12,7 +13,7 @@ pub mod state;
 pub struct NodeFile {
     /// The node's name.
     pub name: String,
-    /// The imports (called functions and nodes).
+    /// The imports (used typedefs, functions and nodes).
     pub imports: Vec<Import>,
     /// The input structure.
     pub input: Input,

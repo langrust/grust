@@ -6,7 +6,7 @@ use crate::{
     lir::{
         block::Block,
         expression::{Expression as LIRExpression, FieldIdentifier},
-        item::node_file::import::Import,
+        item::import::Import,
         pattern::Pattern,
         statement::Statement,
     },

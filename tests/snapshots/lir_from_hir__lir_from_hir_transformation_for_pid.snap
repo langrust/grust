@@ -57,6 +57,7 @@ items:
               expression:
                 Identifier:
                   identifier: result
+      imports: []
   - NodeFile:
       name: integrate_i
       imports:

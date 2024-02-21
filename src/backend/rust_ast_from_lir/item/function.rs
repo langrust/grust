@@ -82,6 +82,7 @@ mod rust_ast_from_lir {
                     },
                 }],
             },
+            imports: vec![],
         };
 
         let control = parse_quote! {

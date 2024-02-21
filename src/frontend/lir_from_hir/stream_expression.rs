@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::{
     common::{convert_case::camel_case, r#type::Type},
     hir::stream_expression::{StreamExpression, StreamExpressionKind},
-    lir::{expression::Expression as LIRExpression, item::node_file::import::Import},
+    lir::{expression::Expression as LIRExpression, item::import::Import},
     symbol_table::SymbolTable,
 };
 

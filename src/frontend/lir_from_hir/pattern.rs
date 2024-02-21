@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::{
     hir::pattern::{Pattern, PatternKind},
-    lir::{item::node_file::import::Import, pattern::Pattern as LIRPattern},
+    lir::{item::import::Import, pattern::Pattern as LIRPattern},
     symbol_table::SymbolTable,
 };
 

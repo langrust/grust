@@ -1,7 +1,7 @@
 use crate::{
     hir::statement::Statement,
     lir::{
-        expression::Expression as LIRExpression, item::node_file::import::Import,
+        expression::Expression as LIRExpression, item::import::Import,
         statement::Statement as LIRStatement,
     },
     symbol_table::SymbolTable,
