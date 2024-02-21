@@ -9,6 +9,64 @@ RustASTProject {
             shebang: None,
             attrs: [],
             items: [
+                Item::Use {
+                    attrs: [],
+                    vis: Visibility::Inherited,
+                    use_token: Use,
+                    leading_colon: None,
+                    tree: UseTree::Path(
+                        UsePath {
+                            ident: Ident(
+                                crate,
+                            ),
+                            colon2_token: PathSep,
+                            tree: UseTree::Path(
+                                UsePath {
+                                    ident: Ident(
+                                        counter_o,
+                                    ),
+                                    colon2_token: PathSep,
+                                    tree: UseTree::Glob(
+                                        UseGlob {
+                                            star_token: Star,
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                    semi_token: Semi,
+                },
+                Item::Use {
+                    attrs: [],
+                    vis: Visibility::Inherited,
+                    use_token: Use,
+                    leading_colon: None,
+                    tree: UseTree::Path(
+                        UsePath {
+                            ident: Ident(
+                                crate,
+                            ),
+                            colon2_token: PathSep,
+                            tree: UseTree::Path(
+                                UsePath {
+                                    ident: Ident(
+                                        functions,
+                                    ),
+                                    colon2_token: PathSep,
+                                    tree: UseTree::Name(
+                                        UseName {
+                                            ident: Ident(
+                                                xor,
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                    semi_token: Semi,
+                },
                 Item::Struct {
                     attrs: [],
                     vis: Visibility::Public(
