@@ -30,6 +30,7 @@ pub mod contract;
 /// LIR memory construction from HIR typedef.
 pub mod memory;
 pub mod pattern;
+pub mod r#type;
 
 pub trait LIRFromHIR {
     type LIR;
