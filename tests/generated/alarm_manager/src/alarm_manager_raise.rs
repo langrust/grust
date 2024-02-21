@@ -1,3 +1,5 @@
+use crate::functions::high_priority;
+use crate::typedefs::Alarm;
 pub struct AlarmManagerRaiseInput {
     pub alarms: [Alarm; 10usize],
 }

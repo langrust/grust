@@ -10,7 +10,7 @@ struct Alarm {
 function high_priority(alarm: Alarm) -> bool {
     let is_raiseable: bool = match (alarm) {
         Alarm {
-            priority: Priority.High,
+            priority: Priority::High,
             raised: raised,
         } => raised,
         _ => false,
@@ -18,6 +18,10 @@ function high_priority(alarm: Alarm) -> bool {
     return is_raiseable;
 }
 
+function alarms_processing(alarms: [Alarm; 10]) -> [bool; 10] {
+    return alarms.map(high_priority);
+}
+
 node alarm_manager(alarms: [Alarm; 10]) {
-    out raise: [bool; 10] = alarms.map(high_priority);
+    out raise: [bool; 10] = alarms_processing(alarms);
 }
