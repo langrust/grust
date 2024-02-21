@@ -74,7 +74,17 @@ impl StreamExpression {
                 inputs,
                 output_id,
             } => {
-                memory.add_called_node(*node_id, *node_id, *output_id);
+                // create fresh identifier for the new memory buffer
+                let node_name = symbol_table.get_name(&node_id);
+                let memory_name = identifier_creator.new_identifier(
+                    String::from(""),
+                    node_name.clone(),
+                    String::from(""),
+                );
+                let memory_id =
+                    symbol_table.insert_fresh_signal(memory_name, Scope::Memory, None);
+
+                memory.add_called_node(memory_id, *node_id, *output_id);
 
                 self.dependencies = Dependencies::from(
                     inputs

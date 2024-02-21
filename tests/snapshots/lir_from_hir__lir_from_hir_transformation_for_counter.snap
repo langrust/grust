@@ -1,6 +1,6 @@
 ---
 source: tests/lir_from_hir.rs
-expression: file
+expression: project
 ---
 items:
   - NodeFile:
@@ -113,7 +113,7 @@ items:
               type: Boolean
           - CalledNode:
               identifier: counter_o
-              node_name: 25_19
+              node_name: counter_o
         step:
           node_name: main_y
           output_type: Integer
@@ -188,6 +188,5 @@ items:
                   Boolean: true
             - CalledNodeInit:
                 identifier: counter_o
-                node_name: 25_19
+                node_name: counter_o
           invariant_initialisation: []
-

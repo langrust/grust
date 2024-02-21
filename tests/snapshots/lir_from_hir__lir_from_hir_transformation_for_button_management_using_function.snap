@@ -1,6 +1,6 @@
 ---
 source: tests/lir_from_hir.rs
-expression: file
+expression: project
 ---
 items:
   - Enumeration:
@@ -163,7 +163,7 @@ items:
               type: Boolean
           - CalledNode:
               identifier: counter_o
-              node_name: 41_29
+              node_name: counter_o
         step:
           node_name: reset_button_user_reset_request_state
           output_type:
@@ -255,7 +255,7 @@ items:
                   Boolean: true
             - CalledNodeInit:
                 identifier: counter_o
-                node_name: 41_29
+                node_name: counter_o
           invariant_initialisation: []
   - NodeFile:
       name: reset_button_user_reset_request
@@ -283,7 +283,7 @@ items:
               type: Boolean
           - CalledNode:
               identifier: counter_o
-              node_name: 41_29
+              node_name: counter_o
         step:
           node_name: reset_button_user_reset_request
           output_type: Boolean
@@ -407,6 +407,5 @@ items:
                   Boolean: false
             - CalledNodeInit:
                 identifier: counter_o
-                node_name: 41_29
+                node_name: counter_o
           invariant_initialisation: []
-

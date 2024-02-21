@@ -1,6 +1,6 @@
 ---
 source: tests/lir_from_hir.rs
-expression: file
+expression: project
 ---
 items:
   - Structure:
@@ -220,10 +220,10 @@ items:
         elements:
           - CalledNode:
               identifier: integrate_i
-              node_name: 49_26
+              node_name: integrate_i
           - CalledNode:
               identifier: derive_d
-              node_name: 50_32
+              node_name: derive_d
         step:
           node_name: pid_u
           output_type: Float
@@ -360,9 +360,8 @@ items:
           state_elements_init:
             - CalledNodeInit:
                 identifier: integrate_i
-                node_name: 49_26
+                node_name: integrate_i
             - CalledNodeInit:
                 identifier: derive_d
-                node_name: 50_32
+                node_name: derive_d
           invariant_initialisation: []
-
