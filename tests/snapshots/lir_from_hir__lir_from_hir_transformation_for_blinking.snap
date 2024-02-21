@@ -36,6 +36,7 @@ items:
                           expression:
                             Identifier:
                               identifier: b
+      imports: []
   - NodeFile:
       name: counter_o
       imports: []

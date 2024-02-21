@@ -2,9 +2,9 @@ use itertools::Itertools;
 
 use crate::{
     hir::memory::{Buffer, CalledNode, Memory},
-    lir::item::node_file::{
+    lir::item::{
         import::Import,
-        state::{init::StateElementInit, step::StateElementStep, StateElement},
+        node_file::state::{init::StateElementInit, step::StateElementStep, StateElement},
     },
     symbol_table::SymbolTable,
 };

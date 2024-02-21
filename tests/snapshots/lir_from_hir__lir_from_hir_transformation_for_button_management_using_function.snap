@@ -70,6 +70,9 @@ items:
               expression:
                 Identifier:
                   identifier: result
+      imports:
+        - Enumeration: Button
+        - Enumeration: ResetState
   - NodeFile:
       name: counter_o
       imports: []

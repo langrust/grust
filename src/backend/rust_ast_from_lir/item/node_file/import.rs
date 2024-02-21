@@ -1,4 +1,4 @@
-use crate::lir::item::node_file::import::Import;
+use crate::lir::item::import::Import;
 use proc_macro2::Span;
 use syn::*;
 /// Transform LIR import into RustAST import.
@@ -30,7 +30,7 @@ pub fn rust_ast_from_lir(import: Import) -> ItemUse {
 #[cfg(test)]
 mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::item::node_file::import::rust_ast_from_lir;
-    use crate::lir::item::node_file::import::Import;
+    use crate::lir::item::import::Import;
     use syn::*;
 
     #[test]
