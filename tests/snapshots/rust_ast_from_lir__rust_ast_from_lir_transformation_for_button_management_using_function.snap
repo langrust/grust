@@ -2931,14 +2931,7 @@ RustASTProject {
                                                             segments: [
                                                                 PathSegment {
                                                                     ident: Ident(
-                                                                        Expr,
-                                                                    ),
-                                                                    arguments: PathArguments::None,
-                                                                },
-                                                                PathSep,
-                                                                PathSegment {
-                                                                    ident: Ident(
-                                                                        FunctionCall,
+                                                                        reset_state_management,
                                                                     ),
                                                                     arguments: PathArguments::None,
                                                                 },
@@ -2947,66 +2940,70 @@ RustASTProject {
                                                     },
                                                     paren_token: Paren,
                                                     args: [
-                                                        Expr::Macro {
+                                                        Expr::Field {
                                                             attrs: [],
-                                                            mac: Macro {
+                                                            base: Expr::Path {
+                                                                attrs: [],
+                                                                qself: None,
                                                                 path: Path {
                                                                     leading_colon: None,
                                                                     segments: [
                                                                         PathSegment {
                                                                             ident: Ident(
-                                                                                parse_quote,
+                                                                                input,
                                                                             ),
                                                                             arguments: PathArguments::None,
                                                                         },
                                                                     ],
                                                                 },
-                                                                bang_token: Not,
-                                                                delimiter: MacroDelimiter::Brace(
-                                                                    Brace,
+                                                            },
+                                                            dot_token: Dot,
+                                                            member: Member::Named(
+                                                                Ident(
+                                                                    button_state,
                                                                 ),
-                                                                tokens: TokenStream [
-                                                                    Ident {
-                                                                        sym: reset_state_management,
-                                                                    },
-                                                                    Group {
-                                                                        delimiter: Parenthesis,
-                                                                        stream: TokenStream [
-                                                                            Ident {
-                                                                                sym: input,
-                                                                            },
-                                                                            Punct {
-                                                                                char: '.',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: button_state,
-                                                                            },
-                                                                            Punct {
-                                                                                char: ',',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: counter,
-                                                                            },
-                                                                            Punct {
-                                                                                char: ',',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: input,
-                                                                            },
-                                                                            Punct {
-                                                                                char: '.',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: reset_limit_1,
-                                                                            },
-                                                                        ],
+                                                            ),
+                                                        },
+                                                        Comma,
+                                                        Expr::Path {
+                                                            attrs: [],
+                                                            qself: None,
+                                                            path: Path {
+                                                                leading_colon: None,
+                                                                segments: [
+                                                                    PathSegment {
+                                                                        ident: Ident(
+                                                                            counter,
+                                                                        ),
+                                                                        arguments: PathArguments::None,
                                                                     },
                                                                 ],
                                                             },
+                                                        },
+                                                        Comma,
+                                                        Expr::Field {
+                                                            attrs: [],
+                                                            base: Expr::Path {
+                                                                attrs: [],
+                                                                qself: None,
+                                                                path: Path {
+                                                                    leading_colon: None,
+                                                                    segments: [
+                                                                        PathSegment {
+                                                                            ident: Ident(
+                                                                                input,
+                                                                            ),
+                                                                            arguments: PathArguments::None,
+                                                                        },
+                                                                    ],
+                                                                },
+                                                            },
+                                                            dot_token: Dot,
+                                                            member: Member::Named(
+                                                                Ident(
+                                                                    reset_limit_1,
+                                                                ),
+                                                            ),
                                                         },
                                                     ],
                                                 },
