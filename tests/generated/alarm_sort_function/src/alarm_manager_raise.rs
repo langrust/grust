@@ -1,4 +1,5 @@
 use crate::functions::sorting;
+use crate::typedefs::Alarm;
 pub struct AlarmManagerRaiseInput {
     pub alarms: [Alarm; 10usize],
 }
@@ -8,11 +9,7 @@ impl AlarmManagerRaiseState {
         AlarmManagerRaiseState {}
     }
     pub fn step(&mut self, input: AlarmManagerRaiseInput) -> [Alarm; 10usize] {
-        let raise = Expr::FunctionCall(
-            parse_quote! {
-                sorting(input.alarms)
-            },
-        );
+        let raise = sorting(input.alarms);
         raise
     }
 }
