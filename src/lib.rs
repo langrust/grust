@@ -86,6 +86,8 @@
 //! [critical systems]: https://en.wikipedia.org/wiki/Critical_system
 //! [Lustre]: https://en.wikipedia.org/wiki/Lustre_(programming_language)
 
+use std::path::Path;
+
 use ast::file::File as ASTFile;
 use backend::rust_ast_from_lir::project::{rust_ast_from_lir as rust_from_lir, RustASTProject};
 use codespan_reporting::files::{Files, SimpleFiles};
@@ -257,6 +259,12 @@ pub fn generate_rust_project<P>(
     hir.normalize(&mut symbol_table, &mut errors).unwrap();
 
     let mut project = rust_from_lir(hir.lir_from_hir(&symbol_table));
+    let parent_path = {
+        let file_name = Path::new(files.name(file_id).unwrap())
+            .file_stem()
+            .unwrap();
+        parent_path.as_ref().join(file_name)
+    };
     project.set_parent(parent_path);
 
     project.generate()
