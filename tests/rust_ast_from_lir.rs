@@ -8,7 +8,7 @@ fn rust_ast_from_lir_transformation_for_counter() {
 
     let counter_id = files.add(
         "counter.gr",
-        std::fs::read_to_string("tests/fixture/counter.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/rust_ast_from_lir/success/counter.gr").expect("unkown file"),
     );
 
     let project = rust_ast_from_lir(counter_id, &mut files);
@@ -21,7 +21,7 @@ fn rust_ast_from_lir_transformation_for_blinking() {
 
     let blinking_id = files.add(
         "blinking.gr",
-        std::fs::read_to_string("tests/fixture/blinking.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/rust_ast_from_lir/success/blinking.gr").expect("unkown file"),
     );
 
     let project = rust_ast_from_lir(blinking_id, &mut files);
@@ -34,7 +34,7 @@ fn rust_ast_from_lir_transformation_for_button_management() {
 
     let button_management_id = files.add(
         "button_management.gr",
-        std::fs::read_to_string("tests/fixture/button_management.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/rust_ast_from_lir/success/button_management.gr").expect("unkown file"),
     );
 
     let project = rust_ast_from_lir(button_management_id, &mut files);
@@ -47,7 +47,7 @@ fn rust_ast_from_lir_transformation_for_button_management_condition_match() {
 
     let button_management_condition_match_id = files.add(
         "button_management_condition_match.gr",
-        std::fs::read_to_string("tests/fixture/button_management_condition_match.gr")
+        std::fs::read_to_string("tests/fixture/rust_ast_from_lir/success/button_management_condition_match.gr")
             .expect("unkown file"),
     );
 
@@ -61,7 +61,7 @@ fn rust_ast_from_lir_transformation_for_button_management_using_function() {
 
     let button_management_using_function_id = files.add(
         "button_management_using_function.gr",
-        std::fs::read_to_string("tests/fixture/button_management_using_function.gr")
+        std::fs::read_to_string("tests/fixture/rust_ast_from_lir/success/button_management_using_function.gr")
             .expect("unkown file"),
     );
 
@@ -75,7 +75,7 @@ fn rust_ast_from_lir_transformation_for_pid() {
 
     let pid_id = files.add(
         "pid.gr",
-        std::fs::read_to_string("tests/fixture/pid.gr").expect("unkown file"),
+        std::fs::read_to_string("tests/fixture/rust_ast_from_lir/success/pid.gr").expect("unkown file"),
     );
 
     let project = rust_ast_from_lir(pid_id, &mut files);
