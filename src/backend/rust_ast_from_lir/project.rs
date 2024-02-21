@@ -23,12 +23,14 @@ pub struct RustASTProject {
     /// Project's directory.
     pub directory: String,
     files: BTreeMap<String, File>,
+    crates: Vec<String>,
 }
 impl RustASTProject {
     fn new() -> Self {
         RustASTProject {
             files: Default::default(),
             directory: Default::default(),
+            crates: Default::default(),
         }
     }
 
@@ -76,7 +78,9 @@ authors = [\"Émilie THOMÉ <emilie.e.thome@renault.com>\"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-"
+{}
+",
+            self.crates.join("\n")
         );
         let path = std::path::Path::new(&self.directory).join("Cargo.toml");
 
@@ -143,14 +147,19 @@ pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
 
     project.items.into_iter().for_each(|item| match item {
         Item::NodeFile(node_file) => {
-            let (path, rust_ast_node_file) = node_file_rust_ast_from_lir(node_file);
+            let (path, rust_ast_node_file) =
+                node_file_rust_ast_from_lir(node_file, &mut rust_ast_project.crates);
             rust_ast_project.add_file(&path, rust_ast_node_file)
         }
         Item::Function(function) => {
-            let mut rust_ast_function = function_rust_ast_from_lir(function);
+            let mut rust_ast_function =
+                function_rust_ast_from_lir(function, &mut rust_ast_project.crates);
             function_file.items.append(&mut rust_ast_function);
             // remove duplicated imports between functions
-            function_file.items = std::mem::take(&mut function_file.items).into_iter().unique().collect::<Vec<_>>();
+            function_file.items = std::mem::take(&mut function_file.items)
+                .into_iter()
+                .unique()
+                .collect::<Vec<_>>();
         }
         Item::Enumeration(enumeration) => {
             let rust_ast_enumeration = enumeration_rust_ast_from_lir(enumeration);
