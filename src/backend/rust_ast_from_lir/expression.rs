@@ -107,9 +107,9 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
                 } else {
                     let arguments = arguments.into_iter().map(rust_ast_from_lir);
                     let function = rust_ast_from_lir(*function);
-                    parse_quote!(Expr::FunctionCall(parse_quote! {
+                    parse_quote! {
                         #function (#(#arguments),*)
-                    }))
+                    }
                 }
             }
             _ => {

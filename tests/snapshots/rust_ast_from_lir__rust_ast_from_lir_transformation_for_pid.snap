@@ -1332,14 +1332,7 @@ RustASTProject {
                                                             segments: [
                                                                 PathSegment {
                                                                     ident: Ident(
-                                                                        Expr,
-                                                                    ),
-                                                                    arguments: PathArguments::None,
-                                                                },
-                                                                PathSep,
-                                                                PathSegment {
-                                                                    ident: Ident(
-                                                                        FunctionCall,
+                                                                        min,
                                                                     ),
                                                                     arguments: PathArguments::None,
                                                                 },
@@ -1348,70 +1341,93 @@ RustASTProject {
                                                     },
                                                     paren_token: Paren,
                                                     args: [
-                                                        Expr::Macro {
+                                                        Expr::Binary {
                                                             attrs: [],
-                                                            mac: Macro {
+                                                            left: Expr::Path {
+                                                                attrs: [],
+                                                                qself: None,
                                                                 path: Path {
                                                                     leading_colon: None,
                                                                     segments: [
                                                                         PathSegment {
                                                                             ident: Ident(
-                                                                                parse_quote,
+                                                                                prev_i,
                                                                             ),
                                                                             arguments: PathArguments::None,
                                                                         },
                                                                     ],
                                                                 },
-                                                                bang_token: Not,
-                                                                delimiter: MacroDelimiter::Brace(
-                                                                    Brace,
-                                                                ),
-                                                                tokens: TokenStream [
-                                                                    Ident {
-                                                                        sym: min,
+                                                            },
+                                                            op: BinOp::Add(
+                                                                Plus,
+                                                            ),
+                                                            right: Expr::Binary {
+                                                                attrs: [],
+                                                                left: Expr::Field {
+                                                                    attrs: [],
+                                                                    base: Expr::Path {
+                                                                        attrs: [],
+                                                                        qself: None,
+                                                                        path: Path {
+                                                                            leading_colon: None,
+                                                                            segments: [
+                                                                                PathSegment {
+                                                                                    ident: Ident(
+                                                                                        input,
+                                                                                    ),
+                                                                                    arguments: PathArguments::None,
+                                                                                },
+                                                                            ],
+                                                                        },
                                                                     },
-                                                                    Group {
-                                                                        delimiter: Parenthesis,
-                                                                        stream: TokenStream [
-                                                                            Ident {
-                                                                                sym: prev_i,
-                                                                            },
-                                                                            Punct {
-                                                                                char: '+',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: input,
-                                                                            },
-                                                                            Punct {
-                                                                                char: '.',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: x,
-                                                                            },
-                                                                            Punct {
-                                                                                char: '*',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: input,
-                                                                            },
-                                                                            Punct {
-                                                                                char: '.',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: dt,
-                                                                            },
-                                                                            Punct {
-                                                                                char: ',',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: MAX_INTEGRALE,
-                                                                            },
-                                                                        ],
+                                                                    dot_token: Dot,
+                                                                    member: Member::Named(
+                                                                        Ident(
+                                                                            x,
+                                                                        ),
+                                                                    ),
+                                                                },
+                                                                op: BinOp::Mul(
+                                                                    Star,
+                                                                ),
+                                                                right: Expr::Field {
+                                                                    attrs: [],
+                                                                    base: Expr::Path {
+                                                                        attrs: [],
+                                                                        qself: None,
+                                                                        path: Path {
+                                                                            leading_colon: None,
+                                                                            segments: [
+                                                                                PathSegment {
+                                                                                    ident: Ident(
+                                                                                        input,
+                                                                                    ),
+                                                                                    arguments: PathArguments::None,
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    dot_token: Dot,
+                                                                    member: Member::Named(
+                                                                        Ident(
+                                                                            dt,
+                                                                        ),
+                                                                    ),
+                                                                },
+                                                            },
+                                                        },
+                                                        Comma,
+                                                        Expr::Path {
+                                                            attrs: [],
+                                                            qself: None,
+                                                            path: Path {
+                                                                leading_colon: None,
+                                                                segments: [
+                                                                    PathSegment {
+                                                                        ident: Ident(
+                                                                            MAX_INTEGRALE,
+                                                                        ),
+                                                                        arguments: PathArguments::None,
                                                                     },
                                                                 ],
                                                             },
