@@ -1707,10 +1707,10 @@ component:
       memory:
         buffers: {}
         called_nodes:
-          49:
+          54:
             node_id: 49
             signal_id: 26
-          50:
+          55:
             node_id: 50
             signal_id: 32
       location: ~
@@ -1798,4 +1798,3 @@ component:
       - 40
     : Weight: 0
 location: ~
-
