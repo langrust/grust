@@ -13,6 +13,7 @@ use crate::{
     },
     lir::{item::Item, project::Project},
 };
+use itertools::Itertools;
 use proc_macro2::Span;
 use syn::*;
 
@@ -147,7 +148,9 @@ pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
         }
         Item::Function(function) => {
             let mut rust_ast_function = function_rust_ast_from_lir(function);
-            function_file.items.append(&mut rust_ast_function)
+            function_file.items.append(&mut rust_ast_function);
+            // remove duplicated imports between functions
+            function_file.items = std::mem::take(&mut function_file.items).into_iter().unique().collect::<Vec<_>>();
         }
         Item::Enumeration(enumeration) => {
             let rust_ast_enumeration = enumeration_rust_ast_from_lir(enumeration);
