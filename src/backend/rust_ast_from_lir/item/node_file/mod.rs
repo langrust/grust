@@ -1,11 +1,9 @@
-use self::import::rust_ast_from_lir as import_rust_ast_from_lir;
 use self::input::rust_ast_from_lir as input_rust_ast_from_lir;
 use self::state::rust_ast_from_lir as state_rust_ast_from_lir;
+use crate::backend::rust_ast_from_lir::item::import::rust_ast_from_lir as import_rust_ast_from_lir;
 use crate::lir::item::node_file::NodeFile;
 use syn::*;
 
-/// RustAST node and function import construction from LIR import.
-pub mod import;
 /// RustAST input structure construction from LIR input.
 pub mod input;
 /// RustAST state structure and implementation construction from LIR state.

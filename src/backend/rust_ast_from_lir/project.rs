@@ -146,8 +146,8 @@ pub fn rust_ast_from_lir(project: Project) -> RustASTProject {
             rust_ast_project.add_file(&path, rust_ast_node_file)
         }
         Item::Function(function) => {
-            let rust_ast_function = function_rust_ast_from_lir(function);
-            function_file.items.push(syn::Item::Fn(rust_ast_function))
+            let mut rust_ast_function = function_rust_ast_from_lir(function);
+            function_file.items.append(&mut rust_ast_function)
         }
         Item::Enumeration(enumeration) => {
             let rust_ast_enumeration = enumeration_rust_ast_from_lir(enumeration);

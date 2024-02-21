@@ -8,3 +8,5 @@ pub mod function;
 pub mod node_file;
 /// RustAST structure construction from LIR structure.
 pub mod structure;
+/// RustAST node and function import construction from LIR import.
+pub mod import;
