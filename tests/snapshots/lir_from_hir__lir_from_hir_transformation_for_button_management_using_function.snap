@@ -144,7 +144,10 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: reset_button_user_reset_request_state
-      imports: []
+      imports:
+        - Enumeration: Button
+        - NodeFile: counter_o
+        - Function: reset_state_management
       input:
         node_name: reset_button_user_reset_request_state
         elements:
@@ -259,7 +262,9 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: reset_button_user_reset_request
-      imports: []
+      imports:
+        - Enumeration: Button
+        - NodeFile: counter_o
       input:
         node_name: reset_button_user_reset_request
         elements:

@@ -98,7 +98,8 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: main_y
-      imports: []
+      imports:
+        - NodeFile: counter_o
       input:
         node_name: main_y
         elements: []

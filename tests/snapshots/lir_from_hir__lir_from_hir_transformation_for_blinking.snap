@@ -131,7 +131,9 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: blinking_status
-      imports: []
+      imports:
+        - NodeFile: counter_o
+        - Function: xor
       input:
         node_name: blinking_status
         elements:

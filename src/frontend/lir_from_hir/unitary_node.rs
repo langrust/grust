@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
     hir::unitary_node::UnitaryNode,
     lir::{
@@ -31,12 +33,19 @@ impl LIRFromHIR for UnitaryNode {
             identifier: symbol_table.get_unitary_node_output_name(&id).clone(),
         };
 
-        // TODO: imports
-        // let imports = statements
-        //     .iter()
-        //     .flat_map(|equation| equation.expression.get_imports())
-        //     .unique()
-        //     .collect();
+        // collect imports from statements
+        let mut imports = statements
+            .iter()
+            .flat_map(|equation| equation.get_imports(symbol_table))
+            .unique()
+            .collect::<Vec<_>>();
+
+        // collect imports from memory
+        let mut memory_imports = memory.get_imports(symbol_table);
+
+        // combining both imports and eliminate duplicates
+        imports.append(&mut memory_imports);
+        let imports = imports.into_iter().unique().collect::<Vec<_>>();
 
         let (elements, state_elements_init, state_elements_step) =
             memory.get_state_elements(symbol_table);
@@ -45,7 +54,7 @@ impl LIRFromHIR for UnitaryNode {
 
         NodeFile {
             name: name.clone(),
-            imports: vec![], // TODO
+            imports,
             input: Input {
                 node_name: name.clone(),
                 elements: inputs

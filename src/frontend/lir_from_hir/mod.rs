@@ -1,4 +1,6 @@
-use crate::{common::r#type::Type, symbol_table::SymbolTable};
+use crate::{
+    common::r#type::Type, lir::item::node_file::import::Import, symbol_table::SymbolTable,
+};
 
 /// LIR file construction from HIR project.
 pub mod file;
@@ -41,5 +43,8 @@ pub trait LIRFromHIR {
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
         false
+    }
+    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
+        vec![]
     }
 }
