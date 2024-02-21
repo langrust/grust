@@ -1,7 +1,9 @@
+use itertools::Itertools;
+
 use crate::{
     common::{convert_case::camel_case, r#type::Type},
     hir::stream_expression::{StreamExpression, StreamExpressionKind},
-    lir::expression::Expression as LIRExpression,
+    lir::{expression::Expression as LIRExpression, item::node_file::import::Import},
     symbol_table::SymbolTable,
 };
 
@@ -50,6 +52,25 @@ impl LIRFromHIR for StreamExpression {
                 expression.is_if_then_else(symbol_table)
             }
             _ => false,
+        }
+    }
+
+    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
+        match &self.kind {
+            StreamExpressionKind::Expression { expression } => expression.get_imports(symbol_table),
+            StreamExpressionKind::UnitaryNodeApplication {
+                node_id, inputs, ..
+            } => {
+                let mut imports = inputs
+                    .iter()
+                    .flat_map(|(_, expression)| expression.get_imports(symbol_table))
+                    .unique()
+                    .collect::<Vec<_>>();
+                imports.push(Import::NodeFile(symbol_table.get_name(node_id).clone()));
+                imports
+            }
+            StreamExpressionKind::FollowedBy { .. }
+            | StreamExpressionKind::NodeApplication { .. } => unreachable!(),
         }
     }
 }

@@ -59,7 +59,8 @@ items:
                   identifier: result
   - NodeFile:
       name: integrate_i
-      imports: []
+      imports:
+        - Function: min
       input:
         node_name: integrate_i
         elements:
@@ -205,7 +206,10 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: pid_u
-      imports: []
+      imports:
+        - NodeFile: derive_d
+        - NodeFile: integrate_i
+        - Structure: GainPID
       input:
         node_name: pid_u
         elements:

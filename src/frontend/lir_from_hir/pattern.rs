@@ -1,6 +1,8 @@
+use itertools::Itertools;
+
 use crate::{
     hir::pattern::{Pattern, PatternKind},
-    lir::pattern::Pattern as LIRPattern,
+    lir::{item::node_file::import::Import, pattern::Pattern as LIRPattern},
     symbol_table::SymbolTable,
 };
 
@@ -42,6 +44,34 @@ impl LIRFromHIR for Pattern {
             },
             PatternKind::None => LIRPattern::None,
             PatternKind::Default => LIRPattern::Default,
+        }
+    }
+
+    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
+        match &self.kind {
+            PatternKind::Identifier { .. }
+            | PatternKind::Constant { .. }
+            | PatternKind::None
+            | PatternKind::Default => vec![],
+            PatternKind::Structure { id, fields } => {
+                let mut imports = fields
+                    .iter()
+                    .flat_map(|(_, pattern)| pattern.get_imports(symbol_table))
+                    .unique()
+                    .collect::<Vec<_>>();
+                imports.push(Import::Structure(symbol_table.get_name(id).clone()));
+
+                imports
+            }
+            PatternKind::Enumeration { enum_id, .. } => {
+                vec![Import::Enumeration(symbol_table.get_name(enum_id).clone())]
+            }
+            PatternKind::Tuple { elements } => elements
+                .iter()
+                .flat_map(|pattern| pattern.get_imports(symbol_table))
+                .unique()
+                .collect(),
+            PatternKind::Some { pattern } => pattern.get_imports(symbol_table),
         }
     }
 }

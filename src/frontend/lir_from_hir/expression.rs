@@ -1,9 +1,12 @@
+use itertools::Itertools;
+
 use crate::{
     common::{operator::OtherOperator, r#type::Type, scope::Scope},
     hir::expression::{Expression, ExpressionKind},
     lir::{
         block::Block,
         expression::{Expression as LIRExpression, FieldIdentifier},
+        item::node_file::import::Import,
         pattern::Pattern,
         statement::Statement,
     },
@@ -219,6 +222,143 @@ where
             _ => false,
         }
     }
+
+    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
+        match self {
+            ExpressionKind::Constant { .. } => vec![],
+            ExpressionKind::Identifier { id } => {
+                if symbol_table.is_function(&id) {
+                    vec![Import::Function(symbol_table.get_name(id).clone())]
+                } else {
+                    vec![]
+                }
+            }
+            ExpressionKind::Application {
+                function_expression,
+                inputs,
+            } => {
+                let mut imports = function_expression.get_imports(symbol_table);
+                let mut inputs_imports = inputs
+                    .iter()
+                    .flat_map(|expression| expression.get_imports(symbol_table))
+                    .unique()
+                    .collect::<Vec<_>>();
+                imports.append(&mut inputs_imports);
+                imports
+            }
+            ExpressionKind::Abstraction { expression, .. } => expression.get_imports(symbol_table),
+            ExpressionKind::Structure { id, fields } => {
+                let mut imports = fields
+                    .iter()
+                    .flat_map(|(_, expression)| expression.get_imports(symbol_table))
+                    .unique()
+                    .collect::<Vec<_>>();
+                imports.push(Import::Structure(symbol_table.get_name(id).clone()));
+
+                imports
+            }
+            ExpressionKind::Enumeration { enum_id, .. } => {
+                vec![Import::Enumeration(symbol_table.get_name(enum_id).clone())]
+            }
+            ExpressionKind::Array { elements } => elements
+                .iter()
+                .flat_map(|expression| expression.get_imports(symbol_table))
+                .unique()
+                .collect(),
+            ExpressionKind::Match { expression, arms } => {
+                let mut imports = expression.get_imports(symbol_table);
+                let mut arms_imports = arms
+                    .iter()
+                    .flat_map(|(pattern, option, statements, expression)| {
+                        let mut pattern_imports = pattern.get_imports(symbol_table);
+                        let mut option_imports = option
+                            .as_ref()
+                            .map_or(vec![], |expression| expression.get_imports(symbol_table));
+                        pattern_imports.append(&mut option_imports);
+                        let mut statements_imports = statements
+                            .iter()
+                            .flat_map(|statement| statement.get_imports(symbol_table))
+                            .unique()
+                            .collect::<Vec<_>>();
+                        pattern_imports.append(&mut statements_imports);
+                        let mut expression_imports = expression.get_imports(symbol_table);
+                        pattern_imports.append(&mut expression_imports);
+                        pattern_imports
+                    })
+                    .unique()
+                    .collect::<Vec<_>>();
+                imports.append(&mut arms_imports);
+                imports
+            }
+            ExpressionKind::When {
+                option,
+                present,
+                present_body,
+                default,
+                default_body,
+                ..
+            } => {
+                let mut imports = option.get_imports(symbol_table);
+                let mut present_imports = present.get_imports(symbol_table);
+                imports.append(&mut present_imports);
+                let mut present_body_imports = present_body
+                    .iter()
+                    .flat_map(|statement| statement.get_imports(symbol_table))
+                    .unique()
+                    .collect::<Vec<_>>();
+                imports.append(&mut present_body_imports);
+                let mut default_imports = default.get_imports(symbol_table);
+                imports.append(&mut default_imports);
+                let mut default_body_imports = default_body
+                    .iter()
+                    .flat_map(|statement| statement.get_imports(symbol_table))
+                    .unique()
+                    .collect::<Vec<_>>();
+                imports.append(&mut default_body_imports);
+                imports
+            }
+            ExpressionKind::FieldAccess { expression, .. } => expression.get_imports(symbol_table),
+            ExpressionKind::TupleElementAccess { expression, .. } => {
+                expression.get_imports(symbol_table)
+            }
+            ExpressionKind::Map {
+                expression,
+                function_expression,
+            } => {
+                let mut imports = expression.get_imports(symbol_table);
+                let mut function_imports = function_expression.get_imports(symbol_table);
+                imports.append(&mut function_imports);
+                imports
+            }
+            ExpressionKind::Fold {
+                expression,
+                initialization_expression,
+                function_expression,
+            } => {
+                let mut imports = expression.get_imports(symbol_table);
+                let mut initialization_imports =
+                    initialization_expression.get_imports(symbol_table);
+                imports.append(&mut initialization_imports);
+                let mut function_imports = function_expression.get_imports(symbol_table);
+                imports.append(&mut function_imports);
+                imports
+            }
+            ExpressionKind::Sort {
+                expression,
+                function_expression,
+            } => {
+                let mut imports = expression.get_imports(symbol_table);
+                let mut function_imports = function_expression.get_imports(symbol_table);
+                imports.append(&mut function_imports);
+                imports
+            }
+            ExpressionKind::Zip { arrays } => arrays
+                .iter()
+                .flat_map(|expression| expression.get_imports(symbol_table))
+                .unique()
+                .collect(),
+        }
+    }
 }
 
 impl LIRFromHIR for Expression {
@@ -233,5 +373,9 @@ impl LIRFromHIR for Expression {
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
         self.kind.is_if_then_else(symbol_table)
+    }
+
+    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
+        self.kind.get_imports(symbol_table)
     }
 }
