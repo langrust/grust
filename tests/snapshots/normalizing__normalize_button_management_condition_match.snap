@@ -1234,7 +1234,7 @@ nodes:
                   - - 27
                     - 0
           called_nodes:
-            36:
+            41:
               node_id: 36
               signal_id: 25
         location: ~
@@ -1330,11 +1330,11 @@ nodes:
                               Expression:
                                 expression:
                                   Identifier:
-                                    id: 42
+                                    id: 43
                             typing: Boolean
                             location: ~
                             dependencies:
-                              - - 42
+                              - - 43
                                 - 0
                         - - kind:
                               Enumeration:
@@ -1585,11 +1585,11 @@ nodes:
                                         Expression:
                                           expression:
                                             Identifier:
-                                              id: 41
+                                              id: 42
                                       typing: Boolean
                                       location: ~
                                       dependencies:
-                                        - - 41
+                                        - - 42
                                           - 0
                           typing: Boolean
                           location: ~
@@ -1606,7 +1606,7 @@ nodes:
             location: ~
         memory:
           buffers:
-            41:
+            42:
               typing: Boolean
               initial_value:
                 Boolean: true
@@ -1655,7 +1655,7 @@ nodes:
                 dependencies:
                   - - 27
                     - 0
-            42:
+            43:
               typing: Boolean
               initial_value:
                 Boolean: false
@@ -1671,7 +1671,7 @@ nodes:
                   - - 32
                     - 0
           called_nodes:
-            36:
+            44:
               node_id: 36
               signal_id: 25
         location: ~
@@ -1680,8 +1680,8 @@ nodes:
             - 34
             - 32
             - 33
-            - 41
             - 42
+            - 43
             - 27
             - 29
             - 30
@@ -1758,4 +1758,3 @@ nodes:
       : Weight: 0
 component: ~
 location: ~
-

@@ -1181,7 +1181,7 @@ nodes:
                   - - 31
                     - 0
           called_nodes:
-            41:
+            46:
               node_id: 41
               signal_id: 29
         location: ~
@@ -1277,11 +1277,11 @@ nodes:
                               Expression:
                                 expression:
                                   Identifier:
-                                    id: 47
+                                    id: 48
                             typing: Boolean
                             location: ~
                             dependencies:
-                              - - 47
+                              - - 48
                                 - 0
                         - - kind:
                               Enumeration:
@@ -1532,11 +1532,11 @@ nodes:
                                         Expression:
                                           expression:
                                             Identifier:
-                                              id: 46
+                                              id: 47
                                       typing: Boolean
                                       location: ~
                                       dependencies:
-                                        - - 46
+                                        - - 47
                                           - 0
                           typing: Boolean
                           location: ~
@@ -1553,7 +1553,7 @@ nodes:
             location: ~
         memory:
           buffers:
-            46:
+            47:
               typing: Boolean
               initial_value:
                 Boolean: true
@@ -1602,7 +1602,7 @@ nodes:
                 dependencies:
                   - - 31
                     - 0
-            47:
+            48:
               typing: Boolean
               initial_value:
                 Boolean: false
@@ -1618,7 +1618,7 @@ nodes:
                   - - 36
                     - 0
           called_nodes:
-            41:
+            49:
               node_id: 41
               signal_id: 29
         location: ~
@@ -1627,8 +1627,8 @@ nodes:
             - 38
             - 36
             - 37
-            - 46
             - 47
+            - 48
             - 31
             - 33
             - 34
@@ -1705,4 +1705,3 @@ nodes:
       : Weight: 0
 component: ~
 location: ~
-

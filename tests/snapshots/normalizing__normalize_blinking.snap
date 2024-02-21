@@ -918,11 +918,11 @@ nodes:
                             Expression:
                               expression:
                                 Identifier:
-                                  id: 36
+                                  id: 37
                           typing: Boolean
                           location: ~
                           dependencies:
-                            - - 36
+                            - - 37
                               - 0
               typing: Boolean
               location: ~
@@ -975,11 +975,11 @@ nodes:
                 Expression:
                   expression:
                     Identifier:
-                      id: 35
+                      id: 36
               typing: Boolean
               location: ~
               dependencies:
-                - - 35
+                - - 36
                   - 0
             location: ~
           - id: 33
@@ -996,7 +996,7 @@ nodes:
             location: ~
         memory:
           buffers:
-            35:
+            36:
               typing: Boolean
               initial_value:
                 Boolean: true
@@ -1102,7 +1102,7 @@ nodes:
                     - 0
                   - - 25
                     - 0
-            36:
+            37:
               typing: Boolean
               initial_value:
                 Boolean: true
@@ -1118,7 +1118,7 @@ nodes:
                   - - 29
                     - 0
           called_nodes:
-            31:
+            35:
               node_id: 31
               signal_id: 22
         location: ~
@@ -1129,8 +1129,8 @@ nodes:
             - 27
             - 28
             - 29
-            - 35
             - 36
+            - 37
           node_holes: []
           edge_property: directed
           edges:
@@ -1188,4 +1188,3 @@ nodes:
       : Weight: 1
 component: ~
 location: ~
-
