@@ -35,7 +35,8 @@ impl UnitaryNode {
                 _ => debug_assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
             });
 
-        let schedule = toposort(&subgraph, None).unwrap();
+        let mut schedule = toposort(&subgraph, None).unwrap();
+        schedule.reverse();
 
         let scheduled_statements = schedule
             .into_iter()
