@@ -6,13 +6,13 @@ items:
   - Enumeration:
       name: Button
       elements:
-        - "Button::Released"
-        - "Button::Pressed"
+        - Released
+        - Pressed
   - Enumeration:
       name: ResetState
       elements:
-        - "ResetState::InProgress"
-        - "ResetState::Confirmed"
+        - InProgress
+        - Confirmed
   - Function:
       name: reset_state_management
       inputs:
@@ -41,14 +41,14 @@ items:
                   arms:
                     - - Enumeration:
                           enum_name: Button
-                          elem_name: "Button::Released"
+                          elem_name: Released
                       - ~
                       - Enumeration:
                           name: ResetState
-                          element: "ResetState::Confirmed"
+                          element: Confirmed
                     - - Enumeration:
                           enum_name: Button
-                          elem_name: "Button::Pressed"
+                          elem_name: Pressed
                       - FunctionCall:
                           function:
                             Identifier:
@@ -60,12 +60,12 @@ items:
                                 identifier: reset_limit_1
                       - Enumeration:
                           name: ResetState
-                          element: "ResetState::InProgress"
+                          element: InProgress
                     - - Default
                       - ~
                       - Enumeration:
                           name: ResetState
-                          element: "ResetState::Confirmed"
+                          element: Confirmed
           - ExpressionLast:
               expression:
                 Identifier:
@@ -218,7 +218,7 @@ items:
                                       identifier: button_state
                                   - Enumeration:
                                       name: Button
-                                      element: "Button::Pressed"
+                                      element: Pressed
                       - FunctionCall:
                           function:
                             Identifier:
@@ -238,7 +238,7 @@ items:
                         identifier: button_state
                     - Enumeration:
                         name: Button
-                        element: "Button::Released"
+                        element: Released
           output_expression:
             Identifier:
               identifier: user_reset_request_state
@@ -303,13 +303,13 @@ items:
                     arms:
                       - - Enumeration:
                             enum_name: Button
-                            elem_name: "Button::Released"
+                            elem_name: Released
                         - ~
                         - MemoryAccess:
                             identifier: mem_user_reset_request
                       - - Enumeration:
                             enum_name: Button
-                            elem_name: "Button::Pressed"
+                            elem_name: Pressed
                         - ~
                         - FunctionCall:
                             function:
@@ -362,7 +362,7 @@ items:
                                       identifier: button_state
                                   - Enumeration:
                                       name: Button
-                                      element: "Button::Pressed"
+                                      element: Pressed
                       - FunctionCall:
                           function:
                             Identifier:
@@ -382,7 +382,7 @@ items:
                         identifier: button_state
                     - Enumeration:
                         name: Button
-                        element: "Button::Released"
+                        element: Released
             - identifier: mem_user_reset_request
               expression:
                 Identifier:
