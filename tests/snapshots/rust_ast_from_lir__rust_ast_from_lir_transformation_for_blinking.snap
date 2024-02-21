@@ -459,89 +459,18 @@ RustASTProject {
                                             by_ref: None,
                                             mutability: None,
                                             ident: Ident(
-                                                status,
+                                                x,
                                             ),
                                             subpat: None,
                                         },
                                         init: Some(
                                             LocalInit {
                                                 eq_token: Eq,
-                                                expr: Expr::If {
+                                                expr: Expr::Lit {
                                                     attrs: [],
-                                                    if_token: If,
-                                                    cond: Expr::Path {
-                                                        attrs: [],
-                                                        qself: None,
-                                                        path: Path {
-                                                            leading_colon: None,
-                                                            segments: [
-                                                                PathSegment {
-                                                                    ident: Ident(
-                                                                        on_off,
-                                                                    ),
-                                                                    arguments: PathArguments::None,
-                                                                },
-                                                            ],
-                                                        },
+                                                    lit: Lit::Bool {
+                                                        value: true,
                                                     },
-                                                    then_branch: Block {
-                                                        brace_token: Brace,
-                                                        stmts: [
-                                                            Stmt::Expr(
-                                                                Expr::Binary {
-                                                                    attrs: [],
-                                                                    left: Expr::Path {
-                                                                        attrs: [],
-                                                                        qself: None,
-                                                                        path: Path {
-                                                                            leading_colon: None,
-                                                                            segments: [
-                                                                                PathSegment {
-                                                                                    ident: Ident(
-                                                                                        counter,
-                                                                                    ),
-                                                                                    arguments: PathArguments::None,
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    },
-                                                                    op: BinOp::Add(
-                                                                        Plus,
-                                                                    ),
-                                                                    right: Expr::Lit {
-                                                                        attrs: [],
-                                                                        lit: Lit::Int {
-                                                                            token: 1i64,
-                                                                        },
-                                                                    },
-                                                                },
-                                                                None,
-                                                            ),
-                                                        ],
-                                                    },
-                                                    else_branch: Some(
-                                                        (
-                                                            Else,
-                                                            Expr::Block {
-                                                                attrs: [],
-                                                                label: None,
-                                                                block: Block {
-                                                                    brace_token: Brace,
-                                                                    stmts: [
-                                                                        Stmt::Expr(
-                                                                            Expr::Lit {
-                                                                                attrs: [],
-                                                                                lit: Lit::Int {
-                                                                                    token: 0i64,
-                                                                                },
-                                                                            },
-                                                                            None,
-                                                                        ),
-                                                                    ],
-                                                                },
-                                                            },
-                                                        ),
-                                                    ),
                                                 },
                                                 diverge: None,
                                             },
@@ -556,16 +485,16 @@ RustASTProject {
                                             by_ref: None,
                                             mutability: None,
                                             ident: Ident(
-                                                on_off,
+                                                res,
                                             ),
                                             subpat: None,
                                         },
                                         init: Some(
                                             LocalInit {
                                                 eq_token: Eq,
-                                                expr: Expr::Call {
+                                                expr: Expr::Field {
                                                     attrs: [],
-                                                    func: Expr::Path {
+                                                    base: Expr::Path {
                                                         attrs: [],
                                                         qself: None,
                                                         path: Path {
@@ -573,70 +502,19 @@ RustASTProject {
                                                             segments: [
                                                                 PathSegment {
                                                                     ident: Ident(
-                                                                        Expr,
-                                                                    ),
-                                                                    arguments: PathArguments::None,
-                                                                },
-                                                                PathSep,
-                                                                PathSegment {
-                                                                    ident: Ident(
-                                                                        FunctionCall,
+                                                                        self,
                                                                     ),
                                                                     arguments: PathArguments::None,
                                                                 },
                                                             ],
                                                         },
                                                     },
-                                                    paren_token: Paren,
-                                                    args: [
-                                                        Expr::Macro {
-                                                            attrs: [],
-                                                            mac: Macro {
-                                                                path: Path {
-                                                                    leading_colon: None,
-                                                                    segments: [
-                                                                        PathSegment {
-                                                                            ident: Ident(
-                                                                                parse_quote,
-                                                                            ),
-                                                                            arguments: PathArguments::None,
-                                                                        },
-                                                                    ],
-                                                                },
-                                                                bang_token: Not,
-                                                                delimiter: MacroDelimiter::Brace(
-                                                                    Brace,
-                                                                ),
-                                                                tokens: TokenStream [
-                                                                    Ident {
-                                                                        sym: xor,
-                                                                    },
-                                                                    Group {
-                                                                        delimiter: Parenthesis,
-                                                                        stream: TokenStream [
-                                                                            Ident {
-                                                                                sym: res,
-                                                                            },
-                                                                            Punct {
-                                                                                char: ',',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: self,
-                                                                            },
-                                                                            Punct {
-                                                                                char: '.',
-                                                                                spacing: Alone,
-                                                                            },
-                                                                            Ident {
-                                                                                sym: mem_on_off,
-                                                                            },
-                                                                        ],
-                                                                    },
-                                                                ],
-                                                            },
-                                                        },
-                                                    ],
+                                                    dot_token: Dot,
+                                                    member: Member::Named(
+                                                        Ident(
+                                                            mem_res,
+                                                        ),
+                                                    ),
                                                 },
                                                 diverge: None,
                                             },
@@ -779,16 +657,16 @@ RustASTProject {
                                             by_ref: None,
                                             mutability: None,
                                             ident: Ident(
-                                                res,
+                                                on_off,
                                             ),
                                             subpat: None,
                                         },
                                         init: Some(
                                             LocalInit {
                                                 eq_token: Eq,
-                                                expr: Expr::Field {
+                                                expr: Expr::Call {
                                                     attrs: [],
-                                                    base: Expr::Path {
+                                                    func: Expr::Path {
                                                         attrs: [],
                                                         qself: None,
                                                         path: Path {
@@ -796,19 +674,70 @@ RustASTProject {
                                                             segments: [
                                                                 PathSegment {
                                                                     ident: Ident(
-                                                                        self,
+                                                                        Expr,
+                                                                    ),
+                                                                    arguments: PathArguments::None,
+                                                                },
+                                                                PathSep,
+                                                                PathSegment {
+                                                                    ident: Ident(
+                                                                        FunctionCall,
                                                                     ),
                                                                     arguments: PathArguments::None,
                                                                 },
                                                             ],
                                                         },
                                                     },
-                                                    dot_token: Dot,
-                                                    member: Member::Named(
-                                                        Ident(
-                                                            mem_res,
-                                                        ),
-                                                    ),
+                                                    paren_token: Paren,
+                                                    args: [
+                                                        Expr::Macro {
+                                                            attrs: [],
+                                                            mac: Macro {
+                                                                path: Path {
+                                                                    leading_colon: None,
+                                                                    segments: [
+                                                                        PathSegment {
+                                                                            ident: Ident(
+                                                                                parse_quote,
+                                                                            ),
+                                                                            arguments: PathArguments::None,
+                                                                        },
+                                                                    ],
+                                                                },
+                                                                bang_token: Not,
+                                                                delimiter: MacroDelimiter::Brace(
+                                                                    Brace,
+                                                                ),
+                                                                tokens: TokenStream [
+                                                                    Ident {
+                                                                        sym: xor,
+                                                                    },
+                                                                    Group {
+                                                                        delimiter: Parenthesis,
+                                                                        stream: TokenStream [
+                                                                            Ident {
+                                                                                sym: res,
+                                                                            },
+                                                                            Punct {
+                                                                                char: ',',
+                                                                                spacing: Alone,
+                                                                            },
+                                                                            Ident {
+                                                                                sym: self,
+                                                                            },
+                                                                            Punct {
+                                                                                char: '.',
+                                                                                spacing: Alone,
+                                                                            },
+                                                                            Ident {
+                                                                                sym: mem_on_off,
+                                                                            },
+                                                                        ],
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
                                                 },
                                                 diverge: None,
                                             },
@@ -823,18 +752,89 @@ RustASTProject {
                                             by_ref: None,
                                             mutability: None,
                                             ident: Ident(
-                                                x,
+                                                status,
                                             ),
                                             subpat: None,
                                         },
                                         init: Some(
                                             LocalInit {
                                                 eq_token: Eq,
-                                                expr: Expr::Lit {
+                                                expr: Expr::If {
                                                     attrs: [],
-                                                    lit: Lit::Bool {
-                                                        value: true,
+                                                    if_token: If,
+                                                    cond: Expr::Path {
+                                                        attrs: [],
+                                                        qself: None,
+                                                        path: Path {
+                                                            leading_colon: None,
+                                                            segments: [
+                                                                PathSegment {
+                                                                    ident: Ident(
+                                                                        on_off,
+                                                                    ),
+                                                                    arguments: PathArguments::None,
+                                                                },
+                                                            ],
+                                                        },
                                                     },
+                                                    then_branch: Block {
+                                                        brace_token: Brace,
+                                                        stmts: [
+                                                            Stmt::Expr(
+                                                                Expr::Binary {
+                                                                    attrs: [],
+                                                                    left: Expr::Path {
+                                                                        attrs: [],
+                                                                        qself: None,
+                                                                        path: Path {
+                                                                            leading_colon: None,
+                                                                            segments: [
+                                                                                PathSegment {
+                                                                                    ident: Ident(
+                                                                                        counter,
+                                                                                    ),
+                                                                                    arguments: PathArguments::None,
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    op: BinOp::Add(
+                                                                        Plus,
+                                                                    ),
+                                                                    right: Expr::Lit {
+                                                                        attrs: [],
+                                                                        lit: Lit::Int {
+                                                                            token: 1i64,
+                                                                        },
+                                                                    },
+                                                                },
+                                                                None,
+                                                            ),
+                                                        ],
+                                                    },
+                                                    else_branch: Some(
+                                                        (
+                                                            Else,
+                                                            Expr::Block {
+                                                                attrs: [],
+                                                                label: None,
+                                                                block: Block {
+                                                                    brace_token: Brace,
+                                                                    stmts: [
+                                                                        Stmt::Expr(
+                                                                            Expr::Lit {
+                                                                                attrs: [],
+                                                                                lit: Lit::Int {
+                                                                                    token: 0i64,
+                                                                                },
+                                                                            },
+                                                                            None,
+                                                                        ),
+                                                                    ],
+                                                                },
+                                                            },
+                                                        ),
+                                                    ),
                                                 },
                                                 diverge: None,
                                             },
@@ -1379,6 +1379,91 @@ RustASTProject {
                                             by_ref: None,
                                             mutability: None,
                                             ident: Ident(
+                                                inc,
+                                            ),
+                                            subpat: None,
+                                        },
+                                        init: Some(
+                                            LocalInit {
+                                                eq_token: Eq,
+                                                expr: Expr::If {
+                                                    attrs: [],
+                                                    if_token: If,
+                                                    cond: Expr::Field {
+                                                        attrs: [],
+                                                        base: Expr::Path {
+                                                            attrs: [],
+                                                            qself: None,
+                                                            path: Path {
+                                                                leading_colon: None,
+                                                                segments: [
+                                                                    PathSegment {
+                                                                        ident: Ident(
+                                                                            input,
+                                                                        ),
+                                                                        arguments: PathArguments::None,
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        dot_token: Dot,
+                                                        member: Member::Named(
+                                                            Ident(
+                                                                tick,
+                                                            ),
+                                                        ),
+                                                    },
+                                                    then_branch: Block {
+                                                        brace_token: Brace,
+                                                        stmts: [
+                                                            Stmt::Expr(
+                                                                Expr::Lit {
+                                                                    attrs: [],
+                                                                    lit: Lit::Int {
+                                                                        token: 1i64,
+                                                                    },
+                                                                },
+                                                                None,
+                                                            ),
+                                                        ],
+                                                    },
+                                                    else_branch: Some(
+                                                        (
+                                                            Else,
+                                                            Expr::Block {
+                                                                attrs: [],
+                                                                label: None,
+                                                                block: Block {
+                                                                    brace_token: Brace,
+                                                                    stmts: [
+                                                                        Stmt::Expr(
+                                                                            Expr::Lit {
+                                                                                attrs: [],
+                                                                                lit: Lit::Int {
+                                                                                    token: 0i64,
+                                                                                },
+                                                                            },
+                                                                            None,
+                                                                        ),
+                                                                    ],
+                                                                },
+                                                            },
+                                                        ),
+                                                    ),
+                                                },
+                                                diverge: None,
+                                            },
+                                        ),
+                                        semi_token: Semi,
+                                    },
+                                    Stmt::Local {
+                                        attrs: [],
+                                        let_token: Let,
+                                        pat: Pat::Ident {
+                                            attrs: [],
+                                            by_ref: None,
+                                            mutability: None,
+                                            ident: Ident(
                                                 o,
                                             ),
                                             subpat: None,
@@ -1484,91 +1569,6 @@ RustASTProject {
                                                                                             },
                                                                                         ],
                                                                                     },
-                                                                                },
-                                                                            },
-                                                                            None,
-                                                                        ),
-                                                                    ],
-                                                                },
-                                                            },
-                                                        ),
-                                                    ),
-                                                },
-                                                diverge: None,
-                                            },
-                                        ),
-                                        semi_token: Semi,
-                                    },
-                                    Stmt::Local {
-                                        attrs: [],
-                                        let_token: Let,
-                                        pat: Pat::Ident {
-                                            attrs: [],
-                                            by_ref: None,
-                                            mutability: None,
-                                            ident: Ident(
-                                                inc,
-                                            ),
-                                            subpat: None,
-                                        },
-                                        init: Some(
-                                            LocalInit {
-                                                eq_token: Eq,
-                                                expr: Expr::If {
-                                                    attrs: [],
-                                                    if_token: If,
-                                                    cond: Expr::Field {
-                                                        attrs: [],
-                                                        base: Expr::Path {
-                                                            attrs: [],
-                                                            qself: None,
-                                                            path: Path {
-                                                                leading_colon: None,
-                                                                segments: [
-                                                                    PathSegment {
-                                                                        ident: Ident(
-                                                                            input,
-                                                                        ),
-                                                                        arguments: PathArguments::None,
-                                                                    },
-                                                                ],
-                                                            },
-                                                        },
-                                                        dot_token: Dot,
-                                                        member: Member::Named(
-                                                            Ident(
-                                                                tick,
-                                                            ),
-                                                        ),
-                                                    },
-                                                    then_branch: Block {
-                                                        brace_token: Brace,
-                                                        stmts: [
-                                                            Stmt::Expr(
-                                                                Expr::Lit {
-                                                                    attrs: [],
-                                                                    lit: Lit::Int {
-                                                                        token: 1i64,
-                                                                    },
-                                                                },
-                                                                None,
-                                                            ),
-                                                        ],
-                                                    },
-                                                    else_branch: Some(
-                                                        (
-                                                            Else,
-                                                            Expr::Block {
-                                                                attrs: [],
-                                                                label: None,
-                                                                block: Block {
-                                                                    brace_token: Brace,
-                                                                    stmts: [
-                                                                        Stmt::Expr(
-                                                                            Expr::Lit {
-                                                                                attrs: [],
-                                                                                lit: Lit::Int {
-                                                                                    token: 0i64,
                                                                                 },
                                                                             },
                                                                             None,

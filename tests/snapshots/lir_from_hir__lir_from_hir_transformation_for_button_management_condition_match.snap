@@ -113,6 +113,49 @@ items:
             Enumeration: ResetState
           body:
             - Let:
+                identifier: res
+                expression:
+                  FunctionCall:
+                    function:
+                      Identifier:
+                        identifier: " && "
+                    arguments:
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " == "
+                                arguments:
+                                  - InputAccess:
+                                      identifier: button_state
+                                  - Enumeration:
+                                      name: Button
+                                      element: Pressed
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - MemoryAccess:
+                                identifier: mem_res
+            - Let:
+                identifier: counter
+                expression:
+                  NodeCall:
+                    node_identifier: counter_o
+                    input_name: CounterOInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: res
+                      - - inc
+                        - InputAccess:
+                            identifier: period
+            - Let:
                 identifier: user_reset_request_state
                 expression:
                   Match:
@@ -152,49 +195,6 @@ items:
                         - Enumeration:
                             name: ResetState
                             element: Confirmed
-            - Let:
-                identifier: counter
-                expression:
-                  NodeCall:
-                    node_identifier: counter_o
-                    input_name: CounterOInput
-                    input_fields:
-                      - - res
-                        - Identifier:
-                            identifier: res
-                      - - inc
-                        - InputAccess:
-                            identifier: period
-            - Let:
-                identifier: res
-                expression:
-                  FunctionCall:
-                    function:
-                      Identifier:
-                        identifier: " && "
-                    arguments:
-                      - FunctionCall:
-                          function:
-                            Identifier:
-                              identifier: (_)
-                          arguments:
-                            - FunctionCall:
-                                function:
-                                  Identifier:
-                                    identifier: " == "
-                                arguments:
-                                  - InputAccess:
-                                      identifier: button_state
-                                  - Enumeration:
-                                      name: Button
-                                      element: Pressed
-                      - FunctionCall:
-                          function:
-                            Identifier:
-                              identifier: (_)
-                          arguments:
-                            - MemoryAccess:
-                                identifier: mem_res
           state_elements_step:
             - identifier: mem_res
               expression:
@@ -258,6 +258,49 @@ items:
           output_type: Boolean
           body:
             - Let:
+                identifier: res
+                expression:
+                  FunctionCall:
+                    function:
+                      Identifier:
+                        identifier: " && "
+                    arguments:
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " == "
+                                arguments:
+                                  - InputAccess:
+                                      identifier: button_state
+                                  - Enumeration:
+                                      name: Button
+                                      element: Pressed
+                      - FunctionCall:
+                          function:
+                            Identifier:
+                              identifier: (_)
+                          arguments:
+                            - MemoryAccess:
+                                identifier: mem_res
+            - Let:
+                identifier: counter
+                expression:
+                  NodeCall:
+                    node_identifier: counter_o
+                    input_name: CounterOInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: res
+                      - - inc
+                        - InputAccess:
+                            identifier: period
+            - Let:
                 identifier: user_reset_request
                 expression:
                   Match:
@@ -296,49 +339,6 @@ items:
                                         identifier: reset_limit_1
                                     - InputAccess:
                                         identifier: reset_limit_2
-            - Let:
-                identifier: counter
-                expression:
-                  NodeCall:
-                    node_identifier: counter_o
-                    input_name: CounterOInput
-                    input_fields:
-                      - - res
-                        - Identifier:
-                            identifier: res
-                      - - inc
-                        - InputAccess:
-                            identifier: period
-            - Let:
-                identifier: res
-                expression:
-                  FunctionCall:
-                    function:
-                      Identifier:
-                        identifier: " && "
-                    arguments:
-                      - FunctionCall:
-                          function:
-                            Identifier:
-                              identifier: (_)
-                          arguments:
-                            - FunctionCall:
-                                function:
-                                  Identifier:
-                                    identifier: " == "
-                                arguments:
-                                  - InputAccess:
-                                      identifier: button_state
-                                  - Enumeration:
-                                      name: Button
-                                      element: Pressed
-                      - FunctionCall:
-                          function:
-                            Identifier:
-                              identifier: (_)
-                          arguments:
-                            - MemoryAccess:
-                                identifier: mem_res
           state_elements_step:
             - identifier: mem_res
               expression:
