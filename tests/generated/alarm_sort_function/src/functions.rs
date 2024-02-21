@@ -1,20 +1,21 @@
+use crate::typedefs::Priority;
 pub fn priority_order(priority: Priority, other: Priority) -> i64 {
-    let higher_priority = match priority {
+    let higher_priority = match (priority) {
         Priority::High => {
-            match other {
+            match (other) {
                 Priority::High => 0i64,
                 _ => 1i64,
             }
         }
         Priority::Medium => {
-            match other {
+            match (other) {
                 Priority::High => -1i64,
                 Priority::Medium => 0i64,
                 Priority::Low => 1i64,
             }
         }
         Priority::Low => {
-            match other {
+            match (other) {
                 Priority::Low => 1i64,
                 _ => -1i64,
             }
@@ -22,13 +23,10 @@ pub fn priority_order(priority: Priority, other: Priority) -> i64 {
     };
     higher_priority
 }
+use crate::typedefs::Alarm;
 pub fn prioritize(alarm: Alarm, other: Alarm) -> i64 {
     let raise_difference = alarm.raised != other.raised;
-    let priority_ordering = Expr::FunctionCall(
-        parse_quote! {
-            priority_order(alarm.priority, other.priority)
-        },
-    );
+    let priority_ordering = priority_order(alarm.priority, other.priority);
     if raise_difference {
         (if alarm.raised { 1i64 } else { -1i64 })
     } else {
@@ -36,5 +34,20 @@ pub fn prioritize(alarm: Alarm, other: Alarm) -> i64 {
     }
 }
 pub fn sorting(alarms: [Alarm; 10usize]) -> [Alarm; 10usize] {
-    alarms.sort(prioritize)
+    {
+        let mut x = alarms.clone();
+        let slice = x.as_mut();
+        slice
+            .sort_by(|a, b| {
+                let compare = prioritize(*a, *b);
+                if compare < 0 {
+                    std::cmp::Ordering::Less
+                } else if compare > 0 {
+                    std::cmp::Ordering::Greater
+                } else {
+                    std::cmp::Ordering::Equal
+                }
+            });
+        x
+    }
 }

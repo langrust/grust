@@ -277,19 +277,32 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
             dot_token: Default::default(),
         }),
         Expression::Sort { sorted, function } => {
-            let receiver = Box::new(rust_ast_from_lir(*sorted));
-            let method = syn::Ident::new("sort", proc_macro2::Span::call_site());
-            let arguments = vec![rust_ast_from_lir(*function)];
-            let method_call = syn::ExprMethodCall {
-                attrs: Vec::new(),
-                receiver,
-                method,
-                turbofish: None,
-                paren_token: Default::default(),
-                args: syn::punctuated::Punctuated::from_iter(arguments),
-                dot_token: Default::default(),
-            };
-            Expr::MethodCall(method_call)
+            let token_sorted = rust_ast_from_lir(*sorted);
+            let token_function = rust_ast_from_lir(*function);
+            // let receiver = Box::new(rust_ast_from_lir(*sorted));
+            // let method = syn::Ident::new("sort", proc_macro2::Span::call_site());
+            // let arguments = vec![rust_ast_from_lir(*function)];
+            // let method_call = syn::ExprMethodCall {
+            //     attrs: Vec::new(),
+            //     receiver,
+            //     method,
+            //     turbofish: None,
+            //     paren_token: Default::default(),
+            //     args: syn::punctuated::Punctuated::from_iter(arguments),
+            //     dot_token: Default::default(),
+            // };
+            // Expr::MethodCall(method_call);
+            parse_quote!({
+                let mut x = #token_sorted.clone();
+                let slice = x.as_mut();
+                slice.sort_by(|a, b| {
+                    let compare = #token_function(*a, *b);
+                    if compare < 0 { std::cmp::Ordering::Less }
+                    else if compare > 0 { std::cmp::Ordering::Greater }
+                    else { std::cmp::Ordering::Equal }
+                });
+                x
+            })
         }
         Expression::Zip { arrays } => {
             let macro_name = syn::Ident::new("par_zip", proc_macro2::Span::call_site());
