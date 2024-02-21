@@ -4,7 +4,6 @@ use syn::*;
 
 /// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
-
     let attribute = parse_quote!(#[derive(Clone, Copy, Debug, PartialEq)]);
     ItemEnum {
         attrs: vec![attribute],

@@ -260,9 +260,7 @@ pub fn generate_rust_project<P>(
 
     let mut project = rust_from_lir(hir.lir_from_hir(&symbol_table));
     let parent_path = {
-        let file_name = Path::new(files.name(file_id).unwrap())
-            .file_stem()
-            .unwrap();
+        let file_name = Path::new(files.name(file_id).unwrap()).file_stem().unwrap();
         parent_path.as_ref().join(file_name)
     };
     project.set_parent(parent_path);

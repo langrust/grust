@@ -1,6 +1,4 @@
-use crate::{
-    common::r#type::Type, lir::item::import::Import, symbol_table::SymbolTable,
-};
+use crate::{common::r#type::Type, lir::item::import::Import, symbol_table::SymbolTable};
 
 /// LIR file construction from HIR project.
 pub mod file;
