@@ -9,12 +9,12 @@ pub mod array_alias;
 pub mod enumeration;
 /// LIR [Function](crate::lir::item::function::Function) module.
 pub mod function;
+/// LIR [Import](crate::lir::item::import::Import) module.
+pub mod import;
 /// LIR [NodeFile](crate::lir::item::node_file::NodeFile) module.
 pub mod node_file;
 /// LIR [Structure](crate::lir::item::structure::Structure) module.
 pub mod structure;
-/// LIR [Import](crate::lir::item::import::Import) module.
-pub mod import;
 
 /// An item of the project.
 #[derive(Debug, PartialEq, serde::Serialize)]

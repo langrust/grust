@@ -81,8 +81,7 @@ impl StreamExpression {
                     node_name.clone(),
                     String::from(""),
                 );
-                let memory_id =
-                    symbol_table.insert_fresh_signal(memory_name, Scope::Memory, None);
+                let memory_id = symbol_table.insert_fresh_signal(memory_name, Scope::Memory, None);
 
                 memory.add_called_node(memory_id, *node_id, *output_id);
 

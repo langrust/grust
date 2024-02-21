@@ -6,7 +6,7 @@ pub fn rust_ast_from_lir(block: Block, crates: &mut Vec<String>) -> syn::Block {
     let stmts = block
         .statements
         .into_iter()
-        .map(|statement|statement_rust_ast_from_lir(statement, crates))
+        .map(|statement| statement_rust_ast_from_lir(statement, crates))
         .collect();
     syn::Block {
         stmts,
