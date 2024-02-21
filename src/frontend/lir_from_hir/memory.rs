@@ -85,7 +85,16 @@ impl Memory {
         let mut imports = self
             .buffers
             .values()
-            .flat_map(|Buffer { expression, .. }| expression.get_imports(symbol_table))
+            .flat_map(
+                |Buffer {
+                     expression, typing, ..
+                 }| {
+                    let mut imports = expression.get_imports(symbol_table);
+                    let mut typing_imports = typing.get_imports(symbol_table);
+                    imports.append(&mut typing_imports);
+                    imports
+                },
+            )
             .unique()
             .collect::<Vec<_>>();
         let mut called_node_imports = self
