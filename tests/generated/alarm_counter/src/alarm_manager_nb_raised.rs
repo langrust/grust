@@ -1,3 +1,5 @@
+use crate::functions::sum_alarm;
+use crate::typedefs::Alarm;
 pub struct AlarmManagerNbRaisedInput {
     pub alarms: [Alarm; 10usize],
 }

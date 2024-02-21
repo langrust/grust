@@ -1,5 +1,7 @@
+use crate::typedefs::Priority;
+use crate::typedefs::Alarm;
 pub fn sum_alarm(sum: i64, alarm: Alarm) -> i64 {
-    let is_raiseable = match alarm {
+    let is_raiseable = match (alarm) {
         Alarm { priority: Priority::High, raised: raised } => raised,
         _ => false,
     };
