@@ -1,4 +1,4 @@
-use crate::common::{location::Location, r#type::Type};
+use crate::common::location::Location;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust user defined type AST.
