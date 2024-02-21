@@ -112,9 +112,9 @@ impl Typedef {
                 let element_ids = elements
                     .iter()
                     .map(|element_name| {
-                        let element_id = symbol_table.insert_identifier(
-                            format!("{id}::{element_name}"),
-                            None,
+                        let element_id = symbol_table.insert_enum_elem(
+                            element_name.clone(),
+                            id.clone(),
                             false,
                             location.clone(),
                             errors,

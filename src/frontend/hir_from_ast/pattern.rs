@@ -90,8 +90,9 @@ impl HIRFromAST for Pattern {
             } => {
                 let enum_id =
                     symbol_table.get_enum_id(&enum_name, false, location.clone(), errors)?;
-                let elem_id = symbol_table.get_identifier_id(
-                    &format!("{enum_name}::{elem_name}"),
+                let elem_id = symbol_table.get_enum_elem_id(
+                    &elem_name,
+                    &enum_name,
                     false,
                     location.clone(),
                     errors,

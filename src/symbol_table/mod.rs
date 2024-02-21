@@ -50,6 +50,9 @@ pub enum SymbolKind {
         /// The enumeration's elements.
         elements: Vec<usize>,
     },
+    EnumerationElement {
+        enum_name: String,
+    },
     Array {
         /// The array's type.
         array_type: Option<Type>,
@@ -94,6 +97,9 @@ impl Symbol {
             SymbolKind::UnitaryNode { .. } => format!("unitary_node {}", self.name),
             SymbolKind::Structure { .. } => format!("struct {}", self.name),
             SymbolKind::Enumeration { .. } => format!("enum {}", self.name),
+            SymbolKind::EnumerationElement { enum_name } => {
+                format!("enum_elem {enum_name}::{}", self.name)
+            }
             SymbolKind::Array { .. } => format!("array {}", self.name),
         }
     }
@@ -355,6 +361,22 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
             kind: SymbolKind::Enumeration { elements },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
+    pub fn insert_enum_elem(
+        &mut self,
+        name: String,
+        enum_name: String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::EnumerationElement { enum_name },
             name,
         };
 
@@ -852,6 +874,28 @@ impl SymbolTable {
             None => {
                 let error = Error::UnknownType {
                     name: name.to_string(),
+                    location,
+                };
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    pub fn get_enum_elem_id(
+        &self,
+        elem_name: &String,
+        enum_name: &String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol_hash = format!("enum_elem {enum_name}::{elem_name}");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(*id),
+            None => {
+                let error = Error::UnknownElement {
+                    name: elem_name.to_string(),
                     location,
                 };
                 errors.push(error);
