@@ -1,5 +1,6 @@
 use crate::backend::rust_ast_from_lir::{
     block::rust_ast_from_lir as block_rust_ast_from_lir,
+    item::import::rust_ast_from_lir as import_rust_ast_from_lir,
     r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
 use crate::lir::item::function::Function;
@@ -7,7 +8,13 @@ use proc_macro2::Span;
 use syn::*;
 
 /// Transform LIR function into RustAST function.
-pub fn rust_ast_from_lir(function: Function) -> ItemFn {
+pub fn rust_ast_from_lir(function: Function) -> Vec<Item> {
+    let mut items = function
+        .imports
+        .into_iter()
+        .map(|import| Item::Use(import_rust_ast_from_lir(import)))
+        .collect::<Vec<_>>();
+
     let inputs = function
         .inputs
         .into_iter()
@@ -38,12 +45,16 @@ pub fn rust_ast_from_lir(function: Function) -> ItemFn {
             Box::new(type_rust_ast_from_lir(function.output)),
         ),
     };
-    ItemFn {
+
+    let item_function = Item::Fn(ItemFn {
         attrs: Default::default(),
         vis: Visibility::Public(Default::default()),
         sig,
         block: Box::new(block_rust_ast_from_lir(function.body)),
-    }
+    });
+    items.push(item_function);
+
+    items
 }
 
 #[cfg(test)]
@@ -90,6 +101,6 @@ mod rust_ast_from_lir {
                 a + b
             }
         };
-        assert_eq!(rust_ast_from_lir(function), control)
+        assert_eq!(rust_ast_from_lir(function), vec![control])
     }
 }

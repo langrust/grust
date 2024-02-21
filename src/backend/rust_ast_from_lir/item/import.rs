@@ -29,7 +29,7 @@ pub fn rust_ast_from_lir(import: Import) -> ItemUse {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::node_file::import::rust_ast_from_lir;
+    use crate::backend::rust_ast_from_lir::item::import::rust_ast_from_lir;
     use crate::lir::item::import::Import;
     use syn::*;
 
