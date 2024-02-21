@@ -195,6 +195,61 @@ nodes:
       19:
         id: 25
         statements:
+          - id: 20
+            expression:
+              kind:
+                Expression:
+                  expression:
+                    Application:
+                      function_expression:
+                        kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: 15
+                        typing:
+                          Abstract:
+                            - - Boolean
+                              - Integer
+                              - Integer
+                            - Integer
+                        location: ~
+                        dependencies: ~
+                      inputs:
+                        - kind:
+                            Expression:
+                              expression:
+                                Identifier:
+                                  id: 18
+                          typing: Boolean
+                          location: ~
+                          dependencies:
+                            - - 18
+                              - 0
+                        - kind:
+                            Expression:
+                              expression:
+                                Constant:
+                                  constant:
+                                    Integer: 1
+                          typing: Integer
+                          location: ~
+                          dependencies: []
+                        - kind:
+                            Expression:
+                              expression:
+                                Constant:
+                                  constant:
+                                    Integer: 0
+                          typing: Integer
+                          location: ~
+                          dependencies: []
+              typing: Integer
+              location: ~
+              dependencies:
+                - - 18
+                  - 0
+            location: ~
           - id: 19
             expression:
               kind:
@@ -310,61 +365,6 @@ nodes:
                 - - 19
                   - 1
                 - - 20
-                  - 0
-            location: ~
-          - id: 20
-            expression:
-              kind:
-                Expression:
-                  expression:
-                    Application:
-                      function_expression:
-                        kind:
-                          Expression:
-                            expression:
-                              Identifier:
-                                id: 15
-                        typing:
-                          Abstract:
-                            - - Boolean
-                              - Integer
-                              - Integer
-                            - Integer
-                        location: ~
-                        dependencies: ~
-                      inputs:
-                        - kind:
-                            Expression:
-                              expression:
-                                Identifier:
-                                  id: 18
-                          typing: Boolean
-                          location: ~
-                          dependencies:
-                            - - 18
-                              - 0
-                        - kind:
-                            Expression:
-                              expression:
-                                Constant:
-                                  constant:
-                                    Integer: 1
-                          typing: Integer
-                          location: ~
-                          dependencies: []
-                        - kind:
-                            Expression:
-                              expression:
-                                Constant:
-                                  constant:
-                                    Integer: 0
-                          typing: Integer
-                          location: ~
-                          dependencies: []
-              typing: Integer
-              location: ~
-              dependencies:
-                - - 18
                   - 0
             location: ~
         memory:
@@ -585,6 +585,32 @@ component:
     22:
       id: 26
       statements:
+        - id: 27
+          expression:
+            kind:
+              Expression:
+                expression:
+                  Identifier:
+                    id: 29
+            typing: Boolean
+            location: ~
+            dependencies:
+              - - 29
+                - 0
+          location: ~
+        - id: 23
+          expression:
+            kind:
+              Expression:
+                expression:
+                  Identifier:
+                    id: 31
+            typing: Boolean
+            location: ~
+            dependencies:
+              - - 31
+                - 0
+          location: ~
         - id: 22
           expression:
             kind:
@@ -620,32 +646,6 @@ component:
               - - 27
                 - 0
               - - 23
-                - 0
-          location: ~
-        - id: 23
-          expression:
-            kind:
-              Expression:
-                expression:
-                  Identifier:
-                    id: 31
-            typing: Boolean
-            location: ~
-            dependencies:
-              - - 31
-                - 0
-          location: ~
-        - id: 27
-          expression:
-            kind:
-              Expression:
-                expression:
-                  Identifier:
-                    id: 29
-            typing: Boolean
-            location: ~
-            dependencies:
-              - - 29
                 - 0
           location: ~
       memory:
