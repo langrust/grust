@@ -22,8 +22,20 @@ impl ExpressionKind<StreamExpression> {
     ) -> Result<Vec<(usize, usize)>, TerminationError> {
         match self {
             // dependencies of function application are dependencies of its inputs
-            ExpressionKind::Application { inputs, .. } => {
+            ExpressionKind::Application {
+                function_expression,
+                inputs,
+            } => {
                 // propagate dependencies computation
+                function_expression.compute_dependencies(
+                    symbol_table,
+                    nodes_context,
+                    nodes_processus_manager,
+                    nodes_reduced_processus_manager,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 inputs
                     .iter()
                     .map(|input_expression| {
@@ -41,10 +53,15 @@ impl ExpressionKind<StreamExpression> {
                     .into_iter()
                     .collect::<Result<_, _>>()?;
 
-                Ok(inputs
+                // combine dependencies
+                let mut dependencies = function_expression.get_dependencies().clone();
+                let mut inputs_dependencies = inputs
                     .iter()
                     .flat_map(|input_expression| input_expression.get_dependencies().clone())
-                    .collect())
+                    .collect::<Vec<_>>();
+                dependencies.append(&mut inputs_dependencies);
+
+                Ok(dependencies)
             }
             _ => unreachable!(),
         }
