@@ -10,7 +10,7 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
         Type::Boolean => parse_quote!(bool),
         Type::String => parse_quote!(String),
         Type::Unit => parse_quote!(()),
-        Type::Any => parse_quote!(Any), // TODO does it exist
+        Type::Any => parse_quote!(std::any::Any),
         Type::Enumeration { name, .. } => {
             let identifier = Ident::new(&name, Span::call_site());
             parse_quote!(#identifier)
