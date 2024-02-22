@@ -3029,7 +3029,55 @@ RustASTProject {
             attrs: [],
             items: [
                 Item::Enum {
-                    attrs: [],
+                    attrs: [
+                        Attribute {
+                            pound_token: Pound,
+                            style: AttrStyle::Outer,
+                            bracket_token: Bracket,
+                            meta: Meta::List {
+                                path: Path {
+                                    leading_colon: None,
+                                    segments: [
+                                        PathSegment {
+                                            ident: Ident(
+                                                derive,
+                                            ),
+                                            arguments: PathArguments::None,
+                                        },
+                                    ],
+                                },
+                                delimiter: MacroDelimiter::Paren(
+                                    Paren,
+                                ),
+                                tokens: TokenStream [
+                                    Ident {
+                                        sym: Clone,
+                                    },
+                                    Punct {
+                                        char: ',',
+                                        spacing: Alone,
+                                    },
+                                    Ident {
+                                        sym: Copy,
+                                    },
+                                    Punct {
+                                        char: ',',
+                                        spacing: Alone,
+                                    },
+                                    Ident {
+                                        sym: Debug,
+                                    },
+                                    Punct {
+                                        char: ',',
+                                        spacing: Alone,
+                                    },
+                                    Ident {
+                                        sym: PartialEq,
+                                    },
+                                ],
+                            },
+                        },
+                    ],
                     vis: Visibility::Public(
                         Pub,
                     ),
@@ -3065,7 +3113,55 @@ RustASTProject {
                     ],
                 },
                 Item::Enum {
-                    attrs: [],
+                    attrs: [
+                        Attribute {
+                            pound_token: Pound,
+                            style: AttrStyle::Outer,
+                            bracket_token: Bracket,
+                            meta: Meta::List {
+                                path: Path {
+                                    leading_colon: None,
+                                    segments: [
+                                        PathSegment {
+                                            ident: Ident(
+                                                derive,
+                                            ),
+                                            arguments: PathArguments::None,
+                                        },
+                                    ],
+                                },
+                                delimiter: MacroDelimiter::Paren(
+                                    Paren,
+                                ),
+                                tokens: TokenStream [
+                                    Ident {
+                                        sym: Clone,
+                                    },
+                                    Punct {
+                                        char: ',',
+                                        spacing: Alone,
+                                    },
+                                    Ident {
+                                        sym: Copy,
+                                    },
+                                    Punct {
+                                        char: ',',
+                                        spacing: Alone,
+                                    },
+                                    Ident {
+                                        sym: Debug,
+                                    },
+                                    Punct {
+                                        char: ',',
+                                        spacing: Alone,
+                                    },
+                                    Ident {
+                                        sym: PartialEq,
+                                    },
+                                ],
+                            },
+                        },
+                    ],
                     vis: Visibility::Public(
                         Pub,
                     ),
@@ -3103,4 +3199,5 @@ RustASTProject {
             ],
         },
     },
+    crates: [],
 }

@@ -8,8 +8,8 @@ use crate::lir::expression::{Expression, FieldIdentifier};
 use proc_macro2::{Span, TokenStream};
 use quote::format_ident;
 use syn::*;
-
 use strum::IntoEnumIterator;
+
 
 /// Transforms binary operator into syn's binary operator.
 pub fn binary_to_syn(op: BinaryOperator) -> syn::BinOp {
