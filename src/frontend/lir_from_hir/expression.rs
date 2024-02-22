@@ -1,7 +1,12 @@
 use itertools::Itertools;
+use strum::IntoEnumIterator;
 
 use crate::{
-    common::{operator::OtherOperator, r#type::Type, scope::Scope},
+    common::{
+        operator::{BinaryOperator, OtherOperator, UnaryOperator},
+        r#type::Type,
+        scope::Scope,
+    },
     hir::expression::{Expression, ExpressionKind},
     lir::{
         block::Block,
@@ -233,8 +238,22 @@ where
         match self {
             ExpressionKind::Constant { .. } => vec![],
             ExpressionKind::Identifier { id } => {
-                if symbol_table.is_function(&id) {
-                    vec![Import::Function(symbol_table.get_name(id).clone())]
+                if symbol_table.is_function(id) {
+                    if let Some(_) = BinaryOperator::iter()
+                        .find(|binary| binary.to_string().eq(symbol_table.get_name(id)))
+                    {
+                        vec![]
+                    } else if let Some(_) = UnaryOperator::iter()
+                        .find(|unary| unary.to_string().eq(symbol_table.get_name(id)))
+                    {
+                        vec![]
+                    } else if let Some(_) = OtherOperator::iter()
+                        .find(|op| op.to_string().eq(symbol_table.get_name(id)))
+                    {
+                        vec![]
+                    } else {
+                        vec![Import::Function(symbol_table.get_name(id).clone())]
+                    }
                 } else {
                     vec![]
                 }

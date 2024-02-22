@@ -1969,4 +1969,5 @@ RustASTProject {
             items: [],
         },
     },
+    crates: [],
 }
