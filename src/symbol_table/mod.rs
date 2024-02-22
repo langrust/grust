@@ -188,34 +188,43 @@ impl SymbolTable {
     pub fn initialize(&mut self) {
         // initialize with unary, binary and other operators
         UnaryOperator::iter().for_each(|op| {
-            self.insert_identifier(
-                op.to_string(),
-                Some(op.get_type()),
-                false,
-                Location::default(),
-                &mut vec![],
-            )
-            .unwrap();
+            let symbol = Symbol {
+                kind: SymbolKind::Function {
+                    inputs: vec![],
+                    output_type: None,
+                    typing: Some(op.get_type()),
+                },
+                name: op.to_string(),
+            };
+
+            self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+                .expect("you should not fail");
         });
         BinaryOperator::iter().for_each(|op| {
-            self.insert_identifier(
-                op.to_string(),
-                Some(op.get_type()),
-                false,
-                Location::default(),
-                &mut vec![],
-            )
-            .unwrap();
+            let symbol = Symbol {
+                kind: SymbolKind::Function {
+                    inputs: vec![],
+                    output_type: None,
+                    typing: Some(op.get_type()),
+                },
+                name: op.to_string(),
+            };
+
+            self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+                .expect("you should not fail");
         });
         OtherOperator::iter().for_each(|op| {
-            self.insert_identifier(
-                op.to_string(),
-                Some(op.get_type()),
-                false,
-                Location::default(),
-                &mut vec![],
-            )
-            .unwrap();
+            let symbol = Symbol {
+                kind: SymbolKind::Function {
+                    inputs: vec![],
+                    output_type: None,
+                    typing: Some(op.get_type()),
+                },
+                name: op.to_string(),
+            };
+
+            self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+                .expect("you should not fail");
         });
     }
 

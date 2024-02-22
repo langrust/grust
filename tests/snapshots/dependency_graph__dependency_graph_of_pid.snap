@@ -115,7 +115,7 @@ nodes:
                           - Float
                         - Float
                     location: ~
-                    dependencies: ~
+                    dependencies: []
                   inputs:
                     - kind:
                         Expression:
@@ -133,7 +133,7 @@ nodes:
                                       - Float
                                     - Float
                                 location: ~
-                                dependencies: ~
+                                dependencies: []
                               inputs:
                                 - kind:
                                     Expression:
@@ -144,7 +144,7 @@ nodes:
                                   location: ~
                                   dependencies:
                                     - - 27
-                                      - 0
+                                      - Weight: 0
                                 - kind:
                                     Expression:
                                       expression:
@@ -161,7 +161,7 @@ nodes:
                                                   - Float
                                                 - Float
                                             location: ~
-                                            dependencies: ~
+                                            dependencies: []
                                           inputs:
                                             - kind:
                                                 Expression:
@@ -172,7 +172,7 @@ nodes:
                                               location: ~
                                               dependencies:
                                                 - - 24
-                                                  - 0
+                                                  - Weight: 0
                                             - kind:
                                                 Expression:
                                                   expression:
@@ -182,23 +182,23 @@ nodes:
                                               location: ~
                                               dependencies:
                                                 - - 25
-                                                  - 0
+                                                  - Weight: 0
                                   typing: Float
                                   location: ~
                                   dependencies:
                                     - - 24
-                                      - 0
+                                      - Weight: 0
                                     - - 25
-                                      - 0
+                                      - Weight: 0
                       typing: Float
                       location: ~
                       dependencies:
                         - - 27
-                          - 0
+                          - Weight: 0
                         - - 24
-                          - 0
+                          - Weight: 0
                         - - 25
-                          - 0
+                          - Weight: 0
                     - kind:
                         Expression:
                           expression:
@@ -208,18 +208,18 @@ nodes:
                       location: ~
                       dependencies:
                         - - 28
-                          - 0
+                          - Weight: 0
           typing: Float
           location: ~
           dependencies:
             - - 27
-              - 0
+              - Weight: 0
             - - 24
-              - 0
+              - Weight: 0
             - - 25
-              - 0
+              - Weight: 0
             - - 28
-              - 0
+              - Weight: 0
         location: ~
       27:
         id: 27
@@ -238,12 +238,12 @@ nodes:
                 location: ~
                 dependencies:
                   - - 26
-                    - 0
+                    - Weight: 0
           typing: Float
           location: ~
           dependencies:
             - - 26
-              - 1
+              - Weight: 1
         location: ~
       28:
         id: 28
@@ -301,7 +301,7 @@ nodes:
                           - Float
                         - Float
                     location: ~
-                    dependencies: ~
+                    dependencies: []
                   inputs:
                     - kind:
                         Expression:
@@ -318,7 +318,7 @@ nodes:
                                     - - Float
                                     - Float
                                 location: ~
-                                dependencies: ~
+                                dependencies: []
                               inputs:
                                 - kind:
                                     Expression:
@@ -336,7 +336,7 @@ nodes:
                                                   - Float
                                                 - Float
                                             location: ~
-                                            dependencies: ~
+                                            dependencies: []
                                           inputs:
                                             - kind:
                                                 Expression:
@@ -347,7 +347,7 @@ nodes:
                                               location: ~
                                               dependencies:
                                                 - - 30
-                                                  - 0
+                                                  - Weight: 0
                                             - kind:
                                                 Expression:
                                                   expression:
@@ -357,21 +357,21 @@ nodes:
                                               location: ~
                                               dependencies:
                                                 - - 33
-                                                  - 0
+                                                  - Weight: 0
                                   typing: Float
                                   location: ~
                                   dependencies:
                                     - - 30
-                                      - 0
+                                      - Weight: 0
                                     - - 33
-                                      - 0
+                                      - Weight: 0
                       typing: Float
                       location: ~
                       dependencies:
                         - - 30
-                          - 0
+                          - Weight: 0
                         - - 33
-                          - 0
+                          - Weight: 0
                     - kind:
                         Expression:
                           expression:
@@ -381,16 +381,16 @@ nodes:
                       location: ~
                       dependencies:
                         - - 31
-                          - 0
+                          - Weight: 0
           typing: Float
           location: ~
           dependencies:
             - - 30
-              - 0
+              - Weight: 0
             - - 33
-              - 0
+              - Weight: 0
             - - 31
-              - 0
+              - Weight: 0
         location: ~
       33:
         id: 33
@@ -409,12 +409,12 @@ nodes:
                 location: ~
                 dependencies:
                   - - 30
-                    - 0
+                    - Weight: 0
           typing: Float
           location: ~
           dependencies:
             - - 30
-              - 1
+              - Weight: 1
         location: ~
     unitary_nodes: {}
     contract:
@@ -461,7 +461,7 @@ component:
                                 - - Structure: GainPID
                                 - Structure: GainPID
                             location: ~
-                            dependencies: ~
+                            dependencies: []
                           inputs:
                             - kind:
                                 Expression:
@@ -473,13 +473,13 @@ component:
                               location: ~
                               dependencies:
                                 - - 39
-                                  - 0
+                                  - Weight: 0
                   typing:
                     Structure: GainPID
                   location: ~
                   dependencies:
                     - - 39
-                      - 0
+                      - Weight: 0
                 arms:
                   - - kind:
                         Structure:
@@ -524,7 +524,7 @@ component:
                                       - Float
                                     - Float
                                 location: ~
-                                dependencies: ~
+                                dependencies: []
                               inputs:
                                 - kind:
                                     Expression:
@@ -542,7 +542,7 @@ component:
                                                   - Float
                                                 - Float
                                             location: ~
-                                            dependencies: ~
+                                            dependencies: []
                                           inputs:
                                             - kind:
                                                 Expression:
@@ -560,7 +560,7 @@ component:
                                                               - Float
                                                             - Float
                                                         location: ~
-                                                        dependencies: ~
+                                                        dependencies: []
                                                       inputs:
                                                         - kind:
                                                             Expression:
@@ -571,7 +571,7 @@ component:
                                                           location: ~
                                                           dependencies:
                                                             - - 46
-                                                              - 0
+                                                              - Weight: 0
                                                         - kind:
                                                             Expression:
                                                               expression:
@@ -581,14 +581,14 @@ component:
                                                           location: ~
                                                           dependencies:
                                                             - - 40
-                                                              - 0
+                                                              - Weight: 0
                                               typing: Float
                                               location: ~
                                               dependencies:
                                                 - - 46
-                                                  - 0
+                                                  - Weight: 0
                                                 - - 40
-                                                  - 0
+                                                  - Weight: 0
                                             - kind:
                                                 Expression:
                                                   expression:
@@ -605,7 +605,7 @@ component:
                                                               - Float
                                                             - Float
                                                         location: ~
-                                                        dependencies: ~
+                                                        dependencies: []
                                                       inputs:
                                                         - kind:
                                                             Expression:
@@ -616,7 +616,7 @@ component:
                                                           location: ~
                                                           dependencies:
                                                             - - 47
-                                                              - 0
+                                                              - Weight: 0
                                                         - kind:
                                                             Expression:
                                                               expression:
@@ -626,25 +626,25 @@ component:
                                                           location: ~
                                                           dependencies:
                                                             - - 41
-                                                              - 0
+                                                              - Weight: 0
                                               typing: Float
                                               location: ~
                                               dependencies:
                                                 - - 47
-                                                  - 0
+                                                  - Weight: 0
                                                 - - 41
-                                                  - 0
+                                                  - Weight: 0
                                   typing: Float
                                   location: ~
                                   dependencies:
                                     - - 46
-                                      - 0
+                                      - Weight: 0
                                     - - 40
-                                      - 0
+                                      - Weight: 0
                                     - - 47
-                                      - 0
+                                      - Weight: 0
                                     - - 41
-                                      - 0
+                                      - Weight: 0
                                 - kind:
                                     Expression:
                                       expression:
@@ -661,7 +661,7 @@ component:
                                                   - Float
                                                 - Float
                                             location: ~
-                                            dependencies: ~
+                                            dependencies: []
                                           inputs:
                                             - kind:
                                                 Expression:
@@ -672,7 +672,7 @@ component:
                                               location: ~
                                               dependencies:
                                                 - - 48
-                                                  - 0
+                                                  - Weight: 0
                                             - kind:
                                                 Expression:
                                                   expression:
@@ -682,40 +682,40 @@ component:
                                               location: ~
                                               dependencies:
                                                 - - 42
-                                                  - 0
+                                                  - Weight: 0
                                   typing: Float
                                   location: ~
                                   dependencies:
                                     - - 48
-                                      - 0
+                                      - Weight: 0
                                     - - 42
-                                      - 0
+                                      - Weight: 0
                       typing: Float
                       location: ~
                       dependencies:
                         - - 46
-                          - 0
+                          - Weight: 0
                         - - 40
-                          - 0
+                          - Weight: 0
                         - - 47
-                          - 0
+                          - Weight: 0
                         - - 41
-                          - 0
+                          - Weight: 0
                         - - 48
-                          - 0
+                          - Weight: 0
                         - - 42
-                          - 0
+                          - Weight: 0
         typing: Float
         location: ~
         dependencies:
           - - 40
-            - 0
+            - Weight: 0
           - - 41
-            - 0
+            - Weight: 0
           - - 42
-            - 0
+            - Weight: 0
           - - 39
-            - 0
+            - Weight: 0
       location: ~
     39:
       id: 39
@@ -780,7 +780,7 @@ component:
                         - Float
                       - Float
                   location: ~
-                  dependencies: ~
+                  dependencies: []
                 inputs:
                   - kind:
                       Expression:
@@ -791,7 +791,7 @@ component:
                     location: ~
                     dependencies:
                       - - 35
-                        - 0
+                        - Weight: 0
                   - kind:
                       Expression:
                         expression:
@@ -801,14 +801,14 @@ component:
                     location: ~
                     dependencies:
                       - - 36
-                        - 0
+                        - Weight: 0
         typing: Float
         location: ~
         dependencies:
           - - 35
-            - 0
+            - Weight: 0
           - - 36
-            - 0
+            - Weight: 0
       location: ~
     41:
       id: 41
@@ -827,7 +827,7 @@ component:
                   location: ~
                   dependencies:
                     - - 40
-                      - 0
+                      - Weight: 0
               - - 25
                 - kind:
                     Expression:
@@ -838,15 +838,15 @@ component:
                   location: ~
                   dependencies:
                     - - 37
-                      - 0
+                      - Weight: 0
             output_id: 26
         typing: Float
         location: ~
         dependencies:
           - - 40
-            - 0
+            - Weight: 0
           - - 37
-            - 0
+            - Weight: 0
       location: ~
     42:
       id: 42
@@ -865,7 +865,7 @@ component:
                   location: ~
                   dependencies:
                     - - 40
-                      - 0
+                      - Weight: 0
               - - 31
                 - kind:
                     Expression:
@@ -876,15 +876,15 @@ component:
                   location: ~
                   dependencies:
                     - - 37
-                      - 0
+                      - Weight: 0
             output_id: 32
         typing: Float
         location: ~
         dependencies:
           - - 40
-            - 0
+            - Weight: 0
           - - 37
-            - 0
+            - Weight: 0
       location: ~
   unitary_nodes: {}
   contract:

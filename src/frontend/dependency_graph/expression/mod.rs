@@ -53,7 +53,7 @@ impl ExpressionKind<StreamExpression> {
     ) -> Result<Vec<(usize, Label)>, TerminationError> {
         match self {
             ExpressionKind::Constant { .. } => self.compute_constant_dependencies(),
-            ExpressionKind::Identifier { .. } => self.compute_identifier_dependencies(),
+            ExpressionKind::Identifier { .. } => self.compute_identifier_dependencies(symbol_table),
             ExpressionKind::Abstraction { .. } => self.compute_abstraction_dependencies(),
             ExpressionKind::Enumeration { .. } => self.compute_enumeration_dependencies(),
             ExpressionKind::Application { .. } => self.compute_function_application_dependencies(
