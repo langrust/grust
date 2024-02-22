@@ -10,21 +10,21 @@ pub struct PidUInput {
     pub dt: f64,
 }
 pub struct PidUState {
-    derive_d_e_d: DeriveDState,
-    integrate_i_e_i: IntegrateIState,
+    integrate_i: IntegrateIState,
+    derive_d: DeriveDState,
 }
 impl PidUState {
     pub fn init() -> PidUState {
         PidUState {
-            derive_d_e_d: DeriveDState::init(),
-            integrate_i_e_i: IntegrateIState::init(),
+            integrate_i: IntegrateIState::init(),
+            derive_d: DeriveDState::init(),
         }
     }
     pub fn step(&mut self, input: PidUInput) -> f64 {
         let e = input.v_c - input.v;
-        let e_d = self.derive_d_e_d.step(DeriveDInput { x: e, dt: input.dt });
+        let e_d = self.derive_d.step(DeriveDInput { x: e, dt: input.dt });
         let e_i = self
-            .integrate_i_e_i
+            .integrate_i
             .step(IntegrateIInput {
                 x: e,
                 dt: input.dt,
@@ -34,21 +34,7 @@ impl PidUState {
             k_i: 1.5f64,
             k_d: 6f64,
         };
-        let u = Expr::FunctionCall(
-            parse_quote! {
-                access_k_p(gain)
-            },
-        ) * e
-            + Expr::FunctionCall(
-                parse_quote! {
-                    access_k_i(gain)
-                },
-            ) * e_i
-            + Expr::FunctionCall(
-                parse_quote! {
-                    access_k_d(gain)
-                },
-            ) * e_d;
+        let u = access_k_p(gain) * e + access_k_i(gain) * e_i + access_k_d(gain) * e_d;
         u
     }
 }
