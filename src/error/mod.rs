@@ -181,6 +181,16 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// expect option pattern
+    ExpectOptionPattern {
+        /// the error location
+        location: Location,
+    },
+    /// expect tuple pattern
+    ExpectTuplePattern {
+        /// the error location
+        location: Location,
+    },
     /// incompatible array length
     IncompatibleLength {
         /// given length
@@ -448,6 +458,26 @@ impl Error {
                     format!("expect array type but '{given_type}' was given")
                 ]
             ),
+            Error::ExpectOptionPattern { location } => Diagnostic::error()
+                .with_message("incompatible pattern")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong pattern")
+                ])
+                .with_notes(vec![
+                    format!("expect option pattern of the form 'some(p)'")
+                ]
+            ),
+            Error::ExpectTuplePattern { location } => Diagnostic::error()
+                .with_message("incompatible pattern")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong pattern")
+                ])
+                .with_notes(vec![
+                    format!("expect tuple pattern of the form '(p1, p2, ...)'")
+                ]
+            ),
             Error::IncompatibleLength { given_length, expected_length, location } => Diagnostic::error()
                 .with_message("incompatible array lenght")
                 .with_labels(vec![
@@ -511,6 +541,8 @@ impl std::fmt::Display for Error {
             Error::ExpectStructure { .. } => write!(f, "Expect Structure"),
             Error::ExpectTuple { .. } => write!(f, "Expect Tuple"),
             Error::ExpectArray { .. } => write!(f, "Expect Array"),
+            Error::ExpectOptionPattern { .. } => write!(f, "Expect Option Pattern"),
+            Error::ExpectTuplePattern { .. } => write!(f, "Expect Tuple Pattern"),
             Error::IncompatibleLength { .. } => write!(f, "Incompatible Length"),
             Error::NoTypeInference { .. } => write!(f, "No Type Inference"),
             Error::NotCausal { .. } => write!(f, "Not Causal"),

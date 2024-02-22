@@ -71,7 +71,13 @@ impl Pattern {
                         self.typing = Some(Type::Tuple(types));
                         Ok(())
                     }
-                    _ => todo!("error not a tuple"),
+                    _ => {
+                        let error = Error::ExpectTuplePattern {
+                            location: self.location.clone(),
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
                 }
             }
             PatternKind::Some { ref mut pattern } => match expected_type {
@@ -82,8 +88,7 @@ impl Pattern {
                     Ok(())
                 }
                 _ => {
-                    let error = Error::ExpectOption {
-                        given_type: expected_type.clone(),
+                    let error = Error::ExpectOptionPattern {
                         location: self.location.clone(),
                     };
                     errors.push(error);
