@@ -15,10 +15,7 @@ items:
         - Confirmed
   - NodeFile:
       name: counter_o
-      imports:
-        - Function: if_then_else
-        - Function: " + "
-        - Function: (_)
+      imports: []
       input:
         node_name: counter_o
         elements:
@@ -93,13 +90,9 @@ items:
   - NodeFile:
       name: reset_button_user_reset_request_state
       imports:
-        - Function: " && "
-        - Function: (_)
-        - Function: " == "
         - Enumeration: Button
         - NodeFile: counter_o
         - Enumeration: ResetState
-        - Function: " >= "
       input:
         node_name: reset_button_user_reset_request_state
         elements:
@@ -243,13 +236,8 @@ items:
   - NodeFile:
       name: reset_button_user_reset_request
       imports:
-        - Function: " && "
-        - Function: (_)
-        - Function: " == "
         - Enumeration: Button
         - NodeFile: counter_o
-        - Function: " >= "
-        - Function: " + "
       input:
         node_name: reset_button_user_reset_request
         elements:
