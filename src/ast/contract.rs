@@ -1,4 +1,8 @@
-use crate::common::{constant::Constant, location::Location, operator::{BinaryOperator, UnaryOperator}};
+use crate::common::{
+    constant::Constant,
+    location::Location,
+    operator::{BinaryOperator, UnaryOperator},
+};
 
 pub(crate) enum ClauseKind {
     Invariant,

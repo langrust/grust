@@ -1,4 +1,8 @@
-use crate::common::{constant::Constant, operator::{BinaryOperator, UnaryOperator}, scope::Scope};
+use crate::common::{
+    constant::Constant,
+    operator::{BinaryOperator, UnaryOperator},
+    scope::Scope,
+};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// Term.

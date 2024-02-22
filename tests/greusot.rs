@@ -12,11 +12,7 @@ fn generate_rust_project_for_greusot_test() {
             .expect("unkown file"),
     );
 
-    generate_rust_project(
-        greusot_test_id,
-        &mut files,
-        "tests/generated/greusot/",
-    )
+    generate_rust_project(greusot_test_id, &mut files, "tests/generated/greusot/")
 }
 
 #[test]
@@ -29,9 +25,5 @@ fn generate_rust_project_for_contracts_test() {
             .expect("unkown file"),
     );
 
-    generate_rust_project(
-        contracts_test_id,
-        &mut files,
-        "tests/generated/greusot/",
-    )
+    generate_rust_project(contracts_test_id, &mut files, "tests/generated/greusot/")
 }
