@@ -11,6 +11,7 @@ impl Term {
     /// Compute dependencies of a term.
     pub fn compute_dependencies(&self) -> Vec<usize> {
         match &self.kind {
+            TermKind::Unary { term, .. } => term.compute_dependencies(),
             TermKind::Binary { left, right, .. } => {
                 let mut dependencies_left = left.compute_dependencies();
                 let mut dependencies = right.compute_dependencies();

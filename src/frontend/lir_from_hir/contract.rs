@@ -50,6 +50,10 @@ mod term {
                     name: symbol_table.get_name(&id).clone(),
                     scope: symbol_table.get_scope(&id).clone(),
                 },
+                TermKind::Unary { op, term } => LIRTerm::Unary {
+                    op,
+                    term: Box::new(term.lir_from_hir(symbol_table)),
+                },
                 TermKind::Binary { op, left, right } => LIRTerm::Binary {
                     op,
                     left: Box::new(left.lir_from_hir(symbol_table)),

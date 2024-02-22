@@ -1,5 +1,5 @@
 use crate::backend::rust_ast_from_lir::expression::{
-    binary_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir,
+    binary_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
 };
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
@@ -13,6 +13,11 @@ use syn::*;
 
 fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
     match term {
+        Term::Unary { op, term } => {
+            let ts_term = term_to_token_stream(*term, prophecy);
+            let ts_op = unary_to_syn(op);
+            quote!(#ts_op #ts_term)
+        }
         Term::Binary { op, left, right } => {
             let ts_left = term_to_token_stream(*left, prophecy);
             let ts_right = term_to_token_stream(*right, prophecy);
