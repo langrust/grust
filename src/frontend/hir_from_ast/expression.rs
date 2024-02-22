@@ -212,8 +212,54 @@ where
                     .into_iter()
                     .collect::<Result<Vec<_>, _>>()?,
             }),
-            ExpressionKind::Abstraction { inputs, expression } => todo!(),
-            ExpressionKind::TypedAbstraction { inputs, expression } => todo!(),
+            ExpressionKind::Abstraction { inputs, expression } => {
+                symbol_table.local();
+                let inputs = inputs
+                    .into_iter()
+                    .map(|input_name| {
+                        symbol_table.insert_identifier(
+                            input_name,
+                            None,
+                            true,
+                            location.clone(),
+                            errors,
+                        )
+                    })
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
+                let expression = expression.hir_from_ast(symbol_table, errors)?;
+                symbol_table.global();
+
+                Ok(HIRExpressionKind::Abstraction {
+                    inputs,
+                    expression: Box::new(expression),
+                })
+            }
+            ExpressionKind::TypedAbstraction { inputs, expression } => {
+                symbol_table.local();
+                let inputs = inputs
+                    .into_iter()
+                    .map(|(input_name, typing)| {
+                        symbol_table.insert_identifier(
+                            input_name,
+                            Some(typing),
+                            true,
+                            location.clone(),
+                            errors,
+                        )
+                    })
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
+                let expression = expression.hir_from_ast(symbol_table, errors)?;
+                symbol_table.global();
+
+                Ok(HIRExpressionKind::Abstraction {
+                    inputs,
+                    expression: Box::new(expression),
+                })
+            }
         }
     }
 }
