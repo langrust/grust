@@ -1,6 +1,6 @@
 use petgraph::algo::toposort;
 
-use crate::{common::graph::neighbor::Label, hir::unitary_node::UnitaryNode};
+use crate::{common::label::Label, hir::unitary_node::UnitaryNode};
 
 impl UnitaryNode {
     /// Schedule statements.

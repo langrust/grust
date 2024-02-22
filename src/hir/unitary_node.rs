@@ -1,6 +1,6 @@
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::{graph::neighbor::Label, location::Location};
+use crate::common::{label::Label, location::Location};
 use crate::hir::{
     contract::Contract, memory::Memory, statement::Statement, stream_expression::StreamExpression,
 };

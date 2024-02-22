@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use petgraph::graphmap::DiGraphMap;
 
 use crate::{
-    common::graph::neighbor::Label,
+    common::label::Label,
     hir::{
         dependencies::Dependencies,
         identifier_creator::IdentifierCreator,

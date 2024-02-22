@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::graph::neighbor::Label;
+use crate::common::label::Label;
 use crate::common::scope::Scope;
 use crate::hir::expression::ExpressionKind;
 use crate::hir::stream_expression::StreamExpressionKind;

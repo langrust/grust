@@ -1,7 +1,7 @@
 use petgraph::graphmap::DiGraphMap;
 
 use crate::{
-    common::graph::neighbor::Label,
+    common::label::Label,
     hir::contract::{Term, TermKind},
 };
 

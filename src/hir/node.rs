@@ -1,7 +1,7 @@
 use petgraph::graphmap::DiGraphMap;
 use std::collections::BTreeMap;
 
-use crate::common::{graph::neighbor::Label, location::Location, serialize::ordered_graph};
+use crate::common::{label::Label, location::Location, serialize::ordered_graph};
 use crate::hir::{
     contract::Contract, once_cell::OnceCell, statement::Statement,
     stream_expression::StreamExpression, unitary_node::UnitaryNode,

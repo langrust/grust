@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use petgraph::graphmap::DiGraphMap;
 
-use crate::{common::graph::neighbor::Label, hir::node::Node, symbol_table::SymbolTable};
+use crate::{common::label::Label, hir::node::Node, symbol_table::SymbolTable};
 
 impl Node {
     /// Change HIR node into a normal form.

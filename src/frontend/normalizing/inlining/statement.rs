@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use petgraph::{algo::all_simple_paths, graphmap::DiGraphMap};
 
 use crate::{
-    common::graph::neighbor::Label,
+    common::label::Label,
     hir::{
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
