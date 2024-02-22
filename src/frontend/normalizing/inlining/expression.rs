@@ -1,7 +1,10 @@
 use std::collections::BTreeMap;
 
-use crate::hir::{
-    dependencies::Dependencies, expression::ExpressionKind, stream_expression::StreamExpression,
+use crate::{
+    common::label::Label,
+    hir::{
+        dependencies::Dependencies, expression::ExpressionKind, stream_expression::StreamExpression,
+    },
 };
 
 use super::Union;
@@ -33,7 +36,7 @@ impl ExpressionKind<StreamExpression> {
                     match element {
                         Union::I1(new_id) => {
                             *id = *new_id;
-                            *dependencies = Dependencies::from(vec![(*new_id, 0)]);
+                            *dependencies = Dependencies::from(vec![(*new_id, Label::Weight(0))]);
                             None
                         }
                         Union::I2(new_expression) => Some(new_expression.clone()),
@@ -124,7 +127,7 @@ impl ExpressionKind<StreamExpression> {
                             .clone()
                             .into_iter()
                             .filter(|(signal, _)| !local_signals.contains(signal))
-                            .collect::<Vec<(usize, usize)>>();
+                            .collect::<Vec<(usize, Label)>>();
                         expression_dependencies.append(&mut matched_expression_dependencies);
                     });
 

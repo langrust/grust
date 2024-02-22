@@ -42,7 +42,7 @@ impl Node {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        // construct node's subgraph containing only 0-depth
+        // construct node's subgraph containing only 0-label weight
         let graph = self
             .graph
             .get()

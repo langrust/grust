@@ -2,11 +2,11 @@ use petgraph::graphmap::DiGraphMap;
 
 use crate::common::label::Label;
 
+mod contract;
 mod expression;
 mod file;
 mod node;
 mod stream_expression;
-mod term;
 
 pub fn add_edge(
     graph: &mut DiGraphMap<usize, Label>,

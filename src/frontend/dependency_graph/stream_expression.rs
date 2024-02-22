@@ -28,7 +28,7 @@ impl StreamExpression {
     /// ```
     ///
     /// The stream expression `my_node(f(x), 1).o` depends on the signal `x` with
-    /// a dependency depth of 2. Indeed, the expression depends on the memory
+    /// a dependency label weight of 2. Indeed, the expression depends on the memory
     /// of the memory of `x` (the signal is behind 2 fby operations).
     pub fn compute_dependencies(
         &self,
@@ -59,7 +59,7 @@ impl StreamExpression {
                         .get_dependencies()
                         .clone()
                         .into_iter()
-                        .map(|(id, depth)| (id, depth + 1))
+                        .map(|(id, label)| (id, label.increment()))
                         .collect(),
                 );
 
@@ -118,22 +118,19 @@ impl StreamExpression {
                             )?;
                             Ok(local_reduced_graph
                                 .edge_weight(*output_id, *input_id)
-                                .map_or(Ok(vec![]), |label| {
-                                    match label {
-                                        Label::Contract => Ok(vec![]), // TODO: do we loose the CREUSOT dependence with the input?
-                                        Label::Weight(weight) => Ok(input_expression
-                                            .get_dependencies()
-                                            .clone()
-                                            .into_iter()
-                                            .map(|(id, depth)| (id, depth + weight))
-                                            .collect()),
-                                    }
+                                .map_or(Ok(vec![]), |label1| {
+                                    Ok(input_expression
+                                        .get_dependencies()
+                                        .clone()
+                                        .into_iter()
+                                        .map(|(id, label2)| (id, label1.add(&label2)))
+                                        .collect())
                                 })?)
                         })
-                        .collect::<Result<Vec<Vec<(usize, usize)>>, TerminationError>>()?
+                        .collect::<Result<Vec<Vec<(usize, Label)>>, TerminationError>>()?
                         .into_iter()
                         .flatten()
-                        .collect::<Vec<(usize, usize)>>(),
+                        .collect::<Vec<(usize, Label)>>(),
                 );
 
                 Ok(())

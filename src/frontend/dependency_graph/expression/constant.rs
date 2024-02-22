@@ -1,11 +1,12 @@
 use crate::{
+    common::label::Label,
     error::TerminationError,
     hir::{expression::ExpressionKind, stream_expression::StreamExpression},
 };
 
 impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of a constant stream expression.
-    pub fn compute_constant_dependencies(&self) -> Result<Vec<(usize, usize)>, TerminationError> {
+    pub fn compute_constant_dependencies(&self) -> Result<Vec<(usize, Label)>, TerminationError> {
         match self {
             // no dependencies for constant stream expression
             ExpressionKind::Constant { .. } => Ok(vec![]),

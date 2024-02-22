@@ -49,7 +49,7 @@ impl StreamExpression {
                     expression
                         .get_dependencies()
                         .iter()
-                        .map(|(id, depth)| (id.clone(), *depth + 1))
+                        .map(|(id, label)| (id.clone(), label.increment()))
                         .collect(),
                 );
 
@@ -80,16 +80,13 @@ impl StreamExpression {
                         .flat_map(|(input_id, expression)| {
                             reduced_graph.edge_weight(output_id, *input_id).map_or(
                                 vec![],
-                                |label| {
-                                    match label {
-                                        Label::Contract => vec![], // TODO: do we loose the CREUSOT dependence with the input?
-                                        Label::Weight(weight) => expression
-                                            .get_dependencies()
-                                            .clone()
-                                            .into_iter()
-                                            .map(|(id, depth)| (id, depth + weight))
-                                            .collect(),
-                                    }
+                                |label1| {
+                                    expression
+                                        .get_dependencies()
+                                        .clone()
+                                        .into_iter()
+                                        .map(|(id, label2)| (id, label1.add(&label2)))
+                                        .collect()
                                 },
                             )
                         })
@@ -117,7 +114,7 @@ impl StreamExpression {
                 self.kind = StreamExpressionKind::Expression {
                     expression: ExpressionKind::Identifier { id: fresh_id },
                 };
-                self.dependencies = Dependencies::from(vec![(fresh_id, 0)]);
+                self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 
                 // return new additional statements
                 new_statements
@@ -181,7 +178,7 @@ impl StreamExpression {
                 self.kind = StreamExpressionKind::Expression {
                     expression: ExpressionKind::Identifier { id: fresh_id },
                 };
-                self.dependencies = Dependencies::from(vec![(fresh_id, 0)]);
+                self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 
                 // return new additional statements
                 statements

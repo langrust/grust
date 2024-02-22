@@ -1,3 +1,4 @@
+use crate::common::label::Label;
 use crate::common::scope::Scope;
 use crate::hir::contract::Contract;
 use crate::hir::expression::ExpressionKind;
@@ -66,7 +67,7 @@ impl StreamExpression {
                 self.kind = StreamExpressionKind::Expression {
                     expression: ExpressionKind::Identifier { id: memory_id },
                 };
-                self.dependencies = Dependencies::from(vec![(memory_id, 0)]);
+                self.dependencies = Dependencies::from(vec![(memory_id, Label::Weight(0))]);
             }
             StreamExpressionKind::NodeApplication { .. } => unreachable!(),
             StreamExpressionKind::UnitaryNodeApplication {

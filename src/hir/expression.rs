@@ -1,3 +1,4 @@
+use crate::common::label::Label;
 use crate::common::{constant::Constant, location::Location, r#type::Type};
 use crate::hir::{dependencies::Dependencies, pattern::Pattern, statement::Statement};
 
@@ -132,7 +133,7 @@ impl Expression {
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         self.typing.as_mut()
     }
-    pub fn get_dependencies(&self) -> &Vec<(usize, usize)> {
+    pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
         self.dependencies
             .get()
             .expect("there should be dependencies")

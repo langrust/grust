@@ -19,7 +19,7 @@ impl ExpressionKind<StreamExpression> {
         nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(usize, usize)>, TerminationError> {
+    ) -> Result<Vec<(usize, Label)>, TerminationError> {
         match self {
             // dependencies of when are dependencies of the optional expression
             // plus present and default expressions (without the new local signal)

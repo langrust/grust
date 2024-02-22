@@ -19,7 +19,7 @@ impl ExpressionKind<StreamExpression> {
         nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(usize, usize)>, TerminationError> {
+    ) -> Result<Vec<(usize, Label)>, TerminationError> {
         match self {
             // dependencies of match are dependencies of matched expression and
             // dependencies of arms (without new signals defined in patterns)
@@ -48,7 +48,7 @@ impl ExpressionKind<StreamExpression> {
                             .clone()
                             .into_iter()
                             .filter(|(signal, _)| !local_signals.contains(signal))
-                            .collect::<Vec<(usize, usize)>>();
+                            .collect::<Vec<(usize, Label)>>();
 
                         // get bound dependencies
                         let mut bound_dependencies =
@@ -77,10 +77,10 @@ impl ExpressionKind<StreamExpression> {
                         // return arm dependencies
                         Ok(arm_dependencies)
                     })
-                    .collect::<Result<Vec<Vec<(usize, usize)>>, TerminationError>>()?
+                    .collect::<Result<Vec<Vec<(usize, Label)>>, TerminationError>>()?
                     .into_iter()
                     .flatten()
-                    .collect::<Vec<(usize, usize)>>();
+                    .collect::<Vec<(usize, Label)>>();
 
                 // get matched expression dependencies
                 expression.compute_dependencies(
