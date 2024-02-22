@@ -1,6 +1,3 @@
-/// [Context] trait definition.
-pub mod context;
-
 /// Location handler module.
 pub mod location;
 
