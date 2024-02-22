@@ -41,7 +41,7 @@ nodes:
                           - Integer
                         - Integer
                     location: ~
-                    dependencies: ~
+                    dependencies: []
                   inputs:
                     - kind:
                         Expression:
@@ -52,7 +52,7 @@ nodes:
                       location: ~
                       dependencies:
                         - - 23
-                          - 0
+                          - Weight: 0
                     - kind:
                         Expression:
                           expression:
@@ -78,7 +78,7 @@ nodes:
                                       - Integer
                                     - Integer
                                 location: ~
-                                dependencies: ~
+                                dependencies: []
                               inputs:
                                 - kind:
                                     Expression:
@@ -95,7 +95,7 @@ nodes:
                                                 - - Integer
                                                 - Integer
                                             location: ~
-                                            dependencies: ~
+                                            dependencies: []
                                           inputs:
                                             - kind:
                                                 FollowedBy:
@@ -111,17 +111,17 @@ nodes:
                                                     location: ~
                                                     dependencies:
                                                       - - 25
-                                                        - 0
+                                                        - Weight: 0
                                               typing: Integer
                                               location: ~
                                               dependencies:
                                                 - - 25
-                                                  - 1
+                                                  - Weight: 1
                                   typing: Integer
                                   location: ~
                                   dependencies:
                                     - - 25
-                                      - 1
+                                      - Weight: 1
                                 - kind:
                                     Expression:
                                       expression:
@@ -131,23 +131,23 @@ nodes:
                                   location: ~
                                   dependencies:
                                     - - 24
-                                      - 0
+                                      - Weight: 0
                       typing: Integer
                       location: ~
                       dependencies:
                         - - 25
-                          - 1
+                          - Weight: 1
                         - - 24
-                          - 0
+                          - Weight: 0
           typing: Integer
           location: ~
           dependencies:
             - - 23
-              - 0
+              - Weight: 0
             - - 25
-              - 1
+              - Weight: 1
             - - 24
-              - 0
+              - Weight: 0
         location: ~
     unitary_nodes:
       25:
@@ -172,7 +172,7 @@ nodes:
                               - Integer
                             - Integer
                         location: ~
-                        dependencies: ~
+                        dependencies: []
                       inputs:
                         - kind:
                             Expression:
@@ -183,7 +183,7 @@ nodes:
                           location: ~
                           dependencies:
                             - - 23
-                              - 0
+                              - Weight: 0
                         - kind:
                             Expression:
                               expression:
@@ -209,7 +209,7 @@ nodes:
                                           - Integer
                                         - Integer
                                     location: ~
-                                    dependencies: ~
+                                    dependencies: []
                                   inputs:
                                     - kind:
                                         Expression:
@@ -226,7 +226,7 @@ nodes:
                                                     - - Integer
                                                     - Integer
                                                 location: ~
-                                                dependencies: ~
+                                                dependencies: []
                                               inputs:
                                                 - kind:
                                                     Expression:
@@ -237,12 +237,12 @@ nodes:
                                                   location: ~
                                                   dependencies:
                                                     - - 39
-                                                      - 0
+                                                      - Weight: 0
                                       typing: Integer
                                       location: ~
                                       dependencies:
                                         - - 25
-                                          - 1
+                                          - Weight: 1
                                     - kind:
                                         Expression:
                                           expression:
@@ -252,23 +252,23 @@ nodes:
                                       location: ~
                                       dependencies:
                                         - - 24
-                                          - 0
+                                          - Weight: 0
                           typing: Integer
                           location: ~
                           dependencies:
                             - - 25
-                              - 1
+                              - Weight: 1
                             - - 24
-                              - 0
+                              - Weight: 0
               typing: Integer
               location: ~
               dependencies:
                 - - 23
-                  - 0
+                  - Weight: 0
                 - - 25
-                  - 1
+                  - Weight: 1
                 - - 24
-                  - 0
+                  - Weight: 0
             location: ~
         memory:
           buffers:
@@ -286,7 +286,7 @@ nodes:
                 location: ~
                 dependencies:
                   - - 25
-                    - 0
+                    - Weight: 0
           called_nodes: {}
         location: ~
         graph:
@@ -351,7 +351,7 @@ nodes:
                                   - - Enumeration: Button
                                   - Enumeration: Button
                               location: ~
-                              dependencies: ~
+                              dependencies: []
                             inputs:
                               - kind:
                                   Expression:
@@ -363,13 +363,13 @@ nodes:
                                 location: ~
                                 dependencies:
                                   - - 27
-                                    - 0
+                                    - Weight: 0
                     typing:
                       Enumeration: Button
                     location: ~
                     dependencies:
                       - - 27
-                        - 0
+                        - Weight: 0
                   arms:
                     - - kind:
                           Enumeration:
@@ -413,7 +413,7 @@ nodes:
                                         - Integer
                                       - Boolean
                                   location: ~
-                                  dependencies: ~
+                                  dependencies: []
                                 inputs:
                                   - kind:
                                       Expression:
@@ -424,7 +424,7 @@ nodes:
                                     location: ~
                                     dependencies:
                                       - - 33
-                                        - 0
+                                        - Weight: 0
                                   - kind:
                                       Expression:
                                         expression:
@@ -434,14 +434,14 @@ nodes:
                                     location: ~
                                     dependencies:
                                       - - 29
-                                        - 0
+                                        - Weight: 0
                         typing: Boolean
                         location: ~
                         dependencies:
                           - - 33
-                            - 0
+                            - Weight: 0
                           - - 29
-                            - 0
+                            - Weight: 0
                       - []
                       - kind:
                           Expression:
@@ -473,11 +473,11 @@ nodes:
           location: ~
           dependencies:
             - - 33
-              - 0
+              - Weight: 0
             - - 29
-              - 0
+              - Weight: 0
             - - 27
-              - 0
+              - Weight: 0
         location: ~
       32:
         id: 32
@@ -502,7 +502,7 @@ nodes:
                                   - - Enumeration: Button
                                   - Enumeration: Button
                               location: ~
-                              dependencies: ~
+                              dependencies: []
                             inputs:
                               - kind:
                                   Expression:
@@ -514,13 +514,13 @@ nodes:
                                 location: ~
                                 dependencies:
                                   - - 27
-                                    - 0
+                                    - Weight: 0
                     typing:
                       Enumeration: Button
                     location: ~
                     dependencies:
                       - - 27
-                        - 0
+                        - Weight: 0
                   arms:
                     - - kind:
                           Enumeration:
@@ -545,12 +545,12 @@ nodes:
                               location: ~
                               dependencies:
                                 - - 32
-                                  - 0
+                                  - Weight: 0
                         typing: Boolean
                         location: ~
                         dependencies:
                           - - 32
-                            - 1
+                            - Weight: 1
                     - - kind:
                           Enumeration:
                             enum_id: 19
@@ -576,7 +576,7 @@ nodes:
                                         - Integer
                                       - Boolean
                                   location: ~
-                                  dependencies: ~
+                                  dependencies: []
                                 inputs:
                                   - kind:
                                       Expression:
@@ -587,7 +587,7 @@ nodes:
                                     location: ~
                                     dependencies:
                                       - - 33
-                                        - 0
+                                        - Weight: 0
                                   - kind:
                                       Expression:
                                         expression:
@@ -604,7 +604,7 @@ nodes:
                                                     - Integer
                                                   - Integer
                                               location: ~
-                                              dependencies: ~
+                                              dependencies: []
                                             inputs:
                                               - kind:
                                                   Expression:
@@ -615,7 +615,7 @@ nodes:
                                                 location: ~
                                                 dependencies:
                                                   - - 29
-                                                    - 0
+                                                    - Weight: 0
                                               - kind:
                                                   Expression:
                                                     expression:
@@ -625,36 +625,36 @@ nodes:
                                                 location: ~
                                                 dependencies:
                                                   - - 30
-                                                    - 0
+                                                    - Weight: 0
                                     typing: Integer
                                     location: ~
                                     dependencies:
                                       - - 29
-                                        - 0
+                                        - Weight: 0
                                       - - 30
-                                        - 0
+                                        - Weight: 0
                         typing: Boolean
                         location: ~
                         dependencies:
                           - - 33
-                            - 0
+                            - Weight: 0
                           - - 29
-                            - 0
+                            - Weight: 0
                           - - 30
-                            - 0
+                            - Weight: 0
           typing: Boolean
           location: ~
           dependencies:
             - - 32
-              - 1
+              - Weight: 1
             - - 33
-              - 0
+              - Weight: 0
             - - 29
-              - 0
+              - Weight: 0
             - - 30
-              - 0
+              - Weight: 0
             - - 27
-              - 0
+              - Weight: 0
         location: ~
       33:
         id: 33
@@ -673,7 +673,7 @@ nodes:
                     location: ~
                     dependencies:
                       - - 34
-                        - 0
+                        - Weight: 0
                 - - 24
                   - kind:
                       Expression:
@@ -684,15 +684,15 @@ nodes:
                     location: ~
                     dependencies:
                       - - 28
-                        - 0
+                        - Weight: 0
               output_id: 25
           typing: Integer
           location: ~
           dependencies:
             - - 34
-              - 0
+              - Weight: 0
             - - 28
-              - 0
+              - Weight: 0
         location: ~
       34:
         id: 34
@@ -713,7 +713,7 @@ nodes:
                           - Boolean
                         - Boolean
                     location: ~
-                    dependencies: ~
+                    dependencies: []
                   inputs:
                     - kind:
                         Expression:
@@ -730,7 +730,7 @@ nodes:
                                     - - Boolean
                                     - Boolean
                                 location: ~
-                                dependencies: ~
+                                dependencies: []
                               inputs:
                                 - kind:
                                     Expression:
@@ -748,7 +748,7 @@ nodes:
                                                   - Enumeration: Button
                                                 - Boolean
                                             location: ~
-                                            dependencies: ~
+                                            dependencies: []
                                           inputs:
                                             - kind:
                                                 Expression:
@@ -760,7 +760,7 @@ nodes:
                                               location: ~
                                               dependencies:
                                                 - - 27
-                                                  - 0
+                                                  - Weight: 0
                                             - kind:
                                                 Expression:
                                                   expression:
@@ -775,12 +775,12 @@ nodes:
                                   location: ~
                                   dependencies:
                                     - - 27
-                                      - 0
+                                      - Weight: 0
                       typing: Boolean
                       location: ~
                       dependencies:
                         - - 27
-                          - 0
+                          - Weight: 0
                     - kind:
                         Expression:
                           expression:
@@ -796,7 +796,7 @@ nodes:
                                     - - Boolean
                                     - Boolean
                                 location: ~
-                                dependencies: ~
+                                dependencies: []
                               inputs:
                                 - kind:
                                     FollowedBy:
@@ -819,7 +819,7 @@ nodes:
                                                         - Enumeration: Button
                                                       - Boolean
                                                   location: ~
-                                                  dependencies: ~
+                                                  dependencies: []
                                                 inputs:
                                                   - kind:
                                                       Expression:
@@ -831,7 +831,7 @@ nodes:
                                                     location: ~
                                                     dependencies:
                                                       - - 27
-                                                        - 0
+                                                        - Weight: 0
                                                   - kind:
                                                       Expression:
                                                         expression:
@@ -846,24 +846,24 @@ nodes:
                                         location: ~
                                         dependencies:
                                           - - 27
-                                            - 0
+                                            - Weight: 0
                                   typing: Boolean
                                   location: ~
                                   dependencies:
                                     - - 27
-                                      - 1
+                                      - Weight: 1
                       typing: Boolean
                       location: ~
                       dependencies:
                         - - 27
-                          - 1
+                          - Weight: 1
           typing: Boolean
           location: ~
           dependencies:
             - - 27
-              - 0
+              - Weight: 0
             - - 27
-              - 1
+              - Weight: 1
         location: ~
     unitary_nodes:
       31:
@@ -887,7 +887,7 @@ nodes:
                               - Boolean
                             - Boolean
                         location: ~
-                        dependencies: ~
+                        dependencies: []
                       inputs:
                         - kind:
                             Expression:
@@ -904,7 +904,7 @@ nodes:
                                         - - Boolean
                                         - Boolean
                                     location: ~
-                                    dependencies: ~
+                                    dependencies: []
                                   inputs:
                                     - kind:
                                         Expression:
@@ -922,7 +922,7 @@ nodes:
                                                       - Enumeration: Button
                                                     - Boolean
                                                 location: ~
-                                                dependencies: ~
+                                                dependencies: []
                                               inputs:
                                                 - kind:
                                                     Expression:
@@ -934,7 +934,7 @@ nodes:
                                                   location: ~
                                                   dependencies:
                                                     - - 27
-                                                      - 0
+                                                      - Weight: 0
                                                 - kind:
                                                     Expression:
                                                       expression:
@@ -949,12 +949,12 @@ nodes:
                                       location: ~
                                       dependencies:
                                         - - 27
-                                          - 0
+                                          - Weight: 0
                           typing: Boolean
                           location: ~
                           dependencies:
                             - - 27
-                              - 0
+                              - Weight: 0
                         - kind:
                             Expression:
                               expression:
@@ -970,7 +970,7 @@ nodes:
                                         - - Boolean
                                         - Boolean
                                     location: ~
-                                    dependencies: ~
+                                    dependencies: []
                                   inputs:
                                     - kind:
                                         Expression:
@@ -981,19 +981,19 @@ nodes:
                                       location: ~
                                       dependencies:
                                         - - 40
-                                          - 0
+                                          - Weight: 0
                           typing: Boolean
                           location: ~
                           dependencies:
                             - - 27
-                              - 1
+                              - Weight: 1
               typing: Boolean
               location: ~
               dependencies:
                 - - 27
-                  - 0
+                  - Weight: 0
                 - - 27
-                  - 1
+                  - Weight: 1
             location: ~
           - id: 33
             expression:
@@ -1011,7 +1011,7 @@ nodes:
                         location: ~
                         dependencies:
                           - - 34
-                            - 0
+                            - Weight: 0
                     - - 24
                       - kind:
                           Expression:
@@ -1022,15 +1022,15 @@ nodes:
                         location: ~
                         dependencies:
                           - - 28
-                            - 0
+                            - Weight: 0
                   output_id: 25
               typing: Integer
               location: ~
               dependencies:
                 - - 34
-                  - 0
+                  - Weight: 0
                 - - 28
-                  - 0
+                  - Weight: 0
             location: ~
           - id: 31
             expression:
@@ -1054,7 +1054,7 @@ nodes:
                                       - - Enumeration: Button
                                       - Enumeration: Button
                                   location: ~
-                                  dependencies: ~
+                                  dependencies: []
                                 inputs:
                                   - kind:
                                       Expression:
@@ -1066,13 +1066,13 @@ nodes:
                                     location: ~
                                     dependencies:
                                       - - 27
-                                        - 0
+                                        - Weight: 0
                         typing:
                           Enumeration: Button
                         location: ~
                         dependencies:
                           - - 27
-                            - 0
+                            - Weight: 0
                       arms:
                         - - kind:
                               Enumeration:
@@ -1116,7 +1116,7 @@ nodes:
                                             - Integer
                                           - Boolean
                                       location: ~
-                                      dependencies: ~
+                                      dependencies: []
                                     inputs:
                                       - kind:
                                           Expression:
@@ -1127,7 +1127,7 @@ nodes:
                                         location: ~
                                         dependencies:
                                           - - 33
-                                            - 0
+                                            - Weight: 0
                                       - kind:
                                           Expression:
                                             expression:
@@ -1137,14 +1137,14 @@ nodes:
                                         location: ~
                                         dependencies:
                                           - - 29
-                                            - 0
+                                            - Weight: 0
                             typing: Boolean
                             location: ~
                             dependencies:
                               - - 33
-                                - 0
+                                - Weight: 0
                               - - 29
-                                - 0
+                                - Weight: 0
                           - []
                           - kind:
                               Expression:
@@ -1176,11 +1176,11 @@ nodes:
               location: ~
               dependencies:
                 - - 27
-                  - 0
+                  - Weight: 0
                 - - 33
-                  - 0
+                  - Weight: 0
                 - - 29
-                  - 0
+                  - Weight: 0
             location: ~
         memory:
           buffers:
@@ -1205,7 +1205,7 @@ nodes:
                                 - Enumeration: Button
                               - Boolean
                           location: ~
-                          dependencies: ~
+                          dependencies: []
                         inputs:
                           - kind:
                               Expression:
@@ -1217,7 +1217,7 @@ nodes:
                             location: ~
                             dependencies:
                               - - 27
-                                - 0
+                                - Weight: 0
                           - kind:
                               Expression:
                                 expression:
@@ -1232,7 +1232,7 @@ nodes:
                 location: ~
                 dependencies:
                   - - 27
-                    - 0
+                    - Weight: 0
           called_nodes:
             41:
               node_id: 36
@@ -1293,7 +1293,7 @@ nodes:
                               - Boolean
                             - Boolean
                         location: ~
-                        dependencies: ~
+                        dependencies: []
                       inputs:
                         - kind:
                             Expression:
@@ -1310,7 +1310,7 @@ nodes:
                                         - - Boolean
                                         - Boolean
                                     location: ~
-                                    dependencies: ~
+                                    dependencies: []
                                   inputs:
                                     - kind:
                                         Expression:
@@ -1328,7 +1328,7 @@ nodes:
                                                       - Enumeration: Button
                                                     - Boolean
                                                 location: ~
-                                                dependencies: ~
+                                                dependencies: []
                                               inputs:
                                                 - kind:
                                                     Expression:
@@ -1340,7 +1340,7 @@ nodes:
                                                   location: ~
                                                   dependencies:
                                                     - - 27
-                                                      - 0
+                                                      - Weight: 0
                                                 - kind:
                                                     Expression:
                                                       expression:
@@ -1355,12 +1355,12 @@ nodes:
                                       location: ~
                                       dependencies:
                                         - - 27
-                                          - 0
+                                          - Weight: 0
                           typing: Boolean
                           location: ~
                           dependencies:
                             - - 27
-                              - 0
+                              - Weight: 0
                         - kind:
                             Expression:
                               expression:
@@ -1376,7 +1376,7 @@ nodes:
                                         - - Boolean
                                         - Boolean
                                     location: ~
-                                    dependencies: ~
+                                    dependencies: []
                                   inputs:
                                     - kind:
                                         Expression:
@@ -1387,19 +1387,19 @@ nodes:
                                       location: ~
                                       dependencies:
                                         - - 42
-                                          - 0
+                                          - Weight: 0
                           typing: Boolean
                           location: ~
                           dependencies:
                             - - 27
-                              - 1
+                              - Weight: 1
               typing: Boolean
               location: ~
               dependencies:
                 - - 27
-                  - 0
+                  - Weight: 0
                 - - 27
-                  - 1
+                  - Weight: 1
             location: ~
           - id: 33
             expression:
@@ -1417,7 +1417,7 @@ nodes:
                         location: ~
                         dependencies:
                           - - 34
-                            - 0
+                            - Weight: 0
                     - - 24
                       - kind:
                           Expression:
@@ -1428,15 +1428,15 @@ nodes:
                         location: ~
                         dependencies:
                           - - 28
-                            - 0
+                            - Weight: 0
                   output_id: 25
               typing: Integer
               location: ~
               dependencies:
                 - - 34
-                  - 0
+                  - Weight: 0
                 - - 28
-                  - 0
+                  - Weight: 0
             location: ~
           - id: 32
             expression:
@@ -1460,7 +1460,7 @@ nodes:
                                       - - Enumeration: Button
                                       - Enumeration: Button
                                   location: ~
-                                  dependencies: ~
+                                  dependencies: []
                                 inputs:
                                   - kind:
                                       Expression:
@@ -1472,13 +1472,13 @@ nodes:
                                     location: ~
                                     dependencies:
                                       - - 27
-                                        - 0
+                                        - Weight: 0
                         typing:
                           Enumeration: Button
                         location: ~
                         dependencies:
                           - - 27
-                            - 0
+                            - Weight: 0
                       arms:
                         - - kind:
                               Enumeration:
@@ -1498,7 +1498,7 @@ nodes:
                             location: ~
                             dependencies:
                               - - 43
-                                - 0
+                                - Weight: 0
                         - - kind:
                               Enumeration:
                                 enum_id: 19
@@ -1524,7 +1524,7 @@ nodes:
                                             - Integer
                                           - Boolean
                                       location: ~
-                                      dependencies: ~
+                                      dependencies: []
                                     inputs:
                                       - kind:
                                           Expression:
@@ -1535,7 +1535,7 @@ nodes:
                                         location: ~
                                         dependencies:
                                           - - 33
-                                            - 0
+                                            - Weight: 0
                                       - kind:
                                           Expression:
                                             expression:
@@ -1552,7 +1552,7 @@ nodes:
                                                         - Integer
                                                       - Integer
                                                   location: ~
-                                                  dependencies: ~
+                                                  dependencies: []
                                                 inputs:
                                                   - kind:
                                                       Expression:
@@ -1563,7 +1563,7 @@ nodes:
                                                     location: ~
                                                     dependencies:
                                                       - - 29
-                                                        - 0
+                                                        - Weight: 0
                                                   - kind:
                                                       Expression:
                                                         expression:
@@ -1573,36 +1573,36 @@ nodes:
                                                     location: ~
                                                     dependencies:
                                                       - - 30
-                                                        - 0
+                                                        - Weight: 0
                                         typing: Integer
                                         location: ~
                                         dependencies:
                                           - - 29
-                                            - 0
+                                            - Weight: 0
                                           - - 30
-                                            - 0
+                                            - Weight: 0
                             typing: Boolean
                             location: ~
                             dependencies:
                               - - 33
-                                - 0
+                                - Weight: 0
                               - - 29
-                                - 0
+                                - Weight: 0
                               - - 30
-                                - 0
+                                - Weight: 0
               typing: Boolean
               location: ~
               dependencies:
                 - - 27
-                  - 0
+                  - Weight: 0
                 - - 32
-                  - 1
+                  - Weight: 1
                 - - 33
-                  - 0
+                  - Weight: 0
                 - - 29
-                  - 0
+                  - Weight: 0
                 - - 30
-                  - 0
+                  - Weight: 0
             location: ~
         memory:
           buffers:
@@ -1627,7 +1627,7 @@ nodes:
                                 - Enumeration: Button
                               - Boolean
                           location: ~
-                          dependencies: ~
+                          dependencies: []
                         inputs:
                           - kind:
                               Expression:
@@ -1639,7 +1639,7 @@ nodes:
                             location: ~
                             dependencies:
                               - - 27
-                                - 0
+                                - Weight: 0
                           - kind:
                               Expression:
                                 expression:
@@ -1654,7 +1654,7 @@ nodes:
                 location: ~
                 dependencies:
                   - - 27
-                    - 0
+                    - Weight: 0
             43:
               typing: Boolean
               initial_value:
@@ -1669,7 +1669,7 @@ nodes:
                 location: ~
                 dependencies:
                   - - 32
-                    - 0
+                    - Weight: 0
           called_nodes:
             44:
               node_id: 36
@@ -1758,3 +1758,4 @@ nodes:
       : Weight: 0
 component: ~
 location: ~
+

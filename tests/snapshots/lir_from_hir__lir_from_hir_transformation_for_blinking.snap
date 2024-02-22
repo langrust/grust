@@ -5,6 +5,7 @@ expression: project
 items:
   - Function:
       name: xor
+      generics: []
       inputs:
         - - t
           - Boolean
@@ -39,7 +40,10 @@ items:
       imports: []
   - NodeFile:
       name: counter_o
-      imports: []
+      imports:
+        - Function: if_then_else
+        - Function: " + "
+        - Function: (_)
       input:
         node_name: counter_o
         elements:
@@ -47,6 +51,7 @@ items:
             type: Boolean
           - identifier: tick
             type: Boolean
+        generics: []
       state:
         node_name: counter_o
         elements:
@@ -55,6 +60,7 @@ items:
               type: Integer
         step:
           node_name: counter_o
+          generics: []
           output_type: Integer
           body:
             - Let:
@@ -135,11 +141,16 @@ items:
       imports:
         - NodeFile: counter_o
         - Function: xor
+        - Function: if_then_else
+        - Function: " + "
+        - Function: (_)
+        - Function: " == "
       input:
         node_name: blinking_status
         elements:
           - identifier: tick_number
             type: Integer
+        generics: []
       state:
         node_name: blinking_status
         elements:
@@ -154,6 +165,7 @@ items:
               node_name: counter_o
         step:
           node_name: blinking_status
+          generics: []
           output_type: Integer
           body:
             - Let:
@@ -271,3 +283,4 @@ items:
                 identifier: counter_o
                 node_name: counter_o
           invariant_initialisation: []
+

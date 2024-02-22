@@ -5,7 +5,10 @@ expression: project
 items:
   - NodeFile:
       name: counter_o
-      imports: []
+      imports:
+        - Function: if_then_else
+        - Function: " + "
+        - Function: (_)
       input:
         node_name: counter_o
         elements:
@@ -13,6 +16,7 @@ items:
             type: Boolean
           - identifier: tick
             type: Boolean
+        generics: []
       state:
         node_name: counter_o
         elements:
@@ -21,6 +25,7 @@ items:
               type: Integer
         step:
           node_name: counter_o
+          generics: []
           output_type: Integer
           body:
             - Let:
@@ -100,9 +105,13 @@ items:
       name: main_y
       imports:
         - NodeFile: counter_o
+        - Function: (_)
+        - Function: " > "
+        - Function: "!"
       input:
         node_name: main_y
         elements: []
+        generics: []
       state:
         node_name: main_y
         elements:
@@ -117,6 +126,7 @@ items:
               node_name: counter_o
         step:
           node_name: main_y
+          generics: []
           output_type: Integer
           body:
             - Let:
@@ -191,3 +201,4 @@ items:
                 identifier: counter_o
                 node_name: counter_o
           invariant_initialisation: []
+

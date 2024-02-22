@@ -14,6 +14,7 @@ items:
           - Float
   - Function:
       name: min
+      generics: []
       inputs:
         - - a
           - Float
@@ -62,6 +63,8 @@ items:
       name: integrate_i
       imports:
         - Function: min
+        - Function: " + "
+        - Function: " * "
       input:
         node_name: integrate_i
         elements:
@@ -69,6 +72,7 @@ items:
             type: Float
           - identifier: dt
             type: Float
+        generics: []
       state:
         node_name: integrate_i
         elements:
@@ -77,6 +81,7 @@ items:
               type: Float
         step:
           node_name: integrate_i
+          generics: []
           output_type: Float
           body:
             - Let:
@@ -138,7 +143,10 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: derive_d
-      imports: []
+      imports:
+        - Function: " / "
+        - Function: (_)
+        - Function: " - "
       input:
         node_name: derive_d
         elements:
@@ -146,6 +154,7 @@ items:
             type: Float
           - identifier: dt
             type: Float
+        generics: []
       state:
         node_name: derive_d
         elements:
@@ -154,6 +163,7 @@ items:
               type: Float
         step:
           node_name: derive_d
+          generics: []
           output_type: Float
           body:
             - Let:
@@ -208,9 +218,13 @@ items:
   - NodeFile:
       name: pid_u
       imports:
+        - Function: " - "
         - NodeFile: derive_d
         - NodeFile: integrate_i
         - Structure: GainPID
+        - Function: (_)
+        - Function: " + "
+        - Function: " * "
       input:
         node_name: pid_u
         elements:
@@ -220,6 +234,7 @@ items:
             type: Float
           - identifier: dt
             type: Float
+        generics: []
       state:
         node_name: pid_u
         elements:
@@ -231,6 +246,7 @@ items:
               node_name: derive_d
         step:
           node_name: pid_u
+          generics: []
           output_type: Float
           body:
             - Let:
@@ -370,3 +386,4 @@ items:
                 identifier: derive_d
                 node_name: derive_d
           invariant_initialisation: []
+

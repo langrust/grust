@@ -15,7 +15,10 @@ items:
         - Confirmed
   - NodeFile:
       name: counter_o
-      imports: []
+      imports:
+        - Function: if_then_else
+        - Function: " + "
+        - Function: (_)
       input:
         node_name: counter_o
         elements:
@@ -23,6 +26,7 @@ items:
             type: Boolean
           - identifier: inc
             type: Integer
+        generics: []
       state:
         node_name: counter_o
         elements:
@@ -31,6 +35,7 @@ items:
               type: Integer
         step:
           node_name: counter_o
+          generics: []
           output_type: Integer
           body:
             - Let:
@@ -88,9 +93,14 @@ items:
   - NodeFile:
       name: reset_button_user_reset_request_state
       imports:
+        - Function: " && "
+        - Function: (_)
+        - Function: " == "
         - Enumeration: Button
         - NodeFile: counter_o
         - Enumeration: ResetState
+        - Function: if_then_else
+        - Function: " >= "
       input:
         node_name: reset_button_user_reset_request_state
         elements:
@@ -101,6 +111,7 @@ items:
             type: Integer
           - identifier: reset_limit_1
             type: Integer
+        generics: []
       state:
         node_name: reset_button_user_reset_request_state
         elements:
@@ -112,6 +123,7 @@ items:
               node_name: counter_o
         step:
           node_name: reset_button_user_reset_request_state
+          generics: []
           output_type:
             Enumeration: ResetState
           body:
@@ -241,8 +253,13 @@ items:
   - NodeFile:
       name: reset_button_user_reset_request
       imports:
+        - Function: " && "
+        - Function: (_)
+        - Function: " == "
         - Enumeration: Button
         - NodeFile: counter_o
+        - Function: " >= "
+        - Function: " + "
       input:
         node_name: reset_button_user_reset_request
         elements:
@@ -255,6 +272,7 @@ items:
             type: Integer
           - identifier: reset_limit_2
             type: Integer
+        generics: []
       state:
         node_name: reset_button_user_reset_request
         elements:
@@ -269,6 +287,7 @@ items:
               node_name: counter_o
         step:
           node_name: reset_button_user_reset_request
+          generics: []
           output_type: Boolean
           body:
             - Let:
@@ -392,3 +411,4 @@ items:
                 identifier: counter_o
                 node_name: counter_o
           invariant_initialisation: []
+
