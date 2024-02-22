@@ -76,7 +76,7 @@ impl StreamExpression {
                 // create local reduced graphs (because only complete for the called signal)
                 let mut local_nodes_reduced_graphs = nodes_reduced_graphs.clone();
                 let mut local_nodes_reduced_processus_manager =
-                    nodes_reduced_processus_manager.clone(); // TODO: see if this is important
+                    nodes_reduced_processus_manager.clone();
 
                 // add dependencies to inputs in the local graphs
                 node.add_signal_inputs_dependencies(
