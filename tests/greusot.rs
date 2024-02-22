@@ -27,3 +27,16 @@ fn generate_rust_project_for_contracts_test() {
 
     generate_rust_project(contracts_test_id, &mut files, "tests/generated/greusot/")
 }
+
+#[test]
+fn generate_rust_project_for_contract_denpendencies_transitive() {
+    let mut files = SimpleFiles::new();
+
+    let contract_denpendencies_transitive_id = files.add(
+        "contract_denpendencies_transitive.gr",
+        std::fs::read_to_string("tests/fixture/greusot/success/contract_denpendencies_transitive.gr")
+            .expect("unkown file"),
+    );
+
+    generate_rust_project(contract_denpendencies_transitive_id, &mut files, "tests/generated/greusot/")
+}
