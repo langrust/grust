@@ -257,3 +257,18 @@ fn generate_rust_project_for_map_int_to_float() {
 
     generate_rust_project(map_int_to_float_id, &mut files, "tests/generated/")
 }
+
+#[test]
+fn generate_rust_project_for_map_function_int_to_float() {
+    let mut files = SimpleFiles::new();
+
+    let map_function_int_to_float_id = files.add(
+        "map_function_int_to_float.gr",
+        std::fs::read_to_string(
+            "tests/fixture/generate_rust_project/success/map_function_int_to_float.gr",
+        )
+        .expect("unkown file"),
+    );
+
+    generate_rust_project(map_function_int_to_float_id, &mut files, "tests/generated/")
+}

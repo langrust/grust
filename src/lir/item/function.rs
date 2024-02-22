@@ -8,6 +8,8 @@ use crate::{
 pub struct Function {
     /// The function's name.
     pub name: String,
+    /// The input's generic types.
+    pub generics: Vec<(String, Type)>,
     /// The inputs.
     pub inputs: Vec<(String, Type)>,
     /// The output type.

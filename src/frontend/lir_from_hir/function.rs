@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    hir::function::Function,
+    hir::{function::Function, identifier_creator::IdentifierCreator},
     lir::{
         block::Block,
         item::{function::Function as LIRFunction, import::Import},
@@ -27,7 +27,7 @@ impl LIRFromHIR for Function {
         let name = symbol_table.get_name(&id).clone();
 
         // get function inputs
-        let inputs = symbol_table
+        let mut inputs = symbol_table
             .get_function_input(&id)
             .into_iter()
             .map(|id| {
@@ -39,7 +39,7 @@ impl LIRFromHIR for Function {
             .collect::<Vec<_>>();
 
         // get function output type
-        let output = symbol_table.get_function_output_type(&id).clone();
+        let mut output = symbol_table.get_function_output_type(&id).clone();
 
         // collect imports from statements, inputs and output types and returned expression
         let mut imports = statements
@@ -69,6 +69,15 @@ impl LIRFromHIR for Function {
             })
             .collect::<Vec<_>>();
 
+        // get input's generics: function types in inputs
+        let mut identifier_creator = IdentifierCreator::from(vec![]);
+        let mut generics = inputs
+            .iter_mut()
+            .flat_map(|(_, typing)| typing.get_generics(&mut identifier_creator))
+            .collect::<Vec<_>>();
+        let mut output_generics = output.get_generics(&mut identifier_creator);
+        generics.append(&mut output_generics);
+
         // tranforms into LIR statements
         let mut statements = statements
             .into_iter()
@@ -80,6 +89,7 @@ impl LIRFromHIR for Function {
 
         LIRFunction {
             name,
+            generics,
             inputs,
             output,
             body: Block { statements },
