@@ -233,10 +233,11 @@ termProof: Term = {
     },
     #[precedence(level="1")]
     #[assoc(side="left")]
-    <start:@L> <e1: termProof> "*" <e2: termProof> <end:@R> => {
+    // catches * / binary operations as proof terms
+    <start:@L> <e1: termProof> <op: firstBinaryOperator> <e2: termProof> <end:@R> => {
         Term {
             kind: TermKind::Binary {
-                op: BinaryOperator::Mul,
+                op,
                 left: Box::new(e1),
                 right: Box::new(e2),
             },
@@ -245,10 +246,11 @@ termProof: Term = {
     },
     #[precedence(level="2")]
     #[assoc(side="left")]
-    <start:@L> <e1: termProof> "+" <e2: termProof> <end:@R> => {
+    // catches + - binary operations as proof terms
+    <start:@L> <e1: termProof> <op: secondBinaryOperator> <e2: termProof> <end:@R> => {
         Term {
             kind: TermKind::Binary {
-                op: BinaryOperator::Add,
+                op,
                 left: Box::new(e1),
                 right: Box::new(e2),
             },
@@ -257,21 +259,24 @@ termProof: Term = {
     },
     #[precedence(level="3")]
     #[assoc(side="left")]
-    <start:@L> <e1: termProof> "<" <e2: termProof> <end:@R> => {
+    // catches == != <= >= < > binary operations as proof terms
+    <start:@L> <e1: termProof> <op: thirdBinaryOperator> <e2: termProof> <end:@R> => {
         Term {
             kind: TermKind::Binary {
-                op: BinaryOperator::Low,
+                op,
                 left: Box::new(e1),
                 right: Box::new(e2),
             },
             location: Location{ file_id, range: start..end },
         }
     },
+    #[precedence(level="4")]
     #[assoc(side="left")]
-    <start:@L> <e1: termProof> "<=" <e2: termProof> <end:@R> => {
+    // catches && || binary operations as proof terms
+    <start:@L> <e1: termProof> <op: fourthBinaryOperator> <e2: termProof> <end:@R> => {
         Term {
             kind: TermKind::Binary {
-                op: BinaryOperator::Leq,
+                op,
                 left: Box::new(e1),
                 right: Box::new(e2),
             },
