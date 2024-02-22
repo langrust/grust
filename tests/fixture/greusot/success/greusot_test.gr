@@ -1,11 +1,9 @@
 
 node test(i1: int, i2: int)
-    requires {0 < i1 /\ i1 < i2}
+    requires {0 < i1 || i1 < i2}
     ensures {o >= 0}
+    invariant {z > 0}
 {
-    assert {x > 0};
-    invariant {z > 0};
-
     out o: int = y / z;
     x: int = i2 - i1;
     y: int = i1 / x;
