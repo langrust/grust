@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::graph::color::Color;
-use crate::common::graph::neighbor::Label;
+use crate::common::color::Color;
+use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{
     node::Node,

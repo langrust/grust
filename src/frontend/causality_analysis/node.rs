@@ -1,7 +1,7 @@
 use petgraph::algo::toposort;
 
 use crate::{
-    common::graph::neighbor::Label,
+    common::label::Label,
     error::{Error, TerminationError},
     hir::node::Node,
     symbol_table::SymbolTable,

@@ -1,12 +1,6 @@
 /// [Context] trait definition.
 pub mod context;
 
-/// [Graph] API.
-pub mod graph;
-
-/// LanGRust [Pattern](crate::ast::pattern::Pattern) AST module.
-pub mod pattern;
-
 /// Location handler module.
 pub mod location;
 
@@ -27,3 +21,7 @@ pub mod serialize;
 
 /// Case converter module.
 pub mod convert_case;
+
+pub mod label;
+
+pub mod color;
