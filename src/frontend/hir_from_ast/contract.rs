@@ -61,6 +61,13 @@ mod term {
         ) -> Result<Self::HIR, TerminationError> {
             let Term { kind, location } = self;
             match kind {
+                TermKind::Unary { op, term } => Ok(HIRTerm {
+                    kind: HIRTermKind::Unary {
+                        op,
+                        term: Box::new(term.hir_from_ast(symbol_table, errors)?),
+                    },
+                    location,
+                }),
                 TermKind::Binary { op, left, right } => Ok(HIRTerm {
                     kind: HIRTermKind::Binary {
                         op,

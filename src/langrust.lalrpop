@@ -232,6 +232,17 @@ termProof: Term = {
         }
     },
     #[precedence(level="1")]
+    // catches unary operations as proof terms
+    <start:@L> <op: unaryOperator> <e: termProof> <end:@R> => {
+        Term {
+            kind: TermKind::Unary {
+                op,
+                term: Box::new(e),
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    #[precedence(level="2")]
     #[assoc(side="left")]
     // catches * / binary operations as proof terms
     <start:@L> <e1: termProof> <op: firstBinaryOperator> <e2: termProof> <end:@R> => {
@@ -244,7 +255,7 @@ termProof: Term = {
             location: Location{ file_id, range: start..end },
         }
     },
-    #[precedence(level="2")]
+    #[precedence(level="3")]
     #[assoc(side="left")]
     // catches + - binary operations as proof terms
     <start:@L> <e1: termProof> <op: secondBinaryOperator> <e2: termProof> <end:@R> => {
@@ -257,7 +268,7 @@ termProof: Term = {
             location: Location{ file_id, range: start..end },
         }
     },
-    #[precedence(level="3")]
+    #[precedence(level="4")]
     #[assoc(side="left")]
     // catches == != <= >= < > binary operations as proof terms
     <start:@L> <e1: termProof> <op: thirdBinaryOperator> <e2: termProof> <end:@R> => {
@@ -270,7 +281,7 @@ termProof: Term = {
             location: Location{ file_id, range: start..end },
         }
     },
-    #[precedence(level="4")]
+    #[precedence(level="5")]
     #[assoc(side="left")]
     // catches && || binary operations as proof terms
     <start:@L> <e1: termProof> <op: fourthBinaryOperator> <e2: termProof> <end:@R> => {

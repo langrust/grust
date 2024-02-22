@@ -1,4 +1,8 @@
-use crate::common::{constant::Constant, location::Location, operator::BinaryOperator};
+use crate::common::{
+    constant::Constant,
+    location::Location,
+    operator::{BinaryOperator, UnaryOperator},
+};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// Term's kind.
@@ -12,6 +16,13 @@ pub enum TermKind {
     Identifier {
         /// Signal's identifier in Symbol Table.
         id: usize,
+    },
+    /// Unary term: !x
+    Unary {
+        /// The operator
+        op: UnaryOperator,
+        /// The term
+        term: Box<Term>,
     },
     /// Binary term: x == y
     Binary {
@@ -69,6 +80,9 @@ mod term {
                     if *id == old_id {
                         *id = new_id
                     }
+                }
+                TermKind::Unary { ref mut term, .. } => {
+                    term.substitution(old_id, new_id);
                 }
                 TermKind::Binary {
                     ref mut left,

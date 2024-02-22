@@ -1,4 +1,4 @@
-use crate::common::{constant::Constant, location::Location, operator::BinaryOperator};
+use crate::common::{constant::Constant, location::Location, operator::{BinaryOperator, UnaryOperator}};
 
 pub(crate) enum ClauseKind {
     Invariant,
@@ -18,6 +18,13 @@ pub enum TermKind {
     Identifier {
         /// The identifier
         id: String,
+    },
+    /// Unary term: !x
+    Unary {
+        /// The operator
+        op: UnaryOperator,
+        /// The term
+        term: Box<Term>,
     },
     /// Binary term: x == y
     Binary {

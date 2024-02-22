@@ -219,7 +219,7 @@ impl BinaryOperator {
 /// - [UnaryOperator::Neg] is the numerical negation `-`
 /// - [UnaryOperator::Not], the logical negation `!`
 /// - [UnaryOperator::Brackets], is the use of brackets `(_)`
-#[derive(EnumIter, Debug, PartialEq, serde::Serialize)]
+#[derive(EnumIter, Debug, Clone, PartialEq, serde::Serialize)]
 pub enum UnaryOperator {
     /// Numerical negation, `-x`.
     Neg,

@@ -1,4 +1,4 @@
-use crate::common::{constant::Constant, operator::BinaryOperator, scope::Scope};
+use crate::common::{constant::Constant, operator::{BinaryOperator, UnaryOperator}, scope::Scope};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// Term.
@@ -14,6 +14,13 @@ pub enum Term {
         name: String,
         /// The identifier's scope.
         scope: Scope,
+    },
+    /// Unary term: !x
+    Unary {
+        /// The operator
+        op: UnaryOperator,
+        /// The term
+        term: Box<Term>,
     },
     /// Binary term: x == y
     Binary {
