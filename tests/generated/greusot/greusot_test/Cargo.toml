@@ -1,5 +1,5 @@
 [package]
-name = "creusot_test"
+name = "greusot_test"
 version = "0.1.0"
 edition = "2021"
 authors = ["Émilie THOMÉ <emilie.e.thome@renault.com>"]
@@ -7,4 +7,4 @@ authors = ["Émilie THOMÉ <emilie.e.thome@renault.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-creusot-contract = { path = "../../../../../../github/creusot/creusot-contract" }
+creusot-contract = { path = "~/Documents/github/creusot/creusot-contracts" }
