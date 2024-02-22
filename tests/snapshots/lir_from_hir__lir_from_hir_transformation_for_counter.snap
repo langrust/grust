@@ -5,10 +5,7 @@ expression: project
 items:
   - NodeFile:
       name: counter_o
-      imports:
-        - Function: if_then_else
-        - Function: " + "
-        - Function: (_)
+      imports: []
       input:
         node_name: counter_o
         elements:
@@ -105,9 +102,6 @@ items:
       name: main_y
       imports:
         - NodeFile: counter_o
-        - Function: (_)
-        - Function: " > "
-        - Function: "!"
       input:
         node_name: main_y
         elements: []

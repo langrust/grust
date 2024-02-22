@@ -63,8 +63,6 @@ items:
       name: integrate_i
       imports:
         - Function: min
-        - Function: " + "
-        - Function: " * "
       input:
         node_name: integrate_i
         elements:
@@ -143,10 +141,7 @@ items:
           invariant_initialisation: []
   - NodeFile:
       name: derive_d
-      imports:
-        - Function: " / "
-        - Function: (_)
-        - Function: " - "
+      imports: []
       input:
         node_name: derive_d
         elements:
@@ -218,13 +213,9 @@ items:
   - NodeFile:
       name: pid_u
       imports:
-        - Function: " - "
         - NodeFile: derive_d
         - NodeFile: integrate_i
         - Structure: GainPID
-        - Function: (_)
-        - Function: " + "
-        - Function: " * "
       input:
         node_name: pid_u
         elements:

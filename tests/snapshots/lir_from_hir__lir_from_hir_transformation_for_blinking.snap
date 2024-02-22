@@ -40,10 +40,7 @@ items:
       imports: []
   - NodeFile:
       name: counter_o
-      imports:
-        - Function: if_then_else
-        - Function: " + "
-        - Function: (_)
+      imports: []
       input:
         node_name: counter_o
         elements:
@@ -141,10 +138,6 @@ items:
       imports:
         - NodeFile: counter_o
         - Function: xor
-        - Function: if_then_else
-        - Function: " + "
-        - Function: (_)
-        - Function: " == "
       input:
         node_name: blinking_status
         elements:
