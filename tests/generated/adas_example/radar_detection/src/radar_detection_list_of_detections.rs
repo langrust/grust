@@ -1,22 +1,18 @@
 use crate::functions::factorial;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-
 pub struct RadarDetectionListOfDetectionsInput {
-    pub distances: [i64; 10],
+    pub distances: [i64; 10usize],
 }
 pub struct RadarDetectionListOfDetectionsState {}
 impl RadarDetectionListOfDetectionsState {
     pub fn init() -> RadarDetectionListOfDetectionsState {
-        RadarDetectionListOfDetectionsState {}
+        RadarDetectionListOfDetectionsState {
+        }
     }
-    pub fn step(&mut self, input: RadarDetectionListOfDetectionsInput) -> [i64; 10] {
-        let list_of_detections = input
-            .distances
-            .into_par_iter()
-            .map(factorial)
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+    pub fn step(
+        &mut self,
+        input: RadarDetectionListOfDetectionsInput,
+    ) -> [i64; 10usize] {
+        let list_of_detections = input.distances.map(factorial);
         list_of_detections
     }
 }

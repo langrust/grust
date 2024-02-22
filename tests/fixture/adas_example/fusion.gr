@@ -4,5 +4,5 @@ component fusion(
     lidar_detections: [int; 10],
 ) {
     out fused_information: [int; 10] = zip(radar_detections, classification, lidar_detections)
-        .map(|r_c_l: (int, int, int)| r_c_l::0 + r_c_l::1 + r_c_l::2);
+        .map(|r_c_l: (int, int, int)| r_c_l.0 + r_c_l.1 + r_c_l.2);
 }
