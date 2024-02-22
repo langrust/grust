@@ -127,7 +127,7 @@ impl Node {
             .get_node_inputs(&node)
             .iter()
             .filter(|id| subgraph.contains_node(**id))
-            .map(|input| input.clone())
+            .map(|id| *id)
             .collect::<Vec<_>>();
 
         // retrieve statements from useful signals

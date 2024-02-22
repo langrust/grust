@@ -39,7 +39,7 @@ impl ExpressionKind<StreamExpression> {
     /// ```
     ///
     /// The stream expression `my_node(f(x), 1).o` depends on the signal `x` with
-    /// a dependency depth of 2. Indeed, the expression depends on the memory
+    /// a dependency label weight of 2. Indeed, the expression depends on the memory
     /// of the memory of `x` (the signal is behind 2 fby operations).
     pub fn compute_dependencies(
         &self,
@@ -50,7 +50,7 @@ impl ExpressionKind<StreamExpression> {
         nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
-    ) -> Result<Vec<(usize, usize)>, TerminationError> {
+    ) -> Result<Vec<(usize, Label)>, TerminationError> {
         match self {
             ExpressionKind::Constant { .. } => self.compute_constant_dependencies(),
             ExpressionKind::Identifier { .. } => self.compute_identifier_dependencies(),

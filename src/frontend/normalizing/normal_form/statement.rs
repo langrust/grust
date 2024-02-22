@@ -71,16 +71,13 @@ impl Statement<StreamExpression> {
                         .flat_map(|(input_id, expression)| {
                             reduced_graph.edge_weight(output_id, *input_id).map_or(
                                 vec![],
-                                |label| {
-                                    match label {
-                                        Label::Contract => vec![], // TODO: do we loose the CREUSOT dependence with the input?
-                                        Label::Weight(weight) => expression
-                                            .get_dependencies()
-                                            .clone()
-                                            .into_iter()
-                                            .map(|(id, depth)| (id, depth + weight))
-                                            .collect(),
-                                    }
+                                |label1| {
+                                    expression
+                                        .get_dependencies()
+                                        .clone()
+                                        .into_iter()
+                                        .map(|(id, label2)| (id, label1.add(&label2)))
+                                        .collect()
                                 },
                             )
                         })

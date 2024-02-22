@@ -25,12 +25,12 @@ impl Dependencies {
             .get()
             .unwrap()
             .iter()
-            .flat_map(|(id, depth)| match context_map.get(id) {
-                Some(Union::I1(new_id)) => vec![(*new_id, *depth)],
+            .flat_map(|(id, label)| match context_map.get(id) {
+                Some(Union::I1(new_id)) => vec![(*new_id, label.clone())],
                 Some(Union::I2(expression)) => expression
                     .get_dependencies()
                     .iter()
-                    .map(|(new_id, new_depth)| (new_id.clone(), depth + new_depth))
+                    .map(|(new_id, new_label)| (new_id.clone(), label.add(new_label)))
                     .collect(),
                 None => vec![],
             })

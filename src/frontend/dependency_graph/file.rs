@@ -54,11 +54,20 @@ impl File {
             .map(|node| (node.id.clone(), node.clone()))
             .collect::<BTreeMap<_, _>>();
 
-        // every nodes complete their equations and contract dependency graphs
+        // every nodes complete their contract dependency graphs
+        nodes
+            .iter()
+            .for_each(|node| node.add_contract_dependencies(&mut nodes_graphs));
+
+        // optional component completes its contract dependency graph
+        if let Some(component) = component {
+            component.add_contract_dependencies(&mut nodes_graphs)
+        }
+
+        // every nodes complete their equations dependency graphs
         nodes
             .iter()
             .map(|node| {
-                node.add_contract_dependencies(&mut nodes_graphs);
                 node.add_all_equations_dependencies(
                     symbol_table,
                     &nodes_context,
@@ -73,9 +82,8 @@ impl File {
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
 
-        // optional component completes its dependency graph
+        // optional component completes its equations dependency graph
         component.as_ref().map_or(Ok(()), |component| {
-            component.add_contract_dependencies(&mut nodes_graphs);
             component.add_all_equations_dependencies(
                 symbol_table,
                 &nodes_context,

@@ -34,9 +34,34 @@ fn generate_rust_project_for_contract_dependencies_transitive() {
 
     let contract_dependencies_transitive_id = files.add(
         "contract_dependencies_transitive.gr",
-        std::fs::read_to_string("tests/fixture/greusot/success/contract_dependencies_transitive.gr")
-            .expect("unkown file"),
+        std::fs::read_to_string(
+            "tests/fixture/greusot/success/contract_dependencies_transitive.gr",
+        )
+        .expect("unkown file"),
     );
 
-    generate_rust_project(contract_dependencies_transitive_id, &mut files, "tests/generated/greusot/")
+    generate_rust_project(
+        contract_dependencies_transitive_id,
+        &mut files,
+        "tests/generated/greusot/",
+    )
+}
+
+#[test]
+fn generate_rust_project_for_contract_dependencies_propagation() {
+    let mut files = SimpleFiles::new();
+
+    let contract_dependencies_propagation_id = files.add(
+        "contract_dependencies_propagation.gr",
+        std::fs::read_to_string(
+            "tests/fixture/greusot/success/contract_dependencies_propagation.gr",
+        )
+        .expect("unkown file"),
+    );
+
+    generate_rust_project(
+        contract_dependencies_propagation_id,
+        &mut files,
+        "tests/generated/greusot/",
+    )
 }

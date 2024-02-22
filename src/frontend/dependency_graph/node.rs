@@ -5,7 +5,6 @@ use petgraph::graphmap::DiGraphMap;
 use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
-use crate::hir::contract::Contract;
 use crate::hir::node::Node;
 use crate::symbol_table::SymbolTable;
 
@@ -193,9 +192,9 @@ impl Node {
                         expression
                             .get_dependencies()
                             .iter()
-                            .for_each(|(id, depth)| {
+                            .for_each(|(id, label)| {
                                 // if there was another edge, keep the most important label
-                                add_edge(graph, *signal, *id, Label::Weight(*depth))
+                                add_edge(graph, *signal, *id, label.clone())
                             });
 
                         Ok(())
@@ -278,7 +277,7 @@ impl Node {
                 let graph = nodes_graphs.get(node).unwrap().clone();
 
                 // for every neighbors, get inputs dependencies and add it as signal dependencies
-                for (_, neighbor_id, l1) in graph.edges(*signal) {
+                for (_, neighbor_id, label1) in graph.edges(*signal) {
                     // tells if the neighbor is an input
                     let is_input = symbol_table
                         .get_node_inputs(&self.id)
@@ -289,7 +288,11 @@ impl Node {
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
                         // if input then add neighbor to reduced graph
-                        add_edge(reduced_graph, *signal, neighbor_id, l1.clone());
+                        add_edge(reduced_graph, *signal, neighbor_id, label1.clone());
+                        // and add its input dependencies (contract dependencies)
+                        graph.edges(neighbor_id).for_each(|(_, input_id, label2)| {
+                            add_edge(reduced_graph, *signal, input_id, label1.add(label2))
+                        });
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_inputs_dependencies(
@@ -309,26 +312,11 @@ impl Node {
 
                         // add dependencies as graph's edges:
                         // s = e depends on i <=> s -> i
-                        match l1 {
-                            Label::Contract => reduced_graph_cloned.edges(neighbor_id).for_each(
-                                |(_, input_id, _)| {
-                                    add_edge(reduced_graph, *signal, input_id, Label::Contract);
-                                },
-                            ),
-                            Label::Weight(w1) => reduced_graph_cloned.edges(neighbor_id).for_each(
-                                |(_, input_id, l2)| {
-                                    add_edge(
-                                        reduced_graph,
-                                        *signal,
-                                        input_id,
-                                        match l2 {
-                                            Label::Contract => Label::Contract,
-                                            Label::Weight(w2) => Label::Weight(w1 + w2),
-                                        },
-                                    );
-                                },
-                            ),
-                        }
+                        reduced_graph_cloned
+                            .edges(neighbor_id)
+                            .for_each(|(_, input_id, label2)| {
+                                add_edge(reduced_graph, *signal, input_id, label1.add(label2));
+                            })
                     }
                 }
 
@@ -363,14 +351,7 @@ impl Node {
         nodes_graphs: &mut BTreeMap<usize, DiGraphMap<usize, Label>>,
     ) {
         let Node {
-            id: node,
-            contract:
-                Contract {
-                    requires,
-                    ensures,
-                    invariant,
-                },
-            ..
+            id: node, contract, ..
         } = self;
 
         // get node's graph
@@ -378,14 +359,6 @@ impl Node {
 
         // add edges to the graph
         // corresponding to dependencies in contract's terms
-        requires
-            .iter()
-            .for_each(|term| term.add_term_dependencies(graph));
-        ensures
-            .iter()
-            .for_each(|term| term.add_term_dependencies(graph));
-        invariant
-            .iter()
-            .for_each(|term| term.add_term_dependencies(graph));
+        contract.add_dependencies(graph);
     }
 }

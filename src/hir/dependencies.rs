@@ -1,4 +1,5 @@
 use super::once_cell::OnceCell;
+use crate::common::label::Label;
 
 /// Dependencies structure.
 ///
@@ -6,7 +7,7 @@ use super::once_cell::OnceCell;
 /// This allows to set dependencies after creating the the structure.
 /// After setting the value, the dependencies are immutable.
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-pub struct Dependencies(OnceCell<Vec<(usize, usize)>>);
+pub struct Dependencies(OnceCell<Vec<(usize, Label)>>);
 impl Dependencies {
     /// Create unset dependencies.
     ///
@@ -29,7 +30,7 @@ impl Dependencies {
     /// let dependencies = Dependencies::from(v.clone());
     /// assert_eq!(*dependencies.get().unwrap(), v);
     /// ```
-    pub fn from(v: Vec<(usize, usize)>) -> Self {
+    pub fn from(v: Vec<(usize, Label)>) -> Self {
         let cell = OnceCell::new();
         cell.set(v).unwrap();
         Dependencies(cell)
@@ -48,7 +49,7 @@ impl Dependencies {
     /// dependencies.set(v.clone());
     /// assert_eq!(*dependencies.get().unwrap(), v);
     /// ```
-    pub fn set(&self, v: Vec<(usize, usize)>) {
+    pub fn set(&self, v: Vec<(usize, Label)>) {
         self.0
             .set(v)
             .expect("should be the first time setting dependencies")
@@ -70,7 +71,7 @@ impl Dependencies {
     /// let dependencies = Dependencies::new();
     /// assert!(dependencies.get().is_none());
     /// ```
-    pub fn get(&self) -> Option<&Vec<(usize, usize)>> {
+    pub fn get(&self) -> Option<&Vec<(usize, Label)>> {
         self.0.get()
     }
 }

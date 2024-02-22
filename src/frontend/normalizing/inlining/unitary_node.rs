@@ -143,8 +143,8 @@ impl UnitaryNode {
                  expression,
                  ..
              }| {
-                for (to, weight) in expression.get_dependencies() {
-                    graph.add_edge(*from, *to, Label::Weight(*weight));
+                for (to, label) in expression.get_dependencies() {
+                    graph.add_edge(*from, *to, label.clone());
                 }
             },
         );
