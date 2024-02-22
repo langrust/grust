@@ -121,7 +121,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut Vec<String>) -> Ex
                 let arguments = arguments
                     .into_iter()
                     .map(|expression| rust_ast_from_lir(expression, crates));
-                parse_quote!(#function (#(#arguments),*))
+                parse_quote! { (#function)(#(#arguments),*) }
             }
         },
         Expression::NodeCall {
