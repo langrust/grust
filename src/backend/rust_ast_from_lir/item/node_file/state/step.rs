@@ -3,12 +3,11 @@ use crate::backend::rust_ast_from_lir::expression::{
 };
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
-use crate::common::convert_case::camel_case;
-use crate::common::scope::Scope;
+use crate::common::{convert_case::camel_case, r#type::Type as GRRustType, scope::Scope};
 use crate::lir::contract::{Contract, Term};
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::parse_quote;
 use syn::*;
 
@@ -80,10 +79,36 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut Vec<String>) -> ImplItemFn {
     attributes.append(&mut ensures_attributes);
     attributes.append(&mut invariant_attributes);
 
+    // create generics
+    let mut generic_params: Vec<GenericParam> = vec![];
+    let mut generic_idents: Vec<Ident> = vec![];
+    for (generic_name, generic_type) in step.generics {
+        if let GRRustType::Abstract(arguments, output) = generic_type {
+            let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
+            let output = type_rust_ast_from_lir(*output);
+            let identifier = format_ident!("{generic_name}");
+            generic_params.push(parse_quote! { #identifier: Fn(#(#arguments),*) -> #output });
+            generic_idents.push(identifier);
+        } else {
+            unreachable!()
+        }
+    }
+    let generics = if generic_params.is_empty() {
+        Default::default()
+    } else {
+        parse_quote! { <#(#generic_params),*> }
+    };
+
     let input_ty_name = Ident::new(
         &camel_case(&format!("{}Input", step.node_name)),
         Span::call_site(),
     );
+    let ty = if generic_idents.is_empty() {
+        parse_quote! { #input_ty_name }
+    } else {
+        parse_quote! { #input_ty_name<#(#generic_idents),*> }
+    };
+
     let inputs = vec![
         parse_quote!(&mut self),
         FnArg::Typed(PatType {
@@ -96,7 +121,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut Vec<String>) -> ImplItemFn {
                 subpat: None,
             })),
             colon_token: Default::default(),
-            ty: parse_quote!(#input_ty_name),
+            ty,
         }),
     ]
     .into_iter()
@@ -109,7 +134,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut Vec<String>) -> ImplItemFn {
         abi: None,
         fn_token: Default::default(),
         ident: Ident::new("step", Span::call_site()),
-        generics: Default::default(),
+        generics,
         paren_token: Default::default(),
         inputs,
         variadic: None,
@@ -188,6 +213,7 @@ mod rust_ast_from_lir {
         let init = Step {
             contract: Default::default(),
             node_name: format!("Node"),
+            generics: vec![],
             output_type: Type::Integer,
             body: vec![
                 Statement::Let {

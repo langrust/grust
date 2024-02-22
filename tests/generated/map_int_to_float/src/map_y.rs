@@ -7,7 +7,7 @@ impl MapYState {
     pub fn init() -> MapYState {
         MapYState {}
     }
-    pub fn step(&mut self, input: MapYInput) -> f64 {
+    pub fn step<F: Fn(i64) -> f64>(&mut self, input: MapYInput<F>) -> f64 {
         let y = (input.f)(input.x);
         y
     }

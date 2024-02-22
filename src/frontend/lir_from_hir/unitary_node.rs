@@ -90,7 +90,7 @@ impl LIRFromHIR for UnitaryNode {
                     .into_iter()
                     .map(|(identifier, r#type)| InputElement { identifier, r#type })
                     .collect(),
-                generics,
+                generics: generics.clone(),
             },
             state: State {
                 node_name: name.clone(),
@@ -98,6 +98,7 @@ impl LIRFromHIR for UnitaryNode {
                 step: Step {
                     contract: self.contract.lir_from_hir(symbol_table),
                     node_name: name.clone(),
+                    generics,
                     output_type,
                     body: statements
                         .into_iter()

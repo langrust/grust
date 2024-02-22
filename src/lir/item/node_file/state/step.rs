@@ -8,6 +8,8 @@ use crate::{
 pub struct Step {
     /// The node's name.
     pub node_name: String,
+    /// The input's generic types.
+    pub generics: Vec<(String, Type)>,
     /// The output type.
     pub output_type: Type,
     /// The body of the step function.
