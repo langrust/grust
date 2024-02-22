@@ -1,5 +1,5 @@
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::common::convert_case::camel_case;
+use crate::common::{convert_case::camel_case, r#type::Type as GRRustType};
 use crate::lir::item::node_file::input::{Input, InputElement};
 use quote::format_ident;
 use syn::*;
@@ -13,10 +13,30 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
         fields.push(parse_quote! { pub #identifier : #ty });
     }
 
+    let mut generics: Vec<GenericParam> = vec![];
+    for (generic_name, generic_type) in input.generics {
+        if let GRRustType::Abstract(arguments, output) = generic_type {
+            let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
+            let output = type_rust_ast_from_lir(*output);
+            let identifier = format_ident!("{generic_name}");
+            generics.push(parse_quote! { #identifier: Fn(#(#arguments),*) -> #output });
+        } else {
+            unreachable!()
+        }
+    }
+
     let name = format_ident!("{}", camel_case(&format!("{}Input", input.node_name)));
-    parse_quote! {
-        pub struct #name {
-            #(#fields),*
+    if generics.is_empty() {
+        parse_quote! {
+            pub struct #name {
+                #(#fields),*
+            }
+        }
+    } else {
+        parse_quote! {
+            pub struct #name<#(#generics),*> {
+                #(#fields),*
+            }
         }
     }
 }
@@ -36,6 +56,7 @@ mod rust_ast_from_lir {
                 identifier: format!("i"),
                 r#type: Type::Integer,
             }],
+            generics: vec![],
         };
         let control = parse_quote!(
             pub struct NodeInput {

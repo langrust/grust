@@ -40,14 +40,16 @@ pub enum Type {
     Enumeration { name: String, id: usize },
     /// User defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
     Structure { name: String, id: usize },
-    /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
-    NotDefinedYet(String),
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
     Abstract(Vec<Type>, Box<Type>),
-    /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Type -> t -> 't -> 't`
-    Polymorphism(fn(Vec<Type>, Location) -> Result<Type, Error>),
     /// Tuple type, if `z = zip(a, b)` with `a: [int; 5]` and `b: [float; 5]` then `z: [(int, float); 5]`
     Tuple(Vec<Type>),
+    /// Generic type.
+    Generic(String),
+    /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
+    NotDefinedYet(String),
+    /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Type -> t -> 't -> 't`
+    Polymorphism(fn(Vec<Type>, Location) -> Result<Type, Error>),
     /// Match any type.
     Any,
 }
@@ -77,20 +79,23 @@ impl serde::Serialize for Type {
             Type::Structure { name, .. } => {
                 serializer.serialize_newtype_variant("Type", 8, "Structure", name)
             }
-            Type::NotDefinedYet(name) => {
-                serializer.serialize_newtype_variant("Type", 9, "NotDefinedYet", name)
-            }
             Type::Abstract(inputs_types, returned_type) => {
-                let mut s = serializer.serialize_tuple_variant("Type", 10, "Abstract", 2)?;
+                let mut s = serializer.serialize_tuple_variant("Type", 9, "Abstract", 2)?;
                 serde::ser::SerializeTupleVariant::serialize_field(&mut s, inputs_types)?;
                 serde::ser::SerializeTupleVariant::serialize_field(&mut s, returned_type)?;
                 serde::ser::SerializeTupleVariant::end(s)
             }
-            Type::Polymorphism(_) => serializer.serialize_unit_variant("Type", 11, "Polymorphism"),
             Type::Tuple(tuple_types) => {
-                serializer.serialize_newtype_variant("Type", 12, "Tuple", tuple_types)
+                serializer.serialize_newtype_variant("Type", 10, "Tuple", tuple_types)
             }
-            Type::Any => serializer.serialize_unit_variant("Type", 0, "Any"),
+            Type::Generic(name) => {
+                serializer.serialize_newtype_variant("Type", 11, "Generic", name)
+            }
+            Type::NotDefinedYet(name) => {
+                serializer.serialize_newtype_variant("Type", 12, "NotDefinedYet", name)
+            }
+            Type::Polymorphism(_) => serializer.serialize_unit_variant("Type", 13, "Polymorphism"),
+            Type::Any => serializer.serialize_unit_variant("Type", 14, "Any"),
         }
     }
 }
@@ -106,7 +111,6 @@ impl Display for Type {
             Type::Option(t) => write!(f, "Option<{}>", *t),
             Type::Enumeration { name, .. } => write!(f, "{name}"),
             Type::Structure { name, .. } => write!(f, "{name}"),
-            Type::NotDefinedYet(s) => write!(f, "{s}"),
             Type::Abstract(t1, t2) => write!(
                 f,
                 "({}) -> {}",
@@ -116,7 +120,6 @@ impl Display for Type {
                     .join(", "),
                 *t2
             ),
-            Type::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
             Type::Tuple(ts) => write!(
                 f,
                 "({})",
@@ -125,6 +128,9 @@ impl Display for Type {
                     .collect::<Vec<_>>()
                     .join(", "),
             ),
+            Type::Generic(name) => write!(f, "{name}"),
+            Type::NotDefinedYet(s) => write!(f, "{s}"),
+            Type::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
             Type::Any => write!(f, "any"),
         }
     }

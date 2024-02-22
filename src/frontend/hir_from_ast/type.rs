@@ -63,6 +63,7 @@ impl Type {
             | Type::Structure { .. } // no structure at this time: they are `NotDefinedYet`
             | Type::Any // users can not write `Any` type
             | Type::Polymorphism(_) // users can not write `Polymorphism` type
+            | Type::Generic(_) // users can not write `Generic` type
              => unreachable!(),
         }
     }
