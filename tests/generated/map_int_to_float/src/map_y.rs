@@ -1,6 +1,6 @@
-pub struct MapYInput {
+pub struct MapYInput<F: Fn(i64) -> f64> {
     pub x: i64,
-    pub f: impl Fn(i64) -> f64,
+    pub f: F,
 }
 pub struct MapYState {}
 impl MapYState {

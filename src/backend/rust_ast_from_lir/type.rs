@@ -38,6 +38,10 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
 
             parse_quote!((#(#tys),*))
         }
+        Type::Generic(name) => {
+            let identifier = Ident::new(&name, Span::call_site());
+            parse_quote!(#identifier)
+        }
         Type::NotDefinedYet(_) | Type::Polymorphism(_) => unreachable!(),
     }
 }

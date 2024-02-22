@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    hir::unitary_node::UnitaryNode,
+    hir::{identifier_creator::IdentifierCreator, unitary_node::UnitaryNode},
     lir::{
         expression::Expression as LIRExpression,
         item::node_file::{
@@ -30,7 +30,7 @@ impl LIRFromHIR for UnitaryNode {
         let name = symbol_table.get_name(&id);
 
         // get node inputs
-        let inputs = symbol_table
+        let mut inputs = symbol_table
             .get_unitary_node_inputs(&id)
             .into_iter()
             .map(|id| {
@@ -42,7 +42,7 @@ impl LIRFromHIR for UnitaryNode {
             .collect::<Vec<_>>();
 
         // get node output type
-        let output_type = symbol_table.get_unitary_node_output_type(&id).clone();
+        let mut output_type = symbol_table.get_unitary_node_output_type(&id).clone();
 
         let output_expression = LIRExpression::Identifier {
             identifier: symbol_table.get_unitary_node_output_name(&id).clone(),
@@ -68,6 +68,16 @@ impl LIRFromHIR for UnitaryNode {
         imports.append(&mut memory_imports);
         let imports = imports.into_iter().unique().collect::<Vec<_>>();
 
+        // get input's generics: function types in inputs
+        let mut identifier_creator = IdentifierCreator::from(vec![]);
+        let mut generics = inputs
+            .iter_mut()
+            .flat_map(|(_, typing)| typing.get_generics(&mut identifier_creator))
+            .collect::<Vec<_>>();
+        let mut output_generics = output_type.get_generics(&mut identifier_creator);
+        generics.append(&mut output_generics);
+
+        // get memory/state elements
         let (elements, state_elements_init, state_elements_step) =
             memory.get_state_elements(symbol_table);
 
@@ -80,6 +90,7 @@ impl LIRFromHIR for UnitaryNode {
                     .into_iter()
                     .map(|(identifier, r#type)| InputElement { identifier, r#type })
                     .collect(),
+                generics,
             },
             state: State {
                 node_name: name.clone(),
