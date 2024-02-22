@@ -1,5 +1,5 @@
 [package]
-name = "contract_denpendencies_transitive"
+name = "contract_dependencies_transitive"
 version = "0.1.0"
 edition = "2021"
 authors = ["Émilie THOMÉ <emilie.e.thome@renault.com>"]
