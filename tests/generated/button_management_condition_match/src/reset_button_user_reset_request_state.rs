@@ -8,24 +8,24 @@ pub struct ResetButtonUserResetRequestStateInput {
 }
 pub struct ResetButtonUserResetRequestStateState {
     mem_res: bool,
-    counter_o_counter: CounterOState,
+    counter_o: CounterOState,
 }
 impl ResetButtonUserResetRequestStateState {
     pub fn init() -> ResetButtonUserResetRequestStateState {
         ResetButtonUserResetRequestStateState {
             mem_res: true,
-            counter_o_counter: CounterOState::init(),
+            counter_o: CounterOState::init(),
         }
     }
     pub fn step(&mut self, input: ResetButtonUserResetRequestStateInput) -> ResetState {
         let res = (input.button_state == Button::Pressed) && (self.mem_res);
         let counter = self
-            .counter_o_counter
+            .counter_o
             .step(CounterOInput {
                 res: res,
                 inc: input.period,
             });
-        let user_reset_request_state = match input.button_state {
+        let user_reset_request_state = match (input.button_state) {
             Button::Released => ResetState::Confirmed,
             Button::Pressed if counter >= input.reset_limit_1 => ResetState::InProgress,
             _ => ResetState::Confirmed,

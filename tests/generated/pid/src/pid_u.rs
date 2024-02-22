@@ -7,21 +7,21 @@ pub struct PidUInput {
     pub dt: f64,
 }
 pub struct PidUState {
-    derive_d_e_d: DeriveDState,
-    integrate_i_e_i: IntegrateIState,
+    integrate_i: IntegrateIState,
+    derive_d: DeriveDState,
 }
 impl PidUState {
     pub fn init() -> PidUState {
         PidUState {
-            derive_d_e_d: DeriveDState::init(),
-            integrate_i_e_i: IntegrateIState::init(),
+            integrate_i: IntegrateIState::init(),
+            derive_d: DeriveDState::init(),
         }
     }
     pub fn step(&mut self, input: PidUInput) -> f64 {
         let e = input.v_c - input.v;
-        let e_d = self.derive_d_e_d.step(DeriveDInput { x: e, dt: input.dt });
+        let e_d = self.derive_d.step(DeriveDInput { x: e, dt: input.dt });
         let e_i = self
-            .integrate_i_e_i
+            .integrate_i
             .step(IntegrateIInput {
                 x: e,
                 dt: input.dt,
@@ -31,7 +31,7 @@ impl PidUState {
             k_i: 1.5f64,
             k_d: 6f64,
         };
-        let u = match gain {
+        let u = match (gain) {
             GainPID { k_p: k_p, k_i: k_i, k_d: k_d } => k_p * e + k_i * e_i + k_d * e_d,
         };
         u

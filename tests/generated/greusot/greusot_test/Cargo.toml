@@ -7,4 +7,4 @@ authors = ["Émilie THOMÉ <emilie.e.thome@renault.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-creusot-contract = { path = "~/Documents/github/creusot/creusot-contracts" }
+
