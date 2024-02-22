@@ -3,6 +3,7 @@ pub fn min(a: f64, b: f64) -> f64 {
     let result = if test { b } else { a };
     result
 }
+use crate::typedefs::GainPID;
 pub fn access_k_p(gain: GainPID) -> f64 {
     gain.k_p
 }

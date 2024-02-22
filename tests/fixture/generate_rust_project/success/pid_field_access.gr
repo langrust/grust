@@ -21,25 +21,13 @@ node derive(x: float, dt: float) {
     prev_x: float = 0.0 fby x;
 }
 
-function access_k_p(gain: GainPID) -> float {
-    return gain::k_p;
-}
-
-function access_k_i(gain: GainPID) -> float {
-    return gain::k_i;
-}
-
-function access_k_d(gain: GainPID) -> float {
-    return gain::k_d;
-}
-
 component pid(v_c: float, v: float, dt: float) {
     gain: GainPID = GainPID {
         k_p: 0.2,
         k_i: 1.5,
         k_d: 6.0,
     };
-    out u: float = access_k_p(gain) * e + access_k_i(gain) * e_i + access_k_d(gain) * e_d;
+    out u: float = gain.k_p * e + gain.k_i * e_i + gain.k_d * e_d;
     e: float = v_c - v;
     e_i: float = integrate(e, dt).i;
     e_d: float = derive(e, dt).d;

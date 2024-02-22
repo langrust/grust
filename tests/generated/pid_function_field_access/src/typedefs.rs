@@ -1,3 +1,4 @@
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GainPID {
     pub k_p: f64,
     pub k_i: f64,
