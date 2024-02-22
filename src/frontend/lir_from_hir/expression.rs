@@ -91,7 +91,13 @@ where
                 LIRExpression::Lambda {
                     inputs,
                     output,
-                    body: Box::new(expression.lir_from_hir(symbol_table)),
+                    body: Box::new(LIRExpression::Block {
+                        block: Block {
+                            statements: vec![Statement::ExpressionLast {
+                                expression: expression.lir_from_hir(symbol_table),
+                            }],
+                        },
+                    }),
                 }
             }
             ExpressionKind::Structure { id, fields, .. } => LIRExpression::Structure {

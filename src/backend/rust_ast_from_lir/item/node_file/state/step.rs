@@ -173,9 +173,6 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut Vec<String>) -> ImplItemFn {
         )
         .collect::<Vec<_>>();
 
-    // let output_statement =
-    //     Statement::ExpressionLast(expression_rust_ast_from_lir(step.output_expression));
-
     let output_statement = Stmt::Expr(
         expression_rust_ast_from_lir(step.output_expression, crates),
         None,
