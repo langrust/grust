@@ -3,8 +3,10 @@ use crate::backend::rust_ast_from_lir::{
     item::import::rust_ast_from_lir as import_rust_ast_from_lir,
     r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
+use crate::common::r#type::Type as GRRustType;
 use crate::lir::item::function::Function;
 use proc_macro2::Span;
+use quote::format_ident;
 use syn::*;
 
 /// Transform LIR function into RustAST function.
@@ -14,6 +16,24 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut Vec<String>) -> Vec<It
         .into_iter()
         .map(|import| Item::Use(import_rust_ast_from_lir(import)))
         .collect::<Vec<_>>();
+
+    // create generics
+    let mut generic_params: Vec<GenericParam> = vec![];
+    for (generic_name, generic_type) in function.generics {
+        if let GRRustType::Abstract(arguments, output) = generic_type {
+            let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
+            let output = type_rust_ast_from_lir(*output);
+            let identifier = format_ident!("{generic_name}");
+            generic_params.push(parse_quote! { #identifier: Fn(#(#arguments),*) -> #output });
+        } else {
+            unreachable!()
+        }
+    }
+    let generics = if generic_params.is_empty() {
+        Default::default()
+    } else {
+        parse_quote! { <#(#generic_params),*> }
+    };
 
     let inputs = function
         .inputs
@@ -36,7 +56,7 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut Vec<String>) -> Vec<It
         abi: None,
         fn_token: Default::default(),
         ident: Ident::new(&function.name, Span::call_site()),
-        generics: Default::default(),
+        generics,
         paren_token: Default::default(),
         inputs,
         variadic: None,
@@ -71,6 +91,7 @@ mod rust_ast_from_lir {
     fn should_create_rust_ast_function_from_lir_function() {
         let function = Function {
             name: String::from("foo"),
+            generics: vec![],
             inputs: vec![
                 (String::from("a"), Type::Integer),
                 (String::from("b"), Type::Integer),
