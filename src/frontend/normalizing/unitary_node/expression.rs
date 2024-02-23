@@ -45,9 +45,11 @@ impl ExpressionKind<StreamExpression> {
                     expression.change_node_application_into_unitary_node_application(symbol_table)
                 })
             }
-            ExpressionKind::Array { elements } => elements.iter_mut().for_each(|expression| {
-                expression.change_node_application_into_unitary_node_application(symbol_table)
-            }),
+            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
+                elements.iter_mut().for_each(|expression| {
+                    expression.change_node_application_into_unitary_node_application(symbol_table)
+                })
+            }
             ExpressionKind::Match { expression, arms } => {
                 expression.change_node_application_into_unitary_node_application(symbol_table);
                 arms.iter_mut().for_each(|(_, option, block, expression)| {

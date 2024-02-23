@@ -120,6 +120,14 @@ where
                     .into_iter()
                     .collect::<Result<Vec<_>, _>>()?,
             }),
+            ExpressionKind::Tuple { elements } => Ok(HIRExpressionKind::Tuple {
+                elements: elements
+                    .into_iter()
+                    .map(|expression| expression.hir_from_ast(symbol_table, errors))
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?,
+            }),
             ExpressionKind::Match { expression, arms } => Ok(HIRExpressionKind::Match {
                 expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
                 arms: arms

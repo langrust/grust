@@ -311,6 +311,7 @@ mod langrust_ast_constructs {
         let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
         let file_id21 = files.add("zip_test.gr", "zip(a,b)");
         let file_id22 = files.add("tuple_element_access_test.gr", "my_tuple.0");
+        let file_id23 = files.add("tuple.gr", "(0, 1, 2)");
 
         let stream_expression = langrust::streamExpressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -1264,6 +1265,45 @@ mod langrust_ast_constructs {
             },
             stream_expression
         );
+        let stream_expression = langrust::streamExpressionParser::new()
+            .parse(file_id23, &files.source(file_id23).unwrap())
+            .unwrap();
+        assert_eq!(
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Tuple {
+                        elements: vec![
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Integer(0)
+                                    }
+                                },
+                                location: Location::default(),
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Integer(1)
+                                    }
+                                },
+                                location: Location::default(),
+                            },
+                            StreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Constant {
+                                        constant: Constant::Integer(2)
+                                    }
+                                },
+                                location: Location::default(),
+                            },
+                        ]
+                    }
+                },
+                location: Location::default()
+            },
+            stream_expression
+        );
     }
 
     #[test]
@@ -1294,6 +1334,7 @@ mod langrust_ast_constructs {
         let file_id20 = files.add("sort_test.gr", "l.sort(|a, b| a - b)");
         let file_id21 = files.add("zip_test.gr", "zip(a,b)");
         let file_id22 = files.add("tuple_element_access_test.gr", "my_tuple.0");
+        let file_id23 = files.add("tuple.gr", "(0, 1, 2)");
 
         let expression = langrust::expressionParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
@@ -2071,6 +2112,37 @@ mod langrust_ast_constructs {
                         location: Location::default()
                     }),
                     element_number: 0
+                },
+                location: Location::default()
+            },
+            expression
+        );
+        let expression = langrust::expressionParser::new()
+            .parse(file_id23, &files.source(file_id23).unwrap())
+            .unwrap();
+        assert_eq!(
+            Expression {
+                kind: ExpressionKind::Tuple {
+                    elements: vec![
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Integer(0)
+                            },
+                            location: Location::default(),
+                        },
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Integer(1)
+                            },
+                            location: Location::default(),
+                        },
+                        Expression {
+                            kind: ExpressionKind::Constant {
+                                constant: Constant::Integer(2)
+                            },
+                            location: Location::default(),
+                        },
+                    ]
                 },
                 location: Location::default()
             },

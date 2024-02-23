@@ -17,6 +17,7 @@ mod r#match;
 mod sort;
 mod structure;
 mod tuple_element_access;
+mod tuple;
 mod when;
 mod zip;
 
@@ -41,6 +42,7 @@ where
                 self.typing_structure(location, symbol_table, errors)
             }
             ExpressionKind::Array { .. } => self.typing_array(location, symbol_table, errors),
+            ExpressionKind::Tuple { .. } => self.typing_tuple(location, symbol_table, errors),
             ExpressionKind::When { .. } => self.typing_when(location, symbol_table, errors),
             ExpressionKind::Match { .. } => self.typing_match(location, symbol_table, errors),
             ExpressionKind::FieldAccess { .. } => {

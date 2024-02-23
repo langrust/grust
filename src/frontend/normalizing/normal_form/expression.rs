@@ -86,7 +86,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::Array { elements, .. } => {
+            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
                 let new_statements = elements
                     .iter_mut()
                     .flat_map(|expression| {

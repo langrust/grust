@@ -20,6 +20,7 @@ mod map;
 mod r#match;
 mod sort;
 mod structure;
+mod tuple;
 mod tuple_element_access;
 mod when;
 mod zip;
@@ -75,6 +76,15 @@ impl ExpressionKind<StreamExpression> {
                 errors,
             ),
             ExpressionKind::Array { .. } => self.compute_array_dependencies(
+                symbol_table,
+                nodes_context,
+                nodes_processus_manager,
+                nodes_reduced_processus_manager,
+                nodes_graphs,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Tuple { .. } => self.compute_tuple_dependencies(
                 symbol_table,
                 nodes_context,
                 nodes_processus_manager,

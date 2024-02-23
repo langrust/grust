@@ -209,7 +209,7 @@ impl StreamExpression {
                     .collect::<Vec<Result<_, _>>>()
                     .into_iter()
                     .collect::<Result<_, _>>(),
-                ExpressionKind::Array { elements } => elements
+                ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => elements
                     .iter()
                     .map(|expression| expression.check_is_constant(symbol_table, errors))
                     .collect::<Vec<Result<_, _>>>()

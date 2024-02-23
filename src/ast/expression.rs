@@ -42,6 +42,11 @@ pub enum ExpressionKind<E> {
         /// The fields associated with their expressions.
         fields: Vec<(String, E)>,
     },
+    /// Tuple expression.
+    Tuple {
+        /// The elements.
+        elements: Vec<E>,
+    },
     /// Enumeration expression.
     Enumeration {
         /// The enumeration name.
