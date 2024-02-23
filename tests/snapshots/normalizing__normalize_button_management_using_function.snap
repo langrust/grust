@@ -221,7 +221,15 @@ nodes:
                                             - kind:
                                                 FollowedBy:
                                                   constant:
-                                                    Integer: 0
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Constant:
+                                                            constant:
+                                                              Integer: 0
+                                                    typing: Integer
+                                                    location: ~
+                                                    dependencies: []
                                                   expression:
                                                     kind:
                                                       Expression:
@@ -395,8 +403,16 @@ nodes:
           buffers:
             44:
               typing: Integer
-              initial_value:
-                Integer: 0
+              initial_expression:
+                kind:
+                  Expression:
+                    expression:
+                      Constant:
+                        constant:
+                          Integer: 0
+                typing: Integer
+                location: ~
+                dependencies: []
               expression:
                 kind:
                   Expression:
@@ -568,7 +584,15 @@ nodes:
                       - kind:
                           FollowedBy:
                             constant:
-                              Boolean: false
+                              kind:
+                                Expression:
+                                  expression:
+                                    Constant:
+                                      constant:
+                                        Boolean: false
+                              typing: Boolean
+                              location: ~
+                              dependencies: []
                             expression:
                               kind:
                                 Expression:
@@ -835,7 +859,15 @@ nodes:
                                 - kind:
                                     FollowedBy:
                                       constant:
-                                        Boolean: true
+                                        kind:
+                                          Expression:
+                                            expression:
+                                              Constant:
+                                                constant:
+                                                  Boolean: true
+                                        typing: Boolean
+                                        location: ~
+                                        dependencies: []
                                       expression:
                                         kind:
                                           Expression:
@@ -1133,8 +1165,16 @@ nodes:
           buffers:
             45:
               typing: Boolean
-              initial_value:
-                Boolean: true
+              initial_expression:
+                kind:
+                  Expression:
+                    expression:
+                      Constant:
+                        constant:
+                          Boolean: true
+                typing: Boolean
+                location: ~
+                dependencies: []
               expression:
                 kind:
                   Expression:
@@ -1555,8 +1595,16 @@ nodes:
           buffers:
             47:
               typing: Boolean
-              initial_value:
-                Boolean: true
+              initial_expression:
+                kind:
+                  Expression:
+                    expression:
+                      Constant:
+                        constant:
+                          Boolean: true
+                typing: Boolean
+                location: ~
+                dependencies: []
               expression:
                 kind:
                   Expression:
@@ -1604,8 +1652,16 @@ nodes:
                     - Weight: 0
             48:
               typing: Boolean
-              initial_value:
-                Boolean: false
+              initial_expression:
+                kind:
+                  Expression:
+                    expression:
+                      Constant:
+                        constant:
+                          Boolean: false
+                typing: Boolean
+                location: ~
+                dependencies: []
               expression:
                 kind:
                   Expression:
@@ -1705,4 +1761,3 @@ nodes:
       : Weight: 0
 component: ~
 location: ~
-
