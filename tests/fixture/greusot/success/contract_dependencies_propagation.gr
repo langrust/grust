@@ -8,5 +8,4 @@ node transitive(i: int, j: int)
 
 node using(i: int, j: int) {
 	out o: int = transitive(i, j).o;
-	out phantom: int = j;
 }
