@@ -99,7 +99,10 @@ impl Pattern {
                 self.typing = Some(Type::Option(Box::new(Type::Any)));
                 Ok(())
             }
-            PatternKind::Default => Ok(()),
+            PatternKind::Default => {
+                self.typing = Some(Type::Any);
+                Ok(())
+            },
         }
     }
 }
