@@ -102,7 +102,7 @@ impl Pattern {
             PatternKind::Default => {
                 self.typing = Some(Type::Any);
                 Ok(())
-            },
+            }
         }
     }
 }
