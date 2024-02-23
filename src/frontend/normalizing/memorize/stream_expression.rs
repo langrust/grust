@@ -57,7 +57,7 @@ impl StreamExpression {
                     symbol_table.insert_fresh_signal(memory_name, Scope::Memory, typing);
 
                 // add buffer to memory
-                memory.add_buffer(memory_id, constant.clone(), *expression.clone());
+                memory.add_buffer(memory_id, *constant.clone(), *expression.clone());
 
                 // replace signal id by memory id in contract
                 // (Creusot only has access to function input and output in its contract)

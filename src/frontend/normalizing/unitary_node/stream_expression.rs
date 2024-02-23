@@ -30,8 +30,14 @@ impl StreamExpression {
                 expression.change_node_application_into_unitary_node_application(symbol_table)
             }
             StreamExpressionKind::FollowedBy {
-                ref mut expression, ..
-            } => expression.change_node_application_into_unitary_node_application(symbol_table),
+                ref mut expression,
+                ref constant,
+            } => {
+                // constant should not have node application
+                debug_assert!(constant.no_any_node_application());
+
+                expression.change_node_application_into_unitary_node_application(symbol_table)
+            }
             StreamExpressionKind::NodeApplication {
                 node_id,
                 inputs,

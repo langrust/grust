@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::common::{constant::Constant, r#type::Type};
+use crate::common::r#type::Type;
 
 use crate::hir::stream_expression::StreamExpression;
 
@@ -24,7 +24,7 @@ pub struct Buffer {
     /// Buffer type.
     pub typing: Type,
     /// Buffer initial value.
-    pub initial_value: Constant,
+    pub initial_expression: StreamExpression,
     /// Buffer update expression.
     pub expression: StreamExpression,
 }
@@ -95,17 +95,17 @@ impl Memory {
     pub fn add_buffer(
         &mut self,
         memory_id: usize,
-        initial_value: Constant,
+        initial_expression: StreamExpression,
         expression: StreamExpression,
     ) {
-        let typing = initial_value.get_type();
+        let typing = initial_expression.get_type().unwrap().clone();
         debug_assert!(self
             .buffers
             .insert(
                 memory_id,
                 Buffer {
                     typing,
-                    initial_value,
+                    initial_expression,
                     expression
                 }
             )

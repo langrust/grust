@@ -1,4 +1,4 @@
-use crate::{ast::contract::Term, common::constant::Constant};
+use crate::{ast::contract::Term, lir::expression::Expression};
 
 /// A init function.
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -19,7 +19,7 @@ pub enum StateElementInit {
         /// The name of the buffer.
         identifier: String,
         /// The initial value.
-        initial_value: Constant,
+        initial_expression: Expression,
     },
     /// A called node initialization.
     CalledNodeInit {

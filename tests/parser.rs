@@ -584,7 +584,14 @@ mod langrust_ast_constructs {
         assert_eq!(
             StreamExpression {
                 kind: StreamExpressionKind::FollowedBy {
-                    constant: Constant::Integer(0),
+                    constant: Box::new(StreamExpression {
+                        kind: StreamExpressionKind::Expression {
+                            expression: ExpressionKind::Constant {
+                                constant: Constant::Integer(0)
+                            }
+                        },
+                        location: Location::default()
+                    }),
                     expression: Box::new(StreamExpression {
                         kind: StreamExpressionKind::Expression {
                             expression: ExpressionKind::Application {

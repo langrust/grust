@@ -33,18 +33,19 @@ impl TypeAnalysis for StreamExpression {
     ) -> Result<(), TerminationError> {
         match self.kind {
             StreamExpressionKind::FollowedBy {
-                ref constant,
+                ref mut constant,
                 ref mut expression,
             } => {
-                // type expression
+                // type expressions
+                constant.typing(symbol_table, errors)?;
                 expression.typing(symbol_table, errors)?;
 
                 // check it is equal to constant type
                 let expression_type = expression.get_type().unwrap();
-                let constant_type = constant.get_type();
-                expression_type.eq_check(&constant_type, self.location.clone(), errors)?;
+                let constant_type = constant.get_type().unwrap();
+                expression_type.eq_check(constant_type, self.location.clone(), errors)?;
 
-                self.typing = Some(constant_type);
+                self.typing = Some(constant_type.clone());
                 Ok(())
             }
 
