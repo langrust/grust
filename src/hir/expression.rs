@@ -165,19 +165,20 @@ impl<E> ExpressionKind<E> {
                 inputs,
             } => {
                 predicate_expression(function_expression)
-                    && inputs.iter().all(|expression| predicate_expression(expression))
+                    && inputs
+                        .iter()
+                        .all(|expression| predicate_expression(expression))
             }
-            ExpressionKind::Structure { fields, .. } => {
-                fields.iter().all(|(_, expression)| predicate_expression(expression))
-            }
-            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
-                elements.iter().all(|expression| predicate_expression(expression))
-            }
+            ExpressionKind::Structure { fields, .. } => fields
+                .iter()
+                .all(|(_, expression)| predicate_expression(expression)),
+            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => elements
+                .iter()
+                .all(|expression| predicate_expression(expression)),
             ExpressionKind::Match { expression, arms } => {
                 predicate_expression(expression)
                     && arms.iter().all(|(_, option, body, expression)| {
-                        body.iter()
-                            .all(|statement| predicate_statement(statement))
+                        body.iter().all(|statement| predicate_statement(statement))
                             && option
                                 .as_ref()
                                 .map_or(true, |expression| predicate_expression(expression))
@@ -203,7 +204,9 @@ impl<E> ExpressionKind<E> {
                     && predicate_expression(default)
             }
             ExpressionKind::FieldAccess { expression, .. } => predicate_expression(expression),
-            ExpressionKind::TupleElementAccess { expression, .. } => predicate_expression(expression),
+            ExpressionKind::TupleElementAccess { expression, .. } => {
+                predicate_expression(expression)
+            }
             ExpressionKind::Map {
                 expression,
                 function_expression,
@@ -221,7 +224,9 @@ impl<E> ExpressionKind<E> {
                 expression,
                 function_expression,
             } => predicate_expression(expression) && predicate_expression(function_expression),
-            ExpressionKind::Zip { arrays } => arrays.iter().all(|expression| predicate_expression(expression)),
+            ExpressionKind::Zip { arrays } => arrays
+                .iter()
+                .all(|expression| predicate_expression(expression)),
         }
     }
 }

@@ -16,8 +16,8 @@ mod map;
 mod r#match;
 mod sort;
 mod structure;
-mod tuple_element_access;
 mod tuple;
+mod tuple_element_access;
 mod when;
 mod zip;
 
