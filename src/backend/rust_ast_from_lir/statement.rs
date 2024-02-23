@@ -1,10 +1,12 @@
+use std::collections::BTreeSet;
+
 use super::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::lir::statement::Statement;
 use proc_macro2::Span;
 use syn::*;
 
 /// Transform LIR statement into RustAST statement.
-pub fn rust_ast_from_lir(statement: Statement, crates: &mut Vec<String>) -> Stmt {
+pub fn rust_ast_from_lir(statement: Statement, crates: &mut BTreeSet<String>) -> Stmt {
     match statement {
         Statement::Let {
             identifier,
@@ -51,7 +53,7 @@ mod rust_ast_from_lir {
         let control = parse_quote! {
             let x = 1i64;
         };
-        assert_eq!(rust_ast_from_lir(statement, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(statement, &mut Default::default()), control)
     }
 
     #[test]
@@ -71,7 +73,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { let o = self.node_state.step(NodeInput { i: 1i64 }); };
-        assert_eq!(rust_ast_from_lir(statement, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(statement, &mut Default::default()), control)
     }
 
     #[test]
@@ -83,6 +85,6 @@ mod rust_ast_from_lir {
         };
 
         let control = Stmt::Expr(parse_quote! { 1i64 }, None);
-        assert_eq!(rust_ast_from_lir(statement, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(statement, &mut Default::default()), control)
     }
 }

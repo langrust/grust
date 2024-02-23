@@ -7,9 +7,9 @@ use crate::common::operator::{BinaryOperator, UnaryOperator};
 use crate::lir::expression::{Expression, FieldIdentifier};
 use proc_macro2::{Span, TokenStream};
 use quote::format_ident;
-use syn::*;
+use std::collections::BTreeSet;
 use strum::IntoEnumIterator;
-
+use syn::*;
 
 /// Transforms binary operator into syn's binary operator.
 pub fn binary_to_syn(op: BinaryOperator) -> syn::BinOp {
@@ -39,7 +39,7 @@ pub fn unary_to_syn(op: UnaryOperator) -> Option<syn::UnOp> {
 }
 
 /// Transform LIR expression into RustAST expression.
-pub fn rust_ast_from_lir(expression: Expression, crates: &mut Vec<String>) -> Expr {
+pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) -> Expr {
     match expression {
         Expression::Literal { literal } => syn::parse_str(&format!("{literal}")).unwrap(),
         Expression::Identifier { identifier } => {
@@ -298,7 +298,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut Vec<String>) -> Ex
             })
         }
         Expression::Zip { arrays } => {
-            crates.push(String::from("itertools = \"0.12.1\""));
+            crates.insert(String::from("itertools = \"0.12.1\""));
             let arguments = arrays
                 .into_iter()
                 .map(|expression| rust_ast_from_lir(expression, crates));
@@ -337,7 +337,7 @@ mod rust_ast_from_lir {
             literal: Constant::Integer(1),
         };
         let control = parse_quote! { 1i64 };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -346,7 +346,7 @@ mod rust_ast_from_lir {
             identifier: String::from("x"),
         };
         let control = parse_quote! { x };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -355,7 +355,7 @@ mod rust_ast_from_lir {
             identifier: String::from("mem_x"),
         };
         let control = parse_quote! { self . mem_x};
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -364,7 +364,7 @@ mod rust_ast_from_lir {
             identifier: String::from("i"),
         };
         let control = parse_quote! { input . i};
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -387,7 +387,7 @@ mod rust_ast_from_lir {
             ],
         };
         let control = parse_quote! { Point { x : 1i64, y : 2i64 } };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -403,7 +403,7 @@ mod rust_ast_from_lir {
             ],
         };
         let control = parse_quote! { [1i64, 2i64] };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -426,7 +426,7 @@ mod rust_ast_from_lir {
             },
         };
         let control = parse_quote! { { let x = 1i64; x } };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -446,7 +446,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { foo (a, b) };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -466,7 +466,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { a + b };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -483,7 +483,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { self . node_state . step ( NodeInput { i : 1i64 }) };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -496,7 +496,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { my_point . x };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -524,7 +524,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { move |x: i64| -> i64 { let y = x; y } };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -550,7 +550,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { if test { 1i64 } else { 0i64 } };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -585,7 +585,7 @@ mod rust_ast_from_lir {
 
         let control =
             parse_quote! { match my_color { Color::Blue => 1i64, Color::Green => 0i64, } };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -600,7 +600,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { a . map (f) };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -618,7 +618,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { a . into_iter().fold(0i64, sum) };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -633,7 +633,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { a . sort (compare) };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 
     #[test]
@@ -650,6 +650,6 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { par_zip!(a, b) };
-        assert_eq!(rust_ast_from_lir(expression, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(expression, &mut Default::default()), control)
     }
 }

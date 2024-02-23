@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir as init_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir as step_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
@@ -11,7 +12,7 @@ pub mod init;
 pub mod step;
 
 /// Transform LIR state into RustAST structure and implementation.
-pub fn rust_ast_from_lir(state: State, crates: &mut Vec<String>) -> (ItemStruct, ItemImpl) {
+pub fn rust_ast_from_lir(state: State, crates: &mut BTreeSet<String>) -> (ItemStruct, ItemImpl) {
     let fields: Vec<Field> = state
         .elements
         .into_iter()

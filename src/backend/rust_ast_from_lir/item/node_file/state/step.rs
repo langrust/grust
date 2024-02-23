@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use crate::backend::rust_ast_from_lir::expression::{
     binary_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
 };
@@ -50,7 +51,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
 }
 
 /// Transform LIR step into RustAST implementation method.
-pub fn rust_ast_from_lir(step: Step, crates: &mut Vec<String>) -> ImplItemFn {
+pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemFn {
     let Contract {
         requires,
         ensures,
@@ -284,6 +285,6 @@ mod rust_ast_from_lir {
                 o + y
             }
         };
-        assert_eq!(rust_ast_from_lir(init, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(init, &mut Default::default()), control)
     }
 }
