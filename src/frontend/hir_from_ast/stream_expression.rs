@@ -131,15 +131,96 @@ impl HIRFromAST for StreamExpression {
             StreamExpressionKind::FollowedBy {
                 constant,
                 expression,
-            } => Ok(HIRStreamExpression {
-                kind: HIRStreamExpressionKind::FollowedBy {
-                    constant,
-                    expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
-                },
-                typing: None,
-                location: location,
-                dependencies: Dependencies::new(),
-            }),
+            } => {
+                // check the constant expression is indeed constant
+                constant.check_is_constant(symbol_table, errors)?;
+
+                Ok(HIRStreamExpression {
+                    kind: HIRStreamExpressionKind::FollowedBy {
+                        constant: Box::new(constant.hir_from_ast(symbol_table, errors)?),
+                        expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
+                    },
+                    typing: None,
+                    location: location,
+                    dependencies: Dependencies::new(),
+                })
+            }
+        }
+    }
+}
+
+impl StreamExpression {
+    fn check_is_constant(
+        &self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), TerminationError> {
+        match &self.kind {
+            StreamExpressionKind::Expression { expression } => match expression {
+                // Constant by default
+                ExpressionKind::Constant { .. } | ExpressionKind::Enumeration { .. } => Ok(()),
+                // Not constant by default
+                ExpressionKind::Abstraction { .. }
+                | ExpressionKind::TypedAbstraction { .. }
+                | ExpressionKind::Match { .. }
+                | ExpressionKind::When { .. }
+                | ExpressionKind::FieldAccess { .. }
+                | ExpressionKind::TupleElementAccess { .. }
+                | ExpressionKind::Map { .. }
+                | ExpressionKind::Fold { .. }
+                | ExpressionKind::Sort { .. }
+                | ExpressionKind::Zip { .. } => {
+                    let error = todo!();
+                    errors.push(error);
+                    Err(TerminationError)
+                }
+                // It depends
+                ExpressionKind::Identifier { id } => {
+                    // check id exists
+                    let id = symbol_table
+                        .get_identifier_id(&id, false, self.location.clone(), &mut vec![])
+                        .or_else(|_| {
+                            symbol_table.get_function_id(&id, false, self.location.clone(), errors)
+                        })?;
+                    // check it is a function or and operator
+                    if symbol_table.is_function(&id) {
+                        Ok(())
+                    } else {
+                        let error = todo!();
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
+                ExpressionKind::Application {
+                    function_expression,
+                    inputs,
+                } => {
+                    function_expression.check_is_constant(symbol_table, errors)?;
+                    inputs
+                        .iter()
+                        .map(|expression| expression.check_is_constant(symbol_table, errors))
+                        .collect::<Vec<Result<_, _>>>()
+                        .into_iter()
+                        .collect::<Result<_, _>>()
+                }
+                ExpressionKind::Structure { fields, .. } => fields
+                    .iter()
+                    .map(|(_, expression)| expression.check_is_constant(symbol_table, errors))
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<_, _>>(),
+                ExpressionKind::Array { elements } => elements
+                    .iter()
+                    .map(|expression| expression.check_is_constant(symbol_table, errors))
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<_, _>>(),
+            },
+            StreamExpressionKind::FollowedBy { .. } => {
+                let error = todo!();
+                errors.push(error);
+                Err(TerminationError)
+            }
         }
     }
 }

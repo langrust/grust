@@ -40,8 +40,12 @@ impl StreamExpression {
     ) -> Vec<Statement<StreamExpression>> {
         match self.kind {
             StreamExpressionKind::FollowedBy {
-                ref mut expression, ..
+                ref mut expression,
+                ref constant,
             } => {
+                // constant should already be in normal form
+                debug_assert!(constant.is_normal_form());
+
                 let new_statements =
                     expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 

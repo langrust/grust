@@ -41,8 +41,11 @@ impl StreamExpression {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match &self.kind {
-            StreamExpressionKind::FollowedBy { ref expression, .. } => {
-                // propagate dependencies computation
+            StreamExpressionKind::FollowedBy {
+                ref constant,
+                ref expression,
+            } => {
+                // propagate dependencies computation in expression
                 expression.compute_dependencies(
                     symbol_table,
                     nodes_context,
@@ -52,17 +55,29 @@ impl StreamExpression {
                     nodes_reduced_graphs,
                     errors,
                 )?;
+                // dependencies with the memory delay
+                let mut dependencies = expression
+                    .get_dependencies()
+                    .clone()
+                    .into_iter()
+                    .map(|(id, label)| (id, label.increment()))
+                    .collect();
 
-                // set dependencies with the memory delay
-                self.dependencies.set(
-                    expression
-                        .get_dependencies()
-                        .clone()
-                        .into_iter()
-                        .map(|(id, label)| (id, label.increment()))
-                        .collect(),
-                );
+                // constant should not have dependencies
+                debug_assert!({
+                    constant.compute_dependencies(
+                        symbol_table,
+                        nodes_context,
+                        nodes_processus_manager,
+                        nodes_reduced_processus_manager,
+                        nodes_graphs,
+                        nodes_reduced_graphs,
+                        errors,
+                    )?;
+                    expression.get_dependencies().is_empty()
+                });
 
+                self.dependencies.set(dependencies);
                 Ok(())
             }
             StreamExpressionKind::NodeApplication {

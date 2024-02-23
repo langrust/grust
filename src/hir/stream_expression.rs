@@ -1,5 +1,5 @@
 use crate::common::label::Label;
-use crate::common::{constant::Constant, location::Location, r#type::Type};
+use crate::common::{location::Location, r#type::Type};
 use crate::hir::{dependencies::Dependencies, expression::ExpressionKind};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
@@ -12,7 +12,7 @@ pub enum StreamExpressionKind {
     /// Initialized buffer stream expression.
     FollowedBy {
         /// The initialization constant.
-        constant: Constant,
+        constant: Box<StreamExpression>,
         /// The buffered expression.
         expression: Box<StreamExpression>,
     },

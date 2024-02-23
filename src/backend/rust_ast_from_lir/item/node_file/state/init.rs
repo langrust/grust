@@ -1,10 +1,13 @@
+use std::collections::BTreeSet;
+
+use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::init::{Init, StateElementInit};
 use proc_macro2::Span;
 use syn::*;
 
 /// Transform LIR init into RustAST implementation method.
-pub fn rust_ast_from_lir(init: Init) -> ImplItemFn {
+pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemFn {
     let state_ty = Ident::new(
         &camel_case(&format!("{}State", init.node_name)),
         Span::call_site(),
@@ -29,15 +32,16 @@ pub fn rust_ast_from_lir(init: Init) -> ImplItemFn {
         .map(|element| match element {
             StateElementInit::BufferInit {
                 identifier,
-                initial_value,
+                initial_expression,
             } => {
                 let ident = Ident::new(&identifier, Span::call_site());
-                let constant: Expr = parse_str(&format!("{initial_value}")).unwrap();
+                let initial_expression: Expr =
+                    expression_rust_ast_from_lir(initial_expression, crates);
                 FieldValue {
                     attrs: vec![],
                     member: parse_quote! { #ident },
                     colon_token: Some(Default::default()),
-                    expr: constant,
+                    expr: initial_expression,
                 }
             }
             StateElementInit::CalledNodeInit {
@@ -89,6 +93,7 @@ pub fn rust_ast_from_lir(init: Init) -> ImplItemFn {
 mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir;
     use crate::common::constant::Constant;
+    use crate::lir::expression::Expression;
     use crate::lir::item::node_file::state::init::{Init, StateElementInit};
     use syn::*;
 
@@ -100,7 +105,9 @@ mod rust_ast_from_lir {
             state_elements_init: vec![
                 StateElementInit::BufferInit {
                     identifier: format!("mem_i"),
-                    initial_value: Constant::Integer(0),
+                    initial_expression: Expression::Literal {
+                        literal: Constant::Integer(0),
+                    },
                 },
                 StateElementInit::CalledNodeInit {
                     identifier: format!("called_node_state"),
@@ -117,6 +124,6 @@ mod rust_ast_from_lir {
                 }
             }
         };
-        assert_eq!(rust_ast_from_lir(init), control)
+        assert_eq!(rust_ast_from_lir(init, &mut Default::default()), control)
     }
 }

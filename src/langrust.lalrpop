@@ -1043,10 +1043,10 @@ pub streamExpression: StreamExpression = {
     },
     // catches initialized buffers as stream expressions
     #[assoc(side="right")]
-    <start:@L> <c: constant> "fby" <e: streamExpression> <end:@R> => {
+    <start:@L> <c: streamExpression> "fby" <e: streamExpression> <end:@R> => {
         StreamExpression {
             kind: StreamExpressionKind::FollowedBy {
-                constant: c,
+                constant: Box::new(c),
                 expression: Box::new(e),
             },
             location: Location{ file_id, range: start..end }

@@ -35,7 +35,7 @@ impl Memory {
                     memory_id,
                     Buffer {
                         typing,
-                        initial_value,
+                        initial_expression,
                         expression,
                     },
                 )| {
@@ -46,7 +46,7 @@ impl Memory {
                     });
                     inits.push(StateElementInit::BufferInit {
                         identifier: memory_name.clone(),
-                        initial_value,
+                        initial_expression: initial_expression.lir_from_hir(symbol_table),
                     });
                     steps.push(StateElementStep {
                         identifier: memory_name.clone(),
