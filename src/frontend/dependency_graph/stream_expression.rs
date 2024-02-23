@@ -74,7 +74,7 @@ impl StreamExpression {
                         nodes_reduced_graphs,
                         errors,
                     )?;
-                    expression.get_dependencies().is_empty()
+                    constant.get_dependencies().is_empty()
                 });
 
                 self.dependencies.set(dependencies);
