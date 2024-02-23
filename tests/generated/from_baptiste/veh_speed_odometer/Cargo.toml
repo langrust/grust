@@ -1,5 +1,5 @@
 [package]
-name = "Veh-Speed-Odometer"
+name = "veh_speed_odometer"
 version = "0.1.0"
 edition = "2021"
 authors = ["Émilie THOMÉ <emilie.e.thome@renault.com>"]
