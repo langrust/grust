@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use crate::backend::rust_ast_from_lir::{
     block::rust_ast_from_lir as block_rust_ast_from_lir,
     item::import::rust_ast_from_lir as import_rust_ast_from_lir,
@@ -8,6 +7,7 @@ use crate::common::r#type::Type as GRRustType;
 use crate::lir::item::function::Function;
 use proc_macro2::Span;
 use quote::format_ident;
+use std::collections::BTreeSet;
 use syn::*;
 
 /// Transform LIR function into RustAST function.
@@ -123,6 +123,9 @@ mod rust_ast_from_lir {
                 a + b
             }
         };
-        assert_eq!(rust_ast_from_lir(function, &mut Default::default()), vec![control])
+        assert_eq!(
+            rust_ast_from_lir(function, &mut Default::default()),
+            vec![control]
+        )
     }
 }
