@@ -23,6 +23,7 @@ impl LIRFromHIR for UnitaryNode {
             id,
             statements,
             memory,
+            contract,
             ..
         } = self;
 
@@ -48,7 +49,7 @@ impl LIRFromHIR for UnitaryNode {
             identifier: symbol_table.get_unitary_node_output_name(&id).clone(),
         };
 
-        // collect imports from statements, inputs and output types and memory
+        // collect imports from statements, inputs and output types, memory and contracts
         let mut imports = statements
             .iter()
             .flat_map(|equation| equation.get_imports(symbol_table))
@@ -61,11 +62,13 @@ impl LIRFromHIR for UnitaryNode {
             .collect::<Vec<_>>();
         let mut output_type_imports = output_type.get_imports(symbol_table);
         let mut memory_imports = memory.get_imports(symbol_table);
+        let mut contract_imports = contract.get_imports(symbol_table);
 
         // combining all imports and eliminate duplicates
         imports.append(&mut inputs_type_imports);
         imports.append(&mut output_type_imports);
         imports.append(&mut memory_imports);
+        imports.append(&mut contract_imports);
         let imports = imports.into_iter().unique().collect::<Vec<_>>();
 
         // get input's generics: function types in inputs
@@ -80,6 +83,9 @@ impl LIRFromHIR for UnitaryNode {
         // get memory/state elements
         let (elements, state_elements_init, state_elements_step) =
             memory.get_state_elements(symbol_table);
+
+        // transform contract
+        let contract = contract.lir_from_hir(symbol_table);
 
         NodeFile {
             name: name.clone(),
@@ -96,7 +102,7 @@ impl LIRFromHIR for UnitaryNode {
                 node_name: name.clone(),
                 elements,
                 step: Step {
-                    contract: self.contract.lir_from_hir(symbol_table),
+                    contract,
                     node_name: name.clone(),
                     generics,
                     output_type,

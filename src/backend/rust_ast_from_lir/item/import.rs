@@ -1,8 +1,9 @@
+use std::collections::BTreeSet;
 use crate::lir::item::import::Import;
 use proc_macro2::Span;
 use syn::*;
 /// Transform LIR import into RustAST import.
-pub fn rust_ast_from_lir(import: Import) -> ItemUse {
+pub fn rust_ast_from_lir(import: Import, crates: &mut BTreeSet<String>) -> ItemUse {
     match import {
         Import::NodeFile(name) => {
             let name = Ident::new(&name, Span::call_site());
@@ -24,6 +25,11 @@ pub fn rust_ast_from_lir(import: Import) -> ItemUse {
             let name = Ident::new(&name, Span::call_site());
             parse_quote! { use crate::typedefs::#name; }
         }
+        Import::Creusot(name) => {
+            crates.insert(String::from("creusot-contracts = { path = \"creusot/creusot-contracts\" }"));
+            let name = Ident::new(&name, Span::call_site());
+            parse_quote! { use creusot_contracts::#name; }
+        }
     }
 }
 
@@ -38,7 +44,7 @@ mod rust_ast_from_lir {
         let import = Import::Function(String::from("foo"));
 
         let control = parse_quote! { use crate::functions::foo; };
-        assert_eq!(rust_ast_from_lir(import), control)
+        assert_eq!(rust_ast_from_lir(import, &mut Default::default()), control)
     }
 
     #[test]
@@ -46,6 +52,6 @@ mod rust_ast_from_lir {
         let import = Import::NodeFile(String::from("my_node"));
 
         let control = parse_quote! { use crate::my_node::*; };
-        assert_eq!(rust_ast_from_lir(import), control)
+        assert_eq!(rust_ast_from_lir(import, &mut Default::default()), control)
     }
 }

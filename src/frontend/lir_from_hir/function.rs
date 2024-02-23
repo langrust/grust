@@ -63,7 +63,10 @@ impl LIRFromHIR for Function {
             .into_iter()
             .unique()
             .filter(|import| match import {
-                Import::Enumeration(_) | Import::Structure(_) | Import::ArrayAlias(_) => true,
+                Import::Enumeration(_)
+                | Import::Structure(_)
+                | Import::ArrayAlias(_)
+                | Import::Creusot(_) => true,
                 Import::Function(_) => false,
                 Import::NodeFile(_) => unreachable!(),
             })

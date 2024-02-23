@@ -11,4 +11,6 @@ pub enum Import {
     Structure(String),
     /// Import of an array alias.
     ArrayAlias(String),
+    /// Import of creusot contracts
+    Creusot(String),
 }
