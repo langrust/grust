@@ -146,9 +146,14 @@ impl Expression {
 }
 
 impl<E> ExpressionKind<E> {
-    pub fn propagate_predicate<F>(&self, predicate: F) -> bool
+    pub fn propagate_predicate<F1, F2>(
+        &self,
+        predicate_expression: F1,
+        predicate_statement: F2,
+    ) -> bool
     where
-        F: Fn(&E) -> bool,
+        F1: Fn(&E) -> bool,
+        F2: Fn(&Statement<E>) -> bool,
     {
         match self {
             ExpressionKind::Constant { .. }
@@ -159,23 +164,24 @@ impl<E> ExpressionKind<E> {
                 function_expression,
                 inputs,
             } => {
-                predicate(function_expression)
-                    && inputs.iter().all(|expression| predicate(expression))
+                predicate_expression(function_expression)
+                    && inputs.iter().all(|expression| predicate_expression(expression))
             }
             ExpressionKind::Structure { fields, .. } => {
-                fields.iter().all(|(_, expression)| predicate(expression))
+                fields.iter().all(|(_, expression)| predicate_expression(expression))
             }
             ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
-                elements.iter().all(|expression| predicate(expression))
+                elements.iter().all(|expression| predicate_expression(expression))
             }
             ExpressionKind::Match { expression, arms } => {
-                predicate(expression)
+                predicate_expression(expression)
                     && arms.iter().all(|(_, option, body, expression)| {
-                        debug_assert!(body.is_empty());
-                        option
-                            .as_ref()
-                            .map_or(true, |expression| predicate(expression))
-                            && predicate(expression)
+                        body.iter()
+                            .all(|statement| predicate_statement(statement))
+                            && option
+                                .as_ref()
+                                .map_or(true, |expression| predicate_expression(expression))
+                            && predicate_expression(expression)
                     })
             }
             ExpressionKind::When {
@@ -186,30 +192,36 @@ impl<E> ExpressionKind<E> {
                 default_body,
                 ..
             } => {
-                debug_assert!(present_body.is_empty());
-                debug_assert!(default_body.is_empty());
-                predicate(option) && predicate(present) && predicate(default)
+                present_body
+                    .iter()
+                    .all(|statement| predicate_statement(statement))
+                    && default_body
+                        .iter()
+                        .all(|statement| predicate_statement(statement))
+                    && predicate_expression(option)
+                    && predicate_expression(present)
+                    && predicate_expression(default)
             }
-            ExpressionKind::FieldAccess { expression, .. } => predicate(expression),
-            ExpressionKind::TupleElementAccess { expression, .. } => predicate(expression),
+            ExpressionKind::FieldAccess { expression, .. } => predicate_expression(expression),
+            ExpressionKind::TupleElementAccess { expression, .. } => predicate_expression(expression),
             ExpressionKind::Map {
                 expression,
                 function_expression,
-            } => predicate(expression) && predicate(function_expression),
+            } => predicate_expression(expression) && predicate_expression(function_expression),
             ExpressionKind::Fold {
                 expression,
                 initialization_expression,
                 function_expression,
             } => {
-                predicate(expression)
-                    && predicate(initialization_expression)
-                    && predicate(function_expression)
+                predicate_expression(expression)
+                    && predicate_expression(initialization_expression)
+                    && predicate_expression(function_expression)
             }
             ExpressionKind::Sort {
                 expression,
                 function_expression,
-            } => predicate(expression) && predicate(function_expression),
-            ExpressionKind::Zip { arrays } => arrays.iter().all(|expression| predicate(expression)),
+            } => predicate_expression(expression) && predicate_expression(function_expression),
+            ExpressionKind::Zip { arrays } => arrays.iter().all(|expression| predicate_expression(expression)),
         }
     }
 }

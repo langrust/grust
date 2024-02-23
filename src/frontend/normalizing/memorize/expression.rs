@@ -84,7 +84,6 @@ impl ExpressionKind<StreamExpression> {
                     symbol_table,
                 );
                 arms.iter_mut().for_each(|(_, option, block, expression)| {
-                    debug_assert!(block.is_empty());
                     option.as_mut().map(|expression| {
                         expression.memorize(
                             signal_id,
@@ -93,6 +92,9 @@ impl ExpressionKind<StreamExpression> {
                             contract,
                             symbol_table,
                         )
+                    });
+                    block.iter_mut().for_each(|statement| {
+                        statement.memorize(identifier_creator, memory, contract, symbol_table)
                     });
                     expression.memorize(
                         signal_id,
@@ -111,8 +113,6 @@ impl ExpressionKind<StreamExpression> {
                 default_body,
                 ..
             } => {
-                debug_assert!(present_body.is_empty());
-                debug_assert!(default_body.is_empty());
                 option.memorize(
                     signal_id,
                     identifier_creator,
@@ -127,6 +127,9 @@ impl ExpressionKind<StreamExpression> {
                     contract,
                     symbol_table,
                 );
+                present_body.iter_mut().for_each(|statement| {
+                    statement.memorize(identifier_creator, memory, contract, symbol_table)
+                });
                 default.memorize(
                     signal_id,
                     identifier_creator,
@@ -134,6 +137,9 @@ impl ExpressionKind<StreamExpression> {
                     contract,
                     symbol_table,
                 );
+                default_body.iter_mut().for_each(|statement| {
+                    statement.memorize(identifier_creator, memory, contract, symbol_table)
+                });
             }
             ExpressionKind::FieldAccess { expression, .. } => expression.memorize(
                 signal_id,
