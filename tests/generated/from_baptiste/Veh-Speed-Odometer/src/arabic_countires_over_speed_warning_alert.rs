@@ -29,7 +29,7 @@ impl ArabicCountiresOverSpeedWarningAlertState {
         let alert_off = input.speed_kmh <= 118i64;
         let alert = match (alert_off, alert_on) {
             (true, _) => VehiculeSpeedLevel::Level0,
-            (_, true) => VehiculeSpeedLevel::Level1,
+            (_, _) => VehiculeSpeedLevel::Level1,
         };
         alert
     }
