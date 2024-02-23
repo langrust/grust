@@ -21,3 +21,5 @@
 # Creusot symbolic link
 tests/generated/greusot/*/creusot
 tests/generated/greusot/*/ide
+tests/generated/greusot/*/rust-toolchain
+tests/generated/greusot/*/prelude/*
