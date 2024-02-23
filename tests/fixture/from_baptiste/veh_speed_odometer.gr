@@ -68,9 +68,7 @@ node india_over_speed_warning(speed_kmh: int, time_ms: int) {
     high_alert: bool = india_over_speed_high_speed_conditions(speed_kmh, time_ms).speed_condition;
     
     out alert: VehiculeSpeedLevel = match (high_alert, low_alert, no_alert) {
-        (true, _, _) => VehiculeSpeedLevel::Level3,
         (_, true, _) => VehiculeSpeedLevel::Level2,
-        (_, _, _) => VehiculeSpeedLevel::Level0,
     };
 }
 
