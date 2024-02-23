@@ -201,7 +201,15 @@ nodes:
           kind:
             FollowedBy:
               constant:
-                Float: 0
+                kind:
+                  Expression:
+                    expression:
+                      Constant:
+                        constant:
+                          Float: 0
+                typing: Float
+                location: ~
+                dependencies: ~
               expression:
                 kind:
                   Expression:
@@ -333,7 +341,15 @@ nodes:
           kind:
             FollowedBy:
               constant:
-                Float: 0
+                kind:
+                  Expression:
+                    expression:
+                      Constant:
+                        constant:
+                          Float: 0
+                typing: Float
+                location: ~
+                dependencies: ~
               expression:
                 kind:
                   Expression:
@@ -733,4 +749,3 @@ component:
   location: ~
   graph: ~
 location: ~
-

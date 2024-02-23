@@ -140,7 +140,15 @@ nodes:
                                             - kind:
                                                 FollowedBy:
                                                   constant:
-                                                    Integer: 0
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Constant:
+                                                            constant:
+                                                              Integer: 0
+                                                    typing: Integer
+                                                    location: ~
+                                                    dependencies: ~
                                                   expression:
                                                     kind:
                                                       Expression:
@@ -350,7 +358,15 @@ nodes:
           kind:
             FollowedBy:
               constant:
-                Boolean: true
+                kind:
+                  Expression:
+                    expression:
+                      Constant:
+                        constant:
+                          Boolean: true
+                typing: Boolean
+                location: ~
+                dependencies: ~
               expression:
                 kind:
                   Expression:
@@ -475,7 +491,15 @@ nodes:
                     - kind:
                         FollowedBy:
                           constant:
-                            Boolean: true
+                            kind:
+                              Expression:
+                                expression:
+                                  Constant:
+                                    constant:
+                                      Boolean: true
+                            typing: Boolean
+                            location: ~
+                            dependencies: ~
                           expression:
                             kind:
                               Expression:
@@ -501,4 +525,3 @@ nodes:
     graph: ~
 component: ~
 location: ~
-
