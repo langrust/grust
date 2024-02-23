@@ -17,3 +17,6 @@
 
 # VScode settings
 /.vscode
+
+# Creusot symbolic link
+tests/generated/greusot/*/creusot
