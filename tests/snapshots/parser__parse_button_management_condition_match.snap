@@ -84,7 +84,13 @@ nodes:
                                               - kind:
                                                   FollowedBy:
                                                     constant:
-                                                      Integer: 0
+                                                      kind:
+                                                        Expression:
+                                                          expression:
+                                                            Constant:
+                                                              constant:
+                                                                Integer: 0
+                                                      location: ~
                                                     expression:
                                                       kind:
                                                         Expression:
@@ -252,7 +258,13 @@ nodes:
                         - kind:
                             FollowedBy:
                               constant:
-                                Boolean: false
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Constant:
+                                        constant:
+                                          Boolean: false
+                                location: ~
                               expression:
                                 kind:
                                   Expression:
@@ -422,7 +434,13 @@ nodes:
                                   - kind:
                                       FollowedBy:
                                         constant:
-                                          Boolean: true
+                                          kind:
+                                            Expression:
+                                              expression:
+                                                Constant:
+                                                  constant:
+                                                    Boolean: true
+                                          location: ~
                                         expression:
                                           kind:
                                             Expression:
@@ -461,4 +479,3 @@ nodes:
     location: ~
 component: ~
 location: ~
-
