@@ -64,15 +64,17 @@ impl ExpressionKind<StreamExpression> {
                     )
                 })
             }
-            ExpressionKind::Array { elements } => elements.iter_mut().for_each(|expression| {
-                expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                )
-            }),
+            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
+                elements.iter_mut().for_each(|expression| {
+                    expression.memorize(
+                        signal_id,
+                        identifier_creator,
+                        memory,
+                        contract,
+                        symbol_table,
+                    )
+                })
+            }
             ExpressionKind::Match { expression, arms } => {
                 expression.memorize(
                     signal_id,

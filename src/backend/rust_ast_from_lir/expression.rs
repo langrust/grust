@@ -75,6 +75,12 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 .map(|expression| rust_ast_from_lir(expression, crates));
             parse_quote! { [#(#elements),*]}
         }
+        Expression::Tuple { elements } => {
+            let elements = elements
+                .into_iter()
+                .map(|expression| rust_ast_from_lir(expression, crates));
+            parse_quote! { (#(#elements),*)}
+        }
         Expression::Block { block } => Expr::Block(ExprBlock {
             attrs: vec![],
             label: None,

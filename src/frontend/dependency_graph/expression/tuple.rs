@@ -9,8 +9,8 @@ use crate::hir::{expression::ExpressionKind, node::Node, stream_expression::Stre
 use crate::symbol_table::SymbolTable;
 
 impl ExpressionKind<StreamExpression> {
-    /// Compute dependencies of an array stream expression.
-    pub fn compute_array_dependencies(
+    /// Compute dependencies of an tuple stream expression.
+    pub fn compute_tuple_dependencies(
         &self,
         symbol_table: &SymbolTable,
         nodes_context: &BTreeMap<usize, Node>,
@@ -21,8 +21,8 @@ impl ExpressionKind<StreamExpression> {
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(usize, Label)>, TerminationError> {
         match self {
-            // dependencies of array are dependencies of its elements
-            ExpressionKind::Array { elements } => {
+            // dependencies of tuple are dependencies of its elements
+            ExpressionKind::Tuple { elements } => {
                 // propagate dependencies computation
                 elements
                     .iter()

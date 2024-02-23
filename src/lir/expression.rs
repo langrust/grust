@@ -47,6 +47,11 @@ pub enum Expression {
         /// The elements inside the array.
         elements: Vec<Expression>,
     },
+    /// A tuple expression: `(1, 2, 3)`.
+    Tuple {
+        /// The elements inside the tuple.
+        elements: Vec<Expression>,
+    },
     /// A block scope: `{ let x = 1; x }`.
     Block {
         /// The block.

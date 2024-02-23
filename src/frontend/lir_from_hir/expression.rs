@@ -121,7 +121,13 @@ where
                 name: symbol_table.get_name(&enum_id).clone(),
                 element: symbol_table.get_name(&elem_id).clone(),
             },
-            ExpressionKind::Array { elements, .. } => LIRExpression::Array {
+            ExpressionKind::Array { elements } => LIRExpression::Array {
+                elements: elements
+                    .into_iter()
+                    .map(|element| element.lir_from_hir(symbol_table))
+                    .collect(),
+            },
+            ExpressionKind::Tuple { elements } => LIRExpression::Tuple {
                 elements: elements
                     .into_iter()
                     .map(|element| element.lir_from_hir(symbol_table))
@@ -285,7 +291,7 @@ where
             ExpressionKind::Enumeration { enum_id, .. } => {
                 vec![Import::Enumeration(symbol_table.get_name(enum_id).clone())]
             }
-            ExpressionKind::Array { elements } => elements
+            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => elements
                 .iter()
                 .flat_map(|expression| expression.get_imports(symbol_table))
                 .unique()

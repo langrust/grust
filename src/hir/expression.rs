@@ -48,6 +48,11 @@ pub enum ExpressionKind<E> {
         /// The elements inside the array.
         elements: Vec<E>,
     },
+    /// Tuple expression.
+    Tuple {
+        /// The elements.
+        elements: Vec<E>,
+    },
     /// Pattern matching expression.
     Match {
         /// The expression to match.
@@ -160,7 +165,7 @@ impl<E> ExpressionKind<E> {
             ExpressionKind::Structure { fields, .. } => {
                 fields.iter().all(|(_, expression)| predicate(expression))
             }
-            ExpressionKind::Array { elements } => {
+            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
                 elements.iter().all(|expression| predicate(expression))
             }
             ExpressionKind::Match { expression, arms } => {

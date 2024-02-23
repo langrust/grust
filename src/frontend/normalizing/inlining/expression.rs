@@ -71,9 +71,8 @@ impl ExpressionKind<StreamExpression> {
                 );
                 None
             }
-            ExpressionKind::Array {
-                ref mut elements, ..
-            } => {
+            ExpressionKind::Array { ref mut elements }
+            | ExpressionKind::Tuple { ref mut elements } => {
                 elements
                     .iter_mut()
                     .for_each(|expression| expression.replace_by_context(context_map));

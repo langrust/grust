@@ -356,19 +356,38 @@ pub expression: Expression = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches brackets as expressions
-    <start:@L> "(" <e: allExpression> ")" <end:@R> => {
-        Expression {
-            kind: ExpressionKind::Application {
-                function_expression: Box::new(Expression {
-                    kind: ExpressionKind::Identifier{
-                        id: UnaryOperator::Brackets.to_string(),
-                    },
-                    location: Location{ file_id, range: start..end }
-                }),
-                inputs: vec![e],
-            },
-            location: Location{ file_id, range: start..end }
+    // catches unit, brackets, tuple as expression
+    <start:@L> "(" <mut expressions: list<allExpression>> ")" <end:@R> => {
+        if expressions.is_empty() {
+            // contant unit
+            Expression {
+                kind: ExpressionKind::Constant {
+                    constant: Constant::Unit,
+                },
+                location: Location{ file_id, range: start..end }
+            }
+        } else if expressions.len() == 1 {
+            // brackets
+            Expression {
+                kind: ExpressionKind::Application {
+                    function_expression: Box::new(Expression {
+                        kind: ExpressionKind::Identifier{
+                            id: UnaryOperator::Brackets.to_string(),
+                        },
+                        location: Location{ file_id, range: start..end }
+                    }),
+                    inputs: vec![expressions.pop().unwrap()],
+                },
+                location: Location{ file_id, range: start..end }
+            }
+        } else {
+            // tuple
+            Expression {
+                kind: ExpressionKind::Tuple {
+                    elements: expressions,
+                },
+                location: Location{ file_id, range: start..end }
+            }
         }
     },
     // catches pattern matching as expressions
@@ -695,23 +714,46 @@ pub streamExpression: StreamExpression = {
             location: Location{ file_id, range: start..end }
         }
     },
-    // catches brackets as expressions
-    <start:@L> "(" <e: allStreamExpression> ")" <end:@R> => {
-        StreamExpression {
-            kind: StreamExpressionKind::Expression {
-                expression: ExpressionKind::Application {
-                    function_expression: Box::new(StreamExpression {
-                        kind: StreamExpressionKind::Expression {
-                            expression: ExpressionKind::Identifier {
-                                id: UnaryOperator::Brackets.to_string(),
+    // catches unit, brackets, tuple as expression
+    <start:@L> "(" <mut expressions: list<allStreamExpression>> ")" <end:@R> => {
+        if expressions.is_empty() {
+            // contant unit
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Constant {
+                        constant: Constant::Unit,
+                    }
+                },
+                location: Location{ file_id, range: start..end }
+            }
+        } else if expressions.len() == 1 {
+            // brackets
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Application {
+                        function_expression: Box::new(StreamExpression {
+                            kind: StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier {
+                                    id: UnaryOperator::Brackets.to_string(),
+                                },
                             },
-                        },
-                        location: Location{ file_id, range: start..end }
-                    }),
-                    inputs: vec![e],
-                }
-            },
-            location: Location{ file_id, range: start..end }
+                            location: Location{ file_id, range: start..end }
+                        }),
+                        inputs: vec![expressions.pop().unwrap()],
+                    }
+                },
+                location: Location{ file_id, range: start..end }
+            }
+        } else {
+            // tuple
+            StreamExpression {
+                kind: StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Tuple {
+                        elements: expressions,
+                    }
+                },
+                location: Location{ file_id, range: start..end }
+            }
         }
     },
     // catches pattern matching as expressions
