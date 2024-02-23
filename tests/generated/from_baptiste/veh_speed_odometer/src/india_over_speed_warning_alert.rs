@@ -45,7 +45,9 @@ impl IndiaOverSpeedWarningAlertState {
                 time_ms: input.time_ms,
             });
         let alert = match (high_alert, low_alert, no_alert) {
+            (_, _, true) => VehiculeSpeedLevel::Level0,
             (_, true, _) => VehiculeSpeedLevel::Level2,
+            (_, _, _) => VehiculeSpeedLevel::Level3,
         };
         self.mem_prev_alert = alert;
         alert
