@@ -136,8 +136,10 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_prev_i
-                initial_value:
-                  Float: 0
+                initial_expression:
+                  Literal:
+                    literal:
+                      Float: 0
           invariant_initialisation: []
   - NodeFile:
       name: derive_d
@@ -207,8 +209,10 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_prev_x
-                initial_value:
-                  Float: 0
+                initial_expression:
+                  Literal:
+                    literal:
+                      Float: 0
           invariant_initialisation: []
   - NodeFile:
       name: pid_u
@@ -377,4 +381,3 @@ items:
                 identifier: derive_d
                 node_name: derive_d
           invariant_initialisation: []
-
