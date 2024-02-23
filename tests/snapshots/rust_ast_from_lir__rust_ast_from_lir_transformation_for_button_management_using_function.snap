@@ -3533,5 +3533,5 @@ RustASTProject {
             ],
         },
     },
-    crates: [],
+    crates: {},
 }
