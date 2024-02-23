@@ -92,7 +92,13 @@ nodes:
             kind:
               FollowedBy:
                 constant:
-                  Float: 0
+                  kind:
+                    Expression:
+                      expression:
+                        Constant:
+                          constant:
+                            Float: 0
+                  location: ~
                 expression:
                   kind:
                     Expression:
@@ -268,7 +274,13 @@ nodes:
             kind:
               FollowedBy:
                 constant:
-                  Float: 0
+                  kind:
+                    Expression:
+                      expression:
+                        Constant:
+                          constant:
+                            Float: 0
+                  location: ~
                 expression:
                   kind:
                     Expression:
@@ -599,4 +611,3 @@ component:
     invariant: []
   location: ~
 location: ~
-
