@@ -36,14 +36,13 @@ node india_over_speed_low_speed_conditions(
     prev_alert: VehiculeSpeedLevel,
     time_ms: int,
 ) {
-    out speed_condition: bool = india_over_speed_condition(
+    speed_condition_1: bool = india_over_speed_condition(
         |s: int| 80 < s && s <= 120,
         speed_kmh,
         time_ms
-    ).speed_condition_holds || (
-        prev_alert == VehiculeSpeedLevel::Level3
-        && speed_kmh <= 118
-    );
+    ).speed_condition_holds;
+    speed_condition_2: bool = prev_alert == VehiculeSpeedLevel::Level3 && speed_kmh <= 118;
+    out speed_condition: bool = speed_condition_1 || speed_condition_2;
 }
 
 // REQ_SYS_S29-FACE-Veh-Speed-Odometer_Design_310
@@ -95,5 +94,5 @@ component vehicule_speed_odometer(
         NoWarning => VehiculeSpeedLevel::Level0,
         ArabicCountries => arabic_countires_over_speed_warning(speed_kmh, time_ms).alert,
         India => india_over_speed_warning(speed_kmh, time_ms).alert,
-    }
+    };
 }
