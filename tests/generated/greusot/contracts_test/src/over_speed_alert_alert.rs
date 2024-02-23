@@ -1,3 +1,5 @@
+use creusot_contracts::ensures;
+use creusot_contracts::requires;
 pub struct OverSpeedAlertAlertInput {
     pub speed: i64,
     pub dt: i64,
