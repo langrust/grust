@@ -1,8 +1,10 @@
+use std::collections::BTreeSet;
+
 use super::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
 use crate::lir::block::Block;
 
 /// Transform LIR block into RustAST block.
-pub fn rust_ast_from_lir(block: Block, crates: &mut Vec<String>) -> syn::Block {
+pub fn rust_ast_from_lir(block: Block, crates: &mut BTreeSet<String>) -> syn::Block {
     let stmts = block
         .statements
         .into_iter()
@@ -46,6 +48,6 @@ mod rust_ast_from_lir {
             x
         });
 
-        assert_eq!(rust_ast_from_lir(block, &mut vec![]), control)
+        assert_eq!(rust_ast_from_lir(block, &mut Default::default()), control)
     }
 }

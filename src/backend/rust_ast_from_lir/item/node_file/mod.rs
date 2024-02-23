@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use self::input::rust_ast_from_lir as input_rust_ast_from_lir;
 use self::state::rust_ast_from_lir as state_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::item::import::rust_ast_from_lir as import_rust_ast_from_lir;
@@ -10,7 +11,7 @@ pub mod input;
 pub mod state;
 
 /// Transform LIR node_file into RustAST file.
-pub fn rust_ast_from_lir(node_file: NodeFile, crates: &mut Vec<String>) -> (String, File) {
+pub fn rust_ast_from_lir(node_file: NodeFile, crates: &mut BTreeSet<String>) -> (String, File) {
     let mut items = node_file
         .imports
         .into_iter()

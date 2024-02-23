@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use crate::backend::rust_ast_from_lir::{
     block::rust_ast_from_lir as block_rust_ast_from_lir,
     item::import::rust_ast_from_lir as import_rust_ast_from_lir,
@@ -10,7 +11,7 @@ use quote::format_ident;
 use syn::*;
 
 /// Transform LIR function into RustAST function.
-pub fn rust_ast_from_lir(function: Function, crates: &mut Vec<String>) -> Vec<Item> {
+pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> Vec<Item> {
     let mut items = function
         .imports
         .into_iter()
@@ -122,6 +123,6 @@ mod rust_ast_from_lir {
                 a + b
             }
         };
-        assert_eq!(rust_ast_from_lir(function, &mut vec![]), vec![control])
+        assert_eq!(rust_ast_from_lir(function, &mut Default::default()), vec![control])
     }
 }

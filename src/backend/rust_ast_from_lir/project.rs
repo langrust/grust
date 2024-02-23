@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 
@@ -23,7 +23,7 @@ pub struct RustASTProject {
     /// Project's directory.
     pub directory: String,
     files: BTreeMap<String, File>,
-    crates: Vec<String>,
+    crates: BTreeSet<String>,
 }
 impl RustASTProject {
     fn new() -> Self {
@@ -80,7 +80,7 @@ authors = [\"Émilie THOMÉ <emilie.e.thome@renault.com>\"]
 [dependencies]
 {}
 ",
-            self.crates.join("\n")
+            self.crates.iter().join("\n")
         );
         let path = std::path::Path::new(&self.directory).join("Cargo.toml");
 
