@@ -53,7 +53,10 @@ mod rust_ast_from_lir {
         let control = parse_quote! {
             let x = 1i64;
         };
-        assert_eq!(rust_ast_from_lir(statement, &mut Default::default()), control)
+        assert_eq!(
+            rust_ast_from_lir(statement, &mut Default::default()),
+            control
+        )
     }
 
     #[test]
@@ -73,7 +76,10 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! { let o = self.node_state.step(NodeInput { i: 1i64 }); };
-        assert_eq!(rust_ast_from_lir(statement, &mut Default::default()), control)
+        assert_eq!(
+            rust_ast_from_lir(statement, &mut Default::default()),
+            control
+        )
     }
 
     #[test]
@@ -85,6 +91,9 @@ mod rust_ast_from_lir {
         };
 
         let control = Stmt::Expr(parse_quote! { 1i64 }, None);
-        assert_eq!(rust_ast_from_lir(statement, &mut Default::default()), control)
+        assert_eq!(
+            rust_ast_from_lir(statement, &mut Default::default()),
+            control
+        )
     }
 }

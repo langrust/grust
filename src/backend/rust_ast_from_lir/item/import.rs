@@ -1,6 +1,6 @@
-use std::collections::BTreeSet;
 use crate::lir::item::import::Import;
 use proc_macro2::Span;
+use std::collections::BTreeSet;
 use syn::*;
 /// Transform LIR import into RustAST import.
 pub fn rust_ast_from_lir(import: Import, crates: &mut BTreeSet<String>) -> ItemUse {
@@ -26,7 +26,9 @@ pub fn rust_ast_from_lir(import: Import, crates: &mut BTreeSet<String>) -> ItemU
             parse_quote! { use crate::typedefs::#name; }
         }
         Import::Creusot(name) => {
-            crates.insert(String::from("creusot-contracts = { path = \"creusot/creusot-contracts\" }"));
+            crates.insert(String::from(
+                "creusot-contracts = { path = \"creusot/creusot-contracts\" }",
+            ));
             let name = Ident::new(&name, Span::call_site());
             parse_quote! { use creusot_contracts::#name; }
         }

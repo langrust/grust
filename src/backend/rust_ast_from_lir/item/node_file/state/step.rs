@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use crate::backend::rust_ast_from_lir::expression::{
     binary_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
 };
@@ -9,6 +8,7 @@ use crate::lir::contract::{Contract, Term};
 use crate::lir::item::node_file::state::step::{StateElementStep, Step};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
+use std::collections::BTreeSet;
 use syn::parse_quote;
 use syn::*;
 
