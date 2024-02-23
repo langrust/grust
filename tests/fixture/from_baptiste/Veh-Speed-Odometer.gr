@@ -70,7 +70,7 @@ node india_over_speed_warning(speed_kmh: int, time_ms: int) {
     out alert: VehiculeSpeedLevel = match (high_alert, low_alert, no_alert) {
         (true, _, _) => VehiculeSpeedLevel::Level3,
         (_, true, _) => VehiculeSpeedLevel::Level2,
-        (_, _, true) => VehiculeSpeedLevel::Level0,
+        (_, _, _) => VehiculeSpeedLevel::Level0,
     };
 }
 
@@ -80,7 +80,7 @@ node arabic_countires_over_speed_warning(speed_kmh: int, time_ms: int) {
     alert_on: bool = during(120 < speed_kmh, 3000, time_ms).holds_during;
     out alert: VehiculeSpeedLevel = match (alert_off, alert_on) {
         (true, _) => VehiculeSpeedLevel::Level0,
-        (_, true) => VehiculeSpeedLevel::Level1,
+        (_, _) => VehiculeSpeedLevel::Level1,
     };
 }
 
