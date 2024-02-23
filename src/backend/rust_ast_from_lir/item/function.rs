@@ -15,7 +15,7 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> V
     let mut items = function
         .imports
         .into_iter()
-        .map(|import| Item::Use(import_rust_ast_from_lir(import)))
+        .map(|import| Item::Use(import_rust_ast_from_lir(import, crates)))
         .collect::<Vec<_>>();
 
     // create generics

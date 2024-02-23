@@ -1,5 +1,7 @@
 use crate::{
-    hir::contract::Contract, lir::contract::Contract as LIRContract, symbol_table::SymbolTable,
+    hir::contract::Contract,
+    lir::{contract::Contract as LIRContract, item::import::Import},
+    symbol_table::SymbolTable,
 };
 
 use super::LIRFromHIR;
@@ -28,6 +30,24 @@ impl LIRFromHIR for Contract {
                 .map(|term| term.lir_from_hir(symbol_table))
                 .collect(),
         }
+    }
+
+    fn get_imports(&self, _symbol_table: &SymbolTable) -> Vec<Import> {
+        let mut imports = vec![];
+
+        if !self.invariant.is_empty() {
+            imports.push(Import::Creusot(String::from("ensures")));
+            imports.push(Import::Creusot(String::from("requires")))
+        } else {
+            if !self.ensures.is_empty() {
+                imports.push(Import::Creusot(String::from("ensures")))
+            }
+            if !self.requires.is_empty() {
+                imports.push(Import::Creusot(String::from("requires")))
+            }
+        }
+
+        imports
     }
 }
 

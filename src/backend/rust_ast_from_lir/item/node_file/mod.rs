@@ -15,7 +15,7 @@ pub fn rust_ast_from_lir(node_file: NodeFile, crates: &mut BTreeSet<String>) -> 
     let mut items = node_file
         .imports
         .into_iter()
-        .map(|import| Item::Use(import_rust_ast_from_lir(import)))
+        .map(|import| Item::Use(import_rust_ast_from_lir(import, crates)))
         .collect::<Vec<_>>();
     let input_structure = input_rust_ast_from_lir(node_file.input);
     let (state_structure, state_implementation) = state_rust_ast_from_lir(node_file.state, crates);
