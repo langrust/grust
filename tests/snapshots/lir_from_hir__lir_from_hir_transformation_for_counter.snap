@@ -95,8 +95,10 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_o
-                initial_value:
-                  Integer: 0
+                initial_expression:
+                  Literal:
+                    literal:
+                      Integer: 0
           invariant_initialisation: []
   - NodeFile:
       name: main_y
@@ -185,14 +187,17 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_x
-                initial_value:
-                  Boolean: false
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: false
             - BufferInit:
                 identifier: mem_half
-                initial_value:
-                  Boolean: true
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: true
             - CalledNodeInit:
                 identifier: counter_o
                 node_name: counter_o
           invariant_initialisation: []
-

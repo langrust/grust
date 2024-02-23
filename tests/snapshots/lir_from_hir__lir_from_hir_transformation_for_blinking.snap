@@ -130,8 +130,10 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_o
-                initial_value:
-                  Integer: 0
+                initial_expression:
+                  Literal:
+                    literal:
+                      Integer: 0
           invariant_initialisation: []
   - NodeFile:
       name: blinking_status
@@ -266,14 +268,17 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_res
-                initial_value:
-                  Boolean: true
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: true
             - BufferInit:
                 identifier: mem_on_off
-                initial_value:
-                  Boolean: true
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: true
             - CalledNodeInit:
                 identifier: counter_o
                 node_name: counter_o
           invariant_initialisation: []
-

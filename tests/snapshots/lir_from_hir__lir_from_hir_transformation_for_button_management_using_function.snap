@@ -145,8 +145,10 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_o
-                initial_value:
-                  Integer: 0
+                initial_expression:
+                  Literal:
+                    literal:
+                      Integer: 0
           invariant_initialisation: []
   - NodeFile:
       name: reset_button_user_reset_request_state
@@ -263,8 +265,10 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_res
-                initial_value:
-                  Boolean: true
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: true
             - CalledNodeInit:
                 identifier: counter_o
                 node_name: counter_o
@@ -415,14 +419,17 @@ items:
           state_elements_init:
             - BufferInit:
                 identifier: mem_res
-                initial_value:
-                  Boolean: true
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: true
             - BufferInit:
                 identifier: mem_user_reset_request
-                initial_value:
-                  Boolean: false
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: false
             - CalledNodeInit:
                 identifier: counter_o
                 node_name: counter_o
           invariant_initialisation: []
-
