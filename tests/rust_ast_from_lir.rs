@@ -89,3 +89,17 @@ fn rust_ast_from_lir_transformation_for_pid() {
     let project = rust_ast_from_lir(pid_id, &mut files);
     insta::assert_debug_snapshot!(project)
 }
+
+#[test]
+fn generate_rust_project_for_veh_speed_odometer() {
+    let mut files = SimpleFiles::new();
+
+    let veh_speed_odometer_id = files.add(
+        "Veh-Speed-Odometer.gr",
+        std::fs::read_to_string("tests/fixture/from_baptiste/Veh-Speed-Odometer.gr")
+            .expect("unkown file"),
+    );
+
+    let project = rust_ast_from_lir(veh_speed_odometer_id, &mut files);
+    insta::assert_debug_snapshot!(project)
+}
