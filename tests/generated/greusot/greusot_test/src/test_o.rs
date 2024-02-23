@@ -1,3 +1,5 @@
+use creusot_contracts::ensures;
+use creusot_contracts::requires;
 pub struct TestOInput {
     pub i1: i64,
     pub i2: i64,
