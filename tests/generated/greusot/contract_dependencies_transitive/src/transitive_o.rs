@@ -1,3 +1,5 @@
+use creusot_contracts::ensures;
+use creusot_contracts::requires;
 pub struct TransitiveOInput {
     pub i: i64,
     pub j: i64,
