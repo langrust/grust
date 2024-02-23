@@ -65,3 +65,22 @@ fn generate_rust_project_for_contract_dependencies_propagation() {
         "tests/generated/greusot/",
     )
 }
+
+#[test]
+fn generate_rust_project_for_contract_dependencies_propagation_proof() {
+    let mut files = SimpleFiles::new();
+
+    let contract_dependencies_propagation_proof_id = files.add(
+        "contract_dependencies_propagation_proof.gr",
+        std::fs::read_to_string(
+            "tests/fixture/greusot/success/contract_dependencies_propagation_proof.gr",
+        )
+        .expect("unkown file"),
+    );
+
+    generate_rust_project(
+        contract_dependencies_propagation_proof_id,
+        &mut files,
+        "tests/generated/greusot/",
+    )
+}
