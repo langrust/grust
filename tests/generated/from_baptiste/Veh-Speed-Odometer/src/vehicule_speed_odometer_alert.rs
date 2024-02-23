@@ -1,7 +1,7 @@
+use crate::typedefs::Config;
 use crate::typedefs::VehiculeSpeedLevel;
 use crate::arabic_countires_over_speed_warning_alert::*;
 use crate::india_over_speed_warning_alert::*;
-use crate::typedefs::Config;
 pub struct VehiculeSpeedOdometerAlertInput {
     pub vehicule_config: Config,
     pub speed_kmh: i64,
@@ -23,8 +23,8 @@ impl VehiculeSpeedOdometerAlertState {
         input: VehiculeSpeedOdometerAlertInput,
     ) -> VehiculeSpeedLevel {
         let alert = match input.vehicule_config {
-            NoWarning => VehiculeSpeedLevel::Level0,
-            ArabicCountries => {
+            Config::NoWarning => VehiculeSpeedLevel::Level0,
+            Config::ArabicCountries => {
                 let x = self
                     .arabic_countires_over_speed_warning_alert
                     .step(ArabicCountiresOverSpeedWarningAlertInput {
@@ -33,7 +33,7 @@ impl VehiculeSpeedOdometerAlertState {
                     });
                 x
             }
-            India => {
+            Config::India => {
                 let x_1 = self
                     .india_over_speed_warning_alert
                     .step(IndiaOverSpeedWarningAlertInput {
