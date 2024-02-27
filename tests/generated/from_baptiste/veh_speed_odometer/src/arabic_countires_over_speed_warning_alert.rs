@@ -1,16 +1,16 @@
-use crate::during_holds_during::*;
+use crate::during_result::*;
 use crate::typedefs::VehiculeSpeedLevel;
 pub struct ArabicCountiresOverSpeedWarningAlertInput {
     pub speed_kmh: i64,
-    pub time_ms: i64,
+    pub dt_ms: i64,
 }
 pub struct ArabicCountiresOverSpeedWarningAlertState {
-    during_holds_during: DuringHoldsDuringState,
+    during_result: DuringResultState,
 }
 impl ArabicCountiresOverSpeedWarningAlertState {
     pub fn init() -> ArabicCountiresOverSpeedWarningAlertState {
         ArabicCountiresOverSpeedWarningAlertState {
-            during_holds_during: DuringHoldsDuringState::init(),
+            during_result: DuringResultState::init(),
         }
     }
     pub fn step(
@@ -20,11 +20,11 @@ impl ArabicCountiresOverSpeedWarningAlertState {
         let x_1 = 3000i64;
         let x = 120i64 < input.speed_kmh;
         let alert_on = self
-            .during_holds_during
-            .step(DuringHoldsDuringInput {
+            .during_result
+            .step(DuringResultInput {
                 condition: x,
                 duration_ms: x_1,
-                time_ms: input.time_ms,
+                dt_ms: input.dt_ms,
             });
         let alert_off = input.speed_kmh <= 118i64;
         let alert = match (alert_off, alert_on) {

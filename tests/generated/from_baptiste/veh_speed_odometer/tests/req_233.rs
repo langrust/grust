@@ -9,7 +9,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 70,
-                time_ms: 10,
+                dt_ms: 10,
             },
             false,
         ),
@@ -17,7 +17,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 81,
-                time_ms: 100,
+                dt_ms: 90,
             },
             false,
         ),
@@ -25,7 +25,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 85,
-                time_ms: 200,
+                dt_ms: 100,
             },
             false,
         ),
@@ -33,7 +33,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 79,
-                time_ms: 220,
+                dt_ms: 20,
             },
             false,
         ),
@@ -41,7 +41,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 83,
-                time_ms: 400,
+                dt_ms: 180,
             },
             false,
         ),
@@ -49,7 +49,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 86,
-                time_ms: 600,
+                dt_ms: 200,
             },
             false,
         ),
@@ -57,7 +57,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 90,
-                time_ms: 850,
+                dt_ms: 250,
             },
             false,
         ),
@@ -65,7 +65,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 100,
-                time_ms: 1000,
+                dt_ms: 150,
             },
             false,
         ),
@@ -73,7 +73,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 110,
-                time_ms: 1200,
+                dt_ms: 200,
             },
             false,
         ),
@@ -81,7 +81,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 119,
-                time_ms: 1500,
+                dt_ms: 300,
             },
             true,
         ),
@@ -89,7 +89,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 110,
-                time_ms: 2000,
+                dt_ms: 500,
             },
             true,
         ),
@@ -97,7 +97,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 130,
-                time_ms: 2500,
+                dt_ms: 500,
             },
             false,
         ),
@@ -105,7 +105,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 110,
-                time_ms: 3400,
+                dt_ms: 900,
             },
             false,
         ),
@@ -113,7 +113,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 100,
-                time_ms: 3600,
+                dt_ms: 200,
             },
             false,
         ),
@@ -121,7 +121,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 90,
-                time_ms: 3850,
+                dt_ms: 250,
             },
             false,
         ),
@@ -129,7 +129,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 100,
-                time_ms: 4000,
+                dt_ms: 150,
             },
             false,
         ),
@@ -137,7 +137,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 110,
-                time_ms: 4200,
+                dt_ms: 200,
             },
             false,
         ),
@@ -145,7 +145,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 119,
-                time_ms: 4500,
+                dt_ms: 300,
             },
             true,
         ),
@@ -153,7 +153,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 110,
-                time_ms: 5000,
+                dt_ms: 500,
             },
             true,
         ),
@@ -161,7 +161,7 @@ fn should_always_raise_low_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 130,
-                time_ms: 5500,
+                dt_ms: 500,
             },
             false,
         ),

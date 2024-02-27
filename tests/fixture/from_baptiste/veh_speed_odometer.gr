@@ -12,21 +12,16 @@ enum VehiculeSpeedLevel {
 }
 
 // GRRust librairy
-node during(condition: bool, duration_ms: int, time_ms: int) {
-    out holds_during: bool = still_holds && during;
-    prev_still_holds: bool = false fby still_holds;
-    still_holds: bool = if start_during
-                        then true
-                        else prev_still_holds && condition;
-    start_during: bool = !prev_still_holds && condition;
-    start_ms: int = if start_during then time_ms else 0 fby start_ms;
-    during: bool = time_ms > start_ms + duration_ms;
+node during(condition: bool, duration_ms: int, dt_ms: int) {
+    out result: bool = time_ms > duration_ms;
+    prev_time_ms: int = 0 fby time_ms;
+    time_ms: int = if condition then prev_time_ms + dt_ms else 0;
 }
 
 // Helper
-node india_over_speed_condition(condition: int -> bool, speed_kmh: int, time_ms: int) {
+node india_over_speed_condition(condition: int -> bool, speed_kmh: int, dt_ms: int) {
     speed_condition: bool = condition(speed_kmh);
-    out speed_condition_holds: bool = during(speed_condition, 1000, time_ms).holds_during;
+    out speed_condition_holds: bool = during(speed_condition, 1000, dt_ms).result;
 }
 
 // REQ_SYS_S29-FACE-Veh-Speed-Odometer_Design_233
@@ -34,23 +29,23 @@ node india_over_speed_condition(condition: int -> bool, speed_kmh: int, time_ms:
 node india_over_speed_low_speed_conditions(
     speed_kmh: int,
     prev_alert: VehiculeSpeedLevel,
-    time_ms: int,
+    dt_ms: int,
 ) {
     speed_condition_1: bool = india_over_speed_condition(
         |s: int| 80 < s && s <= 120,
         speed_kmh,
-        time_ms
+        dt_ms
     ).speed_condition_holds;
     speed_condition_2: bool = prev_alert == VehiculeSpeedLevel::Level3 && speed_kmh <= 118;
     out speed_condition: bool = speed_condition_1 || speed_condition_2;
 }
 
 // REQ_SYS_S29-FACE-Veh-Speed-Odometer_Design_310
-node india_over_speed_high_speed_conditions(speed_kmh: int, time_ms: int) {
+node india_over_speed_high_speed_conditions(speed_kmh: int, dt_ms: int) {
     out speed_condition: bool = india_over_speed_condition(
         |s: int| 120 < s,
         speed_kmh,
-        time_ms
+        dt_ms
     ).speed_condition_holds;
 }
 
@@ -60,12 +55,12 @@ node india_over_speed_no_alert_conditions(speed_kmh: int) {
 }
 
 // Combine all India requirements
-node india_over_speed_warning(speed_kmh: int, time_ms: int) {
+node india_over_speed_warning(speed_kmh: int, dt_ms: int) {
     prev_alert: VehiculeSpeedLevel = VehiculeSpeedLevel::Level0 fby alert;
 
     no_alert: bool = india_over_speed_no_alert_conditions(speed_kmh).speed_condition;
-    low_alert: bool = india_over_speed_low_speed_conditions(speed_kmh, prev_alert, time_ms).speed_condition;
-    high_alert: bool = india_over_speed_high_speed_conditions(speed_kmh, time_ms).speed_condition;
+    low_alert: bool = india_over_speed_low_speed_conditions(speed_kmh, prev_alert, dt_ms).speed_condition;
+    high_alert: bool = india_over_speed_high_speed_conditions(speed_kmh, dt_ms).speed_condition;
     
     out alert: VehiculeSpeedLevel = match (high_alert, low_alert, no_alert) {
         (_, _, true) => VehiculeSpeedLevel::Level0,
@@ -75,9 +70,9 @@ node india_over_speed_warning(speed_kmh: int, time_ms: int) {
 }
 
 // REQ_SYS_S29-FACE-Veh-Speed-Odometer_Design_293
-node arabic_countires_over_speed_warning(speed_kmh: int, time_ms: int) {
+node arabic_countires_over_speed_warning(speed_kmh: int, dt_ms: int) {
     alert_off: bool = speed_kmh <= 118;
-    alert_on: bool = during(120 < speed_kmh, 3000, time_ms).holds_during;
+    alert_on: bool = during(120 < speed_kmh, 3000, dt_ms).result;
     out alert: VehiculeSpeedLevel = match (alert_off, alert_on) {
         (true, _) => VehiculeSpeedLevel::Level0,
         (_, _) => VehiculeSpeedLevel::Level1,
@@ -87,12 +82,12 @@ node arabic_countires_over_speed_warning(speed_kmh: int, time_ms: int) {
 component vehicule_speed_odometer(
     vehicule_config: Config,
     speed_kmh: int,
-    time_ms: int,
+    dt_ms: int,
 ) {
     out alert: VehiculeSpeedLevel = match vehicule_config {
         // REQ_SYS_S29-FACE-Veh-Speed-Odometer_Design_???
         Config::NoWarning => VehiculeSpeedLevel::Level0,
-        Config::ArabicCountries => arabic_countires_over_speed_warning(speed_kmh, time_ms).alert,
-        Config::India => india_over_speed_warning(speed_kmh, time_ms).alert,
+        Config::ArabicCountries => arabic_countires_over_speed_warning(speed_kmh, dt_ms).alert,
+        Config::India => india_over_speed_warning(speed_kmh, dt_ms).alert,
     };
 }

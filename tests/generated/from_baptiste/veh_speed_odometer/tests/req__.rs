@@ -5,14 +5,14 @@ use veh_speed_odometer::vehicule_speed_odometer_alert::*;
 fn should_always_raise_no_alert_in_condition() {
     let config = Config::NoWarning;
     let speed_range = 70..150;
-    let time_range = 0..100;
+    let dt_range = 0..100;
     let inputs =
         speed_range
-            .zip(time_range)
-            .map(|(speed_kmh, time_ms)| VehiculeSpeedOdometerAlertInput {
+            .zip(dt_range)
+            .map(|(speed_kmh, dt_ms)| VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh,
-                time_ms,
+                dt_ms,
             });
 
     let mut state = VehiculeSpeedOdometerAlertState::init();

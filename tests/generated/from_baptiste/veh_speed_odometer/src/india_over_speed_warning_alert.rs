@@ -4,7 +4,7 @@ use crate::india_over_speed_high_speed_conditions_speed_condition::*;
 use crate::typedefs::VehiculeSpeedLevel;
 pub struct IndiaOverSpeedWarningAlertInput {
     pub speed_kmh: i64,
-    pub time_ms: i64,
+    pub dt_ms: i64,
 }
 pub struct IndiaOverSpeedWarningAlertState {
     mem_prev_alert: VehiculeSpeedLevel,
@@ -36,13 +36,13 @@ impl IndiaOverSpeedWarningAlertState {
             .step(IndiaOverSpeedLowSpeedConditionsSpeedConditionInput {
                 speed_kmh: input.speed_kmh,
                 prev_alert: prev_alert,
-                time_ms: input.time_ms,
+                dt_ms: input.dt_ms,
             });
         let high_alert = self
             .india_over_speed_high_speed_conditions_speed_condition
             .step(IndiaOverSpeedHighSpeedConditionsSpeedConditionInput {
                 speed_kmh: input.speed_kmh,
-                time_ms: input.time_ms,
+                dt_ms: input.dt_ms,
             });
         let alert = match (high_alert, low_alert, no_alert) {
             (_, _, true) => VehiculeSpeedLevel::Level0,
