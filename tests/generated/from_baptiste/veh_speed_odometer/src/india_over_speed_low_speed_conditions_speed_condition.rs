@@ -3,7 +3,7 @@ use crate::india_over_speed_condition_speed_condition_holds::*;
 pub struct IndiaOverSpeedLowSpeedConditionsSpeedConditionInput {
     pub speed_kmh: i64,
     pub prev_alert: VehiculeSpeedLevel,
-    pub time_ms: i64,
+    pub dt_ms: i64,
 }
 pub struct IndiaOverSpeedLowSpeedConditionsSpeedConditionState {
     india_over_speed_condition_speed_condition_holds: IndiaOverSpeedConditionSpeedConditionHoldsState,
@@ -26,7 +26,7 @@ impl IndiaOverSpeedLowSpeedConditionsSpeedConditionState {
             .step(IndiaOverSpeedConditionSpeedConditionHoldsInput {
                 condition: x,
                 speed_kmh: input.speed_kmh,
-                time_ms: input.time_ms,
+                dt_ms: input.dt_ms,
             });
         let speed_condition = speed_condition_1 || speed_condition_2;
         speed_condition
