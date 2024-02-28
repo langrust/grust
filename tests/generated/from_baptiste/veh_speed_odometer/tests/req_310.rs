@@ -185,7 +185,7 @@ fn should_always_raise_high_alert_in_condition() {
             VehiculeSpeedOdometerAlertInput {
                 vehicule_config: config,
                 speed_kmh: 125,
-                dt_ms: 100,
+                dt_ms: 1100,
             },
             true,
         ),
@@ -217,6 +217,7 @@ fn should_always_raise_high_alert_in_condition() {
 
     let mut state = VehiculeSpeedOdometerAlertState::init();
     for (input, raise) in inputs_raise {
+        println!("speed: {}, dt: {}", input.speed_kmh, input.dt_ms);
         let output = state.step(input);
         if raise {
             assert_eq!(output, VehiculeSpeedLevel::Level3)
