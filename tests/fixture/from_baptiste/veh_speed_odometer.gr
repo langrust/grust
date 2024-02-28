@@ -65,17 +65,20 @@ node india_over_speed_warning(speed_kmh: int, dt_ms: int) {
     out alert: VehiculeSpeedLevel = match (high_alert, low_alert, no_alert) {
         (_, _, true) => VehiculeSpeedLevel::Level0,
         (_, true, _) => VehiculeSpeedLevel::Level2,
-        (_, _, _) => VehiculeSpeedLevel::Level3,
+        (true, _, _) => VehiculeSpeedLevel::Level3,
+        _            => prev_alert,
     };
 }
 
 // REQ_SYS_S29-FACE-Veh-Speed-Odometer_Design_293
 node arabic_countires_over_speed_warning(speed_kmh: int, dt_ms: int) {
+    prev_alert: VehiculeSpeedLevel = VehiculeSpeedLevel::Level0 fby alert;
     alert_off: bool = speed_kmh <= 118;
     alert_on: bool = during(120 < speed_kmh, 3000, dt_ms).result;
     out alert: VehiculeSpeedLevel = match (alert_off, alert_on) {
+        (_, true) => VehiculeSpeedLevel::Level1,
         (true, _) => VehiculeSpeedLevel::Level0,
-        (_, _) => VehiculeSpeedLevel::Level1,
+        _         => prev_alert,
     };
 }
 

@@ -5,11 +5,13 @@ pub struct ArabicCountiresOverSpeedWarningAlertInput {
     pub dt_ms: i64,
 }
 pub struct ArabicCountiresOverSpeedWarningAlertState {
+    mem_prev_alert: VehiculeSpeedLevel,
     during_result: DuringResultState,
 }
 impl ArabicCountiresOverSpeedWarningAlertState {
     pub fn init() -> ArabicCountiresOverSpeedWarningAlertState {
         ArabicCountiresOverSpeedWarningAlertState {
+            mem_prev_alert: VehiculeSpeedLevel::Level0,
             during_result: DuringResultState::init(),
         }
     }
@@ -17,6 +19,7 @@ impl ArabicCountiresOverSpeedWarningAlertState {
         &mut self,
         input: ArabicCountiresOverSpeedWarningAlertInput,
     ) -> VehiculeSpeedLevel {
+        let prev_alert = self.mem_prev_alert;
         let x_1 = 3000i64;
         let x = 120i64 < input.speed_kmh;
         let alert_on = self
@@ -28,9 +31,11 @@ impl ArabicCountiresOverSpeedWarningAlertState {
             });
         let alert_off = input.speed_kmh <= 118i64;
         let alert = match (alert_off, alert_on) {
+            (_, true) => VehiculeSpeedLevel::Level1,
             (true, _) => VehiculeSpeedLevel::Level0,
-            (_, _) => VehiculeSpeedLevel::Level1,
+            _ => prev_alert,
         };
+        self.mem_prev_alert = alert;
         alert
     }
 }

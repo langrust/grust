@@ -25,12 +25,12 @@ impl IndiaOverSpeedWarningAlertState {
         &mut self,
         input: IndiaOverSpeedWarningAlertInput,
     ) -> VehiculeSpeedLevel {
+        let prev_alert = self.mem_prev_alert;
         let no_alert = self
             .india_over_speed_no_alert_conditions_speed_condition
             .step(IndiaOverSpeedNoAlertConditionsSpeedConditionInput {
                 speed_kmh: input.speed_kmh,
             });
-        let prev_alert = self.mem_prev_alert;
         let low_alert = self
             .india_over_speed_low_speed_conditions_speed_condition
             .step(IndiaOverSpeedLowSpeedConditionsSpeedConditionInput {
@@ -47,7 +47,8 @@ impl IndiaOverSpeedWarningAlertState {
         let alert = match (high_alert, low_alert, no_alert) {
             (_, _, true) => VehiculeSpeedLevel::Level0,
             (_, true, _) => VehiculeSpeedLevel::Level2,
-            (_, _, _) => VehiculeSpeedLevel::Level3,
+            (true, _, _) => VehiculeSpeedLevel::Level3,
+            _ => prev_alert,
         };
         self.mem_prev_alert = alert;
         alert
