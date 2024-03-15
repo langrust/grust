@@ -6,6 +6,7 @@ use crate::{
 };
 
 impl Type {
+    /// Get imports from type.
     pub fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
         match self {
             Type::Any | Type::Integer | Type::Float | Type::Boolean | Type::String | Type::Unit => {
@@ -33,6 +34,7 @@ impl Type {
         }
     }
 
+    /// Get generics from type.
     pub fn get_generics(
         &mut self,
         identifier_creator: &mut IdentifierCreator,
