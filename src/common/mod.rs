@@ -19,6 +19,8 @@ pub mod serialize;
 /// Case converter module.
 pub mod convert_case;
 
+/// Graph label module.
 pub mod label;
 
+/// Graph color module.
 pub mod color;
