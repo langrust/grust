@@ -11,17 +11,26 @@ use crate::{
     error::{Error, TerminationError},
 };
 
+/// Symbol kinds.
 #[derive(Clone)]
 pub enum SymbolKind {
+    /// Identifier kind.
     Identifier {
+        /// Identifier scope.
         scope: Scope,
+        /// Identifier type.
         typing: Option<Type>,
     },
+    /// Function kind.
     Function {
+        /// Inputs identifiers.
         inputs: Vec<usize>,
+        /// Output type.
         output_type: Option<Type>,
+        /// Function type.
         typing: Option<Type>,
     },
+    /// Node kind.
     Node {
         /// Is true when the node is a component.
         is_component: bool,
@@ -32,6 +41,7 @@ pub enum SymbolKind {
         /// Node's local identifiers.
         locals: BTreeMap<String, usize>,
     },
+    /// Unitary node kind.
     UnitaryNode {
         /// Is true when the node is a component.
         is_component: bool,
@@ -42,17 +52,22 @@ pub enum SymbolKind {
         /// Node's output identifier.
         output: usize,
     },
+    /// Structure kind.
     Structure {
         /// The structure's fields: a field has an identifier and a type.
         fields: Vec<usize>,
     },
+    /// Enumeration kind.
     Enumeration {
         /// The enumeration's elements.
         elements: Vec<usize>,
     },
+    /// Enumeration element kind.
     EnumerationElement {
+        /// Enumeration name.
         enum_name: String,
     },
+    /// Array kind.
     Array {
         /// The array's type.
         array_type: Option<Type>,
@@ -70,9 +85,12 @@ impl PartialEq for SymbolKind {
     }
 }
 
+/// Symbol from the symbol table.
 #[derive(Clone)]
 pub struct Symbol {
+    /// Symbol kind.
     kind: SymbolKind,
+    /// Symbol name.
     name: String,
 }
 impl PartialEq for Symbol {
@@ -81,10 +99,12 @@ impl PartialEq for Symbol {
     }
 }
 impl Symbol {
+    /// Get symbol's kind.
     pub fn kind(&self) -> &SymbolKind {
         &self.kind
     }
 
+    /// Get symbol's mutable kind.
     pub fn kind_mut(&mut self) -> &mut SymbolKind {
         &mut self.kind
     }
@@ -105,8 +125,11 @@ impl Symbol {
     }
 }
 
+/// Context table.
 pub struct Context {
+    /// Current scope context.
     current: BTreeMap<String, usize>,
+    /// Global context.
     global_context: Option<Box<Context>>,
 }
 impl Default for Context {
@@ -162,9 +185,13 @@ impl Context {
     }
 }
 
+/// Symbol table.
 pub struct SymbolTable {
+    /// Table.
     table: BTreeMap<usize, Symbol>,
+    /// The next fresh identifier.
     fresh_id: usize,
+    /// Context of known symbols.
     known_symbols: Context,
 }
 impl Default for SymbolTable {
@@ -177,6 +204,7 @@ impl Default for SymbolTable {
     }
 }
 impl SymbolTable {
+    /// Create new symbol table.
     pub fn new() -> Self {
         Self {
             table: BTreeMap::new(),
@@ -185,6 +213,7 @@ impl SymbolTable {
         }
     }
 
+    /// Initialize symbol table with builtin operators.
     pub fn initialize(&mut self) {
         // initialize with unary, binary and other operators
         UnaryOperator::iter().for_each(|op| {
@@ -228,16 +257,19 @@ impl SymbolTable {
         });
     }
 
+    /// Create local context in symbol table.
     pub fn local(&mut self) {
         let prev = std::mem::take(&mut self.known_symbols);
         self.known_symbols = prev.create_local_context();
     }
 
+    /// Return to global context in symbol table.
     pub fn global(&mut self) {
         let prev = std::mem::take(&mut self.known_symbols);
         self.known_symbols = prev.get_global_context();
     }
 
+    /// Insert raw symbol in symbol table.
     fn insert_symbol(
         &mut self,
         symbol: Symbol,
@@ -263,6 +295,7 @@ impl SymbolTable {
         }
     }
 
+    /// Insert signal in symbol table.
     pub fn insert_signal(
         &mut self,
         name: String,
@@ -280,6 +313,7 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert identifier in symbol table.
     pub fn insert_identifier(
         &mut self,
         name: String,
@@ -299,6 +333,7 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert function in symbol table.
     pub fn insert_function(
         &mut self,
         name: String,
@@ -320,6 +355,7 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert node in symbol table.
     pub fn insert_node(
         &mut self,
         name: String,
@@ -344,6 +380,7 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert structure in symbol table.
     pub fn insert_struct(
         &mut self,
         name: String,
@@ -360,6 +397,7 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert enumeration in symbol table.
     pub fn insert_enum(
         &mut self,
         name: String,
@@ -376,6 +414,7 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert enumeration element in symbol table.
     pub fn insert_enum_elem(
         &mut self,
         name: String,
@@ -392,6 +431,7 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert array in symbol table.
     pub fn insert_array(
         &mut self,
         name: String,
@@ -409,6 +449,7 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert unitary node in symbol table.
     pub fn insert_unitary_node(
         &mut self,
         node_name: String,
@@ -433,6 +474,7 @@ impl SymbolTable {
             .expect("you should not fail")
     }
 
+    /// Insert fresh signal in symbol table.
     pub fn insert_fresh_signal(
         &mut self,
         fresh_name: String,
@@ -448,6 +490,7 @@ impl SymbolTable {
             .expect("you should not fail") // todo make it local
     }
 
+    /// Restore a local context from identifiers.
     fn restore_context_from<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
         ids.for_each(|id| {
             let symbol = self
@@ -458,6 +501,7 @@ impl SymbolTable {
         })
     }
 
+    /// Restore node or function body context.
     pub fn restore_context(&mut self, id: &usize) {
         let symbol = self
             .get_symbol(id)
@@ -481,14 +525,17 @@ impl SymbolTable {
         }
     }
 
+    /// Get symbol from identifier.
     pub fn get_symbol(&self, id: &usize) -> Option<&Symbol> {
         self.table.get(id)
     }
 
+    /// Get mutable symbol from identifier.
     pub fn get_symbol_mut(&mut self, id: &usize) -> Option<&mut Symbol> {
         self.table.get_mut(id)
     }
 
+    /// Get type from identifier.
     pub fn get_type(&self, id: &usize) -> &Type {
         let symbol = self
             .get_symbol(id)
@@ -504,6 +551,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get function output type from identifier.
     pub fn get_function_output_type(&self, id: &usize) -> &Type {
         let symbol = self
             .get_symbol(id)
@@ -514,6 +562,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get function input identifers from identifier.
     pub fn get_function_input(&self, id: &usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
@@ -524,6 +573,7 @@ impl SymbolTable {
         }
     }
 
+    /// Set function output type.
     pub fn set_function_output_type(&mut self, id: &usize, new_type: Type) {
         let symbol = self
             .get_symbol(id)
@@ -555,6 +605,7 @@ impl SymbolTable {
         }
     }
 
+    /// Tell if identifier refers to function.
     pub fn is_function(&self, id: &usize) -> bool {
         let symbol = self
             .get_symbol(id)
@@ -565,6 +616,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get unitary node output type from identifier.
     pub fn get_unitary_node_output_type(&self, id: &usize) -> &Type {
         let symbol = self
             .get_symbol(id)
@@ -575,6 +627,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get unitary node output name from identifier.
     pub fn get_unitary_node_output_name(&self, id: &usize) -> &String {
         let symbol = self
             .get_symbol(id)
@@ -585,6 +638,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get unitary node output identifier from identifier.
     pub fn get_unitary_node_output_id(&self, id: &usize) -> &usize {
         let symbol = self
             .get_symbol(id)
@@ -595,6 +649,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get unitary node vector of used inputs from identifier.
     pub fn get_unitary_node_used_inputs(&self, id: &usize) -> Vec<bool> {
         let symbol = self
             .get_symbol(id)
@@ -615,6 +670,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get unitary node input identifiers from identifier.
     pub fn get_unitary_node_inputs(&self, id: &usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
@@ -625,6 +681,7 @@ impl SymbolTable {
         }
     }
 
+    /// Set identifier's type.
     pub fn set_type(&mut self, id: &usize, new_type: Type) {
         let symbol = self
             .get_symbol_mut(id)
@@ -640,6 +697,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get identifier's name.
     pub fn get_name(&self, id: &usize) -> &String {
         let symbol = self
             .get_symbol(id)
@@ -647,6 +705,7 @@ impl SymbolTable {
         &symbol.name
     }
 
+    /// Get identifier's scope.
     pub fn get_scope(&self, id: &usize) -> &Scope {
         let symbol = self
             .get_symbol(id)
@@ -657,6 +716,7 @@ impl SymbolTable {
         }
     }
 
+    /// Set identifier's scope.
     pub fn set_scope(&mut self, id: &usize, new_scope: Scope) {
         let symbol = self
             .get_symbol_mut(id)
@@ -667,6 +727,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get node input identifiers from identifier.
     pub fn get_node_inputs(&self, id: &usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
@@ -677,6 +738,7 @@ impl SymbolTable {
         }
     }
 
+    /// Tell if identifier is a component.
     pub fn is_component(&self, id: &usize) -> bool {
         let symbol = self
             .get_symbol(id)
@@ -687,6 +749,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get structure' field identifiers from identifier.
     pub fn get_struct_fields(&self, id: &usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
@@ -697,6 +760,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get enumeration' element identifiers from identifier.
     pub fn get_enum_elements(&self, id: &usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
@@ -707,6 +771,7 @@ impl SymbolTable {
         }
     }
 
+    /// Tell if identifier is a node.
     pub fn is_node(&self, name: &String, local: bool) -> bool {
         let symbol_hash = format!("node {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
@@ -715,6 +780,7 @@ impl SymbolTable {
         }
     }
 
+    /// Set array type from identifier.
     pub fn set_array_type(&mut self, id: &usize, new_type: Type) {
         let symbol = self
             .get_symbol_mut(id)
@@ -732,6 +798,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get array type from identifier.
     pub fn get_array(&self, id: &usize) -> Type {
         let symbol = self
             .get_symbol(id)
@@ -745,6 +812,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get array element type from identifier.
     pub fn get_array_type(&self, id: &usize) -> &Type {
         let symbol = self
             .get_symbol(id)
@@ -755,6 +823,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get array size from identifier.
     pub fn get_array_size(&self, id: &usize) -> usize {
         let symbol = self
             .get_symbol(id)
@@ -765,6 +834,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get identifier symbol identifier.
     pub fn get_identifier_id(
         &self,
         name: &String,
@@ -786,6 +856,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get function symbol identifier.
     pub fn get_function_id(
         &self,
         name: &String,
@@ -807,6 +878,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get signal symbol identifier.
     pub fn get_signal_id(
         &self,
         name: &String,
@@ -828,6 +900,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get node symbol identifier.
     pub fn get_node_id(
         &self,
         name: &String,
@@ -849,6 +922,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get structure symbol identifier.
     pub fn get_struct_id(
         &self,
         name: &String,
@@ -870,6 +944,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get enumeration symbol identifier.
     pub fn get_enum_id(
         &self,
         name: &String,
@@ -891,6 +966,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get enumeration element symbol identifier.
     pub fn get_enum_elem_id(
         &self,
         elem_name: &String,
@@ -913,6 +989,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get array symbol identifier.
     pub fn get_array_id(
         &self,
         name: &String,
@@ -934,6 +1011,7 @@ impl SymbolTable {
         }
     }
 
+    /// Get unitary node symbol identifier.
     pub fn get_unitary_node_id(&self, node_name: &String, output_name: &String) -> usize {
         let symbol_hash = format!("unitary_node {node_name}_{}", output_name);
         *self
