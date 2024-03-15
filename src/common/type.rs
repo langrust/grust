@@ -37,9 +37,19 @@ pub enum Type {
     /// Option type, if `n = some(1)` then `n: int?`
     Option(Box<Type>),
     /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
-    Enumeration { name: String, id: usize },
+    Enumeration {
+        /// Enumeration's name.
+        name: String,
+        /// Enumeration's identifier.
+        id: usize,
+    },
     /// User defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
-    Structure { name: String, id: usize },
+    Structure {
+        /// Structure's name.
+        name: String,
+        /// Structure's identifier.
+        id: usize,
+    },
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
     Abstract(Vec<Type>, Box<Type>),
     /// Tuple type, if `z = zip(a, b)` with `a: [int; 5]` and `b: [float; 5]` then `z: [(int, float); 5]`
