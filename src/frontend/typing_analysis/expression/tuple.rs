@@ -1,4 +1,4 @@
-use crate::common::{location::Location, r#type::Type};
+use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
 use crate::frontend::typing_analysis::TypeAnalysis;
 use crate::hir::expression::ExpressionKind;
@@ -11,13 +11,12 @@ where
     /// Add a [Type] to the tuple expression.
     pub fn typing_tuple(
         &mut self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<Type, TerminationError> {
         match self {
-            // an tuple is composed of `n` elements of the same type `t` and
-            // its type is `[t; n]`
+            // an tuple is composed of `n` elements of the different type `t_k` and
+            // its type is `(t_1, ..., t_n)`
             ExpressionKind::Tuple { ref mut elements } => {
                 debug_assert!(elements.len() >= 2);
 
