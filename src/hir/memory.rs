@@ -60,38 +60,7 @@ impl Memory {
         }
     }
 
-    /// Add an initial_valueized buffer to memory.
-    ///
-    /// ```rust
-    /// use std::collections::BTreeMap;
-    ///
-    /// use grustine::common::{
-    ///     constant::Constant, location::Location, scope::Scope, r#type::Type
-    /// };
-    /// use grustine::hir::{
-    ///     dependencies::Dependencies, memory::Memory, signal::Signal,
-    ///     stream_expression::StreamExpression,
-    /// };
-    ///
-    /// let mut memory = Memory::new();
-    ///
-    /// memory.add_buffer(
-    ///     String::from("toto"),
-    ///     Constant::Integer(0),
-    ///     StreamExpression::SignalCall {
-    ///         signal: Signal {
-    ///             id: String::from("x"),
-    ///             scope: Scope::Local,
-    ///         },
-    ///         typing: Type::Integer,
-    ///         location: Location::default(),
-    ///         dependencies: Dependencies::new(),
-    ///     });
-    ///
-    /// assert!(!memory.buffers.is_empty());
-    /// assert!(memory.buffers.contains_key(&String::from("toto")));
-    /// assert!(memory.called_nodes.is_empty());
-    /// ```
+    /// Add an initialized buffer to memory.
     pub fn add_buffer(
         &mut self,
         memory_id: usize,
@@ -113,25 +82,6 @@ impl Memory {
     }
 
     /// Add called node to memory.
-    ///
-    /// ```rust
-    /// use std::collections::BTreeMap;
-    ///
-    /// use grustine::common::{constant::Constant, r#type::Type, location::Location};
-    /// use grustine::hir::{stream_expression::StreamExpression, memory::Memory};
-    ///
-    /// let mut memory = Memory::new();
-    ///
-    /// memory.add_called_node(
-    ///     String::from("toto"),
-    ///     String::from("toto_node"),
-    ///     String::from("toto_signal")
-    /// );
-    ///
-    /// assert!(!memory.called_nodes.is_empty());
-    /// assert!(memory.called_nodes.contains_key(&String::from("toto")));
-    /// assert!(memory.buffers.is_empty());
-    /// ```
     pub fn add_called_node(&mut self, memory_id: usize, node_id: usize, signal_id: usize) {
         debug_assert!(self
             .called_nodes

@@ -5,27 +5,6 @@ use crate::hir::stream_expression::{StreamExpression, StreamExpressionKind};
 use crate::symbol_table::SymbolTable;
 
 impl TypeAnalysis for StreamExpression {
-    /// Add a [Type] to the stream expression.
-    ///
-    /// # Example
-    /// ```rust
-    /// use std::collections::BTreeMap;
-    ///
-    /// use grustine::ast::stream_expression::StreamExpression;
-    /// use grustine::common::{constant::Constant, location::Location};
-    ///
-    /// let mut errors = vec![];
-    /// let nodes_context = BTreeMap::new();
-    /// let signals_context = BTreeMap::new();
-    /// let global_context = BTreeMap::new();
-    /// let user_types_context = BTreeMap::new();
-    /// let mut stream_expression = StreamExpressionKind::Constant {
-    ///     constant: Constant::Integer(0),
-    ///     typing: None,
-    ///     location: Location::default(),
-    /// };
-    /// stream_expression.typing(&nodes_context, &signals_context, &global_context, &user_types_context, &mut errors).unwrap();
-    /// ```
     fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,

@@ -39,67 +39,6 @@ impl IdentifierCreator {
     ///     out o1: int = x;
     /// }
     /// ```
-    ///
-    /// This example is tested in the following code.
-    ///
-    /// ```rust
-    /// use grustine::common::{location::Location, scope::Scope, r#type::Type};
-    /// use grustine::hir::{
-    ///     dependencies::Dependencies, equation::Equation, identifier_creator::IdentifierCreator,
-    ///     memory::Memory, once_cell::OnceCell, identifier::identifier, stream_expression::StreamExpression,
-    ///     unitary_node::UnitaryNode,
-    /// };
-    ///
-    /// let unitary_node = UnitaryNode {
-    ///     node_id: String::from("test"),
-    ///     output_id: String::from("o1"),
-    ///     inputs: vec![(String::from("i1"), Type::Integer)],
-    ///     equations: vec![
-    ///         Equation {
-    ///             scope: Scope::Local,
-    ///             id: String::from("x"),
-    ///             identifier_type: Type::Integer,
-    ///             expression: StreamExpression::identifierCall {
-    ///                 identifier: identifier {
-    ///                     id: String::from("i1"),
-    ///                     scope: Scope::Input,
-    ///                 },
-    ///                 typing: Type::Integer,
-    ///                 location: Location::default(),
-    ///                 dependencies: Dependencies::new(),
-    ///             },
-    ///             location: Location::default(),
-    ///         },
-    ///         Equation {
-    ///             scope: Scope::Output,
-    ///             id: String::from("o1"),
-    ///             identifier_type: Type::Integer,
-    ///             expression: StreamExpression::identifierCall {
-    ///                 identifier: identifier {
-    ///                     id: String::from("x"),
-    ///                     scope: Scope::Local,
-    ///                 },
-    ///                 typing: Type::Integer,
-    ///                 location: Location::default(),
-    ///                 dependencies: Dependencies::new(),
-    ///             },
-    ///             location: Location::default(),
-    ///         },
-    ///     ],
-    ///     memory: Memory::new(),
-    ///     location: Location::default(),
-    ///     graph: OnceCell::new(),
-    /// };
-    /// let mut identifier_creator = IdentifierCreator::from(unitary_node.get_identifiers());
-    ///
-    /// let identifier = identifier_creator.new_identifier(String::from("mem"), String::from("x"), String::from(""));
-    /// let control = String::from("mem_x");
-    /// assert_eq!(identifier, control);
-    ///
-    /// let identifier = identifier_creator.new_identifier(String::from("mem"), String::from("x"), String::from(""));
-    /// let control = String::from("mem_x_1");
-    /// assert_eq!(identifier, control)
-    /// ```
     pub fn new_identifier(
         &mut self,
         mut prefix: String,

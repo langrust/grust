@@ -260,7 +260,7 @@ nodes:
                         location: ~
                         dependencies: ~
                     - - kind: Default
-                        typing: ~
+                        typing: Any
                         location: ~
                       - ~
                       - []
@@ -630,3 +630,4 @@ nodes:
     graph: ~
 component: ~
 location: ~
+

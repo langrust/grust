@@ -62,26 +62,6 @@ where
 }
 
 impl TypeAnalysis for Expression {
-    /// Add a [Type] to the expression.
-    ///
-    /// # Example
-    /// ```rust
-    /// use std::collections::BTreeMap;
-    ///
-    /// use grustine::hir::ExpressionKind::Expression;
-    /// use grustine::common::{constant::Constant, location::Location};
-    ///
-    /// let mut errors = vec![];
-    /// let global_context = BTreeMap::new();
-    /// let elements_context = BTreeMap::new();
-    /// let user_types_context = BTreeMap::new();
-    /// let mut expression = ExpressionKind::Constant {
-    ///     constant: Constant::Integer(0),
-    ///     typing: None,
-    ///     location: Location::default(),
-    /// };
-    /// expression.typing(&global_context, &elements_context, & &mut errors).unwrap();
-    /// ```
     fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
