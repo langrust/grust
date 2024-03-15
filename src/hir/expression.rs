@@ -3,7 +3,7 @@ use crate::common::{constant::Constant, location::Location, r#type::Type};
 use crate::hir::{dependencies::Dependencies, pattern::Pattern, statement::Statement};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust expression AST.
+/// HIR expression kind.
 pub enum ExpressionKind<E> {
     /// Constant expression.
     Constant {
@@ -119,6 +119,7 @@ pub enum ExpressionKind<E> {
     },
 }
 
+/// HIR expression.
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Expression {
     /// Expression kind.
@@ -132,12 +133,15 @@ pub struct Expression {
 }
 
 impl Expression {
+    /// Get expression's type.
     pub fn get_type(&self) -> Option<&Type> {
         self.typing.as_ref()
     }
+    /// Get expression's mutable type.
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         self.typing.as_mut()
     }
+    /// Get expression's dependencies.
     pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
         self.dependencies
             .get()
@@ -146,6 +150,7 @@ impl Expression {
 }
 
 impl<E> ExpressionKind<E> {
+    /// Propagate a predicate over the expression tree.
     pub fn propagate_predicate<F1, F2>(
         &self,
         predicate_expression: F1,

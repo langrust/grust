@@ -57,16 +57,19 @@ impl Node {
         )
     }
 
+    /// Tell if there is no FBY expression.
     pub fn no_fby(&self) -> bool {
         self.unitary_nodes
             .iter()
             .all(|(_, unitary_node)| unitary_node.no_fby())
     }
+    /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {
         self.unitary_nodes
             .iter()
             .all(|(_, unitary_node)| unitary_node.is_normal_form())
     }
+    /// Tell if there is no node application.
     pub fn no_node_application(&self) -> bool {
         self.unitary_nodes
             .iter()

@@ -124,6 +124,7 @@ impl IdentifierCreator {
         identifier
     }
 
+    /// Create new type identifier.
     pub fn new_type_identifier(&mut self, mut type_name: String) -> String {
         let mut counter = 1;
         while self.already_defined(&type_name) {

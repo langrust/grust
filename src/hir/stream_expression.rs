@@ -7,6 +7,7 @@ use crate::hir::{dependencies::Dependencies, expression::ExpressionKind};
 pub enum StreamExpressionKind {
     /// Expression.
     Expression {
+        /// The expression kind.
         expression: ExpressionKind<StreamExpression>,
     },
     /// Initialized buffer stream expression.
@@ -49,18 +50,22 @@ pub struct StreamExpression {
 }
 
 impl StreamExpression {
+    /// Get stream expression's type.
     pub fn get_type(&self) -> Option<&Type> {
         self.typing.as_ref()
     }
+    /// Get stream expression's mutable type.
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         self.typing.as_mut()
     }
+    /// Get stream expression's dependencies.
     pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
         self.dependencies
             .get()
             .expect("there should be dependencies")
     }
 
+    /// Tell if there is no FBY expression.
     pub fn no_fby(&self) -> bool {
         match &self.kind {
             StreamExpressionKind::Expression { expression } => expression
@@ -76,6 +81,7 @@ impl StreamExpression {
             }
         }
     }
+    /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {
         match &self.kind {
             StreamExpressionKind::Expression { expression } => expression
@@ -93,6 +99,7 @@ impl StreamExpression {
                 .all(|(_, expression)| expression.no_any_node_application()),
         }
     }
+    /// Tell if there is no node/unitarynode application.
     pub fn no_any_node_application(&self) -> bool {
         match &self.kind {
             StreamExpressionKind::Expression { expression } => expression
@@ -106,6 +113,7 @@ impl StreamExpression {
             StreamExpressionKind::NodeApplication { .. } => false,
         }
     }
+    /// Tell if there is no node application.
     pub fn no_node_application(&self) -> bool {
         match &self.kind {
             StreamExpressionKind::Expression { expression } => expression

@@ -19,11 +19,19 @@ pub mod memory;
 /// HIR [Dependencies](crate::hir::dependencies::Dependencies) module.
 pub mod dependencies;
 
+/// HIR [Expression](crate::hir::expression::Expression) module.
 pub mod expression;
+
 /// HIR [Function](crate::hir::function::Function) module.
 pub mod function;
+
+/// HIR [Pattern](crate::hir::pattern::Pattern) module.
 pub mod pattern;
+
+/// HIR [Statement](crate::hir::statement::Statement) module.
 pub mod statement;
+
+/// HIR [Typedef](crate::hir::typedef::Typedef) module.
 pub mod typedef;
 
 /// HIR [OnceCell](crate::hir::once_cell::OnceCell) module.
