@@ -24,9 +24,10 @@ impl Dependencies {
     /// Create dependencies according to input.
     ///
     /// ```rust
+    /// use grustine::common::label::Label;
     /// use grustine::hir::dependencies::Dependencies;
     ///
-    /// let v = vec![(1, 0)];
+    /// let v = vec![(1, Label::Weight(0))];
     /// let dependencies = Dependencies::from(v.clone());
     /// assert_eq!(*dependencies.get().unwrap(), v);
     /// ```
@@ -42,9 +43,10 @@ impl Dependencies {
     /// setting the dependencies.
     ///
     /// ```rust
+    /// use grustine::common::label::Label;
     /// use grustine::hir::dependencies::Dependencies;
     ///
-    /// let v = vec![(1, 0)];
+    /// let v = vec![(1, Label::Weight(0))];
     /// let dependencies = Dependencies::new();
     /// dependencies.set(v.clone());
     /// assert_eq!(*dependencies.get().unwrap(), v);
@@ -61,9 +63,10 @@ impl Dependencies {
     /// Return `None` otherwise.
     ///
     /// ```rust
+    /// use grustine::common::label::Label;
     /// use grustine::hir::dependencies::Dependencies;
     ///
-    /// let v = vec![(1, 0)];
+    /// let v = vec![(1, Label::Weight(0))];
     /// let dependencies = Dependencies::new();
     /// dependencies.set(v.clone());
     /// assert_eq!(*dependencies.get().unwrap(), v);

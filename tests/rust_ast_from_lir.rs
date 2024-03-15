@@ -95,8 +95,8 @@ fn generate_rust_project_for_veh_speed_odometer() {
     let mut files = SimpleFiles::new();
 
     let veh_speed_odometer_id = files.add(
-        "Veh-Speed-Odometer.gr",
-        std::fs::read_to_string("tests/fixture/from_baptiste/Veh-Speed-Odometer.gr")
+        "veh_speed_odometer.gr",
+        std::fs::read_to_string("tests/fixture/from_baptiste/veh_speed_odometer.gr")
             .expect("unkown file"),
     );
 

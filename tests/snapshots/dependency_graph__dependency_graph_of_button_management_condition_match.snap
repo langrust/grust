@@ -301,7 +301,7 @@ nodes:
                         location: ~
                         dependencies: []
                     - - kind: Default
-                        typing: ~
+                        typing: Any
                         location: ~
                       - ~
                       - []
@@ -770,3 +770,4 @@ nodes:
       : Weight: 0
 component: ~
 location: ~
+

@@ -4,51 +4,6 @@ use crate::hir::function::Function;
 use crate::symbol_table::SymbolTable;
 
 impl TypeAnalysis for Function {
-    /// [Type] the function.
-    ///
-    /// # Example
-    /// ```rust
-    /// use std::collections::BTreeMap;
-    ///
-    /// use grustine::ast::{
-    ///     expression::Expression, function::Function, statement::Statement,
-    /// };
-    /// use grustine::common::{
-    ///     constant::Constant, location::Location, r#type::Type,
-    /// };
-    ///
-    /// let mut errors = vec![];
-    /// let global_context = BTreeMap::new();
-    /// let user_types_context = BTreeMap::new();
-    ///
-    /// let mut function = Function {
-    ///     id: String::from("test"),
-    ///     inputs: vec![(String::from("i"), Type::Integer)],
-    ///     statements: vec![
-    ///         Statement {
-    ///             id: String::from("x"),
-    ///             element_type: Type::Integer,
-    ///             expression: ExpressionKind::Identifier {
-    ///                 id: String::from("i"),
-    ///                 typing: None,
-    ///                 location: Location::default(),
-    ///             },
-    ///             location: Location::default(),
-    ///         }
-    ///     ],
-    ///     returned: (
-    ///         Type::Integer,
-    ///         ExpressionKind::Identifier {
-    ///             id: String::from("x"),
-    ///             typing: None,
-    ///             location: Location::default(),
-    ///         }
-    ///     ),
-    ///     location: Location::default(),
-    /// };
-    ///
-    /// function.typing(&global_context, &user_types_context, &mut errors).unwrap();
-    /// ```
     fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
