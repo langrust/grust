@@ -58,6 +58,7 @@ impl HIRFromAST for Node {
 }
 
 impl Node {
+    /// Store node's identifiers in symbol table.
     pub fn store(
         &self,
         symbol_table: &mut SymbolTable,

@@ -15,14 +15,15 @@ impl<E> ExpressionKind<E>
 where
     E: HIRFromAST,
 {
-    // precondition: identifiers are stored in symbol table
-    // postcondition: construct HIR expression kind and check identifiers good use
+    /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<HIRExpressionKind<E::HIR>, TerminationError> {
+        // precondition: identifiers are stored in symbol table
+        // postcondition: construct HIR expression kind and check identifiers good use
         match self {
             ExpressionKind::Constant { constant } => Ok(HIRExpressionKind::Constant { constant }),
             ExpressionKind::Identifier { id } => {

@@ -56,6 +56,7 @@ impl HIRFromAST for Function {
 }
 
 impl Function {
+    /// Store function's identifiers in symbol table.
     pub fn store(
         &self,
         symbol_table: &mut SymbolTable,
