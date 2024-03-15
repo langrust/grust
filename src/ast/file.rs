@@ -18,18 +18,23 @@ pub struct File {
 }
 
 impl File {
+    /// Add a [Typedef] to the GRust file.
     pub fn push_typedef(&mut self, typedef: Typedef) {
         self.typedefs.push(typedef)
     }
+    /// Add a [Function] to the GRust file.
     pub fn push_function(&mut self, function: Function) {
         self.functions.push(function)
     }
+    /// Add a [Node] to the GRust file.
     pub fn push_node(&mut self, node: Node) {
         self.nodes.push(node)
     }
+    /// Set GRust file location.
     pub fn set_location(&mut self, location: Location) {
         self.location = location;
     }
+    /// Set GRust file component.
     pub fn set_component(&mut self, component: Node) {
         self.component = Some(component);
     }
