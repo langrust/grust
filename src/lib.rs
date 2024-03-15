@@ -122,12 +122,14 @@ pub mod parser;
 /// LanGRust symbol table module.
 pub mod symbol_table;
 
+/// Creates AST from GRust file.
 pub fn parsing(file_id: usize, files: &mut SimpleFiles<&str, String>) -> ASTFile {
     langrust::fileParser::new()
         .parse(file_id, &files.source(file_id).unwrap())
         .unwrap()
 }
 
+/// Creates HIR from GRust file.
 pub fn hir_from_ast(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
@@ -141,6 +143,8 @@ pub fn hir_from_ast(
     ast.hir_from_ast(&mut symbol_table, &mut errors)
         .map_err(|_| errors)
 }
+
+/// Creates typed HIR from GRust file.
 pub fn typing(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
@@ -156,6 +160,8 @@ pub fn typing(
         .map_err(|_| errors)?;
     Ok(hir)
 }
+
+/// Creates dependent HIR from GRust file.
 pub fn dependency_graph(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
@@ -172,6 +178,8 @@ pub fn dependency_graph(
         .map_err(|_| errors)?;
     Ok(hir)
 }
+
+/// Creates causal HIR from GRust file.
 pub fn causality_analysis(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
@@ -189,6 +197,8 @@ pub fn causality_analysis(
     hir.causality_analysis(&symbol_table, &mut errors)
         .map_err(|_| errors)
 }
+
+/// Creates normalized HIR from GRust file.
 pub fn normalizing(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
@@ -208,6 +218,8 @@ pub fn normalizing(
         .map_err(|_| errors)?;
     Ok(hir)
 }
+
+/// Creates LIR from GRust file.
 pub fn lir_from_hir(file_id: usize, files: &mut SimpleFiles<&str, String>) -> LIRProject {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
@@ -223,6 +235,8 @@ pub fn lir_from_hir(file_id: usize, files: &mut SimpleFiles<&str, String>) -> LI
     hir.normalize(&mut symbol_table, &mut errors).unwrap();
     hir.lir_from_hir(&symbol_table)
 }
+
+/// Creates RustAST from GRust file.
 pub fn rust_ast_from_lir(file_id: usize, files: &mut SimpleFiles<&str, String>) -> RustASTProject {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
@@ -238,6 +252,8 @@ pub fn rust_ast_from_lir(file_id: usize, files: &mut SimpleFiles<&str, String>) 
     hir.normalize(&mut symbol_table, &mut errors).unwrap();
     rust_from_lir(hir.lir_from_hir(&symbol_table))
 }
+
+/// Creates Rust project from GRust file.
 pub fn generate_rust_project<P>(
     file_id: usize,
     files: &mut SimpleFiles<&str, String>,
