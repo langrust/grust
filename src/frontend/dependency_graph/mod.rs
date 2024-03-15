@@ -8,6 +8,9 @@ mod file;
 mod node;
 mod stream_expression;
 
+/// Add an egde to the graph.
+/// 
+/// If edge already exits then keep the edge with the lowest weight.
 pub fn add_edge(
     graph: &mut DiGraphMap<usize, Label>,
     signal_id: usize,

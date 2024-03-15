@@ -56,7 +56,7 @@ impl StreamExpression {
                     errors,
                 )?;
                 // dependencies with the memory delay
-                let mut dependencies = expression
+                let dependencies = expression
                     .get_dependencies()
                     .clone()
                     .into_iter()
