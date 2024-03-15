@@ -1,7 +1,6 @@
 use petgraph::graphmap::GraphMap;
 
 use crate::{
-    common::label::Label,
     hir::{
         identifier_creator::IdentifierCreator, memory::Memory, statement::Statement,
         unitary_node::UnitaryNode,
