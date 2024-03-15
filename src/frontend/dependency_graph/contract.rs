@@ -3,6 +3,7 @@ use petgraph::graphmap::DiGraphMap;
 use crate::{common::label::Label, hir::contract::Contract};
 
 impl Contract {
+    /// Add dependencies of a contract to the graph.
     pub fn add_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>) {
         let Contract {
             requires,
