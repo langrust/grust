@@ -73,14 +73,17 @@ impl UnitaryNode {
         graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
     }
 
+    /// Tell if there is no FBY expression.
     pub fn no_fby(&self) -> bool {
         self.statements.iter().all(|statement| statement.no_fby())
     }
+    /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {
         self.statements
             .iter()
             .all(|statement| statement.is_normal_form())
     }
+    /// Tell if there is no node application.
     pub fn no_node_application(&self) -> bool {
         self.statements
             .iter()

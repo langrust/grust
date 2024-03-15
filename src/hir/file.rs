@@ -18,6 +18,7 @@ pub struct File {
 }
 
 impl File {
+    /// Tell if there is no FBY expression.
     pub fn no_fby(&self) -> bool {
         self.nodes.iter().all(|node| node.no_fby())
             && self
@@ -25,6 +26,7 @@ impl File {
                 .as_ref()
                 .map_or(true, |component| component.no_fby())
     }
+    /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {
         self.nodes.iter().all(|node| node.is_normal_form())
             && self
@@ -32,6 +34,7 @@ impl File {
                 .as_ref()
                 .map_or(true, |component| component.is_normal_form())
     }
+    /// Tell if there is no node application.
     pub fn no_node_application(&self) -> bool {
         self.nodes.iter().all(|node| node.no_node_application())
             && self

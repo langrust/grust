@@ -1,7 +1,7 @@
 use crate::common::{constant::Constant, location::Location, r#type::Type};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust matching pattern HIR.
+/// HIR pattern kind.
 pub enum PatternKind {
     /// Identifier pattern, gives a name to the matching expression.
     Identifier {
@@ -43,6 +43,7 @@ pub enum PatternKind {
     Default,
 }
 
+/// HIR pattern.
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Pattern {
     /// Pattern kind.
@@ -53,12 +54,15 @@ pub struct Pattern {
     pub location: Location,
 }
 impl Pattern {
+    /// Get pattern's type.
     pub fn get_type(&self) -> Option<&Type> {
         self.typing.as_ref()
     }
+    /// Get pattern's mutable type.
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         self.typing.as_mut()
     }
+    /// Get pattern's local identifiers.
     pub fn local_identifiers(&self) -> Vec<usize> {
         match &self.kind {
             PatternKind::Identifier { id } => vec![*id],

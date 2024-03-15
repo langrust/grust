@@ -56,6 +56,7 @@ pub struct Contract {
 }
 
 impl Contract {
+    /// Substitude an identifier from another.
     pub fn substitution(&mut self, old_id: usize, new_id: usize) {
         self.requires
             .iter_mut()
@@ -73,6 +74,7 @@ mod term {
     use super::{Term, TermKind};
 
     impl Term {
+        /// Substitude an identifier from another.
         pub fn substitution(&mut self, old_id: usize, new_id: usize) {
             match &mut self.kind {
                 TermKind::Constant { .. } => (),
