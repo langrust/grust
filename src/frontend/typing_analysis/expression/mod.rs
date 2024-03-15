@@ -25,6 +25,7 @@ impl<E> ExpressionKind<E>
 where
     E: TypeAnalysis,
 {
+    /// Tries to type the given construct.
     pub fn typing(
         &mut self,
         location: &Location,
@@ -42,7 +43,7 @@ where
                 self.typing_structure(location, symbol_table, errors)
             }
             ExpressionKind::Array { .. } => self.typing_array(location, symbol_table, errors),
-            ExpressionKind::Tuple { .. } => self.typing_tuple(location, symbol_table, errors),
+            ExpressionKind::Tuple { .. } => self.typing_tuple(symbol_table, errors),
             ExpressionKind::When { .. } => self.typing_when(location, symbol_table, errors),
             ExpressionKind::Match { .. } => self.typing_match(location, symbol_table, errors),
             ExpressionKind::FieldAccess { .. } => {

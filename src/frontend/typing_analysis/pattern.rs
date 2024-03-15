@@ -4,6 +4,7 @@ use crate::hir::pattern::{Pattern, PatternKind};
 use crate::symbol_table::SymbolTable;
 
 impl Pattern {
+    /// Tries to type the given construct.
     pub fn typing(
         &mut self,
         expected_type: &Type,

@@ -25,20 +25,21 @@ pub mod statement;
 /// LanGRust [Pattern](crate::hir::pattern::Pattern) typing analysis module.
 pub mod pattern;
 
-/// LanGRust [Contract](crate::hir::contract::Contract) typing analysis module.
-pub mod contract;
-
+/// Performs type analysis.
 pub trait TypeAnalysis {
+    /// Tries to type the given construct.
     fn typing(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError>;
 
+    /// Get type from construct.
     fn get_type(&self) -> Option<&Type> {
         None
     }
 
+    /// Get mutable type from construct.
     fn get_type_mut(&mut self) -> Option<&mut Type> {
         None
     }
