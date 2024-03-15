@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use petgraph::graphmap::GraphMap;
 
 use crate::{
-    common::label::Label,
     hir::{
         identifier_creator::IdentifierCreator, memory::Memory, statement::Statement,
         stream_expression::StreamExpression, unitary_node::UnitaryNode,

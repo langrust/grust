@@ -93,7 +93,7 @@ impl Node {
         &mut self,
         output: usize,
         symbol_table: &mut SymbolTable,
-        creusot_contract: bool,
+        _creusot_contract: bool,
     ) -> Vec<usize> {
         let Node {
             id: node,
