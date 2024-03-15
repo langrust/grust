@@ -24,26 +24,39 @@ pub mod unitary_node;
 /// LIR item construction from HIR typedef.
 pub mod typedef;
 
+/// LIR contract construction from HIR contract.
 pub mod contract;
+
 /// LIR memory construction from HIR typedef.
 pub mod memory;
+
+/// LIR pattern construction from HIR pattern.
 pub mod pattern;
+
+/// LIR type construction from HIR type.
 pub mod r#type;
 
+
+/// HIR transformation into LIR.
 pub trait LIRFromHIR {
+    /// Corresponding LIR construct.
     type LIR;
 
     /// Transforms HIR into LIR.
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR;
 
+    /// Get type from LIR.
     fn get_type(&self) -> Option<&Type> {
         None
     }
 
-    fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
+    /// Tell if LIR construct is an IfThenElse operator.
+    fn is_if_then_else(&self, _symbol_table: &SymbolTable) -> bool {
         false
     }
-    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
+    
+    /// Get imports from LIR.
+    fn get_imports(&self, _symbol_table: &SymbolTable) -> Vec<Import> {
         vec![]
     }
 }

@@ -81,6 +81,7 @@ impl Memory {
         (elements, inits, steps)
     }
 
+    /// Get imports from memory.
     pub fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
         let mut imports = self
             .buffers
