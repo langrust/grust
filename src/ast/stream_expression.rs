@@ -6,7 +6,7 @@ use crate::common::location::Location;
 pub enum StreamExpressionKind {
     /// Expression.
     Expression {
-        // The expression kind.
+        /// The expression kind.
         expression: ExpressionKind<StreamExpression>,
     },
     /// Initialized buffer stream expression.
