@@ -4,14 +4,15 @@ use crate::error::{Error, TerminationError};
 use crate::symbol_table::SymbolTable;
 
 impl Type {
-    // precondition: Typedefs are stored in symbol table
-    // postcondition: construct a new Type without `Type::NotDefinedYet`
+    /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<Type, TerminationError> {
+        // precondition: Typedefs are stored in symbol table
+        // postcondition: construct a new Type without `Type::NotDefinedYet`
         match self {
             Type::Array(array_type, array_size) => Ok(Type::Array(
                 Box::new(array_type.hir_from_ast(location, symbol_table, errors)?),

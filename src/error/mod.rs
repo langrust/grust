@@ -132,6 +132,11 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// expect constant expression
+    ExpectConstant {
+        /// the error location
+        location: Location,
+    },
     /// expect at least one input
     ExpectInput {
         /// the error location
@@ -386,6 +391,16 @@ impl Error {
                     )
                 ]
             ),
+            Error::ExpectConstant { location } => Diagnostic::error()
+                .with_message("incompatible expression")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("not constant")
+                ])
+                .with_notes(vec![
+                    format!("expect a constant expression")
+                ]
+            ),
             Error::ExpectInput { location } => Diagnostic::error()
                 .with_message("missing inputs")
                 .with_labels(vec![
@@ -534,6 +549,7 @@ impl std::fmt::Display for Error {
             Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
             Error::IncompatibleInputsNumber { .. } => write!(f, "Incompatible Inputs Number"),
+            Error::ExpectConstant { .. } => write!(f, "Expect Constant"),
             Error::ExpectInput { .. } => write!(f, "Expect Input"),
             Error::ExpectNumber { .. } => write!(f, "Expect Number"),
             Error::ExpectAbstraction { .. } => write!(f, "Expect Abstraction"),

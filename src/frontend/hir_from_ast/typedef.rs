@@ -71,6 +71,7 @@ impl HIRFromAST for Typedef {
 }
 
 impl Typedef {
+    /// Store typedef's identifiers in symbol table.
     pub fn store(
         &self,
         symbol_table: &mut SymbolTable,

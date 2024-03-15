@@ -170,7 +170,9 @@ impl StreamExpression {
                 | ExpressionKind::Fold { .. }
                 | ExpressionKind::Sort { .. }
                 | ExpressionKind::Zip { .. } => {
-                    let error = todo!();
+                    let error = Error::ExpectConstant {
+                        location: self.location.clone(),
+                    };
                     errors.push(error);
                     Err(TerminationError)
                 }
@@ -186,7 +188,9 @@ impl StreamExpression {
                     if symbol_table.is_function(&id) {
                         Ok(())
                     } else {
-                        let error = todo!();
+                        let error = Error::ExpectConstant {
+                            location: self.location.clone(),
+                        };
                         errors.push(error);
                         Err(TerminationError)
                     }
@@ -217,7 +221,9 @@ impl StreamExpression {
                     .collect::<Result<_, _>>(),
             },
             StreamExpressionKind::FollowedBy { .. } => {
-                let error = todo!();
+                let error = Error::ExpectConstant {
+                    location: self.location.clone(),
+                };
                 errors.push(error);
                 Err(TerminationError)
             }

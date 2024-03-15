@@ -21,10 +21,15 @@ pub mod pattern;
 pub mod statement;
 /// HIR StreamExpression construction from AST StreamExpression
 pub mod stream_expression;
+/// HIR Type construction from AST Type
 pub mod r#type;
+/// HIR Typedef construction from AST Typedef.
 pub mod typedef;
 
+
+/// AST transformation into HIR.
 pub trait HIRFromAST {
+    /// Corresponding HIR construct.
     type HIR;
 
     /// Transforms AST into HIR and check identifiers good use.
