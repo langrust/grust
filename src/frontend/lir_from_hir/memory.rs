@@ -27,33 +27,30 @@ impl Memory {
         } = self;
 
         let (mut elements, mut inits, mut steps) = (vec![], vec![], vec![]);
-        buffers
-            .into_iter()
-            .sorted_by_key(|(id, _)| *id)
-            .for_each(
-                |(
-                    memory_id,
-                    Buffer {
-                        typing,
-                        initial_expression,
-                        expression,
-                    },
-                )| {
-                    let memory_name = symbol_table.get_name(memory_id);
-                    elements.push(StateElement::Buffer {
-                        identifier: memory_name.clone(),
-                        r#type: typing,
-                    });
-                    inits.push(StateElementInit::BufferInit {
-                        identifier: memory_name.clone(),
-                        initial_expression: initial_expression.lir_from_hir(symbol_table),
-                    });
-                    steps.push(StateElementStep {
-                        identifier: memory_name.clone(),
-                        expression: expression.lir_from_hir(symbol_table),
-                    });
+        buffers.into_iter().sorted_by_key(|(id, _)| *id).for_each(
+            |(
+                memory_id,
+                Buffer {
+                    typing,
+                    initial_expression,
+                    expression,
                 },
-            );
+            )| {
+                let memory_name = symbol_table.get_name(memory_id);
+                elements.push(StateElement::Buffer {
+                    identifier: memory_name.clone(),
+                    r#type: typing,
+                });
+                inits.push(StateElementInit::BufferInit {
+                    identifier: memory_name.clone(),
+                    initial_expression: initial_expression.lir_from_hir(symbol_table),
+                });
+                steps.push(StateElementStep {
+                    identifier: memory_name.clone(),
+                    expression: expression.lir_from_hir(symbol_table),
+                });
+            },
+        );
         called_nodes
             .into_iter()
             .sorted_by_key(|(id, _)| *id)
