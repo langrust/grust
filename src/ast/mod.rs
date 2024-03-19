@@ -7,9 +7,6 @@ pub mod node;
 /// LanGRust [Function](crate::ast::function::Function) AST module.
 pub mod function;
 
-/// LanGRust global context definition module.
-pub mod global_context;
-
 /// LanGRust [StreamExpression](crate::ast::stream_expression::StreamExpression) AST module.
 pub mod stream_expression;
 
