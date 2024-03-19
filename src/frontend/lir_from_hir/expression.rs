@@ -32,11 +32,11 @@ where
                 LIRExpression::Literal { literal: constant }
             }
             ExpressionKind::Identifier { id, .. } => {
-                let name = symbol_table.get_name(&id).clone();
-                if symbol_table.is_function(&id) {
+                let name = symbol_table.get_name(id).clone();
+                if symbol_table.is_function(id) {
                     LIRExpression::Identifier { identifier: name }
                 } else {
-                    let scope = symbol_table.get_scope(&id);
+                    let scope = symbol_table.get_scope(id);
                     match scope {
                         Scope::Input => LIRExpression::InputAccess { identifier: name },
                         Scope::Memory => LIRExpression::MemoryAccess { identifier: name },
@@ -87,8 +87,8 @@ where
                     .iter()
                     .map(|id| {
                         (
-                            symbol_table.get_name(id).clone(),
-                            symbol_table.get_type(id).clone(),
+                            symbol_table.get_name(*id).clone(),
+                            symbol_table.get_type(*id).clone(),
                         )
                     })
                     .collect();
@@ -106,20 +106,20 @@ where
                 }
             }
             ExpressionKind::Structure { id, fields, .. } => LIRExpression::Structure {
-                name: symbol_table.get_name(&id).clone(),
+                name: symbol_table.get_name(id).clone(),
                 fields: fields
                     .into_iter()
                     .map(|(id, expression)| {
                         (
-                            symbol_table.get_name(&id).clone(),
+                            symbol_table.get_name(id).clone(),
                             expression.lir_from_hir(symbol_table),
                         )
                     })
                     .collect(),
             },
             ExpressionKind::Enumeration { enum_id, elem_id } => LIRExpression::Enumeration {
-                name: symbol_table.get_name(&enum_id).clone(),
-                element: symbol_table.get_name(&elem_id).clone(),
+                name: symbol_table.get_name(enum_id).clone(),
+                element: symbol_table.get_name(elem_id).clone(),
             },
             ExpressionKind::Array { elements } => LIRExpression::Array {
                 elements: elements
@@ -173,7 +173,7 @@ where
                     (
                         Pattern::Some {
                             pattern: Box::new(Pattern::Identifier {
-                                name: symbol_table.get_name(&id).clone(),
+                                name: symbol_table.get_name(id).clone(),
                             }),
                         },
                         None,
@@ -235,7 +235,7 @@ where
         match self {
             ExpressionKind::Identifier { id, .. } => OtherOperator::IfThenElse
                 .to_string()
-                .eq(symbol_table.get_name(&id)),
+                .eq(symbol_table.get_name(*id)),
             _ => false,
         }
     }
@@ -244,21 +244,21 @@ where
         match self {
             ExpressionKind::Constant { .. } => vec![],
             ExpressionKind::Identifier { id } => {
-                if symbol_table.is_function(id) {
+                if symbol_table.is_function(*id) {
                     if let Some(_) = BinaryOperator::iter()
-                        .find(|binary| binary.to_string().eq(symbol_table.get_name(id)))
+                        .find(|binary| binary.to_string().eq(symbol_table.get_name(*id)))
                     {
                         vec![]
                     } else if let Some(_) = UnaryOperator::iter()
-                        .find(|unary| unary.to_string().eq(symbol_table.get_name(id)))
+                        .find(|unary| unary.to_string().eq(symbol_table.get_name(*id)))
                     {
                         vec![]
                     } else if let Some(_) = OtherOperator::iter()
-                        .find(|op| op.to_string().eq(symbol_table.get_name(id)))
+                        .find(|op| op.to_string().eq(symbol_table.get_name(*id)))
                     {
                         vec![]
                     } else {
-                        vec![Import::Function(symbol_table.get_name(id).clone())]
+                        vec![Import::Function(symbol_table.get_name(*id).clone())]
                     }
                 } else {
                     vec![]
@@ -284,12 +284,12 @@ where
                     .flat_map(|(_, expression)| expression.get_imports(symbol_table))
                     .unique()
                     .collect::<Vec<_>>();
-                imports.push(Import::Structure(symbol_table.get_name(id).clone()));
+                imports.push(Import::Structure(symbol_table.get_name(*id).clone()));
 
                 imports
             }
             ExpressionKind::Enumeration { enum_id, .. } => {
-                vec![Import::Enumeration(symbol_table.get_name(enum_id).clone())]
+                vec![Import::Enumeration(symbol_table.get_name(*enum_id).clone())]
             }
             ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => elements
                 .iter()

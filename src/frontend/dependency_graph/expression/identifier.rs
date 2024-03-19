@@ -12,7 +12,7 @@ impl ExpressionKind<StreamExpression> {
         match self {
             // identifier depends on called identifier with label weight of 0
             ExpressionKind::Identifier { id, .. } => {
-                if symbol_table.is_function(&id) {
+                if symbol_table.is_function(*id) {
                     Ok(vec![])
                 } else {
                     Ok(vec![(*id, Label::Weight(0))])

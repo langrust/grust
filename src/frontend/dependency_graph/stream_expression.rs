@@ -95,7 +95,7 @@ impl StreamExpression {
 
                 // add dependencies to inputs in the local graphs
                 node.add_signal_inputs_dependencies(
-                    output_id,
+                    *output_id,
                     symbol_table,
                     nodes_context,
                     nodes_processus_manager,

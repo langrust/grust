@@ -39,7 +39,7 @@ impl Memory {
                         expression,
                     },
                 )| {
-                    let memory_name = symbol_table.get_name(&memory_id);
+                    let memory_name = symbol_table.get_name(memory_id);
                     elements.push(StateElement::Buffer {
                         identifier: memory_name.clone(),
                         r#type: typing,
@@ -58,8 +58,8 @@ impl Memory {
             .into_iter()
             .sorted_by_key(|(id, _)| id.clone()) // TODO why is it sorted?
             .for_each(|(memory_id, CalledNode { node_id, .. })| {
-                let memory_name = symbol_table.get_name(&memory_id);
-                let node_name = symbol_table.get_name(&node_id);
+                let memory_name = symbol_table.get_name(memory_id);
+                let node_name = symbol_table.get_name(node_id);
                 elements.push(StateElement::CalledNode {
                     identifier: memory_name.clone(),
                     node_name: node_name.clone(),
@@ -102,7 +102,7 @@ impl Memory {
             .called_nodes
             .values()
             .flat_map(|CalledNode { node_id, .. }| {
-                vec![Import::NodeFile(symbol_table.get_name(node_id).clone())]
+                vec![Import::NodeFile(symbol_table.get_name(*node_id).clone())]
             })
             .unique()
             .collect::<Vec<_>>();

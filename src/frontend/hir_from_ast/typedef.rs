@@ -19,16 +19,16 @@ impl HIRFromAST for Typedef {
         match kind {
             TypedefKind::Structure { fields } => {
                 let type_id = symbol_table.get_struct_id(&id, false, location.clone(), errors)?;
-                let field_ids = symbol_table.get_struct_fields(&type_id).clone();
+                let field_ids = symbol_table.get_struct_fields(type_id).clone();
 
                 // insert field's type in symbol table
                 field_ids
                     .iter()
                     .zip(fields)
                     .map(|(id, (name, typing))| {
-                        debug_assert_eq!(&name, symbol_table.get_name(id));
+                        debug_assert_eq!(&name, symbol_table.get_name(*id));
                         let typing = typing.hir_from_ast(&location, symbol_table, errors)?;
-                        Ok(symbol_table.set_type(id, typing))
+                        Ok(symbol_table.set_type(*id, typing))
                     })
                     .collect::<Vec<Result<_, _>>>()
                     .into_iter()
@@ -43,7 +43,7 @@ impl HIRFromAST for Typedef {
 
             TypedefKind::Enumeration { .. } => {
                 let type_id = symbol_table.get_enum_id(&id, false, location.clone(), errors)?;
-                let element_ids = symbol_table.get_enum_elements(&type_id).clone();
+                let element_ids = symbol_table.get_enum_elements(type_id).clone();
                 Ok(HIRTypedef {
                     id: type_id,
                     kind: HIRTypedefKind::Enumeration {
@@ -58,7 +58,7 @@ impl HIRFromAST for Typedef {
 
                 // insert array's type in symbol table
                 let typing = array_type.hir_from_ast(&location, symbol_table, errors)?;
-                symbol_table.set_array_type(&type_id, typing);
+                symbol_table.set_array_type(type_id, typing);
 
                 Ok(HIRTypedef {
                     id: type_id,

@@ -30,11 +30,11 @@ impl HIRFromAST for Function {
             .returned
             .0
             .hir_from_ast(&location, symbol_table, errors)?;
-        symbol_table.set_function_output_type(&id, output_typing);
+        symbol_table.set_function_output_type(id, output_typing);
 
         // create local context with all signals
         symbol_table.local();
-        symbol_table.restore_context(&id);
+        symbol_table.restore_context(id);
 
         let statements = statements
             .into_iter()

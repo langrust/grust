@@ -44,10 +44,10 @@ impl StreamExpression {
                 output_id,
             } => {
                 let unitary_node_id = symbol_table.get_unitary_node_id(
-                    symbol_table.get_name(node_id),
-                    symbol_table.get_name(output_id),
+                    symbol_table.get_name(*node_id),
+                    symbol_table.get_name(*output_id),
                 );
-                let used_inputs = symbol_table.get_unitary_node_used_inputs(&unitary_node_id);
+                let used_inputs = symbol_table.get_unitary_node_used_inputs(unitary_node_id);
 
                 let inputs = inputs
                     .iter_mut()

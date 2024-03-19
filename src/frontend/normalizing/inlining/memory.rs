@@ -26,14 +26,14 @@ impl Memory {
         symbol_table: &mut SymbolTable,
     ) {
         self.buffers.keys().for_each(|id| {
-            let name = symbol_table.get_name(id);
+            let name = symbol_table.get_name(*id);
             let fresh_name =
                 identifier_creator.new_identifier(String::new(), name.clone(), String::new());
             if &fresh_name != name {
                 // TODO: should we just replace anyway?
-                let scope = symbol_table.get_scope(id).clone(); // supposed to be Scope::Memory
+                let scope = symbol_table.get_scope(*id).clone(); // supposed to be Scope::Memory
                 debug_assert_eq!(scope, Scope::Memory);
-                let typing = Some(symbol_table.get_type(id).clone());
+                let typing = Some(symbol_table.get_type(*id).clone());
                 let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
                 debug_assert!(context_map
                     .insert(id.clone(), Union::I1(fresh_id))
@@ -41,14 +41,14 @@ impl Memory {
             }
         });
         self.called_nodes.keys().for_each(|id| {
-            let name = symbol_table.get_name(id);
+            let name = symbol_table.get_name(*id);
             let fresh_name =
                 identifier_creator.new_identifier(String::new(), name.clone(), String::new());
             if &fresh_name != name {
                 // TODO: should we just replace anyway?
-                let scope = symbol_table.get_scope(id).clone(); // supposed to be Scope::Memory
+                let scope = symbol_table.get_scope(*id).clone(); // supposed to be Scope::Memory
                 debug_assert_eq!(scope, Scope::Memory);
-                let typing = Some(symbol_table.get_type(id).clone());
+                let typing = Some(symbol_table.get_type(*id).clone());
                 let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
                 debug_assert!(context_map
                     .insert(id.clone(), Union::I1(fresh_id))
@@ -128,8 +128,8 @@ impl Memory {
     }
 
     /// Remove called node from memory.
-    pub fn remove_called_node(&mut self, called_node_id: &usize) {
-        self.called_nodes.remove(called_node_id);
+    pub fn remove_called_node(&mut self, called_node_id: usize) {
+        self.called_nodes.remove(&called_node_id);
     }
 
     /// Combine two memories.

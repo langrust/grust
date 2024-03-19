@@ -25,17 +25,17 @@ where
                 match expression.get_type().unwrap() {
                     Type::Structure { name, id } => {
                         let symbol = symbol_table
-                            .get_symbol(&id)
+                            .get_symbol(*id)
                             .expect("there should be a symbole");
                         match symbol.kind() {
                             SymbolKind::Structure { fields } => {
                                 let option_field_type = fields
                                     .iter()
                                     .filter(|id| {
-                                        let field_name = symbol_table.get_name(id);
+                                        let field_name = symbol_table.get_name(**id);
                                         field == field_name
                                     })
-                                    .map(|id| symbol_table.get_type(id).clone())
+                                    .map(|id| symbol_table.get_type(*id).clone())
                                     .next();
                                 if let Some(field_type) = option_field_type {
                                     Ok(field_type)

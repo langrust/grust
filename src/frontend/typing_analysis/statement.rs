@@ -23,7 +23,7 @@ where
         expression.typing(symbol_table, errors)?;
         let expression_type = expression.get_type().unwrap();
 
-        let expected_type = symbol_table.get_type(id);
+        let expected_type = symbol_table.get_type(*id);
         expression_type.eq_check(expected_type, location.clone(), errors)?;
 
         Ok(())

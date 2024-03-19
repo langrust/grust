@@ -28,25 +28,25 @@ impl LIRFromHIR for UnitaryNode {
         } = self;
 
         // get node name
-        let name = symbol_table.get_name(&id);
+        let name = symbol_table.get_name(id);
 
         // get node inputs
         let mut inputs = symbol_table
-            .get_unitary_node_inputs(&id)
+            .get_unitary_node_inputs(id)
             .into_iter()
             .map(|id| {
                 (
-                    symbol_table.get_name(id).clone(),
-                    symbol_table.get_type(id).clone(),
+                    symbol_table.get_name(*id).clone(),
+                    symbol_table.get_type(*id).clone(),
                 )
             })
             .collect::<Vec<_>>();
 
         // get node output type
-        let mut output_type = symbol_table.get_unitary_node_output_type(&id).clone();
+        let mut output_type = symbol_table.get_unitary_node_output_type(id).clone();
 
         let output_expression = LIRExpression::Identifier {
-            identifier: symbol_table.get_unitary_node_output_name(&id).clone(),
+            identifier: symbol_table.get_unitary_node_output_name(id).clone(),
         };
 
         // collect imports from statements, inputs and output types, memory and contracts

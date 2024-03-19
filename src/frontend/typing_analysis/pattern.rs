@@ -19,7 +19,7 @@ impl Pattern {
                 Ok(())
             }
             PatternKind::Identifier { ref id } => {
-                symbol_table.set_type(id, expected_type.clone());
+                symbol_table.set_type(*id, expected_type.clone());
                 self.typing = Some(expected_type.clone());
                 Ok(())
             }
@@ -30,7 +30,7 @@ impl Pattern {
                 fields
                     .iter_mut()
                     .map(|(id, pattern)| {
-                        let expected_type = symbol_table.get_type(id).clone();
+                        let expected_type = symbol_table.get_type(*id).clone();
                         pattern.typing(&expected_type, symbol_table, errors)?;
                         // check pattern type
                         let pattern_type = pattern.get_type().unwrap();
@@ -40,14 +40,14 @@ impl Pattern {
                     .into_iter()
                     .collect::<Result<(), TerminationError>>()?;
                 self.typing = Some(Type::Structure {
-                    name: symbol_table.get_name(id).clone(),
+                    name: symbol_table.get_name(*id).clone(),
                     id: *id,
                 });
                 Ok(())
             }
             PatternKind::Enumeration { ref enum_id, .. } => {
                 self.typing = Some(Type::Enumeration {
-                    name: symbol_table.get_name(enum_id).clone(),
+                    name: symbol_table.get_name(*enum_id).clone(),
                     id: *enum_id,
                 });
                 Ok(())

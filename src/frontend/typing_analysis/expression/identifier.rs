@@ -16,7 +16,7 @@ where
         match self {
             // the type of a call expression in the type of the called element in the context
             ExpressionKind::Identifier { ref id } => {
-                let typing = symbol_table.get_type(id);
+                let typing = symbol_table.get_type(*id);
                 Ok(typing.clone())
             }
             _ => unreachable!(),

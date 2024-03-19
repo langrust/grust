@@ -51,10 +51,10 @@ where
             ExpressionKind::Structure { name, fields } => {
                 let id = symbol_table.get_struct_id(&name, false, location.clone(), errors)?;
                 let mut field_ids = symbol_table
-                    .get_struct_fields(&id)
+                    .get_struct_fields(id)
                     .clone()
                     .into_iter()
-                    .map(|id| (symbol_table.get_name(&id).clone(), id))
+                    .map(|id| (symbol_table.get_name(id).clone(), id))
                     .collect::<BTreeMap<_, _>>();
 
                 let fields = fields

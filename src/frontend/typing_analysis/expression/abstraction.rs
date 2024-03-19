@@ -27,7 +27,7 @@ where
                 // compute abstraction type
                 let input_types = inputs
                     .iter()
-                    .map(|id| symbol_table.get_type(id).clone())
+                    .map(|id| symbol_table.get_type(*id).clone())
                     .collect::<Vec<_>>();
                 let abstraction_type = Type::Abstract(
                     input_types,

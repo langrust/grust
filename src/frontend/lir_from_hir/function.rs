@@ -24,22 +24,22 @@ impl LIRFromHIR for Function {
         } = self;
 
         // get function name
-        let name = symbol_table.get_name(&id).clone();
+        let name = symbol_table.get_name(id).clone();
 
         // get function inputs
         let mut inputs = symbol_table
-            .get_function_input(&id)
+            .get_function_input(id)
             .into_iter()
             .map(|id| {
                 (
-                    symbol_table.get_name(id).clone(),
-                    symbol_table.get_type(id).clone(),
+                    symbol_table.get_name(*id).clone(),
+                    symbol_table.get_type(*id).clone(),
                 )
             })
             .collect::<Vec<_>>();
 
         // get function output type
-        let mut output = symbol_table.get_function_output_type(&id).clone();
+        let mut output = symbol_table.get_function_output_type(id).clone();
 
         // collect imports from statements, inputs and output types and returned expression
         let mut imports = statements

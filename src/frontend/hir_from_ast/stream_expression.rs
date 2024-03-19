@@ -49,7 +49,7 @@ impl HIRFromAST for StreamExpression {
                                         errors,
                                     )?;
                                     let node_symbol = symbol_table
-                                        .get_symbol(&node_id)
+                                        .get_symbol(node_id)
                                         .expect("there should be a symbol")
                                         .clone();
                                     match node_symbol.kind() {
@@ -185,7 +185,7 @@ impl StreamExpression {
                             symbol_table.get_function_id(&id, false, self.location.clone(), errors)
                         })?;
                     // check it is a function or and operator
-                    if symbol_table.is_function(&id) {
+                    if symbol_table.is_function(id) {
                         Ok(())
                     } else {
                         let error = Error::ExpectConstant {
