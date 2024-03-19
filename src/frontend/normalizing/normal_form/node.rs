@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use petgraph::graphmap::DiGraphMap;
 
 use crate::{common::label::Label, hir::node::Node, symbol_table::SymbolTable};
@@ -51,6 +52,7 @@ impl Node {
     ) {
         self.unitary_nodes
             .values_mut()
+            .sorted_by_key(|unitary_node| unitary_node.id)
             .for_each(|unitary_node| unitary_node.normal_form(nodes_reduced_graphs, symbol_table))
     }
 }

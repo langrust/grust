@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::hir::node::Node;
 use crate::symbol_table::SymbolTable;
 
@@ -39,6 +41,7 @@ impl Node {
     pub fn memorize(&mut self, symbol_table: &mut SymbolTable) {
         self.unitary_nodes
             .values_mut()
+            .sorted_by_key(|unitary_node| unitary_node.id)
             .for_each(|unitary_node| unitary_node.memorize(symbol_table))
     }
 }

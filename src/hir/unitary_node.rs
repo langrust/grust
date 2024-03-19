@@ -1,5 +1,6 @@
 use petgraph::graphmap::DiGraphMap;
 
+use crate::common::serialize::ordered_graph;
 use crate::common::{label::Label, location::Location};
 use crate::hir::{
     contract::Contract, memory::Memory, statement::Statement, stream_expression::StreamExpression,
@@ -18,6 +19,7 @@ pub struct UnitaryNode {
     /// Mother node location.
     pub location: Location,
     /// Unitary node dependency graph.
+    #[serde(serialize_with = "ordered_graph")]
     pub graph: DiGraphMap<usize, Label>,
     /// Unitary node contracts.
     pub contract: Contract,

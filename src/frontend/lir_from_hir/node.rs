@@ -10,7 +10,7 @@ impl LIRFromHIR for Node {
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         self.unitary_nodes
             .into_iter()
-            .sorted_by_key(|(id, _)| id.clone())
+            .sorted_by_key(|(id, _)| *id)
             .map(|(_, unitary_node)| unitary_node.lir_from_hir(symbol_table))
             .collect()
     }

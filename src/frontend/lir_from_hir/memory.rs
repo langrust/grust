@@ -29,7 +29,7 @@ impl Memory {
         let (mut elements, mut inits, mut steps) = (vec![], vec![], vec![]);
         buffers
             .into_iter()
-            .sorted_by_key(|(id, _)| id.clone()) // TODO why is it sorted?
+            .sorted_by_key(|(id, _)| *id)
             .for_each(
                 |(
                     memory_id,
@@ -56,7 +56,7 @@ impl Memory {
             );
         called_nodes
             .into_iter()
-            .sorted_by_key(|(id, _)| id.clone()) // TODO why is it sorted?
+            .sorted_by_key(|(id, _)| *id)
             .for_each(|(memory_id, CalledNode { node_id, .. })| {
                 let memory_name = symbol_table.get_name(memory_id);
                 let node_name = symbol_table.get_name(node_id);
@@ -68,14 +68,6 @@ impl Memory {
                     identifier: memory_name.clone(),
                     node_name: node_name.clone(),
                 });
-                // Because step function update state in place,
-                // we don't need to update called nodes' state
-                // steps.push(StateElementStep {
-                //     identifier: memory_name.clone(),
-                //     expression: crate::lir::expression::Expression::Identifier {
-                //         identifier: memory_name.clone(),
-                //     },
-                // });
             });
 
         (elements, inits, steps)

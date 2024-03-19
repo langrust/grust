@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
+use itertools::Itertools;
 use petgraph::graphmap::DiGraphMap;
+use std::collections::HashMap;
 
 use crate::common::color::Color;
 use crate::common::label::Label;
@@ -25,7 +25,7 @@ impl Node {
         }
 
         // add other signals as vertices
-        for signal in self.unscheduled_equations.keys() {
+        for signal in self.unscheduled_equations.keys().sorted() {
             graph.add_node(*signal);
         }
 
@@ -84,6 +84,7 @@ impl Node {
         // add local and output signals dependencies
         unscheduled_equations
             .keys()
+            .sorted()
             .map(|signal| {
                 self.add_signal_dependencies(
                     *signal,
