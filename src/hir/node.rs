@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::common::{
     label::Label,
     location::Location,
-    serialize::{ordered_oncecell, ordered_hashmap},
+    serialize::{ordered_hashmap, ordered_oncecell},
 };
 use crate::hir::{
     contract::Contract, once_cell::OnceCell, statement::Statement,
