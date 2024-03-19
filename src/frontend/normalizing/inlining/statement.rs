@@ -30,13 +30,13 @@ impl Statement<StreamExpression> {
         symbol_table: &mut SymbolTable,
     ) {
         // create fresh identifier for the new statement
-        let name = symbol_table.get_name(&self.id);
+        let name = symbol_table.get_name(self.id);
         let fresh_name =
             identifier_creator.new_identifier(String::new(), name.clone(), String::new());
         if &fresh_name != name {
             // TODO: should we just replace anyway?
-            let scope = symbol_table.get_scope(&self.id).clone();
-            let typing = Some(symbol_table.get_type(&self.id).clone());
+            let scope = symbol_table.get_scope(self.id).clone();
+            let typing = Some(symbol_table.get_type(self.id).clone());
             let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
             debug_assert!(context_map.insert(self.id, Union::I1(fresh_id)).is_none());
         }
@@ -162,7 +162,7 @@ impl Statement<StreamExpression> {
                         );
 
                     // remove called node from memory
-                    memory.remove_called_node(node_id);
+                    memory.remove_called_node(*node_id);
 
                     memory.combine(retrieved_memory);
                     retrieved_statements

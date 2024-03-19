@@ -18,7 +18,7 @@ where
             ExpressionKind::Enumeration { ref enum_id, .. } => {
                 // type each field and check their type
                 Ok(Type::Enumeration {
-                    name: symbol_table.get_name(enum_id).clone(),
+                    name: symbol_table.get_name(*enum_id).clone(),
                     id: *enum_id,
                 })
             }

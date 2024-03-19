@@ -30,7 +30,7 @@ impl HIRFromAST for Node {
 
         // create local context with all signals
         symbol_table.local();
-        symbol_table.restore_context(&id);
+        symbol_table.restore_context(id);
 
         let unscheduled_equations = equations
             .into_iter()

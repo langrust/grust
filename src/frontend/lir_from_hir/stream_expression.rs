@@ -17,7 +17,7 @@ impl LIRFromHIR for StreamExpression {
             StreamExpressionKind::UnitaryNodeApplication {
                 node_id, inputs, ..
             } => {
-                let name = symbol_table.get_name(&node_id).clone();
+                let name = symbol_table.get_name(node_id).clone();
                 LIRExpression::NodeCall {
                     node_identifier: name.clone(),
                     input_name: camel_case(&format!("{name}Input")),
@@ -25,7 +25,7 @@ impl LIRFromHIR for StreamExpression {
                         .into_iter()
                         .map(|(id, expression)| {
                             (
-                                symbol_table.get_name(&id).clone(),
+                                symbol_table.get_name(id).clone(),
                                 expression.lir_from_hir(symbol_table),
                             )
                         })
@@ -66,7 +66,7 @@ impl LIRFromHIR for StreamExpression {
                     .flat_map(|(_, expression)| expression.get_imports(symbol_table))
                     .unique()
                     .collect::<Vec<_>>();
-                imports.push(Import::NodeFile(symbol_table.get_name(node_id).clone()));
+                imports.push(Import::NodeFile(symbol_table.get_name(*node_id).clone()));
                 imports
             }
             StreamExpressionKind::FollowedBy { .. }

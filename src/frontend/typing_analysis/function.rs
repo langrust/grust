@@ -29,7 +29,7 @@ impl TypeAnalysis for Function {
         returned.typing(symbol_table, errors)?;
 
         // check returned type
-        let expected_type = symbol_table.get_function_output_type(id);
+        let expected_type = symbol_table.get_function_output_type(*id);
         returned
             .get_type()
             .unwrap()

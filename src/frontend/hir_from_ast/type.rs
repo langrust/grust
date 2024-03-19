@@ -47,7 +47,7 @@ impl Type {
                 })
                 .or_else(|_| {
                     let id = symbol_table.get_array_id(&name, false, location.clone(), errors)?;
-                    Ok(symbol_table.get_array(&id))
+                    Ok(symbol_table.get_array(id))
                 }),
             Type::Abstract(inputs_types, output_type) => {
                 let inputs_types = inputs_types

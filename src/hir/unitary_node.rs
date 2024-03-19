@@ -47,7 +47,7 @@ impl UnitaryNode {
     pub fn get_signals_name(&self, symbol_table: &SymbolTable) -> Vec<String> {
         let mut signals = vec![];
         self.statements.iter().for_each(|equation| {
-            signals.push(symbol_table.get_name(&equation.id).clone());
+            signals.push(symbol_table.get_name(equation.id).clone());
         });
         signals
     }

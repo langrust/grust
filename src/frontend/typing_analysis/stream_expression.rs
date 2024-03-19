@@ -40,7 +40,7 @@ impl TypeAnalysis for StreamExpression {
                         input.typing(symbol_table, errors)?;
 
                         let input_type = input.typing.as_ref().unwrap();
-                        let expected_type = symbol_table.get_type(id);
+                        let expected_type = symbol_table.get_type(*id);
                         input_type.eq_check(expected_type, self.location.clone(), errors)
                     })
                     .collect::<Vec<Result<(), TerminationError>>>()
@@ -48,7 +48,7 @@ impl TypeAnalysis for StreamExpression {
                     .collect::<Result<(), TerminationError>>()?;
 
                 // get the called signal type
-                let node_application_type = symbol_table.get_type(&output_id);
+                let node_application_type = symbol_table.get_type(*output_id);
 
                 self.typing = Some(node_application_type.clone());
                 Ok(())

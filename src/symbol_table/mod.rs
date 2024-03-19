@@ -161,8 +161,8 @@ impl Context {
             }
         }
     }
-    fn get_id(&self, symbol_hash: &String, local: bool) -> Option<&usize> {
-        let contains = self.current.get(symbol_hash);
+    fn get_id(&self, symbol_hash: &String, local: bool) -> Option<usize> {
+        let contains = self.current.get(symbol_hash).cloned();
         if local {
             contains
         } else {
@@ -494,7 +494,7 @@ impl SymbolTable {
     fn restore_context_from<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
         ids.for_each(|id| {
             let symbol = self
-                .get_symbol(id)
+                .get_symbol(*id)
                 .expect(&format!("expect symbol for {id}"))
                 .clone();
             self.known_symbols.add_symbol(symbol, *id);
@@ -502,7 +502,7 @@ impl SymbolTable {
     }
 
     /// Restore node or function body context.
-    pub fn restore_context(&mut self, id: &usize) {
+    pub fn restore_context(&mut self, id: usize) {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"))
@@ -526,17 +526,17 @@ impl SymbolTable {
     }
 
     /// Get symbol from identifier.
-    pub fn get_symbol(&self, id: &usize) -> Option<&Symbol> {
-        self.table.get(id)
+    pub fn get_symbol(&self, id: usize) -> Option<&Symbol> {
+        self.table.get(&id)
     }
 
     /// Get mutable symbol from identifier.
-    pub fn get_symbol_mut(&mut self, id: &usize) -> Option<&mut Symbol> {
-        self.table.get_mut(id)
+    pub fn get_symbol_mut(&mut self, id: usize) -> Option<&mut Symbol> {
+        self.table.get_mut(&id)
     }
 
     /// Get type from identifier.
-    pub fn get_type(&self, id: &usize) -> &Type {
+    pub fn get_type(&self, id: usize) -> &Type {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -552,7 +552,7 @@ impl SymbolTable {
     }
 
     /// Get function output type from identifier.
-    pub fn get_function_output_type(&self, id: &usize) -> &Type {
+    pub fn get_function_output_type(&self, id: usize) -> &Type {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -563,7 +563,7 @@ impl SymbolTable {
     }
 
     /// Get function input identifers from identifier.
-    pub fn get_function_input(&self, id: &usize) -> &Vec<usize> {
+    pub fn get_function_input(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -574,14 +574,14 @@ impl SymbolTable {
     }
 
     /// Set function output type.
-    pub fn set_function_output_type(&mut self, id: &usize, new_type: Type) {
+    pub fn set_function_output_type(&mut self, id: usize, new_type: Type) {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         let inputs_type = match &symbol.kind {
             SymbolKind::Function { ref inputs, .. } => inputs
                 .iter()
-                .map(|id| self.get_type(id).clone())
+                .map(|id| self.get_type(*id).clone())
                 .collect::<Vec<_>>(),
             _ => unreachable!(),
         };
@@ -606,7 +606,7 @@ impl SymbolTable {
     }
 
     /// Tell if identifier refers to function.
-    pub fn is_function(&self, id: &usize) -> bool {
+    pub fn is_function(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -617,40 +617,40 @@ impl SymbolTable {
     }
 
     /// Get unitary node output type from identifier.
-    pub fn get_unitary_node_output_type(&self, id: &usize) -> &Type {
+    pub fn get_unitary_node_output_type(&self, id: usize) -> &Type {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::UnitaryNode { output, .. } => self.get_type(output),
+            SymbolKind::UnitaryNode { output, .. } => self.get_type(*output),
             _ => unreachable!(),
         }
     }
 
     /// Get unitary node output name from identifier.
-    pub fn get_unitary_node_output_name(&self, id: &usize) -> &String {
+    pub fn get_unitary_node_output_name(&self, id: usize) -> &String {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::UnitaryNode { output, .. } => self.get_name(output),
+            SymbolKind::UnitaryNode { output, .. } => self.get_name(*output),
             _ => unreachable!(),
         }
     }
 
     /// Get unitary node output identifier from identifier.
-    pub fn get_unitary_node_output_id(&self, id: &usize) -> &usize {
+    pub fn get_unitary_node_output_id(&self, id: usize) -> usize {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::UnitaryNode { output, .. } => output,
+            SymbolKind::UnitaryNode { output, .. } => *output,
             _ => unreachable!(),
         }
     }
 
     /// Get unitary node vector of used inputs from identifier.
-    pub fn get_unitary_node_used_inputs(&self, id: &usize) -> Vec<bool> {
+    pub fn get_unitary_node_used_inputs(&self, id: usize) -> Vec<bool> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -660,7 +660,7 @@ impl SymbolTable {
                 inputs,
                 ..
             } => {
-                let mother_node_inputs = self.get_node_inputs(mother_node);
+                let mother_node_inputs = self.get_node_inputs(*mother_node);
                 mother_node_inputs
                     .iter()
                     .map(|id| inputs.contains(id))
@@ -671,7 +671,7 @@ impl SymbolTable {
     }
 
     /// Get unitary node input identifiers from identifier.
-    pub fn get_unitary_node_inputs(&self, id: &usize) -> &Vec<usize> {
+    pub fn get_unitary_node_inputs(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -682,7 +682,7 @@ impl SymbolTable {
     }
 
     /// Set identifier's type.
-    pub fn set_type(&mut self, id: &usize, new_type: Type) {
+    pub fn set_type(&mut self, id: usize, new_type: Type) {
         let symbol = self
             .get_symbol_mut(id)
             .expect(&format!("expect symbol for {id}"));
@@ -698,7 +698,7 @@ impl SymbolTable {
     }
 
     /// Get identifier's name.
-    pub fn get_name(&self, id: &usize) -> &String {
+    pub fn get_name(&self, id: usize) -> &String {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -706,7 +706,7 @@ impl SymbolTable {
     }
 
     /// Get identifier's scope.
-    pub fn get_scope(&self, id: &usize) -> &Scope {
+    pub fn get_scope(&self, id: usize) -> &Scope {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -717,7 +717,7 @@ impl SymbolTable {
     }
 
     /// Set identifier's scope.
-    pub fn set_scope(&mut self, id: &usize, new_scope: Scope) {
+    pub fn set_scope(&mut self, id: usize, new_scope: Scope) {
         let symbol = self
             .get_symbol_mut(id)
             .expect(&format!("expect symbol for {id}"));
@@ -728,7 +728,7 @@ impl SymbolTable {
     }
 
     /// Get node input identifiers from identifier.
-    pub fn get_node_inputs(&self, id: &usize) -> &Vec<usize> {
+    pub fn get_node_inputs(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -739,7 +739,7 @@ impl SymbolTable {
     }
 
     /// Tell if identifier is a component.
-    pub fn is_component(&self, id: &usize) -> bool {
+    pub fn is_component(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -750,7 +750,7 @@ impl SymbolTable {
     }
 
     /// Get structure' field identifiers from identifier.
-    pub fn get_struct_fields(&self, id: &usize) -> &Vec<usize> {
+    pub fn get_struct_fields(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -761,7 +761,7 @@ impl SymbolTable {
     }
 
     /// Get enumeration' element identifiers from identifier.
-    pub fn get_enum_elements(&self, id: &usize) -> &Vec<usize> {
+    pub fn get_enum_elements(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -781,7 +781,7 @@ impl SymbolTable {
     }
 
     /// Set array type from identifier.
-    pub fn set_array_type(&mut self, id: &usize, new_type: Type) {
+    pub fn set_array_type(&mut self, id: usize, new_type: Type) {
         let symbol = self
             .get_symbol_mut(id)
             .expect(&format!("expect symbol for {id}"));
@@ -799,7 +799,7 @@ impl SymbolTable {
     }
 
     /// Get array type from identifier.
-    pub fn get_array(&self, id: &usize) -> Type {
+    pub fn get_array(&self, id: usize) -> Type {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -813,7 +813,7 @@ impl SymbolTable {
     }
 
     /// Get array element type from identifier.
-    pub fn get_array_type(&self, id: &usize) -> &Type {
+    pub fn get_array_type(&self, id: usize) -> &Type {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -824,7 +824,7 @@ impl SymbolTable {
     }
 
     /// Get array size from identifier.
-    pub fn get_array_size(&self, id: &usize) -> usize {
+    pub fn get_array_size(&self, id: usize) -> usize {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -844,7 +844,7 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("identifier {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(*id),
+            Some(id) => Ok(id),
             None => {
                 let error = Error::UnknownElement {
                     name: name.to_string(),
@@ -866,7 +866,7 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("function {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(*id),
+            Some(id) => Ok(id),
             None => {
                 let error = Error::UnknownElement {
                     name: name.to_string(),
@@ -888,7 +888,7 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("identifier {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(*id),
+            Some(id) => Ok(id),
             None => {
                 let error = Error::UnknownSignal {
                     name: name.to_string(),
@@ -910,7 +910,7 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("node {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(*id),
+            Some(id) => Ok(id),
             None => {
                 let error = Error::UnknownNode {
                     name: name.to_string(),
@@ -932,7 +932,7 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("struct {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(*id),
+            Some(id) => Ok(id),
             None => {
                 let error = Error::UnknownType {
                     name: name.to_string(),
@@ -954,7 +954,7 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("enum {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(*id),
+            Some(id) => Ok(id),
             None => {
                 let error = Error::UnknownType {
                     name: name.to_string(),
@@ -977,7 +977,7 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("enum_elem {enum_name}::{elem_name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(*id),
+            Some(id) => Ok(id),
             None => {
                 let error = Error::UnknownElement {
                     name: elem_name.to_string(),
@@ -999,7 +999,7 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("array {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(*id),
+            Some(id) => Ok(id),
             None => {
                 let error = Error::UnknownType {
                     name: name.to_string(),
@@ -1014,7 +1014,7 @@ impl SymbolTable {
     /// Get unitary node symbol identifier.
     pub fn get_unitary_node_id(&self, node_name: &String, output_name: &String) -> usize {
         let symbol_hash = format!("unitary_node {node_name}_{}", output_name);
-        *self
+        self
             .known_symbols
             .get_id(&symbol_hash, false)
             .expect("there should be an unitary node")

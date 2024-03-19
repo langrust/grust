@@ -99,7 +99,7 @@ impl UnitaryNode {
 
         // add output to context
         new_output_signal.map(|new_output_signal| {
-            let output_id = *symbol_table.get_unitary_node_output_id(&self.id);
+            let output_id = symbol_table.get_unitary_node_output_id(self.id);
             context_map.insert(output_id, Union::I1(new_output_signal));
         });
 

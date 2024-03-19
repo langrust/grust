@@ -54,7 +54,7 @@ impl Node {
         let outputs = self
             .unscheduled_equations
             .values()
-            .filter(|equation| symbol_table.get_scope(&equation.id).eq(&Scope::Output))
+            .filter(|equation| symbol_table.get_scope(equation.id).eq(&Scope::Output))
             .map(|equation| equation.id.clone())
             .collect::<Vec<_>>();
 
@@ -77,8 +77,8 @@ impl Node {
             .into_iter()
             .map(|id| {
                 let error = Error::UnusedSignal {
-                    node: symbol_table.get_name(&self.id).clone(),
-                    signal: symbol_table.get_name(&id).clone(),
+                    node: symbol_table.get_name(self.id).clone(),
+                    signal: symbol_table.get_name(id).clone(),
                     location: self.location.clone(),
                 };
                 errors.push(error);
@@ -124,7 +124,7 @@ impl Node {
 
         // get useful inputs (in application order)
         let unitary_node_inputs = symbol_table
-            .get_node_inputs(&node)
+            .get_node_inputs(*node)
             .iter()
             .filter(|id| subgraph.contains_node(**id))
             .map(|id| *id)
@@ -142,7 +142,7 @@ impl Node {
             terms
                 .iter()
                 .filter_map(|term| {
-                    if subgraph.nodes().any(|id| term.contains_id(&id)) {
+                    if subgraph.nodes().any(|id| term.contains_id(id)) {
                         Some(term)
                     } else {
                         None
@@ -158,9 +158,9 @@ impl Node {
         };
 
         let id = symbol_table.insert_unitary_node(
-            symbol_table.get_name(node).clone(),
-            symbol_table.get_name(&output).clone(),
-            symbol_table.is_component(node),
+            symbol_table.get_name(*node).clone(),
+            symbol_table.get_name(output).clone(),
+            symbol_table.is_component(*node),
             *node,
             unitary_node_inputs,
             output,

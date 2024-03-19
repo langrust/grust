@@ -67,8 +67,8 @@ mod term {
             match self.kind {
                 TermKind::Constant { constant } => LIRTerm::Constant { constant },
                 TermKind::Identifier { id } => LIRTerm::Identifier {
-                    name: symbol_table.get_name(&id).clone(),
-                    scope: symbol_table.get_scope(&id).clone(),
+                    name: symbol_table.get_name(id).clone(),
+                    scope: symbol_table.get_scope(id).clone(),
                 },
                 TermKind::Unary { op, term } => LIRTerm::Unary {
                     op,

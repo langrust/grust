@@ -46,7 +46,7 @@ impl StreamExpression {
                 expression,
             } => {
                 // create fresh identifier for the new memory buffer
-                let name = symbol_table.get_name(&signal_id);
+                let name = symbol_table.get_name(signal_id);
                 let memory_name = identifier_creator.new_identifier(
                     String::from("mem"),
                     name.clone(),
@@ -76,7 +76,7 @@ impl StreamExpression {
                 output_id,
             } => {
                 // create fresh identifier for the new memory buffer
-                let node_name = symbol_table.get_name(&node_id);
+                let node_name = symbol_table.get_name(*node_id);
                 let memory_name = identifier_creator.new_identifier(
                     String::from(""),
                     node_name.clone(),

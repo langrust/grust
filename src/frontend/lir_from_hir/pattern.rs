@@ -14,24 +14,24 @@ impl LIRFromHIR for Pattern {
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         match self.kind {
             PatternKind::Identifier { id } => LIRPattern::Identifier {
-                name: symbol_table.get_name(&id).clone(),
+                name: symbol_table.get_name(id).clone(),
             },
             PatternKind::Constant { constant } => LIRPattern::Literal { literal: constant },
             PatternKind::Structure { id, fields } => LIRPattern::Structure {
-                name: symbol_table.get_name(&id).clone(),
+                name: symbol_table.get_name(id).clone(),
                 fields: fields
                     .into_iter()
                     .map(|(id, pattern)| {
                         (
-                            symbol_table.get_name(&id).clone(),
+                            symbol_table.get_name(id).clone(),
                             pattern.lir_from_hir(symbol_table),
                         )
                     })
                     .collect(),
             },
             PatternKind::Enumeration { enum_id, elem_id } => LIRPattern::Enumeration {
-                enum_name: symbol_table.get_name(&enum_id).clone(),
-                elem_name: symbol_table.get_name(&elem_id).clone(),
+                enum_name: symbol_table.get_name(enum_id).clone(),
+                elem_name: symbol_table.get_name(elem_id).clone(),
             },
             PatternKind::Tuple { elements } => LIRPattern::Tuple {
                 elements: elements
@@ -59,12 +59,12 @@ impl LIRFromHIR for Pattern {
                     .flat_map(|(_, pattern)| pattern.get_imports(symbol_table))
                     .unique()
                     .collect::<Vec<_>>();
-                imports.push(Import::Structure(symbol_table.get_name(id).clone()));
+                imports.push(Import::Structure(symbol_table.get_name(*id).clone()));
 
                 imports
             }
             PatternKind::Enumeration { enum_id, .. } => {
-                vec![Import::Enumeration(symbol_table.get_name(enum_id).clone())]
+                vec![Import::Enumeration(symbol_table.get_name(*enum_id).clone())]
             }
             PatternKind::Tuple { elements } => elements
                 .iter()

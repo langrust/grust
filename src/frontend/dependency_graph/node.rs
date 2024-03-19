@@ -20,7 +20,7 @@ impl Node {
         let mut graph = DiGraphMap::new();
 
         // add input signals as vertices
-        for input in symbol_table.get_node_inputs(&self.id) {
+        for input in symbol_table.get_node_inputs(self.id) {
             graph.add_node(*input);
         }
 
@@ -42,7 +42,7 @@ impl Node {
         let mut hash = BTreeMap::new();
 
         // add input signals with white color (unprocessed)
-        for input in symbol_table.get_node_inputs(&self.id) {
+        for input in symbol_table.get_node_inputs(self.id) {
             hash.insert(*input, Color::White);
         }
 
@@ -86,7 +86,7 @@ impl Node {
             .keys()
             .map(|signal| {
                 self.add_signal_dependencies(
-                    signal,
+                    *signal,
                     symbol_table,
                     nodes_context,
                     nodes_processus_manager,
@@ -102,11 +102,11 @@ impl Node {
 
         // add input signals dependencies
         symbol_table
-            .get_node_inputs(&self.id)
+            .get_node_inputs(self.id)
             .iter()
             .map(|signal| {
                 self.add_signal_dependencies(
-                    signal,
+                    *signal,
                     symbol_table,
                     nodes_context,
                     nodes_processus_manager,
@@ -140,7 +140,7 @@ impl Node {
     /// ```
     pub fn add_signal_dependencies(
         &self,
-        signal: &usize,
+        signal: usize,
         symbol_table: &SymbolTable,
         nodes_context: &BTreeMap<usize, Node>,
         nodes_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
@@ -160,7 +160,7 @@ impl Node {
         let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
         // get signal's color
         let color = processus_manager
-            .get_mut(signal)
+            .get_mut(&signal)
             .expect("signal should be in processing manager");
 
         match color {
@@ -170,7 +170,7 @@ impl Node {
                 *color = Color::Grey;
 
                 unscheduled_equations
-                    .get(signal)
+                    .get(&signal)
                     .map_or(Ok(()), |equation| {
                         // retrieve expression
                         let expression = &equation.expression;
@@ -194,7 +194,7 @@ impl Node {
                             .iter()
                             .for_each(|(id, label)| {
                                 // if there was another edge, keep the most important label
-                                add_edge(graph, *signal, *id, label.clone())
+                                add_edge(graph, signal, *id, label.clone())
                             });
 
                         Ok(())
@@ -203,7 +203,7 @@ impl Node {
                 let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
                 // get signal's color
                 let color = processus_manager
-                    .get_mut(signal)
+                    .get_mut(&signal)
                     .expect("signal should be in processing manager");
                 // update status: processed
                 *color = Color::Black;
@@ -213,7 +213,7 @@ impl Node {
             // if processing: error
             Color::Grey => {
                 let error = Error::NotCausal {
-                    node: symbol_table.get_name(node).clone(),
+                    node: symbol_table.get_name(*node).clone(),
                     signal: symbol_table.get_name(signal).clone(),
                     location: location.clone(),
                 };
@@ -237,7 +237,7 @@ impl Node {
     /// ```
     pub fn add_signal_inputs_dependencies(
         &self,
-        signal: &usize,
+        signal: usize,
         symbol_table: &SymbolTable,
         nodes_context: &BTreeMap<usize, Node>,
         nodes_processus_manager: &mut BTreeMap<usize, BTreeMap<usize, Color>>,
@@ -252,7 +252,7 @@ impl Node {
         let processus_manager = nodes_reduced_processus_manager.get_mut(node).unwrap();
         // get signal's color
         let color = processus_manager
-            .get_mut(signal)
+            .get_mut(&signal)
             .expect("signal should be in processing manager");
 
         match color {
@@ -277,10 +277,10 @@ impl Node {
                 let graph = nodes_graphs.get(node).unwrap().clone();
 
                 // for every neighbors, get inputs dependencies and add it as signal dependencies
-                for (_, neighbor_id, label1) in graph.edges(*signal) {
+                for (_, neighbor_id, label1) in graph.edges(signal) {
                     // tells if the neighbor is an input
                     let is_input = symbol_table
-                        .get_node_inputs(&self.id)
+                        .get_node_inputs(self.id)
                         .iter()
                         .any(|input| neighbor_id.eq(input));
 
@@ -288,15 +288,15 @@ impl Node {
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
                         // if input then add neighbor to reduced graph
-                        add_edge(reduced_graph, *signal, neighbor_id, label1.clone());
+                        add_edge(reduced_graph, signal, neighbor_id, label1.clone());
                         // and add its input dependencies (contract dependencies)
                         graph.edges(neighbor_id).for_each(|(_, input_id, label2)| {
-                            add_edge(reduced_graph, *signal, input_id, label1.add(label2))
+                            add_edge(reduced_graph, signal, input_id, label1.add(label2))
                         });
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_inputs_dependencies(
-                            &neighbor_id,
+                            neighbor_id,
                             symbol_table,
                             nodes_context,
                             nodes_processus_manager,
@@ -315,7 +315,7 @@ impl Node {
                         reduced_graph_cloned
                             .edges(neighbor_id)
                             .for_each(|(_, input_id, label2)| {
-                                add_edge(reduced_graph, *signal, input_id, label1.add(label2));
+                                add_edge(reduced_graph, signal, input_id, label1.add(label2));
                             })
                     }
                 }
@@ -324,7 +324,7 @@ impl Node {
                 let processus_manager = nodes_reduced_processus_manager.get_mut(node).unwrap();
                 // get signal's color
                 let color = processus_manager
-                    .get_mut(signal)
+                    .get_mut(&signal)
                     .expect("signal should be in processing manager");
                 // update status: processed
                 *color = Color::Black;
