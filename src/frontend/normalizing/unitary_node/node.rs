@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use petgraph::algo::has_path_connecting;
 
 use crate::error::{Error, TerminationError};
@@ -56,6 +57,7 @@ impl Node {
             .values()
             .filter(|equation| symbol_table.get_scope(equation.id).eq(&Scope::Output))
             .map(|equation| equation.id.clone())
+            .sorted()
             .collect::<Vec<_>>();
 
         // construct unitary node for each output and get used signals

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
+
 use crate::{
     hir::{node::Node, unitary_node::UnitaryNode},
     symbol_table::SymbolTable,
@@ -31,6 +33,7 @@ impl Node {
     ) {
         self.unitary_nodes
             .values_mut()
+            .sorted_by_key(|unitary_node| unitary_node.id)
             .for_each(|unitary_node| unitary_node.inline_when_needed(unitary_nodes, symbol_table))
     }
 }

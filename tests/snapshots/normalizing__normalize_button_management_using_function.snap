@@ -427,23 +427,15 @@ nodes:
           called_nodes: {}
         location: ~
         graph:
-          nodes:
-            - 29
-            - 44
+          ? - 29
             - 27
+          : Weight: 0
+          ? - 29
             - 28
-          node_holes: []
-          edge_property: directed
-          edges:
-            - - 0
-              - 2
-              - Weight: 0
-            - - 0
-              - 0
-              - Weight: 1
-            - - 0
-              - 3
-              - Weight: 0
+          : Weight: 0
+          ? - 29
+            - 29
+          : Weight: 1
         contract:
           requires: []
           ensures: []
@@ -1226,35 +1218,24 @@ nodes:
               signal_id: 29
         location: ~
         graph:
-          nodes:
-            - 38
-            - 35
-            - 37
-            - 45
+          ? - 35
             - 31
+          : Weight: 0
+          ? - 35
             - 33
+          : Weight: 0
+          ? - 35
+            - 37
+          : Weight: 0
+          ? - 37
             - 32
-          node_holes: []
-          edge_property: directed
-          edges:
-            - - 0
-              - 4
-              - Weight: 1
-            - - 1
-              - 4
-              - Weight: 0
-            - - 1
-              - 2
-              - Weight: 0
-            - - 1
-              - 5
-              - Weight: 0
-            - - 2
-              - 0
-              - Weight: 0
-            - - 2
-              - 6
-              - Weight: 0
+          : Weight: 0
+          ? - 37
+            - 38
+          : Weight: 0
+          ? - 38
+            - 31
+          : Weight: 1
         contract:
           requires: []
           ensures: []
@@ -1679,43 +1660,30 @@ nodes:
               signal_id: 29
         location: ~
         graph:
-          nodes:
-            - 38
-            - 36
-            - 37
-            - 47
-            - 48
+          ? - 36
             - 31
+          : Weight: 0
+          ? - 36
             - 33
+          : Weight: 0
+          ? - 36
             - 34
+          : Weight: 0
+          ? - 36
+            - 36
+          : Weight: 1
+          ? - 36
+            - 37
+          : Weight: 0
+          ? - 37
             - 32
-          node_holes: []
-          edge_property: directed
-          edges:
-            - - 0
-              - 5
-              - Weight: 1
-            - - 1
-              - 5
-              - Weight: 0
-            - - 1
-              - 1
-              - Weight: 1
-            - - 1
-              - 2
-              - Weight: 0
-            - - 1
-              - 6
-              - Weight: 0
-            - - 1
-              - 7
-              - Weight: 0
-            - - 2
-              - 0
-              - Weight: 0
-            - - 2
-              - 8
-              - Weight: 0
+          : Weight: 0
+          ? - 37
+            - 38
+          : Weight: 0
+          ? - 38
+            - 31
+          : Weight: 1
         contract:
           requires: []
           ensures: []
@@ -1761,4 +1729,3 @@ nodes:
       : Weight: 0
 component: ~
 location: ~
-

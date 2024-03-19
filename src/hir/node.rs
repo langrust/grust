@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::common::{
     label::Label,
     location::Location,
-    serialize::{ordered_graph, ordered_hashmap},
+    serialize::{ordered_oncecell, ordered_hashmap},
 };
 use crate::hir::{
     contract::Contract, once_cell::OnceCell, statement::Statement,
@@ -27,7 +27,7 @@ pub struct Node {
     /// Node location.
     pub location: Location,
     /// Node dependency graph.
-    #[serde(serialize_with = "ordered_graph")]
+    #[serde(serialize_with = "ordered_oncecell")]
     pub graph: OnceCell<DiGraphMap<usize, Label>>,
 }
 
