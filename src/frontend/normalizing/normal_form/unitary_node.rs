@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use petgraph::graphmap::{DiGraphMap, GraphMap};
 
@@ -34,7 +34,7 @@ impl UnitaryNode {
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &BTreeMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         symbol_table: &mut SymbolTable,
     ) {
         // create an IdentifierCreator and a local SymbolTable

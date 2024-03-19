@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
@@ -34,7 +34,7 @@ impl StreamExpression {
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &BTreeMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
     ) -> Vec<Statement<StreamExpression>> {
@@ -149,7 +149,7 @@ impl StreamExpression {
     /// ```
     pub fn into_signal_call(
         &mut self,
-        nodes_reduced_graphs: &BTreeMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
     ) -> Vec<Statement<StreamExpression>> {

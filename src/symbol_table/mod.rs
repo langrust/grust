@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -37,9 +37,9 @@ pub enum SymbolKind {
         /// Node's input identifiers.
         inputs: Vec<usize>,
         /// Node's output identifiers.
-        outputs: BTreeMap<String, usize>,
+        outputs: HashMap<String, usize>,
         /// Node's local identifiers.
-        locals: BTreeMap<String, usize>,
+        locals: HashMap<String, usize>,
     },
     /// Unitary node kind.
     UnitaryNode {
@@ -128,14 +128,14 @@ impl Symbol {
 /// Context table.
 pub struct Context {
     /// Current scope context.
-    current: BTreeMap<String, usize>,
+    current: HashMap<String, usize>,
     /// Global context.
     global_context: Option<Box<Context>>,
 }
 impl Default for Context {
     fn default() -> Self {
         Self {
-            current: BTreeMap::new(),
+            current: HashMap::new(),
             global_context: None,
         }
     }
@@ -143,7 +143,7 @@ impl Default for Context {
 impl Context {
     fn new() -> Self {
         Self {
-            current: BTreeMap::new(),
+            current: HashMap::new(),
             global_context: None,
         }
     }
@@ -176,7 +176,7 @@ impl Context {
     }
     fn create_local_context(self) -> Context {
         Context {
-            current: BTreeMap::new(),
+            current: HashMap::new(),
             global_context: Some(Box::new(self)),
         }
     }
@@ -188,7 +188,7 @@ impl Context {
 /// Symbol table.
 pub struct SymbolTable {
     /// Table.
-    table: BTreeMap<usize, Symbol>,
+    table: HashMap<usize, Symbol>,
     /// The next fresh identifier.
     fresh_id: usize,
     /// Context of known symbols.
@@ -197,7 +197,7 @@ pub struct SymbolTable {
 impl Default for SymbolTable {
     fn default() -> Self {
         Self {
-            table: BTreeMap::new(),
+            table: HashMap::new(),
             fresh_id: 0,
             known_symbols: Default::default(),
         }
@@ -207,7 +207,7 @@ impl SymbolTable {
     /// Create new symbol table.
     pub fn new() -> Self {
         Self {
-            table: BTreeMap::new(),
+            table: HashMap::new(),
             fresh_id: 0,
             known_symbols: Context::new(),
         }
@@ -362,8 +362,8 @@ impl SymbolTable {
         is_component: bool,
         local: bool,
         inputs: Vec<usize>,
-        outputs: BTreeMap<String, usize>,
-        locals: BTreeMap<String, usize>,
+        outputs: HashMap<String, usize>,
+        locals: HashMap<String, usize>,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {

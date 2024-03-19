@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
 
@@ -19,7 +19,7 @@ impl Dependencies {
     /// on `x` and `y` will depends on `a` and `b`.
     pub fn replace_by_context(
         &mut self,
-        context_map: &BTreeMap<usize, Union<usize, StreamExpression>>,
+        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
     ) {
         let new_dependencies = self
             .get()

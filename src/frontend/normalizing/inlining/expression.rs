@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::{
     common::label::Label,
@@ -25,7 +25,7 @@ impl ExpressionKind<StreamExpression> {
     pub fn replace_by_context(
         &mut self,
         dependencies: &mut Dependencies,
-        context_map: &BTreeMap<usize, Union<usize, StreamExpression>>,
+        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
     ) -> Option<StreamExpression> {
         match self {
             ExpressionKind::Constant { .. }

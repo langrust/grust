@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
-use crate::common::r#type::Type;
+use crate::common::{r#type::Type, serialize::ordered_hashmap};
 
 use crate::hir::stream_expression::StreamExpression;
 
@@ -11,9 +11,11 @@ use crate::hir::stream_expression::StreamExpression;
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 pub struct Memory {
     /// Initialized buffers.
-    pub buffers: BTreeMap<usize, Buffer>,
+    #[serde(serialize_with = "ordered_hashmap")]
+    pub buffers: HashMap<usize, Buffer>,
     /// Called unitary nodes' names.
-    pub called_nodes: BTreeMap<usize, CalledNode>,
+    #[serde(serialize_with = "ordered_hashmap")]
+    pub called_nodes: HashMap<usize, CalledNode>,
 }
 
 /// Initialized buffer.
@@ -45,7 +47,7 @@ impl Memory {
     /// Create empty memory.
     ///
     /// ```rust
-    /// use std::collections::BTreeMap;
+    /// use std::collections::HashMap;
     ///
     /// use grustine::hir::memory::Memory;
     ///
@@ -55,8 +57,8 @@ impl Memory {
     /// ```
     pub fn new() -> Self {
         Memory {
-            buffers: BTreeMap::new(),
-            called_nodes: BTreeMap::new(),
+            buffers: HashMap::new(),
+            called_nodes: HashMap::new(),
         }
     }
 

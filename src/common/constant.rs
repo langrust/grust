@@ -21,7 +21,7 @@ use crate::common::r#type::Type;
 ///
 /// let constant = Constant::String(String::from("Hello world"));
 /// ```
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub enum Constant {
     /// [i64] integers
     Integer(i64),

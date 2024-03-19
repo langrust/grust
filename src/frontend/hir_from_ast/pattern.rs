@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::ast::pattern::{Pattern, PatternKind};
 use crate::error::{Error, TerminationError};
@@ -38,7 +38,7 @@ impl HIRFromAST for Pattern {
                     .clone()
                     .into_iter()
                     .map(|id| (symbol_table.get_name(id).clone(), id))
-                    .collect::<BTreeMap<_, _>>();
+                    .collect::<HashMap<_, _>>();
 
                 let fields = fields
                     .into_iter()

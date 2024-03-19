@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::{hir::file::File, symbol_table::SymbolTable};
 
@@ -30,7 +30,7 @@ impl File {
                     .values()
                     .map(|unitary_node| (unitary_node.id.clone(), unitary_node.clone()))
             })
-            .collect::<BTreeMap<_, _>>();
+            .collect::<HashMap<_, _>>();
         self.nodes
             .iter_mut()
             .for_each(|node| node.inline_when_needed(&nodes, symbol_table));

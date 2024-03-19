@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::ast::node::Node;
 use crate::common::scope::Scope;
@@ -41,7 +41,7 @@ impl HIRFromAST for Node {
             })
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
-            .collect::<Result<BTreeMap<_, _>, _>>()?;
+            .collect::<Result<HashMap<_, _>, _>>()?;
         let contract = contract.hir_from_ast(symbol_table, errors)?;
 
         symbol_table.global();
@@ -49,7 +49,7 @@ impl HIRFromAST for Node {
         Ok(HIRNode {
             id,
             unscheduled_equations,
-            unitary_nodes: BTreeMap::new(),
+            unitary_nodes: HashMap::new(),
             contract,
             location,
             graph: OnceCell::new(),
@@ -109,7 +109,7 @@ impl Node {
             })
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
-            .collect::<Result<BTreeMap<_, _>, _>>()?;
+            .collect::<Result<HashMap<_, _>, _>>()?;
 
         let locals = self
             .equations
@@ -133,7 +133,7 @@ impl Node {
             })
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
-            .collect::<Result<BTreeMap<_, _>, _>>()?;
+            .collect::<Result<HashMap<_, _>, _>>()?;
 
         symbol_table.global();
 
