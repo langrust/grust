@@ -60,7 +60,7 @@ mod rust_ast_from_lir {
         };
         let control = parse_quote!(
             pub struct NodeInput {
-                pub i: i64
+                pub i: i64,
             }
         );
 

@@ -26,7 +26,6 @@ pub mod r#type;
 /// HIR Typedef construction from AST Typedef.
 pub mod typedef;
 
-
 /// AST transformation into HIR.
 pub trait HIRFromAST {
     /// Corresponding HIR construct.
