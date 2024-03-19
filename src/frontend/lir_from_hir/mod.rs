@@ -36,7 +36,6 @@ pub mod pattern;
 /// LIR type construction from HIR type.
 pub mod r#type;
 
-
 /// HIR transformation into LIR.
 pub trait LIRFromHIR {
     /// Corresponding LIR construct.
@@ -54,7 +53,7 @@ pub trait LIRFromHIR {
     fn is_if_then_else(&self, _symbol_table: &SymbolTable) -> bool {
         false
     }
-    
+
     /// Get imports from LIR.
     fn get_imports(&self, _symbol_table: &SymbolTable) -> Vec<Import> {
         vec![]

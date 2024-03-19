@@ -1014,8 +1014,7 @@ impl SymbolTable {
     /// Get unitary node symbol identifier.
     pub fn get_unitary_node_id(&self, node_name: &String, output_name: &String) -> usize {
         let symbol_hash = format!("unitary_node {node_name}_{}", output_name);
-        self
-            .known_symbols
+        self.known_symbols
             .get_id(&symbol_hash, false)
             .expect("there should be an unitary node")
     }

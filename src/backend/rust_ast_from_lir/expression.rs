@@ -691,9 +691,13 @@ mod rust_ast_from_lir {
             let slice = x.as_mut();
             slice.sort_by(|a, b| {
                 let compare = compare(*a, *b);
-                if compare < 0 { std::cmp::Ordering::Less }
-                else if compare > 0 { std::cmp::Ordering::Greater }
-                else { std::cmp::Ordering::Equal }
+                if compare < 0 {
+                    std::cmp::Ordering::Less
+                } else if compare > 0 {
+                    std::cmp::Ordering::Greater
+                } else {
+                    std::cmp::Ordering::Equal
+                }
             });
             x
         });
@@ -716,7 +720,7 @@ mod rust_ast_from_lir {
             ],
         };
 
-        let control = parse_quote!({ 
+        let control = parse_quote!({
             let mut iter = itertools::izip!(a, b);
             std::array::from_fn(|_| iter.next().unwrap())
         });
