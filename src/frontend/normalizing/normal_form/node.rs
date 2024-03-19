@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
@@ -46,7 +46,7 @@ impl Node {
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &BTreeMap<usize, DiGraphMap<usize, Label>>,
+        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         symbol_table: &mut SymbolTable,
     ) {
         self.unitary_nodes

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::error::{Error, TerminationError};
 use crate::hir::file::File;
@@ -16,10 +16,10 @@ impl File {
         } = self;
 
         // initialize dictionaries for graphs
-        let mut nodes_graphs = BTreeMap::new();
-        let mut nodes_reduced_graphs = BTreeMap::new();
-        let mut nodes_processus_manager = BTreeMap::new();
-        let mut nodes_reduced_processus_manager = BTreeMap::new();
+        let mut nodes_graphs = HashMap::new();
+        let mut nodes_reduced_graphs = HashMap::new();
+        let mut nodes_processus_manager = HashMap::new();
+        let mut nodes_reduced_processus_manager = HashMap::new();
 
         // initialize every nodes' graphs
         nodes
@@ -52,7 +52,7 @@ impl File {
         let nodes_context = nodes
             .iter()
             .map(|node| (node.id.clone(), node.clone()))
-            .collect::<BTreeMap<_, _>>();
+            .collect::<HashMap<_, _>>();
 
         // every nodes complete their contract dependency graphs
         nodes

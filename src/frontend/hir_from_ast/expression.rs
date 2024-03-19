@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::ast::expression::{Expression, ExpressionKind};
 use crate::common::location::Location;
@@ -55,7 +55,7 @@ where
                     .clone()
                     .into_iter()
                     .map(|id| (symbol_table.get_name(id).clone(), id))
-                    .collect::<BTreeMap<_, _>>();
+                    .collect::<HashMap<_, _>>();
 
                 let fields = fields
                     .into_iter()

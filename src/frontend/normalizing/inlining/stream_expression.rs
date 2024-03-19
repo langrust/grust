@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::hir::{
     dependencies::Dependencies,
@@ -23,7 +23,7 @@ impl StreamExpression {
     /// `a + b/2`.
     pub fn replace_by_context(
         &mut self,
-        context_map: &BTreeMap<usize, Union<usize, StreamExpression>>,
+        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
     ) {
         match self.kind {
             StreamExpressionKind::Expression { ref mut expression } => {

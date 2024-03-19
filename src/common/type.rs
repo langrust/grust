@@ -20,7 +20,7 @@ use crate::error::{Error, TerminationError};
 /// - [Type::NotDefinedYet] is not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
 /// - [Type::Abstract] are functions types, if `f = |x| x+1` then `f: int -> int`
 /// - [Type::Polymorphism] is an inferable function type, if `add = |x, y| x+y` then `add: 't -> 't -> 't` with `t` in {`int`, `float`}
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     /// [i64] integers, if `n = 1` then `n: int`
     Integer,
