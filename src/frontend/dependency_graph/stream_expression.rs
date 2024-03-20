@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::stream_expression::{StreamExpression, StreamExpressionKind};
@@ -47,8 +46,6 @@ impl StreamExpression {
     pub fn compute_dependencies(
         &self,
         symbol_table: &SymbolTable,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
@@ -58,13 +55,7 @@ impl StreamExpression {
                 ref expression,
             } => {
                 // propagate dependencies computation in expression
-                expression.compute_dependencies(
-                    symbol_table,
-                    nodes_processus_manager,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
+                expression.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
                 // dependencies with the memory delay
                 let dependencies = expression
                     .get_dependencies()
@@ -75,13 +66,7 @@ impl StreamExpression {
 
                 // constant should not have dependencies
                 debug_assert!({
-                    constant.compute_dependencies(
-                        symbol_table,
-                        nodes_processus_manager,
-                        nodes_graphs,
-                        nodes_reduced_graphs,
-                        errors,
-                    )?;
+                    constant.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
                     constant.get_dependencies().is_empty()
                 });
 
@@ -101,8 +86,6 @@ impl StreamExpression {
                         .map(|(input_id, input_expression)| {
                             input_expression.compute_dependencies(
                                 symbol_table,
-                                nodes_processus_manager,
-                                nodes_graphs,
                                 nodes_reduced_graphs,
                                 errors,
                             )?;
@@ -130,8 +113,6 @@ impl StreamExpression {
             StreamExpressionKind::Expression { expression } => {
                 self.dependencies.set(expression.compute_dependencies(
                     symbol_table,
-                    nodes_processus_manager,
-                    nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
                 )?);

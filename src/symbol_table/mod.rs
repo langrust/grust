@@ -739,7 +739,7 @@ impl SymbolTable {
     }
 
     /// Get node output identifiers from identifier.
-    pub fn get_node_outputs(&self, id: usize) -> Values<'_, String, usize>    {
+    pub fn get_node_outputs(&self, id: usize) -> Values<'_, String, usize> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
@@ -13,8 +12,6 @@ impl ExpressionKind<StreamExpression> {
     pub fn compute_when_dependencies(
         &self,
         symbol_table: &SymbolTable,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(usize, Label)>, TerminationError> {
@@ -29,23 +26,11 @@ impl ExpressionKind<StreamExpression> {
                 ..
             } => {
                 // get dependencies of optional expression
-                option.compute_dependencies(
-                    symbol_table,
-                    nodes_processus_manager,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
+                option.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
                 let mut option_dependencies = option.get_dependencies().clone();
 
                 // get dependencies of present expression without local signal
-                present.compute_dependencies(
-                    symbol_table,
-                    nodes_processus_manager,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
+                present.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
                 let mut present_dependencies = present
                     .get_dependencies()
                     .clone()
@@ -54,13 +39,7 @@ impl ExpressionKind<StreamExpression> {
                     .collect();
 
                 // get dependencies of default expression without local signal
-                default.compute_dependencies(
-                    symbol_table,
-                    nodes_processus_manager,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
+                default.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
                 let mut default_dependencies = default
                     .get_dependencies()
                     .clone()
