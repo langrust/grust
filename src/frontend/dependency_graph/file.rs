@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+use petgraph::algo::toposort;
+use petgraph::graphmap::DiGraphMap;
+
 use crate::error::{Error, TerminationError};
 use crate::hir::file::File;
 use crate::symbol_table::SymbolTable;
@@ -53,6 +56,22 @@ impl File {
             .iter()
             .map(|node| (node.id.clone(), node.clone()))
             .collect::<HashMap<_, _>>();
+
+        // create graph of nodes
+        let mut nodes_graph = DiGraphMap::new();
+        nodes
+            .iter()
+            .for_each(|node| node.add_node_dependencies(&mut nodes_graph));
+
+        // sort nodes according to their dependencies
+        let sorted_nodes = toposort(&nodes_graph, None).map_err(|node| {
+            let error = Error::NotCausalNode {
+                node: symbol_table.get_name(node.node_id()).clone(),
+                location: self.location.clone(),
+            };
+            errors.push(error);
+            TerminationError
+        })?;
 
         // every nodes complete their contract dependency graphs
         nodes
