@@ -26,6 +26,110 @@ mod when;
 mod zip;
 
 impl ExpressionKind<StreamExpression> {
+    /// Get nodes applications identifiers.
+    pub fn get_called_nodes(&self) -> Vec<usize> {
+        match &self {
+            ExpressionKind::Constant { .. }
+            | ExpressionKind::Identifier { .. }
+            | ExpressionKind::Enumeration { .. } => vec![],
+            ExpressionKind::Application {
+                function_expression,
+                inputs,
+            } => {
+                let mut nodes = inputs
+                    .iter()
+                    .flat_map(|expression| expression.get_called_nodes())
+                    .collect::<Vec<_>>();
+                let mut other_nodes = function_expression.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                nodes
+            }
+            ExpressionKind::Abstraction { expression, .. } => expression.get_called_nodes(),
+            ExpressionKind::Structure { fields, .. } => fields
+                .iter()
+                .flat_map(|(_, expression)| expression.get_called_nodes())
+                .collect::<Vec<_>>(),
+            ExpressionKind::Array { elements } => elements
+                .iter()
+                .flat_map(|expression| expression.get_called_nodes())
+                .collect::<Vec<_>>(),
+            ExpressionKind::Tuple { elements } => elements
+                .iter()
+                .flat_map(|expression| expression.get_called_nodes())
+                .collect::<Vec<_>>(),
+            ExpressionKind::Match { expression, arms } => {
+                let mut nodes = expression.get_called_nodes();
+                let mut other_nodes = arms
+                    .iter()
+                    .flat_map(|(_, bound, body, expression)| {
+                        debug_assert!(body.is_empty());
+                        let mut nodes = expression.get_called_nodes();
+                        let mut other_nodes = bound
+                            .as_ref()
+                            .map_or(vec![], |expression| expression.get_called_nodes());
+                        nodes.append(&mut other_nodes);
+                        nodes
+                    })
+                    .collect::<Vec<_>>();
+                nodes.append(&mut other_nodes);
+                nodes
+            }
+            ExpressionKind::When {
+                option,
+                present,
+                present_body,
+                default,
+                default_body,
+                ..
+            } => {
+                debug_assert!(present_body.is_empty());
+                debug_assert!(default_body.is_empty());
+                let mut nodes = option.get_called_nodes();
+                let mut other_nodes = present.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                let mut other_nodes = default.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                nodes
+            }
+            ExpressionKind::FieldAccess { expression, .. } => expression.get_called_nodes(),
+            ExpressionKind::TupleElementAccess { expression, .. } => expression.get_called_nodes(),
+            ExpressionKind::Map {
+                expression,
+                function_expression,
+            } => {
+                let mut nodes = expression.get_called_nodes();
+                let mut other_nodes = function_expression.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                nodes
+            }
+            ExpressionKind::Fold {
+                expression,
+                initialization_expression,
+                function_expression,
+            } => {
+                let mut nodes = expression.get_called_nodes();
+                let mut other_nodes = initialization_expression.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                let mut other_nodes = function_expression.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                nodes
+            }
+            ExpressionKind::Sort {
+                expression,
+                function_expression,
+            } => {
+                let mut nodes = expression.get_called_nodes();
+                let mut other_nodes = function_expression.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                nodes
+            }
+            ExpressionKind::Zip { arrays } => arrays
+                .iter()
+                .flat_map(|expression| expression.get_called_nodes())
+                .collect::<Vec<_>>(),
+        }
+    }
+
     /// Compute dependencies of a stream expression.
     ///
     /// # Example

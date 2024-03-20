@@ -14,6 +14,25 @@ use crate::symbol_table::SymbolTable;
 use super::add_edge;
 
 impl StreamExpression {
+    /// Get nodes applications identifiers.
+    pub fn get_called_nodes(&self) -> Vec<usize> {
+        match &self.kind {
+            StreamExpressionKind::Expression { expression } => expression.get_called_nodes(),
+            StreamExpressionKind::FollowedBy { expression, .. } => expression.get_called_nodes(),
+            StreamExpressionKind::NodeApplication {
+                node_id, inputs, ..
+            } => {
+                let mut nodes = inputs
+                    .iter()
+                    .flat_map(|(_, expression)| expression.get_called_nodes())
+                    .collect::<Vec<_>>();
+                nodes.push(*node_id);
+                nodes
+            }
+            StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
+        }
+    }
+
     /// Compute dependencies of a stream expression.
     ///
     /// # Example
