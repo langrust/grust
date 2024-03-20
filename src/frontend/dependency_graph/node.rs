@@ -226,7 +226,7 @@ impl Node {
             }
             // if processing: error
             Color::Grey => {
-                let error = Error::NotCausal {
+                let error = Error::NotCausalSignal {
                     node: symbol_table.get_name(*node).clone(),
                     signal: symbol_table.get_name(signal).clone(),
                     location: location.clone(),

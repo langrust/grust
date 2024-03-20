@@ -211,11 +211,18 @@ pub enum Error {
         location: Location,
     },
     /// causality error
-    NotCausal {
+    NotCausalSignal {
         /// node's name
         node: String,
         /// signal's name
         signal: String,
+        /// the error location
+        location: Location,
+    },
+    /// causality error
+    NotCausalNode {
+        /// node's name
+        node: String,
         /// the error location
         location: Location,
     },
@@ -512,13 +519,22 @@ impl Error {
                     format!("please explicit type")
                 ]
             ),
-            Error::NotCausal { node, signal, location } => Diagnostic::error()
+            Error::NotCausalSignal { node, signal, location } => Diagnostic::error()
                 .with_message("not causal")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
                 ])
                 .with_notes(vec![
                     format!("signal '{signal}' depends on itself in node '{node}'")
+                ]
+            ),
+            Error::NotCausalNode { node,  location } => Diagnostic::error()
+                .with_message("not causal")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                ])
+                .with_notes(vec![
+                    format!("node '{node}' depends on itself")
                 ]
             ),
             Error::UnusedSignal { node, signal, location } => Diagnostic::error()
@@ -561,7 +577,8 @@ impl std::fmt::Display for Error {
             Error::ExpectTuplePattern { .. } => write!(f, "Expect Tuple Pattern"),
             Error::IncompatibleLength { .. } => write!(f, "Incompatible Length"),
             Error::NoTypeInference { .. } => write!(f, "No Type Inference"),
-            Error::NotCausal { .. } => write!(f, "Not Causal"),
+            Error::NotCausalSignal { .. } => write!(f, "Not Causal Signal"),
+            Error::NotCausalNode { .. } => write!(f, "Not Causal Node"),
             Error::UnusedSignal { .. } => write!(f, "Unused Signal"),
         }
     }
