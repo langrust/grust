@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
+use petgraph::graphmap::DiGraphMap;
+
 use crate::ast::node::Node;
 use crate::common::scope::Scope;
 use crate::error::{Error, TerminationError};
-use crate::hir::{node::Node as HIRNode, once_cell::OnceCell};
+use crate::hir::node::Node as HIRNode;
 use crate::symbol_table::SymbolTable;
 
 use super::HIRFromAST;
@@ -52,7 +54,7 @@ impl HIRFromAST for Node {
             unitary_nodes: HashMap::new(),
             contract,
             location,
-            graph: OnceCell::new(),
+            graph: DiGraphMap::new(),
         })
     }
 }

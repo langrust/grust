@@ -43,10 +43,7 @@ impl Node {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         // construct node's subgraph containing only 0-label weight
-        let graph = self
-            .graph
-            .get()
-            .expect("node dependency graph should be computed");
+        let graph = &self.graph;
         let mut subgraph = graph.clone();
         graph.all_edges().for_each(|(from, to, label)| match label {
             Label::Weight(0) => (),

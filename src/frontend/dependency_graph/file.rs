@@ -54,12 +54,12 @@ impl File {
 
         // ordered nodes complete their dependency graphs
         nodes
-            .iter()
+            .iter_mut()
             .map(|node| node.compute_dependencies(symbol_table, &mut nodes_reduced_graphs, errors))
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
-        component.as_ref().map_or(Ok(()), |component| {
+        component.as_mut().map_or(Ok(()), |component| {
             component.compute_dependencies(symbol_table, &mut nodes_reduced_graphs, errors)
         })?;
 
