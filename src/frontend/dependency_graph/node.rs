@@ -92,7 +92,6 @@ impl Node {
     ) -> Result<(), TerminationError> {
         // initiate graph
         let mut graph = self.create_initialized_graph(symbol_table);
-        nodes_reduced_graphs.insert(self.id, graph.clone());
 
         // complete contract dependency graphs
         self.add_contract_dependencies(&mut graph);
@@ -102,6 +101,9 @@ impl Node {
 
         // set node's graph
         self.graph.set(graph).expect("should be the first time");
+
+        // construct reduced graph
+        self.construct_reduced_graph(symbol_table, nodes_reduced_graphs, errors);
 
         Ok(())
     }
@@ -123,8 +125,9 @@ impl Node {
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        // add local and output signals dependencies
         let mut processus_manager = self.create_initialized_processus_manager(symbol_table);
+
+        // add local and output signals dependencies
         self.unscheduled_equations
             .keys()
             .sorted()
@@ -159,21 +162,6 @@ impl Node {
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
-
-        // add output dependencies over inputs in reduced graph
-        let mut processus_manager = self.create_initialized_processus_manager(symbol_table);
-        symbol_table
-            .get_node_outputs(self.id)
-            .for_each(|output_signal| {
-                self.add_signal_dependencies_over_inputs(
-                    graph,
-                    *output_signal,
-                    symbol_table,
-                    &mut processus_manager,
-                    nodes_reduced_graphs,
-                    errors,
-                )
-            });
 
         Ok(())
     }
@@ -265,6 +253,31 @@ impl Node {
         }
     }
 
+    fn construct_reduced_graph(
+        &self,
+        symbol_table: &SymbolTable,
+        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        errors: &mut Vec<Error>,
+    ) {
+        let graph = self.graph.get().expect("should be there");
+        nodes_reduced_graphs.insert(self.id, self.create_initialized_graph(symbol_table));
+
+        let mut processus_manager = self.create_initialized_processus_manager(symbol_table);
+
+        // add output dependencies over inputs in reduced graph
+        symbol_table
+            .get_node_outputs(self.id)
+            .for_each(|output_signal| {
+                self.add_signal_dependencies_over_inputs(
+                    graph,
+                    *output_signal,
+                    symbol_table,
+                    &mut processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )
+            });
+    }
     /// Add dependencies to node's inputs of a signal.
     ///
     /// # Example
@@ -277,7 +290,7 @@ impl Node {
     /// ```
     fn add_signal_dependencies_over_inputs(
         &self,
-        graph: &mut DiGraphMap<usize, Label>,
+        graph: &DiGraphMap<usize, Label>,
         signal: usize,
         symbol_table: &SymbolTable,
         processus_manager: &mut HashMap<usize, Color>,
@@ -296,14 +309,8 @@ impl Node {
                 // update status: processing
                 *color = Color::Grey;
 
-                // get edges
-                let edges = graph
-                    .edges(signal)
-                    .map(|(_, input_id, label)| (input_id, label.clone()))
-                    .collect::<Vec<_>>();
-
                 // for every neighbors, get inputs dependencies and add it as signal dependencies
-                for (neighbor_id, label1) in edges {
+                for (_, neighbor_id, label1) in graph.edges(signal) {
                     // tells if the neighbor is an input
                     let is_input = symbol_table
                         .get_node_inputs(self.id)
