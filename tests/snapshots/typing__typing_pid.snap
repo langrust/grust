@@ -242,7 +242,7 @@ nodes:
       ensures: []
       invariant: []
     location: ~
-    graph: ~
+    graph: {}
   - id: 34
     unscheduled_equations:
       32:
@@ -369,7 +369,7 @@ nodes:
       ensures: []
       invariant: []
     location: ~
-    graph: ~
+    graph: {}
 component:
   id: 43
   unscheduled_equations:
@@ -747,5 +747,5 @@ component:
     ensures: []
     invariant: []
   location: ~
-  graph: ~
+  graph: {}
 location: ~

@@ -67,11 +67,8 @@ impl Node {
             .collect::<Vec<_>>();
 
         // check that every signals are used
-        let graph = self
+        let unused_signals = self
             .graph
-            .get()
-            .expect("node dependency graph should be computed");
-        let unused_signals = graph
             .nodes()
             .filter(|id| !used_signals.contains(id))
             .collect::<Vec<_>>();
@@ -112,10 +109,7 @@ impl Node {
         } = self;
 
         // construct unitary node's subgraph from its output
-        let graph = self
-            .graph
-            .get()
-            .expect("node dependency graph should be computed");
+        let graph = &self.graph;
         let mut subgraph = graph.clone();
         graph.nodes().for_each(|id| {
             let has_path = has_path_connecting(graph, output, id, None); // TODO: contrary?

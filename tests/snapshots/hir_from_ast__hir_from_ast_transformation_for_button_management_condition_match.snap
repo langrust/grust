@@ -131,7 +131,7 @@ nodes:
       ensures: []
       invariant: []
     location: ~
-    graph: ~
+    graph: {}
   - id: 35
     unscheduled_equations:
       31:
@@ -563,6 +563,6 @@ nodes:
       ensures: []
       invariant: []
     location: ~
-    graph: ~
+    graph: {}
 component: ~
 location: ~

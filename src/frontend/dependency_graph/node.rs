@@ -85,7 +85,7 @@ impl Node {
     /// }
     /// ```
     pub fn compute_dependencies(
-        &self,
+        &mut self,
         symbol_table: &SymbolTable,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
@@ -100,7 +100,7 @@ impl Node {
         self.add_equations_dependencies(&mut graph, symbol_table, nodes_reduced_graphs, errors)?;
 
         // set node's graph
-        self.graph.set(graph).expect("should be the first time");
+        self.graph = graph;
 
         // construct reduced graph
         self.construct_reduced_graph(symbol_table, nodes_reduced_graphs, errors);
@@ -259,7 +259,6 @@ impl Node {
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) {
-        let graph = self.graph.get().expect("should be there");
         nodes_reduced_graphs.insert(self.id, self.create_initialized_graph(symbol_table));
 
         let mut processus_manager = self.create_initialized_processus_manager(symbol_table);
@@ -269,7 +268,6 @@ impl Node {
             .get_node_outputs(self.id)
             .for_each(|output_signal| {
                 self.add_signal_dependencies_over_inputs(
-                    graph,
                     *output_signal,
                     symbol_table,
                     &mut processus_manager,
@@ -290,7 +288,6 @@ impl Node {
     /// ```
     fn add_signal_dependencies_over_inputs(
         &self,
-        graph: &DiGraphMap<usize, Label>,
         signal: usize,
         symbol_table: &SymbolTable,
         processus_manager: &mut HashMap<usize, Color>,
@@ -310,7 +307,7 @@ impl Node {
                 *color = Color::Grey;
 
                 // for every neighbors, get inputs dependencies and add it as signal dependencies
-                for (_, neighbor_id, label1) in graph.edges(signal) {
+                for (_, neighbor_id, label1) in self.graph.edges(signal) {
                     // tells if the neighbor is an input
                     let is_input = symbol_table
                         .get_node_inputs(self.id)
@@ -323,13 +320,14 @@ impl Node {
                         // if input then add neighbor to reduced graph
                         add_edge(reduced_graph, signal, neighbor_id, label1.clone());
                         // and add its input dependencies (contract dependencies)
-                        graph.edges(neighbor_id).for_each(|(_, input_id, label2)| {
-                            add_edge(reduced_graph, signal, input_id, label1.add(label2))
-                        });
+                        self.graph
+                            .edges(neighbor_id)
+                            .for_each(|(_, input_id, label2)| {
+                                add_edge(reduced_graph, signal, input_id, label1.add(label2))
+                            });
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_dependencies_over_inputs(
-                            graph,
                             neighbor_id,
                             symbol_table,
                             processus_manager,
