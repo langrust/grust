@@ -104,7 +104,7 @@ fn causality_analysis_of_pid() {
 }
 
 #[test]
-fn error_when_typing_counter_not_causal() {
+fn error_counter_not_causal() {
     let mut files = SimpleFiles::new();
 
     let counter_not_causal_id = files.add(

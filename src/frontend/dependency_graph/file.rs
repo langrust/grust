@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use petgraph::algo::toposort;
 use petgraph::graphmap::DiGraphMap;
 
@@ -51,17 +52,14 @@ impl File {
             Ok(())
         })?;
 
-        // creates nodes context: nodes dictionary
-        let nodes_context = nodes
-            .iter()
-            .map(|node| (node.id.clone(), node.clone()))
-            .collect::<HashMap<_, _>>();
-
         // create graph of nodes
         let mut nodes_graph = DiGraphMap::new();
         nodes
             .iter()
             .for_each(|node| node.add_node_dependencies(&mut nodes_graph));
+        if let Some(component) = component {
+            component.add_node_dependencies(&mut nodes_graph)
+        }
 
         // sort nodes according to their dependencies
         let sorted_nodes = toposort(&nodes_graph, None).map_err(|node| {
@@ -73,7 +71,7 @@ impl File {
             TerminationError
         })?;
 
-        // every nodes complete their contract dependency graphs
+        // nodes complete their contract dependency graphs
         nodes
             .iter()
             .for_each(|node| node.add_contract_dependencies(&mut nodes_graphs));
@@ -83,15 +81,30 @@ impl File {
             component.add_contract_dependencies(&mut nodes_graphs)
         }
 
-        // every nodes complete their equations dependency graphs
+        // ordered nodes complete their equations dependency graphs
         nodes
             .iter()
+            .sorted_by(|n1, n2| {
+                let index1 = sorted_nodes
+                    .iter()
+                    .position(|id| *id == n1.id)
+                    .expect(&format!(
+                        "node '{}' should be in sorted nodes",
+                        symbol_table.get_name(n1.id)
+                    ));
+                let index2 = sorted_nodes
+                    .iter()
+                    .position(|id| *id == n2.id)
+                    .expect(&format!(
+                        "node '{}' should be in sorted nodes",
+                        symbol_table.get_name(n2.id)
+                    ));
+                Ord::cmp(&index2, &index1)
+            })
             .map(|node| {
-                node.add_all_equations_dependencies(
+                node.add_equations_dependencies(
                     symbol_table,
-                    &nodes_context,
                     &mut nodes_processus_manager,
-                    &mut nodes_reduced_processus_manager,
                     &mut nodes_graphs,
                     &mut nodes_reduced_graphs,
                     errors,
@@ -103,11 +116,9 @@ impl File {
 
         // optional component completes its equations dependency graph
         component.as_ref().map_or(Ok(()), |component| {
-            component.add_all_equations_dependencies(
+            component.add_equations_dependencies(
                 symbol_table,
-                &nodes_context,
                 &mut nodes_processus_manager,
-                &mut nodes_reduced_processus_manager,
                 &mut nodes_graphs,
                 &mut nodes_reduced_graphs,
                 errors,
