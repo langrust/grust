@@ -15,7 +15,7 @@ impl Node {
     ///
     /// The created graph has every node's signals as vertices.
     /// But no edges are added.
-    pub fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> DiGraphMap<usize, Label> {
+    fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> DiGraphMap<usize, Label> {
         // create an empty graph
         let mut graph = DiGraphMap::new();
 
@@ -34,7 +34,7 @@ impl Node {
     }
 
     /// Create an initialized processus manager from a node.
-    pub fn create_initialized_processus_manager(
+    fn create_initialized_processus_manager(
         &self,
         symbol_table: &SymbolTable,
     ) -> HashMap<usize, Color> {
@@ -57,6 +57,9 @@ impl Node {
 
     /// Store nodes applications as dependencies.
     pub fn add_node_dependencies(&self, graph: &mut DiGraphMap<usize, ()>) {
+        // add [self] as node in graph
+        graph.add_node(self.id);
+        // add [self]->[called_nodes] as edges in graph
         self.unscheduled_equations.values().for_each(|statement| {
             statement
                 .expression
@@ -66,6 +69,41 @@ impl Node {
                     graph.add_edge(self.id, id, ());
                 })
         });
+    }
+
+    /// Compute the dependency graph of the node.
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// node test(i: int, j: int)
+    /// requires { j < i }  // i and j depend on each other
+    /// ensures  { j < o }  // o and j depend on each other
+    /// { // i depends on nothing
+    ///     out o: int = x; // depends on x
+    ///     x: int = i;     // depends on i
+    /// }
+    /// ```
+    pub fn compute_dependencies(
+        &self,
+        symbol_table: &SymbolTable,
+        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), TerminationError> {
+        // initiate graph
+        let mut graph = self.create_initialized_graph(symbol_table);
+        nodes_reduced_graphs.insert(self.id, graph.clone());
+
+        // complete contract dependency graphs
+        self.add_contract_dependencies(&mut graph);
+
+        // complete contract dependency graphs
+        self.add_equations_dependencies(&mut graph, symbol_table, nodes_reduced_graphs, errors)?;
+
+        // set node's graph
+        self.graph.set(graph).expect("should be the first time");
+
+        Ok(())
     }
 
     /// Complete dependency graph of the node's equations.
@@ -78,30 +116,24 @@ impl Node {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn add_equations_dependencies(
+    fn add_equations_dependencies(
         &self,
+        graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &SymbolTable,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let Node {
-            unscheduled_equations,
-            graph,
-            ..
-        } = self;
-
         // add local and output signals dependencies
-        unscheduled_equations
+        let mut processus_manager = self.create_initialized_processus_manager(symbol_table);
+        self.unscheduled_equations
             .keys()
             .sorted()
             .map(|signal| {
                 self.add_signal_dependencies(
+                    graph,
                     *signal,
                     symbol_table,
-                    nodes_processus_manager,
-                    nodes_graphs,
+                    &mut processus_manager,
                     nodes_reduced_graphs,
                     errors,
                 )
@@ -116,10 +148,10 @@ impl Node {
             .iter()
             .map(|signal| {
                 self.add_signal_dependencies(
+                    graph,
                     *signal,
                     symbol_table,
-                    nodes_processus_manager,
-                    nodes_graphs,
+                    &mut processus_manager,
                     nodes_reduced_graphs,
                     errors,
                 )
@@ -128,20 +160,16 @@ impl Node {
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
 
-        // set node's graph
-        graph
-            .set(nodes_graphs.get(&self.id).unwrap().clone())
-            .expect("should be the first time");
-
         // add output dependencies over inputs in reduced graph
+        let mut processus_manager = self.create_initialized_processus_manager(symbol_table);
         symbol_table
             .get_node_outputs(self.id)
             .for_each(|output_signal| {
                 self.add_signal_dependencies_over_inputs(
+                    graph,
                     *output_signal,
                     symbol_table,
-                    nodes_processus_manager,
-                    nodes_graphs,
+                    &mut processus_manager,
                     nodes_reduced_graphs,
                     errors,
                 )
@@ -160,12 +188,12 @@ impl Node {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn add_signal_dependencies(
+    fn add_signal_dependencies(
         &self,
+        graph: &mut DiGraphMap<usize, Label>,
         signal: usize,
         symbol_table: &SymbolTable,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        processus_manager: &mut HashMap<usize, Color>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
@@ -176,8 +204,6 @@ impl Node {
             ..
         } = self;
 
-        // get node's processus manager
-        let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
         // get signal's color
         let color = processus_manager
             .get_mut(&signal)
@@ -198,13 +224,10 @@ impl Node {
                         // compute and get dependencies
                         expression.compute_dependencies(
                             symbol_table,
-                            nodes_processus_manager,
-                            nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
                         )?;
 
-                        let graph = nodes_graphs.get_mut(node).unwrap();
                         // add dependencies as graph's edges:
                         // s = e depends on s' <=> s -> s'
                         expression
@@ -218,7 +241,6 @@ impl Node {
                         Ok(())
                     })?;
 
-                let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
                 // get signal's color
                 let color = processus_manager
                     .get_mut(&signal)
@@ -253,19 +275,17 @@ impl Node {
     ///     x: int = i;     // depends on input i
     /// }
     /// ```
-    pub fn add_signal_dependencies_over_inputs(
+    fn add_signal_dependencies_over_inputs(
         &self,
+        graph: &mut DiGraphMap<usize, Label>,
         signal: usize,
         symbol_table: &SymbolTable,
-        nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
+        processus_manager: &mut HashMap<usize, Color>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) {
         let Node { id: node, .. } = self;
 
-        // get node's processus manager
-        let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
         // get signal's color
         let color = processus_manager
             .get_mut(&signal)
@@ -276,11 +296,14 @@ impl Node {
                 // update status: processing
                 *color = Color::Grey;
 
-                // get node's graph
-                let graph = nodes_graphs.get(node).unwrap().clone();
+                // get edges
+                let edges = graph
+                    .edges(signal)
+                    .map(|(_, input_id, label)| (input_id, label.clone()))
+                    .collect::<Vec<_>>();
 
                 // for every neighbors, get inputs dependencies and add it as signal dependencies
-                for (_, neighbor_id, label1) in graph.edges(signal) {
+                for (neighbor_id, label1) in edges {
                     // tells if the neighbor is an input
                     let is_input = symbol_table
                         .get_node_inputs(self.id)
@@ -299,10 +322,10 @@ impl Node {
                     } else {
                         // else compute neighbor's inputs dependencies
                         self.add_signal_dependencies_over_inputs(
+                            graph,
                             neighbor_id,
                             symbol_table,
-                            nodes_processus_manager,
-                            nodes_graphs,
+                            processus_manager,
                             nodes_reduced_graphs,
                             errors,
                         );
@@ -322,7 +345,6 @@ impl Node {
                     }
                 }
 
-                let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
                 // get signal's color
                 let color = processus_manager
                     .get_mut(&signal)
@@ -339,25 +361,16 @@ impl Node {
     /// # Example
     ///
     /// ```GR
+    /// node test(i: int, j: int)
     /// requires { j < i }  // i and j depend on each other
     /// ensures  { j < o }  // o and j depend on each other
-    /// node test(i: int, j: int) {
+    /// {
     ///     out o: int = i;
     /// }
     /// ```
-    pub fn add_contract_dependencies(
-        &self,
-        nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-    ) {
-        let Node {
-            id: node, contract, ..
-        } = self;
-
-        // get node's graph
-        let graph = nodes_graphs.get_mut(node).unwrap();
-
+    fn add_contract_dependencies(&self, graph: &mut DiGraphMap<usize, Label>) {
         // add edges to the graph
         // corresponding to dependencies in contract's terms
-        contract.add_dependencies(graph);
+        self.contract.add_dependencies(graph);
     }
 }
