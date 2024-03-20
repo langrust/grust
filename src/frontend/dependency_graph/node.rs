@@ -55,6 +55,19 @@ impl Node {
         hash
     }
 
+    /// Store nodes applications as dependencies.
+    pub fn add_node_dependencies(&self, graph: &mut DiGraphMap<usize, ()>) {
+        self.unscheduled_equations.values().for_each(|statement| {
+            statement
+                .expression
+                .get_called_nodes()
+                .into_iter()
+                .for_each(|id| {
+                    graph.add_edge(self.id, id, ());
+                })
+        });
+    }
+
     /// Complete dependency graph of the node's equations.
     ///
     /// # Example
