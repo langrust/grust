@@ -139,7 +139,7 @@ impl Node {
             .cloned()
             .collect();
 
-        // retrieve contract from usefull signals
+        // retrieve contract from useful signals
         let retrieve_terms = |terms: &Vec<Term>| {
             terms
                 .iter()
