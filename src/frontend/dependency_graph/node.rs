@@ -78,12 +78,10 @@ impl Node {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn add_all_equations_dependencies(
+    pub fn add_equations_dependencies(
         &self,
         symbol_table: &SymbolTable,
-        nodes_context: &HashMap<usize, Node>,
         nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
         nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
@@ -102,9 +100,7 @@ impl Node {
                 self.add_signal_dependencies(
                     *signal,
                     symbol_table,
-                    nodes_context,
                     nodes_processus_manager,
-                    nodes_reduced_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -122,9 +118,7 @@ impl Node {
                 self.add_signal_dependencies(
                     *signal,
                     symbol_table,
-                    nodes_context,
                     nodes_processus_manager,
-                    nodes_reduced_processus_manager,
                     nodes_graphs,
                     nodes_reduced_graphs,
                     errors,
@@ -138,6 +132,20 @@ impl Node {
         graph
             .set(nodes_graphs.get(&self.id).unwrap().clone())
             .expect("should be the first time");
+
+        // add output dependencies over inputs in reduced graph
+        symbol_table
+            .get_node_outputs(self.id)
+            .for_each(|output_signal| {
+                self.add_signal_dependencies_over_inputs(
+                    *output_signal,
+                    symbol_table,
+                    nodes_processus_manager,
+                    nodes_graphs,
+                    nodes_reduced_graphs,
+                    errors,
+                )
+            });
 
         Ok(())
     }
@@ -156,9 +164,7 @@ impl Node {
         &self,
         signal: usize,
         symbol_table: &SymbolTable,
-        nodes_context: &HashMap<usize, Node>,
         nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
         nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
@@ -192,9 +198,7 @@ impl Node {
                         // compute and get dependencies
                         expression.compute_dependencies(
                             symbol_table,
-                            nodes_context,
                             nodes_processus_manager,
-                            nodes_reduced_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
@@ -249,43 +253,28 @@ impl Node {
     ///     x: int = i;     // depends on input i
     /// }
     /// ```
-    pub fn add_signal_inputs_dependencies(
+    pub fn add_signal_dependencies_over_inputs(
         &self,
         signal: usize,
         symbol_table: &SymbolTable,
-        nodes_context: &HashMap<usize, Node>,
         nodes_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
-        nodes_reduced_processus_manager: &mut HashMap<usize, HashMap<usize, Color>>,
         nodes_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    ) {
         let Node { id: node, .. } = self;
 
         // get node's processus manager
-        let processus_manager = nodes_reduced_processus_manager.get_mut(node).unwrap();
+        let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
         // get signal's color
         let color = processus_manager
             .get_mut(&signal)
             .expect("signal should be in processing manager");
 
         match color {
-            // if vertex unprocessed
             Color::White => {
                 // update status: processing
                 *color = Color::Grey;
-
-                // compute signals dependencies
-                self.add_signal_dependencies(
-                    signal,
-                    symbol_table,
-                    nodes_context,
-                    nodes_processus_manager,
-                    nodes_reduced_processus_manager,
-                    nodes_graphs,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
 
                 // get node's graph
                 let graph = nodes_graphs.get(node).unwrap().clone();
@@ -309,43 +298,39 @@ impl Node {
                         });
                     } else {
                         // else compute neighbor's inputs dependencies
-                        self.add_signal_inputs_dependencies(
+                        self.add_signal_dependencies_over_inputs(
                             neighbor_id,
                             symbol_table,
-                            nodes_context,
                             nodes_processus_manager,
-                            nodes_reduced_processus_manager,
                             nodes_graphs,
                             nodes_reduced_graphs,
                             errors,
-                        )?;
+                        );
 
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = nodes_reduced_graphs.get_mut(node).unwrap();
-                        let reduced_graph_cloned = reduced_graph.clone();
+                        let neighbor_edges = reduced_graph
+                            .edges(neighbor_id)
+                            .map(|(_, input_id, label)| (input_id, label.clone()))
+                            .collect::<Vec<_>>();
 
                         // add dependencies as graph's edges:
                         // s = e depends on i <=> s -> i
-                        reduced_graph_cloned
-                            .edges(neighbor_id)
-                            .for_each(|(_, input_id, label2)| {
-                                add_edge(reduced_graph, signal, input_id, label1.add(label2));
-                            })
+                        neighbor_edges.into_iter().for_each(|(input_id, label2)| {
+                            add_edge(reduced_graph, signal, input_id, label1.add(&label2));
+                        })
                     }
                 }
 
-                // get node's processus manager
-                let processus_manager = nodes_reduced_processus_manager.get_mut(node).unwrap();
+                let processus_manager = nodes_processus_manager.get_mut(node).unwrap();
                 // get signal's color
                 let color = processus_manager
                     .get_mut(&signal)
                     .expect("signal should be in processing manager");
                 // update status: processed
                 *color = Color::Black;
-
-                Ok(())
             }
-            _ => Ok(()),
+            Color::Black | Color::Grey => (),
         }
     }
 
