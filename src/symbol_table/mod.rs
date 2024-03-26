@@ -2,6 +2,7 @@ use std::collections::{hash_map::Values, HashMap};
 use strum::IntoEnumIterator;
 
 use crate::{
+    ast::interface::{FlowPath, FlowType},
     common::{
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
@@ -20,6 +21,13 @@ pub enum SymbolKind {
         scope: Scope,
         /// Identifier type.
         typing: Option<Type>,
+    },
+    /// Flow kind.
+    Flow {
+        /// Flow path (local flows don't have path in real system).
+        path: Option<FlowPath>,
+        /// Flow type.
+        typing: Option<FlowType>,
     },
     /// Function kind.
     Function {
@@ -51,6 +59,13 @@ pub enum SymbolKind {
         inputs: Vec<usize>,
         /// Node's output identifier.
         output: usize,
+    },
+    /// Interface kind.
+    Interface {
+        /// Interface's import identifiers.
+        imports: Vec<usize>,
+        /// Interface's export identifier.
+        exports: Vec<usize>,
     },
     /// Structure kind.
     Structure {
@@ -112,9 +127,11 @@ impl Symbol {
     fn hash_as_string(&self) -> String {
         match &self.kind {
             SymbolKind::Identifier { .. } => format!("identifier {}", self.name),
+            SymbolKind::Flow { .. } => format!("flow {}", self.name),
             SymbolKind::Function { .. } => format!("function {}", self.name),
             SymbolKind::Node { .. } => format!("node {}", self.name),
             SymbolKind::UnitaryNode { .. } => format!("unitary_node {}", self.name),
+            SymbolKind::Interface { .. } => format!("interface {}", self.name),
             SymbolKind::Structure { .. } => format!("struct {}", self.name),
             SymbolKind::Enumeration { .. } => format!("enum {}", self.name),
             SymbolKind::EnumerationElement { enum_name } => {
@@ -333,6 +350,24 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert flow in symbol table.
+    pub fn insert_flow(
+        &mut self,
+        name: String,
+        path: Option<FlowPath>,
+        typing: Option<FlowType>,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::Flow { path, typing },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
     /// Insert function in symbol table.
     pub fn insert_function(
         &mut self,
@@ -374,6 +409,24 @@ impl SymbolTable {
                 outputs,
                 locals,
             },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
+    /// Insert interface in symbol table.
+    pub fn insert_interface(
+        &mut self,
+        name: String,
+        local: bool,
+        imports: Vec<usize>,
+        exports: Vec<usize>,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::Interface { imports, exports },
             name,
         };
 
