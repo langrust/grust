@@ -84,7 +84,7 @@ pub completeType: Type = {
 }
 
 /// Catches flow types
-flowType: FlowType = {
+pub flowType: FlowType = {
     "signal" <t: completeType> => FlowType::Signal(t),
     "event" <t: completeType> => FlowType::Event(t),
 }
