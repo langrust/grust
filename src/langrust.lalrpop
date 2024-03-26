@@ -1,21 +1,22 @@
 use std::str::FromStr;
 
 use crate::ast::{
+    contract::{ClauseKind, Contract, Term, TermKind},
     equation::Equation,
     expression::{Expression, ExpressionKind},
     file::File,
     function::Function,
-    pattern::{Pattern, PatternKind},
+    interface::*,
     node::Node,
+    pattern::{Pattern, PatternKind},
     statement::Statement,
     stream_expression::{StreamExpression, StreamExpressionKind},
     typedef::{Typedef, TypedefKind},
-    contract::{Term, TermKind, ClauseKind, Contract},
 };
 use crate::common::{
     constant::Constant,
     location::Location,
-    operator::{UnaryOperator, BinaryOperator, OtherOperator},
+    operator::{BinaryOperator, OtherOperator, UnaryOperator},
     scope::Scope,
     r#type::Type,
 };
@@ -82,6 +83,12 @@ pub completeType: Type = {
     <t: basicType> => t,
 }
 
+/// Catches flow types
+flowType: FlowType = {
+    "signal" <t: completeType> => FlowType::Signal(t),
+    "event" <t: completeType> => FlowType::Event(t),
+}
+
 /// Catches signals' scopes
 scope: Scope = {
     <"out"?> => match <> {
@@ -136,6 +143,37 @@ fourthBinaryOperator: BinaryOperator = {
     "&&" => BinaryOperator::And,
     "||" => BinaryOperator::Or,
 };
+
+/// Catches flow paths
+flowPath: FlowPath = {
+    // catches name
+    <start:@L> <ident: ID> <end:@R> => {
+        FlowPath {
+            kind: FlowPathKind::Name { ident },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches path
+    <start:@L> <ident: ID> "." <path: flowPath> <end:@R> => {
+        FlowPath {
+            kind: FlowPathKind::Path {
+                ident,
+                path: Box::new(path),
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+    // catches name aliasing
+    <start:@L> <ident: ID> "as" <rename: ID> <end:@R> => {
+        FlowPath {
+            kind: FlowPathKind::Rename {
+                ident,
+                rename,
+            },
+            location: Location{ file_id, range: start..end }
+        }
+    },
+}
 
 /// Catches patterns
 pub pattern: Pattern = {
@@ -1109,6 +1147,72 @@ pub equation: Equation = {
     }
 }
 
+/// Catches flow expressions
+pub flowExpression: FlowExpression = {
+    // catches flow calls
+    <start:@L> <ident: ID> <end:@R> => {
+        FlowExpression {
+            kind: FlowExpressionKind::Ident {
+                ident,
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches GReact `tiemout` operator
+    <start:@L> "timeout" "(" <e: flowExpression> "," <n:r"\d+"> ")" <end:@R> => {
+        FlowExpression {
+            kind: FlowExpressionKind::Timeout {
+                flow_expression: Box::new(e),
+                timeout_ms: u64::from_str(n).unwrap(),
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches GReact `merge` operator
+    <start:@L> "merge" "(" <e_1: flowExpression> "," <e_2: flowExpression> ")" <end:@R> => {
+        FlowExpression {
+            kind: FlowExpressionKind::Merge {
+                flow_expression_1: Box::new(e_1),
+                flow_expression_2: Box::new(e_2),
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches GReact `zip` operator
+    <start:@L> "zip" "(" <e_1: flowExpression> "," <e_2: flowExpression> ")" <end:@R> => {
+        FlowExpression {
+            kind: FlowExpressionKind::Zip {
+                flow_expression_1: Box::new(e_1),
+                flow_expression_2: Box::new(e_2),
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+    // catches component call
+    <start:@L> <c: ID> "(" <v_e: list<flowExpression>> ")" "." <s: ID> <end:@R> => {
+        FlowExpression {
+            kind: FlowExpressionKind::ComponentCall {
+                ident_component: c,
+                inputs: v_e,
+                ident_signal: s,
+            },
+            location: Location{ file_id, range: start..end },
+        }
+    },
+}
+
+/// Catches flow statements
+pub flowStatement: FlowStatement = {
+    <start:@L> <flow_type: flowType> <ident: ID> "=" <e: flowExpression> ";" <end:@R> => {
+        FlowStatement {
+            ident,
+            flow_type,
+            flow_expression: e,
+            location: Location{ file_id, range: start..end }
+        }
+    }
+}
+
 /// Catches type definition
 pub userType: Typedef = {
     // catches enumerations definition
@@ -1209,6 +1313,23 @@ pub component: Node = {
             inputs: vec![],
             equations: e.into_iter().map(|equation| (equation.id.clone(), equation)).collect(),
             contract: c,
+            location: Location{ file_id, range: start..end },
+        }
+    }
+};
+
+/// Catches interface
+pub interface: Interface = {
+    <start:@L> "interface" <id: ID> "{"
+        <imports: ("import" <flowType> <flowPath> ";")*>
+        <flow_statements: flowStatement+>
+        <exports: ("export" <flowPath> ";")+>
+    "}"  <end:@R> => {
+        Interface {
+            id,
+            imports,
+            exports,
+            flow_statements,
             location: Location{ file_id, range: start..end },
         }
     }
