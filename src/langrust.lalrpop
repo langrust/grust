@@ -145,7 +145,7 @@ fourthBinaryOperator: BinaryOperator = {
 };
 
 /// Catches flow paths
-flowPath: FlowPath = {
+pub flowPath: FlowPath = {
     // catches name
     <start:@L> <ident: ID> <end:@R> => {
         FlowPath {
