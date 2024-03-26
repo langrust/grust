@@ -7,10 +7,7 @@ mod langrust_ast_constructs {
     use codespan_reporting::files::{Files, SimpleFiles};
 
     use grustine::ast::{
-        expression::{Expression, ExpressionKind},
-        pattern::{Pattern, PatternKind},
-        stream_expression::{StreamExpression, StreamExpressionKind},
-        typedef::{Typedef, TypedefKind},
+        expression::{Expression, ExpressionKind}, interface::FlowType, pattern::{Pattern, PatternKind}, stream_expression::{StreamExpression, StreamExpressionKind}, typedef::{Typedef, TypedefKind}
     };
     use grustine::common::{
         constant::Constant,
@@ -80,7 +77,7 @@ mod langrust_ast_constructs {
     }
 
     #[test]
-    fn types() {
+    fn complete_types() {
         let mut files = SimpleFiles::new();
         let file_id1 = files.add("int_test.gr", "int");
         let file_id2 = files.add("float_test.gr", "float");
@@ -152,6 +149,155 @@ mod langrust_ast_constructs {
         assert_eq!(
             complete_type,
             Type::Abstract(vec![Type::Integer], Box::new(Type::Boolean))
+        );
+    }
+
+    #[test]
+    fn flow_types() {
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("int_test.gr", "signal int");
+        let file_id2 = files.add("float_test.gr", "signal float");
+        let file_id3 = files.add("bool_test.gr", "signal bool");
+        let file_id4 = files.add("string_test.gr", "signal string");
+        let file_id5 = files.add("unit_test.gr", "signal unit");
+        let file_id6 = files.add("array_test.gr", "signal [int; 3]");
+        let file_id7 = files.add("option_test.gr", "signal int?");
+        let file_id8 = files.add("undefined_type_test.gr", "signal Color");
+        let file_id9 = files.add("tuple_type_test.gr", "signal (int, Color)");
+        let file_id10 = files.add("function_type_test1.gr", "signal (int, Color) -> bool");
+        let file_id11 = files.add("function_type_test2.gr", "signal int -> bool");
+
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(signal_type, FlowType::Signal(Type::Integer));
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(signal_type, FlowType::Signal(Type::Float));
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id3, &files.source(file_id3).unwrap())
+            .unwrap();
+        assert_eq!(signal_type, FlowType::Signal(Type::Boolean));
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id4, &files.source(file_id4).unwrap())
+            .unwrap();
+        assert_eq!(signal_type, FlowType::Signal(Type::String));
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id5, &files.source(file_id5).unwrap())
+            .unwrap();
+        assert_eq!(signal_type, FlowType::Signal(Type::Unit));
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id6, &files.source(file_id6).unwrap())
+            .unwrap();
+        assert_eq!(signal_type, FlowType::Signal(Type::Array(Box::new(Type::Integer), 3)));
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id7, &files.source(file_id7).unwrap())
+            .unwrap();
+        assert_eq!(signal_type, FlowType::Signal(Type::Option(Box::new(Type::Integer))));
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id8, &files.source(file_id8).unwrap())
+            .unwrap();
+        assert_eq!(signal_type, FlowType::Signal(Type::NotDefinedYet(String::from("Color"))));
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id9, &files.source(file_id9).unwrap())
+            .unwrap();
+        assert_eq!(
+            signal_type,
+            FlowType::Signal(Type::Tuple(vec![
+                Type::Integer,
+                Type::NotDefinedYet(String::from("Color"))
+            ]))
+        );
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id10, &files.source(file_id10).unwrap())
+            .unwrap();
+        assert_eq!(
+            signal_type,
+            FlowType::Signal(Type::Abstract(
+                vec![Type::Integer, Type::NotDefinedYet(String::from("Color"))],
+                Box::new(Type::Boolean)
+            ))
+        );
+        let signal_type = langrust::flowTypeParser::new()
+            .parse(file_id11, &files.source(file_id11).unwrap())
+            .unwrap();
+        assert_eq!(
+            signal_type,
+            FlowType::Signal(Type::Abstract(vec![Type::Integer], Box::new(Type::Boolean)))
+        );
+        
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("int_test.gr", "event int");
+        let file_id2 = files.add("float_test.gr", "event float");
+        let file_id3 = files.add("bool_test.gr", "event bool");
+        let file_id4 = files.add("string_test.gr", "event string");
+        let file_id5 = files.add("unit_test.gr", "event unit");
+        let file_id6 = files.add("array_test.gr", "event [int; 3]");
+        let file_id7 = files.add("option_test.gr", "event int?");
+        let file_id8 = files.add("undefined_type_test.gr", "event Color");
+        let file_id9 = files.add("tuple_type_test.gr", "event (int, Color)");
+        let file_id10 = files.add("function_type_test1.gr", "event (int, Color) -> bool");
+        let file_id11 = files.add("function_type_test2.gr", "event int -> bool");
+
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(event_type, FlowType::Event(Type::Integer));
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(event_type, FlowType::Event(Type::Float));
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id3, &files.source(file_id3).unwrap())
+            .unwrap();
+        assert_eq!(event_type, FlowType::Event(Type::Boolean));
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id4, &files.source(file_id4).unwrap())
+            .unwrap();
+        assert_eq!(event_type, FlowType::Event(Type::String));
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id5, &files.source(file_id5).unwrap())
+            .unwrap();
+        assert_eq!(event_type, FlowType::Event(Type::Unit));
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id6, &files.source(file_id6).unwrap())
+            .unwrap();
+        assert_eq!(event_type, FlowType::Event(Type::Array(Box::new(Type::Integer), 3)));
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id7, &files.source(file_id7).unwrap())
+            .unwrap();
+        assert_eq!(event_type, FlowType::Event(Type::Option(Box::new(Type::Integer))));
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id8, &files.source(file_id8).unwrap())
+            .unwrap();
+        assert_eq!(event_type, FlowType::Event(Type::NotDefinedYet(String::from("Color"))));
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id9, &files.source(file_id9).unwrap())
+            .unwrap();
+        assert_eq!(
+            event_type,
+            FlowType::Event(Type::Tuple(vec![
+                Type::Integer,
+                Type::NotDefinedYet(String::from("Color"))
+            ]))
+        );
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id10, &files.source(file_id10).unwrap())
+            .unwrap();
+        assert_eq!(
+            event_type,
+            FlowType::Event(Type::Abstract(
+                vec![Type::Integer, Type::NotDefinedYet(String::from("Color"))],
+                Box::new(Type::Boolean)
+            ))
+        );
+        let event_type = langrust::flowTypeParser::new()
+            .parse(file_id11, &files.source(file_id11).unwrap())
+            .unwrap();
+        assert_eq!(
+            event_type,
+            FlowType::Event(Type::Abstract(vec![Type::Integer], Box::new(Type::Boolean)))
         );
     }
 
