@@ -83,7 +83,7 @@ pub enum FlowExpressionKind {
         /// Input expression.
         flow_expression: Box<FlowExpression>,
         /// Time of the timeout in milliseconds.
-        timeout_ms: usize,
+        timeout_ms: u64,
     },
     /// GReact `merge` operator.
     Merge {
