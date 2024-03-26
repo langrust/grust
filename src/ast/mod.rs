@@ -27,3 +27,6 @@ pub mod pattern;
 
 /// LanGRust [Contract](crate::ast::contract::Contract) AST module.
 pub mod contract;
+
+/// LanGRust [Interface](crate::ast::interface::Interface) AST module.
+pub mod interface;
