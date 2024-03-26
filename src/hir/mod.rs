@@ -39,3 +39,6 @@ pub mod once_cell;
 
 /// HIR [Contract](crate::hir::contract::Contract) module.
 pub mod contract;
+
+/// HIR [Interface](crate::hir::interface::Interface) module.
+pub mod interface;
