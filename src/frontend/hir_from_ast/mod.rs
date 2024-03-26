@@ -13,6 +13,8 @@ pub mod expression;
 pub mod file;
 /// HIR Function construction from AST Function
 pub mod function;
+/// HIR Interface construction from AST Interface.
+pub mod interface;
 /// HIR Node construction from AST Node
 pub mod node;
 /// HIR Pattern construction from AST Pattern
