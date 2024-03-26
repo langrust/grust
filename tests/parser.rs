@@ -2622,3 +2622,17 @@ fn parse_pid() {
 
     insta::assert_yaml_snapshot!(file);
 }
+
+#[test]
+fn parse_urban_braking() {
+    let mut files = SimpleFiles::new();
+
+    let urban_braking_id = files.add(
+        "urban_braking.gr",
+        std::fs::read_to_string("tests/fixture/parser/urban_braking.gr").expect("unkown file"),
+    );
+
+    let file = parsing(urban_braking_id, &mut files);
+
+    insta::assert_yaml_snapshot!(file);
+}
