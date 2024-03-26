@@ -8,7 +8,7 @@ mod langrust_ast_constructs {
 
     use grustine::ast::{
         expression::{Expression, ExpressionKind},
-        interface::{FlowPath, FlowPathKind, FlowType},
+        interface::{FlowExpression, FlowExpressionKind, FlowPath, FlowPathKind, FlowType},
         pattern::{Pattern, PatternKind},
         stream_expression::{StreamExpression, StreamExpressionKind},
         typedef::{Typedef, TypedefKind},
@@ -2385,6 +2385,123 @@ mod langrust_ast_constructs {
                 location: Location::default()
             },
             expression
+        );
+    }
+
+    #[test]
+    fn flow_expression() {
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("identifier_test.gr", "x");
+        let file_id2 = files.add("timeout_test.gr", "timeout(pedestrian, 500)");
+        let file_id3 = files.add("merge_test.gr", "merge(left, right)");
+        let file_id4 = files.add("zip_test.gr", "zip(left, right)");
+        let file_id5 = files.add(
+            "component_call_test.gr",
+            "my_comp(speed, pedestrian).my_signal",
+        );
+
+        let flow_expression = langrust::flowExpressionParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(
+            FlowExpression {
+                kind: FlowExpressionKind::Ident {
+                    ident: String::from("x")
+                },
+                location: Location::default()
+            },
+            flow_expression
+        );
+        let flow_expression = langrust::flowExpressionParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(
+            FlowExpression {
+                kind: FlowExpressionKind::Timeout {
+                    flow_expression: Box::new(FlowExpression {
+                        kind: FlowExpressionKind::Ident {
+                            ident: String::from("pedestrian")
+                        },
+                        location: Location::default()
+                    }),
+                    timeout_ms: 500
+                },
+                location: Location::default()
+            },
+            flow_expression
+        );
+        let flow_expression = langrust::flowExpressionParser::new()
+            .parse(file_id3, &files.source(file_id3).unwrap())
+            .unwrap();
+        assert_eq!(
+            FlowExpression {
+                kind: FlowExpressionKind::Merge {
+                    flow_expression_1: Box::new(FlowExpression {
+                        kind: FlowExpressionKind::Ident {
+                            ident: String::from("left")
+                        },
+                        location: Location::default()
+                    }),
+                    flow_expression_2: Box::new(FlowExpression {
+                        kind: FlowExpressionKind::Ident {
+                            ident: String::from("right")
+                        },
+                        location: Location::default()
+                    }),
+                },
+                location: Location::default()
+            },
+            flow_expression
+        );
+        let flow_expression = langrust::flowExpressionParser::new()
+            .parse(file_id4, &files.source(file_id4).unwrap())
+            .unwrap();
+        assert_eq!(
+            FlowExpression {
+                kind: FlowExpressionKind::Zip {
+                    flow_expression_1: Box::new(FlowExpression {
+                        kind: FlowExpressionKind::Ident {
+                            ident: String::from("left")
+                        },
+                        location: Location::default()
+                    }),
+                    flow_expression_2: Box::new(FlowExpression {
+                        kind: FlowExpressionKind::Ident {
+                            ident: String::from("right")
+                        },
+                        location: Location::default()
+                    }),
+                },
+                location: Location::default()
+            },
+            flow_expression
+        );
+        let flow_expression = langrust::flowExpressionParser::new()
+            .parse(file_id5, &files.source(file_id5).unwrap())
+            .unwrap();
+        assert_eq!(
+            FlowExpression {
+                kind: FlowExpressionKind::ComponentCall {
+                    ident_component: String::from("my_comp"),
+                    inputs: vec![
+                        FlowExpression {
+                            kind: FlowExpressionKind::Ident {
+                                ident: String::from("speed")
+                            },
+                            location: Location::default()
+                        },
+                        FlowExpression {
+                            kind: FlowExpressionKind::Ident {
+                                ident: String::from("pedestrian")
+                            },
+                            location: Location::default()
+                        },
+                    ],
+                    ident_signal: String::from("my_signal"),
+                },
+                location: Location::default()
+            },
+            flow_expression
         );
     }
 
