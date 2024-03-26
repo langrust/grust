@@ -1,4 +1,4 @@
-use crate::ast::{function::Function, node::Node, typedef::Typedef};
+use crate::ast::{function::Function, interface::Interface, node::Node, typedef::Typedef};
 use crate::common::location::Location;
 
 #[derive(Debug, PartialEq, serde::Serialize)]
@@ -13,6 +13,8 @@ pub struct File {
     pub nodes: Vec<Node>,
     /// Program component. It represents the system.
     pub component: Option<Node>,
+    /// Program interface. It represents the system.
+    pub interface: Option<Interface>,
     /// Program location.
     pub location: Location,
 }
@@ -37,5 +39,9 @@ impl File {
     /// Set GRust file component.
     pub fn set_component(&mut self, component: Node) {
         self.component = Some(component);
+    }
+    /// Set GRust file interface.
+    pub fn set_interface(&mut self, interface: Interface) {
+        self.interface = Some(interface);
     }
 }
