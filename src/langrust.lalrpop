@@ -1343,6 +1343,7 @@ pub module: File = {
         functions: vec![],
         nodes: vec![],
         component: None,
+        interface: None,
         location: Location{ file_id, range: start..end }
     },
     // a module composed of one function
@@ -1351,6 +1352,7 @@ pub module: File = {
         functions: vec![f],
         nodes: vec![],
         component: None,
+        interface: None,
         location: Location{ file_id, range: start..end }
     },
     // a module composed of one node
@@ -1359,6 +1361,7 @@ pub module: File = {
         functions: vec![],
         nodes: vec![n],
         component: None,
+        interface: None,
         location: Location{ file_id, range: start..end }
     },
     // adds a type definition to a module
@@ -1389,6 +1392,7 @@ pub program: File = {
         functions: vec![],
         nodes: vec![],
         component: Some(c),
+        interface: None,
         location: Location{ file_id, range: start..end }
     },
     // adds a component to a module, this returns a program
@@ -1396,6 +1400,21 @@ pub program: File = {
         m.set_component(c);
         m.set_location(Location{ file_id, range: start..end });
         m
+    },
+    // a program composed of one interface
+    <start:@L> <i: interface> <end:@R> => File {
+        typedefs: vec![],
+        functions: vec![],
+        nodes: vec![],
+        component: None,
+        interface: Some(i),
+        location: Location{ file_id, range: start..end }
+    },
+    // adds an interface to a program
+    <start:@L> <mut p: program> <i: interface> <end:@R> =>  {
+        p.set_interface(i);
+        p.set_location(Location{ file_id, range: start..end });
+        p
     },
     // adds a type definition to a program
     <start:@L> <mut p: program> <t: userType> <end:@R> => {

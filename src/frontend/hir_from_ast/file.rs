@@ -24,6 +24,7 @@ impl HIRFromAST for File {
             functions,
             nodes,
             component,
+            interface,
             location,
         } = self;
 
