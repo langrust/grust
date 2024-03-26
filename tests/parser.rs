@@ -7,7 +7,11 @@ mod langrust_ast_constructs {
     use codespan_reporting::files::{Files, SimpleFiles};
 
     use grustine::ast::{
-        expression::{Expression, ExpressionKind}, interface::FlowType, pattern::{Pattern, PatternKind}, stream_expression::{StreamExpression, StreamExpressionKind}, typedef::{Typedef, TypedefKind}
+        expression::{Expression, ExpressionKind},
+        interface::{FlowPath, FlowPathKind, FlowType},
+        pattern::{Pattern, PatternKind},
+        stream_expression::{StreamExpression, StreamExpressionKind},
+        typedef::{Typedef, TypedefKind},
     };
     use grustine::common::{
         constant::Constant,
@@ -190,15 +194,24 @@ mod langrust_ast_constructs {
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
-        assert_eq!(signal_type, FlowType::Signal(Type::Array(Box::new(Type::Integer), 3)));
+        assert_eq!(
+            signal_type,
+            FlowType::Signal(Type::Array(Box::new(Type::Integer), 3))
+        );
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id7, &files.source(file_id7).unwrap())
             .unwrap();
-        assert_eq!(signal_type, FlowType::Signal(Type::Option(Box::new(Type::Integer))));
+        assert_eq!(
+            signal_type,
+            FlowType::Signal(Type::Option(Box::new(Type::Integer)))
+        );
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
-        assert_eq!(signal_type, FlowType::Signal(Type::NotDefinedYet(String::from("Color"))));
+        assert_eq!(
+            signal_type,
+            FlowType::Signal(Type::NotDefinedYet(String::from("Color")))
+        );
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id9, &files.source(file_id9).unwrap())
             .unwrap();
@@ -226,7 +239,7 @@ mod langrust_ast_constructs {
             signal_type,
             FlowType::Signal(Type::Abstract(vec![Type::Integer], Box::new(Type::Boolean)))
         );
-        
+
         let mut files = SimpleFiles::new();
         let file_id1 = files.add("int_test.gr", "event int");
         let file_id2 = files.add("float_test.gr", "event float");
@@ -263,15 +276,24 @@ mod langrust_ast_constructs {
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
-        assert_eq!(event_type, FlowType::Event(Type::Array(Box::new(Type::Integer), 3)));
+        assert_eq!(
+            event_type,
+            FlowType::Event(Type::Array(Box::new(Type::Integer), 3))
+        );
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id7, &files.source(file_id7).unwrap())
             .unwrap();
-        assert_eq!(event_type, FlowType::Event(Type::Option(Box::new(Type::Integer))));
+        assert_eq!(
+            event_type,
+            FlowType::Event(Type::Option(Box::new(Type::Integer)))
+        );
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
-        assert_eq!(event_type, FlowType::Event(Type::NotDefinedYet(String::from("Color"))));
+        assert_eq!(
+            event_type,
+            FlowType::Event(Type::NotDefinedYet(String::from("Color")))
+        );
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id9, &files.source(file_id9).unwrap())
             .unwrap();
@@ -298,6 +320,76 @@ mod langrust_ast_constructs {
         assert_eq!(
             event_type,
             FlowType::Event(Type::Abstract(vec![Type::Integer], Box::new(Type::Boolean)))
+        );
+    }
+
+    #[test]
+    fn flow_path() {
+        let mut files = SimpleFiles::new();
+        let file_id1 = files.add("path_name_test.gr", "speed");
+        let file_id2 = files.add("path_test.gr", "adas.fusion.pedestrian");
+        let file_id3 = files.add("alias_test.gr", "adas.fusion.pedestrian as p");
+
+        let path = langrust::flowPathParser::new()
+            .parse(file_id1, &files.source(file_id1).unwrap())
+            .unwrap();
+        assert_eq!(
+            FlowPath {
+                kind: FlowPathKind::Name {
+                    ident: String::from("speed")
+                },
+                location: Location::default()
+            },
+            path
+        );
+        let path = langrust::flowPathParser::new()
+            .parse(file_id2, &files.source(file_id2).unwrap())
+            .unwrap();
+        assert_eq!(
+            FlowPath {
+                kind: FlowPathKind::Path {
+                    ident: String::from("adas"),
+                    path: Box::new(FlowPath {
+                        kind: FlowPathKind::Path {
+                            ident: String::from("fusion"),
+                            path: Box::new(FlowPath {
+                                kind: FlowPathKind::Name {
+                                    ident: String::from("pedestrian")
+                                },
+                                location: Location::default()
+                            }),
+                        },
+                        location: Location::default()
+                    }),
+                },
+                location: Location::default()
+            },
+            path
+        );
+        let path = langrust::flowPathParser::new()
+            .parse(file_id3, &files.source(file_id3).unwrap())
+            .unwrap();
+        assert_eq!(
+            FlowPath {
+                kind: FlowPathKind::Path {
+                    ident: String::from("adas"),
+                    path: Box::new(FlowPath {
+                        kind: FlowPathKind::Path {
+                            ident: String::from("fusion"),
+                            path: Box::new(FlowPath {
+                                kind: FlowPathKind::Rename {
+                                    ident: String::from("pedestrian"),
+                                    rename: String::from("p"),
+                                },
+                                location: Location::default()
+                            }),
+                        },
+                        location: Location::default()
+                    }),
+                },
+                location: Location::default()
+            },
+            path
         );
     }
 
