@@ -63,6 +63,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// encountering an unknown interface
+    UnknownInterface {
+        /// the unknow identifier
+        name: String,
+        /// the error location
+        location: Location,
+    },
     /// encountering an unknown type
     UnknownType {
         /// the unknow identifier
@@ -107,6 +114,13 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// node is called
+    NodeCall {
+        /// name of the calle Component
+        name: String,
+        /// the error location
+        location: Location,
+    },
     /// redefine an already defined element
     AlreadyDefinedElement {
         /// the known identifier
@@ -129,6 +143,15 @@ pub enum Error {
         given_inputs_number: usize,
         /// the expected number of inputs
         expected_inputs_number: usize,
+        /// the error location
+        location: Location,
+    },
+    /// calling an unknown output signal
+    UnknownOuputSignal {
+        /// the node/component identifier
+        node_name: String,
+        /// the unknow identifier
+        signal_name: String,
         /// the error location
         location: Location,
     },
@@ -306,6 +329,16 @@ impl Error {
                     format!("node '{name}' is not defined")
                 ]
             ),
+            Error::UnknownInterface { name, location } => Diagnostic::error()
+                .with_message("unknown interface")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("unknown")
+                ])
+                .with_notes(vec![
+                    format!("interface '{name}' is not defined")
+                ]
+            ),
             Error::UnknownType { name, location } => Diagnostic::error()
                 .with_message("unknown type")
                 .with_labels(vec![
@@ -360,7 +393,16 @@ impl Error {
                     Label::primary(location.file_id, location.range.clone())
                 ])
                 .with_notes(vec![
-                    format!("'{name}' is a component, it can not be called")
+                    format!("'{name}' is a component, it can only be called in interface")
+                ]
+            ),
+            Error::NodeCall { name, location } => Diagnostic::error()
+                .with_message("only components can be called in interface")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                ])
+                .with_notes(vec![
+                    format!("'{name}' is a node, it can not be called in interface")
                 ]
             ),
             Error::AlreadyDefinedElement { name, location } => Diagnostic::error()
@@ -396,6 +438,16 @@ impl Error {
                         if given_inputs_number < &2 {""} else {"s"},
                         if given_inputs_number < &2 {"was"} else {"were"}
                     )
+                ]
+            ),
+            Error::UnknownOuputSignal { node_name, signal_name, location } => Diagnostic::error()
+                .with_message("unknown output signal")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("unknown")
+                ])
+                .with_notes(vec![
+                    format!("signal '{signal_name}' is not an output of '{node_name}'")
                 ]
             ),
             Error::ExpectConstant { location } => Diagnostic::error()
@@ -556,15 +608,18 @@ impl std::fmt::Display for Error {
             Error::UnknownElement { .. } => write!(f, "Unknown Element"),
             Error::UnknownSignal { .. } => write!(f, "Unknown Signal"),
             Error::UnknownNode { .. } => write!(f, "Unknown Node"),
+            Error::UnknownInterface { .. } => write!(f, "Unknown Interface"),
             Error::UnknownType { .. } => write!(f, "Unknown Type"),
             Error::UnknownEnumeration { .. } => write!(f, "Unknown Enumeration"),
             Error::UnknownField { .. } => write!(f, "Unknown Field"),
             Error::MissingField { .. } => write!(f, "Missing Field"),
             Error::IndexOutOfBounds { .. } => write!(f, "Index Out Of Bounds"),
-            Error::ComponentCall { .. } => write!(f, "Component Identifier"),
+            Error::ComponentCall { .. } => write!(f, "Component Call"),
+            Error::NodeCall { .. } => write!(f, "Node Call"),
             Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
             Error::IncompatibleInputsNumber { .. } => write!(f, "Incompatible Inputs Number"),
+            Error::UnknownOuputSignal { .. } => write!(f, "Unknown Output Signal"),
             Error::ExpectConstant { .. } => write!(f, "Expect Constant"),
             Error::ExpectInput { .. } => write!(f, "Expect Input"),
             Error::ExpectNumber { .. } => write!(f, "Expect Number"),
