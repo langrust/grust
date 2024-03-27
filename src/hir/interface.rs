@@ -1,4 +1,4 @@
-use crate::{ast::interface::FlowType, common::location::Location};
+use crate::{ast::interface::FlowType, common::location::Location, hir::statement::Statement};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust interface HIR.
@@ -6,16 +6,7 @@ pub struct Interface {
     /// Interface identifier.
     pub id: usize,
     /// Interface's flow statements.
-    pub flow_statements: Vec<FlowStatement>,
-}
-
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// Flow statement HIR.
-pub struct FlowStatement {
-    /// Identifier of the new flow.
-    pub id: usize,
-    /// The expression defining the flow.
-    pub flow_expression: FlowExpression,
+    pub flow_statements: Vec<Statement<FlowExpression>>,
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]

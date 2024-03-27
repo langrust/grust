@@ -3,9 +3,12 @@ use crate::ast::interface::{
 };
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
-use crate::hir::interface::{
-    FlowExpression as HIRFlowExpression, FlowExpressionKind as HIRFlowExpressionKind,
-    FlowStatement as HIRFlowStatement, Interface as HIRInterface,
+use crate::hir::{
+    interface::{
+        FlowExpression as HIRFlowExpression, FlowExpressionKind as HIRFlowExpressionKind,
+        Interface as HIRInterface,
+    },
+    statement::Statement,
 };
 use crate::symbol_table::SymbolTable;
 
@@ -106,7 +109,7 @@ impl FlowType {
 }
 
 impl HIRFromAST for FlowStatement {
-    type HIR = HIRFlowStatement;
+    type HIR = Statement<HIRFlowExpression>;
 
     // precondition: interface imports are already stored in symbol table
     // postcondition: construct HIR interface and check identifiers good use
@@ -129,9 +132,10 @@ impl HIRFromAST for FlowStatement {
             symbol_table.insert_flow(ident, None, flow_type, true, location.clone(), errors)?;
         let flow_expression = flow_expression.hir_from_ast(symbol_table, errors)?;
 
-        Ok(HIRFlowStatement {
+        Ok(Statement {
             id,
-            flow_expression,
+            expression: flow_expression,
+            location,
         })
     }
 }
