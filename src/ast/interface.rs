@@ -56,6 +56,16 @@ pub struct FlowPath {
     /// Flow path loaction.
     pub location: Location,
 }
+impl FlowPath {
+    /// Returns the name of the imported flow.
+    pub fn get_name(&self) -> String {
+        match &self.kind {
+            FlowPathKind::Name { ident } => ident.clone(),
+            FlowPathKind::Rename { rename, .. } => rename.clone(),
+            FlowPathKind::Path { path, .. } => path.get_name(),
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// Flow statement AST.
