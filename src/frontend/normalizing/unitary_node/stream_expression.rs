@@ -49,27 +49,36 @@ impl StreamExpression {
                 );
                 let used_inputs = symbol_table.get_unitary_node_used_inputs(unitary_node_id);
 
-                let inputs = inputs
-                    .iter_mut()
-                    .zip(used_inputs)
-                    .filter_map(|((input_id, expression), used)| {
-                        expression
-                            .change_node_application_into_unitary_node_application(symbol_table);
-                        if used {
-                            Some((*input_id, expression.clone()))
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<_>>();
+                inputs.retain_mut(|(input_id, expression)| {
+                    expression.change_node_application_into_unitary_node_application(symbol_table);
+                    *used_inputs.get(input_id).expect("should be there")
+                });
 
-                self.kind = StreamExpressionKind::UnitaryNodeApplication {
-                    node_id: unitary_node_id,
-                    inputs,
-                    output_id: *output_id,
-                };
+                self.convert_to_unitary_node_application(unitary_node_id);
             }
             StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
         }
+    }
+
+    fn convert_to_unitary_node_application(&mut self, new_id: usize) {
+        // create temporary replacement
+        let temp = StreamExpressionKind::NodeApplication {
+            node_id: 0,
+            inputs: vec![],
+            output_id: 0,
+        };
+        // compute unitary node application from the existing node application
+        let new_kind = match std::mem::replace(&mut self.kind, temp) {
+            StreamExpressionKind::NodeApplication {
+                inputs, output_id, ..
+            } => StreamExpressionKind::UnitaryNodeApplication {
+                node_id: new_id,
+                inputs,
+                output_id,
+            },
+            _ => unreachable!(),
+        };
+        // reset the unitary node application
+        let _ = std::mem::replace(&mut self.kind, new_kind);
     }
 }
