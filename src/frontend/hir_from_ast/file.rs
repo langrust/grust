@@ -50,7 +50,9 @@ impl HIRFromAST for File {
             component: component
                 .map(|node| node.hir_from_ast(symbol_table, errors))
                 .transpose()?,
-            interface: todo!(),
+            interface: interface
+                .map(|interface| interface.hir_from_ast(symbol_table, errors))
+                .transpose()?,
             location,
         })
     }
