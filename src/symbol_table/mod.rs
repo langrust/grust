@@ -2,7 +2,7 @@ use std::collections::{hash_map::Values, HashMap};
 use strum::IntoEnumIterator;
 
 use crate::{
-    ast::interface::{FlowPath, FlowType},
+    ast::interface::FlowPath,
     common::{
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
@@ -27,7 +27,7 @@ pub enum SymbolKind {
         /// Flow path (local flows don't have path in real system).
         path: Option<FlowPath>,
         /// Flow type.
-        typing: FlowType,
+        typing: Type,
     },
     /// Function kind.
     Function {
@@ -355,7 +355,7 @@ impl SymbolTable {
         &mut self,
         name: String,
         path: Option<FlowPath>,
-        typing: FlowType,
+        typing: Type,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,

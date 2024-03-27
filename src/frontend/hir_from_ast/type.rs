@@ -59,6 +59,16 @@ impl Type {
                 let output_type = output_type.hir_from_ast(location, symbol_table, errors)?;
                 Ok(Type::Abstract(inputs_types, Box::new(output_type)))
             }
+            Type::Signal(signal_type) => Ok(Type::Signal(Box::new(signal_type.hir_from_ast(
+                location,
+                symbol_table,
+                errors,
+            )?))),
+            Type::Event(event_type) => Ok(Type::Event(Box::new(event_type.hir_from_ast(
+                location,
+                symbol_table,
+                errors,
+            )?))),
             Type::Integer | Type::Float | Type::Boolean | Type::String | Type::Unit => Ok(self),
             Type::Enumeration { .. } // no enumeration at this time: they are `NotDefinedYet`
             | Type::Structure { .. } // no structure at this time: they are `NotDefinedYet`

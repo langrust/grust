@@ -1,4 +1,7 @@
-use crate::{ast::interface::FlowType, common::location::Location, hir::statement::Statement};
+use crate::{
+    common::{location::Location, r#type::Type},
+    hir::statement::Statement,
+};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust interface HIR.
@@ -55,7 +58,7 @@ pub struct FlowExpression {
     /// Flow expression's kind.
     pub kind: FlowExpressionKind,
     /// Flow expression type.
-    pub typing: Option<FlowType>,
+    pub typing: Option<Type>,
     /// Flow expression location.
     pub location: Location,
 }

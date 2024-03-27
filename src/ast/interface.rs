@@ -6,22 +6,13 @@ pub struct Interface {
     /// Interface identifier.
     pub id: String,
     /// Interface's imports and their types.
-    pub imports: Vec<(FlowType, FlowPath)>,
+    pub imports: Vec<(Type, FlowPath)>,
     /// Interface's exports and their types.
     pub exports: Vec<FlowPath>,
     /// Interface's flow statements.
     pub flow_statements: Vec<FlowStatement>,
     /// Interface location.
     pub location: Location,
-}
-
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// Flow types AST.
-pub enum FlowType {
-    /// Signal types.
-    Signal(Type),
-    /// Event types.
-    Event(Type),
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
@@ -73,7 +64,7 @@ pub struct FlowStatement {
     /// Identifier of the new flow.
     pub ident: String,
     /// Flow type.
-    pub flow_type: FlowType,
+    pub flow_type: Type,
     /// The expression defining the flow.
     pub flow_expression: FlowExpression,
     /// Flow statement location.
