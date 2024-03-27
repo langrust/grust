@@ -13,6 +13,7 @@ impl TypeAnalysis for File {
             functions,
             nodes,
             component,
+            interface,
             ..
         } = self;
 
@@ -35,6 +36,11 @@ impl TypeAnalysis for File {
             .map(|function| function.typing(symbol_table, errors))
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
-            .collect::<Result<(), TerminationError>>()
+            .collect::<Result<(), TerminationError>>()?;
+
+        // typing interface
+        interface
+            .as_mut()
+            .map_or(Ok(()), |interface| interface.typing(symbol_table, errors))
     }
 }
