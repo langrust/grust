@@ -27,7 +27,7 @@ pub enum SymbolKind {
         /// Flow path (local flows don't have path in real system).
         path: Option<FlowPath>,
         /// Flow type.
-        typing: Option<FlowType>,
+        typing: FlowType,
     },
     /// Function kind.
     Function {
@@ -355,7 +355,7 @@ impl SymbolTable {
         &mut self,
         name: String,
         path: Option<FlowPath>,
-        typing: Option<FlowType>,
+        typing: FlowType,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
@@ -750,6 +750,22 @@ impl SymbolTable {
         }
     }
 
+    /// Set flow's path.
+    pub fn set_path(&mut self, id: usize, new_path: FlowPath) {
+        let symbol = self
+            .get_symbol_mut(id)
+            .expect(&format!("expect symbol for {id}"));
+        match &mut symbol.kind {
+            SymbolKind::Flow { ref mut path, .. } => {
+                if path.is_some() {
+                    panic!("a symbol path can not be modified")
+                }
+                *path = Some(new_path)
+            }
+            _ => unreachable!(),
+        }
+    }
+
     /// Get identifier's name.
     pub fn get_name(&self, id: usize) -> &String {
         let symbol = self
@@ -951,6 +967,28 @@ impl SymbolTable {
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol_hash = format!("identifier {name}");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(id),
+            None => {
+                let error = Error::UnknownSignal {
+                    name: name.to_string(),
+                    location,
+                };
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    /// Get flow symbol identifier.
+    pub fn get_flow_id(
+        &self,
+        name: &String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol_hash = format!("flow {name}");
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
