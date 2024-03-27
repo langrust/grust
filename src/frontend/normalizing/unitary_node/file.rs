@@ -64,6 +64,11 @@ impl File {
             component.change_node_application_into_unitary_node_application(symbol_table)
         };
 
+        // change component application to unitary node application
+        if let Some(interface) = self.interface.as_mut() {
+            interface.change_component_application_into_unitary_node_application(symbol_table)
+        };
+
         // Debug: test there is no NodeApplication
         debug_assert!(self.no_node_application());
 
