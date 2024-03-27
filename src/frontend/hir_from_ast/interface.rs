@@ -1,6 +1,4 @@
-use crate::ast::interface::{
-    FlowExpression, FlowExpressionKind, FlowStatement, FlowType, Interface,
-};
+use crate::ast::interface::{FlowExpression, FlowExpressionKind, FlowStatement, Interface};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 use crate::hir::{
@@ -80,31 +78,6 @@ impl HIRFromAST for Interface {
             id,
             flow_statements,
         })
-    }
-}
-
-impl FlowType {
-    /// Transforms AST into HIR and check identifiers good use.
-    pub fn hir_from_ast(
-        self,
-        location: &Location,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<FlowType, TerminationError> {
-        // precondition: Typedefs are stored in symbol table
-        // postcondition: construct a new FlowType without `Type::NotDefinedYet`
-        match self {
-            FlowType::Signal(typing) => Ok(FlowType::Signal(typing.hir_from_ast(
-                location,
-                symbol_table,
-                errors,
-            )?)),
-            FlowType::Event(typing) => Ok(FlowType::Event(typing.hir_from_ast(
-                location,
-                symbol_table,
-                errors,
-            )?)),
-        }
     }
 }
 

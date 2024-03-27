@@ -14,7 +14,10 @@ impl Type {
             }
             Type::Enumeration { name, .. } => vec![Import::Enumeration(name.clone())],
             Type::Structure { name, .. } => vec![Import::Structure(name.clone())],
-            Type::Array(typing, _) | Type::Option(typing) => typing.get_imports(symbol_table),
+            Type::Array(typing, _)
+            | Type::Option(typing)
+            | Type::Signal(typing)
+            | Type::Event(typing) => typing.get_imports(symbol_table),
             Type::Tuple(elements_types) => elements_types
                 .iter()
                 .flat_map(|typing| typing.get_imports(symbol_table))
@@ -48,9 +51,10 @@ impl Type {
             | Type::Structure { .. }
             | Type::Any
             | Type::Unit => vec![],
-            Type::Array(typing, _) | Type::Option(typing) => {
-                typing.get_generics(identifier_creator)
-            }
+            Type::Array(typing, _)
+            | Type::Option(typing)
+            | Type::Signal(typing)
+            | Type::Event(typing) => typing.get_generics(identifier_creator),
             Type::Abstract(inputs_types, output_type) => {
                 let mut generics = output_type.get_generics(identifier_creator);
                 let mut inputs_generics = inputs_types

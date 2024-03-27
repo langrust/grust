@@ -56,6 +56,10 @@ pub enum Type {
     Tuple(Vec<Type>),
     /// Generic type.
     Generic(String),
+    /// Signal type, in interface if `s' = map(s, |x| x + 1)` then `s': signal int`
+    Signal(Box<Type>),
+    /// Event type, in interface if `e' = map(e, |x| x + 1)` then `e': event int`
+    Event(Box<Type>),
     /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
     NotDefinedYet(String),
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Type -> t -> 't -> 't`
@@ -101,11 +105,13 @@ impl serde::Serialize for Type {
             Type::Generic(name) => {
                 serializer.serialize_newtype_variant("Type", 11, "Generic", name)
             }
+            Type::Signal(ty) => serializer.serialize_newtype_variant("Type", 12, "Signal", ty),
+            Type::Event(ty) => serializer.serialize_newtype_variant("Type", 13, "Event", ty),
             Type::NotDefinedYet(name) => {
-                serializer.serialize_newtype_variant("Type", 12, "NotDefinedYet", name)
+                serializer.serialize_newtype_variant("Type", 14, "NotDefinedYet", name)
             }
-            Type::Polymorphism(_) => serializer.serialize_unit_variant("Type", 13, "Polymorphism"),
-            Type::Any => serializer.serialize_unit_variant("Type", 14, "Any"),
+            Type::Polymorphism(_) => serializer.serialize_unit_variant("Type", 15, "Polymorphism"),
+            Type::Any => serializer.serialize_unit_variant("Type", 16, "Any"),
         }
     }
 }
@@ -139,6 +145,8 @@ impl Display for Type {
                     .join(", "),
             ),
             Type::Generic(name) => write!(f, "{name}"),
+            Type::Signal(ty) => write!(f, "Signal<{}>", *ty),
+            Type::Event(ty) => write!(f, "Event<{}>", *ty),
             Type::NotDefinedYet(s) => write!(f, "{s}"),
             Type::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
             Type::Any => write!(f, "any"),

@@ -84,9 +84,9 @@ pub completeType: Type = {
 }
 
 /// Catches flow types
-pub flowType: FlowType = {
-    "signal" <t: completeType> => FlowType::Signal(t),
-    "event" <t: completeType> => FlowType::Event(t),
+pub flowType: Type = {
+    "signal" <t: completeType> => Type::Signal(Box::new(t)),
+    "event" <t: completeType> => Type::Event(Box::new(t)),
 }
 
 /// Catches signals' scopes

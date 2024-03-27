@@ -8,7 +8,7 @@ mod langrust_ast_constructs {
 
     use grustine::ast::{
         expression::{Expression, ExpressionKind},
-        interface::{FlowExpression, FlowExpressionKind, FlowPath, FlowPathKind, FlowType},
+        interface::{FlowExpression, FlowExpressionKind, FlowPath, FlowPathKind},
         pattern::{Pattern, PatternKind},
         stream_expression::{StreamExpression, StreamExpressionKind},
         typedef::{Typedef, TypedefKind},
@@ -174,70 +174,73 @@ mod langrust_ast_constructs {
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
-        assert_eq!(signal_type, FlowType::Signal(Type::Integer));
+        assert_eq!(signal_type, Type::Signal(Box::new(Type::Integer)));
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
-        assert_eq!(signal_type, FlowType::Signal(Type::Float));
+        assert_eq!(signal_type, Type::Signal(Box::new(Type::Float)));
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id3, &files.source(file_id3).unwrap())
             .unwrap();
-        assert_eq!(signal_type, FlowType::Signal(Type::Boolean));
+        assert_eq!(signal_type, Type::Signal(Box::new(Type::Boolean)));
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id4, &files.source(file_id4).unwrap())
             .unwrap();
-        assert_eq!(signal_type, FlowType::Signal(Type::String));
+        assert_eq!(signal_type, Type::Signal(Box::new(Type::String)));
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
-        assert_eq!(signal_type, FlowType::Signal(Type::Unit));
+        assert_eq!(signal_type, Type::Signal(Box::new(Type::Unit)));
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
         assert_eq!(
             signal_type,
-            FlowType::Signal(Type::Array(Box::new(Type::Integer), 3))
+            Type::Signal(Box::new(Type::Array(Box::new(Type::Integer), 3)))
         );
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id7, &files.source(file_id7).unwrap())
             .unwrap();
         assert_eq!(
             signal_type,
-            FlowType::Signal(Type::Option(Box::new(Type::Integer)))
+            Type::Signal(Box::new(Type::Option(Box::new(Type::Integer))))
         );
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
         assert_eq!(
             signal_type,
-            FlowType::Signal(Type::NotDefinedYet(String::from("Color")))
+            Type::Signal(Box::new(Type::NotDefinedYet(String::from("Color"))))
         );
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id9, &files.source(file_id9).unwrap())
             .unwrap();
         assert_eq!(
             signal_type,
-            FlowType::Signal(Type::Tuple(vec![
+            Type::Signal(Box::new(Type::Tuple(vec![
                 Type::Integer,
                 Type::NotDefinedYet(String::from("Color"))
-            ]))
+            ])))
         );
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id10, &files.source(file_id10).unwrap())
             .unwrap();
         assert_eq!(
             signal_type,
-            FlowType::Signal(Type::Abstract(
+            Type::Signal(Box::new(Type::Abstract(
                 vec![Type::Integer, Type::NotDefinedYet(String::from("Color"))],
                 Box::new(Type::Boolean)
-            ))
+            )))
         );
         let signal_type = langrust::flowTypeParser::new()
             .parse(file_id11, &files.source(file_id11).unwrap())
             .unwrap();
         assert_eq!(
             signal_type,
-            FlowType::Signal(Type::Abstract(vec![Type::Integer], Box::new(Type::Boolean)))
+            Type::Signal(Box::new(Type::Abstract(
+                vec![Type::Integer],
+                Box::new(Type::Boolean)
+            )))
         );
 
         let mut files = SimpleFiles::new();
@@ -256,70 +259,73 @@ mod langrust_ast_constructs {
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id1, &files.source(file_id1).unwrap())
             .unwrap();
-        assert_eq!(event_type, FlowType::Event(Type::Integer));
+        assert_eq!(event_type, Type::Event(Box::new(Type::Integer)));
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id2, &files.source(file_id2).unwrap())
             .unwrap();
-        assert_eq!(event_type, FlowType::Event(Type::Float));
+        assert_eq!(event_type, Type::Event(Box::new(Type::Float)));
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id3, &files.source(file_id3).unwrap())
             .unwrap();
-        assert_eq!(event_type, FlowType::Event(Type::Boolean));
+        assert_eq!(event_type, Type::Event(Box::new(Type::Boolean)));
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id4, &files.source(file_id4).unwrap())
             .unwrap();
-        assert_eq!(event_type, FlowType::Event(Type::String));
+        assert_eq!(event_type, Type::Event(Box::new(Type::String)));
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id5, &files.source(file_id5).unwrap())
             .unwrap();
-        assert_eq!(event_type, FlowType::Event(Type::Unit));
+        assert_eq!(event_type, Type::Event(Box::new(Type::Unit)));
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id6, &files.source(file_id6).unwrap())
             .unwrap();
         assert_eq!(
             event_type,
-            FlowType::Event(Type::Array(Box::new(Type::Integer), 3))
+            Type::Event(Box::new(Type::Array(Box::new(Type::Integer), 3)))
         );
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id7, &files.source(file_id7).unwrap())
             .unwrap();
         assert_eq!(
             event_type,
-            FlowType::Event(Type::Option(Box::new(Type::Integer)))
+            Type::Event(Box::new(Type::Option(Box::new(Type::Integer))))
         );
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id8, &files.source(file_id8).unwrap())
             .unwrap();
         assert_eq!(
             event_type,
-            FlowType::Event(Type::NotDefinedYet(String::from("Color")))
+            Type::Event(Box::new(Type::NotDefinedYet(String::from("Color"))))
         );
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id9, &files.source(file_id9).unwrap())
             .unwrap();
         assert_eq!(
             event_type,
-            FlowType::Event(Type::Tuple(vec![
+            Type::Event(Box::new(Type::Tuple(vec![
                 Type::Integer,
                 Type::NotDefinedYet(String::from("Color"))
-            ]))
+            ])))
         );
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id10, &files.source(file_id10).unwrap())
             .unwrap();
         assert_eq!(
             event_type,
-            FlowType::Event(Type::Abstract(
+            Type::Event(Box::new(Type::Abstract(
                 vec![Type::Integer, Type::NotDefinedYet(String::from("Color"))],
                 Box::new(Type::Boolean)
-            ))
+            )))
         );
         let event_type = langrust::flowTypeParser::new()
             .parse(file_id11, &files.source(file_id11).unwrap())
             .unwrap();
         assert_eq!(
             event_type,
-            FlowType::Event(Type::Abstract(vec![Type::Integer], Box::new(Type::Boolean)))
+            Type::Event(Box::new(Type::Abstract(
+                vec![Type::Integer],
+                Box::new(Type::Boolean)
+            )))
         );
     }
 
