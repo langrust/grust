@@ -269,4 +269,5 @@ component:
     ensures: []
     invariant: []
   location: ~
+interface: ~
 location: ~

@@ -685,4 +685,5 @@ component:
     invariant: []
   location: ~
   graph: {}
+interface: ~
 location: ~

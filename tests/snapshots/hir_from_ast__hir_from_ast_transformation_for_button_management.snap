@@ -578,4 +578,5 @@ nodes:
     location: ~
     graph: {}
 component: ~
+interface: ~
 location: ~
