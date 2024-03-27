@@ -1,0 +1,326 @@
+---
+source: tests/typing.rs
+expression: file
+---
+typedefs:
+  - id: 20
+    kind:
+      Enumeration:
+        elements:
+          - 17
+          - 18
+          - 19
+    location: ~
+functions:
+  - id: 23
+    statements:
+      - id: 29
+        expression:
+          kind:
+            Application:
+              function_expression:
+                kind:
+                  Identifier:
+                    id: 3
+                typing:
+                  Abstract:
+                    - - Float
+                      - Float
+                    - Float
+                location: ~
+                dependencies: ~
+              inputs:
+                - kind:
+                    Identifier:
+                      id: 22
+                  typing: Float
+                  location: ~
+                  dependencies: ~
+                - kind:
+                    Constant:
+                      constant:
+                        Float: 0.278
+                  typing: Float
+                  location: ~
+                  dependencies: ~
+          typing: Float
+          location: ~
+          dependencies: ~
+        location: ~
+    returned:
+      kind:
+        Application:
+          function_expression:
+            kind:
+              Identifier:
+                id: 15
+            typing:
+              Abstract:
+                - - Boolean
+                  - Enumeration: Braking
+                  - Enumeration: Braking
+                - Enumeration: Braking
+            location: ~
+            dependencies: ~
+          inputs:
+            - kind:
+                Application:
+                  function_expression:
+                    kind:
+                      Identifier:
+                        id: 14
+                    typing:
+                      Abstract:
+                        - - Float
+                          - Float
+                        - Boolean
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Identifier:
+                          id: 29
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Identifier:
+                          id: 21
+                      typing: Float
+                      location: ~
+                      dependencies: ~
+              typing: Boolean
+              location: ~
+              dependencies: ~
+            - kind:
+                Enumeration:
+                  enum_id: 20
+                  elem_id: 18
+              typing:
+                Enumeration: Braking
+              location: ~
+              dependencies: ~
+            - kind:
+                Enumeration:
+                  enum_id: 20
+                  elem_id: 19
+              typing:
+                Enumeration: Braking
+              location: ~
+              dependencies: ~
+      typing:
+        Enumeration: Braking
+      location: ~
+      dependencies: ~
+    location: ~
+nodes: []
+component:
+  id: 28
+  unscheduled_equations:
+    26:
+      id: 26
+      expression:
+        kind:
+          Expression:
+            expression:
+              When:
+                id: 30
+                option:
+                  kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 24
+                  typing:
+                    Option: Float
+                  location: ~
+                  dependencies: ~
+                present:
+                  kind:
+                    Expression:
+                      expression:
+                        Application:
+                          function_expression:
+                            kind:
+                              Expression:
+                                expression:
+                                  Identifier:
+                                    id: 23
+                            typing:
+                              Abstract:
+                                - - Float
+                                  - Float
+                                - Enumeration: Braking
+                            location: ~
+                            dependencies: ~
+                          inputs:
+                            - kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: 30
+                              typing: Float
+                              location: ~
+                              dependencies: ~
+                            - kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: 25
+                              typing: Float
+                              location: ~
+                              dependencies: ~
+                  typing:
+                    Enumeration: Braking
+                  location: ~
+                  dependencies: ~
+                present_body: []
+                default:
+                  kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 27
+                  typing:
+                    Enumeration: Braking
+                  location: ~
+                  dependencies: ~
+                default_body: []
+        typing:
+          Enumeration: Braking
+        location: ~
+        dependencies: ~
+      location: ~
+    27:
+      id: 27
+      expression:
+        kind:
+          FollowedBy:
+            constant:
+              kind:
+                Expression:
+                  expression:
+                    Enumeration:
+                      enum_id: 20
+                      elem_id: 17
+              typing:
+                Enumeration: Braking
+              location: ~
+              dependencies: ~
+            expression:
+              kind:
+                Expression:
+                  expression:
+                    Identifier:
+                      id: 26
+              typing:
+                Enumeration: Braking
+              location: ~
+              dependencies: ~
+        typing:
+          Enumeration: Braking
+        location: ~
+        dependencies: ~
+      location: ~
+  unitary_nodes: {}
+  contract:
+    requires:
+      - kind:
+          Binary:
+            op: And
+            left:
+              kind:
+                Binary:
+                  op: Leq
+                  left:
+                    kind:
+                      Constant:
+                        constant:
+                          Float: 0
+                    location: ~
+                  right:
+                    kind:
+                      Identifier:
+                        id: 25
+                    location: ~
+              location: ~
+            right:
+              kind:
+                Binary:
+                  op: Low
+                  left:
+                    kind:
+                      Identifier:
+                        id: 25
+                    location: ~
+                  right:
+                    kind:
+                      Constant:
+                        constant:
+                          Float: 50
+                    location: ~
+              location: ~
+        location: ~
+    ensures: []
+    invariant: []
+  location: ~
+  graph: {}
+interface:
+  id: 36
+  flow_statements:
+    - id: 34
+      expression:
+        kind:
+          Timeout:
+            flow_expression:
+              kind:
+                Merge:
+                  flow_expression_1:
+                    kind:
+                      Ident:
+                        id: 32
+                    typing:
+                      Event: Float
+                    location: ~
+                  flow_expression_2:
+                    kind:
+                      Ident:
+                        id: 33
+                    typing:
+                      Event: Float
+                    location: ~
+              typing:
+                Event: Float
+              location: ~
+            timeout_ms: 500
+        typing:
+          Event: Float
+        location: ~
+      location: ~
+    - id: 35
+      expression:
+        kind:
+          ComponentCall:
+            component_id: 28
+            inputs:
+              - - 24
+                - kind:
+                    Ident:
+                      id: 34
+                  typing:
+                    Event: Float
+                  location: ~
+              - - 25
+                - kind:
+                    Ident:
+                      id: 31
+                  typing:
+                    Signal: Float
+                  location: ~
+            signal_id: 26
+        typing:
+          Signal:
+            Enumeration: Braking
+        location: ~
+      location: ~
+location: ~

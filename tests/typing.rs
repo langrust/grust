@@ -246,3 +246,18 @@ fn error_when_typing_alarm_manager_expect_array() {
         Err(errors) => display(&errors, &files),
     }
 }
+
+#[test]
+fn typing_urban_braking() {
+    let mut files = SimpleFiles::new();
+
+    let urban_braking_id = files.add(
+        "urban_braking.gr",
+        std::fs::read_to_string("tests/fixture/typing/success/urban_braking.gr").expect("unkown file"),
+    );
+
+    match typing(urban_braking_id, &mut files) {
+        Ok(file) => insta::assert_yaml_snapshot!(file),
+        Err(errors) => display(&errors, &files),
+    }
+}
