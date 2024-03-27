@@ -117,3 +117,19 @@ fn error_when_normalize_pid_unused_signal() {
         Err(errors) => display(&errors, &files),
     }
 }
+
+#[test]
+fn normalize_urban_braking() {
+    let mut files = SimpleFiles::new();
+
+    let urban_braking_id = files.add(
+        "urban_braking.gr",
+        std::fs::read_to_string("tests/fixture/normalizing/success/urban_braking.gr")
+            .expect("unkown file"),
+    );
+
+    match normalizing(urban_braking_id, &mut files) {
+        Ok(file) => insta::assert_yaml_snapshot!(file),
+        Err(errors) => display(&errors, &files),
+    }
+}
