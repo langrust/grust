@@ -1,12 +1,10 @@
-use crate::common::location::Location;
+use crate::{ast::interface::FlowType, common::location::Location};
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
 /// LanGRust interface HIR.
 pub struct Interface {
     /// Interface identifier.
     pub id: usize,
-    /// Interface's imports and exports combined as system flows.
-    pub system_flows: Vec<usize>,
     /// Interface's flow statements.
     pub flow_statements: Vec<FlowStatement>,
 }
@@ -54,7 +52,7 @@ pub enum FlowExpressionKind {
         /// Identifier to the component to call.
         component_id: usize,
         /// Input expressions.
-        inputs: Vec<FlowExpression>,
+        inputs: Vec<(usize, FlowExpression)>,
         /// Identifier to the component output signal to call.
         signal_id: usize,
     },
@@ -65,6 +63,8 @@ pub enum FlowExpressionKind {
 pub struct FlowExpression {
     /// Flow expression's kind.
     pub kind: FlowExpressionKind,
+    /// Flow expression type.
+    pub typing: Option<FlowType>,
     /// Flow expression location.
     pub location: Location,
 }
