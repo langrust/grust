@@ -703,8 +703,8 @@ impl SymbolTable {
         }
     }
 
-    /// Get unitary node vector of used inputs from identifier.
-    pub fn get_unitary_node_used_inputs(&self, id: usize) -> Vec<bool> {
+    /// Get unitary node hashmap of used inputs from identifier.
+    pub fn get_unitary_node_used_inputs(&self, id: usize) -> HashMap<usize, bool> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -717,7 +717,7 @@ impl SymbolTable {
                 let mother_node_inputs = self.get_node_inputs(*mother_node);
                 mother_node_inputs
                     .iter()
-                    .map(|id| inputs.contains(id))
+                    .map(|id| (*id, inputs.contains(id)))
                     .collect()
             }
             _ => unreachable!(),
