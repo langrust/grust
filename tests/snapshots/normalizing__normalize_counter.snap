@@ -832,4 +832,5 @@ component:
     ? - 23
       - 23
     : Weight: 1
+interface: ~
 location: ~

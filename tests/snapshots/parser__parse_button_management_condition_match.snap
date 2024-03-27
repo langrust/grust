@@ -478,4 +478,5 @@ nodes:
       invariant: []
     location: ~
 component: ~
+interface: ~
 location: ~
