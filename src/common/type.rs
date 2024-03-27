@@ -293,6 +293,50 @@ impl Type {
             _ => unreachable!(),
         }
     }
+
+    /// Convert from FRP types into StateMachine types.
+    ///
+    /// Convertes `signal T` into `T` and `event T` into `T?`.
+    /// 
+    /// ```rust
+    /// use grustine::common::r#type::Type;
+    ///
+    /// let s_type = Type::Signal(Box::new(Type::Integer));
+    /// let e_type = Type::Event(Box::new(Type::Boolean));
+    ///
+    /// assert_eq!(s_type.convert(), Type::Integer);
+    /// assert_eq!(e_type.convert(), Type::Option(Box::new(Type::Boolean)));
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// In the example bellow, when calling the component `my_comp`,
+    /// the integer signal `s` is converted into an integer `x` and
+    /// the boolean event `e` is converted into an optional boolean `c`.
+    ///
+    /// ```gr
+    /// component my_comp(int x, bool? c) {
+    ///     out res: int = when c then x else prev_res;
+    ///     prev_res: int = 0 fby res;
+    /// }
+    ///
+    ///
+    /// interface exemple {
+    ///     import signal int  s;
+    ///     import event  bool e;
+    ///     
+    ///     signal int res = my_comp(s, e);
+    ///
+    ///     export res;
+    /// }
+    /// ```
+    pub fn convert(&self) -> Self {
+        match self {
+            Type::Signal(t) => t.as_ref().clone(),
+            Type::Event(t) => Type::Option(t.clone()),
+            _ => unreachable!(),
+        }
+    }
 }
 
 #[cfg(test)]
