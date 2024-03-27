@@ -242,7 +242,7 @@ interface:
   id: 36
   flow_statements:
     - id: 34
-      flow_expression:
+      expression:
         kind:
           Timeout:
             flow_expression:
@@ -265,8 +265,9 @@ interface:
             timeout_ms: 500
         typing: ~
         location: ~
+      location: ~
     - id: 35
-      flow_expression:
+      expression:
         kind:
           ComponentCall:
             component_id: 28
@@ -286,4 +287,5 @@ interface:
             signal_id: 26
         typing: ~
         location: ~
+      location: ~
 location: ~
