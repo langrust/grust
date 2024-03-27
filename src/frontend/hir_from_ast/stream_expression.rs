@@ -81,9 +81,16 @@ impl HIRFromAST for StreamExpression {
                                                 return Err(TerminationError);
                                             }
 
-                                            let output_id = *outputs
-                                                .get(signal)
-                                                .expect("this is not an output"); // TODO: make it an error to raise
+                                            let output_id =
+                                                *outputs.get(signal).ok_or_else(|| {
+                                                    let error = Error::UnknownOuputSignal {
+                                                        node_name: node.clone(),
+                                                        signal_name: signal.clone(),
+                                                        location: location.clone(),
+                                                    };
+                                                    errors.push(error);
+                                                    TerminationError
+                                                })?;
                                             return Ok(HIRStreamExpression {
                                                 kind: HIRStreamExpressionKind::NodeApplication {
                                                     node_id,
