@@ -597,6 +597,7 @@ impl SymbolTable {
             SymbolKind::Identifier { typing, .. } => typing
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
+            SymbolKind::Flow { typing, .. } => typing,
             SymbolKind::Function { typing, .. } => typing
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
