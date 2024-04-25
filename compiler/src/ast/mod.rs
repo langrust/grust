@@ -2,23 +2,28 @@ use syn::parse::{Parse, ParseStream, Result};
 
 mod config;
 
+/// Things that can appear in a GRust program.
 pub enum Item {
-    Node(Node),
+    //Component(Component),
+    /// Rust item that can appear inside of a module.
     Rust(syn::Item),
 }
 impl Parse for Item {
     fn parse(input: ParseStream) -> Result<Self> {
-        if Node::peek_node(input) {
-            Ok(Self::Node(input.parse()?))
-        } else if let Ok(item) = input.parse() {
+        /* if Component::peek_Component(input) {
+            Ok(Self::Component(input.parse()?))
+        } else */
+        if let Ok(item) = input.parse() {
             Ok(Self::Rust(item))
         } else {
-            Err(input.error("expected node or Rust item"))
+            Err(input.error("expected component or Rust item"))
         }
     }
 }
 
+/// Complete AST of GRust program.
 pub struct Ast {
+    /// Items contained in the GRust program.
     pub items: Vec<Item>,
 }
 impl Parse for Ast {
@@ -35,4 +40,3 @@ impl Parse for Ast {
         Ok(Self { items })
     }
 }
-

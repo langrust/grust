@@ -2,14 +2,15 @@ use std::sync::RwLock;
 
 use lazy_static::lazy_static;
 
+/// Stores all possible compiler's configurations.
 pub struct Conf {
-    pub_nodes: bool,
+    pub_components: bool,
     dump_code: Option<String>,
 }
 impl Default for Conf {
     fn default() -> Self {
         Self {
-            pub_nodes: false,
+            pub_components: false,
             dump_code: None,
         }
     }
@@ -51,9 +52,16 @@ macro_rules! def {
 
 def! {
     bool {
-        pub_nodes set_pub_nodes
+        #[doc = "Tells if the components are public."]
+        pub_components
+        #[doc = "Set in configuration if the components are public."]
+        set_pub_components
     }
     Option<String> {
-        dump_code set_dump_code
+        #[doc = "Returns `Some(path)` if the code should be written at `path`, \
+        returns `None` if code should not be written."]
+        dump_code
+        #[doc = "Set in configuration if the components are public."]
+        set_dump_code
     }
 }
