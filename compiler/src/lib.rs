@@ -2,6 +2,9 @@ extern crate proc_macro;
 
 pub use proc_macro::TokenStream;
 
+mod ast;
+mod conf;
+
 pub fn handle_tokens(_tokens: TokenStream) -> TokenStream {
     todo!()
 }
