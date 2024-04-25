@@ -6,7 +6,9 @@ use syn::{
 
 use crate::conf;
 
-pub struct Config;
+/// Configuration items in the AST.
+///
+/// They set the static [Conf](conf::Conf).
 pub struct ConfigItem;
 impl Parse for ConfigItem {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -17,9 +19,9 @@ impl Parse for ConfigItem {
                 let val: syn::LitStr = input.parse()?;
                 conf::set_dump_code(Some(val.value()))
             }
-            "pub_fields" => {
+            "pub" => {
                 let val: syn::LitBool = input.parse()?;
-                conf::set_pub_nodes(val.value)
+                conf::set_pub_components(val.value)
             }
             _ => {
                 return Err(syn::Error::new_spanned(
@@ -31,6 +33,11 @@ impl Parse for ConfigItem {
         Ok(ConfigItem)
     }
 }
+
+/// Configuration structure in the AST.
+///
+/// It sets the static [Conf](conf::Conf).
+pub struct Config;
 impl Parse for Config {
     fn parse(input: ParseStream) -> Result<Self> {
         if let Ok(true) = input
