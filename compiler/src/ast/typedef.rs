@@ -1,34 +1,38 @@
-use crate::common::{location::Location, r#type::Type};
+use syn::{punctuated::Punctuated, token, Token};
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust user defined type AST.
-pub enum TypedefKind {
+use super::keyword;
+
+#[derive(Debug, PartialEq, Clone)]
+/// GRust user defined type AST.
+pub enum Typedef {
     /// Represents a structure definition.
     Structure {
+        struct_token: Token![struct],
+        /// Typedef identifier.
+        ident: syn::Ident,
+        brace: token::Brace,
         /// The structure's fields: a field has an identifier and a type.
-        fields: Vec<(String, Type)>,
+        fields: Punctuated<(syn::Ident, Token![:], syn::Type), Token![,]>,
     },
     /// Represents an enumeration definition.
     Enumeration {
-        /// The enumeration's elements.
-        elements: Vec<String>,
+        enum_token: Token![enum],
+        /// Typedef identifier.
+        ident: syn::Ident,
+        brace: token::Brace,
+        /// The structure's fields: a field has an identifier and a type.
+        elements: Punctuated<syn::Ident, Token![,]>,
     },
     /// Represents an array definition.
     Array {
+        array_token: keyword::array,
+        /// Typedef identifier.
+        ident: syn::Ident,
+        bracket_token: token::Bracket,
         /// The array's type.
-        array_type: Type,
+        array_type: syn::Type,
+        semi_token: Token![;],
         /// The array's size.
-        size: usize,
+        size: syn::LitInt,
     },
-}
-
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust user defined type AST.
-pub struct Typedef {
-    /// Typedef identifier.
-    pub id: String,
-    /// Typedef kind.
-    pub kind: TypedefKind,
-    /// Typedef location.
-    pub location: Location,
 }
