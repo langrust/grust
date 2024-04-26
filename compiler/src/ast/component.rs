@@ -1,9 +1,8 @@
 use syn::punctuated::Punctuated;
 use syn::{token, LitInt, Token};
 
-use super::contract::Contract;
 use super::keyword;
-use crate::ast::equation::Equation;
+use crate::ast::{contract::Contract, equation::Equation};
 
 #[derive(Debug, PartialEq, Clone)]
 /// GRust component AST.

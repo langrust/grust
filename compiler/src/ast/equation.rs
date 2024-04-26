@@ -1,17 +1,29 @@
-use crate::ast::stream_expression::StreamExpression;
-use crate::common::{location::Location, r#type::Type, scope::Scope};
+use syn::Token;
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust equation AST.
-pub struct Equation {
-    /// Signal's scope.
-    pub scope: Scope,
-    /// Identifier of the signal.
-    pub id: String,
-    /// Signal type.
-    pub signal_type: Type,
+use crate::ast::stream_expression::StreamExpression;
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct LetDeclaration {
+    pub let_token: Token![let],
+    /// Identifier of the signal and its type.
+    pub typed_ident: syn::PatType,
+    pub eq_token: Token![=],
     /// The stream expression defining the signal.
     pub expression: StreamExpression,
-    /// Equation location.
-    pub location: Location,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Instanciation {
+    /// Identifier of the signal.
+    pub ident: syn::Ident,
+    pub eq_token: Token![=],
+    /// The stream expression defining the signal.
+    pub expression: StreamExpression,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// GRust equation AST.
+pub enum Equation {
+    LocalDef(LetDeclaration),
+    OutputDef(Instanciation),
 }
