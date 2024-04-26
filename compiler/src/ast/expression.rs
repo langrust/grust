@@ -1,8 +1,8 @@
 use crate::ast::pattern::Pattern;
 use crate::common::{constant::Constant, location::Location, r#type::Type};
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust expression AST.
+#[derive(Debug, PartialEq, Clone)]
+/// GRust expression AST.
 pub enum ExpressionKind<E> {
     /// Constant expression.
     Constant {
@@ -121,8 +121,8 @@ pub enum ExpressionKind<E> {
     },
 }
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust expression AST.
+#[derive(Debug, PartialEq, Clone)]
+/// GRust expression AST.
 pub struct Expression {
     /// Expression kind.
     pub kind: ExpressionKind<Expression>,

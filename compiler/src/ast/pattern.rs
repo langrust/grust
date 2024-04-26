@@ -1,7 +1,7 @@
 use crate::common::{constant::Constant, location::Location};
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust matching pattern AST.
+#[derive(Debug, PartialEq, Clone)]
+/// GRust matching pattern AST.
 pub enum PatternKind {
     /// Identifier pattern, gives a name to the matching expression.
     Identifier {
@@ -43,8 +43,8 @@ pub enum PatternKind {
     Default,
 }
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust matching pattern AST.
+#[derive(Debug, PartialEq, Clone)]
+/// GRust matching pattern AST.
 pub struct Pattern {
     /// Pattern kind.
     pub kind: PatternKind,

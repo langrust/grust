@@ -1,8 +1,8 @@
 use crate::ast::expression::ExpressionKind;
 use crate::common::location::Location;
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust stream expression kind AST.
+#[derive(Debug, PartialEq, Clone)]
+/// GRust stream expression kind AST.
 pub enum StreamExpressionKind {
     /// Expression.
     Expression {
@@ -17,8 +17,8 @@ pub enum StreamExpressionKind {
         expression: Box<StreamExpression>,
     },
 }
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust stream expression AST.
+#[derive(Debug, PartialEq, Clone)]
+/// GRust stream expression AST.
 pub struct StreamExpression {
     /// Stream expression kind.
     pub kind: StreamExpressionKind,

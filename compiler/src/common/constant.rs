@@ -2,9 +2,9 @@ use std::fmt::{self, Display};
 
 use crate::common::r#type::Type;
 
-/// LanGrust constants.
+/// GRust constants.
 ///
-/// [Constant] enumeration is used to describe LanGRust expressions.
+/// [Constant] enumeration is used to describe GRust expressions.
 ///
 /// It reprensents all possible constant:
 /// - [Constant::Integer] are [i64] integers, `1` becomes `Constant::Integer(1)`
@@ -21,7 +21,7 @@ use crate::common::r#type::Type;
 ///
 /// let constant = Constant::String(String::from("Hello world"));
 /// ```
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Constant {
     /// [i64] integers
     Integer(i64),

@@ -11,5 +11,5 @@ pub struct Statement {
     pub eq_token: Token![=],
     /// The expression defining the variable.
     pub expression: Expression,
-    pub comma_token: Token![;],
+    pub semi_token: Token![;],
 }

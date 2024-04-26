@@ -4,10 +4,10 @@ use crate::{common::r#type::Type, error::Error};
 
 use super::location::Location;
 
-/// LanGrust binary operators.
+/// GRust binary operators.
 ///
 /// [BinaryOperator] enumeration represents all possible binary operations
-/// that can be used in a LanGRust program:
+/// that can be used in a GRust program:
 /// - [BinaryOperator::Mul] is the multiplication `*`
 /// - [BinaryOperator::Div], the division `/`
 /// - [BinaryOperator::Add], addition `+`
@@ -20,7 +20,7 @@ use super::location::Location;
 /// - [BinaryOperator::Leq], "lower or equal" `<=`
 /// - [BinaryOperator::Grt], "greater" `>`
 /// - [BinaryOperator::Low], "lower" `<`
-#[derive(EnumIter, Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(EnumIter, Debug, Clone, PartialEq)]
 pub enum BinaryOperator {
     /// Multiplication, `x * y`.
     Mul,
@@ -212,14 +212,14 @@ impl BinaryOperator {
     }
 }
 
-/// LanGrust unary operators.
+/// GRust unary operators.
 ///
 /// [UnaryOperator] enumeration represents all possible unary operations
-/// that can be used in a LanGRust program:
+/// that can be used in a GRust program:
 /// - [UnaryOperator::Neg] is the numerical negation `-`
 /// - [UnaryOperator::Not], the logical negation `!`
 /// - [UnaryOperator::Brackets], is the use of brackets `(_)`
-#[derive(EnumIter, Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(EnumIter, Debug, Clone, PartialEq)]
 pub enum UnaryOperator {
     /// Numerical negation, `-x`.
     Neg,
@@ -297,17 +297,17 @@ impl UnaryOperator {
     }
 }
 
-/// Other builtin operators in LanGrust.
+/// Other builtin operators in GRust.
 ///
 /// [OtherOperator] enumeration represents all other operations
-/// that can be used in a LanGRust program:
+/// that can be used in a GRust program:
 /// - [OtherOperator::IfThenElse] is `if _ then _ else _`
 /// - [OtherOperator::Print] is the usual `print` function
 #[derive(EnumIter)]
 pub enum OtherOperator {
-    /// The `if b then x else y` LanGRust expression.
+    /// The `if b then x else y` GRust expression.
     IfThenElse,
-    /// The `print(my_message)` LanGRust expression.
+    /// The `print(my_message)` GRust expression.
     Print,
 }
 impl ToString for OtherOperator {
