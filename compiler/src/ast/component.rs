@@ -1,23 +1,28 @@
-use crate::ast::equation::Equation;
-use crate::common::{location::Location, r#type::Type};
+use syn::punctuated::Punctuated;
+use syn::{token, LitInt, Token};
 
 use super::contract::Contract;
+use super::keyword;
+use crate::ast::equation::Equation;
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// LanGRust component AST.
+#[derive(Debug, PartialEq, Clone)]
+/// GRust component AST.
 pub struct Component {
+    pub node_token: keyword::component,
     /// Component identifier.
-    pub id: String,
-    /// Is true when the component is a service.
-    pub is_service: bool,
+    pub ident: syn::Ident,
+    pub args_paren: token::Paren,
     /// Component's inputs identifiers and their types.
-    pub inputs: Vec<(String, Type)>,
-    /// Component's period of execution.
-    pub period: Option<usize>,
-    /// Component's equations.
-    pub equations: Vec<(String, Equation)>,
+    pub args: Punctuated<syn::PatType, Token![,]>,
+    pub arrow_token: Token![->],
+    pub outs_paren: token::Paren,
+    /// Component's outputs identifiers and their types.
+    pub outs: Punctuated<syn::PatType, Token![,]>,
+    /// Component's computation period.
+    pub period: Option<(Token![@], LitInt, keyword::ms)>,
     /// Component's contract.
     pub contract: Contract,
-    /// Component location.
-    pub location: Location,
+    pub brace: token::Brace,
+    /// Component's equations.
+    pub equations: Vec<Equation>,
 }
