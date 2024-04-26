@@ -1,6 +1,6 @@
 use syn::parse::{Parse, ParseStream, Result};
 
-use self::{component::Component, interface::FlowStatement};
+use self::{component::Component, function::Function, interface::FlowStatement, typedef::Typedef};
 
 mod component;
 mod contract;
@@ -13,11 +13,16 @@ mod pattern;
 mod statement;
 mod stream_expression;
 mod typedef;
+mod keyword;
 
 /// Things that can appear in a GRust program.
 pub enum Item {
     /// GRust synchronous component.
     Component(Component),
+    /// GRust function.
+    Function(Function),
+    /// GRust typedef.
+    Typedef(Typedef),
     /// GRust FRP flow statement.
     FlowStatement(FlowStatement),
     /// Rust item that can appear inside of a module.
@@ -25,7 +30,7 @@ pub enum Item {
 }
 impl Parse for Item {
     fn parse(input: ParseStream) -> Result<Self> {
-        /* if Component::peek_Component(input) {
+        /* if Component::peek_component(input) {
             Ok(Self::Component(input.parse()?))
         } else */
         if let Ok(item) = input.parse() {

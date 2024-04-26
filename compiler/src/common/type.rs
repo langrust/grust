@@ -3,11 +3,11 @@ use std::fmt::{self, Display};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 
-/// LanGrust type system.
+/// GRust type system.
 ///
-/// [Type] enumeration is used when [typing](crate::ast::file::File) a LanGRust program.
+/// [Type] enumeration is used when [typing](crate::ast::file::File) a GRust program.
 ///
-/// It reprensents all possible types a LanGRust expression can take:
+/// It reprensents all possible types a GRust expression can take:
 /// - [Type::Integer] are [i64] integers, if `n = 1` then `n: int`
 /// - [Type::Float] are [f64] floats, if `r = 1.0` then `r: float`
 /// - [Type::Boolean] is the [bool] type for booleans, if `b = true` then `b: bool`

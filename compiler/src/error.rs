@@ -24,7 +24,7 @@ impl std::error::Error for TerminationError {}
 /// Compilation errors enumeration.
 ///
 /// [Error] enumeration is used during the compilation to alert
-/// the programmer of some errors in its LanGRust program.
+/// the programmer of some errors in its GRust program.
 ///
 /// # Example
 /// ```rust

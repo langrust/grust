@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+#[derive(Debug, PartialEq, Clone)]
 /// Edge label.
 pub enum Label {
     /// Contract label

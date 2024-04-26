@@ -10,6 +10,7 @@ pub struct LetDeclaration {
     pub eq_token: Token![=],
     /// The stream expression defining the signal.
     pub expression: StreamExpression,
+    pub semi_token: Token![;],
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -19,6 +20,7 @@ pub struct Instanciation {
     pub eq_token: Token![=],
     /// The stream expression defining the signal.
     pub expression: StreamExpression,
+    pub semi_token: Token![;],
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -1,4 +1,4 @@
-/// Signals scopes in LanGRust nodes or components.
+/// Signals scopes in GRust nodes or components.
 ///
 /// A [Scope] is the visibility of the signal in a node/component.
 /// It can be:
@@ -12,7 +12,7 @@
 ///
 /// # Example
 ///
-/// ```langrust
+/// ```grust
 /// node blinking(blink_tick_number: int) {
 ///     change_state: bool = blink_tick_number == prev_tick_state;
 ///     out on_off_status: int = if status then tick_state else 0;
@@ -30,24 +30,24 @@
 ///
 /// During the compilation, the compiler will construct intermediate signals.
 /// Especially memory signals to replace `fby` expressions:
-/// ```langrust
+/// ```grust
 /// prev_tick_state: int = 0 fby tick_state;
 /// ```
 /// will become
-/// ```langrust
+/// ```grust
 /// mem prev_tick_state: int = 0 fby tick_state;
 /// ```
 /// because it represents the initialized memory of the signal `tick_state`.
-/// ```langrust
+/// ```grust
 /// some_signal: int = 0 fby x * y;
 /// ```
 /// will become
-/// ```langrust
+/// ```grust
 /// x_0: int = x * y;
 /// mem some_signal: int = 0 fby x_0;
 /// ```
 /// as it represents the initialized memory of the normalized signal `x_0`.
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Scope {
     /// input of the node/component
     Input,
