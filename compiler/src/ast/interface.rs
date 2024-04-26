@@ -1,121 +1,120 @@
-use crate::common::{location::Location, r#type::Type};
+use syn::{punctuated::Punctuated, token, Token};
 
-// #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-// /// LanGRust interface AST.
-// pub struct Interface {
-//     /// Interface identifier.
-//     pub id: String,
-//     /// Interface's imports and their types.
-//     pub imports: Vec<(Type, FlowPath)>,
-//     /// Interface's exports and their types.
-//     pub exports: Vec<FlowPath>,
-//     /// Interface's flow statements.
-//     pub flow_statements: Vec<FlowStatement>,
-//     /// Interface location.
-//     pub location: Location,
-// }
+use super::keyword;
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// Flow statement AST.
-pub struct FlowStatement {
-    /// Identifier of the new flow.
-    pub ident: String,
-    /// Flow type.
-    pub flow_type: Type,
-    /// The expression defining the flow.
-    pub flow_expression: FlowExpression,
-    /// Flow statement location.
-    pub location: Location,
+#[derive(Debug, PartialEq, Clone)]
+pub enum FlowKind {
+    Signal(keyword::signal),
+    Event(keyword::event),
 }
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+#[derive(Debug, PartialEq, Clone)]
+pub enum FlowStatement {
+    Declaration(FlowDeclaration),
+    Instanciation(FlowInstanciation),
+    Import(FlowImport),
+    Export(FlowExport),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// Flow statement AST.
+pub struct FlowDeclaration {
+    pub let_token: Token![let],
+    /// Flow's kind.
+    pub kind: FlowKind,
+    /// Identifier of the flow and its type.
+    pub typed_ident: syn::PatType,
+    pub eq_token: Token![=],
+    /// The expression defining the flow.
+    pub flow_expression: FlowExpression,
+    pub semi_token: Token![;],
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// Flow statement AST.
+pub struct FlowInstanciation {
+    /// Identifier of the flow.
+    pub ident: syn::Ident,
+    pub eq_token: Token![=],
+    /// The expression defining the flow.
+    pub flow_expression: FlowExpression,
+    pub semi_token: Token![;],
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// Flow statement AST.
+pub struct FlowImport {
+    pub import_token: keyword::import,
+    /// Flow's kind.
+    pub kind: FlowKind,
+    /// Identifier of the flow and its type.
+    pub typed_ident: syn::PatType,
+    pub semi_token: Token![;],
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// Flow statement AST.
+pub struct FlowExport {
+    pub export_token: keyword::export,
+    /// Flow's kind.
+    pub kind: FlowKind,
+    /// Identifier of the flow and its type.
+    pub typed_ident: syn::PatType,
+    pub semi_token: Token![;],
+}
+
+#[derive(Debug, PartialEq, Clone)]
 /// Flow expression kinds.
-pub enum FlowExpressionKind {
-    /// Flow identifier call.
-    Ident {
-        /// The identifier of the flow to call.
-        ident: String,
-    },
+pub enum FlowExpression {
     /// GReact `tiemout` operator.
     Timeout {
+        timeout_token: keyword::timeout,
+        paren_token: token::Paren,
         /// Input expression.
         flow_expression: Box<FlowExpression>,
+        comma_token: Token![,],
         /// Time of the timeout in milliseconds.
-        timeout_ms: u64,
+        timeout_ms: syn::LitInt,
+    },
+    /// GReact `map` operator.
+    Map {
+        map_token: keyword::map,
+        paren_token: token::Paren,
+        /// Input expression.
+        flow_expression: Box<FlowExpression>,
+        comma_token: Token![,],
+        /// Time of the timeout in milliseconds.
+        function: syn::Expr,
     },
     /// GReact `merge` operator.
     Merge {
+        merge_token: keyword::merge,
+        paren_token: token::Paren,
         /// Input expression 1.
         flow_expression_1: Box<FlowExpression>,
+        comma_token: Token![,],
         /// Input expression 2.
         flow_expression_2: Box<FlowExpression>,
     },
     /// GReact `zip` operator.
     Zip {
+        zip_token: keyword::zip,
+        paren_token: token::Paren,
         /// Input expression 1.
         flow_expression_1: Box<FlowExpression>,
+        comma_token: Token![,],
         /// Input expression 2.
         flow_expression_2: Box<FlowExpression>,
     },
     /// Component call.
     ComponentCall {
         /// Identifier to the component to call.
-        ident_component: String,
+        ident_component: syn::Path,
+        paren_token: token::Paren,
         /// Input expressions.
-        inputs: Vec<FlowExpression>,
+        inputs: Punctuated<FlowExpression, Token![,]>,
         /// Identifier to the component output signal to call.
-        ident_signal: String,
+        ident_signal: Option<(Token![.], syn::Ident)>,
     },
+    RustExpr(syn::Expr),
 }
-
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
-/// Flow expression AST.
-pub struct FlowExpression {
-    /// Flow expression's kind.
-    pub kind: FlowExpressionKind,
-    /// Flow expression location.
-    pub location: Location,
-}
-
-// #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-// /// Flow path kinds.
-// pub enum FlowPathKind {
-//     /// Path `module.path`.
-//     Path {
-//         /// Name of the module.
-//         ident: String,
-//         /// Rest of the path.
-//         path: Box<FlowPath>,
-//     },
-//     /// Path `name as other_name`.
-//     Rename {
-//         /// Name of the flow.
-//         ident: String,
-//         /// Alias of the flow.
-//         rename: String,
-//     },
-//     /// Path `name`.
-//     Name {
-//         /// Name of the flow.
-//         ident: String,
-//     },
-// }
-
-// #[derive(Debug, PartialEq, Clone, serde::Serialize)]
-// /// Real flow path in the system.
-// pub struct FlowPath {
-//     /// Flow path kind.
-//     pub kind: FlowPathKind,
-//     /// Flow path loaction.
-//     pub location: Location,
-// }
-// impl FlowPath {
-//     /// Returns the name of the imported flow.
-//     pub fn get_name(&self) -> String {
-//         match &self.kind {
-//             FlowPathKind::Name { ident } => ident.clone(),
-//             FlowPathKind::Rename { rename, .. } => rename.clone(),
-//             FlowPathKind::Path { path, .. } => path.get_name(),
-//         }
-//     }
-// }
