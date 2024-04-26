@@ -10,8 +10,10 @@ extern crate proc_macro;
 
 pub use proc_macro::TokenStream;
 
-pub mod ast;
-pub mod conf;
+mod ast;
+mod common;
+mod error;
+mod conf;
 
 /// Compiles input GRust tokens into output Rust tokens.
 pub fn handle_tokens(_tokens: TokenStream) -> TokenStream {

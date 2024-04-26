@@ -1,10 +1,25 @@
 use syn::parse::{Parse, ParseStream, Result};
 
+use self::{component::Component, interface::FlowStatement};
+
+mod component;
+mod contract;
 mod config;
+mod equation;
+mod expression;
+mod function;
+mod interface;
+mod pattern;
+mod statement;
+mod stream_expression;
+mod typedef;
 
 /// Things that can appear in a GRust program.
 pub enum Item {
-    //Component(Component),
+    /// GRust synchronous component.
+    Component(Component),
+    /// GRust FRP flow statement.
+    FlowStatement(FlowStatement),
     /// Rust item that can appear inside of a module.
     Rust(syn::Item),
 }
