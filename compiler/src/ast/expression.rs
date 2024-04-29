@@ -1,8 +1,8 @@
 use syn::parse::Parse;
 use syn::punctuated::Punctuated;
-use syn::{token, Token};
+use syn::{braced, token, Token};
 
-use crate::ast::pattern::Pattern;
+use crate::ast::{ident_colon::IdentColon, pattern::Pattern};
 use crate::common::{constant::Constant, r#type::Type};
 
 /// Application expression.
@@ -25,6 +25,21 @@ where
         forked.peek(token::Paren)
     }
 }
+impl<E> Parse for Application<E>
+where
+    E: Parse,
+{
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let function_expression: Box<E> = Box::new(input.parse()?);
+        let content;
+        let _ = syn::parenthesized!(content in input);
+        let inputs: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
+        Ok(Application {
+            function_expression,
+            inputs: inputs.into_iter().collect(),
+        })
+    }
+}
 
 /// Abstraction expression with inputs types.
 #[derive(Debug, PartialEq, Clone)]
@@ -34,6 +49,46 @@ pub struct TypedAbstraction<E> {
     /// The expression abstracted.
     expression: Box<E>,
 }
+impl<E> TypedAbstraction<E>
+where
+    E: Parse,
+{
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        let forked = input.fork();
+        forked.peek(Token![|])
+    }
+}
+impl<E> Parse for TypedAbstraction<E>
+where
+    E: Parse,
+{
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: Token![|] = input.parse()?;
+        let mut inputs: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::new();
+        loop {
+            if input.peek(Token![|]) {
+                break;
+            }
+            let value = input.parse()?;
+            inputs.push_value(value);
+            if input.peek(Token![|]) {
+                break;
+            }
+            let punct: Token![,] = input.parse()?;
+            inputs.push_punct(punct);
+        }
+        let _: Token![|] = input.parse()?;
+        let expression: E = input.parse()?;
+        Ok(TypedAbstraction {
+            inputs: inputs
+                .into_iter()
+                .map(|IdentColon { ident, elem, .. }| (ident.to_string(), elem))
+                .collect(),
+            expression: Box::new(expression),
+        })
+    }
+}
+
 /// Structure expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Structure<E> {
@@ -42,6 +97,37 @@ pub struct Structure<E> {
     /// The fields associated with their expressions.
     fields: Vec<(String, E)>,
 }
+impl<E> Structure<E>
+where
+    E: Parse,
+{
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        let forked = input.fork();
+        if forked.call(syn::Ident::parse).is_err() {
+            return false;
+        }
+        forked.peek(token::Brace)
+    }
+}
+impl<E> Parse for Structure<E>
+where
+    E: Parse,
+{
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ident: syn::Ident = input.parse()?;
+        let content;
+        let _ = braced!(content in input);
+        let fields: Punctuated<IdentColon<E>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        Ok(Structure {
+            name: ident.to_string(),
+            fields: fields
+                .into_iter()
+                .map(|IdentColon { ident, elem, .. }| (ident.to_string(), elem))
+                .collect(),
+        })
+    }
+}
+
 /// Tuple expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tuple<E> {
@@ -176,14 +262,11 @@ impl Parse for Expression {
             let ident: syn::Ident = input.parse()?;
             Ok(Expression::Identifier(ident.to_string()))
         } else if Application::<Expression>::peek(input) {
-            let function_expression: Box<Expression> = Box::new(input.parse()?);
-            let content;
-            let _ = syn::parenthesized!(content in input);
-            let inputs: Punctuated<Expression, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Expression::Application(Application {
-                function_expression,
-                inputs: inputs.into_iter().collect(),
-            }))
+            Ok(Expression::Application(input.parse()?))
+        } else if TypedAbstraction::<Expression>::peek(input) {
+            Ok(Expression::TypedAbstraction(input.parse()?))
+        } else if Structure::<Expression>::peek(input) {
+            Ok(Expression::Structure(input.parse()?))
         } else {
             todo!()
         }

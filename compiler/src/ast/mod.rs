@@ -3,17 +3,18 @@ use syn::parse::{Parse, ParseStream, Result};
 use self::{component::Component, function::Function, interface::FlowStatement, typedef::Typedef};
 
 mod component;
-mod contract;
 mod config;
+mod contract;
 mod equation;
 mod expression;
 mod function;
+mod ident_colon;
 mod interface;
+pub mod keyword;
 mod pattern;
 mod statement;
 mod stream_expression;
 mod typedef;
-pub mod keyword;
 
 /// Things that can appear in a GRust program.
 pub enum Item {
