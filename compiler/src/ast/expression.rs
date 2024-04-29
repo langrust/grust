@@ -1,5 +1,5 @@
 use crate::ast::pattern::Pattern;
-use crate::common::{constant::Constant, location::Location, r#type::Type};
+use crate::common::{constant::Constant, r#type::Type};
 
 #[derive(Debug, PartialEq, Clone)]
 /// GRust expression AST.
@@ -126,6 +126,4 @@ pub enum ExpressionKind<E> {
 pub struct Expression {
     /// Expression kind.
     pub kind: ExpressionKind<Expression>,
-    /// Expression location.
-    pub location: Location,
 }

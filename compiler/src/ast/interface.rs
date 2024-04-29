@@ -1,6 +1,7 @@
 use syn::{punctuated::Punctuated, token, Token};
 
 use super::keyword;
+use crate::common::r#type::Type;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum FlowKind {
@@ -23,7 +24,7 @@ pub struct FlowDeclaration {
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: syn::PatType,
+    pub typed_ident: (syn::Ident, Token![:], Type),
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: FlowExpression,
@@ -48,7 +49,7 @@ pub struct FlowImport {
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: syn::PatType,
+    pub typed_ident: (syn::Ident, Token![:], Type),
     pub semi_token: Token![;],
 }
 
@@ -59,7 +60,7 @@ pub struct FlowExport {
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: syn::PatType,
+    pub typed_ident: (syn::Ident, Token![:], Type),
     pub semi_token: Token![;],
 }
 

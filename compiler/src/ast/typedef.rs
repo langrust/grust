@@ -1,5 +1,7 @@
 use syn::{punctuated::Punctuated, token, Token};
 
+use crate::common::r#type::Type;
+
 use super::keyword;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -12,7 +14,7 @@ pub enum Typedef {
         ident: syn::Ident,
         brace: token::Brace,
         /// The structure's fields: a field has an identifier and a type.
-        fields: Punctuated<(syn::Ident, Token![:], syn::Type), Token![,]>,
+        fields: Punctuated<(syn::Ident, Token![:], Type), Token![,]>,
     },
     /// Represents an enumeration definition.
     Enumeration {
@@ -30,7 +32,7 @@ pub enum Typedef {
         ident: syn::Ident,
         bracket_token: token::Bracket,
         /// The array's type.
-        array_type: syn::Type,
+        array_type: Type,
         semi_token: Token![;],
         /// The array's size.
         size: syn::LitInt,

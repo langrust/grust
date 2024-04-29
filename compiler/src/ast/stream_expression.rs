@@ -22,6 +22,4 @@ pub enum StreamExpressionKind {
 pub struct StreamExpression {
     /// Stream expression kind.
     pub kind: StreamExpressionKind,
-    /// Stream expression location.
-    pub location: Location,
 }
