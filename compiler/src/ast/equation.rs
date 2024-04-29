@@ -1,12 +1,13 @@
 use syn::Token;
 
 use crate::ast::stream_expression::StreamExpression;
+use crate::common::r#type::Type;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LetDeclaration {
     pub let_token: Token![let],
     /// Identifier of the signal and its type.
-    pub typed_ident: syn::PatType,
+    pub typed_ident: (syn::Ident, Token![:], Type),
     pub eq_token: Token![=],
     /// The stream expression defining the signal.
     pub expression: StreamExpression,

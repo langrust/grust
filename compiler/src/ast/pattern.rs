@@ -1,4 +1,4 @@
-use crate::common::{constant::Constant, location::Location};
+use crate::common::constant::Constant;
 
 #[derive(Debug, PartialEq, Clone)]
 /// GRust matching pattern AST.
@@ -48,6 +48,4 @@ pub enum PatternKind {
 pub struct Pattern {
     /// Pattern kind.
     pub kind: PatternKind,
-    /// Pattern location.
-    pub location: Location,
 }
