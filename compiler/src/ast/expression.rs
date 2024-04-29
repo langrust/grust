@@ -1,4 +1,6 @@
 use syn::parse::Parse;
+use syn::punctuated::Punctuated;
+use syn::{token, Token};
 
 use crate::ast::pattern::Pattern;
 use crate::common::{constant::Constant, r#type::Type};
@@ -11,6 +13,19 @@ pub struct Application<E> {
     /// The inputs to the expression.
     inputs: Vec<E>,
 }
+impl<E> Application<E>
+where
+    E: Parse,
+{
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        let forked = input.fork();
+        if forked.call(E::parse).is_err() {
+            return false;
+        }
+        forked.peek(token::Paren)
+    }
+}
+
 /// Abstraction expression with inputs types.
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypedAbstraction<E> {
@@ -122,7 +137,7 @@ pub enum Expression {
     /// Constant expression.
     Constant(Constant),
     /// Identifier expression.
-    Identifier(syn::Ident),
+    Identifier(String),
     /// Application expression.
     Application(Application<Expression>),
     /// Abstraction expression with inputs types.
@@ -155,6 +170,22 @@ pub enum Expression {
 
 impl Parse for Expression {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        todo!()
+        if input.fork().call(Constant::parse).is_ok() {
+            Ok(Expression::Constant(input.parse()?))
+        } else if input.fork().call(syn::Ident::parse).is_ok() {
+            let ident: syn::Ident = input.parse()?;
+            Ok(Expression::Identifier(ident.to_string()))
+        } else if Application::<Expression>::peek(input) {
+            let function_expression: Box<Expression> = Box::new(input.parse()?);
+            let content;
+            let _ = syn::parenthesized!(content in input);
+            let inputs: Punctuated<Expression, Token![,]> = Punctuated::parse_terminated(&content)?;
+            Ok(Expression::Application(Application {
+                function_expression,
+                inputs: inputs.into_iter().collect(),
+            }))
+        } else {
+            todo!()
+        }
     }
 }
