@@ -13,7 +13,7 @@ mod pattern;
 mod statement;
 mod stream_expression;
 mod typedef;
-mod keyword;
+pub mod keyword;
 
 /// Things that can appear in a GRust program.
 pub enum Item {
