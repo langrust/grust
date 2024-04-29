@@ -307,14 +307,11 @@ impl UnaryOperator {
 pub enum OtherOperator {
     /// The `if b then x else y` GRust expression.
     IfThenElse,
-    /// The `print(my_message)` GRust expression.
-    Print,
 }
 impl ToString for OtherOperator {
     fn to_string(&self) -> String {
         match self {
             OtherOperator::IfThenElse => String::from("if_then_else"),
-            OtherOperator::Print => String::from("print"),
         }
     }
 }
@@ -368,7 +365,6 @@ impl OtherOperator {
             // `bool -> t -> t` for any type t
             // then it is a [Type::Polymorphism]
             OtherOperator::IfThenElse => Type::Polymorphism(OtherOperator::if_then_else),
-            OtherOperator::Print => Type::Abstract(vec![Type::String], Box::new(Type::Unit)),
         }
     }
 }
@@ -445,9 +441,5 @@ mod to_string {
             String::from("if_then_else"),
             OtherOperator::IfThenElse.to_string()
         );
-    }
-    #[test]
-    fn should_convert_print_operator_to_string() {
-        assert_eq!(String::from("print"), OtherOperator::Print.to_string());
     }
 }

@@ -48,11 +48,7 @@ impl Parse for Constant {
             let content;
             let parens = syn::parenthesized!(content in input);
             if content.is_empty() {
-                if input.is_empty() {
-                    Ok(Constant::Unit(parens))
-                } else {
-                    Err(input.error("expected constant: integer, float, boolean or unit"))
-                }
+                Ok(Constant::Unit(parens))
             } else {
                 Err(input.error("expected unit `()`"))
             }

@@ -25,3 +25,8 @@ syn::custom_keyword!(timeout);
 syn::custom_keyword!(map);
 syn::custom_keyword!(merge);
 syn::custom_keyword!(zip);
+
+// Types
+syn::custom_keyword!(int);
+syn::custom_keyword!(float);
+syn::custom_keyword!(bool);

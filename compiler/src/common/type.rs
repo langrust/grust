@@ -1,5 +1,10 @@
 use std::fmt::{self, Display};
 
+use syn::parse::Parse;
+use syn::punctuated::Punctuated;
+use syn::Token;
+
+use crate::ast::keyword;
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 
@@ -28,8 +33,6 @@ pub enum Type {
     Float,
     /// [bool] type for booleans, if `b = true` then `b: bool`
     Boolean,
-    /// Strings of type [String], if `s = "hello world"` then `s: string`
-    String,
     /// Unit type, if `u = ()` then `u: unit`
     Unit,
     /// Array type, if `a = [1, 2, 3]` then `a: [int; 3]`
@@ -67,61 +70,12 @@ pub enum Type {
     /// Match any type.
     Any,
 }
-impl serde::Serialize for Type {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            Type::Integer => serializer.serialize_unit_variant("Type", 0, "Integer"),
-            Type::Float => serializer.serialize_unit_variant("Type", 1, "Float"),
-            Type::Boolean => serializer.serialize_unit_variant("Type", 2, "Boolean"),
-            Type::String => serializer.serialize_unit_variant("Type", 3, "String"),
-            Type::Unit => serializer.serialize_unit_variant("Type", 4, "Unit"),
-            Type::Array(element_type, size) => {
-                let mut s = serializer.serialize_tuple_variant("Type", 5, "Array", 2)?;
-                serde::ser::SerializeTupleVariant::serialize_field(&mut s, element_type)?;
-                serde::ser::SerializeTupleVariant::serialize_field(&mut s, size)?;
-                serde::ser::SerializeTupleVariant::end(s)
-            }
-            Type::Option(option_type) => {
-                serializer.serialize_newtype_variant("Type", 6, "Option", option_type)
-            }
-            Type::Enumeration { name, .. } => {
-                serializer.serialize_newtype_variant("Type", 7, "Enumeration", name)
-            }
-            Type::Structure { name, .. } => {
-                serializer.serialize_newtype_variant("Type", 8, "Structure", name)
-            }
-            Type::Abstract(inputs_types, returned_type) => {
-                let mut s = serializer.serialize_tuple_variant("Type", 9, "Abstract", 2)?;
-                serde::ser::SerializeTupleVariant::serialize_field(&mut s, inputs_types)?;
-                serde::ser::SerializeTupleVariant::serialize_field(&mut s, returned_type)?;
-                serde::ser::SerializeTupleVariant::end(s)
-            }
-            Type::Tuple(tuple_types) => {
-                serializer.serialize_newtype_variant("Type", 10, "Tuple", tuple_types)
-            }
-            Type::Generic(name) => {
-                serializer.serialize_newtype_variant("Type", 11, "Generic", name)
-            }
-            Type::Signal(ty) => serializer.serialize_newtype_variant("Type", 12, "Signal", ty),
-            Type::Event(ty) => serializer.serialize_newtype_variant("Type", 13, "Event", ty),
-            Type::NotDefinedYet(name) => {
-                serializer.serialize_newtype_variant("Type", 14, "NotDefinedYet", name)
-            }
-            Type::Polymorphism(_) => serializer.serialize_unit_variant("Type", 15, "Polymorphism"),
-            Type::Any => serializer.serialize_unit_variant("Type", 16, "Any"),
-        }
-    }
-}
 impl Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Type::Integer => write!(f, "i64"),
             Type::Float => write!(f, "f64"),
             Type::Boolean => write!(f, "bool"),
-            Type::String => write!(f, "String"),
             Type::Unit => write!(f, "()"),
             Type::Array(t, n) => write!(f, "[{}; {n}]", *t),
             Type::Option(t) => write!(f, "Option<{}>", *t),
@@ -150,6 +104,71 @@ impl Display for Type {
             Type::NotDefinedYet(s) => write!(f, "{s}"),
             Type::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
             Type::Any => write!(f, "any"),
+        }
+    }
+}
+impl Parse for Type {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.fork().call(keyword::int::parse).is_ok() {
+            let _: keyword::int = input.parse()?;
+            Ok(Type::Integer)
+        } else if input.fork().call(keyword::float::parse).is_ok() {
+            let _: keyword::float = input.parse()?;
+            Ok(Type::Float)
+        } else if input.fork().call(keyword::bool::parse).is_ok() {
+            let _: keyword::bool = input.parse()?;
+            Ok(Type::Boolean)
+        } else if input.fork().peek(syn::token::Paren) {
+            let content;
+            let _ = syn::parenthesized!(content in input);
+            if content.is_empty() {
+                Ok(Type::Unit)
+            } else {
+                let types: Punctuated<Type, Token![,]> = Punctuated::parse_terminated(&content)?;
+                Ok(Type::Tuple(types.into_iter().collect()))
+            }
+        } else if input.fork().peek(syn::token::Bracket) {
+            let content;
+            let _ = syn::bracketed!(content in input);
+            if content.is_empty() {
+                Err(input.error("expected type: `int`, `float`, etc"))
+            } else {
+                let ty = content.parse()?;
+                let _: Token![;] = content.parse()?;
+                let size: syn::LitInt = content.parse()?;
+                Ok(Type::Array(Box::new(ty), size.base10_parse().unwrap()))
+            }
+        } else if input
+            .fork()
+            .call(|ps| {
+                let _: Type = ps.parse()?;
+                let _: Token![?] = ps.parse()?;
+                Ok(())
+            })
+            .is_ok()
+        {
+            let ty = input.parse()?;
+            let _: Token![?] = input.parse()?;
+            Ok(Type::Option(Box::new(ty)))
+        } else if input
+            .fork()
+            .call(|ps| {
+                let _: Type = ps.parse()?;
+                let _: Token![->] = ps.parse()?;
+                Ok(())
+            })
+            .is_ok()
+        {
+            let args_ty = input.parse()?;
+            let _: Token![->] = input.parse()?;
+            let out_ty = input.parse()?;
+            match args_ty {
+                Type::Tuple(v_ty) => Ok(Type::Abstract(v_ty, Box::new(out_ty))),
+                _ => Ok(Type::Abstract(vec![args_ty], Box::new(out_ty))),
+            }
+        } else {
+            let ident: syn::Ident = input.parse()?;
+            Ok(Type::NotDefinedYet(ident.to_string()))
         }
     }
 }
@@ -297,7 +316,7 @@ impl Type {
     /// Convert from FRP types into StateMachine types.
     ///
     /// Convertes `signal T` into `T` and `event T` into `T?`.
-    /// 
+    ///
     /// ```rust
     /// use grustine::common::r#type::Type;
     ///
@@ -336,6 +355,21 @@ impl Type {
             Type::Event(t) => Type::Option(t.clone()),
             _ => unreachable!(),
         }
+    }
+}
+
+pub struct IdentColonType {
+    pub ident: syn::Ident,
+    pub colon: Token![:],
+    pub typing: Type,
+}
+impl Parse for IdentColonType {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            ident: input.parse()?,
+            colon: input.parse()?,
+            typing: input.parse()?,
+        })
     }
 }
 
