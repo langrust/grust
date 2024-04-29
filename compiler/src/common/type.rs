@@ -358,21 +358,6 @@ impl Type {
     }
 }
 
-pub struct IdentColonType {
-    pub ident: syn::Ident,
-    pub colon: Token![:],
-    pub typing: Type,
-}
-impl Parse for IdentColonType {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Ok(Self {
-            ident: input.parse()?,
-            colon: input.parse()?,
-            typing: input.parse()?,
-        })
-    }
-}
-
 #[cfg(test)]
 mod apply {
     use crate::{
