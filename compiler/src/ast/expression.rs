@@ -1,6 +1,6 @@
 use syn::parse::Parse;
 use syn::punctuated::Punctuated;
-use syn::{braced, token, Token};
+use syn::{braced, bracketed, parenthesized, token, Token};
 
 use crate::ast::{ident_colon::IdentColon, pattern::Pattern};
 use crate::common::{constant::Constant, r#type::Type};
@@ -134,6 +134,29 @@ pub struct Tuple<E> {
     /// The elements.
     elements: Vec<E>,
 }
+impl<E> Tuple<E>
+where
+    E: Parse,
+{
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        let forked = input.fork();
+        forked.peek(token::Paren)
+    }
+}
+impl<E> Parse for Tuple<E>
+where
+    E: Parse,
+{
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let content;
+        let _ = parenthesized!(content in input);
+        let elements: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
+        Ok(Tuple {
+            elements: elements.into_iter().collect(),
+        })
+    }
+}
+
 /// Enumeration expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Enumeration {
@@ -142,12 +165,56 @@ pub struct Enumeration {
     /// The enumeration element.
     elem_name: String,
 }
+impl Enumeration {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        let forked = input.fork();
+        if forked.call(syn::Ident::parse).is_err() {
+            return false;
+        }
+        forked.peek(Token![::])
+    }
+}
+impl Parse for Enumeration {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ident_enum: syn::Ident = input.parse()?;
+        let _: Token![::] = input.parse()?;
+        let ident_elem: syn::Ident = input.parse()?;
+        Ok(Enumeration {
+            enum_name: ident_enum.to_string(),
+            elem_name: ident_elem.to_string(),
+        })
+    }
+}
+
 /// Array expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Array<E> {
     /// The elements inside the array.
     elements: Vec<E>,
 }
+impl<E> Array<E>
+where
+    E: Parse,
+{
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        let forked = input.fork();
+        forked.peek(token::Bracket)
+    }
+}
+impl<E> Parse for Array<E>
+where
+    E: Parse,
+{
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let content;
+        let _ = bracketed!(content in input);
+        let elements: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
+        Ok(Array {
+            elements: elements.into_iter().collect(),
+        })
+    }
+}
+
 /// Pattern matching expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Match<E> {
@@ -267,6 +334,12 @@ impl Parse for Expression {
             Ok(Expression::TypedAbstraction(input.parse()?))
         } else if Structure::<Expression>::peek(input) {
             Ok(Expression::Structure(input.parse()?))
+        } else if Tuple::<Expression>::peek(input) {
+            Ok(Expression::Tuple(input.parse()?))
+        } else if Enumeration::peek(input) {
+            Ok(Expression::Enumeration(input.parse()?))
+        } else if Array::<Expression>::peek(input) {
+            Ok(Expression::Array(input.parse()?))
         } else {
             todo!()
         }
