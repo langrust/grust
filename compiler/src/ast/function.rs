@@ -1,8 +1,11 @@
+use syn::parse::Parse;
 use syn::punctuated::Punctuated;
-use syn::{token, Token};
+use syn::{braced, parenthesized, token, Token};
 
-use crate::ast::{expression::Expression, statement::Statement};
+use crate::ast::statement::Statement;
 use crate::common::r#type::Type;
+
+use super::ident_colon::IdentColon;
 
 /// GRust function AST.
 pub struct Function {
@@ -10,13 +13,38 @@ pub struct Function {
     pub ident: syn::Ident,
     pub args_paren: token::Paren,
     /// Component's inputs identifiers and their types.
-    pub args: Punctuated<(syn::Ident, Token![:], Type), Token![,]>,
+    pub args: Punctuated<IdentColon<Type>, Token![,]>,
     pub arrow_token: Token![->],
-    pub output_type: (syn::Ident, Token![:], Type),
+    pub output_type: IdentColon<Type>,
     pub brace: token::Brace,
     /// Function's statements.
     pub statements: Vec<Statement>,
-    pub return_token: Token![return],
-    /// Function's returned expression and its type.
-    pub returned: Expression,
+}
+impl Parse for Function {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ident: syn::Ident = input.parse()?;
+        let content;
+        let args_paren: token::Paren = parenthesized!(content in input);
+        let args: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let arrow_token: Token![->] = input.parse()?;
+        let output_type: IdentColon<Type> = input.parse()?;
+        let content;
+        let brace: token::Brace = braced!(content in input);
+        let statements: Vec<Statement> = {
+            let mut statements = Vec::new();
+            while !content.is_empty() {
+                statements.push(content.parse()?);
+            }
+            statements
+        };
+        Ok(Function {
+            ident,
+            args_paren,
+            args,
+            arrow_token,
+            output_type,
+            brace,
+            statements,
+        })
+    }
 }
