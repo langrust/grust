@@ -12,8 +12,8 @@ pub use proc_macro::TokenStream;
 
 pub mod ast;
 pub mod common;
-pub mod error;
 pub mod conf;
+pub mod error;
 
 /// Compiles input GRust tokens into output Rust tokens.
 pub fn handle_tokens(_tokens: TokenStream) -> TokenStream {

@@ -4,10 +4,10 @@
 use compiler::{handle_tokens, TokenStream};
 
 /// The GRust compiler as an integrated Rust macro.
-/// 
+///
 /// Calls the GRust compiler and performs analysis that guarantee
 /// the correct execution of the program.
-/// 
+///
 /// The generated structures and functions are accessible immediately
 /// in the Rust program, which eases the interface with other programs.
 #[proc_macro]
