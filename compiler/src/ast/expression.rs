@@ -569,6 +569,7 @@ pub enum Expression {
 
 impl Parse for Expression {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        // TODO: add 'if then else', unop and binop !
         if TypedAbstraction::<Expression>::peek(input) {
             Ok(Expression::TypedAbstraction(input.parse()?))
         } else if Sort::<Expression>::peek(input) {
