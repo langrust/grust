@@ -83,7 +83,7 @@ impl Parse for Typedef {
                     size,
                 })
             } else {
-                Err(input.error("expected array alias defition"))
+                Err(input.error("expected array alias definition"))
             }
         } else {
             Err(input.error("expected type definition"))
