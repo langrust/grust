@@ -4,7 +4,6 @@ use syn::{token, Token};
 use crate::ast::{expression::Expression, statement::Statement};
 use crate::common::r#type::Type;
 
-#[derive(Debug, PartialEq)]
 /// GRust function AST.
 pub struct Function {
     /// Function identifier.
