@@ -30,3 +30,9 @@ syn::custom_keyword!(zip);
 syn::custom_keyword!(int);
 syn::custom_keyword!(float);
 syn::custom_keyword!(bool);
+
+// Operators and constructs.
+syn::custom_keyword!(some);
+syn::custom_keyword!(none);
+syn::custom_keyword!(sort);
+syn::custom_keyword!(fold);

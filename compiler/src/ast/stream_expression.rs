@@ -1,6 +1,6 @@
 use crate::ast::expression::{
     Application, Array, Enumeration, FieldAccess, Fold, Map, Match, Sort, Structure, Tuple,
-    TupleElementAccess, TypedAbstraction, When, Zip,
+    TupleElementAccess, TypedAbstraction, Zip,
 };
 use crate::common::constant::Constant;
 
@@ -34,8 +34,6 @@ pub enum StreamExpression {
     Array(Array<StreamExpression>),
     /// Pattern matching expression.
     Match(Match<StreamExpression>),
-    /// When present expression.
-    When(When<StreamExpression>),
     /// Field access expression.
     FieldAccess(FieldAccess<StreamExpression>),
     /// Tuple element access expression.
