@@ -1,18 +1,18 @@
 use syn::{parenthesized, parse::Parse, punctuated::Punctuated, token, Token};
 
-use super::keyword;
+use super::{ident_colon::IdentColon, keyword};
 use crate::common::r#type::Type;
 
 /// GReact `sample` operator.
-#[derive(Debug, PartialEq, Clone)]
+
 pub struct Sample {
-    sample_token: keyword::sample,
-    paren_token: token::Paren,
+    pub sample_token: keyword::sample,
+    pub paren_token: token::Paren,
     /// Input expression.
-    flow_expression: Box<FlowExpression>,
-    comma_token: Token![,],
+    pub flow_expression: Box<FlowExpression>,
+    pub comma_token: Token![,],
     /// Sampling period in milliseconds.
-    period_ms: syn::LitInt,
+    pub period_ms: syn::LitInt,
 }
 impl Sample {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -42,15 +42,15 @@ impl Parse for Sample {
 }
 
 /// GReact `map` operator.
-#[derive(Debug, PartialEq, Clone)]
+
 pub struct Map {
-    map_token: keyword::map,
-    paren_token: token::Paren,
+    pub map_token: keyword::map,
+    pub paren_token: token::Paren,
     /// Input expression.
-    flow_expression: Box<FlowExpression>,
-    comma_token: Token![,],
+    pub flow_expression: Box<FlowExpression>,
+    pub comma_token: Token![,],
     /// Function to apply on each element of the flow.
-    function: syn::Expr,
+    pub function: syn::Expr,
 }
 impl Map {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -80,15 +80,15 @@ impl Parse for Map {
 }
 
 /// GReact `merge` operator.
-#[derive(Debug, PartialEq, Clone)]
+
 pub struct Merge {
-    merge_token: keyword::merge,
-    paren_token: token::Paren,
+    pub merge_token: keyword::merge,
+    pub paren_token: token::Paren,
     /// Input expression 1.
-    flow_expression_1: Box<FlowExpression>,
-    comma_token: Token![,],
+    pub flow_expression_1: Box<FlowExpression>,
+    pub comma_token: Token![,],
     /// Input expression 2.
-    flow_expression_2: Box<FlowExpression>,
+    pub flow_expression_2: Box<FlowExpression>,
 }
 impl Merge {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -118,15 +118,15 @@ impl Parse for Merge {
 }
 
 /// GReact `zip` operator.
-#[derive(Debug, PartialEq, Clone)]
+
 pub struct Zip {
-    zip_token: keyword::zip,
-    paren_token: token::Paren,
+    pub zip_token: keyword::zip,
+    pub paren_token: token::Paren,
     /// Input expression 1.
-    flow_expression_1: Box<FlowExpression>,
-    comma_token: Token![,],
+    pub flow_expression_1: Box<FlowExpression>,
+    pub comma_token: Token![,],
     /// Input expression 2.
-    flow_expression_2: Box<FlowExpression>,
+    pub flow_expression_2: Box<FlowExpression>,
 }
 impl Zip {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -156,15 +156,15 @@ impl Parse for Zip {
 }
 
 /// Component call.
-#[derive(Debug, PartialEq, Clone)]
+
 pub struct ComponentCall {
     /// Identifier to the component to call.
-    ident_component: syn::Path,
-    paren_token: token::Paren,
+    pub ident_component: syn::Path,
+    pub paren_token: token::Paren,
     /// Input expressions.
-    inputs: Punctuated<FlowExpression, Token![,]>,
+    pub inputs: Punctuated<FlowExpression, Token![,]>,
     /// Identifier to the component output signal to call.
-    ident_signal: Option<(Token![.], syn::Ident)>,
+    pub ident_signal: Option<(Token![.], syn::Ident)>,
 }
 impl Parse for ComponentCall {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
@@ -189,7 +189,7 @@ impl Parse for ComponentCall {
 }
 
 /// Flow expression kinds.
-#[derive(Debug, PartialEq, Clone)]
+
 pub enum FlowExpression {
     /// GReact `tiemout` operator.
     Sample(Sample),
@@ -222,7 +222,6 @@ impl Parse for FlowExpression {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
 pub enum FlowKind {
     Signal(keyword::signal),
     Event(keyword::event),
@@ -232,22 +231,54 @@ impl FlowKind {
         input.peek(keyword::signal) || input.peek(keyword::event)
     }
 }
+impl Parse for FlowKind {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.peek(keyword::signal) {
+            Ok(FlowKind::Signal(input.parse()?))
+        } else if input.peek(keyword::event) {
+            Ok(FlowKind::Event(input.parse()?))
+        } else {
+            Err(input.error("expected 'signal' or 'event'"))
+        }
+    }
+}
 
-#[derive(Debug, PartialEq, Clone)]
 /// Flow statement AST.
 pub struct FlowDeclaration {
     pub let_token: Token![let],
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: (syn::Ident, Token![:], Type),
+    pub typed_ident: IdentColon<Type>,
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: FlowExpression,
     pub semi_token: Token![;],
 }
+impl FlowDeclaration {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![let])
+    }
+}
+impl Parse for FlowDeclaration {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let let_token: Token![let] = input.parse()?;
+        let kind: FlowKind = input.parse()?;
+        let typed_ident: IdentColon<Type> = input.parse()?;
+        let eq_token: Token![=] = input.parse()?;
+        let flow_expression: FlowExpression = input.parse()?;
+        let semi_token: Token![;] = input.parse()?;
+        Ok(FlowDeclaration {
+            let_token,
+            kind,
+            typed_ident,
+            eq_token,
+            flow_expression,
+            semi_token,
+        })
+    }
+}
 
-#[derive(Debug, PartialEq, Clone)]
 /// Flow statement AST.
 pub struct FlowInstanciation {
     /// Identifier of the flow.
@@ -257,33 +288,106 @@ pub struct FlowInstanciation {
     pub flow_expression: FlowExpression,
     pub semi_token: Token![;],
 }
+impl FlowInstanciation {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        let forked = input.fork();
+        if forked.call(syn::Ident::parse).is_err() {
+            return false;
+        }
+        forked.peek(Token![=])
+    }
+}
+impl Parse for FlowInstanciation {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ident: syn::Ident = input.parse()?;
+        let eq_token: Token![=] = input.parse()?;
+        let flow_expression: FlowExpression = input.parse()?;
+        let semi_token: Token![;] = input.parse()?;
+        Ok(FlowInstanciation {
+            ident,
+            eq_token,
+            flow_expression,
+            semi_token,
+        })
+    }
+}
 
-#[derive(Debug, PartialEq, Clone)]
 /// Flow statement AST.
 pub struct FlowImport {
     pub import_token: keyword::import,
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: (syn::Ident, Token![:], Type),
+    pub typed_ident: IdentColon<Type>,
     pub semi_token: Token![;],
 }
+impl FlowImport {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::import)
+    }
+}
+impl Parse for FlowImport {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let import_token: keyword::import = input.parse()?;
+        let kind: FlowKind = input.parse()?;
+        let typed_ident: IdentColon<Type> = input.parse()?;
+        let semi_token: Token![;] = input.parse()?;
+        Ok(FlowImport {
+            import_token,
+            kind,
+            typed_ident,
+            semi_token,
+        })
+    }
+}
 
-#[derive(Debug, PartialEq, Clone)]
 /// Flow statement AST.
 pub struct FlowExport {
     pub export_token: keyword::export,
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: (syn::Ident, Token![:], Type),
+    pub typed_ident: IdentColon<Type>,
     pub semi_token: Token![;],
 }
+impl FlowExport {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::export)
+    }
+}
+impl Parse for FlowExport {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let export_token: keyword::export = input.parse()?;
+        let kind: FlowKind = input.parse()?;
+        let typed_ident: IdentColon<Type> = input.parse()?;
+        let semi_token: Token![;] = input.parse()?;
+        Ok(FlowExport {
+            export_token,
+            kind,
+            typed_ident,
+            semi_token,
+        })
+    }
+}
 
-#[derive(Debug, PartialEq, Clone)]
 pub enum FlowStatement {
     Declaration(FlowDeclaration),
     Instanciation(FlowInstanciation),
     Import(FlowImport),
     Export(FlowExport),
+}
+impl Parse for FlowStatement {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if FlowDeclaration::peek(input) {
+            Ok(FlowStatement::Declaration(input.parse()?))
+        } else if FlowInstanciation::peek(input) {
+            Ok(FlowStatement::Instanciation(input.parse()?))
+        } else if FlowImport::peek(input) {
+            Ok(FlowStatement::Import(input.parse()?))
+        } else if FlowExport::peek(input) {
+            Ok(FlowStatement::Export(input.parse()?))
+        } else {
+            Err(input.error("expected flow declaration, instanciation, import or export"))
+        }
+    }
 }
