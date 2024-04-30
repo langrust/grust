@@ -31,13 +31,16 @@ pub enum Item {
 }
 impl Parse for Item {
     fn parse(input: ParseStream) -> Result<Self> {
-        /* if Component::peek_component(input) {
-            Ok(Self::Component(input.parse()?))
-        } else */
-        if let Ok(item) = input.parse() {
-            Ok(Self::Rust(item))
+        if Component::peek(input) {
+            Ok(Item::Component(input.parse()?))
+        } else if Function::peek(input) {
+            Ok(Item::Function(input.parse()?))
+        } else if Typedef::peek(input) {
+            Ok(Item::Typedef(input.parse()?))
+        } else if FlowStatement::peek(input) {
+            Ok(Item::FlowStatement(input.parse()?))
         } else {
-            Err(input.error("expected component or Rust item"))
+            Ok(Item::Rust(input.parse()?))
         }
     }
 }
@@ -50,14 +53,14 @@ pub struct Ast {
 impl Parse for Ast {
     fn parse(input: ParseStream) -> Result<Self> {
         let _: config::Config = input.parse()?;
-        let mut items = Vec::with_capacity(100);
-        'parse_items: loop {
-            if input.is_empty() {
-                break 'parse_items;
+        let items: Vec<Item> = {
+            let mut items = Vec::with_capacity(100);
+            while !input.is_empty() {
+                items.push(input.parse()?);
             }
-            items.push(input.parse()?);
-        }
-        items.shrink_to_fit();
+            items.shrink_to_fit();
+            items
+        };
         Ok(Self { items })
     }
 }

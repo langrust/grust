@@ -9,7 +9,7 @@ use crate::common::r#type::Type;
 
 /// GRust component AST.
 pub struct Component {
-    pub node_token: keyword::component,
+    pub component_token: keyword::component,
     /// Component identifier.
     pub ident: syn::Ident,
     pub args_paren: token::Paren,
@@ -27,9 +27,14 @@ pub struct Component {
     /// Component's equations.
     pub equations: Vec<Equation>,
 }
+impl Component {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::component)
+    }
+}
 impl Parse for Component {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let node_token: keyword::component = input.parse()?;
+        let component_token: keyword::component = input.parse()?;
         let ident: syn::Ident = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
@@ -56,7 +61,7 @@ impl Parse for Component {
             equations
         };
         Ok(Component {
-            node_token,
+            component_token,
             ident,
             args_paren,
             args,

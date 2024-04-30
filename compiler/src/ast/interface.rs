@@ -376,6 +376,14 @@ pub enum FlowStatement {
     Import(FlowImport),
     Export(FlowExport),
 }
+impl FlowStatement {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        FlowDeclaration::peek(input)
+            || FlowInstanciation::peek(input)
+            || FlowImport::peek(input)
+            || FlowExport::peek(input)
+    }
+}
 impl Parse for FlowStatement {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if FlowDeclaration::peek(input) {
