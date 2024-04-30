@@ -37,6 +37,11 @@ pub enum Typedef {
         size: syn::LitInt,
     },
 }
+impl Typedef {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![struct]) || input.peek(Token![enum]) || input.peek(keyword::array)
+    }
+}
 impl Parse for Typedef {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(Token![struct]) {
