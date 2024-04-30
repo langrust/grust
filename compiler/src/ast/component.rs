@@ -5,7 +5,6 @@ use super::keyword;
 use crate::ast::{contract::Contract, equation::Equation};
 use crate::common::r#type::Type;
 
-#[derive(Debug, PartialEq, Clone)]
 /// GRust component AST.
 pub struct Component {
     pub node_token: keyword::component,
