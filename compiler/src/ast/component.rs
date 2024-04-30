@@ -1,6 +1,8 @@
+use syn::parse::Parse;
 use syn::punctuated::Punctuated;
-use syn::{token, LitInt, Token};
+use syn::{braced, parenthesized, token, LitInt, Token};
 
+use super::ident_colon::IdentColon;
 use super::keyword;
 use crate::ast::{contract::Contract, equation::Equation};
 use crate::common::r#type::Type;
@@ -12,11 +14,11 @@ pub struct Component {
     pub ident: syn::Ident,
     pub args_paren: token::Paren,
     /// Component's inputs identifiers and their types.
-    pub args: Punctuated<(syn::Ident, Token![:], Type), Token![,]>,
+    pub args: Punctuated<IdentColon<Type>, Token![,]>,
     pub arrow_token: Token![->],
     pub outs_paren: token::Paren,
     /// Component's outputs identifiers and their types.
-    pub outs: Punctuated<(syn::Ident, Token![:], Type), Token![,]>,
+    pub outs: Punctuated<IdentColon<Type>, Token![,]>,
     /// Component's computation period.
     pub period: Option<(Token![@], LitInt, keyword::ms)>,
     /// Component's contract.
@@ -24,4 +26,47 @@ pub struct Component {
     pub brace: token::Brace,
     /// Component's equations.
     pub equations: Vec<Equation>,
+}
+impl Parse for Component {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let node_token: keyword::component = input.parse()?;
+        let ident: syn::Ident = input.parse()?;
+        let content;
+        let args_paren: token::Paren = parenthesized!(content in input);
+        let args: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let arrow_token: Token![->] = input.parse()?;
+        let content;
+        let outs_paren: token::Paren = parenthesized!(content in input);
+        let outs: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let period: Option<(Token![@], LitInt, keyword::ms)> = {
+            if input.peek(Token![@]) {
+                Some((input.parse()?, input.parse()?, input.parse()?))
+            } else {
+                None
+            }
+        };
+        let contract: Contract = input.parse()?;
+        let content;
+        let brace: token::Brace = braced!(content in input);
+        let equations: Vec<Equation> = {
+            let mut equations = vec![];
+            while !content.is_empty() {
+                equations.push(input.parse()?)
+            }
+            equations
+        };
+        Ok(Component {
+            node_token,
+            ident,
+            args_paren,
+            args,
+            arrow_token,
+            outs_paren,
+            outs,
+            period,
+            contract,
+            brace,
+            equations,
+        })
+    }
 }
