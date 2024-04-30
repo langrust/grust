@@ -8,6 +8,7 @@
 
 extern crate proc_macro;
 
+use ast::Ast;
 pub use proc_macro::TokenStream;
 
 pub mod ast;
@@ -16,12 +17,17 @@ pub mod conf;
 pub mod error;
 
 /// Compiles input GRust tokens into output Rust tokens.
-pub fn handle_tokens(_tokens: TokenStream) -> TokenStream {
-    todo!()
+pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
+    let ast = syn::parse_macro_input!(tokens as Ast);
+    let tokens = todo!();
+    if let Some(path) = conf::dump_code() {
+        dump_code(&path, &tokens);
+    }
+    TokenStream::from(tokens)
 }
 
 /// Writes the generated code at the given filepath.
-pub fn dump_ast(path_name: &str, tokens: &proc_macro2::TokenStream) {
+pub fn dump_code(path_name: &str, tokens: &proc_macro2::TokenStream) {
     use std::{fs::OpenOptions, io::Write, path::Path, process::Command};
     let path = Path::new(path_name);
 
