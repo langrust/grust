@@ -21,7 +21,7 @@ syn::custom_keyword!(import);
 syn::custom_keyword!(export);
 
 // Greact operators keywords.
-syn::custom_keyword!(timeout);
+syn::custom_keyword!(sample);
 syn::custom_keyword!(map);
 syn::custom_keyword!(merge);
 syn::custom_keyword!(zip);
