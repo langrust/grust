@@ -825,7 +825,7 @@ impl SymbolTable {
             _ => unreachable!(),
         }
     }
-    
+
     /// Get node period from identifier.
     pub fn get_node_period(&self, id: usize) -> Option<usize> {
         let symbol = self

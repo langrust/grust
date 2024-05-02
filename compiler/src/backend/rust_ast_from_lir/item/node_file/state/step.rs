@@ -1,5 +1,5 @@
 use crate::backend::rust_ast_from_lir::expression::{
-    binary_to_syn, constant_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn
+    binary_to_syn, constant_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
 };
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;

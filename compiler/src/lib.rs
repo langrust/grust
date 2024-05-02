@@ -52,7 +52,7 @@ pub fn rust_from_ast(ast: Ast) -> RustASTProject {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
-    let mut hir: File = todo!();//ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    let mut hir: File = todo!(); //ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
     hir.typing(&mut symbol_table, &mut errors).unwrap();
     hir.generate_dependency_graphs(&symbol_table, &mut errors)
         .unwrap();

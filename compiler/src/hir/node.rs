@@ -1,10 +1,7 @@
 use petgraph::graphmap::DiGraphMap;
 use std::collections::HashMap;
 
-use crate::common::{
-    label::Label,
-    location::Location,
-};
+use crate::common::{label::Label, location::Location};
 use crate::hir::{
     contract::Contract, statement::Statement, stream_expression::StreamExpression,
     unitary_node::UnitaryNode,
