@@ -10,9 +10,7 @@ extern crate proc_macro;
 
 use ast::Ast;
 use backend::rust_ast_from_lir::project::{rust_ast_from_lir, RustASTProject};
-use codespan_reporting::files::SimpleFiles;
-use error::Error;
-use frontend::{lir_from_hir::LIRFromHIR, typing_analysis::TypeAnalysis};
+use frontend::{hir_from_ast::HIRFromAST, lir_from_hir::LIRFromHIR, typing_analysis::TypeAnalysis};
 use hir::file::File;
 use lir::project::Project;
 pub use proc_macro::TokenStream;
@@ -52,7 +50,7 @@ pub fn rust_from_ast(ast: Ast) -> RustASTProject {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
-    let mut hir: File = todo!(); //ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    let mut hir: File = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
     hir.typing(&mut symbol_table, &mut errors).unwrap();
     hir.generate_dependency_graphs(&symbol_table, &mut errors)
         .unwrap();
