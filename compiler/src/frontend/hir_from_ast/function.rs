@@ -43,10 +43,7 @@ impl HIRFromAST for Function {
                     declarations.push(declaration.hir_from_ast(symbol_table, errors));
                     (declarations, option_returned)
                 }
-                Statement::Return(ReturnInstruction {
-                    return_token,
-                    expression,
-                }) => {
+                Statement::Return(ReturnInstruction { expression, .. }) => {
                     assert!(option_returned.is_none());
                     (
                         declarations,
@@ -83,8 +80,8 @@ impl Function {
             .map(
                 |IdentColon {
                      ident,
-                     colon,
                      elem: typing,
+                     ..
                  }| {
                     let name = ident.to_string();
                     let typing = typing

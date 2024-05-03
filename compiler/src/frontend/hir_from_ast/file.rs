@@ -37,8 +37,15 @@ impl HIRFromAST for Ast {
                     typedefs.push(typedef.hir_from_ast(symbol_table, errors));
                     (typedefs, functions, nodes, interface)
                 }
-                crate::ast::Item::FlowStatement(_) => todo!(),
-                crate::ast::Item::Rust(_) => todo!(),
+                crate::ast::Item::FlowStatement(flow_statement) => {
+                    if let Some(statement) = flow_statement
+                        .hir_from_ast(symbol_table, errors)
+                        .transpose()
+                    {
+                        interface.push(statement);
+                    }
+                    (typedefs, functions, nodes, interface)
+                }
             },
         );
 
@@ -65,8 +72,7 @@ impl Ast {
                 crate::ast::Item::Component(component) => component.store(symbol_table, errors),
                 crate::ast::Item::Function(function) => function.store(symbol_table, errors),
                 crate::ast::Item::Typedef(typedef) => typedef.store(symbol_table, errors),
-                crate::ast::Item::FlowStatement(_) => todo!(),
-                crate::ast::Item::Rust(_) => Ok(()),
+                crate::ast::Item::FlowStatement(_) => Ok(()),
             })
             .collect::<Vec<Result<_, _>>>()
             .into_iter()

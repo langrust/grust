@@ -160,7 +160,7 @@ impl HIRFromAST for StreamExpression {
                 }
             }
             StreamExpression::Application(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::TypedAbstraction(expression) => StreamExpressionKind::Expression {
                 expression: expression.hir_from_ast(&location, symbol_table, errors)?,
@@ -169,7 +169,7 @@ impl HIRFromAST for StreamExpression {
                 expression: expression.hir_from_ast(&location, symbol_table, errors)?,
             },
             StreamExpression::Tuple(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::Enumeration(expression) => StreamExpressionKind::Expression {
                 expression: expression.hir_from_ast::<StreamExpression>(
@@ -179,25 +179,25 @@ impl HIRFromAST for StreamExpression {
                 )?,
             },
             StreamExpression::Array(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::Match(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::TupleElementAccess(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::Map(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::Fold(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::Sort(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::Zip(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(symbol_table, errors)?,
             },
         };
         Ok(HIRStreamExpression {

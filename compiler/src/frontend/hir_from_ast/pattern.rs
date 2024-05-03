@@ -98,8 +98,6 @@ impl Tuple {
         errors: &mut Vec<Error>,
     ) -> Result<PatternKind, TerminationError> {
         let Tuple { elements } = self;
-        let location = Location::default();
-
         Ok(PatternKind::Tuple {
             elements: elements
                 .into_iter()
@@ -118,8 +116,6 @@ impl Some {
         errors: &mut Vec<Error>,
     ) -> Result<PatternKind, TerminationError> {
         let Some { pattern } = self;
-        let location = Location::default();
-
         Ok(PatternKind::Some {
             pattern: Box::new(pattern.hir_from_ast(symbol_table, errors)?),
         })

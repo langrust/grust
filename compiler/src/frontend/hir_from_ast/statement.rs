@@ -19,16 +19,14 @@ impl HIRFromAST for LetDeclaration<Expression> {
         errors: &mut Vec<Error>,
     ) -> Result<Self::HIR, TerminationError> {
         let LetDeclaration {
-            let_token,
             typed_ident:
                 IdentColon {
                     ident,
-                    colon,
                     elem: element_type,
+                    ..
                 },
-            eq_token,
             expression,
-            semi_token,
+            ..
         } = self;
         let location = Location::default();
         let element_name = ident.to_string();

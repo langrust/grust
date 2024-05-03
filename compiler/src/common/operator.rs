@@ -334,20 +334,6 @@ impl UnaryOperator {
         }
     }
 
-    fn brackets(mut input_types: Vec<Type>, location: Location) -> Result<Type, Error> {
-        if input_types.len() == 1 {
-            let type_1 = input_types.pop().unwrap();
-            Ok(Type::Abstract(vec![type_1.clone()], Box::new(type_1)))
-        } else {
-            let error = Error::IncompatibleInputsNumber {
-                given_inputs_number: input_types.len(),
-                expected_inputs_number: 2,
-                location,
-            };
-            Err(error)
-        }
-    }
-
     /// Get the [Type] of a unary operator.
     ///
     /// # Example

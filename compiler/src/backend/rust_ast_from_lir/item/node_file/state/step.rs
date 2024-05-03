@@ -27,7 +27,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
         }
         Term::Constant { constant } => {
             let expr = constant_to_syn(constant);
-            quote!(expr)
+            quote!(#expr)
         }
         Term::Identifier { name, scope } => {
             let id = Ident::new(&name, Span::call_site());
