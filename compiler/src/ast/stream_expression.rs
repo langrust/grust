@@ -13,9 +13,9 @@ use crate::common::constant::Constant;
 #[derive(Debug, PartialEq, Clone)]
 pub struct FollowedBy {
     /// The initialization constant.
-    constant: Box<StreamExpression>,
+    pub constant: Box<StreamExpression>,
     /// The buffered expression.
-    expression: Box<StreamExpression>,
+    pub expression: Box<StreamExpression>,
 }
 impl FollowedBy {
     pub fn peek(input: syn::parse::ParseStream) -> bool {

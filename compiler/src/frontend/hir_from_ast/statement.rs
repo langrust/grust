@@ -1,11 +1,14 @@
-use crate::ast::statement::Statement;
+use crate::ast::expression::Expression;
+use crate::ast::ident_colon::IdentColon;
+use crate::ast::statement::LetDeclaration;
+use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 use crate::hir::{expression::Expression as HIRExpression, statement::Statement as HIRStatement};
 use crate::symbol_table::SymbolTable;
 
 use super::HIRFromAST;
 
-impl HIRFromAST for Statement {
+impl HIRFromAST for LetDeclaration<Expression> {
     type HIR = HIRStatement<HIRExpression>;
 
     // precondition: NOTHING is in symbol table
@@ -15,16 +18,29 @@ impl HIRFromAST for Statement {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<Self::HIR, TerminationError> {
-        let Statement {
-            id,
-            element_type,
+        let LetDeclaration {
+            let_token,
+            typed_ident:
+                IdentColon {
+                    ident,
+                    colon,
+                    elem: element_type,
+                },
+            eq_token,
             expression,
-            location,
+            semi_token,
         } = self;
+        let location = Location::default();
+        let element_name = ident.to_string();
 
         let typing = element_type.hir_from_ast(&location, symbol_table, errors)?;
-        let id =
-            symbol_table.insert_identifier(id, Some(typing), true, location.clone(), errors)?;
+        let id = symbol_table.insert_identifier(
+            element_name,
+            Some(typing),
+            true,
+            location.clone(),
+            errors,
+        )?;
 
         Ok(HIRStatement {
             id,

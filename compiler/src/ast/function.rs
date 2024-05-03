@@ -17,7 +17,7 @@ pub struct Function {
     /// Component's inputs identifiers and their types.
     pub args: Punctuated<IdentColon<Type>, Token![,]>,
     pub arrow_token: Token![->],
-    pub output_type: IdentColon<Type>,
+    pub output_type: Type,
     pub brace: token::Brace,
     /// Function's statements.
     pub statements: Vec<Statement>,
@@ -35,7 +35,7 @@ impl Parse for Function {
         let args_paren: token::Paren = parenthesized!(content in input);
         let args: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
-        let output_type: IdentColon<Type> = input.parse()?;
+        let output_type: Type = input.parse()?;
         let content;
         let brace: token::Brace = braced!(content in input);
         let statements: Vec<Statement> = {

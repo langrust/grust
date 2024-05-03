@@ -1,5 +1,10 @@
 use syn::{braced, parse::Parse, token, Token};
 
+use crate::common::{
+    constant::Constant,
+    operator::{BinaryOperator, UnaryOperator},
+};
+
 use super::keyword;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -28,17 +33,68 @@ impl Parse for Implication {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+/// Unary term.
+pub struct Unary {
+    pub op: UnaryOperator,
+    pub term: Box<Term>,
+}
+impl Unary {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        UnaryOperator::peek(input)
+    }
+}
+impl Parse for Unary {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let op: UnaryOperator = input.parse()?;
+        let term: Box<Term> = Box::new(input.parse()?);
+        Ok(Unary { op, term })
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// Binary term.
+pub struct Binary {
+    pub left: Box<Term>,
+    pub op: BinaryOperator,
+    pub right: Box<Term>,
+}
+impl Binary {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        let forked = input.fork();
+        if forked.call(Term::parse).is_err() {
+            return false;
+        }
+        BinaryOperator::peek(&forked)
+    }
+}
+impl Parse for Binary {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let left: Box<Term> = Box::new(input.parse()?);
+        let op: BinaryOperator = input.parse()?;
+        let right: Box<Term> = Box::new(input.parse()?);
+        Ok(Binary { left, op, right })
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 /// GRust clause's term.
 pub enum Term {
     Implication(Implication),
-    Expression(syn::Expr),
+    Unary(Unary),
+    Binary(Binary),
+    Constant(Constant),
+    Identifier(syn::Ident),
 }
 impl Parse for Term {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if Implication::peek(input) {
             Ok(Term::Implication(input.parse()?))
+        } else if Unary::peek(input) {
+            Ok(Term::Unary(input.parse()?))
+        } else if Binary::peek(input) {
+            Ok(Term::Binary(input.parse()?))
         } else {
-            Ok(Term::Expression(input.parse()?))
+            Ok(Term::Constant(input.parse()?))
         }
     }
 }

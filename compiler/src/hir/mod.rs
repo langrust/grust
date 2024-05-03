@@ -41,4 +41,4 @@ pub mod once_cell;
 pub mod contract;
 
 /// HIR [Interface](crate::hir::interface::Interface) module.
-pub mod interface;
+pub mod flow_expression;

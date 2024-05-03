@@ -40,7 +40,10 @@ impl TypeAnalysis for File {
 
         // typing interface
         interface
-            .as_mut()
-            .map_or(Ok(()), |interface| interface.typing(symbol_table, errors))
+            .iter_mut()
+            .map(|statement| statement.typing(symbol_table, errors))
+            .collect::<Vec<Result<(), TerminationError>>>()
+            .into_iter()
+            .collect::<Result<(), TerminationError>>()
     }
 }

@@ -31,11 +31,10 @@ pub fn binary_to_syn(op: BinaryOperator) -> syn::BinOp {
 }
 
 /// Transforms unary operator into syn's unary operator.
-pub fn unary_to_syn(op: UnaryOperator) -> Option<syn::UnOp> {
+pub fn unary_to_syn(op: UnaryOperator) -> syn::UnOp {
     match op {
-        UnaryOperator::Neg => Some(UnOp::Neg(Default::default())),
-        UnaryOperator::Not => Some(UnOp::Not(Default::default())),
-        UnaryOperator::Brackets => None,
+        UnaryOperator::Neg => UnOp::Neg(Default::default()),
+        UnaryOperator::Not => UnOp::Not(Default::default()),
     }
 }
 
@@ -127,15 +126,12 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 {
                     let op = unary_to_syn(unary);
                     let expr = rust_ast_from_lir(arguments.remove(0), crates);
-                    if let Some(op) = op {
-                        Expr::Unary(parse_quote! { #op #expr})
-                    } else {
-                        Expr::Paren(ExprParen {
-                            attrs: vec![],
-                            paren_token: Default::default(),
-                            expr: Box::new(expr),
-                        })
-                    }
+                    // Expr::Paren(ExprParen {
+                    //     attrs: vec![],
+                    //     paren_token: Default::default(),
+                    //     expr: Box::new(expr),
+                    // })
+                    Expr::Unary(parse_quote! { #op #expr})
                 } else {
                     let function = rust_ast_from_lir(*function, crates);
                     let arguments = arguments

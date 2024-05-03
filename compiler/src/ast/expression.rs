@@ -11,9 +11,9 @@ use super::keyword;
 #[derive(Debug, PartialEq, Clone)]
 pub struct Application<E> {
     /// The expression applied.
-    function_expression: Box<E>,
+    pub function_expression: Box<E>,
     /// The inputs to the expression.
-    inputs: Vec<E>,
+    pub inputs: Vec<E>,
 }
 impl<E> Application<E>
 where
@@ -47,9 +47,9 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypedAbstraction<E> {
     /// The inputs to the abstraction.
-    inputs: Vec<(String, Type)>,
+    pub inputs: Vec<(String, Type)>,
     /// The expression abstracted.
-    expression: Box<E>,
+    pub expression: Box<E>,
 }
 impl<E> TypedAbstraction<E>
 where
@@ -95,9 +95,9 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Structure<E> {
     /// The structure name.
-    name: String,
+    pub name: String,
     /// The fields associated with their expressions.
-    fields: Vec<(String, E)>,
+    pub fields: Vec<(String, E)>,
 }
 impl<E> Structure<E>
 where
@@ -134,7 +134,7 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tuple<E> {
     /// The elements.
-    elements: Vec<E>,
+    pub elements: Vec<E>,
 }
 impl<E> Tuple<E>
 where
@@ -163,9 +163,9 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Enumeration {
     /// The enumeration name.
-    enum_name: String,
+    pub enum_name: String,
     /// The enumeration element.
-    elem_name: String,
+    pub elem_name: String,
 }
 impl Enumeration {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -192,7 +192,7 @@ impl Parse for Enumeration {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Array<E> {
     /// The elements inside the array.
-    elements: Vec<E>,
+    pub elements: Vec<E>,
 }
 impl<E> Array<E>
 where
@@ -221,11 +221,11 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Arm<E> {
     /// The pattern to match.
-    pattern: Pattern,
+    pub pattern: Pattern,
     /// The optional guard.
-    guard: Option<E>,
+    pub guard: Option<E>,
     /// The expression.
-    expression: E,
+    pub expression: E,
 }
 impl<E> Parse for Arm<E>
 where
@@ -256,9 +256,9 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Match<E> {
     /// The expression to match.
-    expression: Box<E>,
+    pub expression: Box<E>,
     /// The different matching cases.
-    arms: Vec<Arm<E>>,
+    pub arms: Vec<Arm<E>>,
 }
 impl<E> Match<E>
 where
@@ -290,9 +290,9 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct FieldAccess<E> {
     /// The structure expression.
-    expression: Box<E>,
+    pub expression: Box<E>,
     /// The field to access.
-    field: String,
+    pub field: String,
 }
 impl<E> FieldAccess<E>
 where
@@ -328,9 +328,9 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct TupleElementAccess<E> {
     /// The tuple expression.
-    expression: Box<E>,
+    pub expression: Box<E>,
     /// The element to access.
-    element_number: usize,
+    pub element_number: usize,
 }
 impl<E> TupleElementAccess<E>
 where
@@ -366,9 +366,9 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Map<E> {
     /// The array expression.
-    expression: Box<E>,
+    pub expression: Box<E>,
     /// The function expression.
-    function_expression: Box<E>,
+    pub function_expression: Box<E>,
 }
 impl<E> Map<E>
 where
@@ -411,11 +411,11 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Fold<E> {
     /// The array expression.
-    expression: Box<E>,
+    pub expression: Box<E>,
     /// The initialization expression.
-    initialization_expression: Box<E>,
+    pub initialization_expression: Box<E>,
     /// The function expression.
-    function_expression: Box<E>,
+    pub function_expression: Box<E>,
 }
 impl<E> Fold<E>
 where
@@ -461,9 +461,9 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Sort<E> {
     /// The array expression.
-    expression: Box<E>,
+    pub expression: Box<E>,
     /// The function expression.
-    function_expression: Box<E>,
+    pub function_expression: Box<E>,
 }
 impl<E> Sort<E>
 where
@@ -506,7 +506,7 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Zip<E> {
     /// The array expressions.
-    arrays: Vec<E>,
+    pub arrays: Vec<E>,
 }
 impl<E> Zip<E>
 where

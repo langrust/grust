@@ -1,11 +1,8 @@
 use syn::parse::Parse;
 use syn::Token;
 
-use crate::ast::expression::Expression;
+use crate::ast::{expression::Expression, ident_colon::IdentColon};
 use crate::common::r#type::Type;
-
-use super::ident_colon::IdentColon;
-use super::stream_expression::StreamExpression;
 
 /// GRust declaration AST.
 pub struct LetDeclaration<E> {
@@ -16,6 +13,11 @@ pub struct LetDeclaration<E> {
     /// The stream expression defining the signal.
     pub expression: E,
     pub semi_token: Token![;],
+}
+impl<E> LetDeclaration<E> {
+    pub fn get_ident(&self) -> &syn::Ident {
+        &self.typed_ident.ident
+    }
 }
 impl<E> Parse for LetDeclaration<E>
 where
@@ -59,7 +61,7 @@ impl Parse for ReturnInstruction {
 /// GRust statement AST.
 pub enum Statement {
     /// GRust declaration AST.
-    Declaration(LetDeclaration<StreamExpression>),
+    Declaration(LetDeclaration<Expression>),
     /// GRust return statement AST.
     Return(ReturnInstruction),
 }
