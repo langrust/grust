@@ -8,9 +8,9 @@ use super::{ident_colon::IdentColon, keyword};
 #[derive(Debug, PartialEq, Clone)]
 pub struct Structure {
     /// The structure name.
-    name: String,
+    pub name: String,
     /// The structure fields with the corresponding patterns to match.
-    fields: Vec<(String, Pattern)>,
+    pub fields: Vec<(String, Pattern)>,
 }
 impl Structure {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -42,9 +42,9 @@ impl Parse for Structure {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Enumeration {
     /// The enumeration type name.
-    enum_name: String,
+    pub enum_name: String,
     /// The element name.
-    elem_name: String,
+    pub elem_name: String,
 }
 impl Enumeration {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -71,7 +71,7 @@ impl Parse for Enumeration {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tuple {
     /// The elements of the tuple.
-    elements: Vec<Pattern>,
+    pub elements: Vec<Pattern>,
 }
 impl Tuple {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -94,7 +94,7 @@ impl Parse for Tuple {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Some {
     /// The pattern matching the value.
-    pattern: Box<Pattern>,
+    pub pattern: Box<Pattern>,
 }
 impl Some {
     pub fn peek(input: syn::parse::ParseStream) -> bool {

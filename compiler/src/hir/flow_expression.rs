@@ -1,16 +1,4 @@
-use crate::{
-    common::{location::Location, r#type::Type},
-    hir::statement::Statement,
-};
-
-#[derive(Debug, PartialEq, Clone)]
-/// LanGRust interface HIR.
-pub struct Interface {
-    /// Interface identifier.
-    pub id: usize,
-    /// Interface's flow statements.
-    pub flow_statements: Vec<Statement<FlowExpression>>,
-}
+use crate::common::{location::Location, r#type::Type};
 
 #[derive(Debug, PartialEq, Clone)]
 /// Flow expression kinds.
@@ -20,12 +8,12 @@ pub enum FlowExpressionKind {
         /// The identifier of the flow to call.
         id: usize,
     },
-    /// GReact `tiemout` operator.
-    Timeout {
+    /// GReact `sample` operator.
+    Sample {
         /// Input expression.
         flow_expression: Box<FlowExpression>,
-        /// Time of the timeout in milliseconds.
-        timeout_ms: u64,
+        /// Sampling period in milliseconds.
+        period_ms: u64,
     },
     /// GReact `merge` operator.
     Merge {

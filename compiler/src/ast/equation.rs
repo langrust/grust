@@ -11,6 +11,11 @@ pub struct Instanciation {
     pub expression: StreamExpression,
     pub semi_token: Token![;],
 }
+impl Instanciation {
+    pub fn get_ident(&self) -> &syn::Ident {
+        &self.ident
+    }
+}
 impl Parse for Instanciation {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let ident: syn::Ident = input.parse()?;
@@ -31,6 +36,20 @@ impl Parse for Instanciation {
 pub enum Equation {
     LocalDef(LetDeclaration<StreamExpression>),
     OutputDef(Instanciation),
+}
+impl Equation {
+    pub fn get_ident(&self) -> &syn::Ident {
+        match self {
+            Equation::LocalDef(declaration) => declaration.get_ident(),
+            Equation::OutputDef(instanciation) => instanciation.get_ident(),
+        }
+    }
+    pub fn is_local(&self) -> bool {
+        match self {
+            Equation::LocalDef(_) => true,
+            Equation::OutputDef(_) => false,
+        }
+    }
 }
 impl Parse for Equation {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {

@@ -7,7 +7,6 @@ use super::{
 use crate::common::r#type::Type;
 
 /// GReact `sample` operator.
-
 pub struct Sample {
     pub sample_token: keyword::sample,
     pub paren_token: token::Paren,
@@ -44,46 +43,7 @@ impl Parse for Sample {
     }
 }
 
-/// GReact `map` operator.
-
-pub struct Map {
-    pub map_token: keyword::map,
-    pub paren_token: token::Paren,
-    /// Input expression.
-    pub flow_expression: Box<FlowExpression>,
-    pub comma_token: Token![,],
-    /// Function to apply on each element of the flow.
-    pub function: syn::Expr,
-}
-impl Map {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
-        input.peek(keyword::map)
-    }
-}
-impl Parse for Map {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let map_token: keyword::map = input.parse()?;
-        let content;
-        let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
-        let comma_token: Token![,] = content.parse()?;
-        let function: syn::Expr = content.parse()?;
-        if content.is_empty() {
-            Ok(Map {
-                map_token,
-                paren_token,
-                flow_expression,
-                comma_token,
-                function,
-            })
-        } else {
-            Err(content.error("expected two input expressions"))
-        }
-    }
-}
-
 /// GReact `merge` operator.
-
 pub struct Merge {
     pub merge_token: keyword::merge,
     pub paren_token: token::Paren,
@@ -121,7 +81,6 @@ impl Parse for Merge {
 }
 
 /// GReact `zip` operator.
-
 pub struct Zip {
     pub zip_token: keyword::zip,
     pub paren_token: token::Paren,
@@ -159,10 +118,9 @@ impl Parse for Zip {
 }
 
 /// Component call.
-
 pub struct ComponentCall {
     /// Identifier to the component to call.
-    pub ident_component: syn::Path,
+    pub ident_component: syn::Ident,
     pub paren_token: token::Paren,
     /// Input expressions.
     pub inputs: Punctuated<FlowExpression, Token![,]>,
@@ -171,7 +129,7 @@ pub struct ComponentCall {
 }
 impl Parse for ComponentCall {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let ident_component: syn::Path = input.parse()?;
+        let ident_component: syn::Ident = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let inputs: Punctuated<FlowExpression, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -192,12 +150,9 @@ impl Parse for ComponentCall {
 }
 
 /// Flow expression kinds.
-
 pub enum FlowExpression {
     /// GReact `tiemout` operator.
     Sample(Sample),
-    /// GReact `map` operator.
-    Map(Map),
     /// GReact `merge` operator.
     Merge(Merge),
     /// GReact `zip` operator.
@@ -205,14 +160,12 @@ pub enum FlowExpression {
     /// Component call.
     ComponentCall(ComponentCall),
     /// Another Rust expression.
-    RustExpr(syn::Expr),
+    Ident(syn::Ident),
 }
 impl Parse for FlowExpression {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if Sample::peek(input) {
             Ok(FlowExpression::Sample(input.parse()?))
-        } else if Map::peek(input) {
-            Ok(FlowExpression::Map(input.parse()?))
         } else if Merge::peek(input) {
             Ok(FlowExpression::Merge(input.parse()?))
         } else if Zip::peek(input) {
@@ -220,7 +173,7 @@ impl Parse for FlowExpression {
         } else if input.fork().call(ComponentCall::parse).is_ok() {
             Ok(FlowExpression::ComponentCall(input.parse()?))
         } else {
-            Ok(FlowExpression::RustExpr(input.parse()?))
+            Ok(FlowExpression::Ident(input.parse()?))
         }
     }
 }
@@ -321,7 +274,7 @@ pub struct FlowImport {
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: PathColon<Type>,
+    pub typed_path: PathColon<Type>,
     pub semi_token: Token![;],
 }
 impl FlowImport {
@@ -333,12 +286,12 @@ impl Parse for FlowImport {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let import_token: keyword::import = input.parse()?;
         let kind: FlowKind = input.parse()?;
-        let typed_ident: PathColon<Type> = input.parse()?;
+        let typed_path: PathColon<Type> = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
         Ok(FlowImport {
             import_token,
             kind,
-            typed_ident,
+            typed_path,
             semi_token,
         })
     }
@@ -350,7 +303,7 @@ pub struct FlowExport {
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: PathColon<Type>,
+    pub typed_path: PathColon<Type>,
     pub semi_token: Token![;],
 }
 impl FlowExport {
@@ -362,12 +315,12 @@ impl Parse for FlowExport {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let export_token: keyword::export = input.parse()?;
         let kind: FlowKind = input.parse()?;
-        let typed_ident: PathColon<Type> = input.parse()?;
+        let typed_path: PathColon<Type> = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
         Ok(FlowExport {
             export_token,
             kind,
-            typed_ident,
+            typed_path,
             semi_token,
         })
     }

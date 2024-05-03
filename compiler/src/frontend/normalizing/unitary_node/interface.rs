@@ -1,37 +1,7 @@
 use crate::{
-    hir::interface::{FlowExpression, FlowExpressionKind, Interface},
+    hir::flow_expression::{FlowExpression, FlowExpressionKind},
     symbol_table::SymbolTable,
 };
-
-impl Interface {
-    /// Change component applications into unitary node applications.
-    ///
-    /// It removes unused inputs from unitary node application.
-    ///
-    /// # Example
-    ///
-    /// Let be a component `example` as follows:
-    ///
-    /// ```GR
-    /// component example(x: int, y: int) {
-    ///     out o1: int = x+y;
-    ///     out o2: int = 2*y;
-    /// }
-    /// ```
-    ///
-    /// The application `example(g-1, v).o2` is changed
-    /// to the application of the unitary node `example(v).o2`
-    pub fn change_component_application_into_unitary_node_application(
-        &mut self,
-        symbol_table: &SymbolTable,
-    ) {
-        self.flow_statements.iter_mut().for_each(|statement| {
-            statement
-                .expression
-                .change_node_application_into_unitary_node_application(symbol_table)
-        })
-    }
-}
 
 impl FlowExpression {
     /// Change node application expressions into unitary node application.
@@ -57,7 +27,7 @@ impl FlowExpression {
     ) {
         match &mut self.kind {
             FlowExpressionKind::Ident { .. } => (),
-            FlowExpressionKind::Timeout {
+            FlowExpressionKind::Sample {
                 flow_expression, ..
             } => {
                 flow_expression.change_node_application_into_unitary_node_application(symbol_table)

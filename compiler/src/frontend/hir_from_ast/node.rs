@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
-use crate::ast::node::Node;
+use crate::ast::component::Component;
+use crate::ast::equation::Equation;
+use crate::ast::ident_colon::IdentColon;
+use crate::common::location::Location;
 use crate::common::scope::Scope;
 use crate::error::{Error, TerminationError};
 use crate::hir::node::Node as HIRNode;
@@ -10,7 +13,7 @@ use crate::symbol_table::SymbolTable;
 
 use super::HIRFromAST;
 
-impl HIRFromAST for Node {
+impl HIRFromAST for Component {
     type HIR = HIRNode;
 
     // precondition: node and its signals are already stored in symbol table
@@ -20,15 +23,22 @@ impl HIRFromAST for Node {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<Self::HIR, TerminationError> {
-        let Node {
-            id,
-            equations,
+        let Component {
+            component_token,
+            ident,
+            args_paren,
+            args,
+            arrow_token,
+            outs_paren,
+            outs,
+            period,
             contract,
-            location,
-            ..
+            brace,
+            equations,
         } = self;
-
-        let id = symbol_table.get_node_id(&id, false, location.clone(), errors)?;
+        let name = ident.to_string();
+        let location = Location::default();
+        let id = symbol_table.get_node_id(&name, false, location.clone(), errors)?;
 
         // create local context with all signals
         symbol_table.local();
@@ -36,9 +46,9 @@ impl HIRFromAST for Node {
 
         let unscheduled_equations = equations
             .into_iter()
-            .map(|(signal, equation)| {
-                let id =
-                    symbol_table.get_signal_id(&signal, true, equation.location.clone(), errors)?;
+            .map(|equation| {
+                let signal = equation.get_ident().to_string();
+                let id = symbol_table.get_signal_id(&signal, true, location.clone(), errors)?;
                 Ok((id, equation.hir_from_ast(symbol_table, errors)?))
             })
             .collect::<Vec<Result<_, _>>>()
@@ -59,7 +69,7 @@ impl HIRFromAST for Node {
     }
 }
 
-impl Node {
+impl Component {
     /// Store node's identifiers in symbol table.
     pub fn store(
         &self,
@@ -68,47 +78,65 @@ impl Node {
     ) -> Result<(), TerminationError> {
         symbol_table.local();
 
+        let name = self.ident.to_string();
+        let is_component = false;
+        let period = self
+            .period
+            .as_ref()
+            .map(|(_, literal, _)| literal.base10_parse().unwrap());
+        let location = Location::default();
         let inputs = self
-            .inputs
+            .args
             .iter()
-            .map(|(name, typing)| {
-                let typing = typing
-                    .clone()
-                    .hir_from_ast(&self.location, symbol_table, errors)?;
-                let id = symbol_table.insert_signal(
-                    name.clone(),
-                    Scope::Input,
-                    Some(typing),
-                    true,
-                    self.location.clone(),
-                    errors,
-                )?;
-                Ok(id)
-            })
+            .map(
+                |IdentColon {
+                     ident,
+                     colon,
+                     elem: typing,
+                 }| {
+                    let name = ident.to_string();
+                    let typing = typing
+                        .clone()
+                        .hir_from_ast(&location, symbol_table, errors)?;
+                    let id = symbol_table.insert_signal(
+                        name,
+                        Scope::Input,
+                        Some(typing),
+                        true,
+                        location.clone(),
+                        errors,
+                    )?;
+                    Ok(id)
+                },
+            )
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
             .collect::<Result<Vec<_>, _>>()?;
 
         let outputs = self
-            .equations
+            .outs
             .iter()
-            .filter(|(_, equation)| Scope::Output == equation.scope)
-            .map(|(name, equation)| {
-                let typing = equation.signal_type.clone().hir_from_ast(
-                    &self.location,
-                    symbol_table,
-                    errors,
-                )?;
-                let id = symbol_table.insert_signal(
-                    name.clone(),
-                    Scope::Output,
-                    Some(typing),
-                    true,
-                    equation.location.clone(),
-                    errors,
-                )?;
-                Ok((name.clone(), id))
-            })
+            .map(
+                |IdentColon {
+                     ident,
+                     colon,
+                     elem: typing,
+                 }| {
+                    let name = ident.to_string();
+                    let typing = typing
+                        .clone()
+                        .hir_from_ast(&location, symbol_table, errors)?;
+                    let id = symbol_table.insert_signal(
+                        name.clone(),
+                        Scope::Input,
+                        Some(typing),
+                        true,
+                        location.clone(),
+                        errors,
+                    )?;
+                    Ok((name, id))
+                },
+            )
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
             .collect::<Result<HashMap<_, _>, _>>()?;
@@ -116,22 +144,25 @@ impl Node {
         let locals = self
             .equations
             .iter()
-            .filter(|(_, equation)| Scope::Local == equation.scope)
-            .map(|(name, equation)| {
-                let typing = equation.signal_type.clone().hir_from_ast(
-                    &self.location,
-                    symbol_table,
-                    errors,
-                )?;
-                let id = symbol_table.insert_signal(
-                    name.clone(),
-                    Scope::Local,
-                    Some(typing),
-                    true,
-                    equation.location.clone(),
-                    errors,
-                )?;
-                Ok((name.clone(), id))
+            .filter_map(|equation| match equation {
+                Equation::LocalDef(declaration) => Some((|| {
+                    let name = declaration.typed_ident.ident.to_string();
+                    let typing = declaration.typed_ident.elem.clone().hir_from_ast(
+                        &location,
+                        symbol_table,
+                        errors,
+                    )?;
+                    let id = symbol_table.insert_signal(
+                        name.clone(),
+                        Scope::Local,
+                        Some(typing),
+                        true,
+                        location.clone(),
+                        errors,
+                    )?;
+                    Ok((name, id))
+                })()),
+                Equation::OutputDef(_) => None,
             })
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
@@ -140,14 +171,14 @@ impl Node {
         symbol_table.global();
 
         let _ = symbol_table.insert_node(
-            self.id.clone(),
-            self.is_component,
+            name,
+            is_component,
             false,
             inputs,
             outputs,
             locals,
-            self.period,
-            self.location.clone(),
+            period,
+            location,
             errors,
         )?;
 

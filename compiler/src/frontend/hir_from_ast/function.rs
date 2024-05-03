@@ -1,4 +1,7 @@
 use crate::ast::function::Function;
+use crate::ast::ident_colon::IdentColon;
+use crate::ast::statement::{ReturnInstruction, Statement};
+use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 use crate::hir::function::Function as HIRFunction;
 use crate::symbol_table::SymbolTable;
@@ -16,40 +19,49 @@ impl HIRFromAST for Function {
         errors: &mut Vec<Error>,
     ) -> Result<Self::HIR, TerminationError> {
         let Function {
-            id,
+            ident,
+            output_type,
             statements,
-            returned: (_, returned),
-            location,
             ..
         } = self;
-
-        let id = symbol_table.get_function_id(&id, false, location.clone(), errors)?;
+        let name = ident.to_string();
+        let location = Location::default();
+        let id = symbol_table.get_function_id(&name, false, location.clone(), errors)?;
 
         // insert function output type in symbol table
-        let output_typing = self
-            .returned
-            .0
-            .hir_from_ast(&location, symbol_table, errors)?;
+        let output_typing = output_type.hir_from_ast(&location, symbol_table, errors)?;
         symbol_table.set_function_output_type(id, output_typing);
 
         // create local context with all signals
         symbol_table.local();
         symbol_table.restore_context(id);
 
-        let statements = statements
-            .into_iter()
-            .map(|statement| statement.hir_from_ast(symbol_table, errors))
-            .collect::<Vec<Result<_, _>>>()
-            .into_iter()
-            .collect::<Result<Vec<_>, _>>()?;
-        let returned = returned.hir_from_ast(symbol_table, errors)?;
+        let (statements, returned) = statements.into_iter().fold(
+            (vec![], None),
+            |(mut declarations, option_returned), statement| match statement {
+                Statement::Declaration(declaration) => {
+                    declarations.push(declaration.hir_from_ast(symbol_table, errors));
+                    (declarations, option_returned)
+                }
+                Statement::Return(ReturnInstruction {
+                    return_token,
+                    expression,
+                }) => {
+                    assert!(option_returned.is_none());
+                    (
+                        declarations,
+                        Some(expression.hir_from_ast(symbol_table, errors)),
+                    )
+                }
+            },
+        );
 
         symbol_table.global();
 
         Ok(HIRFunction {
             id,
-            statements,
-            returned,
+            statements: statements.into_iter().collect::<Result<Vec<_>, _>>()?,
+            returned: returned.unwrap()?,
             location,
         })
     }
@@ -64,22 +76,30 @@ impl Function {
     ) -> Result<(), TerminationError> {
         symbol_table.local();
 
+        let location = Location::default();
         let inputs = self
-            .inputs
+            .args
             .iter()
-            .map(|(name, typing)| {
-                let typing = typing
-                    .clone()
-                    .hir_from_ast(&self.location, symbol_table, errors)?;
-                let id = symbol_table.insert_identifier(
-                    name.clone(),
-                    Some(typing),
-                    true,
-                    self.location.clone(),
-                    errors,
-                )?;
-                Ok(id)
-            })
+            .map(
+                |IdentColon {
+                     ident,
+                     colon,
+                     elem: typing,
+                 }| {
+                    let name = ident.to_string();
+                    let typing = typing
+                        .clone()
+                        .hir_from_ast(&location, symbol_table, errors)?;
+                    let id = symbol_table.insert_identifier(
+                        name.clone(),
+                        Some(typing),
+                        true,
+                        location.clone(),
+                        errors,
+                    )?;
+                    Ok(id)
+                },
+            )
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
             .collect::<Result<Vec<_>, _>>()?;
@@ -87,11 +107,11 @@ impl Function {
         symbol_table.global();
 
         let _ = symbol_table.insert_function(
-            self.id.clone(),
+            self.ident.to_string(),
             inputs,
             None,
             false,
-            self.location.clone(),
+            location,
             errors,
         )?;
 

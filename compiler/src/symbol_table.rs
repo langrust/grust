@@ -63,13 +63,6 @@ pub enum SymbolKind {
         /// Node's period of execution.
         period: Option<usize>,
     },
-    /// Interface kind.
-    Interface {
-        /// Interface's import identifiers.
-        imports: Vec<usize>,
-        /// Interface's export identifier.
-        exports: Vec<usize>,
-    },
     /// Structure kind.
     Structure {
         /// The structure's fields: a field has an identifier and a type.
@@ -134,7 +127,6 @@ impl Symbol {
             SymbolKind::Function { .. } => format!("function {}", self.name),
             SymbolKind::Node { .. } => format!("node {}", self.name),
             SymbolKind::UnitaryNode { .. } => format!("unitary_node {}", self.name),
-            SymbolKind::Interface { .. } => format!("interface {}", self.name),
             SymbolKind::Structure { .. } => format!("struct {}", self.name),
             SymbolKind::Enumeration { .. } => format!("enum {}", self.name),
             SymbolKind::EnumerationElement { enum_name } => {
@@ -414,24 +406,6 @@ impl SymbolTable {
                 locals,
                 period,
             },
-            name,
-        };
-
-        self.insert_symbol(symbol, local, location, errors)
-    }
-
-    /// Insert interface in symbol table.
-    pub fn insert_interface(
-        &mut self,
-        name: String,
-        local: bool,
-        imports: Vec<usize>,
-        exports: Vec<usize>,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> Result<usize, TerminationError> {
-        let symbol = Symbol {
-            kind: SymbolKind::Interface { imports, exports },
             name,
         };
 

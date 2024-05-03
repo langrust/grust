@@ -1,4 +1,5 @@
 use strum::EnumIter;
+use syn::{parse::Parse, Token};
 
 use crate::{common::r#type::Type, error::Error};
 
@@ -46,6 +47,65 @@ pub enum BinaryOperator {
     Grt,
     /// Test "lower", `x < y`.
     Low,
+}
+impl BinaryOperator {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![*])
+            || input.peek(Token![/])
+            || input.peek(Token![+])
+            || input.peek(Token![-])
+            || input.peek(Token![&&])
+            || input.peek(Token![||])
+            || input.peek(Token![==])
+            || input.peek(Token![!=])
+            || input.peek(Token![>=])
+            || input.peek(Token![<=])
+            || input.peek(Token![>])
+            || input.peek(Token![<])
+    }
+}
+impl Parse for BinaryOperator {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.peek(Token![*]) {
+            let _: Token![*] = input.parse()?;
+            Ok(BinaryOperator::Mul)
+        } else if input.peek(Token![/]) {
+            let _: Token![/] = input.parse()?;
+            Ok(BinaryOperator::Div)
+        } else if input.peek(Token![+]) {
+            let _: Token![+] = input.parse()?;
+            Ok(BinaryOperator::Add)
+        } else if input.peek(Token![-]) {
+            let _: Token![-] = input.parse()?;
+            Ok(BinaryOperator::Sub)
+        } else if input.peek(Token![&&]) {
+            let _: Token![&&] = input.parse()?;
+            Ok(BinaryOperator::And)
+        } else if input.peek(Token![||]) {
+            let _: Token![||] = input.parse()?;
+            Ok(BinaryOperator::Or)
+        } else if input.peek(Token![==]) {
+            let _: Token![==] = input.parse()?;
+            Ok(BinaryOperator::Eq)
+        } else if input.peek(Token![!=]) {
+            let _: Token![!=] = input.parse()?;
+            Ok(BinaryOperator::Dif)
+        } else if input.peek(Token![>=]) {
+            let _: Token![>=] = input.parse()?;
+            Ok(BinaryOperator::Geq)
+        } else if input.peek(Token![<=]) {
+            let _: Token![<=] = input.parse()?;
+            Ok(BinaryOperator::Leq)
+        } else if input.peek(Token![>]) {
+            let _: Token![>] = input.parse()?;
+            Ok(BinaryOperator::Grt)
+        } else if input.peek(Token![<]) {
+            let _: Token![<] = input.parse()?;
+            Ok(BinaryOperator::Low)
+        } else {
+            Err(input.error("expected binary operators"))
+        }
+    }
 }
 impl ToString for BinaryOperator {
     fn to_string(&self) -> String {
@@ -218,22 +278,36 @@ impl BinaryOperator {
 /// that can be used in a GRust program:
 /// - [UnaryOperator::Neg] is the numerical negation `-`
 /// - [UnaryOperator::Not], the logical negation `!`
-/// - [UnaryOperator::Brackets], is the use of brackets `(_)`
 #[derive(EnumIter, Debug, Clone, PartialEq)]
 pub enum UnaryOperator {
     /// Numerical negation, `-x`.
     Neg,
     /// Logical negation, `!x`.
     Not,
-    /// Use of brackets, `(x)`.
-    Brackets,
+}
+impl UnaryOperator {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![-]) || input.peek(Token![!])
+    }
+}
+impl Parse for UnaryOperator {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.peek(Token![-]) {
+            let _: Token![-] = input.parse()?;
+            Ok(UnaryOperator::Neg)
+        } else if input.peek(Token![!]) {
+            let _: Token![!] = input.parse()?;
+            Ok(UnaryOperator::Not)
+        } else {
+            Err(input.error("expected '-', or '!' unary operators"))
+        }
+    }
 }
 impl ToString for UnaryOperator {
     fn to_string(&self) -> String {
         match self {
             UnaryOperator::Neg => String::from("-"),
             UnaryOperator::Not => String::from("!"),
-            UnaryOperator::Brackets => String::from("(_)"),
         }
     }
 }
@@ -288,9 +362,6 @@ impl UnaryOperator {
             // be `int -> int` or `float -> float`
             // then it is a [Type::Polymorphism]
             UnaryOperator::Neg => Type::Polymorphism(UnaryOperator::numerical_negation),
-            // If self is "brackets" then its type can be `t -> t` for any t
-            // then it is a [Type::Polymorphism]
-            UnaryOperator::Brackets => Type::Polymorphism(UnaryOperator::brackets),
             // If self is the logical negation then its type is `bool -> bool`
             UnaryOperator::Not => Type::Abstract(vec![Type::Boolean], Box::new(Type::Boolean)),
         }
@@ -380,10 +451,6 @@ mod to_string {
     #[test]
     fn should_convert_not_operator_to_string() {
         assert_eq!(String::from("!"), UnaryOperator::Not.to_string());
-    }
-    #[test]
-    fn should_convert_brackets_operator_to_string() {
-        assert_eq!(String::from("(_)"), UnaryOperator::Brackets.to_string());
     }
 
     #[test]
