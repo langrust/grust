@@ -1,8 +1,9 @@
 use crate::ast::interface::{
     ComponentCall, FlowDeclaration, FlowExport, FlowExpression, FlowImport, FlowInstanciation,
-    FlowStatement, Merge, Sample, Zip,
+    FlowKind, FlowStatement, Merge, Sample, Zip,
 };
 use crate::common::location::Location;
+use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
 use crate::hir::{
     flow_expression::{
@@ -17,8 +18,6 @@ use super::HIRFromAST;
 impl HIRFromAST for FlowStatement {
     type HIR = Option<Statement<HIRFlowExpression>>;
 
-    // precondition: interface imports are already stored in symbol table
-    // postcondition: construct HIR interface and check identifiers good use
     fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
@@ -27,17 +26,21 @@ impl HIRFromAST for FlowStatement {
         let location = Location::default();
         match self {
             FlowStatement::Declaration(FlowDeclaration {
-                let_token,
                 kind,
                 typed_ident,
-                eq_token,
                 flow_expression,
-                semi_token,
+                ..
             }) => {
                 let name = typed_ident.ident.to_string();
-                let flow_type = typed_ident
-                    .elem
-                    .hir_from_ast(&location, symbol_table, errors)?;
+                let flow_type = {
+                    let inner = typed_ident
+                        .elem
+                        .hir_from_ast(&location, symbol_table, errors)?;
+                    match kind {
+                        FlowKind::Signal(_) => Type::Signal(Box::new(inner)),
+                        FlowKind::Event(_) => Type::Event(Box::new(inner)),
+                    }
+                };
                 let id = symbol_table.insert_flow(
                     name,
                     None,
@@ -56,9 +59,8 @@ impl HIRFromAST for FlowStatement {
             }
             FlowStatement::Instanciation(FlowInstanciation {
                 ident,
-                eq_token,
                 flow_expression,
-                semi_token,
+                ..
             }) => {
                 // identifiers are already in symbol table because of flow export
                 let name = ident.to_string();
@@ -74,22 +76,27 @@ impl HIRFromAST for FlowStatement {
                 }))
             }
             FlowStatement::Import(FlowImport {
-                import_token,
                 kind,
                 mut typed_path,
-                semi_token,
+                ..
             }) => {
                 let last = typed_path.path.segments.pop().unwrap().into_value();
                 let name = last.ident.to_string();
                 assert!(last.arguments.is_none());
                 let path = typed_path.path;
-                let typing = typed_path
-                    .elem
-                    .hir_from_ast(&location, symbol_table, errors)?;
+                let flow_type = {
+                    let inner = typed_path
+                        .elem
+                        .hir_from_ast(&location, symbol_table, errors)?;
+                    match kind {
+                        FlowKind::Signal(_) => Type::Signal(Box::new(inner)),
+                        FlowKind::Event(_) => Type::Event(Box::new(inner)),
+                    }
+                };
                 symbol_table.insert_flow(
                     name,
                     Some(path),
-                    typing,
+                    flow_type,
                     true,
                     location.clone(),
                     errors,
@@ -97,22 +104,27 @@ impl HIRFromAST for FlowStatement {
                 Ok(None)
             }
             FlowStatement::Export(FlowExport {
-                export_token,
                 kind,
                 mut typed_path,
-                semi_token,
+                ..
             }) => {
                 let last = typed_path.path.segments.pop().unwrap().into_value();
                 let name = last.ident.to_string();
                 assert!(last.arguments.is_none());
                 let path = typed_path.path;
-                let typing = typed_path
-                    .elem
-                    .hir_from_ast(&location, symbol_table, errors)?;
+                let flow_type = {
+                    let inner = typed_path
+                        .elem
+                        .hir_from_ast(&location, symbol_table, errors)?;
+                    match kind {
+                        FlowKind::Signal(_) => Type::Signal(Box::new(inner)),
+                        FlowKind::Event(_) => Type::Event(Box::new(inner)),
+                    }
+                };
                 symbol_table.insert_flow(
                     name,
                     Some(path),
-                    typing,
+                    flow_type,
                     true,
                     location.clone(),
                     errors,
@@ -127,16 +139,13 @@ impl Sample {
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<HIRFlowExpressionKind, TerminationError> {
         let Sample {
-            sample_token,
-            paren_token,
             flow_expression,
-            comma_token,
             period_ms,
+            ..
         } = self;
         Ok(HIRFlowExpressionKind::Sample {
             flow_expression: Box::new(flow_expression.hir_from_ast(symbol_table, errors)?),
@@ -149,16 +158,13 @@ impl Zip {
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<HIRFlowExpressionKind, TerminationError> {
         let Zip {
-            zip_token,
-            paren_token,
             flow_expression_1,
-            comma_token,
             flow_expression_2,
+            ..
         } = self;
         Ok(HIRFlowExpressionKind::Zip {
             flow_expression_1: Box::new(flow_expression_1.hir_from_ast(symbol_table, errors)?),
@@ -171,16 +177,13 @@ impl Merge {
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<HIRFlowExpressionKind, TerminationError> {
         let Merge {
-            merge_token,
-            paren_token,
             flow_expression_1,
-            comma_token,
             flow_expression_2,
+            ..
         } = self;
         Ok(HIRFlowExpressionKind::Merge {
             flow_expression_1: Box::new(flow_expression_1.hir_from_ast(symbol_table, errors)?),
@@ -199,9 +202,9 @@ impl ComponentCall {
     ) -> Result<HIRFlowExpressionKind, TerminationError> {
         let ComponentCall {
             ident_component,
-            paren_token,
             inputs,
             ident_signal,
+            ..
         } = self;
 
         let name = ident_component.to_string();
@@ -277,13 +280,13 @@ impl HIRFromAST for FlowExpression {
         let location = Location::default();
         let kind = match self {
             FlowExpression::Sample(flow_expression) => {
-                flow_expression.hir_from_ast(&location, symbol_table, errors)?
+                flow_expression.hir_from_ast(symbol_table, errors)?
             }
             FlowExpression::Merge(flow_expression) => {
-                flow_expression.hir_from_ast(&location, symbol_table, errors)?
+                flow_expression.hir_from_ast(symbol_table, errors)?
             }
             FlowExpression::Zip(flow_expression) => {
-                flow_expression.hir_from_ast(&location, symbol_table, errors)?
+                flow_expression.hir_from_ast(symbol_table, errors)?
             }
             FlowExpression::ComponentCall(flow_expression) => {
                 flow_expression.hir_from_ast(&location, symbol_table, errors)?

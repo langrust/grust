@@ -26,8 +26,6 @@ pub enum Item {
     Typedef(Typedef),
     /// GRust FRP flow statement.
     FlowStatement(FlowStatement),
-    /// Rust item that can appear inside of a module.
-    Rust(syn::Item),
 }
 impl Parse for Item {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -37,10 +35,8 @@ impl Parse for Item {
             Ok(Item::Function(input.parse()?))
         } else if Typedef::peek(input) {
             Ok(Item::Typedef(input.parse()?))
-        } else if FlowStatement::peek(input) {
-            Ok(Item::FlowStatement(input.parse()?))
         } else {
-            Ok(Item::Rust(input.parse()?))
+            Ok(Item::FlowStatement(input.parse()?))
         }
     }
 }

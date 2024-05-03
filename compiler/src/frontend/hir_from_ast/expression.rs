@@ -21,7 +21,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        _location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -145,7 +144,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -170,7 +168,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -195,7 +192,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -236,7 +232,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -257,7 +252,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -281,7 +275,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -305,7 +298,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -333,7 +325,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -357,7 +348,6 @@ where
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
-        location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
@@ -437,45 +427,27 @@ impl HIRFromAST for Expression {
                     })?;
                 ExpressionKind::Identifier { id }
             }
-            Expression::Application(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
+            Expression::Application(expression) => expression.hir_from_ast(symbol_table, errors)?,
             Expression::TypedAbstraction(expression) => {
                 expression.hir_from_ast(&location, symbol_table, errors)?
             }
             Expression::Structure(expression) => {
                 expression.hir_from_ast(&location, symbol_table, errors)?
             }
-            Expression::Tuple(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
+            Expression::Tuple(expression) => expression.hir_from_ast(symbol_table, errors)?,
             Expression::Enumeration(expression) => {
                 expression.hir_from_ast::<Expression>(&location, symbol_table, errors)?
             }
-            Expression::Array(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
-            Expression::Match(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
-            Expression::FieldAccess(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
+            Expression::Array(expression) => expression.hir_from_ast(symbol_table, errors)?,
+            Expression::Match(expression) => expression.hir_from_ast(symbol_table, errors)?,
+            Expression::FieldAccess(expression) => expression.hir_from_ast(symbol_table, errors)?,
             Expression::TupleElementAccess(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
+                expression.hir_from_ast(symbol_table, errors)?
             }
-            Expression::Map(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
-            Expression::Fold(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
-            Expression::Sort(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
-            Expression::Zip(expression) => {
-                expression.hir_from_ast(&location, symbol_table, errors)?
-            }
+            Expression::Map(expression) => expression.hir_from_ast(symbol_table, errors)?,
+            Expression::Fold(expression) => expression.hir_from_ast(symbol_table, errors)?,
+            Expression::Sort(expression) => expression.hir_from_ast(symbol_table, errors)?,
+            Expression::Zip(expression) => expression.hir_from_ast(symbol_table, errors)?,
         };
         Ok(HIRExpression {
             kind,

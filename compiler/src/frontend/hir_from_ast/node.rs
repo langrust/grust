@@ -24,17 +24,10 @@ impl HIRFromAST for Component {
         errors: &mut Vec<Error>,
     ) -> Result<Self::HIR, TerminationError> {
         let Component {
-            component_token,
             ident,
-            args_paren,
-            args,
-            arrow_token,
-            outs_paren,
-            outs,
-            period,
             contract,
-            brace,
             equations,
+            ..
         } = self;
         let name = ident.to_string();
         let location = Location::default();
@@ -91,8 +84,8 @@ impl Component {
             .map(
                 |IdentColon {
                      ident,
-                     colon,
                      elem: typing,
+                     ..
                  }| {
                     let name = ident.to_string();
                     let typing = typing
@@ -119,8 +112,8 @@ impl Component {
             .map(
                 |IdentColon {
                      ident,
-                     colon,
                      elem: typing,
+                     ..
                  }| {
                     let name = ident.to_string();
                     let typing = typing
