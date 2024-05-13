@@ -45,6 +45,44 @@ impl ExpressionKind<StreamExpression> {
                     None
                 }
             }
+            ExpressionKind::Unop { expression, .. } => {
+                expression.replace_by_context(context_map);
+                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+                None
+            }
+            ExpressionKind::Binop {
+                left_expression,
+                right_expression,
+                ..
+            } => {
+                left_expression.replace_by_context(context_map);
+                right_expression.replace_by_context(context_map);
+
+                let mut expression_dependencies = left_expression.get_dependencies().clone();
+                let mut other_dependencies = right_expression.get_dependencies().clone();
+                expression_dependencies.append(&mut other_dependencies);
+
+                *dependencies = Dependencies::from(expression_dependencies);
+                None
+            }
+            ExpressionKind::IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+            } => {
+                expression.replace_by_context(context_map);
+                true_expression.replace_by_context(context_map);
+                false_expression.replace_by_context(context_map);
+
+                let mut expression_dependencies = expression.get_dependencies().clone();
+                let mut other_dependencies = true_expression.get_dependencies().clone();
+                expression_dependencies.append(&mut other_dependencies);
+                let mut other_dependencies = false_expression.get_dependencies().clone();
+                expression_dependencies.append(&mut other_dependencies);
+
+                *dependencies = Dependencies::from(expression_dependencies);
+                None
+            }
             ExpressionKind::Application { ref mut inputs, .. } => {
                 inputs
                     .iter_mut()

@@ -3,9 +3,104 @@ use syn::punctuated::Punctuated;
 use syn::{braced, bracketed, parenthesized, token, Token};
 
 use crate::ast::{ident_colon::IdentColon, pattern::Pattern};
+use crate::common::operator::{BinaryOperator, UnaryOperator};
 use crate::common::{constant::Constant, r#type::Type};
 
 use super::keyword;
+
+/// Unop expression.
+#[derive(Debug, PartialEq, Clone)]
+pub struct Unop<E> {
+    /// The unary operator.
+    pub op: UnaryOperator,
+    /// The input expression.
+    pub expression: Box<E>,
+}
+impl<E> Unop<E>
+where
+    E: Parse,
+{
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        UnaryOperator::peek(input)
+    }
+}
+impl<E> Parse for Unop<E>
+where
+    E: Parse,
+{
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let expression = Box::new(input.parse()?);
+        Ok(Unop { op, expression })
+    }
+}
+
+/// Binop expression.
+///
+/// TODO: precedence
+#[derive(Debug, PartialEq, Clone)]
+pub struct Binop<E> {
+    /// The unary operator.
+    pub op: BinaryOperator,
+    /// The left expression.
+    pub left_expression: Box<E>,
+    /// The right expression.
+    pub right_expression: Box<E>,
+}
+impl<E> Binop<E>
+where
+    E: Parse,
+{
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        BinaryOperator::peek(input)
+    }
+    pub fn parse(left_expression: Box<E>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right_expression = Box::new(input.parse()?);
+        Ok(Binop {
+            op,
+            left_expression,
+            right_expression,
+        })
+    }
+}
+
+/// IfThenElse expression.
+#[derive(Debug, PartialEq, Clone)]
+pub struct IfThenElse<E> {
+    /// The test expression.
+    pub expression: Box<E>,
+    /// The 'true' expression.
+    pub true_expression: Box<E>,
+    /// The 'false' expression.
+    pub false_expression: Box<E>,
+}
+impl<E> IfThenElse<E>
+where
+    E: Parse,
+{
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![if])
+    }
+}
+impl<E> Parse for IfThenElse<E>
+where
+    E: Parse,
+{
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: Token![if] = input.parse()?;
+        let expression = Box::new(input.parse()?);
+        let _: keyword::then = input.parse()?;
+        let true_expression = Box::new(input.parse()?);
+        let _: Token![else] = input.parse()?;
+        let false_expression = Box::new(input.parse()?);
+        Ok(IfThenElse {
+            expression,
+            true_expression,
+            false_expression,
+        })
+    }
+}
 
 /// Application expression.
 #[derive(Debug, PartialEq, Clone)]
@@ -591,6 +686,12 @@ pub enum Expression {
     Constant(Constant),
     /// Identifier expression.
     Identifier(String),
+    /// Unop expression.
+    Unop(Unop<Expression>),
+    /// Binop expression.
+    Binop(Binop<Expression>),
+    /// IfThenElse expression.
+    IfThenElse(IfThenElse<Expression>),
     /// Application expression.
     Application(Application<Expression>),
     /// Abstraction expression with inputs types.
@@ -624,6 +725,10 @@ impl Parse for Expression {
         // TODO: add 'if then else', unop and binop !
         let mut expression = if TypedAbstraction::<Expression>::peek(input) {
             Expression::TypedAbstraction(input.parse()?)
+        } else if Unop::<Expression>::peek(input) {
+            Expression::Unop(input.parse()?)
+        } else if IfThenElse::<Expression>::peek(input) {
+            Expression::IfThenElse(input.parse()?)
         } else if Zip::<Expression>::peek(input) {
             Expression::Zip(input.parse()?)
         } else if Match::<Expression>::peek(input) {
@@ -646,7 +751,10 @@ impl Parse for Expression {
         };
 
         loop {
-            if Sort::<Expression>::peek(input) {
+            if Binop::<Expression>::peek(input) {
+                expression =
+                    Expression::Binop(Binop::<Expression>::parse(Box::new(expression), input)?);
+            } else if Sort::<Expression>::peek(input) {
                 expression =
                     Expression::Sort(Sort::<Expression>::parse(Box::new(expression), input)?);
             } else if Map::<Expression>::peek(input) {

@@ -1,5 +1,9 @@
 use crate::{
-    common::{constant::Constant, r#type::Type},
+    common::{
+        constant::Constant,
+        operator::{BinaryOperator, UnaryOperator},
+        r#type::Type,
+    },
     lir::pattern::Pattern,
 };
 
@@ -17,6 +21,31 @@ pub enum Expression {
     Identifier {
         /// The identifier.
         identifier: String,
+    },
+    /// An unitary operation: `!x`.
+    Unop {
+        /// The operator.
+        op: UnaryOperator,
+        /// The expression.
+        expression: Box<Expression>,
+    },
+    /// A binary operation: `x + y`.
+    Binop {
+        /// The operator.
+        op: BinaryOperator,
+        /// The left expression.
+        left_expression: Box<Expression>,
+        /// The right expression.
+        right_expression: Box<Expression>,
+    },
+    /// An if_then_else expression: `if test { "ok" } else { "oh no" }`.
+    IfThenElse {
+        /// The test expression.
+        condition: Box<Expression>,
+        /// The `true` block.
+        then_branch: Block,
+        /// The `false` block.
+        else_branch: Block,
     },
     /// A memory access: `self.i_mem`.
     MemoryAccess {
@@ -88,15 +117,6 @@ pub enum Expression {
         output: Type,
         /// The body of the closure.
         body: Box<Expression>,
-    },
-    /// An if_then_else expression: `if test { "ok" } else { "oh no" }`.
-    IfThenElse {
-        /// The test expression.
-        condition: Box<Expression>,
-        /// The `true` block.
-        then_branch: Block,
-        /// The `false` block.
-        else_branch: Block,
     },
     /// A match expression: `match c { Color::Blue => 1, _ => 0, }`
     Match {

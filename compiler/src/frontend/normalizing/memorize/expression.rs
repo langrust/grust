@@ -32,6 +32,60 @@ impl ExpressionKind<StreamExpression> {
             | ExpressionKind::Identifier { .. }
             | ExpressionKind::Abstraction { .. }
             | ExpressionKind::Enumeration { .. } => (),
+            ExpressionKind::Unop { expression, .. } => expression.memorize(
+                signal_id,
+                identifier_creator,
+                memory,
+                contract,
+                symbol_table,
+            ),
+            ExpressionKind::Binop {
+                left_expression,
+                right_expression,
+                ..
+            } => {
+                left_expression.memorize(
+                    signal_id,
+                    identifier_creator,
+                    memory,
+                    contract,
+                    symbol_table,
+                );
+                right_expression.memorize(
+                    signal_id,
+                    identifier_creator,
+                    memory,
+                    contract,
+                    symbol_table,
+                )
+            }
+            ExpressionKind::IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+            } => {
+                expression.memorize(
+                    signal_id,
+                    identifier_creator,
+                    memory,
+                    contract,
+                    symbol_table,
+                );
+                true_expression.memorize(
+                    signal_id,
+                    identifier_creator,
+                    memory,
+                    contract,
+                    symbol_table,
+                );
+                false_expression.memorize(
+                    signal_id,
+                    identifier_creator,
+                    memory,
+                    contract,
+                    symbol_table,
+                )
+            }
             ExpressionKind::Application {
                 function_expression,
                 inputs,

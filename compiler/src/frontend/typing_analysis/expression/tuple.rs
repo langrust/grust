@@ -18,7 +18,7 @@ where
             // an tuple is composed of `n` elements of the different type `t_k` and
             // its type is `(t_1, ..., t_n)`
             ExpressionKind::Tuple { ref mut elements } => {
-                debug_assert!(elements.len() >= 2);
+                debug_assert!(elements.len() >= 1);
 
                 let elements_types = elements
                     .iter_mut()

@@ -30,6 +30,28 @@ impl ExpressionKind<StreamExpression> {
             | ExpressionKind::Identifier { .. }
             | ExpressionKind::Abstraction { .. }
             | ExpressionKind::Enumeration { .. } => (),
+            ExpressionKind::Unop { expression, .. } => {
+                expression.change_node_application_into_unitary_node_application(symbol_table);
+            }
+            ExpressionKind::Binop {
+                left_expression,
+                right_expression,
+                ..
+            } => {
+                left_expression.change_node_application_into_unitary_node_application(symbol_table);
+                right_expression
+                    .change_node_application_into_unitary_node_application(symbol_table);
+            }
+            ExpressionKind::IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+            } => {
+                expression.change_node_application_into_unitary_node_application(symbol_table);
+                true_expression.change_node_application_into_unitary_node_application(symbol_table);
+                false_expression
+                    .change_node_application_into_unitary_node_application(symbol_table);
+            }
             ExpressionKind::Application {
                 function_expression,
                 inputs,

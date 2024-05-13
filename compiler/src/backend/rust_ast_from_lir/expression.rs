@@ -9,7 +9,6 @@ use crate::lir::expression::{Expression, FieldIdentifier};
 use proc_macro2::{Span, TokenStream};
 use quote::format_ident;
 use std::collections::BTreeSet;
-use strum::IntoEnumIterator;
 use syn::*;
 
 /// Transforms binary operator into syn's binary operator.
@@ -111,45 +110,29 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
         }),
         Expression::FunctionCall {
             function,
-            mut arguments,
-        } => match function.as_ref() {
-            Expression::Identifier { identifier } => {
-                if let Some(binary) =
-                    BinaryOperator::iter().find(|binary| binary.to_string() == *identifier)
-                {
-                    let left = rust_ast_from_lir(arguments.remove(0), crates);
-                    let right = rust_ast_from_lir(arguments.remove(0), crates);
-                    let binary = binary_to_syn(binary);
-                    Expr::Binary(parse_quote! { #left #binary #right })
-                } else if let Some(unary) =
-                    UnaryOperator::iter().find(|unary| unary.to_string() == *identifier)
-                {
-                    let op = unary_to_syn(unary);
-                    let expr = rust_ast_from_lir(arguments.remove(0), crates);
-                    // Expr::Paren(ExprParen {
-                    //     attrs: vec![],
-                    //     paren_token: Default::default(),
-                    //     expr: Box::new(expr),
-                    // })
-                    Expr::Unary(parse_quote! { #op #expr})
-                } else {
-                    let function = rust_ast_from_lir(*function, crates);
-                    let arguments = arguments
-                        .into_iter()
-                        .map(|expression| rust_ast_from_lir(expression, crates));
-                    parse_quote! {
-                        #function (#(#arguments),*)
-                    }
-                }
-            }
-            _ => {
-                let function = rust_ast_from_lir(*function, crates);
-                let arguments = arguments
-                    .into_iter()
-                    .map(|expression| rust_ast_from_lir(expression, crates));
-                parse_quote! { (#function)(#(#arguments),*) }
-            }
-        },
+            arguments,
+        } => {
+            let function = rust_ast_from_lir(*function, crates);
+            let arguments = arguments
+                .into_iter()
+                .map(|expression| rust_ast_from_lir(expression, crates));
+            parse_quote! { (#function)(#(#arguments),*) }
+        }
+        Expression::Unop { op, expression } => {
+            let op = unary_to_syn(op);
+            let expr = rust_ast_from_lir(*expression, crates);
+            Expr::Unary(parse_quote! { #op #expr})
+        }
+        Expression::Binop {
+            op,
+            left_expression,
+            right_expression,
+        } => {
+            let left = rust_ast_from_lir(*left_expression, crates);
+            let right = rust_ast_from_lir(*right_expression, crates);
+            let binary = binary_to_syn(op);
+            Expr::Binary(parse_quote! { #left #binary #right })
+        }
         Expression::NodeCall {
             node_identifier,
             input_name,

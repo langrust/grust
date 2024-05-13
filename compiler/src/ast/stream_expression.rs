@@ -9,6 +9,8 @@ use crate::ast::{
 };
 use crate::common::constant::Constant;
 
+use super::expression::{Binop, IfThenElse, Unop};
+
 /// Initialized buffer stream expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct FollowedBy {
@@ -54,6 +56,12 @@ pub enum StreamExpression {
     Identifier(String),
     /// Application expression.
     Application(Application<StreamExpression>),
+    /// Unop expression.
+    Unop(Unop<StreamExpression>),
+    /// Binop expression.
+    Binop(Binop<StreamExpression>),
+    /// IfThenElse expression.
+    IfThenElse(IfThenElse<StreamExpression>),
     /// Abstraction expression with inputs types.
     TypedAbstraction(TypedAbstraction<StreamExpression>),
     /// Structure expression.
@@ -85,6 +93,10 @@ impl Parse for StreamExpression {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut expression = if TypedAbstraction::<StreamExpression>::peek(input) {
             StreamExpression::TypedAbstraction(input.parse()?)
+        } else if Unop::<StreamExpression>::peek(input) {
+            StreamExpression::Unop(input.parse()?)
+        } else if IfThenElse::<StreamExpression>::peek(input) {
+            StreamExpression::IfThenElse(input.parse()?)
         } else if Zip::<StreamExpression>::peek(input) {
             StreamExpression::Zip(input.parse()?)
         } else if Match::<StreamExpression>::peek(input) {
@@ -109,6 +121,11 @@ impl Parse for StreamExpression {
             if FollowedBy::peek(input) {
                 expression =
                     StreamExpression::FollowedBy(FollowedBy::parse(Box::new(expression), input)?);
+            } else if Binop::<StreamExpression>::peek(input) {
+                expression = StreamExpression::Binop(Binop::<StreamExpression>::parse(
+                    Box::new(expression),
+                    input,
+                )?);
             } else if Sort::<StreamExpression>::peek(input) {
                 expression = StreamExpression::Sort(Sort::<StreamExpression>::parse(
                     Box::new(expression),

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::expression::{
-    Application, Arm, Array, Enumeration, Expression, FieldAccess, Fold, Map, Match, Sort,
-    Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
+    Application, Arm, Array, Binop, Enumeration, Expression, FieldAccess, Fold, IfThenElse, Map,
+    Match, Sort, Structure, Tuple, TupleElementAccess, TypedAbstraction, Unop, Zip,
 };
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
@@ -13,6 +13,77 @@ use crate::hir::{
 use crate::symbol_table::SymbolTable;
 
 use super::HIRFromAST;
+
+impl<E> Unop<E>
+where
+    E: HIRFromAST,
+{
+    /// Transforms AST into HIR and check identifiers good use.
+    pub fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
+        let Unop { op, expression } = self;
+        // precondition: identifiers are stored in symbol table
+        // postcondition: construct HIR expression kind and check identifiers good use
+        Ok(ExpressionKind::Unop {
+            op,
+            expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
+        })
+    }
+}
+
+impl<E> Binop<E>
+where
+    E: HIRFromAST,
+{
+    /// Transforms AST into HIR and check identifiers good use.
+    pub fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
+        let Binop {
+            op,
+            left_expression,
+            right_expression,
+        } = self;
+        // precondition: identifiers are stored in symbol table
+        // postcondition: construct HIR expression kind and check identifiers good use
+        Ok(ExpressionKind::Binop {
+            op,
+            left_expression: Box::new(left_expression.hir_from_ast(symbol_table, errors)?),
+            right_expression: Box::new(right_expression.hir_from_ast(symbol_table, errors)?),
+        })
+    }
+}
+
+impl<E> IfThenElse<E>
+where
+    E: HIRFromAST,
+{
+    /// Transforms AST into HIR and check identifiers good use.
+    pub fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<ExpressionKind<E::HIR>, TerminationError> {
+        let IfThenElse {
+            expression,
+            true_expression,
+            false_expression,
+        } = self;
+        // precondition: identifiers are stored in symbol table
+        // postcondition: construct HIR expression kind and check identifiers good use
+        Ok(ExpressionKind::IfThenElse {
+            expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
+            true_expression: Box::new(true_expression.hir_from_ast(symbol_table, errors)?),
+
+            false_expression: Box::new(false_expression.hir_from_ast(symbol_table, errors)?),
+        })
+    }
+}
 
 impl<E> Application<E>
 where
@@ -427,6 +498,9 @@ impl HIRFromAST for Expression {
                     })?;
                 ExpressionKind::Identifier { id }
             }
+            Expression::Unop(expression) => expression.hir_from_ast(symbol_table, errors)?,
+            Expression::Binop(expression) => expression.hir_from_ast(symbol_table, errors)?,
+            Expression::IfThenElse(expression) => expression.hir_from_ast(symbol_table, errors)?,
             Expression::Application(expression) => expression.hir_from_ast(symbol_table, errors)?,
             Expression::TypedAbstraction(expression) => {
                 expression.hir_from_ast(&location, symbol_table, errors)?
