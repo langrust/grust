@@ -56,7 +56,7 @@ impl Parse for Component {
         let equations: Vec<Equation> = {
             let mut equations = vec![];
             while !content.is_empty() {
-                equations.push(input.parse()?)
+                equations.push(content.parse()?)
             }
             equations
         };
@@ -73,5 +73,20 @@ impl Parse for Component {
             brace,
             equations,
         })
+    }
+}
+
+#[cfg(test)]
+mod parse_component {
+    use crate::ast::component::Component;
+
+    #[test]
+    fn should_parse_component() {
+        let _: Component = syn::parse_quote! {
+            component counter(res: bool, tick: bool) -> (o: int) {
+                o = if res then 0 else (0 fby o) + inc;
+                let inc: int = if tick then 1 else 0;
+            }
+        };
     }
 }
