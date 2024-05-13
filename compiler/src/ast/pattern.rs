@@ -75,8 +75,7 @@ pub struct Tuple {
 }
 impl Tuple {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        forked.peek(token::Paren)
+        input.peek(token::Paren)
     }
 }
 impl Parse for Tuple {
@@ -98,8 +97,7 @@ pub struct Some {
 }
 impl Some {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        forked.peek(keyword::some)
+        input.peek(keyword::some)
     }
 }
 impl Parse for Some {
@@ -160,5 +158,88 @@ impl Parse for Pattern {
         } else {
             Err(input.error("expected pattern"))
         }
+    }
+}
+
+#[cfg(test)]
+mod parse_expression {
+    use crate::{
+        ast::pattern::{Enumeration, Pattern, Some, Structure, Tuple},
+        common::constant::Constant,
+    };
+
+    #[test]
+    fn should_parse_constant() {
+        let pattern: Pattern = syn::parse_quote! {1};
+        let control = Pattern::Constant(Constant::Integer(syn::parse_quote! {1}));
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_identifier() {
+        let pattern: Pattern = syn::parse_quote! {x};
+        let control = Pattern::Identifier(String::from("x"));
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_structure() {
+        let pattern: Pattern = syn::parse_quote! {Point {x: 0, y: _}};
+        let control = Pattern::Structure(Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Pattern::Constant(Constant::Integer(syn::parse_quote! {0})),
+                ),
+                (String::from("y"), Pattern::Default),
+            ],
+        });
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_tuple() {
+        let pattern: Pattern = syn::parse_quote! {(x, 0)};
+        let control = Pattern::Tuple(Tuple {
+            elements: vec![
+                Pattern::Identifier(String::from("x")),
+                Pattern::Constant(Constant::Integer(syn::parse_quote! {0})),
+            ],
+        });
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_enumeration() {
+        let pattern: Pattern = syn::parse_quote! {Color::Pink};
+        let control = Pattern::Enumeration(Enumeration {
+            enum_name: String::from("Color"),
+            elem_name: String::from("Pink"),
+        });
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_some() {
+        let pattern: Pattern = syn::parse_quote! {some(x)};
+        let control = Pattern::Some(Some {
+            pattern: Box::new(Pattern::Identifier(String::from("x"))),
+        });
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_none() {
+        let pattern: Pattern = syn::parse_quote! {none};
+        let control = Pattern::None;
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_default() {
+        let pattern: Pattern = syn::parse_quote! {_};
+        let control = Pattern::Default;
+        assert_eq!(pattern, control)
     }
 }
