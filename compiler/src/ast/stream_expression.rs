@@ -19,11 +19,18 @@ pub struct FollowedBy {
 }
 impl FollowedBy {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        if forked.call(StreamExpression::parse).is_err() {
-            return false;
-        }
-        forked.peek(keyword::fby)
+        input.peek(keyword::fby)
+    }
+    pub fn parse(
+        constant: Box<StreamExpression>,
+        input: syn::parse::ParseStream,
+    ) -> syn::Result<Self> {
+        let _: keyword::fby = input.parse()?;
+        let expression = Box::new(input.parse()?);
+        Ok(FollowedBy {
+            constant,
+            expression,
+        })
     }
 }
 impl Parse for FollowedBy {
@@ -76,41 +83,311 @@ pub enum StreamExpression {
 }
 impl Parse for StreamExpression {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if FollowedBy::peek(input) {
-            Ok(StreamExpression::FollowedBy(input.parse()?))
-        } else if TypedAbstraction::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::TypedAbstraction(input.parse()?))
-        } else if Sort::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Sort(input.parse()?))
-        } else if Map::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Map(input.parse()?))
-        } else if Fold::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Fold(input.parse()?))
-        } else if TupleElementAccess::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::TupleElementAccess(input.parse()?))
-        } else if FieldAccess::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::FieldAccess(input.parse()?))
+        let mut expression = if TypedAbstraction::<StreamExpression>::peek(input) {
+            StreamExpression::TypedAbstraction(input.parse()?)
         } else if Zip::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Zip(input.parse()?))
-        } else if Application::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Application(input.parse()?))
+            StreamExpression::Zip(input.parse()?)
         } else if Match::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Match(input.parse()?))
+            StreamExpression::Match(input.parse()?)
         } else if Tuple::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Tuple(input.parse()?))
+            StreamExpression::Tuple(input.parse()?)
         } else if Array::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Array(input.parse()?))
+            StreamExpression::Array(input.parse()?)
         } else if Structure::<StreamExpression>::peek(input) {
-            Ok(StreamExpression::Structure(input.parse()?))
+            StreamExpression::Structure(input.parse()?)
         } else if Enumeration::peek(input) {
-            Ok(StreamExpression::Enumeration(input.parse()?))
+            StreamExpression::Enumeration(input.parse()?)
         } else if input.fork().call(syn::Ident::parse).is_ok() {
             let ident: syn::Ident = input.parse()?;
-            Ok(StreamExpression::Identifier(ident.to_string()))
+            StreamExpression::Identifier(ident.to_string())
         } else if input.fork().call(Constant::parse).is_ok() {
-            Ok(StreamExpression::Constant(input.parse()?))
+            StreamExpression::Constant(input.parse()?)
         } else {
-            Err(input.error("expected expression"))
+            return Err(input.error("expected expression"));
+        };
+        loop {
+            if FollowedBy::peek(input) {
+                expression =
+                    StreamExpression::FollowedBy(FollowedBy::parse(Box::new(expression), input)?);
+            } else if Sort::<StreamExpression>::peek(input) {
+                expression = StreamExpression::Sort(Sort::<StreamExpression>::parse(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else if Map::<StreamExpression>::peek(input) {
+                expression = StreamExpression::Map(Map::<StreamExpression>::parse(
+                    Box::new(expression),
+                    input,
+                )?)
+            } else if Fold::<StreamExpression>::peek(input) {
+                expression = StreamExpression::Fold(Fold::<StreamExpression>::parse(
+                    Box::new(expression),
+                    input,
+                )?)
+            } else if TupleElementAccess::<StreamExpression>::peek(input) {
+                expression =
+                    StreamExpression::TupleElementAccess(
+                        TupleElementAccess::<StreamExpression>::parse(Box::new(expression), input)?,
+                    )
+            } else if FieldAccess::<StreamExpression>::peek(input) {
+                expression = StreamExpression::FieldAccess(FieldAccess::<StreamExpression>::parse(
+                    Box::new(expression),
+                    input,
+                )?)
+            } else if Application::<StreamExpression>::peek(input) {
+                expression = StreamExpression::Application(Application::<StreamExpression>::parse(
+                    Box::new(expression),
+                    input,
+                )?)
+            } else {
+                break;
+            }
         }
+        Ok(expression)
+    }
+}
+
+#[cfg(test)]
+mod parse_stream_expression {
+    use crate::{
+        ast::{
+            expression::{
+                Application, Arm, Array, Enumeration, FieldAccess, Fold, Map, Match, Sort,
+                Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
+            },
+            pattern::{self, Pattern},
+            stream_expression::{FollowedBy, StreamExpression},
+        },
+        common::{constant::Constant, r#type::Type},
+    };
+
+    #[test]
+    fn should_parse_followed_by() {
+        let expression: StreamExpression = syn::parse_quote! {0 fby p.x};
+        let control = StreamExpression::FollowedBy(FollowedBy {
+            constant: Box::new(StreamExpression::Constant(Constant::Integer(
+                syn::parse_quote! {0},
+            ))),
+            expression: Box::new(StreamExpression::FieldAccess(FieldAccess {
+                expression: Box::new(StreamExpression::Identifier(String::from("p"))),
+                field: String::from("x"),
+            })),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_constant() {
+        let expression: StreamExpression = syn::parse_quote! {1};
+        let control = StreamExpression::Constant(Constant::Integer(syn::parse_quote! {1}));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_identifier() {
+        let expression: StreamExpression = syn::parse_quote! {x};
+        let control = StreamExpression::Identifier(String::from("x"));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_application() {
+        let expression: StreamExpression = syn::parse_quote! {f(x)};
+        let control = StreamExpression::Application(Application {
+            function_expression: Box::new(StreamExpression::Identifier(String::from("f"))),
+            inputs: vec![StreamExpression::Identifier(String::from("x"))],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_typed_abstraction() {
+        let expression: StreamExpression = syn::parse_quote! {|x: int| f(x)};
+        let control = StreamExpression::TypedAbstraction(TypedAbstraction {
+            inputs: vec![(String::from("x"), Type::Integer)],
+            expression: Box::new(StreamExpression::Application(Application {
+                function_expression: Box::new(StreamExpression::Identifier(String::from("f"))),
+                inputs: vec![StreamExpression::Identifier(String::from("x"))],
+            })),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_structure() {
+        let expression: StreamExpression = syn::parse_quote! {Point {x: 0, y: 1}};
+        let control = StreamExpression::Structure(Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    StreamExpression::Constant(Constant::Integer(syn::parse_quote! {0})),
+                ),
+                (
+                    String::from("y"),
+                    StreamExpression::Constant(Constant::Integer(syn::parse_quote! {1})),
+                ),
+            ],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_tuple() {
+        let expression: StreamExpression = syn::parse_quote! {(x, 0)};
+        let control = StreamExpression::Tuple(Tuple {
+            elements: vec![
+                StreamExpression::Identifier(String::from("x")),
+                StreamExpression::Constant(Constant::Integer(syn::parse_quote! {0})),
+            ],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_enumeration() {
+        let expression: StreamExpression = syn::parse_quote! {Color::Pink};
+        let control = StreamExpression::Enumeration(Enumeration {
+            enum_name: String::from("Color"),
+            elem_name: String::from("Pink"),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_array() {
+        let expression: StreamExpression = syn::parse_quote! {[1, 2, 3]};
+        let control = StreamExpression::Array(Array {
+            elements: vec![
+                StreamExpression::Constant(Constant::Integer(syn::parse_quote! {1})),
+                StreamExpression::Constant(Constant::Integer(syn::parse_quote! {2})),
+                StreamExpression::Constant(Constant::Integer(syn::parse_quote! {3})),
+            ],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_match() {
+        let expression: StreamExpression = syn::parse_quote! {
+            match a {
+                Point {x: 0, y: _} => 0,
+                Point {x: x, y: _} if f(x) => -1,
+                _ => 1,
+            }
+        };
+        let control = StreamExpression::Match(Match {
+            expression: Box::new(StreamExpression::Identifier(String::from("a"))),
+            arms: vec![
+                Arm {
+                    pattern: Pattern::Structure(pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant(Constant::Integer(syn::parse_quote! {0})),
+                            ),
+                            (String::from("y"), Pattern::Default),
+                        ],
+                    }),
+                    guard: None,
+                    expression: StreamExpression::Constant(Constant::Integer(
+                        syn::parse_quote! {0},
+                    )),
+                },
+                Arm {
+                    pattern: Pattern::Structure(pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (String::from("x"), Pattern::Identifier(String::from("x"))),
+                            (String::from("y"), Pattern::Default),
+                        ],
+                    }),
+                    guard: Some(StreamExpression::Application(Application {
+                        function_expression: Box::new(StreamExpression::Identifier(String::from(
+                            "f",
+                        ))),
+                        inputs: vec![StreamExpression::Identifier(String::from("x"))],
+                    })),
+                    expression: StreamExpression::Constant(Constant::Integer(
+                        syn::parse_quote! {-1},
+                    )),
+                },
+                Arm {
+                    pattern: Pattern::Default,
+                    guard: None,
+                    expression: StreamExpression::Constant(Constant::Integer(
+                        syn::parse_quote! {1},
+                    )),
+                },
+            ],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_field_access() {
+        let expression: StreamExpression = syn::parse_quote! {p.x};
+        let control = StreamExpression::FieldAccess(FieldAccess {
+            expression: Box::new(StreamExpression::Identifier(String::from("p"))),
+            field: String::from("x"),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_tuple_element_access() {
+        let expression: StreamExpression = syn::parse_quote! {t.0};
+        let control = StreamExpression::TupleElementAccess(TupleElementAccess {
+            expression: Box::new(StreamExpression::Identifier(String::from("t"))),
+            element_number: 0,
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_map() {
+        let expression: StreamExpression = syn::parse_quote! {a.map(f)};
+        let control = StreamExpression::Map(Map {
+            expression: Box::new(StreamExpression::Identifier(String::from("a"))),
+            function_expression: Box::new(StreamExpression::Identifier(String::from("f"))),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_fold() {
+        let expression: StreamExpression = syn::parse_quote! {a.fold(0, sum)};
+        let control = StreamExpression::Fold(Fold {
+            expression: Box::new(StreamExpression::Identifier(String::from("a"))),
+            initialization_expression: Box::new(StreamExpression::Constant(Constant::Integer(
+                syn::parse_quote! {0},
+            ))),
+            function_expression: Box::new(StreamExpression::Identifier(String::from("sum"))),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_sort() {
+        let expression: StreamExpression = syn::parse_quote! {a.sort(order)};
+        let control = StreamExpression::Sort(Sort {
+            expression: Box::new(StreamExpression::Identifier(String::from("a"))),
+            function_expression: Box::new(StreamExpression::Identifier(String::from("order"))),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_zip() {
+        let expression: StreamExpression = syn::parse_quote! {zip(a, b, c)};
+        let control = StreamExpression::Zip(Zip {
+            arrays: vec![
+                StreamExpression::Identifier(String::from("a")),
+                StreamExpression::Identifier(String::from("b")),
+                StreamExpression::Identifier(String::from("c")),
+            ],
+        });
+        assert_eq!(expression, control)
     }
 }
