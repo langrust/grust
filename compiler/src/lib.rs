@@ -9,11 +9,12 @@
 extern crate proc_macro;
 
 use ast::Ast;
-use backend::rust_ast_from_lir::project::{rust_ast_from_lir, RustASTProject};
+use backend::rust_ast_from_lir::project::rust_ast_from_lir;
 use frontend::{hir_from_ast::HIRFromAST, lir_from_hir::LIRFromHIR, typing_analysis::TypeAnalysis};
 use hir::file::File;
 use lir::project::Project;
 pub use proc_macro::TokenStream;
+use quote::TokenStreamExt;
 use symbol_table::SymbolTable;
 
 /// GRust AST module.
@@ -37,8 +38,7 @@ pub mod symbol_table;
 /// Compiles input GRust tokens into output Rust tokens.
 pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(tokens as Ast);
-    let rust = rust_from_ast(ast);
-    let tokens = todo!(); // quote::quote!(#rust)
+    let tokens = into_token_stream(ast);
     if let Some(path) = conf::dump_code() {
         dump_code(&path, &tokens);
     }
@@ -46,7 +46,7 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 }
 
 /// Creates RustAST from GRust file.
-pub fn rust_from_ast(ast: Ast) -> RustASTProject {
+pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
@@ -57,7 +57,11 @@ pub fn rust_from_ast(ast: Ast) -> RustASTProject {
     hir.causality_analysis(&symbol_table, &mut errors).unwrap();
     hir.normalize(&mut symbol_table, &mut errors).unwrap();
     let lir: Project = hir.lir_from_hir(&symbol_table);
-    rust_ast_from_lir(lir)
+    let rust = rust_ast_from_lir(lir);
+
+    let mut tokens = proc_macro2::TokenStream::new();
+    tokens.append_all(rust);
+    tokens
 }
 
 /// Writes the generated code at the given filepath.
