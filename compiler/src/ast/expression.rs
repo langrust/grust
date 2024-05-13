@@ -20,11 +20,17 @@ where
     E: Parse,
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        if forked.call(E::parse).is_err() {
-            return false;
-        }
-        forked.peek(token::Paren)
+        input.peek(token::Paren)
+    }
+
+    pub fn parse(function_expression: Box<E>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let content;
+        let _ = syn::parenthesized!(content in input);
+        let inputs: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
+        Ok(Application {
+            function_expression,
+            inputs: inputs.into_iter().collect(),
+        })
     }
 }
 impl<E> Parse for Application<E>
@@ -300,13 +306,19 @@ where
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(E::parse).is_err() {
-            return false;
-        }
         if forked.call(token::Dot::parse).is_err() {
             return false;
         }
         forked.call(syn::Ident::parse).is_ok()
+    }
+
+    pub fn parse(expression: Box<E>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: Token![.] = input.parse()?;
+        let field: syn::Ident = input.parse()?;
+        Ok(FieldAccess {
+            expression,
+            field: field.to_string(),
+        })
     }
 }
 impl<E> Parse for FieldAccess<E>
@@ -338,13 +350,19 @@ where
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(E::parse).is_err() {
-            return false;
-        }
         if forked.call(token::Dot::parse).is_err() {
             return false;
         }
         forked.call(syn::LitInt::parse).is_ok()
+    }
+
+    pub fn parse(expression: Box<E>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: Token![.] = input.parse()?;
+        let element_number: syn::LitInt = input.parse()?;
+        Ok(TupleElementAccess {
+            expression,
+            element_number: element_number.base10_parse().unwrap(),
+        })
     }
 }
 impl<E> Parse for TupleElementAccess<E>
@@ -376,13 +394,26 @@ where
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(E::parse).is_err() {
-            return false;
-        }
         if forked.call(token::Dot::parse).is_err() {
             return false;
         }
         forked.peek(keyword::map)
+    }
+
+    pub fn parse(expression: Box<E>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: Token![.] = input.parse()?;
+        let _: keyword::map = input.parse()?;
+        let content;
+        let _ = parenthesized!(content in input);
+        let function_expression = Box::new(content.parse()?);
+        if content.is_empty() {
+            Ok(Map {
+                expression,
+                function_expression,
+            })
+        } else {
+            Err(input.error("expected only one expression"))
+        }
     }
 }
 impl<E> Parse for Map<E>
@@ -423,13 +454,29 @@ where
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(E::parse).is_err() {
-            return false;
-        }
         if forked.call(token::Dot::parse).is_err() {
             return false;
         }
         forked.peek(keyword::fold)
+    }
+
+    pub fn parse(expression: Box<E>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: Token![.] = input.parse()?;
+        let _: keyword::fold = input.parse()?;
+        let content;
+        let _ = parenthesized!(content in input);
+        let initialization_expression = Box::new(content.parse()?);
+        let _: Token![,] = content.parse()?;
+        let function_expression = Box::new(content.parse()?);
+        if content.is_empty() {
+            Ok(Fold {
+                expression,
+                initialization_expression,
+                function_expression,
+            })
+        } else {
+            Err(input.error("expected only two expressions"))
+        }
     }
 }
 impl<E> Parse for Fold<E>
@@ -443,7 +490,7 @@ where
         let content;
         let _ = parenthesized!(content in input);
         let initialization_expression = Box::new(content.parse()?);
-        let _: Token![,] = input.parse()?;
+        let _: Token![,] = content.parse()?;
         let function_expression = Box::new(content.parse()?);
         if content.is_empty() {
             Ok(Fold {
@@ -471,13 +518,26 @@ where
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(E::parse).is_err() {
-            return false;
-        }
         if forked.call(token::Dot::parse).is_err() {
             return false;
         }
         forked.peek(keyword::sort)
+    }
+
+    pub fn parse(expression: Box<E>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: Token![.] = input.parse()?;
+        let _: keyword::sort = input.parse()?;
+        let content;
+        let _ = parenthesized!(content in input);
+        let function_expression = Box::new(content.parse()?);
+        if content.is_empty() {
+            Ok(Sort {
+                expression,
+                function_expression,
+            })
+        } else {
+            Err(input.error("expected only one expression"))
+        }
     }
 }
 impl<E> Parse for Sort<E>
@@ -570,39 +630,58 @@ pub enum Expression {
 impl Parse for Expression {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         // TODO: add 'if then else', unop and binop !
-        if TypedAbstraction::<Expression>::peek(input) {
-            Ok(Expression::TypedAbstraction(input.parse()?))
-        } else if Sort::<Expression>::peek(input) {
-            Ok(Expression::Sort(input.parse()?))
-        } else if Map::<Expression>::peek(input) {
-            Ok(Expression::Map(input.parse()?))
-        } else if Fold::<Expression>::peek(input) {
-            Ok(Expression::Fold(input.parse()?))
-        } else if TupleElementAccess::<Expression>::peek(input) {
-            Ok(Expression::TupleElementAccess(input.parse()?))
-        } else if FieldAccess::<Expression>::peek(input) {
-            Ok(Expression::FieldAccess(input.parse()?))
+        let mut expression = if TypedAbstraction::<Expression>::peek(input) {
+            Expression::TypedAbstraction(input.parse()?)
         } else if Zip::<Expression>::peek(input) {
-            Ok(Expression::Zip(input.parse()?))
-        } else if Application::<Expression>::peek(input) {
-            Ok(Expression::Application(input.parse()?))
+            Expression::Zip(input.parse()?)
         } else if Match::<Expression>::peek(input) {
-            Ok(Expression::Match(input.parse()?))
+            Expression::Match(input.parse()?)
         } else if Tuple::<Expression>::peek(input) {
-            Ok(Expression::Tuple(input.parse()?))
+            Expression::Tuple(input.parse()?)
         } else if Array::<Expression>::peek(input) {
-            Ok(Expression::Array(input.parse()?))
+            Expression::Array(input.parse()?)
         } else if Structure::<Expression>::peek(input) {
-            Ok(Expression::Structure(input.parse()?))
+            Expression::Structure(input.parse()?)
         } else if Enumeration::peek(input) {
-            Ok(Expression::Enumeration(input.parse()?))
+            Expression::Enumeration(input.parse()?)
         } else if input.fork().call(syn::Ident::parse).is_ok() {
             let ident: syn::Ident = input.parse()?;
-            Ok(Expression::Identifier(ident.to_string()))
+            Expression::Identifier(ident.to_string())
         } else if input.fork().call(Constant::parse).is_ok() {
-            Ok(Expression::Constant(input.parse()?))
+            Expression::Constant(input.parse()?)
         } else {
-            Err(input.error("expected expression"))
+            return Err(input.error("expected expression"));
+        };
+
+        loop {
+            if Sort::<Expression>::peek(input) {
+                expression =
+                    Expression::Sort(Sort::<Expression>::parse(Box::new(expression), input)?);
+            } else if Map::<Expression>::peek(input) {
+                expression = Expression::Map(Map::<Expression>::parse(Box::new(expression), input)?)
+            } else if Fold::<Expression>::peek(input) {
+                expression =
+                    Expression::Fold(Fold::<Expression>::parse(Box::new(expression), input)?)
+            } else if TupleElementAccess::<Expression>::peek(input) {
+                expression = Expression::TupleElementAccess(
+                    TupleElementAccess::<Expression>::parse(Box::new(expression), input)?,
+                )
+            } else if FieldAccess::<Expression>::peek(input) {
+                expression = Expression::FieldAccess(FieldAccess::<Expression>::parse(
+                    Box::new(expression),
+                    input,
+                )?)
+            } else if Application::<Expression>::peek(input) {
+                expression = Expression::Application(Application::<Expression>::parse(
+                    Box::new(expression),
+                    input,
+                )?)
+            } else {
+                break;
+            }
         }
+        Ok(expression)
+    }
+}
     }
 }
