@@ -46,38 +46,60 @@ where
                     }
                 }
             }
+            ExpressionKind::Unop { op, expression } => {
+                let expression = expression.lir_from_hir(symbol_table);
+                LIRExpression::Unop {
+                    op,
+                    expression: Box::new(expression),
+                }
+            }
+            ExpressionKind::Binop {
+                op,
+                left_expression,
+                right_expression,
+            } => {
+                let left_expression = left_expression.lir_from_hir(symbol_table);
+                let right_expression = right_expression.lir_from_hir(symbol_table);
+                LIRExpression::Binop {
+                    op,
+                    left_expression: Box::new(left_expression),
+                    right_expression: Box::new(right_expression),
+                }
+            }
+            ExpressionKind::IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+            } => {
+                let else_branch = expression.lir_from_hir(symbol_table);
+                let then_branch = true_expression.lir_from_hir(symbol_table);
+                let condition = false_expression.lir_from_hir(symbol_table);
+                LIRExpression::IfThenElse {
+                    condition: Box::new(condition),
+                    then_branch: Block {
+                        statements: vec![Statement::ExpressionLast {
+                            expression: then_branch,
+                        }],
+                    },
+                    else_branch: Block {
+                        statements: vec![Statement::ExpressionLast {
+                            expression: else_branch,
+                        }],
+                    },
+                }
+            }
             ExpressionKind::Application {
                 function_expression,
-                mut inputs,
+                inputs,
                 ..
             } => {
-                if function_expression.is_if_then_else(symbol_table) {
-                    debug_assert_eq!(inputs.len(), 3);
-                    let else_branch = inputs.pop().unwrap().lir_from_hir(symbol_table);
-                    let then_branch = inputs.pop().unwrap().lir_from_hir(symbol_table);
-                    let condition = inputs.pop().unwrap().lir_from_hir(symbol_table);
-                    LIRExpression::IfThenElse {
-                        condition: Box::new(condition),
-                        then_branch: Block {
-                            statements: vec![Statement::ExpressionLast {
-                                expression: then_branch,
-                            }],
-                        },
-                        else_branch: Block {
-                            statements: vec![Statement::ExpressionLast {
-                                expression: else_branch,
-                            }],
-                        },
-                    }
-                } else {
-                    let arguments = inputs
-                        .into_iter()
-                        .map(|input| input.lir_from_hir(symbol_table))
-                        .collect();
-                    LIRExpression::FunctionCall {
-                        function: Box::new(function_expression.lir_from_hir(symbol_table)),
-                        arguments,
-                    }
+                let arguments = inputs
+                    .into_iter()
+                    .map(|input| input.lir_from_hir(symbol_table))
+                    .collect();
+                LIRExpression::FunctionCall {
+                    function: Box::new(function_expression.lir_from_hir(symbol_table)),
+                    arguments,
                 }
             }
             ExpressionKind::Abstraction {
@@ -263,6 +285,29 @@ where
                 } else {
                     vec![]
                 }
+            }
+            ExpressionKind::Unop { expression, .. } => expression.get_imports(symbol_table),
+            ExpressionKind::Binop {
+                left_expression,
+                right_expression,
+                ..
+            } => {
+                let mut imports = left_expression.get_imports(symbol_table);
+                let mut right_imports = right_expression.get_imports(symbol_table);
+                imports.append(&mut right_imports);
+                imports
+            }
+            ExpressionKind::IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+            } => {
+                let mut imports = expression.get_imports(symbol_table);
+                let mut true_imports = true_expression.get_imports(symbol_table);
+                let mut false_imports = false_expression.get_imports(symbol_table);
+                imports.append(&mut true_imports);
+                imports.append(&mut false_imports);
+                imports
             }
             ExpressionKind::Application {
                 function_expression,

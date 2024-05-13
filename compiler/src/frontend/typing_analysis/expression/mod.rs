@@ -7,17 +7,20 @@ use crate::symbol_table::SymbolTable;
 mod abstraction;
 mod application;
 mod array;
+mod binop;
 mod constant;
 mod enumeration;
 mod field_access;
 mod fold;
 mod identifier;
+mod if_then_else;
 mod map;
 mod r#match;
 mod sort;
 mod structure;
 mod tuple;
 mod tuple_element_access;
+mod unop;
 mod when;
 mod zip;
 
@@ -35,6 +38,11 @@ where
         match self {
             ExpressionKind::Constant { .. } => self.typing_constant(),
             ExpressionKind::Identifier { .. } => self.typing_identifier(symbol_table),
+            ExpressionKind::Unop { .. } => self.typing_unop(location, symbol_table, errors),
+            ExpressionKind::Binop { .. } => self.typing_binop(location, symbol_table, errors),
+            ExpressionKind::IfThenElse { .. } => {
+                self.typing_if_then_else(location, symbol_table, errors)
+            }
             ExpressionKind::Application { .. } => {
                 self.typing_application(location, symbol_table, errors)
             }

@@ -10,17 +10,20 @@ use crate::symbol_table::SymbolTable;
 mod abstraction;
 mod application;
 mod array;
+mod binop;
 mod constant;
 mod enumeration;
 mod field_access;
 mod fold;
 mod identifier;
+mod if_then_else;
 mod map;
 mod r#match;
 mod sort;
 mod structure;
 mod tuple;
 mod tuple_element_access;
+mod unop;
 mod when;
 mod zip;
 
@@ -43,7 +46,30 @@ impl ExpressionKind<StreamExpression> {
                 nodes.append(&mut other_nodes);
                 nodes
             }
-            ExpressionKind::Abstraction { expression, .. } => expression.get_called_nodes(),
+            ExpressionKind::Abstraction { expression, .. }
+            | ExpressionKind::Unop { expression, .. } => expression.get_called_nodes(),
+            ExpressionKind::Binop {
+                left_expression,
+                right_expression,
+                ..
+            } => {
+                let mut nodes = left_expression.get_called_nodes();
+                let mut other_nodes = right_expression.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                nodes
+            }
+            ExpressionKind::IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+            } => {
+                let mut nodes = expression.get_called_nodes();
+                let mut other_nodes = true_expression.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                let mut other_nodes = false_expression.get_called_nodes();
+                nodes.append(&mut other_nodes);
+                nodes
+            }
             ExpressionKind::Structure { fields, .. } => fields
                 .iter()
                 .flat_map(|(_, expression)| expression.get_called_nodes())
@@ -156,6 +182,15 @@ impl ExpressionKind<StreamExpression> {
             ExpressionKind::Identifier { .. } => self.compute_identifier_dependencies(symbol_table),
             ExpressionKind::Abstraction { .. } => self.compute_abstraction_dependencies(),
             ExpressionKind::Enumeration { .. } => self.compute_enumeration_dependencies(),
+            ExpressionKind::Unop { .. } => {
+                self.compute_unop_dependencies(symbol_table, nodes_reduced_graphs, errors)
+            }
+            ExpressionKind::Binop { .. } => {
+                self.compute_binop_dependencies(symbol_table, nodes_reduced_graphs, errors)
+            }
+            ExpressionKind::IfThenElse { .. } => {
+                self.compute_ifthenelse_dependencies(symbol_table, nodes_reduced_graphs, errors)
+            }
             ExpressionKind::Application { .. } => self.compute_function_application_dependencies(
                 symbol_table,
                 nodes_reduced_graphs,

@@ -43,6 +43,72 @@ impl ExpressionKind<StreamExpression> {
             | ExpressionKind::Abstraction { .. } => {
                 vec![]
             }
+            ExpressionKind::Unop { expression, .. } => {
+                let new_statements =
+                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+
+                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+
+                new_statements
+            }
+
+            ExpressionKind::Binop {
+                left_expression,
+                right_expression,
+                ..
+            } => {
+                let mut new_statements = left_expression.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    symbol_table,
+                );
+                let mut other_statements = right_expression.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    symbol_table,
+                );
+                new_statements.append(&mut other_statements);
+
+                let mut expression_dependencies = left_expression.get_dependencies().clone();
+                let mut other_dependencies = right_expression.get_dependencies().clone();
+                expression_dependencies.append(&mut other_dependencies);
+
+                *dependencies = Dependencies::from(expression_dependencies);
+
+                new_statements
+            }
+
+            ExpressionKind::IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+            } => {
+                let mut new_statements =
+                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                let mut other_statements = true_expression.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    symbol_table,
+                );
+                new_statements.append(&mut other_statements);
+                let mut other_statements = false_expression.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    symbol_table,
+                );
+                new_statements.append(&mut other_statements);
+
+                let mut expression_dependencies = expression.get_dependencies().clone();
+                let mut other_dependencies = true_expression.get_dependencies().clone();
+                expression_dependencies.append(&mut other_dependencies);
+                let mut other_dependencies = false_expression.get_dependencies().clone();
+                expression_dependencies.append(&mut other_dependencies);
+
+                *dependencies = Dependencies::from(expression_dependencies);
+
+                new_statements
+            }
+
             ExpressionKind::Application { ref mut inputs, .. } => {
                 let new_statements = inputs
                     .iter_mut()

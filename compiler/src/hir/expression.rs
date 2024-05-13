@@ -1,4 +1,5 @@
 use crate::common::label::Label;
+use crate::common::operator::{BinaryOperator, UnaryOperator};
 use crate::common::{constant::Constant, location::Location, r#type::Type};
 use crate::hir::{dependencies::Dependencies, pattern::Pattern, statement::Statement};
 
@@ -14,6 +15,31 @@ pub enum ExpressionKind<E> {
     Identifier {
         /// Element identifier.
         id: usize,
+    },
+    /// Unop expression.
+    Unop {
+        /// The unary operator.
+        op: UnaryOperator,
+        /// The input expression.
+        expression: Box<E>,
+    },
+    /// Binop expression.
+    Binop {
+        /// The unary operator.
+        op: BinaryOperator,
+        /// The left expression.
+        left_expression: Box<E>,
+        /// The right expression.
+        right_expression: Box<E>,
+    },
+    /// IfThenElse expression.
+    IfThenElse {
+        /// The test expression.
+        expression: Box<E>,
+        /// The 'true' expression.
+        true_expression: Box<E>,
+        /// The 'false' expression.
+        false_expression: Box<E>,
     },
     /// Application expression.
     Application {
@@ -165,6 +191,21 @@ impl<E> ExpressionKind<E> {
             | ExpressionKind::Identifier { .. }
             | ExpressionKind::Abstraction { .. }
             | ExpressionKind::Enumeration { .. } => true,
+            ExpressionKind::Unop { expression, .. } => predicate_expression(expression),
+            ExpressionKind::Binop {
+                left_expression,
+                right_expression,
+                ..
+            } => predicate_expression(left_expression) && predicate_expression(right_expression),
+            ExpressionKind::IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+            } => {
+                predicate_expression(expression)
+                    && predicate_expression(true_expression)
+                    && predicate_expression(false_expression)
+            }
             ExpressionKind::Application {
                 function_expression,
                 inputs,

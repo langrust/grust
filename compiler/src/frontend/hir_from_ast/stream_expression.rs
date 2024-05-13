@@ -1,4 +1,6 @@
-use crate::ast::expression::{Application, Array, FieldAccess, Structure, Tuple};
+use crate::ast::expression::{
+    Application, Array, Binop, FieldAccess, IfThenElse, Structure, Tuple, Unop,
+};
 use crate::ast::stream_expression::{FollowedBy, StreamExpression};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
@@ -159,6 +161,15 @@ impl HIRFromAST for StreamExpression {
                     expression: ExpressionKind::Identifier { id },
                 }
             }
+            StreamExpression::Unop(expression) => StreamExpressionKind::Expression {
+                expression: expression.hir_from_ast(symbol_table, errors)?,
+            },
+            StreamExpression::Binop(expression) => StreamExpressionKind::Expression {
+                expression: expression.hir_from_ast(symbol_table, errors)?,
+            },
+            StreamExpression::IfThenElse(expression) => StreamExpressionKind::Expression {
+                expression: expression.hir_from_ast(symbol_table, errors)?,
+            },
             StreamExpression::Application(expression) => StreamExpressionKind::Expression {
                 expression: expression.hir_from_ast(symbol_table, errors)?,
             },
@@ -252,6 +263,27 @@ impl StreamExpression {
                     errors.push(error);
                     Err(TerminationError)
                 }
+            }
+            StreamExpression::Unop(Unop { expression, .. }) => {
+                expression.check_is_constant(symbol_table, errors)
+            }
+            StreamExpression::Binop(Binop {
+                left_expression,
+                right_expression,
+                ..
+            }) => {
+                left_expression.check_is_constant(symbol_table, errors)?;
+                right_expression.check_is_constant(symbol_table, errors)
+            }
+            StreamExpression::IfThenElse(IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+                ..
+            }) => {
+                expression.check_is_constant(symbol_table, errors)?;
+                true_expression.check_is_constant(symbol_table, errors)?;
+                false_expression.check_is_constant(symbol_table, errors)
             }
             StreamExpression::Application(Application {
                 function_expression,
