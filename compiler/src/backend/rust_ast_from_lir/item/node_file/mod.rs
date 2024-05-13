@@ -10,8 +10,8 @@ pub mod input;
 /// RustAST state structure and implementation construction from LIR state.
 pub mod state;
 
-/// Transform LIR node_file into RustAST file.
-pub fn rust_ast_from_lir(node_file: NodeFile, crates: &mut BTreeSet<String>) -> (String, File) {
+/// Transform LIR node_file into items.
+pub fn rust_ast_from_lir(node_file: NodeFile, crates: &mut BTreeSet<String>) -> Vec<Item> {
     let mut items = node_file
         .imports
         .into_iter()
@@ -22,13 +22,6 @@ pub fn rust_ast_from_lir(node_file: NodeFile, crates: &mut BTreeSet<String>) -> 
     items.push(Item::Struct(input_structure));
     items.push(Item::Struct(state_structure));
     items.push(Item::Impl(state_implementation));
-    (
-        format!("src/{}.rs", node_file.name),
-        File {
-            // path: ,
-            items,
-            shebang: None,
-            attrs: Default::default(),
-        },
-    )
+
+    items
 }
