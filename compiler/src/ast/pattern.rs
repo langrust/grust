@@ -162,7 +162,7 @@ impl Parse for Pattern {
 }
 
 #[cfg(test)]
-mod parse_expression {
+mod parse_pattern {
     use crate::{
         ast::pattern::{Enumeration, Pattern, Some, Structure, Tuple},
         common::constant::Constant,
