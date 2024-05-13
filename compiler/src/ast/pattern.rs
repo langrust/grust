@@ -184,7 +184,12 @@ mod parse_expression {
 
     #[test]
     fn should_parse_structure() {
-        let pattern: Pattern = syn::parse_quote! {Point {x: 0, y: _}};
+        let pattern: Pattern = syn::parse_quote! {
+            Point {
+                x: 0,
+                y: _,
+            }
+        };
         let control = Pattern::Structure(Structure {
             name: String::from("Point"),
             fields: vec![

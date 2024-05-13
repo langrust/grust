@@ -62,8 +62,7 @@ where
     E: Parse,
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        forked.peek(Token![|])
+        input.peek(Token![|])
     }
 }
 impl<E> Parse for TypedAbstraction<E>
@@ -111,10 +110,7 @@ where
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(syn::Ident::parse).is_err() {
-            return false;
-        }
-        forked.peek(token::Brace)
+        forked.call(Structure::<E>::parse).is_ok()
     }
 }
 impl<E> Parse for Structure<E>
@@ -147,8 +143,7 @@ where
     E: Parse,
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        forked.peek(token::Paren)
+        input.peek(token::Paren)
     }
 }
 impl<E> Parse for Tuple<E>
@@ -205,8 +200,7 @@ where
     E: Parse,
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        forked.peek(token::Bracket)
+        input.peek(token::Bracket)
     }
 }
 impl<E> Parse for Array<E>
@@ -271,8 +265,7 @@ where
     E: Parse,
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        forked.peek(Token![match])
+        input.peek(Token![match])
     }
 }
 impl<E> Parse for Match<E>
@@ -281,12 +274,12 @@ where
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: Token![match] = input.parse()?;
-        let expression = Box::new(input.parse()?);
+        let expression = input.parse()?;
         let content;
         let _ = braced!(content in input);
         let arms: Punctuated<Arm<E>, Token![,]> = Punctuated::parse_terminated(&content)?;
         Ok(Match {
-            expression,
+            expression: Box::new(expression),
             arms: arms.into_iter().collect(),
         })
     }
@@ -573,8 +566,7 @@ where
     E: Parse,
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        forked.peek(keyword::zip)
+        input.peek(keyword::zip)
     }
 }
 impl<E> Parse for Zip<E>
