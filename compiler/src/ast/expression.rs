@@ -683,5 +683,224 @@ impl Parse for Expression {
         Ok(expression)
     }
 }
+
+#[cfg(test)]
+mod parse_expression {
+    use crate::{
+        ast::{
+            expression::{
+                Application, Arm, Array, Enumeration, Expression, FieldAccess, Fold, Map, Match,
+                Sort, Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
+            },
+            pattern::{self, Pattern},
+        },
+        common::{constant::Constant, r#type::Type},
+    };
+
+    #[test]
+    fn should_parse_constant() {
+        let expression: Expression = syn::parse_quote! {1};
+        let control = Expression::Constant(Constant::Integer(syn::parse_quote! {1}));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_identifier() {
+        let expression: Expression = syn::parse_quote! {x};
+        let control = Expression::Identifier(String::from("x"));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_application() {
+        let expression: Expression = syn::parse_quote! {f(x)};
+        let control = Expression::Application(Application {
+            function_expression: Box::new(Expression::Identifier(String::from("f"))),
+            inputs: vec![Expression::Identifier(String::from("x"))],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_typed_abstraction() {
+        let expression: Expression = syn::parse_quote! {|x: int| f(x)};
+        let control = Expression::TypedAbstraction(TypedAbstraction {
+            inputs: vec![(String::from("x"), Type::Integer)],
+            expression: Box::new(Expression::Application(Application {
+                function_expression: Box::new(Expression::Identifier(String::from("f"))),
+                inputs: vec![Expression::Identifier(String::from("x"))],
+            })),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_structure() {
+        let expression: Expression = syn::parse_quote! {Point {x: 0, y: 1}};
+        let control = Expression::Structure(Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Expression::Constant(Constant::Integer(syn::parse_quote! {0})),
+                ),
+                (
+                    String::from("y"),
+                    Expression::Constant(Constant::Integer(syn::parse_quote! {1})),
+                ),
+            ],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_tuple() {
+        let expression: Expression = syn::parse_quote! {(x, 0)};
+        let control = Expression::Tuple(Tuple {
+            elements: vec![
+                Expression::Identifier(String::from("x")),
+                Expression::Constant(Constant::Integer(syn::parse_quote! {0})),
+            ],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_enumeration() {
+        let expression: Expression = syn::parse_quote! {Color::Pink};
+        let control = Expression::Enumeration(Enumeration {
+            enum_name: String::from("Color"),
+            elem_name: String::from("Pink"),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_array() {
+        let expression: Expression = syn::parse_quote! {[1, 2, 3]};
+        let control = Expression::Array(Array {
+            elements: vec![
+                Expression::Constant(Constant::Integer(syn::parse_quote! {1})),
+                Expression::Constant(Constant::Integer(syn::parse_quote! {2})),
+                Expression::Constant(Constant::Integer(syn::parse_quote! {3})),
+            ],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_match() {
+        let expression: Expression = syn::parse_quote! {
+            match a {
+                Point {x: 0, y: _} => 0,
+                Point {x: x, y: _} if f(x) => -1,
+                _ => 1,
+            }
+        };
+        let control = Expression::Match(Match {
+            expression: Box::new(Expression::Identifier(String::from("a"))),
+            arms: vec![
+                Arm {
+                    pattern: Pattern::Structure(pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (
+                                String::from("x"),
+                                Pattern::Constant(Constant::Integer(syn::parse_quote! {0})),
+                            ),
+                            (String::from("y"), Pattern::Default),
+                        ],
+                    }),
+                    guard: None,
+                    expression: Expression::Constant(Constant::Integer(syn::parse_quote! {0})),
+                },
+                Arm {
+                    pattern: Pattern::Structure(pattern::Structure {
+                        name: String::from("Point"),
+                        fields: vec![
+                            (String::from("x"), Pattern::Identifier(String::from("x"))),
+                            (String::from("y"), Pattern::Default),
+                        ],
+                    }),
+                    guard: Some(Expression::Application(Application {
+                        function_expression: Box::new(Expression::Identifier(String::from("f"))),
+                        inputs: vec![Expression::Identifier(String::from("x"))],
+                    })),
+                    expression: Expression::Constant(Constant::Integer(syn::parse_quote! {-1})),
+                },
+                Arm {
+                    pattern: Pattern::Default,
+                    guard: None,
+                    expression: Expression::Constant(Constant::Integer(syn::parse_quote! {1})),
+                },
+            ],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_field_access() {
+        let expression: Expression = syn::parse_quote! {p.x};
+        let control = Expression::FieldAccess(FieldAccess {
+            expression: Box::new(Expression::Identifier(String::from("p"))),
+            field: String::from("x"),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_tuple_element_access() {
+        let expression: Expression = syn::parse_quote! {t.0};
+        let control = Expression::TupleElementAccess(TupleElementAccess {
+            expression: Box::new(Expression::Identifier(String::from("t"))),
+            element_number: 0,
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_map() {
+        let expression: Expression = syn::parse_quote! {a.map(f)};
+        let control = Expression::Map(Map {
+            expression: Box::new(Expression::Identifier(String::from("a"))),
+            function_expression: Box::new(Expression::Identifier(String::from("f"))),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_fold() {
+        let expression: Expression = syn::parse_quote! {a.fold(0, sum)};
+        let control = Expression::Fold(Fold {
+            expression: Box::new(Expression::Identifier(String::from("a"))),
+            initialization_expression: Box::new(Expression::Constant(Constant::Integer(
+                syn::parse_quote! {0},
+            ))),
+            function_expression: Box::new(Expression::Identifier(String::from("sum"))),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_sort() {
+        let expression: Expression = syn::parse_quote! {a.sort(order)};
+        let control = Expression::Sort(Sort {
+            expression: Box::new(Expression::Identifier(String::from("a"))),
+            function_expression: Box::new(Expression::Identifier(String::from("order"))),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_zip() {
+        let expression: Expression = syn::parse_quote! {zip(a, b, c)};
+        let control = Expression::Zip(Zip {
+            arrays: vec![
+                Expression::Identifier(String::from("a")),
+                Expression::Identifier(String::from("b")),
+                Expression::Identifier(String::from("c")),
+            ],
+        });
+        assert_eq!(expression, control)
     }
 }
