@@ -121,7 +121,7 @@ impl Component {
                         .hir_from_ast(&location, symbol_table, errors)?;
                     let id = symbol_table.insert_signal(
                         name.clone(),
-                        Scope::Input,
+                        Scope::Output,
                         Some(typing),
                         true,
                         location.clone(),

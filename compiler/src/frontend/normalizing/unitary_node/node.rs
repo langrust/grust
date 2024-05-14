@@ -56,7 +56,7 @@ impl Node {
             .unscheduled_equations
             .values()
             .filter(|equation| symbol_table.get_scope(equation.id).eq(&Scope::Output))
-            .map(|equation| equation.id.clone())
+            .map(|equation| equation.id)
             .sorted()
             .collect::<Vec<_>>();
 
