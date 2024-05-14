@@ -1,6 +1,5 @@
 use crate::backend::rust_ast_from_lir::{
     block::rust_ast_from_lir as block_rust_ast_from_lir,
-    item::import::rust_ast_from_lir as import_rust_ast_from_lir,
     r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
 use crate::common::r#type::Type as GRRustType;
@@ -12,11 +11,7 @@ use syn::*;
 
 /// Transform LIR function into RustAST function.
 pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> Vec<Item> {
-    let mut items = function
-        .imports
-        .into_iter()
-        .map(|import| Item::Use(import_rust_ast_from_lir(import, crates)))
-        .collect::<Vec<_>>();
+    let mut items = vec![];
 
     // create generics
     let mut generic_params: Vec<GenericParam> = vec![];
