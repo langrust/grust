@@ -47,10 +47,6 @@ impl File {
             .map(|node| node.causal(symbol_table, errors))
             .collect::<Vec<_>>()
             .into_iter()
-            .collect::<Result<_, _>>()?;
-        // check causality of the optional component
-        self.component
-            .as_ref()
-            .map_or(Ok(()), |component| component.causal(symbol_table, errors))
+            .collect::<Result<_, _>>()
     }
 }

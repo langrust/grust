@@ -53,7 +53,6 @@ impl HIRFromAST for Ast {
             typedefs: typedefs.into_iter().collect::<Result<Vec<_>, _>>()?,
             functions: functions.into_iter().collect::<Result<Vec<_>, _>>()?,
             nodes: nodes.into_iter().collect::<Result<Vec<_>, _>>()?,
-            component: None,
             interface: interface.into_iter().collect::<Result<Vec<_>, _>>()?,
             location: Location::default(),
         })

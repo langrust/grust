@@ -12,7 +12,6 @@ impl TypeAnalysis for File {
         let File {
             functions,
             nodes,
-            component,
             interface,
             ..
         } = self;
@@ -24,11 +23,6 @@ impl TypeAnalysis for File {
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
-
-        // typing component
-        component
-            .as_mut()
-            .map_or(Ok(()), |component| component.typing(symbol_table, errors))?;
 
         // typing functions
         functions

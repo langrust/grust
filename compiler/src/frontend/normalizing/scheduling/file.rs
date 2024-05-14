@@ -29,12 +29,6 @@ impl File {
             node.unitary_nodes
                 .iter_mut()
                 .for_each(|(_, unitary_node)| unitary_node.schedule())
-        });
-        self.component.as_mut().map_or((), |component| {
-            component
-                .unitary_nodes
-                .iter_mut()
-                .for_each(|(_, unitary_node)| unitary_node.schedule())
         })
     }
 }

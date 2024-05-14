@@ -40,9 +40,6 @@ impl File {
         self.nodes
             .iter_mut()
             .for_each(|node| node.memorize(symbol_table));
-        if let Some(component) = self.component.as_mut() {
-            component.memorize(symbol_table)
-        }
 
         // Debug: test there is no FollowedBy expressions
         debug_assert!(self.no_fby());

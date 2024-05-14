@@ -52,17 +52,11 @@ impl File {
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
-        self.component.as_mut().map_or(Ok(()), |component| {
-            component.generate_unitary_nodes(symbol_table, creusot_contract, errors)
-        })?;
 
         // change node application to unitary node application
         self.nodes.iter_mut().for_each(|node| {
             node.change_node_application_into_unitary_node_application(symbol_table)
         });
-        if let Some(component) = self.component.as_mut() {
-            component.change_node_application_into_unitary_node_application(symbol_table)
-        };
 
         // change component application to unitary node application
         self.interface.iter_mut().for_each(|statement| {
