@@ -1,15 +1,18 @@
 use syn::parse::Parse;
 
-use crate::ast::{
-    expression::{
-        Application, Array, Enumeration, FieldAccess, Fold, Map, Match, Sort, Structure, Tuple,
-        TupleElementAccess, TypedAbstraction, Zip,
-    },
-    keyword,
-};
 use crate::common::constant::Constant;
+use crate::{
+    ast::{
+        expression::{
+            Application, Array, Enumeration, FieldAccess, Fold, Map, Match, Sort, Structure, Tuple,
+            TupleElementAccess, TypedAbstraction, Zip,
+        },
+        keyword,
+    },
+    common::operator::BinaryOperator,
+};
 
-use super::expression::{Binop, IfThenElse, Unop};
+use super::expression::{Binop, IfThenElse, ParsePrec, Unop};
 
 /// Initialized buffer stream expression.
 #[derive(Debug, PartialEq, Clone)]
@@ -89,14 +92,12 @@ pub enum StreamExpression {
     /// Initialized buffer stream expression.
     FollowedBy(FollowedBy),
 }
-impl Parse for StreamExpression {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let mut expression = if TypedAbstraction::<StreamExpression>::peek(input) {
-            StreamExpression::TypedAbstraction(input.parse()?)
+impl ParsePrec for StreamExpression {
+    fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = if input.fork().call(Constant::parse).is_ok() {
+            StreamExpression::Constant(input.parse()?)
         } else if Unop::<StreamExpression>::peek(input) {
             StreamExpression::Unop(input.parse()?)
-        } else if IfThenElse::<StreamExpression>::peek(input) {
-            StreamExpression::IfThenElse(input.parse()?)
         } else if Zip::<StreamExpression>::peek(input) {
             StreamExpression::Zip(input.parse()?)
         } else if Match::<StreamExpression>::peek(input) {
@@ -117,21 +118,11 @@ impl Parse for StreamExpression {
         } else if input.fork().call(syn::Ident::parse).is_ok() {
             let ident: syn::Ident = input.parse()?;
             StreamExpression::Identifier(ident.to_string())
-        } else if input.fork().call(Constant::parse).is_ok() {
-            StreamExpression::Constant(input.parse()?)
         } else {
             return Err(input.error("expected expression"));
         };
         loop {
-            if FollowedBy::peek(input) {
-                expression =
-                    StreamExpression::FollowedBy(FollowedBy::parse(Box::new(expression), input)?);
-            } else if Binop::<StreamExpression>::peek(input) {
-                expression = StreamExpression::Binop(Binop::<StreamExpression>::parse(
-                    Box::new(expression),
-                    input,
-                )?);
-            } else if Sort::<StreamExpression>::peek(input) {
+            if Sort::<StreamExpression>::peek(input) {
                 expression = StreamExpression::Sort(Sort::<StreamExpression>::parse(
                     Box::new(expression),
                     input,
@@ -167,6 +158,87 @@ impl Parse for StreamExpression {
         }
         Ok(expression)
     }
+
+    fn parse_prec1(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = StreamExpression::parse_term(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec1(input) {
+                expression = StreamExpression::Binop(Binop::<StreamExpression>::parse_term(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
+    fn parse_prec2(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = StreamExpression::parse_prec1(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec2(input) {
+                expression = StreamExpression::Binop(Binop::<StreamExpression>::parse_prec1(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
+    fn parse_prec3(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = StreamExpression::parse_prec2(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec3(input) {
+                expression = StreamExpression::Binop(Binop::<StreamExpression>::parse_prec2(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
+    fn parse_prec4(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = StreamExpression::parse_prec3(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec4(input) {
+                expression = StreamExpression::Binop(Binop::<StreamExpression>::parse_prec3(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
+}
+impl Parse for StreamExpression {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = if TypedAbstraction::<StreamExpression>::peek(input) {
+            StreamExpression::TypedAbstraction(input.parse()?)
+        } else if IfThenElse::<StreamExpression>::peek(input) {
+            StreamExpression::IfThenElse(input.parse()?)
+        } else {
+            StreamExpression::parse_prec4(input)?
+        };
+        loop {
+            if FollowedBy::peek(input) {
+                expression =
+                    StreamExpression::FollowedBy(FollowedBy::parse(Box::new(expression), input)?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
 }
 
 #[cfg(test)]
@@ -174,13 +246,13 @@ mod parse_stream_expression {
     use crate::{
         ast::{
             expression::{
-                Application, Arm, Array, Enumeration, FieldAccess, Fold, Map, Match, Sort,
+                Application, Arm, Array, Binop, Enumeration, FieldAccess, Fold, Map, Match, Sort,
                 Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
             },
             pattern::{self, Pattern},
             stream_expression::{FollowedBy, StreamExpression},
         },
-        common::{constant::Constant, r#type::Type},
+        common::{constant::Constant, operator::BinaryOperator, r#type::Type},
     };
 
     #[test]
@@ -218,6 +290,32 @@ mod parse_stream_expression {
         let control = StreamExpression::Application(Application {
             function_expression: Box::new(StreamExpression::Identifier(String::from("f"))),
             inputs: vec![StreamExpression::Identifier(String::from("x"))],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_binop() {
+        let expression: StreamExpression = syn::parse_quote! {a+b};
+        let control = StreamExpression::Binop(Binop {
+            op: BinaryOperator::Add,
+            left_expression: Box::new(StreamExpression::Identifier(String::from("a"))),
+            right_expression: Box::new(StreamExpression::Identifier(String::from("b"))),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_binop_with_precedence() {
+        let expression: StreamExpression = syn::parse_quote! {a+b*c};
+        let control = StreamExpression::Binop(Binop {
+            op: BinaryOperator::Add,
+            left_expression: Box::new(StreamExpression::Identifier(String::from("a"))),
+            right_expression: Box::new(StreamExpression::Binop(Binop {
+                op: BinaryOperator::Mul,
+                left_expression: Box::new(StreamExpression::Identifier(String::from("b"))),
+                right_expression: Box::new(StreamExpression::Identifier(String::from("c"))),
+            })),
         });
         assert_eq!(expression, control)
     }

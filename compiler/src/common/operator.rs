@@ -63,6 +63,23 @@ impl BinaryOperator {
             || input.peek(Token![>])
             || input.peek(Token![<])
     }
+    pub fn peek_prec1(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![*]) || input.peek(Token![/])
+    }
+    pub fn peek_prec2(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![+]) || input.peek(Token![-])
+    }
+    pub fn peek_prec3(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![==])
+            || input.peek(Token![!=])
+            || input.peek(Token![>=])
+            || input.peek(Token![<=])
+            || input.peek(Token![>])
+            || input.peek(Token![<])
+    }
+    pub fn peek_prec4(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![&&]) || input.peek(Token![||])
+    }
 }
 impl Parse for BinaryOperator {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {

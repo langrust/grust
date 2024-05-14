@@ -8,6 +8,17 @@ use crate::common::{constant::Constant, r#type::Type};
 
 use super::keyword;
 
+pub trait ParsePrec
+where
+    Self: Sized,
+{
+    fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self>;
+    fn parse_prec1(input: syn::parse::ParseStream) -> syn::Result<Self>;
+    fn parse_prec2(input: syn::parse::ParseStream) -> syn::Result<Self>;
+    fn parse_prec3(input: syn::parse::ParseStream) -> syn::Result<Self>;
+    fn parse_prec4(input: syn::parse::ParseStream) -> syn::Result<Self>;
+}
+
 /// Unop expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Unop<E> {
@@ -49,14 +60,65 @@ pub struct Binop<E> {
 }
 impl<E> Binop<E>
 where
-    E: Parse,
+    E: ParsePrec,
 {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         BinaryOperator::peek(input)
     }
-    pub fn parse(left_expression: Box<E>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse_term(
+        left_expression: Box<E>,
+        input: syn::parse::ParseStream,
+    ) -> syn::Result<Self> {
         let op = input.parse()?;
-        let right_expression = Box::new(input.parse()?);
+        let right_expression = Box::new(E::parse_term(input)?);
+        Ok(Binop {
+            op,
+            left_expression,
+            right_expression,
+        })
+    }
+    pub fn parse_prec1(
+        left_expression: Box<E>,
+        input: syn::parse::ParseStream,
+    ) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right_expression = Box::new(E::parse_prec1(input)?);
+        Ok(Binop {
+            op,
+            left_expression,
+            right_expression,
+        })
+    }
+    pub fn parse_prec2(
+        left_expression: Box<E>,
+        input: syn::parse::ParseStream,
+    ) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right_expression = Box::new(E::parse_prec2(input)?);
+        Ok(Binop {
+            op,
+            left_expression,
+            right_expression,
+        })
+    }
+    pub fn parse_prec3(
+        left_expression: Box<E>,
+        input: syn::parse::ParseStream,
+    ) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right_expression = Box::new(E::parse_prec3(input)?);
+        Ok(Binop {
+            op,
+            left_expression,
+            right_expression,
+        })
+    }
+    pub fn parse_prec4(
+        left_expression: Box<E>,
+        input: syn::parse::ParseStream,
+    ) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right_expression = Box::new(E::parse_prec4(input)?);
         Ok(Binop {
             op,
             left_expression,
@@ -719,16 +781,12 @@ pub enum Expression {
     /// Arrays zip operator expression.
     Zip(Zip<Expression>),
 }
-
-impl Parse for Expression {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        // TODO: add 'if then else', unop and binop !
-        let mut expression = if TypedAbstraction::<Expression>::peek(input) {
-            Expression::TypedAbstraction(input.parse()?)
+impl ParsePrec for Expression {
+    fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = if input.fork().call(Constant::parse).is_ok() {
+            Expression::Constant(input.parse()?)
         } else if Unop::<Expression>::peek(input) {
             Expression::Unop(input.parse()?)
-        } else if IfThenElse::<Expression>::peek(input) {
-            Expression::IfThenElse(input.parse()?)
         } else if Zip::<Expression>::peek(input) {
             Expression::Zip(input.parse()?)
         } else if Match::<Expression>::peek(input) {
@@ -749,17 +807,12 @@ impl Parse for Expression {
         } else if input.fork().call(syn::Ident::parse).is_ok() {
             let ident: syn::Ident = input.parse()?;
             Expression::Identifier(ident.to_string())
-        } else if input.fork().call(Constant::parse).is_ok() {
-            Expression::Constant(input.parse()?)
         } else {
             return Err(input.error("expected expression"));
         };
 
         loop {
-            if Binop::<Expression>::peek(input) {
-                expression =
-                    Expression::Binop(Binop::<Expression>::parse(Box::new(expression), input)?);
-            } else if Sort::<Expression>::peek(input) {
+            if Sort::<Expression>::peek(input) {
                 expression =
                     Expression::Sort(Sort::<Expression>::parse(Box::new(expression), input)?);
             } else if Map::<Expression>::peek(input) {
@@ -787,6 +840,79 @@ impl Parse for Expression {
         }
         Ok(expression)
     }
+    fn parse_prec1(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = Expression::parse_term(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec1(input) {
+                expression = Expression::Binop(Binop::<Expression>::parse_term(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
+    fn parse_prec2(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = Expression::parse_prec1(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec2(input) {
+                expression = Expression::Binop(Binop::<Expression>::parse_prec1(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
+    fn parse_prec3(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = Expression::parse_prec2(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec3(input) {
+                expression = Expression::Binop(Binop::<Expression>::parse_prec2(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
+    fn parse_prec4(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut expression = Expression::parse_prec3(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec4(input) {
+                expression = Expression::Binop(Binop::<Expression>::parse_prec3(
+                    Box::new(expression),
+                    input,
+                )?);
+            } else {
+                break;
+            }
+        }
+        Ok(expression)
+    }
+}
+impl Parse for Expression {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let expression = if TypedAbstraction::<Expression>::peek(input) {
+            Expression::TypedAbstraction(input.parse()?)
+        } else if IfThenElse::<Expression>::peek(input) {
+            Expression::IfThenElse(input.parse()?)
+        } else {
+            Expression::parse_prec4(input)?
+        };
+
+        Ok(expression)
+    }
 }
 
 #[cfg(test)]
@@ -794,12 +920,12 @@ mod parse_expression {
     use crate::{
         ast::{
             expression::{
-                Application, Arm, Array, Enumeration, Expression, FieldAccess, Fold, Map, Match,
-                Sort, Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
+                Application, Arm, Array, Binop, Enumeration, Expression, FieldAccess, Fold, Map,
+                Match, Sort, Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
             },
             pattern::{self, Pattern},
         },
-        common::{constant::Constant, r#type::Type},
+        common::{constant::Constant, operator::BinaryOperator, r#type::Type},
     };
 
     #[test]
@@ -822,6 +948,32 @@ mod parse_expression {
         let control = Expression::Application(Application {
             function_expression: Box::new(Expression::Identifier(String::from("f"))),
             inputs: vec![Expression::Identifier(String::from("x"))],
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_binop() {
+        let expression: Expression = syn::parse_quote! {a+b};
+        let control = Expression::Binop(Binop {
+            op: BinaryOperator::Add,
+            left_expression: Box::new(Expression::Identifier(String::from("a"))),
+            right_expression: Box::new(Expression::Identifier(String::from("b"))),
+        });
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_binop_with_precedence() {
+        let expression: Expression = syn::parse_quote! {a+b*c};
+        let control = Expression::Binop(Binop {
+            op: BinaryOperator::Add,
+            left_expression: Box::new(Expression::Identifier(String::from("a"))),
+            right_expression: Box::new(Expression::Binop(Binop {
+                op: BinaryOperator::Mul,
+                left_expression: Box::new(Expression::Identifier(String::from("b"))),
+                right_expression: Box::new(Expression::Identifier(String::from("c"))),
+            })),
         });
         assert_eq!(expression, control)
     }
