@@ -71,9 +71,9 @@ where
                 true_expression,
                 false_expression,
             } => {
-                let else_branch = expression.lir_from_hir(symbol_table);
+                let condition = expression.lir_from_hir(symbol_table);
                 let then_branch = true_expression.lir_from_hir(symbol_table);
-                let condition = false_expression.lir_from_hir(symbol_table);
+                let else_branch = false_expression.lir_from_hir(symbol_table);
                 LIRExpression::IfThenElse {
                     condition: Box::new(condition),
                     then_branch: Block {
