@@ -102,7 +102,12 @@ impl Parse for StreamExpression {
         } else if Match::<StreamExpression>::peek(input) {
             StreamExpression::Match(input.parse()?)
         } else if Tuple::<StreamExpression>::peek(input) {
-            StreamExpression::Tuple(input.parse()?)
+            let mut tuple: Tuple<StreamExpression> = input.parse()?;
+            if tuple.elements.len() == 1 {
+                tuple.elements.pop().unwrap()
+            } else {
+                StreamExpression::Tuple(tuple)
+            }
         } else if Array::<StreamExpression>::peek(input) {
             StreamExpression::Array(input.parse()?)
         } else if Structure::<StreamExpression>::peek(input) {

@@ -734,7 +734,12 @@ impl Parse for Expression {
         } else if Match::<Expression>::peek(input) {
             Expression::Match(input.parse()?)
         } else if Tuple::<Expression>::peek(input) {
-            Expression::Tuple(input.parse()?)
+            let mut tuple: Tuple<Expression> = input.parse()?;
+            if tuple.elements.len() == 1 {
+                tuple.elements.pop().unwrap()
+            } else {
+                Expression::Tuple(tuple)
+            }
         } else if Array::<Expression>::peek(input) {
             Expression::Array(input.parse()?)
         } else if Structure::<Expression>::peek(input) {
