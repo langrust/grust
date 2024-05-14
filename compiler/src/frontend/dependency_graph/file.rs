@@ -14,9 +14,7 @@ impl File {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let File {
-            nodes, component, ..
-        } = self;
+        let File { nodes, .. } = self;
 
         // initialize dictionariy for reduced graphs
         let mut nodes_reduced_graphs = HashMap::new();
@@ -26,9 +24,6 @@ impl File {
         nodes
             .iter()
             .for_each(|node| node.add_node_dependencies(&mut nodes_graph));
-        if let Some(component) = component {
-            component.add_node_dependencies(&mut nodes_graph)
-        }
 
         // sort nodes according to their dependencies
         let sorted_nodes = toposort(&nodes_graph, None).map_err(|node| {
@@ -59,9 +54,6 @@ impl File {
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
-        component.as_mut().map_or(Ok(()), |component| {
-            component.compute_dependencies(symbol_table, &mut nodes_reduced_graphs, errors)
-        })?;
 
         Ok(())
     }

@@ -64,21 +64,10 @@ impl File {
                     .is_none())
             })
         });
-        // get optional component's graph
-        if let Some(component) = self.component.as_ref() {
-            component.unitary_nodes.values().for_each(|unitary_node| {
-                debug_assert!(nodes_reduced_graphs
-                    .insert(unitary_node.id.clone(), unitary_node.graph.clone())
-                    .is_none())
-            })
-        };
 
         self.nodes
             .iter_mut()
             .for_each(|node| node.normal_form(&nodes_reduced_graphs, symbol_table));
-        if let Some(component) = self.component.as_mut() {
-            component.normal_form(&nodes_reduced_graphs, symbol_table)
-        }
 
         // Debug: test it is in normal form
         debug_assert!(self.is_normal_form());

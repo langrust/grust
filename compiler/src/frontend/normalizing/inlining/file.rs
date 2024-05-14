@@ -33,9 +33,6 @@ impl File {
             .collect::<HashMap<_, _>>();
         self.nodes
             .iter_mut()
-            .for_each(|node| node.inline_when_needed(&nodes, symbol_table));
-        self.component.as_mut().map_or((), |component| {
-            component.inline_when_needed(&nodes, symbol_table)
-        })
+            .for_each(|node| node.inline_when_needed(&nodes, symbol_table))
     }
 }

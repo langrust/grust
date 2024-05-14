@@ -14,7 +14,6 @@ impl LIRFromHIR for File {
             typedefs,
             functions,
             nodes,
-            component,
             ..
         } = self;
 
@@ -35,19 +34,12 @@ impl LIRFromHIR for File {
                     .map(Item::NodeFile)
             })
             .collect();
-        let mut component = component.map_or(vec![], |component| {
-            component
-                .lir_from_hir(symbol_table)
-                .into_iter()
-                .map(Item::NodeFile)
-                .collect()
-        });
 
         let mut items = vec![];
         items.append(&mut typedefs);
         items.append(&mut functions);
         items.append(&mut nodes);
-        items.append(&mut component);
+        
         Project { items }
     }
 }
