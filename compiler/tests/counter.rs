@@ -1,6 +1,5 @@
 use compiler::{ast::Ast, conf, dump_code, into_token_stream};
 
-
 #[test]
 fn should_compile_counter() {
     let ast: Ast = syn::parse_quote! {
