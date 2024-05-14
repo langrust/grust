@@ -39,7 +39,7 @@ impl LIRFromHIR for File {
         items.append(&mut typedefs);
         items.append(&mut functions);
         items.append(&mut nodes);
-        
+
         Project { items }
     }
 }
