@@ -17,6 +17,10 @@ impl LIRFromHIR for Pattern {
                 name: symbol_table.get_name(id).clone(),
             },
             PatternKind::Constant { constant } => LIRPattern::Literal { literal: constant },
+            PatternKind::Typed { pattern, typing } => LIRPattern::Typed {
+                pattern: Box::new(pattern.lir_from_hir(symbol_table)),
+                typing,
+            },
             PatternKind::Structure { id, fields } => LIRPattern::Structure {
                 name: symbol_table.get_name(id).clone(),
                 fields: fields
@@ -80,7 +84,9 @@ impl LIRFromHIR for Pattern {
                 .flat_map(|pattern| pattern.get_imports(symbol_table))
                 .unique()
                 .collect(),
-            PatternKind::Some { pattern } => pattern.get_imports(symbol_table),
+            PatternKind::Some { pattern } | PatternKind::Typed { pattern, .. } => {
+                pattern.get_imports(symbol_table)
+            }
         }
     }
 }

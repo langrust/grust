@@ -1,12 +1,29 @@
 use std::collections::HashMap;
 
-use crate::ast::pattern::{Enumeration, Pattern, Some, Structure, Tuple};
+use crate::ast::pattern::{Enumeration, Pattern, Some, Structure, Tuple, Typed};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 use crate::hir::pattern::{Pattern as HIRPattern, PatternKind};
 use crate::symbol_table::SymbolTable;
 
 use super::HIRFromAST;
+
+impl Typed {
+    fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<PatternKind, TerminationError> {
+        let Typed {
+            pattern, typing, ..
+        } = self;
+        let location = Location::default();
+
+        let pattern = Box::new(pattern.hir_from_ast(symbol_table, errors)?);
+        let typing = typing.hir_from_ast(&location, symbol_table, errors)?;
+        Ok(PatternKind::Typed { pattern, typing })
+    }
+}
 
 impl Structure {
     fn hir_from_ast(
@@ -49,21 +66,23 @@ impl Structure {
             .into_iter()
             .collect::<Result<Vec<_>, _>>()?;
 
-        // check if there are no missing fields
-        field_ids
-            .keys()
-            .map(|field_name| {
-                let error = Error::MissingField {
-                    structure_name: name.clone(),
-                    field_name: field_name.clone(),
-                    location: location.clone(),
-                };
-                errors.push(error);
-                Err::<(), TerminationError>(TerminationError)
-            })
-            .collect::<Vec<Result<_, _>>>()
-            .into_iter()
-            .collect::<Result<Vec<_>, _>>()?;
+        if rest.is_none() {
+            // check if there are no missing fields
+            field_ids
+                .keys()
+                .map(|field_name| {
+                    let error = Error::MissingField {
+                        structure_name: name.clone(),
+                        field_name: field_name.clone(),
+                        location: location.clone(),
+                    };
+                    errors.push(error);
+                    Err::<(), TerminationError>(TerminationError)
+                })
+                .collect::<Vec<Result<_, _>>>()
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()?;
+        }
 
         Ok(PatternKind::Structure { id, fields })
     }
@@ -141,7 +160,7 @@ impl HIRFromAST for Pattern {
                     symbol_table.insert_identifier(name, None, true, location.clone(), errors)?;
                 PatternKind::Identifier { id }
             }
-            Pattern::Typed(pattern) => todo!(),
+            Pattern::Typed(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
             Pattern::Structure(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
             Pattern::Enumeration(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
             Pattern::Tuple(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
