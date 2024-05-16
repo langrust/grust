@@ -17,12 +17,12 @@ where
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         let Statement {
-            typed_pattern,
+            pattern,
             expression,
             ..
         } = self;
         LIRStatement::Let {
-            pattern: typed_pattern.lir_from_hir(symbol_table),
+            pattern: pattern.lir_from_hir(symbol_table),
             expression: expression.lir_from_hir(symbol_table),
         }
     }

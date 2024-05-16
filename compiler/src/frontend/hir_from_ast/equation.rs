@@ -32,10 +32,10 @@ impl HIRFromAST for Equation {
                 expression,
                 ..
             }) => {
-                let typed_pattern = pattern.hir_from_ast(symbol_table, errors)?;
+                let pattern = pattern.hir_from_ast(symbol_table, errors)?;
 
                 Ok(HIRStatement {
-                    typed_pattern,
+                    pattern,
                     expression: expression.hir_from_ast(symbol_table, errors)?,
                     location,
                 })

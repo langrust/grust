@@ -6,7 +6,6 @@ use crate::ast::colon::Colon;
 use crate::ast::component::Component;
 use crate::ast::equation::Equation;
 use crate::common::location::Location;
-use crate::common::r#type::Type;
 use crate::common::scope::Scope;
 use crate::error::{Error, TerminationError};
 use crate::hir::node::Node as HIRNode;
@@ -40,14 +39,10 @@ impl HIRFromAST for Component {
 
         let unscheduled_equations = equations
             .into_iter()
-            .map(|equation| {
-                let signal = todo!(); //equation.get_pattern().to_string();
-                let id = symbol_table.get_signal_id(&signal, true, location.clone(), errors)?;
-                Ok((id, equation.hir_from_ast(symbol_table, errors)?))
-            })
+            .map(|equation| equation.hir_from_ast(symbol_table, errors))
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            .collect::<Result<Vec<_>, _>>()?;
         let contract = contract.hir_from_ast(symbol_table, errors)?;
 
         symbol_table.global();
@@ -64,7 +59,7 @@ impl HIRFromAST for Component {
 }
 
 impl Component {
-    /// Store node's identifiers in symbol table.
+    /// Store node's signals in symbol table.
     pub fn store(
         &self,
         symbol_table: &mut SymbolTable,
@@ -139,25 +134,17 @@ impl Component {
             .equations
             .iter()
             .filter_map(|equation| match equation {
-                Equation::LocalDef(declaration) => Some((|| {
-                    let element_name: String = todo!(); //declaration.typed_pattern.left.to_string();
-                    let element_type: Type = todo!();
-                    let typing = element_type.hir_from_ast(&location, symbol_table, errors)?;
-                    let id = symbol_table.insert_signal(
-                        element_name.clone(),
-                        Scope::Local,
-                        Some(typing),
-                        true,
-                        location.clone(),
-                        errors,
-                    )?;
-                    Ok((element_name, id))
-                })()),
+                Equation::LocalDef(declaration) => {
+                    Some(declaration.typed_pattern.store(symbol_table, errors))
+                }
                 Equation::OutputDef(_) => None,
             })
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            .collect::<Result<Vec<Vec<_>>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect::<HashMap<String, usize>>();
 
         symbol_table.global();
 
