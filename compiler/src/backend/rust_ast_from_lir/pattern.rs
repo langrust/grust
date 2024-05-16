@@ -1,4 +1,7 @@
-use crate::{common::constant::Constant, lir::pattern::Pattern};
+use crate::{
+    backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    common::constant::Constant, lir::pattern::Pattern,
+};
 use proc_macro2::Span;
 use quote::format_ident;
 use syn::*;
@@ -33,6 +36,12 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
         Pattern::Default => Pat::Wild(PatWild {
             attrs: vec![],
             underscore_token: Default::default(),
+        }),
+        Pattern::Typed { pattern, typing } => Pat::Type(PatType {
+            attrs: vec![],
+            pat: Box::new(rust_ast_from_lir(*pattern)),
+            colon_token: parse_quote!(:),
+            ty: Box::new(type_rust_ast_from_lir(typing)),
         }),
         Pattern::Structure { name, fields } => Pat::Struct(PatStruct {
             attrs: vec![],

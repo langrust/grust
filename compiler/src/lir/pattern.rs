@@ -1,4 +1,4 @@
-use crate::common::constant::Constant;
+use crate::common::{constant::Constant, r#type::Type};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust matching pattern LIR (resemble to the AST).
@@ -12,6 +12,13 @@ pub enum Pattern {
     Literal {
         /// The matching literal (constant).
         literal: Constant,
+    },
+    /// Typed pattern.
+    Typed {
+        /// The pattern.
+        pattern: Box<Pattern>,
+        /// The type.
+        typing: Type,
     },
     /// Structure pattern that matches the structure and its fields.
     Structure {

@@ -13,6 +13,13 @@ pub enum PatternKind {
         /// The matching constant.
         constant: Constant,
     },
+    /// Typed pattern.
+    Typed {
+        /// The pattern.
+        pattern: Box<Pattern>,
+        /// The type.
+        typing: Type,
+    },
     /// Structure pattern that matches the structure and its fields.
     Structure {
         /// The structure id.
@@ -84,7 +91,9 @@ impl Pattern {
                 .iter()
                 .flat_map(|pattern| pattern.local_identifiers())
                 .collect(),
-            PatternKind::Some { pattern } => pattern.local_identifiers(),
+            PatternKind::Some { pattern } | PatternKind::Typed { pattern, .. } => {
+                pattern.local_identifiers()
+            }
         }
     }
 }

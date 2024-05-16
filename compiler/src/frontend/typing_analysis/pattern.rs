@@ -23,6 +23,13 @@ impl Pattern {
                 self.typing = Some(expected_type.clone());
                 Ok(())
             }
+            PatternKind::Typed {
+                ref mut pattern,
+                ref typing,
+            } => {
+                typing.eq_check(&expected_type, self.location.clone(), errors)?;
+                pattern.typing(expected_type, symbol_table, errors)
+            }
             PatternKind::Structure {
                 ref id,
                 ref mut fields,
