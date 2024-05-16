@@ -5,7 +5,7 @@ use crate::hir::{stream_expression::StreamExpression, pattern::Pattern};
 /// LanGRust statement HIR.
 pub struct Statement<E> {
     /// Pattern of elements.
-    pub typed_pattern: Pattern,
+    pub pattern: Pattern,
     /// The expression defining the element.
     pub expression: E,
     /// Statement location.

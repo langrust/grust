@@ -5,6 +5,7 @@ use crate::ast::interface::{
 use crate::common::location::Location;
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
+use crate::hir::pattern::{Pattern, PatternKind};
 use crate::hir::{
     flow_expression::{
         FlowExpression as HIRFlowExpression, FlowExpressionKind as HIRFlowExpressionKind,
@@ -52,7 +53,11 @@ impl HIRFromAST for FlowStatement {
                 let flow_expression = flow_expression.hir_from_ast(symbol_table, errors)?;
 
                 Ok(Some(Statement {
-                    id,
+                    pattern: Pattern {
+                        kind: PatternKind::Identifier { id },
+                        typing: None,
+                        location: location.clone(),
+                    },
                     expression: flow_expression,
                     location,
                 }))
@@ -70,7 +75,11 @@ impl HIRFromAST for FlowStatement {
                 let flow_expression = flow_expression.hir_from_ast(symbol_table, errors)?;
 
                 Ok(Some(Statement {
-                    id,
+                    pattern: Pattern {
+                        kind: PatternKind::Identifier { id },
+                        typing: None,
+                        location: location.clone(),
+                    },
                     expression: flow_expression,
                     location,
                 }))

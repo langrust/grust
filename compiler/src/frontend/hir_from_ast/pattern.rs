@@ -156,8 +156,7 @@ impl HIRFromAST for Pattern {
         let kind = match self {
             Pattern::Constant(constant) => PatternKind::Constant { constant },
             Pattern::Identifier(name) => {
-                let id =
-                    symbol_table.insert_identifier(name, None, true, location.clone(), errors)?;
+                let id = symbol_table.get_identifier_id(&name, false, location, errors)?;
                 PatternKind::Identifier { id }
             }
             Pattern::Typed(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
@@ -174,5 +173,40 @@ impl HIRFromAST for Pattern {
             typing: None,
             location,
         })
+    }
+}
+
+impl Pattern {
+    pub fn store(
+        &self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<Vec<(String, usize)>, TerminationError> {
+        let location = Location::default();
+
+        match self {
+            Pattern::Identifier(name) => {
+                let id = symbol_table.insert_identifier(
+                    name.clone(),
+                    None,
+                    true,
+                    location.clone(),
+                    errors,
+                )?;
+                Ok(vec![(name.clone(), id)])
+            }
+            Pattern::Typed(Typed { pattern, .. }) => pattern.store(symbol_table, errors),
+            Pattern::Tuple(Tuple { elements }) => Ok(elements
+                .iter()
+                .map(|pattern| pattern.store(symbol_table, errors))
+                .collect::<Vec<Result<_, _>>>()
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .flatten()
+                .collect()),
+            Pattern::Default => Ok(vec![]),
+            _ => todo!("error: not declaration pattern"),
+        }
     }
 }

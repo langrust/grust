@@ -13,7 +13,7 @@ pub struct Node {
     /// Node identifier.
     pub id: usize,
     /// Node's unscheduled equations.
-    pub unscheduled_equations: HashMap<usize, Statement<StreamExpression>>,
+    pub unscheduled_equations: Vec<Statement<StreamExpression>>,
     /// Unitary output nodes generated from this node.
     pub unitary_nodes: HashMap<usize, UnitaryNode>,
     /// Node's contract.

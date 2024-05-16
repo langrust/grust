@@ -17,7 +17,7 @@ impl TypeAnalysis for Node {
         // type all equations
         unscheduled_equations
             .iter_mut()
-            .map(|(_, equation)| equation.typing(symbol_table, errors))
+            .map(|equation| equation.typing(symbol_table, errors))
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()
