@@ -1,9 +1,6 @@
 use syn::{parenthesized, parse::Parse, punctuated::Punctuated, token, Token};
 
-use super::{
-    ident_colon::{IdentColon, PathColon},
-    keyword,
-};
+use super::{colon::Colon, keyword};
 use crate::common::r#type::Type;
 
 /// GReact `sample` operator.
@@ -205,7 +202,7 @@ pub struct FlowDeclaration {
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_ident: IdentColon<Type>,
+    pub typed_ident: Colon<syn::Ident, Type>,
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: FlowExpression,
@@ -220,7 +217,7 @@ impl Parse for FlowDeclaration {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let let_token: Token![let] = input.parse()?;
         let kind: FlowKind = input.parse()?;
-        let typed_ident: IdentColon<Type> = input.parse()?;
+        let typed_ident: Colon<syn::Ident, Type> = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
         let flow_expression: FlowExpression = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
@@ -274,7 +271,7 @@ pub struct FlowImport {
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_path: PathColon<Type>,
+    pub typed_path: Colon<syn::Path, Type>,
     pub semi_token: Token![;],
 }
 impl FlowImport {
@@ -286,7 +283,7 @@ impl Parse for FlowImport {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let import_token: keyword::import = input.parse()?;
         let kind: FlowKind = input.parse()?;
-        let typed_path: PathColon<Type> = input.parse()?;
+        let typed_path: Colon<syn::Path, Type> = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
         Ok(FlowImport {
             import_token,
@@ -303,7 +300,7 @@ pub struct FlowExport {
     /// Flow's kind.
     pub kind: FlowKind,
     /// Identifier of the flow and its type.
-    pub typed_path: PathColon<Type>,
+    pub typed_path: Colon<syn::Path, Type>,
     pub semi_token: Token![;],
 }
 impl FlowExport {
@@ -315,7 +312,7 @@ impl Parse for FlowExport {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let export_token: keyword::export = input.parse()?;
         let kind: FlowKind = input.parse()?;
-        let typed_path: PathColon<Type> = input.parse()?;
+        let typed_path: Colon<syn::Path, Type> = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
         Ok(FlowExport {
             export_token,

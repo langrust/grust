@@ -1,8 +1,34 @@
 use syn::{braced, parenthesized, parse::Parse, punctuated::Punctuated, token, Token};
 
-use crate::common::constant::Constant;
+use crate::common::{constant::Constant, r#type::Type};
 
-use super::{ident_colon::IdentColon, keyword};
+use super::{colon::Colon, keyword};
+
+/// Typed pattern.
+#[derive(Debug, PartialEq, Clone)]
+pub struct Typed {
+    /// The pattern.
+    pub pattern: Box<Pattern>,
+    /// The colon token.
+    pub colon_token: Token![:],
+    /// The type.
+    pub typing: Type,
+}
+impl Typed {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![:])
+    }
+
+    pub fn parse(pattern: Box<Pattern>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let colon_token: Token![:] = input.parse()?;
+        let typing = input.parse()?;
+        Ok(Typed {
+            pattern,
+            colon_token,
+            typing,
+        })
+    }
+}
 
 /// Structure pattern that matches the structure and its fields.
 #[derive(Debug, PartialEq, Clone)]
@@ -11,6 +37,8 @@ pub struct Structure {
     pub name: String,
     /// The structure fields with the corresponding patterns to match.
     pub fields: Vec<(String, Pattern)>,
+    /// The rest of the fields
+    pub rest: Option<Token![..]>,
 }
 impl Structure {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -26,14 +54,27 @@ impl Parse for Structure {
         let ident: syn::Ident = input.parse()?;
         let content;
         let _ = braced!(content in input);
-        let fields: Punctuated<IdentColon<Pattern>, Token![,]> =
-            Punctuated::parse_terminated(&content)?;
+        let mut fields: Punctuated<Colon<syn::Ident, Pattern>, Token![,]> = Punctuated::new();
+        let mut rest = None;
+        while !content.is_empty() {
+            if content.peek(Token![..]) {
+                rest = Some(content.parse()?);
+                break;
+            }
+            fields.push_value(content.parse()?);
+            if content.is_empty() {
+                break;
+            }
+            fields.push_punct(content.parse()?);
+        }
+
         Ok(Structure {
             name: ident.to_string(),
             fields: fields
                 .into_iter()
-                .map(|IdentColon { ident, elem, .. }| (ident.to_string(), elem))
+                .map(|Colon { left, right, .. }| (left.to_string(), right))
                 .collect(),
+            rest,
         })
     }
 }
@@ -121,6 +162,8 @@ pub enum Pattern {
     Constant(Constant),
     /// Identifier pattern.
     Identifier(String),
+    /// Typed pattern.
+    Typed(Typed),
     /// Structure pattern that matches the structure and its fields.
     Structure(Structure),
     /// Enumeration pattern.
@@ -136,28 +179,32 @@ pub enum Pattern {
 }
 impl Parse for Pattern {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if input.fork().call(Constant::parse).is_ok() {
-            Ok(Pattern::Constant(input.parse()?))
+        let mut pattern = if input.fork().call(Constant::parse).is_ok() {
+            Pattern::Constant(input.parse()?)
         } else if Structure::peek(input) {
-            Ok(Pattern::Structure(input.parse()?))
+            Pattern::Structure(input.parse()?)
         } else if Tuple::peek(input) {
-            Ok(Pattern::Tuple(input.parse()?))
+            Pattern::Tuple(input.parse()?)
         } else if Enumeration::peek(input) {
-            Ok(Pattern::Enumeration(input.parse()?))
+            Pattern::Enumeration(input.parse()?)
         } else if Some::peek(input) {
-            Ok(Pattern::Some(input.parse()?))
+            Pattern::Some(input.parse()?)
         } else if input.fork().peek(keyword::none) {
             let _: keyword::none = input.parse()?;
-            Ok(Pattern::None)
+            Pattern::None
         } else if input.fork().peek(Token![_]) {
             let _: Token![_] = input.parse()?;
-            Ok(Pattern::Default)
-        } else if input.fork().call(syn::Ident::parse).is_ok() {
-            let ident: syn::Ident = input.parse()?;
-            Ok(Pattern::Identifier(ident.to_string()))
+            Pattern::Default
         } else {
-            Err(input.error("expected pattern"))
+            let ident: syn::Ident = input.parse()?;
+            Pattern::Identifier(ident.to_string())
+        };
+
+        if Typed::peek(input) {
+            pattern = Pattern::Typed(Typed::parse(Box::new(pattern), input)?);
         }
+
+        Ok(pattern)
     }
 }
 
@@ -199,6 +246,7 @@ mod parse_pattern {
                 ),
                 (String::from("y"), Pattern::Default),
             ],
+            rest: None,
         });
         assert_eq!(pattern, control)
     }

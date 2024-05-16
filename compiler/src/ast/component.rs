@@ -2,7 +2,7 @@ use syn::parse::Parse;
 use syn::punctuated::Punctuated;
 use syn::{braced, parenthesized, token, LitInt, Token};
 
-use super::ident_colon::IdentColon;
+use super::colon::Colon;
 use super::keyword;
 use crate::ast::{contract::Contract, equation::Equation};
 use crate::common::r#type::Type;
@@ -14,11 +14,11 @@ pub struct Component {
     pub ident: syn::Ident,
     pub args_paren: token::Paren,
     /// Component's inputs identifiers and their types.
-    pub args: Punctuated<IdentColon<Type>, Token![,]>,
+    pub args: Punctuated<Colon<syn::Ident, Type>, Token![,]>,
     pub arrow_token: Token![->],
     pub outs_paren: token::Paren,
     /// Component's outputs identifiers and their types.
-    pub outs: Punctuated<IdentColon<Type>, Token![,]>,
+    pub outs: Punctuated<Colon<syn::Ident, Type>, Token![,]>,
     /// Component's computation period.
     pub period: Option<(Token![@], LitInt, keyword::ms)>,
     /// Component's contract.
@@ -38,11 +38,11 @@ impl Parse for Component {
         let ident: syn::Ident = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
-        let args: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let args: Punctuated<Colon<syn::Ident, Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
         let content;
         let outs_paren: token::Paren = parenthesized!(content in input);
-        let outs: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let outs: Punctuated<Colon<syn::Ident, Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
         let period: Option<(Token![@], LitInt, keyword::ms)> = {
             if input.peek(Token![@]) {
                 Some((input.parse()?, input.parse()?, input.parse()?))

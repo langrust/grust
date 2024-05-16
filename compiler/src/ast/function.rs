@@ -5,7 +5,7 @@ use syn::{braced, parenthesized, token, Token};
 use crate::ast::statement::Statement;
 use crate::common::r#type::Type;
 
-use super::ident_colon::IdentColon;
+use super::colon::Colon;
 use super::keyword;
 
 /// GRust function AST.
@@ -15,7 +15,7 @@ pub struct Function {
     pub ident: syn::Ident,
     pub args_paren: token::Paren,
     /// Component's inputs identifiers and their types.
-    pub args: Punctuated<IdentColon<Type>, Token![,]>,
+    pub args: Punctuated<Colon<syn::Ident, Type>, Token![,]>,
     pub arrow_token: Token![->],
     pub output_type: Type,
     pub brace: token::Brace,
@@ -33,7 +33,7 @@ impl Parse for Function {
         let ident: syn::Ident = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
-        let args: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let args: Punctuated<Colon<syn::Ident, Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
         let output_type: Type = input.parse()?;
         let content;
