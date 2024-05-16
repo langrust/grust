@@ -439,7 +439,9 @@ mod rust_ast_from_lir {
             block: Block {
                 statements: vec![
                     Statement::Let {
-                        identifier: String::from("x"),
+                        pattern: Pattern::Identifier {
+                            name: String::from("x"),
+                        },
                         expression: Expression::Literal {
                             literal: Constant::Integer(parse_quote!(1)),
                         },
@@ -550,7 +552,9 @@ mod rust_ast_from_lir {
                 block: Block {
                     statements: vec![
                         Statement::Let {
-                            identifier: String::from("y"),
+                            pattern: Pattern::Identifier {
+                                name: String::from("y"),
+                            },
                             expression: Expression::Identifier {
                                 identifier: String::from("x"),
                             },

@@ -1,26 +1,22 @@
 use std::collections::BTreeSet;
 
-use super::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
+use super::{
+    expression::rust_ast_from_lir as expression_rust_ast_from_lir,
+    pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
+};
 use crate::lir::statement::Statement;
-use proc_macro2::Span;
 use syn::*;
 
 /// Transform LIR statement into RustAST statement.
 pub fn rust_ast_from_lir(statement: Statement, crates: &mut BTreeSet<String>) -> Stmt {
     match statement {
         Statement::Let {
-            identifier,
+            pattern,
             expression,
         } => Stmt::Local(Local {
             attrs: vec![],
             let_token: Default::default(),
-            pat: Pat::Ident(PatIdent {
-                attrs: vec![],
-                by_ref: None,
-                mutability: None,
-                ident: Ident::new(&identifier, Span::call_site()),
-                subpat: None,
-            }),
+            pat: pattern_rust_ast_from_lir(pattern),
             init: Some(LocalInit {
                 eq_token: Default::default(),
                 expr: Box::new(expression_rust_ast_from_lir(expression, crates)),
@@ -39,12 +35,15 @@ mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::lir::expression::Expression;
+    use crate::lir::pattern::Pattern;
     use crate::lir::statement::Statement;
     use syn::*;
     #[test]
     fn should_create_rust_ast_let_statement_from_lir_let_statement() {
         let statement = Statement::Let {
-            identifier: String::from("x"),
+            pattern: Pattern::Identifier {
+                name: String::from("x"),
+            },
             expression: Expression::Literal {
                 literal: Constant::Integer(parse_quote!(1)),
             },
@@ -62,7 +61,9 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_let_statement_from_lir_let_statement_with_node_call() {
         let statement = Statement::Let {
-            identifier: String::from("o"),
+            pattern: Pattern::Identifier {
+                name: String::from("o"),
+            },
             expression: Expression::NodeCall {
                 node_identifier: String::from("node_state"),
                 input_name: String::from("NodeInput"),

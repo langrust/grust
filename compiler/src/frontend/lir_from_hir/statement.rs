@@ -16,9 +16,13 @@ where
     type LIR = LIRStatement;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
-        let Statement { id, expression, .. } = self;
+        let Statement {
+            typed_pattern,
+            expression,
+            ..
+        } = self;
         LIRStatement::Let {
-            identifier: symbol_table.get_name(id).clone(),
+            pattern: typed_pattern.lir_from_hir(symbol_table),
             expression: expression.lir_from_hir(symbol_table),
         }
     }

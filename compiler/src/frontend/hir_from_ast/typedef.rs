@@ -1,4 +1,4 @@
-use crate::ast::ident_colon::IdentColon;
+use crate::ast::colon::Colon;
 use crate::ast::typedef::Typedef;
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
@@ -31,9 +31,9 @@ impl HIRFromAST for Typedef {
                     .map(
                         |(
                             id,
-                            IdentColon {
-                                ident,
-                                elem: typing,
+                            Colon {
+                                left: ident,
+                                right: typing,
                                 ..
                             },
                         )| {
@@ -102,7 +102,7 @@ impl Typedef {
 
                 let field_ids = fields
                     .iter()
-                    .map(|IdentColon { ident, .. }| {
+                    .map(|Colon { left: ident, .. }| {
                         let field_name = ident.to_string();
                         let field_id = symbol_table.insert_identifier(
                             field_name.clone(),

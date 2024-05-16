@@ -22,6 +22,7 @@ mod rust_ast_from_lir {
     use crate::common::constant::Constant;
     use crate::lir::block::Block;
     use crate::lir::expression::Expression;
+    use crate::lir::pattern::Pattern;
     use crate::lir::statement::Statement;
     use syn::*;
 
@@ -30,7 +31,9 @@ mod rust_ast_from_lir {
         let block = Block {
             statements: vec![
                 Statement::Let {
-                    identifier: String::from("x"),
+                    pattern: Pattern::Identifier {
+                        name: String::from("x"),
+                    },
                     expression: Expression::Literal {
                         literal: Constant::Integer(parse_quote!(1)),
                     },

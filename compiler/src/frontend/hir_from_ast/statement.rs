@@ -1,5 +1,4 @@
 use crate::ast::expression::Expression;
-use crate::ast::ident_colon::IdentColon;
 use crate::ast::statement::LetDeclaration;
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
@@ -19,29 +18,15 @@ impl HIRFromAST for LetDeclaration<Expression> {
         errors: &mut Vec<Error>,
     ) -> Result<Self::HIR, TerminationError> {
         let LetDeclaration {
-            typed_ident:
-                IdentColon {
-                    ident,
-                    elem: element_type,
-                    ..
-                },
+            typed_pattern,
             expression,
             ..
         } = self;
         let location = Location::default();
-        let element_name = ident.to_string();
-
-        let typing = element_type.hir_from_ast(&location, symbol_table, errors)?;
-        let id = symbol_table.insert_identifier(
-            element_name,
-            Some(typing),
-            true,
-            location.clone(),
-            errors,
-        )?;
+        let typed_pattern = typed_pattern.hir_from_ast(symbol_table, errors)?;
 
         Ok(HIRStatement {
-            id,
+            typed_pattern,
             expression: expression.hir_from_ast(symbol_table, errors)?,
             location,
         })

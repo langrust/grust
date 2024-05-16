@@ -1,5 +1,5 @@
 use crate::ast::function::Function;
-use crate::ast::ident_colon::IdentColon;
+use crate::ast::colon::Colon;
 use crate::ast::statement::{ReturnInstruction, Statement};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
@@ -78,9 +78,9 @@ impl Function {
             .args
             .iter()
             .map(
-                |IdentColon {
-                     ident,
-                     elem: typing,
+                |Colon {
+                     left: ident,
+                     right: typing,
                      ..
                  }| {
                     let name = ident.to_string();

@@ -18,8 +18,8 @@ impl Pattern {
                 self.typing = Some(pattern_type);
                 Ok(())
             }
-            PatternKind::Identifier { ref id } => {
-                symbol_table.set_type(*id, expected_type.clone());
+            PatternKind::Identifier { id } => {
+                symbol_table.set_type(id, expected_type.clone());
                 self.typing = Some(expected_type.clone());
                 Ok(())
             }
@@ -63,35 +63,39 @@ impl Pattern {
                 });
                 Ok(())
             }
-            PatternKind::Tuple { ref mut elements } => {
-                // todo: check number of type vs number of elements
-                match expected_type {
-                    Type::Tuple(types) => {
-                        elements
-                            .iter_mut()
-                            .zip(types)
-                            .map(|(pattern, expected_type)| {
-                                pattern.typing(expected_type, symbol_table, errors)
-                            })
-                            .collect::<Vec<Result<(), TerminationError>>>()
-                            .into_iter()
-                            .collect::<Result<(), TerminationError>>()?;
-                        let types = elements
-                            .iter()
-                            .map(|pattern| pattern.get_type().unwrap().clone())
-                            .collect();
-                        self.typing = Some(Type::Tuple(types));
-                        Ok(())
-                    }
-                    _ => {
-                        let error = Error::ExpectTuplePattern {
+            PatternKind::Tuple { ref mut elements } => match expected_type {
+                Type::Tuple(types) => {
+                    if elements.len() != types.len() {
+                        let error = Error::IncompatibleTuple {
                             location: self.location.clone(),
                         };
                         errors.push(error);
-                        Err(TerminationError)
+                        return Err(TerminationError);
                     }
+                    elements
+                        .iter_mut()
+                        .zip(types)
+                        .map(|(pattern, expected_type)| {
+                            pattern.typing(expected_type, symbol_table, errors)
+                        })
+                        .collect::<Vec<Result<(), TerminationError>>>()
+                        .into_iter()
+                        .collect::<Result<(), TerminationError>>()?;
+                    let types = elements
+                        .iter()
+                        .map(|pattern| pattern.get_type().unwrap().clone())
+                        .collect();
+                    self.typing = Some(Type::Tuple(types));
+                    Ok(())
                 }
-            }
+                _ => {
+                    let error = Error::ExpectTuplePattern {
+                        location: self.location.clone(),
+                    };
+                    errors.push(error);
+                    Err(TerminationError)
+                }
+            },
             PatternKind::Some { ref mut pattern } => match expected_type {
                 Type::Option(expected_type) => {
                     pattern.typing(expected_type, symbol_table, errors)?;
@@ -114,6 +118,52 @@ impl Pattern {
             PatternKind::Default => {
                 self.typing = Some(Type::Any);
                 Ok(())
+            }
+        }
+    }
+
+    /// Tries to construct the type of the given construct.
+    pub fn construct_statement_type(
+        &mut self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<Type, TerminationError> {
+        match self.kind {
+            PatternKind::Constant { .. }
+            | PatternKind::Structure { .. }
+            | PatternKind::Enumeration { .. }
+            | PatternKind::Some { .. }
+            | PatternKind::None
+            | PatternKind::Default => {
+                let error = Error::NotStatementPattern {
+                    location: self.location.clone(),
+                };
+                errors.push(error);
+                return Err(TerminationError);
+            }
+            PatternKind::Identifier { id } => {
+                let typing = symbol_table.get_type(id);
+                self.typing = Some(typing.clone());
+                Ok(typing.clone())
+            }
+            PatternKind::Typed {
+                ref mut pattern,
+                ref typing,
+            } => {
+                pattern.typing(typing, symbol_table, errors)?;
+                self.typing = Some(typing.clone());
+                Ok(typing.clone())
+            }
+            PatternKind::Tuple { ref mut elements } => {
+                let types = elements
+                    .iter_mut()
+                    .map(|pattern| pattern.construct_statement_type(symbol_table, errors))
+                    .collect::<Vec<Result<_, TerminationError>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, TerminationError>>()?;
+
+                self.typing = Some(Type::Tuple(types));
+                Ok(Type::Tuple(types))
             }
         }
     }

@@ -15,16 +15,16 @@ where
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Statement {
-            id,
+            typed_pattern,
             expression,
             location,
         } = self;
 
+        let expected_type = typed_pattern.construct_statement_type(symbol_table, errors)?;
         expression.typing(symbol_table, errors)?;
+        
         let expression_type = expression.get_type().unwrap();
-
-        let expected_type = symbol_table.get_type(*id);
-        expression_type.eq_check(expected_type, location.clone(), errors)?;
+        expression_type.eq_check(&expected_type, location.clone(), errors)?;
 
         Ok(())
     }

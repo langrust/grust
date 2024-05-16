@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
+use crate::ast::colon::Colon;
 use crate::ast::component::Component;
 use crate::ast::equation::Equation;
-use crate::ast::ident_colon::IdentColon;
 use crate::common::location::Location;
+use crate::common::r#type::Type;
 use crate::common::scope::Scope;
 use crate::error::{Error, TerminationError};
 use crate::hir::node::Node as HIRNode;
@@ -40,7 +41,7 @@ impl HIRFromAST for Component {
         let unscheduled_equations = equations
             .into_iter()
             .map(|equation| {
-                let signal = equation.get_ident().to_string();
+                let signal = todo!(); //equation.get_pattern().to_string();
                 let id = symbol_table.get_signal_id(&signal, true, location.clone(), errors)?;
                 Ok((id, equation.hir_from_ast(symbol_table, errors)?))
             })
@@ -82,9 +83,9 @@ impl Component {
             .args
             .iter()
             .map(
-                |IdentColon {
-                     ident,
-                     elem: typing,
+                |Colon {
+                     left: ident,
+                     right: typing,
                      ..
                  }| {
                     let name = ident.to_string();
@@ -110,9 +111,9 @@ impl Component {
             .outs
             .iter()
             .map(
-                |IdentColon {
-                     ident,
-                     elem: typing,
+                |Colon {
+                     left: ident,
+                     right: typing,
                      ..
                  }| {
                     let name = ident.to_string();
@@ -139,21 +140,18 @@ impl Component {
             .iter()
             .filter_map(|equation| match equation {
                 Equation::LocalDef(declaration) => Some((|| {
-                    let name = declaration.typed_ident.ident.to_string();
-                    let typing = declaration.typed_ident.elem.clone().hir_from_ast(
-                        &location,
-                        symbol_table,
-                        errors,
-                    )?;
+                    let element_name: String = todo!(); //declaration.typed_pattern.left.to_string();
+                    let element_type: Type = todo!();
+                    let typing = element_type.hir_from_ast(&location, symbol_table, errors)?;
                     let id = symbol_table.insert_signal(
-                        name.clone(),
+                        element_name.clone(),
                         Scope::Local,
                         Some(typing),
                         true,
                         location.clone(),
                         errors,
                     )?;
-                    Ok((name, id))
+                    Ok((element_name, id))
                 })()),
                 Equation::OutputDef(_) => None,
             })
