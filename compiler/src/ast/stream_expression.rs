@@ -409,6 +409,7 @@ mod parse_stream_expression {
                             ),
                             (String::from("y"), Pattern::Default),
                         ],
+                        rest: None,
                     }),
                     guard: None,
                     expression: StreamExpression::Constant(Constant::Integer(
@@ -422,6 +423,7 @@ mod parse_stream_expression {
                             (String::from("x"), Pattern::Identifier(String::from("x"))),
                             (String::from("y"), Pattern::Default),
                         ],
+                        rest: None,
                     }),
                     guard: Some(StreamExpression::Application(Application {
                         function_expression: Box::new(StreamExpression::Identifier(String::from(

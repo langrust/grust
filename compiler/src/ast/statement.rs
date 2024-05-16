@@ -1,22 +1,22 @@
 use syn::parse::Parse;
 use syn::Token;
 
-use crate::ast::{expression::Expression, ident_colon::IdentColon};
-use crate::common::r#type::Type;
+use crate::ast::{expression::Expression, pattern::Pattern};
 
 /// GRust declaration AST.
 pub struct LetDeclaration<E> {
     pub let_token: Token![let],
-    /// Identifier of the signal and its type.
-    pub typed_ident: IdentColon<Type>,
+    /// Identifier of the signal
+    /// Pattern of instanciated signals and its type.
+    pub typed_pattern: Pattern,
     pub eq_token: Token![=],
     /// The stream expression defining the signal.
     pub expression: E,
     pub semi_token: Token![;],
 }
 impl<E> LetDeclaration<E> {
-    pub fn get_ident(&self) -> &syn::Ident {
-        &self.typed_ident.ident
+    pub fn get_pattern(&self) -> &Pattern {
+        &self.typed_pattern
     }
 }
 impl<E> Parse for LetDeclaration<E>
@@ -25,14 +25,14 @@ where
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let let_token: Token![let] = input.parse()?;
-        let typed_ident: IdentColon<Type> = input.parse()?;
+        let typed_pattern: Pattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
         let expression: E = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
 
         Ok(LetDeclaration {
             let_token,
-            typed_ident,
+            typed_pattern,
             eq_token,
             expression,
             semi_token,

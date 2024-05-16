@@ -2,7 +2,7 @@ use syn::parse::Parse;
 use syn::punctuated::Punctuated;
 use syn::{braced, bracketed, parenthesized, token, Token};
 
-use crate::ast::{ident_colon::IdentColon, pattern::Pattern};
+use crate::ast::{colon::Colon, pattern::Pattern};
 use crate::common::operator::{BinaryOperator, UnaryOperator};
 use crate::common::{constant::Constant, r#type::Type};
 
@@ -228,7 +228,7 @@ where
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: Token![|] = input.parse()?;
-        let mut inputs: Punctuated<IdentColon<Type>, Token![,]> = Punctuated::new();
+        let mut inputs: Punctuated<Colon<syn::Ident, Type>, Token![,]> = Punctuated::new();
         loop {
             if input.peek(Token![|]) {
                 break;
@@ -246,7 +246,7 @@ where
         Ok(TypedAbstraction {
             inputs: inputs
                 .into_iter()
-                .map(|IdentColon { ident, elem, .. }| (ident.to_string(), elem))
+                .map(|Colon { left, right, .. }| (left.to_string(), right))
                 .collect(),
             expression: Box::new(expression),
         })
@@ -278,12 +278,12 @@ where
         let ident: syn::Ident = input.parse()?;
         let content;
         let _ = braced!(content in input);
-        let fields: Punctuated<IdentColon<E>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let fields: Punctuated<Colon<syn::Ident, E>, Token![,]> = Punctuated::parse_terminated(&content)?;
         Ok(Structure {
             name: ident.to_string(),
             fields: fields
                 .into_iter()
-                .map(|IdentColon { ident, elem, .. }| (ident.to_string(), elem))
+                .map(|Colon { left, right, .. }| (left.to_string(), right))
                 .collect(),
         })
     }
@@ -1067,6 +1067,7 @@ mod parse_expression {
                             ),
                             (String::from("y"), Pattern::Default),
                         ],
+                        rest: None,
                     }),
                     guard: None,
                     expression: Expression::Constant(Constant::Integer(syn::parse_quote! {0})),
@@ -1078,6 +1079,7 @@ mod parse_expression {
                             (String::from("x"), Pattern::Identifier(String::from("x"))),
                             (String::from("y"), Pattern::Default),
                         ],
+                        rest: None,
                     }),
                     guard: Some(Expression::Application(Application {
                         function_expression: Box::new(Expression::Identifier(String::from("f"))),

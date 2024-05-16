@@ -2,7 +2,7 @@ use syn::{braced, bracketed, parse::Parse, punctuated::Punctuated, token, Token}
 
 use crate::common::r#type::Type;
 
-use super::{ident_colon::IdentColon, keyword};
+use super::{colon::Colon, keyword};
 
 /// GRust user defined type AST.
 pub enum Typedef {
@@ -13,7 +13,7 @@ pub enum Typedef {
         ident: syn::Ident,
         brace: token::Brace,
         /// The structure's fields: a field has an identifier and a type.
-        fields: Punctuated<IdentColon<Type>, Token![,]>,
+        fields: Punctuated<Colon<syn::Ident, Type>, Token![,]>,
     },
     /// Represents an enumeration definition.
     Enumeration {
@@ -49,7 +49,7 @@ impl Parse for Typedef {
             let ident: syn::Ident = input.parse()?;
             let content;
             let brace: token::Brace = braced!(content in input);
-            let fields: Punctuated<IdentColon<Type>, Token![,]> =
+            let fields: Punctuated<Colon<syn::Ident, Type>, Token![,]> =
                 Punctuated::parse_terminated(&content)?;
             Ok(Typedef::Structure {
                 struct_token,

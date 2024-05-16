@@ -8,7 +8,7 @@ pub mod contract;
 pub mod equation;
 pub mod expression;
 pub mod function;
-pub mod ident_colon;
+pub mod colon;
 pub mod interface;
 pub mod keyword;
 pub mod pattern;
