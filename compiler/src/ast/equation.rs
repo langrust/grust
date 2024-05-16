@@ -69,8 +69,8 @@ mod parse_equation {
 
     use crate::{
         ast::{
-            expression::{Binop, IfThenElse},
-            pattern::{Pattern, Typed},
+            expression::{Binop, IfThenElse, Tuple},
+            pattern::{Pattern, Tuple as PatTuple, Typed},
             stream_expression::{FollowedBy, StreamExpression},
         },
         common::{constant::Constant, operator::BinaryOperator, r#type::Type},
@@ -136,6 +136,62 @@ mod parse_equation {
     }
 
     #[test]
+    fn should_parse_tuple_instanciation() {
+        let equation: Equation = syn::parse_quote! {
+            (o1, o2) = if res then (0, 0) else ((0 fby o1) + inc1, (0 fby o2) + inc2);
+        };
+        let control = Equation::OutputDef(super::Instanciation {
+            pattern: Pattern::Tuple(PatTuple {
+                elements: vec![syn::parse_quote! {o1}, syn::parse_quote! {o2}],
+            }),
+            eq_token: syn::parse_quote! {=},
+            expression: StreamExpression::IfThenElse(IfThenElse {
+                expression: Box::new(StreamExpression::Identifier(String::from("res"))),
+                true_expression: Box::new(StreamExpression::Tuple(Tuple {
+                    elements: vec![
+                        StreamExpression::Constant(Constant::Integer(syn::parse_quote! {0})),
+                        StreamExpression::Constant(Constant::Integer(syn::parse_quote! {0})),
+                    ],
+                })),
+                false_expression: Box::new(StreamExpression::Tuple(Tuple {
+                    elements: vec![
+                        StreamExpression::Binop(Binop {
+                            op: BinaryOperator::Add,
+                            left_expression: Box::new(StreamExpression::FollowedBy(FollowedBy {
+                                constant: Box::new(StreamExpression::Constant(Constant::Integer(
+                                    syn::parse_quote! {0},
+                                ))),
+                                expression: Box::new(StreamExpression::Identifier(String::from(
+                                    "o1",
+                                ))),
+                            })),
+                            right_expression: Box::new(StreamExpression::Identifier(String::from(
+                                "inc1",
+                            ))),
+                        }),
+                        StreamExpression::Binop(Binop {
+                            op: BinaryOperator::Add,
+                            left_expression: Box::new(StreamExpression::FollowedBy(FollowedBy {
+                                constant: Box::new(StreamExpression::Constant(Constant::Integer(
+                                    syn::parse_quote! {0},
+                                ))),
+                                expression: Box::new(StreamExpression::Identifier(String::from(
+                                    "o2",
+                                ))),
+                            })),
+                            right_expression: Box::new(StreamExpression::Identifier(String::from(
+                                "inc2",
+                            ))),
+                        }),
+                    ],
+                })),
+            }),
+            semi_token: syn::parse_quote! {;},
+        });
+        assert_eq!(equation, control)
+    }
+
+    #[test]
     fn should_parse_local_definition() {
         let equation: Equation =
             syn::parse_quote! {let o: int = if res then 0 else (0 fby o) + inc;};
@@ -161,6 +217,74 @@ mod parse_equation {
                         expression: Box::new(StreamExpression::Identifier(String::from("o"))),
                     })),
                     right_expression: Box::new(StreamExpression::Identifier(String::from("inc"))),
+                })),
+            }),
+            semi_token: syn::parse_quote! {;},
+        });
+        assert_eq!(equation, control)
+    }
+
+    #[test]
+    fn should_parse_multiple_definitions() {
+        let equation: Equation = syn::parse_quote! {
+            let (o1: int, o2: int) = if res then (0, 0) else ((0 fby o1) + inc1, (0 fby o2) + inc2);
+        };
+        let control = Equation::LocalDef(super::LetDeclaration {
+            let_token: syn::parse_quote!(let),
+            typed_pattern: Pattern::Tuple(PatTuple {
+                elements: vec![
+                    Pattern::Typed(Typed {
+                        pattern: syn::parse_quote!(o1),
+                        colon_token: syn::parse_quote!(:),
+                        typing: Type::Integer,
+                    }),
+                    Pattern::Typed(Typed {
+                        pattern: syn::parse_quote!(o2),
+                        colon_token: syn::parse_quote!(:),
+                        typing: Type::Integer,
+                    }),
+                ],
+            }),
+            eq_token: syn::parse_quote!(=),
+            expression: StreamExpression::IfThenElse(IfThenElse {
+                expression: Box::new(StreamExpression::Identifier(String::from("res"))),
+                true_expression: Box::new(StreamExpression::Tuple(Tuple {
+                    elements: vec![
+                        StreamExpression::Constant(Constant::Integer(syn::parse_quote! {0})),
+                        StreamExpression::Constant(Constant::Integer(syn::parse_quote! {0})),
+                    ],
+                })),
+                false_expression: Box::new(StreamExpression::Tuple(Tuple {
+                    elements: vec![
+                        StreamExpression::Binop(Binop {
+                            op: BinaryOperator::Add,
+                            left_expression: Box::new(StreamExpression::FollowedBy(FollowedBy {
+                                constant: Box::new(StreamExpression::Constant(Constant::Integer(
+                                    syn::parse_quote! {0},
+                                ))),
+                                expression: Box::new(StreamExpression::Identifier(String::from(
+                                    "o1",
+                                ))),
+                            })),
+                            right_expression: Box::new(StreamExpression::Identifier(String::from(
+                                "inc1",
+                            ))),
+                        }),
+                        StreamExpression::Binop(Binop {
+                            op: BinaryOperator::Add,
+                            left_expression: Box::new(StreamExpression::FollowedBy(FollowedBy {
+                                constant: Box::new(StreamExpression::Constant(Constant::Integer(
+                                    syn::parse_quote! {0},
+                                ))),
+                                expression: Box::new(StreamExpression::Identifier(String::from(
+                                    "o2",
+                                ))),
+                            })),
+                            right_expression: Box::new(StreamExpression::Identifier(String::from(
+                                "inc2",
+                            ))),
+                        }),
+                    ],
                 })),
             }),
             semi_token: syn::parse_quote! {;},
