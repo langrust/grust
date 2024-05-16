@@ -1,12 +1,12 @@
-use crate::lir::expression::Expression;
+use crate::lir::{expression::Expression, pattern::Pattern};
 
 /// A statement declaration.
 #[derive(Debug, PartialEq)]
 pub enum Statement {
     /// A let-statement creating one variable: `let x = y + 1;`.
     Let {
-        /// The variable created.
-        identifier: String,
+        /// The variables created.
+        pattern: Pattern,
         /// The expression associated to the variable.
         expression: Expression,
     },

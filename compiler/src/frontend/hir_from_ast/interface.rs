@@ -31,10 +31,10 @@ impl HIRFromAST for FlowStatement {
                 flow_expression,
                 ..
             }) => {
-                let name = typed_ident.ident.to_string();
+                let name = typed_ident.left.to_string();
                 let flow_type = {
                     let inner = typed_ident
-                        .elem
+                        .right
                         .hir_from_ast(&location, symbol_table, errors)?;
                     match kind {
                         FlowKind::Signal(_) => Type::Signal(Box::new(inner)),
@@ -80,13 +80,13 @@ impl HIRFromAST for FlowStatement {
                 mut typed_path,
                 ..
             }) => {
-                let last = typed_path.path.segments.pop().unwrap().into_value();
+                let last = typed_path.left.segments.pop().unwrap().into_value();
                 let name = last.ident.to_string();
                 assert!(last.arguments.is_none());
-                let path = typed_path.path;
+                let path = typed_path.left;
                 let flow_type = {
                     let inner = typed_path
-                        .elem
+                        .right
                         .hir_from_ast(&location, symbol_table, errors)?;
                     match kind {
                         FlowKind::Signal(_) => Type::Signal(Box::new(inner)),
@@ -108,13 +108,13 @@ impl HIRFromAST for FlowStatement {
                 mut typed_path,
                 ..
             }) => {
-                let last = typed_path.path.segments.pop().unwrap().into_value();
+                let last = typed_path.left.segments.pop().unwrap().into_value();
                 let name = last.ident.to_string();
                 assert!(last.arguments.is_none());
-                let path = typed_path.path;
+                let path = typed_path.left;
                 let flow_type = {
                     let inner = typed_path
-                        .elem
+                        .right
                         .hir_from_ast(&location, symbol_table, errors)?;
                     match kind {
                         FlowKind::Signal(_) => Type::Signal(Box::new(inner)),

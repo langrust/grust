@@ -137,6 +137,16 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// incompatible tuple
+    IncompatibleTuple {
+        /// the error location
+        location: Location,
+    },
+    /// not statement pattern error
+    NotStatementPattern {
+        /// the error location
+        location: Location,
+    },
     /// given inputs are not of the right number
     IncompatibleInputsNumber {
         /// the given number of inputs
@@ -425,6 +435,18 @@ impl Error {
                     format!("expected '{expected_type}' but '{given_type}' was given")
                 ]
             ),
+            Error::IncompatibleTuple {  location } => Diagnostic::error()
+                .with_message("incompatible type")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("incompatible tuple type")
+                ]),
+            Error::NotStatementPattern {  location } => Diagnostic::error()
+                .with_message("pattern error")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("not a statement pattern")
+                ]),
             Error::IncompatibleInputsNumber { given_inputs_number, expected_inputs_number, location } => Diagnostic::error()
                 .with_message("incompatible number of inputs")
                 .with_labels(vec![
@@ -618,6 +640,8 @@ impl std::fmt::Display for Error {
             Error::NodeCall { .. } => write!(f, "Node Call"),
             Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
+            Error::IncompatibleTuple { .. } => write!(f, "Incompatible Tuple"),
+            Error::NotStatementPattern { .. } => write!(f, "Not Statement Pattern"),
             Error::IncompatibleInputsNumber { .. } => write!(f, "Incompatible Inputs Number"),
             Error::UnknownOuputSignal { .. } => write!(f, "Unknown Output Signal"),
             Error::ExpectConstant { .. } => write!(f, "Expect Constant"),

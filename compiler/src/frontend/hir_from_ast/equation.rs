@@ -1,5 +1,4 @@
 use crate::ast::equation::{Equation, Instanciation};
-use crate::ast::ident_colon::IdentColon;
 use crate::ast::statement::LetDeclaration;
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
@@ -24,18 +23,19 @@ impl HIRFromAST for Equation {
         let location = Location::default();
         match self {
             Equation::LocalDef(LetDeclaration {
-                typed_ident: IdentColon { ident, .. },
+                typed_pattern: pattern,
                 expression,
                 ..
             })
             | Equation::OutputDef(Instanciation {
-                ident, expression, ..
+                pattern,
+                expression,
+                ..
             }) => {
-                let name = ident.to_string();
-                let id = symbol_table.get_signal_id(&name, true, location.clone(), errors)?;
+                let typed_pattern = pattern.hir_from_ast(symbol_table, errors)?;
 
                 Ok(HIRStatement {
-                    id,
+                    typed_pattern,
                     expression: expression.hir_from_ast(symbol_table, errors)?,
                     location,
                 })

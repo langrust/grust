@@ -208,6 +208,7 @@ mod rust_ast_from_lir {
     use crate::common::r#type::Type;
     use crate::lir::expression::{Expression, FieldIdentifier};
     use crate::lir::item::node_file::state::step::{StateElementStep, Step};
+    use crate::lir::pattern::Pattern;
     use crate::lir::statement::Statement;
     use syn::*;
 
@@ -220,7 +221,9 @@ mod rust_ast_from_lir {
             output_type: Type::Integer,
             body: vec![
                 Statement::Let {
-                    identifier: format!("o"),
+                    pattern: Pattern::Identifier {
+                        name: String::from("o"),
+                    },
                     expression: Expression::FieldAccess {
                         expression: Box::new(Expression::Identifier {
                             identifier: format!("self"),
@@ -229,7 +232,9 @@ mod rust_ast_from_lir {
                     },
                 },
                 Statement::Let {
-                    identifier: format!("y"),
+                    pattern: Pattern::Identifier {
+                        name: String::from("y"),
+                    },
                     expression: Expression::NodeCall {
                         node_identifier: format!("called_node_state"),
                         input_name: format!("CalledNodeInput"),

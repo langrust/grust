@@ -1,11 +1,11 @@
 use crate::common::location::Location;
-use crate::hir::stream_expression::StreamExpression;
+use crate::hir::{stream_expression::StreamExpression, pattern::Pattern};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust statement HIR.
 pub struct Statement<E> {
-    /// Identifier of the element.
-    pub id: usize,
+    /// Pattern of elements.
+    pub typed_pattern: Pattern,
     /// The expression defining the element.
     pub expression: E,
     /// Statement location.
