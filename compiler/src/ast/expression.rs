@@ -278,7 +278,8 @@ where
         let ident: syn::Ident = input.parse()?;
         let content;
         let _ = braced!(content in input);
-        let fields: Punctuated<Colon<syn::Ident, E>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let fields: Punctuated<Colon<syn::Ident, E>, Token![,]> =
+            Punctuated::parse_terminated(&content)?;
         Ok(Structure {
             name: ident.to_string(),
             fields: fields
@@ -1063,9 +1064,9 @@ mod parse_expression {
                         fields: vec![
                             (
                                 String::from("x"),
-                                Pattern::Constant(Constant::Integer(syn::parse_quote! {0})),
+                                Some(Pattern::Constant(Constant::Integer(syn::parse_quote! {0}))),
                             ),
-                            (String::from("y"), Pattern::Default),
+                            (String::from("y"), Some(Pattern::Default)),
                         ],
                         rest: None,
                     }),
@@ -1076,8 +1077,11 @@ mod parse_expression {
                     pattern: Pattern::Structure(pattern::Structure {
                         name: String::from("Point"),
                         fields: vec![
-                            (String::from("x"), Pattern::Identifier(String::from("x"))),
-                            (String::from("y"), Pattern::Default),
+                            (
+                                String::from("x"),
+                                Some(Pattern::Identifier(String::from("x"))),
+                            ),
+                            (String::from("y"), Some(Pattern::Default)),
                         ],
                         rest: None,
                     }),

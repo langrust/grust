@@ -29,12 +29,16 @@ impl Pattern {
             } => {
                 fields
                     .iter_mut()
-                    .map(|(id, pattern)| {
+                    .map(|(id, optional_pattern)| {
                         let expected_type = symbol_table.get_type(*id).clone();
-                        pattern.typing(&expected_type, symbol_table, errors)?;
-                        // check pattern type
-                        let pattern_type = pattern.get_type().unwrap();
-                        pattern_type.eq_check(&expected_type, self.location.clone(), errors)
+                        if let Some(pattern) = optional_pattern {
+                            pattern.typing(&expected_type, symbol_table, errors)?;
+                            // check pattern type
+                            let pattern_type = pattern.get_type().unwrap();
+                            pattern_type.eq_check(&expected_type, self.location.clone(), errors)
+                        } else {
+                            Ok(())
+                        }
                     })
                     .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()

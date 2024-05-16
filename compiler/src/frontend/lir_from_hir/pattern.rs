@@ -21,10 +21,15 @@ impl LIRFromHIR for Pattern {
                 name: symbol_table.get_name(id).clone(),
                 fields: fields
                     .into_iter()
-                    .map(|(id, pattern)| {
+                    .map(|(id, optional_pattern)| {
                         (
                             symbol_table.get_name(id).clone(),
-                            pattern.lir_from_hir(symbol_table),
+                            optional_pattern.map_or_else(
+                                || LIRPattern::Identifier {
+                                    name: symbol_table.get_name(id).clone(),
+                                },
+                                |pattern| pattern.lir_from_hir(symbol_table),
+                            ),
                         )
                     })
                     .collect(),
@@ -56,7 +61,11 @@ impl LIRFromHIR for Pattern {
             PatternKind::Structure { id, fields } => {
                 let mut imports = fields
                     .iter()
-                    .flat_map(|(_, pattern)| pattern.get_imports(symbol_table))
+                    .flat_map(|(_, optional_pattern)| {
+                        optional_pattern
+                            .as_ref()
+                            .map_or(vec![], |pattern| pattern.get_imports(symbol_table))
+                    })
                     .unique()
                     .collect::<Vec<_>>();
                 imports.push(Import::Structure(symbol_table.get_name(*id).clone()));

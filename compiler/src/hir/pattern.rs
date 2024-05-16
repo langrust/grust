@@ -18,7 +18,7 @@ pub enum PatternKind {
         /// The structure id.
         id: usize,
         /// The structure fields with the corresponding patterns to match.
-        fields: Vec<(usize, Pattern)>,
+        fields: Vec<(usize, Option<Pattern>)>,
     },
     /// Enumeration pattern.
     Enumeration {
@@ -72,7 +72,13 @@ impl Pattern {
             | PatternKind::Default => vec![],
             PatternKind::Structure { fields, .. } => fields
                 .iter()
-                .flat_map(|(_, pattern)| pattern.local_identifiers())
+                .flat_map(|(id, optional_pattern)| {
+                    if let Some(pattern) = optional_pattern {
+                        pattern.local_identifiers()
+                    } else {
+                        vec![*id]
+                    }
+                })
                 .collect(),
             PatternKind::Tuple { elements } => elements
                 .iter()
