@@ -1,8 +1,9 @@
 use syn::{braced, parenthesized, parse::Parse, punctuated::Punctuated, token, Token};
 
-use crate::common::{constant::Constant, r#type::Type};
-
-use super::{colon::Colon, keyword};
+use crate::{
+    ast::keyword,
+    common::{constant::Constant, r#type::Type},
+};
 
 /// Typed pattern.
 #[derive(Debug, PartialEq, Clone)]
@@ -36,7 +37,7 @@ pub struct Structure {
     /// The structure name.
     pub name: String,
     /// The structure fields with the corresponding patterns to match.
-    pub fields: Vec<(String, Pattern)>,
+    pub fields: Vec<(String, Option<Pattern>)>,
     /// The rest of the fields
     pub rest: Option<Token![..]>,
 }
@@ -54,14 +55,25 @@ impl Parse for Structure {
         let ident: syn::Ident = input.parse()?;
         let content;
         let _ = braced!(content in input);
-        let mut fields: Punctuated<Colon<syn::Ident, Pattern>, Token![,]> = Punctuated::new();
+        let mut fields: Punctuated<(syn::Ident, Option<(Token![:], Pattern)>), Token![,]> =
+            Punctuated::new();
         let mut rest = None;
         while !content.is_empty() {
             if content.peek(Token![..]) {
                 rest = Some(content.parse()?);
                 break;
             }
-            fields.push_value(content.parse()?);
+
+            let member: syn::Ident = content.parse()?;
+            let optional_pattern = if content.peek(Token![:]) {
+                let colon_token = content.parse()?;
+                let pattern = content.parse()?;
+                Some((colon_token, pattern))
+            } else {
+                None
+            };
+            fields.push_value((member, optional_pattern));
+
             if content.is_empty() {
                 break;
             }
@@ -72,7 +84,12 @@ impl Parse for Structure {
             name: ident.to_string(),
             fields: fields
                 .into_iter()
-                .map(|Colon { left, right, .. }| (left.to_string(), right))
+                .map(|(ident, optional_pattern)| {
+                    (
+                        ident.to_string(),
+                        optional_pattern.map(|(_, pattern)| pattern),
+                    )
+                })
                 .collect(),
             rest,
         })
@@ -242,11 +259,49 @@ mod parse_pattern {
             fields: vec![
                 (
                     String::from("x"),
-                    Pattern::Constant(Constant::Integer(syn::parse_quote! {0})),
+                    Some(Pattern::Constant(Constant::Integer(syn::parse_quote! {0}))),
                 ),
-                (String::from("y"), Pattern::Default),
+                (String::from("y"), Some(Pattern::Default)),
             ],
             rest: None,
+        });
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_structure_with_unrenamed_field() {
+        let pattern: Pattern = syn::parse_quote! {
+            Point {
+                x: 0,
+                y,
+            }
+        };
+        let control = Pattern::Structure(Structure {
+            name: String::from("Point"),
+            fields: vec![
+                (
+                    String::from("x"),
+                    Some(Pattern::Constant(Constant::Integer(syn::parse_quote! {0}))),
+                ),
+                (String::from("y"), None),
+            ],
+            rest: None,
+        });
+        assert_eq!(pattern, control)
+    }
+
+    #[test]
+    fn should_parse_structure_with_unspecified_field() {
+        let pattern: Pattern = syn::parse_quote! {
+            Point { x: 0, .. }
+        };
+        let control = Pattern::Structure(Structure {
+            name: String::from("Point"),
+            fields: vec![(
+                String::from("x"),
+                Some(Pattern::Constant(Constant::Integer(syn::parse_quote! {0}))),
+            )],
+            rest: Some(syn::parse_quote!(..)),
         });
         assert_eq!(pattern, control)
     }

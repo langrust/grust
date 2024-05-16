@@ -14,7 +14,7 @@ impl Structure {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<PatternKind, TerminationError> {
-        let Structure { name, fields } = self;
+        let Structure { name, fields, rest } = self;
         let location = Location::default();
 
         let id = symbol_table.get_struct_id(&name, false, location.clone(), errors)?;
@@ -27,7 +27,7 @@ impl Structure {
 
         let fields = fields
             .into_iter()
-            .map(|(field_name, pattern)| {
+            .map(|(field_name, optional_pattern)| {
                 let id = field_ids.remove(&field_name).map_or_else(
                     || {
                         let error = Error::UnknownField {
@@ -40,7 +40,9 @@ impl Structure {
                     },
                     |id| Ok(id),
                 )?;
-                let pattern = pattern.hir_from_ast(symbol_table, errors)?;
+                let pattern = optional_pattern
+                    .map(|pattern| pattern.hir_from_ast(symbol_table, errors))
+                    .transpose()?;
                 Ok((id, pattern))
             })
             .collect::<Vec<Result<_, _>>>()
@@ -139,6 +141,7 @@ impl HIRFromAST for Pattern {
                     symbol_table.insert_identifier(name, None, true, location.clone(), errors)?;
                 PatternKind::Identifier { id }
             }
+            Pattern::Typed(pattern) => todo!(),
             Pattern::Structure(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
             Pattern::Enumeration(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
             Pattern::Tuple(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
