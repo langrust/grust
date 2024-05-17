@@ -13,11 +13,6 @@ pub struct LetDeclaration<E> {
     pub expression: E,
     pub semi_token: Token![;],
 }
-impl<E> LetDeclaration<E> {
-    pub fn get_pattern(&self) -> &Pattern {
-        &self.typed_pattern
-    }
-}
 impl<E> Parse for LetDeclaration<E>
 where
     E: Parse,
