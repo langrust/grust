@@ -44,15 +44,18 @@ pub struct ReturnInstruction {
     pub return_token: Token![return],
     /// The expression defining the variable.
     pub expression: Expression,
+    pub semi_token: Token![;],
 }
 impl Parse for ReturnInstruction {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let return_token: Token![return] = input.parse()?;
         let expression: Expression = input.parse()?;
+        let semi_token: Token![;] = input.parse()?;
 
         Ok(ReturnInstruction {
             return_token,
             expression,
+            semi_token,
         })
     }
 }

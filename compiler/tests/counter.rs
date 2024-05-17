@@ -5,8 +5,13 @@ fn should_compile_counter() {
     let ast: Ast = syn::parse_quote! {
         #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/compiler/tests/macro_outputs/counter.rs"]
 
+        function add(x: int, y: int) -> int {
+            let res: int = x + y;
+            return res;
+        }
+
         component counter(res: bool, tick: bool) -> (o: int) {
-            o = if res then 0 else (0 fby o) + inc;
+            o = if res then 0 else add(0 fby o, inc);
             let inc: int = if tick then 1 else 0;
         }
 

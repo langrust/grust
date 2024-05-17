@@ -32,7 +32,9 @@ impl HIRFromAST for Equation {
                 expression,
                 ..
             }) => {
-                let pattern = pattern.hir_from_ast(symbol_table, errors)?;
+                let mut pattern = pattern.hir_from_ast(symbol_table, errors)?;
+                pattern.construct_statement_type(symbol_table, errors)?;
+                debug_assert!(pattern.typing.is_some());
 
                 Ok(HIRStatement {
                     pattern,

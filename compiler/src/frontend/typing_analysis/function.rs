@@ -20,7 +20,10 @@ impl TypeAnalysis for Function {
         // type all statements
         statements
             .iter_mut()
-            .map(|statement| statement.typing(symbol_table, errors))
+            .map(|statement| {
+                statement.pattern.construct_statement_type(symbol_table, errors)?;
+                statement.typing(symbol_table, errors)
+            })
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
