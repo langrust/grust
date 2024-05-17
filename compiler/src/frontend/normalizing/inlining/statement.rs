@@ -8,9 +8,9 @@ use crate::{
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
         memory::Memory,
+        node::Node,
         statement::Statement,
         stream_expression::{StreamExpression, StreamExpressionKind},
-        unitary_node::UnitaryNode,
     },
     symbol_table::SymbolTable,
 };
@@ -29,16 +29,20 @@ impl Statement<StreamExpression> {
         context_map: &mut HashMap<usize, Union<usize, StreamExpression>>,
         symbol_table: &mut SymbolTable,
     ) {
-        // create fresh identifier for the new statement
-        let name = symbol_table.get_name(self.id);
-        let fresh_name =
-            identifier_creator.new_identifier(String::new(), name.clone(), String::new());
-        if &fresh_name != name {
-            // TODO: should we just replace anyway?
-            let scope = symbol_table.get_scope(self.id).clone();
-            let typing = Some(symbol_table.get_type(self.id).clone());
-            let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
-            debug_assert!(context_map.insert(self.id, Union::I1(fresh_id)).is_none());
+        // create fresh identifiers for the new statement
+        let local_signals = self.pattern.identifiers();
+        for signal_id in local_signals {
+            let name = symbol_table.get_name(signal_id);
+            let fresh_name =
+                identifier_creator.new_identifier(String::new(), name.clone(), String::new());
+            if &fresh_name != name {
+                // TODO: should we just replace anyway?
+                let scope = symbol_table.get_scope(signal_id).clone();
+                let typing = Some(symbol_table.get_type(signal_id).clone());
+                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
+                let test_first_insert = context_map.insert(signal_id, Union::I1(fresh_id));
+                debug_assert!(test_first_insert.is_none());
+            }
         }
     }
 
@@ -60,22 +64,30 @@ impl Statement<StreamExpression> {
         context_map: &HashMap<usize, Union<usize, StreamExpression>>,
     ) -> Statement<StreamExpression> {
         let mut new_statement = self.clone();
-        if let Some(element) = context_map.get(&new_statement.id) {
-            match element {
-                Union::I1(new_id)
-                | Union::I2(StreamExpression {
-                    kind:
-                        StreamExpressionKind::Expression {
-                            expression: ExpressionKind::Identifier { id: new_id },
-                        },
-                    ..
-                }) => {
-                    new_statement.id = new_id.clone();
+
+        // replace statement's identifiers by the new ones
+        let local_signals = new_statement.pattern.identifiers_mut();
+        for signal_id in local_signals {
+            if let Some(element) = context_map.get(&signal_id) {
+                match element {
+                    Union::I1(new_id)
+                    | Union::I2(StreamExpression {
+                        kind:
+                            StreamExpressionKind::Expression {
+                                expression: ExpressionKind::Identifier { id: new_id },
+                            },
+                        ..
+                    }) => {
+                        *signal_id = new_id.clone();
+                    }
+                    Union::I2(_) => unreachable!(),
                 }
-                Union::I2(_) => unreachable!(),
             }
         }
+
+        // replace identifiers in statement's expression
         new_statement.expression.replace_by_context(context_map);
+
         new_statement
     }
 
@@ -101,16 +113,11 @@ impl Statement<StreamExpression> {
         identifier_creator: &mut IdentifierCreator,
         graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        unitary_nodes: &HashMap<usize, UnitaryNode>,
+        nodes: &HashMap<usize, Node>,
     ) -> Vec<Statement<StreamExpression>> {
         let mut current_statements = vec![self.clone()];
-        let mut new_statements = self.inline_when_needed(
-            memory,
-            identifier_creator,
-            graph,
-            symbol_table,
-            unitary_nodes,
-        );
+        let mut new_statements =
+            self.inline_when_needed(memory, identifier_creator, graph, symbol_table, nodes);
         while current_statements != new_statements {
             current_statements = new_statements;
             new_statements = current_statements
@@ -122,7 +129,7 @@ impl Statement<StreamExpression> {
                         identifier_creator,
                         graph,
                         symbol_table,
-                        unitary_nodes,
+                        nodes,
                     )
                 })
                 .collect();
@@ -136,28 +143,32 @@ impl Statement<StreamExpression> {
         identifier_creator: &mut IdentifierCreator,
         graph: &DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        unitary_nodes: &HashMap<usize, UnitaryNode>,
+        nodes: &HashMap<usize, Node>,
     ) -> Vec<Statement<StreamExpression>> {
         match &self.expression.kind {
             StreamExpressionKind::UnitaryNodeApplication {
                 node_id, inputs, ..
             } => {
-                // a loop in the graph induces that inputs depends on output
-                // TODO: check it is correct
-                let is_loop = all_simple_paths::<Vec<_>, _>(graph, self.id, self.id, 0, None)
-                    .next()
-                    .is_some();
+                // a loop in the graph induces that "node call" inputs depends on output
+                let signals = self.pattern.identifiers();
+                let is_loop = signals.iter().any(|signal1| {
+                    signals.iter().any(|signal2| {
+                        all_simple_paths::<Vec<_>, _>(graph, *signal1, *signal2, 0, None)
+                            .next()
+                            .is_some()
+                    })
+                });
 
                 // then node call must be inlined
                 if is_loop {
-                    let called_unitary_node = unitary_nodes.get(&node_id).unwrap();
+                    let called_unitary_node = nodes.get(&node_id).unwrap();
 
                     // get statements from called node, with corresponding inputs
                     let (retrieved_statements, retrieved_memory) = called_unitary_node
                         .instantiate_statements_and_memory(
                             identifier_creator,
                             inputs,
-                            Some(self.id),
+                            Some(self.pattern),
                             symbol_table,
                         );
 

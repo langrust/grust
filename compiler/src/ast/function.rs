@@ -33,7 +33,8 @@ impl Parse for Function {
         let ident: syn::Ident = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
-        let args: Punctuated<Colon<syn::Ident, Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let args: Punctuated<Colon<syn::Ident, Type>, Token![,]> =
+            Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
         let output_type: Type = input.parse()?;
         let content;

@@ -18,9 +18,6 @@ pub mod statement;
 /// LIR expression construction from HIR stream expression.
 pub mod stream_expression;
 
-/// LIR node file construction from HIR unitary node.
-pub mod unitary_node;
-
 /// LIR item construction from HIR typedef.
 pub mod typedef;
 

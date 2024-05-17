@@ -28,11 +28,8 @@ impl LIRFromHIR for File {
             .collect();
         let mut nodes = nodes
             .into_iter()
-            .flat_map(|node| {
-                node.lir_from_hir(symbol_table)
-                    .into_iter()
-                    .map(Item::NodeFile)
-            })
+            .map(|node| node.lir_from_hir(symbol_table))
+            .map(Item::NodeFile)
             .collect();
 
         let mut items = vec![];

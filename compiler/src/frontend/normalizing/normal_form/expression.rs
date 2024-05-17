@@ -183,7 +183,7 @@ impl ExpressionKind<StreamExpression> {
                 arms.iter_mut()
                     .for_each(|(pattern, bound, body, matched_expression)| {
                         // get local signals defined in pattern
-                        let local_signals = pattern.local_identifiers();
+                        let local_signals = pattern.identifiers();
 
                         // remove identifiers created by the pattern from the dependencies
                         let (mut bound_statements, mut bound_dependencies) =

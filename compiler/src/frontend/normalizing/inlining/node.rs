@@ -1,13 +1,35 @@
 use std::collections::HashMap;
 
-use itertools::Itertools;
+use petgraph::graphmap::GraphMap;
 
 use crate::{
-    hir::{node::Node, unitary_node::UnitaryNode},
+    hir::{
+        identifier_creator::IdentifierCreator, memory::Memory, node::Node, pattern::Pattern,
+        statement::Statement, stream_expression::StreamExpression,
+    },
     symbol_table::SymbolTable,
 };
 
+use super::Union;
+
 impl Node {
+    /// Return vector of unitary node's signals id.
+    pub fn get_signals_id(&self) -> Vec<usize> {
+        self.statements
+            .iter()
+            .flat_map(|statement| statement.pattern.identifiers())
+            .collect()
+    }
+
+    /// Return vector of unitary node's signals name.
+    pub fn get_signals_name(&self, symbol_table: &SymbolTable) -> Vec<String> {
+        self.statements
+            .iter()
+            .flat_map(|statement| statement.pattern.identifiers())
+            .map(|id| symbol_table.get_name(id).clone())
+            .collect()
+    }
+
     /// Inline node application when it is needed.
     ///
     /// Inlining needed for "shifted causality loop".
@@ -28,12 +50,128 @@ impl Node {
     /// which can not be computed by a function call.
     pub fn inline_when_needed(
         &mut self,
-        unitary_nodes: &HashMap<usize, UnitaryNode>,
+        unitary_nodes: &HashMap<usize, Node>,
         symbol_table: &mut SymbolTable,
     ) {
-        self.unitary_nodes
-            .values_mut()
-            .sorted_by_key(|unitary_node| unitary_node.id)
-            .for_each(|unitary_node| unitary_node.inline_when_needed(unitary_nodes, symbol_table))
+        // create identifier creator containing the signals
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
+
+        // compute new statements for the unitary node
+        let mut new_statements: Vec<Statement<StreamExpression>> = vec![];
+        std::mem::take(&mut self.statements)
+            .into_iter()
+            .for_each(|statement| {
+                let mut retrieved_statements = statement.inline_when_needed_reccursive(
+                    &mut self.memory,
+                    &mut identifier_creator,
+                    &mut self.graph,
+                    symbol_table,
+                    unitary_nodes,
+                );
+                new_statements.append(&mut retrieved_statements)
+            });
+
+        // update node's unitary node
+        self.update_statements(&new_statements)
+    }
+
+    /// Instantiate unitary node's statements with inputs.
+    ///
+    /// It will return new statements where the input signals are instanciated by
+    /// expressions.
+    /// New statements should have fresh id according to the calling node.
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// node to_be_inlined(i: int) {
+    ///     o: int = 0 fby j;
+    ///     out j: int = i + 1;
+    /// }
+    ///
+    /// node calling_node(i: int) {
+    ///     out o: int = to_be_inlined(o);
+    ///     j: int = i * o;
+    /// }
+    /// ```
+    ///
+    /// The call to `to_be_inlined` will generate th following statements:
+    ///
+    /// ```GR
+    /// o: int = 0 fby j_1;
+    /// j_1: int = o + 1;
+    /// ```
+    pub fn instantiate_statements_and_memory(
+        &self,
+        identifier_creator: &mut IdentifierCreator,
+        inputs: &[(usize, StreamExpression)],
+        new_output_pattern: Option<Pattern>,
+        symbol_table: &mut SymbolTable,
+    ) -> (Vec<Statement<StreamExpression>>, Memory) {
+        // create the context with the given inputs
+        let mut context_map = inputs
+            .iter()
+            .map(|(input, expression)| (*input, Union::I2(expression.clone())))
+            .collect::<HashMap<_, _>>();
+
+        // add output signals to context
+        new_output_pattern.map(|pattern| {
+            let signals = pattern.identifiers();
+            symbol_table
+                .get_node_outputs(self.id)
+                .zip(signals)
+                .for_each(|(output_id, new_output_id)| {
+                    context_map.insert(*output_id, Union::I1(new_output_id));
+                })
+        });
+
+        // add identifiers of the inlined statements to the context
+        self.statements.iter().for_each(|statement| {
+            statement.add_necessary_renaming(identifier_creator, &mut context_map, symbol_table)
+        });
+        // add identifiers of the inlined memory to the context
+        self.memory
+            .add_necessary_renaming(identifier_creator, &mut context_map, symbol_table);
+
+        // reduce statements according to the context
+        let statements = self
+            .statements
+            .iter()
+            .map(|statement| statement.replace_by_context(&context_map))
+            .collect();
+
+        // reduce memory according to the context
+        let memory = self.memory.replace_by_context(&context_map);
+
+        (statements, memory)
+    }
+
+    /// Update unitary node statements and add the corresponding dependency graph.
+    pub fn update_statements(&mut self, new_statements: &[Statement<StreamExpression>]) {
+        // put new statements in unitary node
+        self.statements = new_statements.to_vec();
+        // add a dependency graph to the unitary node
+        let mut graph = GraphMap::new();
+        self.get_signals_id().iter().for_each(|signal_id| {
+            graph.add_node(*signal_id);
+        });
+        self.memory.buffers.keys().for_each(|signal_id| {
+            graph.add_node(*signal_id);
+        });
+        self.statements.iter().for_each(
+            |Statement {
+                 pattern,
+                 expression,
+                 ..
+             }| {
+                let signals = pattern.identifiers();
+                for from in signals {
+                    for (to, label) in expression.get_dependencies() {
+                        graph.add_edge(from, *to, label.clone());
+                    }
+                }
+            },
+        );
+        self.graph = graph;
     }
 }

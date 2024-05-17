@@ -38,11 +38,13 @@ impl Parse for Component {
         let ident: syn::Ident = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
-        let args: Punctuated<Colon<syn::Ident, Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let args: Punctuated<Colon<syn::Ident, Type>, Token![,]> =
+            Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
         let content;
         let outs_paren: token::Paren = parenthesized!(content in input);
-        let outs: Punctuated<Colon<syn::Ident, Type>, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let outs: Punctuated<Colon<syn::Ident, Type>, Token![,]> =
+            Punctuated::parse_terminated(&content)?;
         let period: Option<(Token![@], LitInt, keyword::ms)> = {
             if input.peek(Token![@]) {
                 Some((input.parse()?, input.parse()?, input.parse()?))

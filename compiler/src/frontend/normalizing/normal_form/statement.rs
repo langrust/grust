@@ -40,7 +40,7 @@ impl Statement<StreamExpression> {
         symbol_table: &mut SymbolTable,
     ) -> Vec<Statement<StreamExpression>> {
         let Statement {
-            id,
+            pattern,
             mut expression,
             location,
         } = self;
@@ -50,7 +50,7 @@ impl Statement<StreamExpression> {
             StreamExpressionKind::UnitaryNodeApplication {
                 node_id,
                 ref mut inputs,
-                output_id,
+                ..
             } => {
                 let new_statements = inputs
                     .iter_mut()
@@ -69,17 +69,21 @@ impl Statement<StreamExpression> {
                     inputs
                         .iter()
                         .flat_map(|(input_id, expression)| {
-                            reduced_graph.edge_weight(output_id, *input_id).map_or(
-                                vec![],
-                                |label1| {
-                                    expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .map(|(id, label2)| (id, label1.add(&label2)))
-                                        .collect()
-                                },
-                            )
+                            symbol_table
+                                .get_node_outputs(node_id)
+                                .flat_map(|output_id| {
+                                    reduced_graph.edge_weight(*output_id, *input_id).map_or(
+                                        vec![],
+                                        |label1| {
+                                            expression
+                                                .get_dependencies()
+                                                .clone()
+                                                .into_iter()
+                                                .map(|(id, label2)| (id, label1.add(&label2)))
+                                                .collect()
+                                        },
+                                    )
+                                })
                         })
                         .collect(),
                 );
@@ -91,7 +95,7 @@ impl Statement<StreamExpression> {
 
         // recreate the new statement with modified expression
         let normal_formed_statement = Statement {
-            id,
+            pattern,
             expression,
             location,
         };

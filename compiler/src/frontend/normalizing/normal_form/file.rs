@@ -58,11 +58,9 @@ impl File {
         let mut nodes_reduced_graphs = HashMap::new();
         // get every nodes' graphs
         self.nodes.iter().for_each(|node| {
-            node.unitary_nodes.values().for_each(|unitary_node| {
-                debug_assert!(nodes_reduced_graphs
-                    .insert(unitary_node.id.clone(), unitary_node.graph.clone())
-                    .is_none())
-            })
+            let test_first_insert =
+                nodes_reduced_graphs.insert(node.id.clone(), node.graph.clone());
+            debug_assert!(test_first_insert.is_none())
         });
 
         self.nodes

@@ -1,5 +1,5 @@
-use crate::ast::function::Function;
 use crate::ast::colon::Colon;
+use crate::ast::function::Function;
 use crate::ast::statement::{ReturnInstruction, Statement};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};

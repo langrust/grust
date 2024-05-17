@@ -1,34 +1,30 @@
-use petgraph::graphmap::DiGraphMap;
-use std::collections::HashMap;
-
 use crate::common::{label::Label, location::Location};
-use crate::hir::{
-    contract::Contract, statement::Statement, stream_expression::StreamExpression,
-    unitary_node::UnitaryNode,
-};
+use crate::hir::{contract::Contract, statement::Statement, stream_expression::StreamExpression};
+use petgraph::graphmap::DiGraphMap;
+
+use super::memory::Memory;
 
 #[derive(Debug, Clone)]
 /// LanGRust node HIR.
 pub struct Node {
     /// Node identifier.
     pub id: usize,
-    /// Node's unscheduled equations.
-    pub unscheduled_equations: Vec<Statement<StreamExpression>>,
-    /// Unitary output nodes generated from this node.
-    pub unitary_nodes: HashMap<usize, UnitaryNode>,
+    /// Node's statements.
+    pub statements: Vec<Statement<StreamExpression>>,
     /// Node's contract.
     pub contract: Contract,
     /// Node location.
     pub location: Location,
     /// Node dependency graph.
     pub graph: DiGraphMap<usize, Label>,
+    /// Unitary node's memory.
+    pub memory: Memory,
 }
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
-            && self.unscheduled_equations == other.unscheduled_equations
-            && self.unitary_nodes == other.unitary_nodes
+            && self.statements == other.statements
             && self.contract == other.contract
             && self.location == other.location
             && self.eq_graph(other)
@@ -46,20 +42,18 @@ impl Node {
 
     /// Tell if there is no FBY expression.
     pub fn no_fby(&self) -> bool {
-        self.unitary_nodes
-            .iter()
-            .all(|(_, unitary_node)| unitary_node.no_fby())
+        self.statements.iter().all(|statement| statement.no_fby())
     }
     /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {
-        self.unitary_nodes
+        self.statements
             .iter()
-            .all(|(_, unitary_node)| unitary_node.is_normal_form())
+            .all(|statement| statement.is_normal_form())
     }
     /// Tell if there is no node application.
     pub fn no_node_application(&self) -> bool {
-        self.unitary_nodes
+        self.statements
             .iter()
-            .all(|(_, unitary_node)| unitary_node.no_node_application())
+            .all(|statement| statement.no_node_application())
     }
 }

@@ -1,5 +1,5 @@
 use crate::common::location::Location;
-use crate::hir::{stream_expression::StreamExpression, pattern::Pattern};
+use crate::hir::{pattern::Pattern, stream_expression::StreamExpression};
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust statement HIR.

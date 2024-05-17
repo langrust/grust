@@ -9,15 +9,12 @@ impl TypeAnalysis for Node {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
-        let Node {
-            unscheduled_equations,
-            ..
-        } = self;
+        let Node { statements, .. } = self;
 
         // type all equations
-        unscheduled_equations
+        statements
             .iter_mut()
-            .map(|equation| equation.typing(symbol_table, errors))
+            .map(|statement| statement.typing(symbol_table, errors))
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
             .collect::<Result<(), TerminationError>>()

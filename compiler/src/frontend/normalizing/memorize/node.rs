@@ -1,6 +1,9 @@
-use itertools::Itertools;
+use petgraph::graphmap::GraphMap;
 
+use crate::hir::identifier_creator::IdentifierCreator;
+use crate::hir::memory::Memory;
 use crate::hir::node::Node;
+use crate::hir::statement::Statement;
 use crate::symbol_table::SymbolTable;
 
 impl Node {
@@ -36,12 +39,47 @@ impl Node {
     ///     },
     /// }
     /// ```
-    ///
-    /// This example is tested in source.
     pub fn memorize(&mut self, symbol_table: &mut SymbolTable) {
-        self.unitary_nodes
-            .values_mut()
-            .sorted_by_key(|unitary_node| unitary_node.id)
-            .for_each(|unitary_node| unitary_node.memorize(symbol_table))
+        // create an IdentifierCreator, a local SymbolTable and Memory
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
+        symbol_table.local();
+        let mut memory = Memory::new();
+
+        self.statements.iter_mut().for_each(|statement| {
+            statement.memorize(
+                &mut identifier_creator,
+                &mut memory,
+                &mut self.contract,
+                symbol_table,
+            )
+        });
+
+        // drop IdentifierCreator (auto), local SymbolTable and set Memory
+        symbol_table.global();
+        self.memory = memory;
+
+        // add a dependency graph to the unitary node
+        let mut graph = GraphMap::new();
+        self.get_signals_id().iter().for_each(|signal_id| {
+            graph.add_node(*signal_id);
+        });
+        self.memory.buffers.keys().for_each(|signal_id| {
+            graph.add_node(*signal_id);
+        });
+        self.statements.iter().for_each(
+            |Statement {
+                 pattern,
+                 expression,
+                 ..
+             }| {
+                let signals = pattern.identifiers();
+                for from in signals {
+                    for (to, label) in expression.get_dependencies() {
+                        graph.add_edge(from, *to, label.clone());
+                    }
+                }
+            },
+        );
+        self.graph = graph;
     }
 }

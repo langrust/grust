@@ -156,7 +156,7 @@ impl HIRFromAST for Pattern {
         let kind = match self {
             Pattern::Constant(constant) => PatternKind::Constant { constant },
             Pattern::Identifier(name) => {
-                let id = symbol_table.get_identifier_id(&name, false, location, errors)?;
+                let id = symbol_table.get_identifier_id(&name, false, location.clone(), errors)?;
                 PatternKind::Identifier { id }
             }
             Pattern::Typed(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
