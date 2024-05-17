@@ -16,7 +16,7 @@ fn should_compile_counter() {
         }
 
         component test() -> (y: int) {
-            y = counter(false fby (y > 35), half).o;
+            y = counter(false fby (y > 35), half);
             let half: bool = true fby !half;
         }
     };

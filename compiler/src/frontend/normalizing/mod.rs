@@ -3,11 +3,7 @@ mod memorize;
 mod normal_form;
 mod scheduling;
 
-use crate::{
-    error::{Error, TerminationError},
-    hir::file::File,
-    symbol_table::SymbolTable,
-};
+use crate::{hir::file::File, symbol_table::SymbolTable};
 
 impl File {
     /// Normalize HIR nodes in file.
@@ -156,15 +152,10 @@ impl File {
     ///     out z: int = 0 fby z;
     /// }
     /// ```
-    pub fn normalize(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    pub fn normalize(&mut self, symbol_table: &mut SymbolTable) {
         self.normal_form(symbol_table);
         self.memorize(symbol_table);
         self.inline_when_needed(symbol_table);
-        self.schedule();
-        Ok(())
+        self.schedule()
     }
 }

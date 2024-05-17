@@ -55,7 +55,7 @@ pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
     hir.generate_dependency_graphs(&symbol_table, &mut errors)
         .unwrap();
     hir.causality_analysis(&symbol_table, &mut errors).unwrap();
-    hir.normalize(&mut symbol_table, &mut errors).unwrap();
+    hir.normalize(&mut symbol_table);
     let lir: Project = hir.lir_from_hir(&symbol_table);
     let rust = rust_ast_from_lir(lir);
 

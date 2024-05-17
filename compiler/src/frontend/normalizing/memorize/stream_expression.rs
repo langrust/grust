@@ -63,12 +63,7 @@ impl StreamExpression {
                 };
                 self.dependencies = Dependencies::from(vec![(memory_id, Label::Weight(0))]);
             }
-            StreamExpressionKind::NodeApplication { .. } => unreachable!(),
-            StreamExpressionKind::UnitaryNodeApplication {
-                node_id,
-                inputs,
-                output_id,
-            } => {
+            StreamExpressionKind::NodeApplication { node_id, inputs } => {
                 // create fresh identifier for the new memory buffer
                 let node_name = symbol_table.get_name(*node_id);
                 let memory_name = identifier_creator.new_identifier(
@@ -78,7 +73,7 @@ impl StreamExpression {
                 );
                 let memory_id = symbol_table.insert_fresh_signal(memory_name, Scope::Memory, None);
 
-                memory.add_called_node(memory_id, *node_id, *output_id);
+                memory.add_called_node(memory_id, *node_id);
 
                 self.dependencies = Dependencies::from(
                     inputs

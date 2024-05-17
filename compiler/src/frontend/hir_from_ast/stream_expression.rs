@@ -1,6 +1,4 @@
-use crate::ast::expression::{
-    Application, Array, Binop, FieldAccess, IfThenElse, Structure, Tuple, Unop,
-};
+use crate::ast::expression::{Application, Array, Binop, IfThenElse, Structure, Tuple, Unop};
 use crate::ast::stream_expression::{FollowedBy, StreamExpression};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
@@ -25,117 +23,74 @@ impl HIRFromAST for StreamExpression {
     ) -> Result<Self::HIR, TerminationError> {
         let location = Location::default();
         let kind = match self {
-            StreamExpression::FieldAccess(FieldAccess { expression, field }) => {
-                // check if it is a node expression (ie: node_id(intputs).signal_id)
-                match *expression {
-                    StreamExpression::Application(Application {
-                        function_expression,
-                        inputs: inputs_stream_expressions,
-                    }) => match *function_expression {
-                        StreamExpression::Identifier(node)
-                            if symbol_table.is_node(&node, false) =>
-                        {
-                            let node_id =
-                                symbol_table.get_node_id(&node, false, location.clone(), errors)?;
-                            let node_symbol = symbol_table
-                                .get_symbol(node_id)
-                                .expect("there should be a symbol")
-                                .clone();
-                            match node_symbol.kind() {
-                                SymbolKind::Node {
-                                    is_component,
-                                    inputs,
-                                    outputs,
-                                    ..
-                                } => {
-                                    // if component raise error: component can not be called
-                                    if *is_component {
-                                        let error = Error::ComponentCall {
-                                            name: node.clone(),
-                                            location: location.clone(),
-                                        };
-                                        errors.push(error);
-                                        return Err(TerminationError);
-                                    }
+            StreamExpression::Application(Application {
+                function_expression,
+                inputs: inputs_stream_expressions,
+            }) => match *function_expression {
+                StreamExpression::Identifier(node) if symbol_table.is_node(&node, false) => {
+                    let node_id =
+                        symbol_table.get_node_id(&node, false, location.clone(), errors)?;
+                    let node_symbol = symbol_table
+                        .get_symbol(node_id)
+                        .expect("there should be a symbol")
+                        .clone();
+                    match node_symbol.kind() {
+                        SymbolKind::Node {
+                            is_component,
+                            inputs,
+                            ..
+                        } => {
+                            // if component raise error: component can not be called
+                            if *is_component {
+                                let error = Error::ComponentCall {
+                                    name: node.clone(),
+                                    location: location.clone(),
+                                };
+                                errors.push(error);
+                                return Err(TerminationError);
+                            }
 
-                                    // check inputs and node_inputs have the same length
-                                    if inputs.len() != inputs_stream_expressions.len() {
-                                        let error = Error::IncompatibleInputsNumber {
-                                            given_inputs_number: inputs_stream_expressions.len(),
-                                            expected_inputs_number: inputs.len(),
-                                            location: location.clone(),
-                                        };
-                                        errors.push(error);
-                                        return Err(TerminationError);
-                                    }
+                            // check inputs and node_inputs have the same length
+                            if inputs.len() != inputs_stream_expressions.len() {
+                                let error = Error::IncompatibleInputsNumber {
+                                    given_inputs_number: inputs_stream_expressions.len(),
+                                    expected_inputs_number: inputs.len(),
+                                    location: location.clone(),
+                                };
+                                errors.push(error);
+                                return Err(TerminationError);
+                            }
 
-                                    let output_id = *outputs.get(&field).ok_or_else(|| {
-                                        let error = Error::UnknownOuputSignal {
-                                            node_name: node.clone(),
-                                            signal_name: field,
-                                            location: location.clone(),
-                                        };
-                                        errors.push(error);
-                                        TerminationError
-                                    })?;
-
-                                    StreamExpressionKind::NodeApplication {
-                                        node_id,
-                                        output_id,
-                                        inputs: inputs_stream_expressions
-                                            .into_iter()
-                                            .zip(inputs)
-                                            .map(|(input, id)| {
-                                                Ok((
-                                                    *id,
-                                                    input
-                                                        .clone()
-                                                        .hir_from_ast(symbol_table, errors)?,
-                                                ))
-                                            })
-                                            .collect::<Vec<Result<_, _>>>()
-                                            .into_iter()
-                                            .collect::<Result<Vec<_>, _>>()?,
-                                    }
-                                }
-                                _ => unreachable!(),
+                            StreamExpressionKind::NodeApplication {
+                                node_id,
+                                inputs: inputs_stream_expressions
+                                    .into_iter()
+                                    .zip(inputs)
+                                    .map(|(input, id)| {
+                                        Ok((*id, input.clone().hir_from_ast(symbol_table, errors)?))
+                                    })
+                                    .collect::<Vec<Result<_, _>>>()
+                                    .into_iter()
+                                    .collect::<Result<Vec<_>, _>>()?,
                             }
                         }
-                        function_expression => StreamExpressionKind::Expression {
-                            expression: ExpressionKind::FieldAccess {
-                                expression: Box::new(HIRStreamExpression {
-                                    kind: StreamExpressionKind::Expression {
-                                        expression: ExpressionKind::Application {
-                                            function_expression: Box::new(
-                                                function_expression
-                                                    .hir_from_ast(symbol_table, errors)?,
-                                            ),
-                                            inputs: inputs_stream_expressions
-                                                .into_iter()
-                                                .map(|input| {
-                                                    input.clone().hir_from_ast(symbol_table, errors)
-                                                })
-                                                .collect::<Vec<Result<_, _>>>()
-                                                .into_iter()
-                                                .collect::<Result<Vec<_>, _>>()?,
-                                        },
-                                    },
-                                    typing: None,
-                                    location: location.clone(),
-                                    dependencies: Dependencies::new(),
-                                }),
-                                field,
-                            },
-                        },
-                    },
-                    expression => StreamExpressionKind::Expression {
-                        expression: ExpressionKind::FieldAccess {
-                            expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
-                            field,
-                        },
-                    },
+                        _ => unreachable!(),
+                    }
                 }
-            }
+                function_expression => StreamExpressionKind::Expression {
+                    expression: ExpressionKind::Application {
+                        function_expression: Box::new(
+                            function_expression.hir_from_ast(symbol_table, errors)?,
+                        ),
+                        inputs: inputs_stream_expressions
+                            .into_iter()
+                            .map(|input| input.clone().hir_from_ast(symbol_table, errors))
+                            .collect::<Vec<Result<_, _>>>()
+                            .into_iter()
+                            .collect::<Result<Vec<_>, _>>()?,
+                    },
+                },
+            },
             StreamExpression::FollowedBy(FollowedBy {
                 constant,
                 expression,
@@ -170,9 +125,6 @@ impl HIRFromAST for StreamExpression {
             StreamExpression::IfThenElse(expression) => StreamExpressionKind::Expression {
                 expression: expression.hir_from_ast(symbol_table, errors)?,
             },
-            StreamExpression::Application(expression) => StreamExpressionKind::Expression {
-                expression: expression.hir_from_ast(symbol_table, errors)?,
-            },
             StreamExpression::TypedAbstraction(expression) => StreamExpressionKind::Expression {
                 expression: expression.hir_from_ast(&location, symbol_table, errors)?,
             },
@@ -193,6 +145,9 @@ impl HIRFromAST for StreamExpression {
                 expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::Match(expression) => StreamExpressionKind::Expression {
+                expression: expression.hir_from_ast(symbol_table, errors)?,
+            },
+            StreamExpression::FieldAccess(expression) => StreamExpressionKind::Expression {
                 expression: expression.hir_from_ast(symbol_table, errors)?,
             },
             StreamExpression::TupleElementAccess(expression) => StreamExpressionKind::Expression {

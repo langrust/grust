@@ -23,7 +23,6 @@ impl StreamExpression {
                 nodes.push(*node_id);
                 nodes
             }
-            StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
         }
     }
 
@@ -76,7 +75,6 @@ impl StreamExpression {
             StreamExpressionKind::NodeApplication {
                 ref node_id,
                 ref inputs,
-                ref output_id,
             } => {
                 // function "dependencies to inputs" and "input expressions's dependencies"
                 // of node application
@@ -84,23 +82,35 @@ impl StreamExpression {
                     inputs
                         .iter()
                         .map(|(input_id, input_expression)| {
+                            // compute input expression dependencies
                             input_expression.compute_dependencies(
                                 symbol_table,
                                 nodes_reduced_graphs,
                                 errors,
                             )?;
+
+                            // get reduced graph (graph with only inputs/outputs signals)
                             let reduced_graph = nodes_reduced_graphs.get_mut(node_id).unwrap();
-                            Ok(reduced_graph.edge_weight(*output_id, *input_id).map_or(
-                                Ok(vec![]),
-                                |label1| {
-                                    Ok(input_expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .map(|(id, label2)| (id, label1.add(&label2)))
-                                        .collect())
-                                },
-                            )?)
+
+                            // for each node's output, get dependencies from output to inputs
+                            let dependencies = symbol_table
+                                .get_node_outputs(*node_id)
+                                .flat_map(|output_signal| {
+                                    reduced_graph.edge_weight(*output_signal, *input_id).map_or(
+                                        vec![],
+                                        |label1| {
+                                            input_expression
+                                                .get_dependencies()
+                                                .clone()
+                                                .into_iter()
+                                                .map(|(id, label2)| (id, label1.add(&label2)))
+                                                .collect()
+                                        },
+                                    )
+                                })
+                                .collect();
+                            
+                            Ok(dependencies)
                         })
                         .collect::<Result<Vec<Vec<(usize, Label)>>, TerminationError>>()?
                         .into_iter()
@@ -118,7 +128,6 @@ impl StreamExpression {
                 )?);
                 Ok(())
             }
-            StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
         }
     }
 }

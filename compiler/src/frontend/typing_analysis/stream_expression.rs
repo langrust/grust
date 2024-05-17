@@ -29,8 +29,8 @@ impl TypeAnalysis for StreamExpression {
             }
 
             StreamExpressionKind::NodeApplication {
+                node_id,
                 ref mut inputs,
-                ref output_id,
                 ..
             } => {
                 // type all inputs and check their types
@@ -48,9 +48,19 @@ impl TypeAnalysis for StreamExpression {
                     .collect::<Result<(), TerminationError>>()?;
 
                 // get the called signal type
-                let node_application_type = symbol_table.get_type(*output_id);
+                let node_application_type = {
+                    let mut outputs_types = symbol_table
+                        .get_node_outputs(node_id)
+                        .map(|output_signal| symbol_table.get_type(*output_signal).clone())
+                        .collect::<Vec<_>>();
+                    if outputs_types.len() == 1 {
+                        outputs_types.pop().unwrap()
+                    } else {
+                        Type::Tuple(outputs_types)
+                    }
+                };
 
-                self.typing = Some(node_application_type.clone());
+                self.typing = Some(node_application_type);
                 Ok(())
             }
 
@@ -58,7 +68,6 @@ impl TypeAnalysis for StreamExpression {
                 self.typing = Some(expression.typing(&self.location, symbol_table, errors)?);
                 Ok(())
             }
-            StreamExpressionKind::UnitaryNodeApplication { .. } => unreachable!(),
         }
     }
 

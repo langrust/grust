@@ -33,7 +33,7 @@ impl StreamExpression {
                     *self = new_expression;
                 }
             }
-            StreamExpressionKind::UnitaryNodeApplication {
+            StreamExpressionKind::NodeApplication {
                 ref mut node_id,
                 ref mut inputs,
                 ..
@@ -67,8 +67,7 @@ impl StreamExpression {
                         .collect(),
                 );
             }
-            StreamExpressionKind::FollowedBy { .. }
-            | StreamExpressionKind::NodeApplication { .. } => unreachable!(),
+            StreamExpressionKind::FollowedBy { .. } => unreachable!(),
         }
     }
 }

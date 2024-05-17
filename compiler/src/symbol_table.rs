@@ -50,19 +50,6 @@ pub enum SymbolKind {
         /// Node's period of execution.
         period: Option<usize>,
     },
-    /// Unitary node kind.
-    UnitaryNode {
-        /// Is true when the node is a component.
-        is_component: bool,
-        /// Mother node identifier.
-        mother_node: usize,
-        /// Node's input identifiers.
-        inputs: Vec<usize>,
-        /// Node's output identifier.
-        output: usize,
-        /// Node's period of execution.
-        period: Option<usize>,
-    },
     /// Structure kind.
     Structure {
         /// The structure's fields: a field has an identifier and a type.
@@ -126,7 +113,6 @@ impl Symbol {
             SymbolKind::Flow { .. } => format!("flow {}", self.name),
             SymbolKind::Function { .. } => format!("function {}", self.name),
             SymbolKind::Node { .. } => format!("node {}", self.name),
-            SymbolKind::UnitaryNode { .. } => format!("unitary_node {}", self.name),
             SymbolKind::Structure { .. } => format!("struct {}", self.name),
             SymbolKind::Enumeration { .. } => format!("enum {}", self.name),
             SymbolKind::EnumerationElement { enum_name } => {
@@ -481,33 +467,6 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
-    /// Insert unitary node in symbol table.
-    pub fn insert_unitary_node(
-        &mut self,
-        node_name: String,
-        output_name: String,
-        is_component: bool,
-        mother_node: usize,
-        inputs: Vec<usize>,
-        output: usize,
-        period: Option<usize>,
-    ) -> usize {
-        let name = format!("{node_name}_{output_name}");
-        let symbol = Symbol {
-            kind: SymbolKind::UnitaryNode {
-                is_component,
-                mother_node,
-                inputs,
-                output,
-                period,
-            },
-            name,
-        };
-
-        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
-            .expect("you should not fail")
-    }
-
     /// Insert fresh signal in symbol table.
     pub fn insert_fresh_signal(
         &mut self,
@@ -651,70 +610,70 @@ impl SymbolTable {
         }
     }
 
-    /// Get unitary node output type from identifier.
-    pub fn get_unitary_node_output_type(&self, id: usize) -> &Type {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::UnitaryNode { output, .. } => self.get_type(*output),
-            _ => unreachable!(),
-        }
-    }
+    // /// Get unitary node output type from identifier.
+    // pub fn get_unitary_node_output_type(&self, id: usize) -> &Type {
+    //     let symbol = self
+    //         .get_symbol(id)
+    //         .expect(&format!("expect symbol for {id}"));
+    //     match symbol.kind() {
+    //         SymbolKind::UnitaryNode { output, .. } => self.get_type(*output),
+    //         _ => unreachable!(),
+    //     }
+    // }
 
-    /// Get unitary node output name from identifier.
-    pub fn get_unitary_node_output_name(&self, id: usize) -> &String {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::UnitaryNode { output, .. } => self.get_name(*output),
-            _ => unreachable!(),
-        }
-    }
+    // /// Get unitary node output name from identifier.
+    // pub fn get_unitary_node_output_name(&self, id: usize) -> &String {
+    //     let symbol = self
+    //         .get_symbol(id)
+    //         .expect(&format!("expect symbol for {id}"));
+    //     match symbol.kind() {
+    //         SymbolKind::UnitaryNode { output, .. } => self.get_name(*output),
+    //         _ => unreachable!(),
+    //     }
+    // }
 
-    /// Get unitary node output identifier from identifier.
-    pub fn get_unitary_node_output_id(&self, id: usize) -> usize {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::UnitaryNode { output, .. } => *output,
-            _ => unreachable!(),
-        }
-    }
+    // /// Get unitary node output identifier from identifier.
+    // pub fn get_unitary_node_output_id(&self, id: usize) -> usize {
+    //     let symbol = self
+    //         .get_symbol(id)
+    //         .expect(&format!("expect symbol for {id}"));
+    //     match symbol.kind() {
+    //         SymbolKind::UnitaryNode { output, .. } => *output,
+    //         _ => unreachable!(),
+    //     }
+    // }
 
-    /// Get unitary node hashmap of used inputs from identifier.
-    pub fn get_unitary_node_used_inputs(&self, id: usize) -> HashMap<usize, bool> {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::UnitaryNode {
-                mother_node,
-                inputs,
-                ..
-            } => {
-                let mother_node_inputs = self.get_node_inputs(*mother_node);
-                mother_node_inputs
-                    .iter()
-                    .map(|id| (*id, inputs.contains(id)))
-                    .collect()
-            }
-            _ => unreachable!(),
-        }
-    }
+    // /// Get unitary node hashmap of used inputs from identifier.
+    // pub fn get_unitary_node_used_inputs(&self, id: usize) -> HashMap<usize, bool> {
+    //     let symbol = self
+    //         .get_symbol(id)
+    //         .expect(&format!("expect symbol for {id}"));
+    //     match symbol.kind() {
+    //         SymbolKind::UnitaryNode {
+    //             mother_node,
+    //             inputs,
+    //             ..
+    //         } => {
+    //             let mother_node_inputs = self.get_node_inputs(*mother_node);
+    //             mother_node_inputs
+    //                 .iter()
+    //                 .map(|id| (*id, inputs.contains(id)))
+    //                 .collect()
+    //         }
+    //         _ => unreachable!(),
+    //     }
+    // }
 
-    /// Get unitary node input identifiers from identifier.
-    pub fn get_unitary_node_inputs(&self, id: usize) -> &Vec<usize> {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::UnitaryNode { inputs, .. } => inputs,
-            _ => unreachable!(),
-        }
-    }
+    // /// Get unitary node input identifiers from identifier.
+    // pub fn get_unitary_node_inputs(&self, id: usize) -> &Vec<usize> {
+    //     let symbol = self
+    //         .get_symbol(id)
+    //         .expect(&format!("expect symbol for {id}"));
+    //     match symbol.kind() {
+    //         SymbolKind::UnitaryNode { inputs, .. } => inputs,
+    //         _ => unreachable!(),
+    //     }
+    // }
 
     /// Set identifier's type.
     pub fn set_type(&mut self, id: usize, new_type: Type) {

@@ -14,7 +14,7 @@ impl LIRFromHIR for StreamExpression {
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         match self.kind {
-            StreamExpressionKind::UnitaryNodeApplication {
+            StreamExpressionKind::NodeApplication {
                 node_id, inputs, ..
             } => {
                 let name = symbol_table.get_name(node_id).clone();
@@ -32,8 +32,7 @@ impl LIRFromHIR for StreamExpression {
                         .collect(),
                 }
             }
-            StreamExpressionKind::FollowedBy { .. }
-            | StreamExpressionKind::NodeApplication { .. } => {
+            StreamExpressionKind::FollowedBy { .. } => {
                 unreachable!()
             }
             StreamExpressionKind::Expression { expression } => {
@@ -58,7 +57,7 @@ impl LIRFromHIR for StreamExpression {
     fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
         match &self.kind {
             StreamExpressionKind::Expression { expression } => expression.get_imports(symbol_table),
-            StreamExpressionKind::UnitaryNodeApplication {
+            StreamExpressionKind::NodeApplication {
                 node_id, inputs, ..
             } => {
                 let mut imports = inputs
@@ -69,8 +68,7 @@ impl LIRFromHIR for StreamExpression {
                 imports.push(Import::NodeFile(symbol_table.get_name(*node_id).clone()));
                 imports
             }
-            StreamExpressionKind::FollowedBy { .. }
-            | StreamExpressionKind::NodeApplication { .. } => unreachable!(),
+            StreamExpressionKind::FollowedBy { .. } => unreachable!(),
         }
     }
 }

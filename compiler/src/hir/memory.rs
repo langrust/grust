@@ -37,8 +37,6 @@ pub struct Buffer {
 pub struct CalledNode {
     /// Node name.
     pub node_id: usize,
-    /// Output signal name.
-    pub signal_id: usize,
 }
 
 impl Memory {
@@ -82,10 +80,10 @@ impl Memory {
     }
 
     /// Add called node to memory.
-    pub fn add_called_node(&mut self, memory_id: usize, node_id: usize, signal_id: usize) {
+    pub fn add_called_node(&mut self, memory_id: usize, node_id: usize) {
         debug_assert!(self
             .called_nodes
-            .insert(memory_id, CalledNode { node_id, signal_id })
+            .insert(memory_id, CalledNode { node_id })
             .is_none())
     }
 }

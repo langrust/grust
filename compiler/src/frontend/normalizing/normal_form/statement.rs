@@ -47,7 +47,7 @@ impl Statement<StreamExpression> {
 
         // change expression into normal form and get additional statements
         let mut statements = match expression.kind {
-            StreamExpressionKind::UnitaryNodeApplication {
+            StreamExpressionKind::NodeApplication {
                 node_id,
                 ref mut inputs,
                 ..
