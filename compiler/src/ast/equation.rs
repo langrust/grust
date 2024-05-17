@@ -1,5 +1,6 @@
-use syn::parse::Parse;
-use syn::Token;
+use syn::punctuated::Punctuated;
+use syn::{braced, Token};
+use syn::{parse::Parse, token};
 
 use crate::ast::{
     pattern::Pattern, statement::LetDeclaration, stream_expression::StreamExpression,
@@ -12,11 +13,6 @@ pub struct Instanciation {
     /// The stream expression defining the signals.
     pub expression: StreamExpression,
     pub semi_token: Token![;],
-}
-impl Instanciation {
-    pub fn get_pattern(&self) -> &Pattern {
-        &self.pattern
-    }
 }
 impl Parse for Instanciation {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
@@ -34,28 +30,85 @@ impl Parse for Instanciation {
     }
 }
 
+/// Arm for matching expression.
+pub struct Arm {
+    /// The pattern to match.
+    pub pattern: Pattern,
+    /// The optional guard.
+    pub guard: Option<(Token![if], StreamExpression)>,
+    pub arrow_token: Token![=>],
+    pub brace_token: token::Brace,
+    /// The equations.
+    pub equations: Vec<Equation>,
+}
+impl Parse for Arm {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let pattern = input.parse()?;
+        let guard = {
+            if input.fork().peek(Token![if]) {
+                let token = input.parse()?;
+                let guard = input.parse()?;
+                Some((token, guard))
+            } else {
+                None
+            }
+        };
+        let arrow_token = input.parse()?;
+        let content;
+        let brace_token = braced!(content in input);
+        let equations = {
+            let mut equations = Vec::new();
+            while !content.is_empty() {
+                equations.push(content.parse()?);
+            }
+            equations
+        };
+        Ok(Arm {
+            pattern,
+            guard,
+            arrow_token,
+            brace_token,
+            equations,
+        })
+    }
+}
+
+pub struct Match {
+    pub match_token: Token![match],
+    /// The stream expression defining the signals.
+    pub expression: StreamExpression,
+    pub brace_token: token::Brace,
+    /// The different matching cases.
+    pub arms: Punctuated<Arm, Token![,]>,
+}
+impl Parse for Match {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let match_token = input.parse()?;
+        let expression = input.parse()?;
+        let content;
+        let brace_token = braced!(content in input);
+        let arms: Punctuated<Arm, Token![,]> = Punctuated::parse_terminated(&content)?;
+
+        Ok(Match {
+            match_token,
+            expression,
+            brace_token,
+            arms,
+        })
+    }
+}
+
 /// GRust equation AST.
 pub enum Equation {
     LocalDef(LetDeclaration<StreamExpression>),
     OutputDef(Instanciation),
-}
-impl Equation {
-    pub fn get_pattern(&self) -> &Pattern {
-        match self {
-            Equation::LocalDef(declaration) => declaration.get_pattern(),
-            Equation::OutputDef(instanciation) => instanciation.get_pattern(),
-        }
-    }
-    pub fn is_local(&self) -> bool {
-        match self {
-            Equation::LocalDef(_) => true,
-            Equation::OutputDef(_) => false,
-        }
-    }
+    Match(Match),
 }
 impl Parse for Equation {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if input.peek(Token![let]) {
+        if input.peek(Token![match]) {
+            Ok(Equation::Match(input.parse()?))
+        } else if input.peek(Token![let]) {
             Ok(Equation::LocalDef(input.parse()?))
         } else {
             Ok(Equation::OutputDef(input.parse()?))
@@ -94,15 +147,32 @@ mod parse_equation {
     impl Debug for Equation {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                Self::LocalDef(arg0) => f
+                Equation::LocalDef(arg0) => f
                     .debug_tuple("LocalDef")
                     .field(&arg0.typed_pattern)
                     .field(&arg0.expression)
                     .finish(),
-                Self::OutputDef(arg0) => f
+                Equation::OutputDef(arg0) => f
                     .debug_tuple("OutputDef")
                     .field(&arg0.pattern)
                     .field(&arg0.expression)
+                    .finish(),
+                Equation::Match(arg0) => f
+                    .debug_tuple("Match")
+                    .field(&arg0.expression)
+                    .field(
+                        &arg0
+                            .arms
+                            .iter()
+                            .map(|arm| {
+                                (
+                                    &arm.pattern,
+                                    arm.guard.as_ref().map(|(_, expr)| expr),
+                                    &arm.equations,
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                    )
                     .finish(),
             }
         }
