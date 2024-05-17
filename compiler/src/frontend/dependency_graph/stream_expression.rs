@@ -109,7 +109,7 @@ impl StreamExpression {
                                     )
                                 })
                                 .collect();
-                            
+
                             Ok(dependencies)
                         })
                         .collect::<Result<Vec<Vec<(usize, Label)>>, TerminationError>>()?

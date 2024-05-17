@@ -198,9 +198,7 @@ impl Node {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         let Node {
-            id: node,
-            location,
-            ..
+            id: node, location, ..
         } = self;
 
         // get signal's color

@@ -21,7 +21,9 @@ impl TypeAnalysis for Function {
         statements
             .iter_mut()
             .map(|statement| {
-                statement.pattern.construct_statement_type(symbol_table, errors)?;
+                statement
+                    .pattern
+                    .construct_statement_type(symbol_table, errors)?;
                 statement.typing(symbol_table, errors)
             })
             .collect::<Vec<Result<(), TerminationError>>>()
