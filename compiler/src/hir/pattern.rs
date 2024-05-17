@@ -69,8 +69,8 @@ impl Pattern {
     pub fn get_type_mut(&mut self) -> Option<&mut Type> {
         self.typing.as_mut()
     }
-    /// Get pattern's local identifiers.
-    pub fn local_identifiers(&self) -> Vec<usize> {
+    /// Get pattern's identifiers.
+    pub fn identifiers(&self) -> Vec<usize> {
         match &self.kind {
             PatternKind::Identifier { id } => vec![*id],
             PatternKind::Constant { .. }
@@ -81,7 +81,7 @@ impl Pattern {
                 .iter()
                 .flat_map(|(id, optional_pattern)| {
                     if let Some(pattern) = optional_pattern {
-                        pattern.local_identifiers()
+                        pattern.identifiers()
                     } else {
                         vec![*id]
                     }
@@ -89,10 +89,37 @@ impl Pattern {
                 .collect(),
             PatternKind::Tuple { elements } => elements
                 .iter()
-                .flat_map(|pattern| pattern.local_identifiers())
+                .flat_map(|pattern| pattern.identifiers())
                 .collect(),
             PatternKind::Some { pattern } | PatternKind::Typed { pattern, .. } => {
-                pattern.local_identifiers()
+                pattern.identifiers()
+            }
+        }
+    }
+    /// Get mutable references to pattern's identifiers.
+    pub fn identifiers_mut(&mut self) -> Vec<&mut usize> {
+        match &mut self.kind {
+            PatternKind::Identifier { id } => vec![id],
+            PatternKind::Constant { .. }
+            | PatternKind::Enumeration { .. }
+            | PatternKind::None
+            | PatternKind::Default => vec![],
+            PatternKind::Structure { fields, .. } => fields
+                .iter_mut()
+                .flat_map(|(id, optional_pattern)| {
+                    if let Some(pattern) = optional_pattern {
+                        pattern.identifiers_mut()
+                    } else {
+                        vec![id]
+                    }
+                })
+                .collect(),
+            PatternKind::Tuple { elements } => elements
+                .iter_mut()
+                .flat_map(|pattern| pattern.identifiers_mut())
+                .collect(),
+            PatternKind::Some { pattern } | PatternKind::Typed { pattern, .. } => {
+                pattern.identifiers_mut()
             }
         }
     }

@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use petgraph::graphmap::DiGraphMap;
 use std::collections::HashMap;
 
@@ -6,6 +5,7 @@ use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::node::Node;
+use crate::hir::stream_expression::StreamExpression;
 use crate::symbol_table::SymbolTable;
 
 use super::add_edge;
@@ -25,8 +25,11 @@ impl Node {
         }
 
         // add other signals as vertices
-        for signal in self.unscheduled_equations.keys().sorted() {
-            graph.add_node(*signal);
+        for statement in &self.statements {
+            let signals = statement.pattern.identifiers();
+            signals.iter().for_each(|signal| {
+                graph.add_node(*signal);
+            });
         }
 
         // return graph
@@ -47,8 +50,11 @@ impl Node {
         }
 
         // add other signals with white color (unprocessed)
-        for signal in self.unscheduled_equations.keys() {
-            hash.insert(*signal, Color::White);
+        for statement in &self.statements {
+            let signals = statement.pattern.identifiers();
+            signals.iter().for_each(|signal| {
+                hash.insert(*signal, Color::White);
+            });
         }
 
         // return hash
@@ -60,7 +66,7 @@ impl Node {
         // add [self] as node in graph
         graph.add_node(self.id);
         // add [self]->[called_nodes] as edges in graph
-        self.unscheduled_equations.values().for_each(|statement| {
+        self.statements.iter().for_each(|statement| {
             statement
                 .expression
                 .get_called_nodes()
@@ -128,18 +134,22 @@ impl Node {
         let mut processus_manager = self.create_initialized_processus_manager(symbol_table);
 
         // add local and output signals dependencies
-        self.unscheduled_equations
-            .keys()
-            .sorted()
-            .map(|signal| {
-                self.add_signal_dependencies(
-                    graph,
-                    *signal,
-                    symbol_table,
-                    &mut processus_manager,
-                    nodes_reduced_graphs,
-                    errors,
-                )
+        self.statements
+            .iter()
+            .map(|statement| {
+                let signals = statement.pattern.identifiers();
+                for signal in signals {
+                    self.add_signal_dependencies(
+                        graph,
+                        signal,
+                        Some(&statement.expression),
+                        symbol_table,
+                        &mut processus_manager,
+                        nodes_reduced_graphs,
+                        errors,
+                    )?
+                }
+                Ok(())
             })
             .collect::<Vec<Result<(), TerminationError>>>()
             .into_iter()
@@ -153,6 +163,7 @@ impl Node {
                 self.add_signal_dependencies(
                     graph,
                     *signal,
+                    None,
                     symbol_table,
                     &mut processus_manager,
                     nodes_reduced_graphs,
@@ -180,6 +191,7 @@ impl Node {
         &self,
         graph: &mut DiGraphMap<usize, Label>,
         signal: usize,
+        optional_expression: Option<&StreamExpression>,
         symbol_table: &SymbolTable,
         processus_manager: &mut HashMap<usize, Color>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
@@ -187,7 +199,7 @@ impl Node {
     ) -> Result<(), TerminationError> {
         let Node {
             id: node,
-            unscheduled_equations,
+            statements,
             location,
             ..
         } = self;
@@ -203,31 +215,22 @@ impl Node {
                 // update status: processing
                 *color = Color::Grey;
 
-                unscheduled_equations
-                    .get(&signal)
-                    .map_or(Ok(()), |equation| {
-                        // retrieve expression
-                        let expression = &equation.expression;
+                optional_expression.map_or(Ok(()), |expression| {
+                    // compute and get dependencies
+                    expression.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
 
-                        // compute and get dependencies
-                        expression.compute_dependencies(
-                            symbol_table,
-                            nodes_reduced_graphs,
-                            errors,
-                        )?;
+                    // add dependencies as graph's edges:
+                    // s = e depends on s' <=> s -> s'
+                    expression
+                        .get_dependencies()
+                        .iter()
+                        .for_each(|(id, label)| {
+                            // if there was another edge, keep the most important label
+                            add_edge(graph, signal, *id, label.clone())
+                        });
 
-                        // add dependencies as graph's edges:
-                        // s = e depends on s' <=> s -> s'
-                        expression
-                            .get_dependencies()
-                            .iter()
-                            .for_each(|(id, label)| {
-                                // if there was another edge, keep the most important label
-                                add_edge(graph, signal, *id, label.clone())
-                            });
-
-                        Ok(())
-                    })?;
+                    Ok(())
+                })?;
 
                 // get signal's color
                 let color = processus_manager

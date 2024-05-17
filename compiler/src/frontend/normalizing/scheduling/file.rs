@@ -25,10 +25,6 @@ impl File {
     /// }
     /// ```
     pub fn schedule(&mut self) {
-        self.nodes.iter_mut().for_each(|node| {
-            node.unitary_nodes
-                .iter_mut()
-                .for_each(|(_, unitary_node)| unitary_node.schedule())
-        })
+        self.nodes.iter_mut().for_each(|node| node.schedule())
     }
 }

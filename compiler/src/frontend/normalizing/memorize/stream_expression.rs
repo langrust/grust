@@ -27,29 +27,23 @@ impl StreamExpression {
     /// Examples are tested in source.
     pub fn memorize(
         &mut self,
-        signal_id: usize,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
         contract: &mut Contract,
         symbol_table: &mut SymbolTable,
     ) {
         match &mut self.kind {
-            StreamExpressionKind::Expression { expression } => expression.memorize(
-                signal_id,
-                identifier_creator,
-                memory,
-                contract,
-                symbol_table,
-            ),
+            StreamExpressionKind::Expression { expression } => {
+                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            }
             StreamExpressionKind::FollowedBy {
                 constant,
                 expression,
             } => {
                 // create fresh identifier for the new memory buffer
-                let name = symbol_table.get_name(signal_id);
                 let memory_name = identifier_creator.new_identifier(
                     String::from("mem"),
-                    name.clone(),
+                    String::from(""),
                     String::from(""),
                 );
                 let typing = self.typing.clone();
@@ -61,7 +55,7 @@ impl StreamExpression {
 
                 // replace signal id by memory id in contract
                 // (Creusot only has access to function input and output in its contract)
-                contract.substitution(signal_id, memory_id); // TODO: I do not think this is true
+                // contract.substitution(signal_id, memory_id); // TODO: followed by as root expression
 
                 // replace fby expression by a call to buffer
                 self.kind = StreamExpressionKind::Expression {

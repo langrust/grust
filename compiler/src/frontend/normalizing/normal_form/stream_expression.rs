@@ -5,6 +5,7 @@ use petgraph::graphmap::DiGraphMap;
 use crate::common::label::Label;
 use crate::common::scope::Scope;
 use crate::hir::expression::ExpressionKind;
+use crate::hir::pattern::{Pattern, PatternKind};
 use crate::hir::stream_expression::StreamExpressionKind;
 use crate::hir::{
     dependencies::Dependencies, identifier_creator::IdentifierCreator, statement::Statement,
@@ -63,7 +64,7 @@ impl StreamExpression {
             StreamExpressionKind::UnitaryNodeApplication {
                 node_id,
                 ref mut inputs,
-                output_id,
+                ..
             } => {
                 let mut new_statements = inputs
                     .iter_mut()
@@ -82,17 +83,21 @@ impl StreamExpression {
                     inputs
                         .iter()
                         .flat_map(|(input_id, expression)| {
-                            reduced_graph.edge_weight(output_id, *input_id).map_or(
-                                vec![],
-                                |label1| {
-                                    expression
-                                        .get_dependencies()
-                                        .clone()
-                                        .into_iter()
-                                        .map(|(id, label2)| (id, label1.add(&label2)))
-                                        .collect()
-                                },
-                            )
+                            symbol_table
+                                .get_node_outputs(node_id)
+                                .flat_map(|output_id| {
+                                    reduced_graph.edge_weight(*output_id, *input_id).map_or(
+                                        vec![],
+                                        |label1| {
+                                            expression
+                                                .get_dependencies()
+                                                .clone()
+                                                .into_iter()
+                                                .map(|(id, label2)| (id, label1.add(&label2)))
+                                                .collect()
+                                        },
+                                    )
+                                })
                         })
                         .collect(),
                 );
@@ -104,17 +109,22 @@ impl StreamExpression {
                     String::from(""),
                 );
                 let typing = self.get_type().cloned();
-                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing);
+                let fresh_id =
+                    symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.clone());
 
-                // create statement for unitary node call
-                let unitary_node_application_statement = Statement {
-                    id: fresh_id,
-                    location: self.location.clone(),
+                // create statement for node call
+                let node_application_statement = Statement {
+                    pattern: Pattern {
+                        kind: PatternKind::Identifier { id: fresh_id },
+                        typing,
+                        location: self.location.clone(),
+                    },
                     expression: self.clone(),
+                    location: self.location.clone(),
                 };
-                new_statements.push(unitary_node_application_statement);
+                new_statements.push(node_application_statement);
 
-                // change current expression be an identifier to the statement of the unitary node call
+                // change current expression be an identifier to the statement of the node call
                 self.kind = StreamExpressionKind::Expression {
                     expression: ExpressionKind::Identifier { id: fresh_id },
                 };
@@ -168,11 +178,16 @@ impl StreamExpression {
                     String::from(""),
                 );
                 let typing = self.get_type().cloned();
-                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing);
+                let fresh_id =
+                    symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.clone());
 
                 // create statement for the expression
                 let new_statement = Statement {
-                    id: fresh_id,
+                    pattern: Pattern {
+                        kind: PatternKind::Identifier { id: fresh_id },
+                        typing,
+                        location: self.location.clone(),
+                    },
                     location: self.location.clone(),
                     expression: self.clone(),
                 };

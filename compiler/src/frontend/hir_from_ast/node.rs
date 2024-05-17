@@ -8,6 +8,7 @@ use crate::ast::equation::Equation;
 use crate::common::location::Location;
 use crate::common::scope::Scope;
 use crate::error::{Error, TerminationError};
+use crate::hir::memory::Memory;
 use crate::hir::node::Node as HIRNode;
 use crate::symbol_table::SymbolTable;
 
@@ -37,7 +38,7 @@ impl HIRFromAST for Component {
         symbol_table.local();
         symbol_table.restore_context(id);
 
-        let unscheduled_equations = equations
+        let statements = equations
             .into_iter()
             .map(|equation| equation.hir_from_ast(symbol_table, errors))
             .collect::<Vec<Result<_, _>>>()
@@ -49,11 +50,11 @@ impl HIRFromAST for Component {
 
         Ok(HIRNode {
             id,
-            unscheduled_equations,
-            unitary_nodes: HashMap::new(),
+            statements,
             contract,
             location,
             graph: DiGraphMap::new(),
+            memory: Memory::new(),
         })
     }
 }

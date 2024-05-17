@@ -29,6 +29,6 @@ impl Statement<StreamExpression> {
         symbol_table: &mut SymbolTable,
     ) {
         self.expression
-            .memorize(self.id, identifier_creator, memory, contract, symbol_table)
+            .memorize(identifier_creator, memory, contract, symbol_table)
     }
 }

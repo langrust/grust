@@ -162,7 +162,7 @@ impl Pattern {
                     .into_iter()
                     .collect::<Result<Vec<_>, TerminationError>>()?;
 
-                self.typing = Some(Type::Tuple(types));
+                self.typing = Some(Type::Tuple(types.clone()));
                 Ok(Type::Tuple(types))
             }
         }

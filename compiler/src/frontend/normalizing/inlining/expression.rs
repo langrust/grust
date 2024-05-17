@@ -133,7 +133,7 @@ impl ExpressionKind<StreamExpression> {
 
                 arms.iter_mut()
                     .for_each(|(pattern, bound, body, matched_expression)| {
-                        let local_signals = pattern.local_identifiers();
+                        let local_signals = pattern.identifiers();
 
                         // remove identifiers created by the pattern from the context
                         let context_map = context_map

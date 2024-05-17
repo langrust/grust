@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 use petgraph::algo::toposort;
 
-use crate::{common::label::Label, hir::unitary_node::UnitaryNode};
+use crate::{common::label::Label, hir::node::Node};
 
-impl UnitaryNode {
+impl Node {
     /// Schedule statements.
     ///
     /// # Example.
@@ -27,6 +29,7 @@ impl UnitaryNode {
     /// }
     /// ```
     pub fn schedule(&mut self) {
+        // get subgraph with only direct dependencies
         let mut subgraph = self.graph.clone();
         self.graph
             .all_edges()
@@ -35,19 +38,26 @@ impl UnitaryNode {
                 _ => debug_assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
             });
 
+        // topological sorting
         let mut schedule = toposort(&subgraph, None).unwrap();
         schedule.reverse();
 
-        let scheduled_statements = schedule
+        // construct map from signal_id to their position in the schedule
+        let signals_order = schedule
             .into_iter()
-            .filter_map(|signal_id| {
-                self.statements
-                    .iter()
-                    .position(|equation| equation.id == signal_id)
-            })
-            .map(|index| self.statements.get(index).unwrap().clone())
-            .collect();
+            .enumerate()
+            .map(|(order, signal_id)| (signal_id, order))
+            .collect::<HashMap<_, _>>();
 
-        self.statements = scheduled_statements;
+        // sort statements
+        self.statements.sort_by_key(|statement| {
+            statement
+                .pattern
+                .identifiers()
+                .into_iter()
+                .map(|signal_id| signals_order.get(&signal_id).unwrap())
+                .min()
+                .unwrap()
+        });
     }
 }

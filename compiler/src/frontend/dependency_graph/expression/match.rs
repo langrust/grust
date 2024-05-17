@@ -26,7 +26,7 @@ impl ExpressionKind<StreamExpression> {
                     .iter()
                     .map(|(pattern, bound, _, arm_expression)| {
                         // get local signals defined in pattern
-                        let local_signals = pattern.local_identifiers();
+                        let local_signals = pattern.identifiers();
 
                         // get arm expression dependencies
                         arm_expression.compute_dependencies(

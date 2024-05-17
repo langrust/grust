@@ -2,13 +2,13 @@ use syn::parse::{Parse, ParseStream, Result};
 
 use self::{component::Component, function::Function, interface::FlowStatement, typedef::Typedef};
 
+pub mod colon;
 pub mod component;
 pub mod config;
 pub mod contract;
 pub mod equation;
 pub mod expression;
 pub mod function;
-pub mod colon;
 pub mod interface;
 pub mod keyword;
 pub mod pattern;

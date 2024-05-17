@@ -22,7 +22,7 @@ where
 
         let expected_type = pattern.construct_statement_type(symbol_table, errors)?;
         expression.typing(symbol_table, errors)?;
-        
+
         let expression_type = expression.get_type().unwrap();
         expression_type.eq_check(&expected_type, location.clone(), errors)?;
 

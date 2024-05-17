@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use itertools::Itertools;
-use petgraph::graphmap::DiGraphMap;
+use petgraph::graphmap::{DiGraphMap, GraphMap};
 
-use crate::{common::label::Label, hir::node::Node, symbol_table::SymbolTable};
+use crate::{
+    common::label::Label,
+    hir::{identifier_creator::IdentifierCreator, node::Node, statement::Statement},
+    symbol_table::SymbolTable,
+};
 
 impl Node {
     /// Change HIR node into a normal form.
@@ -50,9 +53,42 @@ impl Node {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         symbol_table: &mut SymbolTable,
     ) {
-        self.unitary_nodes
-            .values_mut()
-            .sorted_by_key(|unitary_node| unitary_node.id)
-            .for_each(|unitary_node| unitary_node.normal_form(nodes_reduced_graphs, symbol_table))
+        // create an IdentifierCreator and a local SymbolTable
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
+        symbol_table.local();
+
+        let Node { statements, .. } = self;
+
+        *statements = statements
+            .clone()
+            .into_iter()
+            .flat_map(|equation| {
+                equation.normal_form(nodes_reduced_graphs, &mut identifier_creator, symbol_table)
+            })
+            .collect();
+
+        // drop IdentifierCreator (auto) and local SymbolTable
+        symbol_table.global();
+
+        // add a dependency graph to the node
+        let mut graph = GraphMap::new();
+        self.get_signals_id().iter().for_each(|signal_id| {
+            graph.add_node(*signal_id);
+        });
+        self.statements.iter().for_each(
+            |Statement {
+                 pattern,
+                 expression,
+                 ..
+             }| {
+                let signals = pattern.identifiers();
+                for from in signals {
+                    for (to, label) in expression.get_dependencies() {
+                        graph.add_edge(from, *to, label.clone());
+                    }
+                }
+            },
+        );
+        self.graph = graph;
     }
 }

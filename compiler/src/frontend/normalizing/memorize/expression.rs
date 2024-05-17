@@ -21,7 +21,6 @@ impl ExpressionKind<StreamExpression> {
     /// Examples are tested in source.
     pub fn memorize(
         &mut self,
-        signal_id: usize,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
         contract: &mut Contract,
@@ -32,131 +31,55 @@ impl ExpressionKind<StreamExpression> {
             | ExpressionKind::Identifier { .. }
             | ExpressionKind::Abstraction { .. }
             | ExpressionKind::Enumeration { .. } => (),
-            ExpressionKind::Unop { expression, .. } => expression.memorize(
-                signal_id,
-                identifier_creator,
-                memory,
-                contract,
-                symbol_table,
-            ),
+            ExpressionKind::Unop { expression, .. } => {
+                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            }
             ExpressionKind::Binop {
                 left_expression,
                 right_expression,
                 ..
             } => {
-                left_expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
-                right_expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                )
+                left_expression.memorize(identifier_creator, memory, contract, symbol_table);
+                right_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
             ExpressionKind::IfThenElse {
                 expression,
                 true_expression,
                 false_expression,
             } => {
-                expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
-                true_expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
-                false_expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                )
+                expression.memorize(identifier_creator, memory, contract, symbol_table);
+                true_expression.memorize(identifier_creator, memory, contract, symbol_table);
+                false_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
             ExpressionKind::Application {
                 function_expression,
                 inputs,
             } => {
-                function_expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
+                function_expression.memorize(identifier_creator, memory, contract, symbol_table);
                 inputs.iter_mut().for_each(|expression| {
-                    expression.memorize(
-                        signal_id,
-                        identifier_creator,
-                        memory,
-                        contract,
-                        symbol_table,
-                    )
+                    expression.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
             ExpressionKind::Structure { fields, .. } => {
                 fields.iter_mut().for_each(|(_, expression)| {
-                    expression.memorize(
-                        signal_id,
-                        identifier_creator,
-                        memory,
-                        contract,
-                        symbol_table,
-                    )
+                    expression.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
             ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
                 elements.iter_mut().for_each(|expression| {
-                    expression.memorize(
-                        signal_id,
-                        identifier_creator,
-                        memory,
-                        contract,
-                        symbol_table,
-                    )
+                    expression.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
             ExpressionKind::Match { expression, arms } => {
-                expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
+                expression.memorize(identifier_creator, memory, contract, symbol_table);
                 arms.iter_mut().for_each(|(_, option, block, expression)| {
                     option.as_mut().map(|expression| {
-                        expression.memorize(
-                            signal_id,
-                            identifier_creator,
-                            memory,
-                            contract,
-                            symbol_table,
-                        )
+                        expression.memorize(identifier_creator, memory, contract, symbol_table)
                     });
                     block.iter_mut().for_each(|statement| {
                         statement.memorize(identifier_creator, memory, contract, symbol_table)
                     });
-                    expression.memorize(
-                        signal_id,
-                        identifier_creator,
-                        memory,
-                        contract,
-                        symbol_table,
-                    )
+                    expression.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
             ExpressionKind::When {
@@ -167,121 +90,52 @@ impl ExpressionKind<StreamExpression> {
                 default_body,
                 ..
             } => {
-                option.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
-                present.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
+                option.memorize(identifier_creator, memory, contract, symbol_table);
+                present.memorize(identifier_creator, memory, contract, symbol_table);
                 present_body.iter_mut().for_each(|statement| {
                     statement.memorize(identifier_creator, memory, contract, symbol_table)
                 });
-                default.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
+                default.memorize(identifier_creator, memory, contract, symbol_table);
                 default_body.iter_mut().for_each(|statement| {
                     statement.memorize(identifier_creator, memory, contract, symbol_table)
                 });
             }
-            ExpressionKind::FieldAccess { expression, .. } => expression.memorize(
-                signal_id,
-                identifier_creator,
-                memory,
-                contract,
-                symbol_table,
-            ),
-            ExpressionKind::TupleElementAccess { expression, .. } => expression.memorize(
-                signal_id,
-                identifier_creator,
-                memory,
-                contract,
-                symbol_table,
-            ),
+            ExpressionKind::FieldAccess { expression, .. } => {
+                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            }
+            ExpressionKind::TupleElementAccess { expression, .. } => {
+                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            }
             ExpressionKind::Map {
                 expression,
                 function_expression,
             } => {
-                expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
-                function_expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                )
+                expression.memorize(identifier_creator, memory, contract, symbol_table);
+                function_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
             ExpressionKind::Fold {
                 expression,
                 initialization_expression,
                 function_expression,
             } => {
-                expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
+                expression.memorize(identifier_creator, memory, contract, symbol_table);
                 initialization_expression.memorize(
-                    signal_id,
                     identifier_creator,
                     memory,
                     contract,
                     symbol_table,
                 );
-                function_expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                )
+                function_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
             ExpressionKind::Sort {
                 expression,
                 function_expression,
             } => {
-                expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
-                function_expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                )
+                expression.memorize(identifier_creator, memory, contract, symbol_table);
+                function_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
             ExpressionKind::Zip { arrays } => arrays.iter_mut().for_each(|expression| {
-                expression.memorize(
-                    signal_id,
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                )
+                expression.memorize(identifier_creator, memory, contract, symbol_table)
             }),
         }
     }
