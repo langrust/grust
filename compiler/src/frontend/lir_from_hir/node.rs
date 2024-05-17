@@ -1,6 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
+    common::r#type::Type,
     hir::{identifier_creator::IdentifierCreator, node::Node},
     lir::{
         expression::Expression as LIRExpression,
@@ -32,7 +33,7 @@ impl LIRFromHIR for Node {
 
         // get node inputs
         let mut inputs = symbol_table
-            .get_unitary_node_inputs(id)
+            .get_node_inputs(id)
             .into_iter()
             .map(|id| {
                 (
@@ -43,10 +44,33 @@ impl LIRFromHIR for Node {
             .collect::<Vec<_>>();
 
         // get node output type
-        let mut output_type = symbol_table.get_unitary_node_output_type(id).clone();
+        let outputs = symbol_table.get_node_outputs(id);
+        let mut output_type = {
+            let mut types = outputs
+                .map(|output_id| symbol_table.get_type(*output_id).clone())
+                .collect::<Vec<_>>();
+            if types.len() == 1 {
+                types.pop().unwrap()
+            } else {
+                Type::Tuple(types)
+            }
+        };
 
-        let output_expression = LIRExpression::Identifier {
-            identifier: symbol_table.get_unitary_node_output_name(id).clone(),
+        // get node output expression
+        let outputs = symbol_table.get_node_outputs(id);
+        let output_expression = {
+            let mut identifiers = outputs
+                .map(|output_id| LIRExpression::Identifier {
+                    identifier: symbol_table.get_name(*output_id).clone(),
+                })
+                .collect::<Vec<_>>();
+            if identifiers.len() == 1 {
+                identifiers.pop().unwrap()
+            } else {
+                LIRExpression::Tuple {
+                    elements: identifiers,
+                }
+            }
         };
 
         // collect imports from statements, inputs and output types, memory and contracts

@@ -1,41 +1,45 @@
-pub struct CounterOInput {
+pub fn add(x: i64, y: i64) -> i64 {
+    let res: i64 = x + y;
+    res
+}
+pub struct CounterInput {
     pub res: bool,
     pub tick: bool,
 }
-pub struct CounterOState {
-    mem_o: i64,
+pub struct CounterState {
+    mem_: i64,
 }
-impl CounterOState {
-    pub fn init() -> CounterOState {
-        CounterOState { mem_o: 0 }
+impl CounterState {
+    pub fn init() -> CounterState {
+        CounterState { mem_: 0 }
     }
-    pub fn step(&mut self, input: CounterOInput) -> i64 {
-        let inc = if input.tick { 1 } else { 0 };
-        let o = if input.res { 0 } else { self.mem_o + inc };
-        self.mem_o = o;
+    pub fn step(&mut self, input: CounterInput) -> i64 {
+        let inc: i64 = if input.tick { 1 } else { 0 };
+        let o = if input.res { 0 } else { (add)(self.mem_, inc) };
+        self.mem_ = o;
         o
     }
 }
-pub struct TestYInput {}
-pub struct TestYState {
-    mem_x: bool,
-    mem_half: bool,
-    counter_o: CounterOState,
+pub struct TestInput {}
+pub struct TestState {
+    mem_: bool,
+    mem__1: bool,
+    counter: CounterState,
 }
-impl TestYState {
-    pub fn init() -> TestYState {
-        TestYState {
-            mem_x: false,
-            mem_half: true,
-            counter_o: CounterOState::init(),
+impl TestState {
+    pub fn init() -> TestState {
+        TestState {
+            mem_: false,
+            mem__1: true,
+            counter: CounterState::init(),
         }
     }
-    pub fn step(&mut self, input: TestYInput) -> i64 {
-        let x = self.mem_x;
-        let half = self.mem_half;
-        let y = self.counter_o.step(CounterOInput { res: x, tick: half });
-        self.mem_x = y > 35;
-        self.mem_half = !half;
+    pub fn step(&mut self, input: TestInput) -> i64 {
+        let x = self.mem_;
+        let half: bool = self.mem__1;
+        let y = self.counter.step(CounterInput { res: x, tick: half });
+        self.mem_ = y > 35;
+        self.mem__1 = !half;
         y
     }
 }

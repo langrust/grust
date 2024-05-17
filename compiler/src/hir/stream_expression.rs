@@ -23,17 +23,6 @@ pub enum StreamExpressionKind {
         node_id: usize,
         /// The inputs to the expression.
         inputs: Vec<(usize, StreamExpression)>,
-        /// Output signal's id in Symbol Table.
-        output_id: usize,
-    },
-    /// Unitary node application stream expression.
-    UnitaryNodeApplication {
-        /// Unitary node's id in Symbol Table.
-        node_id: usize,
-        /// The inputs to the expression.
-        inputs: Vec<(usize, StreamExpression)>,
-        /// Output signal's id in Symbol Table.
-        output_id: usize,
     },
 }
 #[derive(Debug, PartialEq, Clone)]
@@ -73,9 +62,6 @@ impl StreamExpression {
                     statement.expression.no_fby()
                 }),
             StreamExpressionKind::FollowedBy { .. } => false,
-            StreamExpressionKind::UnitaryNodeApplication { inputs, .. } => {
-                inputs.iter().all(|(_, expression)| expression.no_fby())
-            }
             StreamExpressionKind::NodeApplication { inputs, .. } => {
                 inputs.iter().all(|(_, expression)| expression.no_fby())
             }
@@ -85,32 +71,13 @@ impl StreamExpression {
     pub fn is_normal_form(&self) -> bool {
         match &self.kind {
             StreamExpressionKind::Expression { expression } => expression
-                .propagate_predicate(StreamExpression::no_any_node_application, |statement| {
+                .propagate_predicate(StreamExpression::no_node_application, |statement| {
                     statement.expression.is_normal_form()
                 }),
-            StreamExpressionKind::FollowedBy { expression, .. } => {
-                expression.no_any_node_application()
-            }
-            StreamExpressionKind::UnitaryNodeApplication { inputs, .. } => inputs
-                .iter()
-                .all(|(_, expression)| expression.no_any_node_application()),
+            StreamExpressionKind::FollowedBy { expression, .. } => expression.no_node_application(),
             StreamExpressionKind::NodeApplication { inputs, .. } => inputs
                 .iter()
-                .all(|(_, expression)| expression.no_any_node_application()),
-        }
-    }
-    /// Tell if there is no node/unitarynode application.
-    pub fn no_any_node_application(&self) -> bool {
-        match &self.kind {
-            StreamExpressionKind::Expression { expression } => expression
-                .propagate_predicate(StreamExpression::no_any_node_application, |statement| {
-                    statement.expression.no_any_node_application()
-                }),
-            StreamExpressionKind::FollowedBy { expression, .. } => {
-                expression.no_any_node_application()
-            }
-            StreamExpressionKind::UnitaryNodeApplication { .. } => false,
-            StreamExpressionKind::NodeApplication { .. } => false,
+                .all(|(_, expression)| expression.no_node_application()),
         }
     }
     /// Tell if there is no node application.
@@ -121,9 +88,6 @@ impl StreamExpression {
                     statement.expression.no_node_application()
                 }),
             StreamExpressionKind::FollowedBy { expression, .. } => expression.no_node_application(),
-            StreamExpressionKind::UnitaryNodeApplication { inputs, .. } => inputs
-                .iter()
-                .all(|(_, expression)| expression.no_node_application()),
             StreamExpressionKind::NodeApplication { .. } => false,
         }
     }

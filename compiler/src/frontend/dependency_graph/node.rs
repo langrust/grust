@@ -199,7 +199,6 @@ impl Node {
     ) -> Result<(), TerminationError> {
         let Node {
             id: node,
-            statements,
             location,
             ..
         } = self;

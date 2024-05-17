@@ -146,7 +146,7 @@ impl Statement<StreamExpression> {
         nodes: &HashMap<usize, Node>,
     ) -> Vec<Statement<StreamExpression>> {
         match &self.expression.kind {
-            StreamExpressionKind::UnitaryNodeApplication {
+            StreamExpressionKind::NodeApplication {
                 node_id, inputs, ..
             } => {
                 // a loop in the graph induces that "node call" inputs depends on output

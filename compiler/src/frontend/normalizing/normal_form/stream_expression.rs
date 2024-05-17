@@ -60,8 +60,7 @@ impl StreamExpression {
 
                 new_statements
             }
-            StreamExpressionKind::NodeApplication { .. } => unreachable!(),
-            StreamExpressionKind::UnitaryNodeApplication {
+            StreamExpressionKind::NodeApplication {
                 node_id,
                 ref mut inputs,
                 ..
