@@ -127,7 +127,7 @@ impl Pattern {
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> Result<(), TerminationError> {
         match self.kind {
             PatternKind::Constant { .. }
             | PatternKind::Structure { .. }
@@ -144,7 +144,7 @@ impl Pattern {
             PatternKind::Identifier { id } => {
                 let typing = symbol_table.get_type(id);
                 self.typing = Some(typing.clone());
-                Ok(typing.clone())
+                Ok(())
             }
             PatternKind::Typed {
                 ref mut pattern,
@@ -152,18 +152,21 @@ impl Pattern {
             } => {
                 pattern.typing(typing, symbol_table, errors)?;
                 self.typing = Some(typing.clone());
-                Ok(typing.clone())
+                Ok(())
             }
             PatternKind::Tuple { ref mut elements } => {
                 let types = elements
                     .iter_mut()
-                    .map(|pattern| pattern.construct_statement_type(symbol_table, errors))
+                    .map(|pattern| {
+                        pattern.construct_statement_type(symbol_table, errors)?;
+                        Ok(pattern.typing.as_ref().unwrap().clone())
+                    })
                     .collect::<Vec<Result<_, TerminationError>>>()
                     .into_iter()
                     .collect::<Result<Vec<_>, TerminationError>>()?;
 
-                self.typing = Some(Type::Tuple(types.clone()));
-                Ok(Type::Tuple(types))
+                self.typing = Some(Type::Tuple(types));
+                Ok(())
             }
         }
     }
