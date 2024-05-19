@@ -11,7 +11,7 @@ use crate::common::r#type::Type;
 /// - [Constant::Float] are [f64] floats, `1.0` becomes `Constant::Float(1.0)`
 /// - [Constant::Boolean] is the [bool] type for booleans, `true` becomes `Constant::Boolean(true)`
 /// - [Constant::Unit] is the unit type, `()` becomes `Constant::Unit`
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Constant {
     /// [i64] integers
     Integer(syn::LitInt),
