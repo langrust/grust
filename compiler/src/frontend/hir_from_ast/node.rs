@@ -4,7 +4,6 @@ use petgraph::graphmap::DiGraphMap;
 
 use crate::ast::colon::Colon;
 use crate::ast::component::Component;
-use crate::ast::equation::Equation;
 use crate::common::location::Location;
 use crate::common::scope::Scope;
 use crate::error::{Error, TerminationError};
@@ -134,12 +133,7 @@ impl Component {
         let locals = self
             .equations
             .iter()
-            .filter_map(|equation| match equation {
-                Equation::LocalDef(declaration) => {
-                    Some(declaration.typed_pattern.store(symbol_table, errors))
-                }
-                Equation::OutputDef(_) => None,
-            })
+            .filter_map(|equation| equation.store_local_declarations(symbol_table, errors))
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
             .collect::<Result<Vec<Vec<_>>, _>>()?

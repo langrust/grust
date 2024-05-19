@@ -1,6 +1,6 @@
 use crate::common::{constant::Constant, location::Location, r#type::Type};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 /// HIR pattern kind.
 pub enum PatternKind {
     /// Identifier pattern, gives a name to the matching expression.
@@ -51,7 +51,7 @@ pub enum PatternKind {
 }
 
 /// HIR pattern.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Pattern {
     /// Pattern kind.
     pub kind: PatternKind,

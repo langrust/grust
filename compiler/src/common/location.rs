@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 /// Element location in source code for errors display.
-#[derive(Debug, Eq, Clone)]
+#[derive(Debug, Eq, Hash, Clone)]
 pub struct Location {
     /// the file identifiant as a [usize] in case there are multiple files
     pub file_id: usize,
