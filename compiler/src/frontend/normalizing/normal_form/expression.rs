@@ -185,6 +185,18 @@ impl ExpressionKind<StreamExpression> {
                         // get local signals defined in pattern
                         let local_signals = pattern.identifiers();
 
+                        // normalize body statements
+                        *body = body
+                            .iter()
+                            .flat_map(|statement| {
+                                statement.clone().normal_form(
+                                    nodes_reduced_graphs,
+                                    identifier_creator,
+                                    symbol_table,
+                                )
+                            })
+                            .collect();
+
                         // remove identifiers created by the pattern from the dependencies
                         let (mut bound_statements, mut bound_dependencies) =
                             bound.as_mut().map_or((vec![], vec![]), |expression| {

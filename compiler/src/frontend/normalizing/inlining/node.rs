@@ -17,7 +17,7 @@ impl Node {
     pub fn get_signals_id(&self) -> Vec<usize> {
         self.statements
             .iter()
-            .flat_map(|statement| statement.pattern.identifiers())
+            .flat_map(|statement| statement.get_identifiers())
             .collect()
     }
 
@@ -25,7 +25,7 @@ impl Node {
     pub fn get_signals_name(&self, symbol_table: &SymbolTable) -> Vec<String> {
         self.statements
             .iter()
-            .flat_map(|statement| statement.pattern.identifiers())
+            .flat_map(|statement| statement.get_identifiers())
             .map(|id| symbol_table.get_name(id).clone())
             .collect()
     }
@@ -158,20 +158,9 @@ impl Node {
         self.memory.buffers.keys().for_each(|signal_id| {
             graph.add_node(*signal_id);
         });
-        self.statements.iter().for_each(
-            |Statement {
-                 pattern,
-                 expression,
-                 ..
-             }| {
-                let signals = pattern.identifiers();
-                for from in signals {
-                    for (to, label) in expression.get_dependencies() {
-                        graph.add_edge(from, *to, label.clone());
-                    }
-                }
-            },
-        );
+        self.statements
+            .iter()
+            .for_each(|statement| statement.add_to_graph(&mut graph));
         self.graph = graph;
     }
 }

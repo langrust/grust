@@ -25,41 +25,13 @@ impl ExpressionKind<StreamExpression> {
                 expression, arms, ..
             } => {
                 // compute arms dependencies
-                let mut arms_dependencies = arms
-                    .iter()
-                    .map(|(pattern, bound, body, arm_expression)| {
-                        for statement in body {
-                            statement.add_dependencies(
-                                graph,
-                                symbol_table,
-                                processus_manager,
-                                nodes_reduced_graphs,
-                                errors,
-                            )?
-                        }
+                let mut arms_dependencies =
+                    arms.iter()
+                        .map(|(pattern, bound, body, arm_expression)| {
+                            let mut arm_dependencies = vec![];
 
-                        // get local signals defined in pattern
-                        let local_signals = pattern.identifiers();
-
-                        // get arm expression dependencies
-                        arm_expression.compute_dependencies(
-                            graph,
-                            symbol_table,
-                            processus_manager,
-                            nodes_reduced_graphs,
-                            errors,
-                        )?;
-                        let mut arm_dependencies = arm_expression
-                            .get_dependencies()
-                            .clone()
-                            .into_iter()
-                            .filter(|(signal, _)| !local_signals.contains(signal))
-                            .collect::<Vec<(usize, Label)>>();
-
-                        // get bound dependencies
-                        let mut bound_dependencies =
-                            bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
-                                bound_expression.compute_dependencies(
+                            for statement in body {
+                                statement.add_dependencies(
                                     graph,
                                     symbol_table,
                                     processus_manager,
@@ -67,24 +39,63 @@ impl ExpressionKind<StreamExpression> {
                                     errors,
                                 )?;
 
-                                Ok(bound_expression
-                                    .get_dependencies()
-                                    .clone()
-                                    .into_iter()
-                                    .filter(|(signal, _)| !local_signals.contains(signal))
-                                    .collect())
-                            })?;
+                                let mut more_dependencies =
+                                    statement.expression.get_dependencies().clone();
+                                arm_dependencies.append(&mut more_dependencies);
 
-                        // push all dependencies in arm dependencies
-                        arm_dependencies.append(&mut bound_dependencies);
+                                print!("[");
+                                statement.pattern.identifiers().iter().for_each(|id| {
+                                    print!("{id}:{} ; ", symbol_table.get_name(*id))
+                                });
+                                print!("] depends on [");
+                                statement.expression.get_dependencies().iter().for_each(
+                                    |(id, label)| print!("{id}:{} ; ", symbol_table.get_name(*id)),
+                                );
+                                println!("]");
+                            }
 
-                        // return arm dependencies
-                        Ok(arm_dependencies)
-                    })
-                    .collect::<Result<Vec<Vec<(usize, Label)>>, TerminationError>>()?
-                    .into_iter()
-                    .flatten()
-                    .collect::<Vec<(usize, Label)>>();
+                            // get arm expression dependencies
+                            arm_expression.compute_dependencies(
+                                graph,
+                                symbol_table,
+                                processus_manager,
+                                nodes_reduced_graphs,
+                                errors,
+                            )?;
+                            let mut more_dependencies = arm_expression.get_dependencies().clone();
+                            arm_dependencies.append(&mut more_dependencies);
+
+                            // get bound dependencies
+                            let mut more_dependencies =
+                                bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
+                                    bound_expression.compute_dependencies(
+                                        graph,
+                                        symbol_table,
+                                        processus_manager,
+                                        nodes_reduced_graphs,
+                                        errors,
+                                    )?;
+
+                                    Ok(bound_expression.get_dependencies().clone())
+                                })?;
+                            arm_dependencies.append(&mut more_dependencies);
+
+                            // get local signals defined in pattern
+                            let local_signals = pattern.identifiers();
+
+                            // remove pattern-local signals from the dependencies
+                            arm_dependencies = arm_dependencies
+                                .into_iter()
+                                .filter(|(signal, _)| !local_signals.contains(signal))
+                                .collect::<Vec<(usize, Label)>>();
+
+                            // return arm dependencies
+                            Ok(arm_dependencies)
+                        })
+                        .collect::<Result<Vec<Vec<(usize, Label)>>, TerminationError>>()?
+                        .into_iter()
+                        .flatten()
+                        .collect::<Vec<(usize, Label)>>();
 
                 // get matched expression dependencies
                 expression.compute_dependencies(
