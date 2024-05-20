@@ -179,6 +179,7 @@ impl HIRFromAST for Pattern {
 impl Pattern {
     pub fn store(
         &self,
+        is_declaration: bool,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(String, usize)>, TerminationError> {
@@ -186,27 +187,79 @@ impl Pattern {
 
         match self {
             Pattern::Identifier(name) => {
-                let id = symbol_table.insert_identifier(
-                    name.clone(),
-                    None,
-                    true,
-                    location.clone(),
-                    errors,
-                )?;
-                Ok(vec![(name.clone(), id)])
+                if is_declaration {
+                    let id = symbol_table.insert_identifier(
+                        name.clone(),
+                        None,
+                        true,
+                        location.clone(),
+                        errors,
+                    )?;
+                    Ok(vec![(name.clone(), id)])
+                } else {
+                    let id =
+                        symbol_table.get_identifier_id(name, false, location.clone(), errors)?;
+                    let typing = symbol_table.get_type(id).clone();
+
+                    let id = symbol_table.insert_identifier(
+                        name.clone(),
+                        Some(typing),
+                        true,
+                        location.clone(),
+                        errors,
+                    )?;
+                    Ok(vec![(name.clone(), id)])
+                }
             }
-            Pattern::Typed(Typed { pattern, .. }) => pattern.store(symbol_table, errors),
+            Pattern::Typed(Typed { pattern, .. }) => {
+                pattern.store(is_declaration, symbol_table, errors)
+            }
             Pattern::Tuple(Tuple { elements }) => Ok(elements
                 .iter()
-                .map(|pattern| pattern.store(symbol_table, errors))
+                .map(|pattern| pattern.store(is_declaration, symbol_table, errors))
                 .collect::<Vec<Result<_, _>>>()
                 .into_iter()
                 .collect::<Result<Vec<_>, _>>()?
                 .into_iter()
                 .flatten()
                 .collect()),
-            Pattern::Default => Ok(vec![]),
-            _ => todo!("error: not declaration pattern"),
+            Pattern::Structure(Structure { fields, .. }) => Ok(fields
+                .iter()
+                .map(|(field, optional_pattern)| {
+                    if let Some(pattern) = optional_pattern {
+                        pattern.store(is_declaration, symbol_table, errors)
+                    } else {
+                        let id = symbol_table.insert_identifier(
+                            field.clone(),
+                            None,
+                            true,
+                            location.clone(),
+                            errors,
+                        )?;
+                        Ok(vec![(field.clone(), id)])
+                    }
+                })
+                .collect::<Vec<Result<_, _>>>()
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .flatten()
+                .collect()),
+            Pattern::Some(Some { pattern }) => pattern.store(is_declaration, symbol_table, errors),
+            Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::None | Pattern::Default => {
+                Ok(vec![])
+            }
+        }
+    }
+
+    pub fn get_simple_patterns(self) -> Vec<Pattern> {
+        match self {
+            Pattern::Identifier(_) | Pattern::Typed(_) => vec![self],
+            Pattern::Tuple(Tuple { elements }) => elements
+                .into_iter()
+                .flat_map(|pattern| pattern.get_simple_patterns())
+                .collect(),
+            _ => todo!(),
         }
     }
 }

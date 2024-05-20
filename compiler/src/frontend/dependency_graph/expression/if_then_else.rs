@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
+use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
@@ -11,7 +12,9 @@ impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of a ifthenelse stream expression.
     pub fn compute_ifthenelse_dependencies(
         &self,
+        graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &SymbolTable,
+        processus_manager: &mut HashMap<usize, Color>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(usize, Label)>, TerminationError> {
@@ -23,10 +26,9 @@ impl ExpressionKind<StreamExpression> {
                 false_expression,
             } => {
                 // get right and left expressions dependencies
-                expression.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
-                true_expression.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
-                false_expression.compute_dependencies(
-                    symbol_table,
+                expression.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
+                true_expression.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
+                false_expression.compute_dependencies(graph, symbol_table, processus_manager, 
                     nodes_reduced_graphs,
                     errors,
                 )?;

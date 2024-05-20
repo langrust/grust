@@ -37,12 +37,7 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
             attrs: vec![],
             underscore_token: Default::default(),
         }),
-        Pattern::Typed { pattern, typing } => Pat::Type(PatType {
-            attrs: vec![],
-            pat: Box::new(rust_ast_from_lir(*pattern)),
-            colon_token: parse_quote!(:),
-            ty: Box::new(type_rust_ast_from_lir(typing)),
-        }),
+        Pattern::Typed { pattern, typing } => rust_ast_from_lir(*pattern),
         Pattern::Structure { name, fields } => Pat::Struct(PatStruct {
             attrs: vec![],
             path: format_ident!("{name}").into(),

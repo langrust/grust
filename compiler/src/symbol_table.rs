@@ -683,7 +683,7 @@ impl SymbolTable {
         match &mut symbol.kind {
             SymbolKind::Identifier { ref mut typing, .. } => {
                 if typing.is_some() {
-                    panic!("a symbol type can not be modified")
+                    panic!("a symbol type of {} can not be modified", symbol.name)
                 }
                 *typing = Some(new_type)
             }

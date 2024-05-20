@@ -7,6 +7,7 @@ mod expression;
 mod file;
 mod node;
 mod stream_expression;
+mod statement;
 
 /// Add an egde to the graph.
 ///

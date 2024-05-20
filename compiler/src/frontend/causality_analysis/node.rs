@@ -53,7 +53,6 @@ impl Node {
         // if a schedule exists, then the node is causal
         let _ = toposort(&subgraph, None).map_err(|signal| {
             let error = Error::NotCausalSignal {
-                node: symbol_table.get_name(self.id).clone(),
                 signal: symbol_table.get_name(signal.node_id()).clone(),
                 location: self.location.clone(),
             };

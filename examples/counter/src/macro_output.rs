@@ -1,5 +1,5 @@
 pub fn add(x: i64, y: i64) -> i64 {
-    let res: i64 = x + y;
+    let res = x + y;
     res
 }
 pub struct CounterInput {
@@ -14,7 +14,7 @@ impl CounterState {
         CounterState { mem_: 0 }
     }
     pub fn step(&mut self, input: CounterInput) -> i64 {
-        let inc: i64 = if input.tick { 1 } else { 0 };
+        let inc = if input.tick { 1 } else { 0 };
         let o = if input.res { 0 } else { (add)(self.mem_, inc) };
         self.mem_ = o;
         o
@@ -36,7 +36,7 @@ impl TestState {
     }
     pub fn step(&mut self, input: TestInput) -> i64 {
         let x = self.mem_;
-        let half: bool = self.mem__1;
+        let half = self.mem__1;
         let y = self.counter.step(CounterInput { res: x, tick: half });
         self.mem_ = y > 35;
         self.mem__1 = !half;

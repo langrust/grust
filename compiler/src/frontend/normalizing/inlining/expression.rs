@@ -153,10 +153,9 @@ impl ExpressionKind<StreamExpression> {
                             expression_dependencies.append(&mut bound_dependencies);
                         };
 
-                        debug_assert!(body.is_empty());
-                        // body.iter_mut().for_each(|statements| {
-                        //     statements.expression.replace_by_context(&context_map)
-                        // });
+                        body.iter_mut().for_each(|statement| {
+                            statement.expression.replace_by_context(&context_map)
+                        });
 
                         matched_expression.replace_by_context(&context_map);
                         let mut matched_expression_dependencies = matched_expression

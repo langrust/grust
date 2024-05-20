@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
+use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
@@ -11,7 +12,9 @@ impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of an array stream expression.
     pub fn compute_array_dependencies(
         &self,
+        graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &SymbolTable,
+        processus_manager: &mut HashMap<usize, Color>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(usize, Label)>, TerminationError> {
@@ -22,8 +25,7 @@ impl ExpressionKind<StreamExpression> {
                 elements
                     .iter()
                     .map(|element_expression| {
-                        element_expression.compute_dependencies(
-                            symbol_table,
+                        element_expression.compute_dependencies(graph, symbol_table, processus_manager, 
                             nodes_reduced_graphs,
                             errors,
                         )

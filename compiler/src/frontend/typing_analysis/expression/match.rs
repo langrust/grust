@@ -26,27 +26,45 @@ where
                 let expression_type = expression.get_type().unwrap();
 
                 arms.iter_mut()
-                    .map(|(pattern, optional_test_expression, _, arm_expression)| {
-                        // check it matches pattern type
-                        pattern.typing(expression_type, symbol_table, errors)?;
+                    .map(
+                        |(pattern, optional_test_expression, body, arm_expression)| {
+                            // check it matches pattern type
+                            pattern.typing(expression_type, symbol_table, errors)?;
 
-                        let optional_test_expression_typing_test = optional_test_expression
-                            .as_mut()
-                            .map_or(Ok(()), |expression| {
-                                expression.typing(symbol_table, errors)?;
-                                expression.get_type().unwrap().eq_check(
-                                    &Type::Boolean,
-                                    location.clone(),
-                                    errors,
-                                )
-                            });
+                            optional_test_expression
+                                .as_mut()
+                                .map_or(Ok(()), |expression| {
+                                    expression.typing(symbol_table, errors)?;
+                                    expression.get_type().unwrap().eq_check(
+                                        &Type::Boolean,
+                                        location.clone(),
+                                        errors,
+                                    )
+                                })?;
 
-                        let arm_expression_typing_test =
-                            arm_expression.typing(symbol_table, errors);
+                            // set types for every pattern
+                            body
+                                .iter_mut()
+                                .map(|statement| {
+                                    statement
+                                        .pattern
+                                        .construct_statement_type(symbol_table, errors)
+                                })
+                                .collect::<Vec<Result<(), TerminationError>>>()
+                                .into_iter()
+                                .collect::<Result<(), TerminationError>>()?;
 
-                        optional_test_expression_typing_test?;
-                        arm_expression_typing_test
-                    })
+                            // type all equations
+                            body
+                                .iter_mut()
+                                .map(|statement| statement.typing(symbol_table, errors))
+                                .collect::<Vec<Result<(), TerminationError>>>()
+                                .into_iter()
+                                .collect::<Result<(), TerminationError>>()?;
+
+                            arm_expression.typing(symbol_table, errors)
+                        },
+                    )
                     .collect::<Vec<Result<(), TerminationError>>>()
                     .into_iter()
                     .collect::<Result<(), TerminationError>>()?;
