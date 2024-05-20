@@ -187,7 +187,7 @@ impl Node {
                 )
             });
     }
-    
+
     /// Add dependencies to node's inputs of a signal.
     ///
     /// # Example

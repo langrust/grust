@@ -29,11 +29,23 @@ impl ExpressionKind<StreamExpression> {
                 ..
             } => {
                 // get dependencies of optional expression
-                option.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
+                option.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let mut option_dependencies = option.get_dependencies().clone();
 
                 // get dependencies of present expression without local signal
-                present.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
+                present.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let mut present_dependencies = present
                     .get_dependencies()
                     .clone()
@@ -42,7 +54,13 @@ impl ExpressionKind<StreamExpression> {
                     .collect();
 
                 // get dependencies of default expression without local signal
-                default.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
+                default.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let mut default_dependencies = default
                     .get_dependencies()
                     .clone()

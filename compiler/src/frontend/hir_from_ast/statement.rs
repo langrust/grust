@@ -23,7 +23,7 @@ impl HIRFromAST for LetDeclaration<Expression> {
             ..
         } = self;
         let location = Location::default();
-        typed_pattern.store(true,symbol_table, errors)?;
+        typed_pattern.store(true, symbol_table, errors)?;
         let pattern = typed_pattern.hir_from_ast(symbol_table, errors)?;
 
         Ok(HIRStatement {

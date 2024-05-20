@@ -25,7 +25,10 @@ impl ExpressionKind<StreamExpression> {
                 arrays
                     .iter()
                     .map(|array_expression| {
-                        array_expression.compute_dependencies(graph, symbol_table, processus_manager, 
+                        array_expression.compute_dependencies(
+                            graph,
+                            symbol_table,
+                            processus_manager,
                             nodes_reduced_graphs,
                             errors,
                         )

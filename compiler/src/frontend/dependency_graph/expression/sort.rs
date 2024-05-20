@@ -22,7 +22,13 @@ impl ExpressionKind<StreamExpression> {
             // dependencies of sort are dependencies of the sorted expression
             ExpressionKind::Sort { expression, .. } => {
                 // get sorted expression dependencies
-                expression.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
+                expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let expression_dependencies = expression.get_dependencies().clone();
 
                 Ok(expression_dependencies)

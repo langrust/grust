@@ -6,8 +6,8 @@ mod contract;
 mod expression;
 mod file;
 mod node;
-mod stream_expression;
 mod statement;
+mod stream_expression;
 
 /// Add an egde to the graph.
 ///
