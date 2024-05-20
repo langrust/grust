@@ -3,7 +3,7 @@ use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_fr
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
 use crate::lir::item::node_file::state::{State, StateElement};
-use quote::format_ident;
+use quote::{format_ident, ToTokens};
 use std::collections::BTreeSet;
 use syn::*;
 /// RustAST init method construction from LIR init.

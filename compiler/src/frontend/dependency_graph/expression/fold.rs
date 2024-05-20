@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
+use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
@@ -11,7 +12,9 @@ impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of a fold stream expression.
     pub fn compute_fold_dependencies(
         &self,
+        graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &SymbolTable,
+        processus_manager: &mut HashMap<usize, Color>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(usize, Label)>, TerminationError> {
@@ -23,12 +26,11 @@ impl ExpressionKind<StreamExpression> {
                 ..
             } => {
                 // get folded expression dependencies
-                expression.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
+                expression.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
                 let mut expression_dependencies = expression.get_dependencies().clone();
 
                 // get initialization expression dependencies
-                initialization_expression.compute_dependencies(
-                    symbol_table,
+                initialization_expression.compute_dependencies(graph, symbol_table, processus_manager, 
                     nodes_reduced_graphs,
                     errors,
                 )?;

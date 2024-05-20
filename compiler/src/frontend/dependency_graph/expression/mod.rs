@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
+use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
@@ -87,8 +88,13 @@ impl ExpressionKind<StreamExpression> {
                 let mut other_nodes = arms
                     .iter()
                     .flat_map(|(_, bound, body, expression)| {
-                        debug_assert!(body.is_empty());
-                        let mut nodes = expression.get_called_nodes();
+                        let mut nodes = vec![];
+                        body.iter().for_each(|statement| {
+                            let mut other_nodes = statement.expression.get_called_nodes();
+                            nodes.append(&mut other_nodes);
+                        });
+                        let mut other_nodes = expression.get_called_nodes();
+                        nodes.append(&mut other_nodes);
                         let mut other_nodes = bound
                             .as_ref()
                             .map_or(vec![], |expression| expression.get_called_nodes());
@@ -173,7 +179,9 @@ impl ExpressionKind<StreamExpression> {
     /// of the memory of `x` (the signal is behind 2 fby operations).
     pub fn compute_dependencies(
         &self,
+        graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &SymbolTable,
+        processus_manager: &mut HashMap<usize, Color>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(usize, Label)>, TerminationError> {
@@ -182,56 +190,112 @@ impl ExpressionKind<StreamExpression> {
             ExpressionKind::Identifier { .. } => self.compute_identifier_dependencies(symbol_table),
             ExpressionKind::Abstraction { .. } => self.compute_abstraction_dependencies(),
             ExpressionKind::Enumeration { .. } => self.compute_enumeration_dependencies(),
-            ExpressionKind::Unop { .. } => {
-                self.compute_unop_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::Binop { .. } => {
-                self.compute_binop_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::IfThenElse { .. } => {
-                self.compute_ifthenelse_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::Application { .. } => self.compute_function_application_dependencies(
+            ExpressionKind::Unop { .. } => self.compute_unop_dependencies(
+                graph,
                 symbol_table,
+                processus_manager,
                 nodes_reduced_graphs,
                 errors,
             ),
-            ExpressionKind::Structure { .. } => {
-                self.compute_structure_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::Array { .. } => {
-                self.compute_array_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::Tuple { .. } => {
-                self.compute_tuple_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::Match { .. } => {
-                self.compute_match_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::When { .. } => {
-                self.compute_when_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::FieldAccess { .. } => {
-                self.compute_field_access_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
+            ExpressionKind::Binop { .. } => self.compute_binop_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::IfThenElse { .. } => self.compute_ifthenelse_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Application { .. } => self.compute_function_application_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Structure { .. } => self.compute_structure_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Array { .. } => self.compute_array_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Tuple { .. } => self.compute_tuple_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Match { .. } => self.compute_match_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::When { .. } => self.compute_when_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::FieldAccess { .. } => self.compute_field_access_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
             ExpressionKind::TupleElementAccess { .. } => self
                 .compute_tuple_element_access_dependencies(
+                    graph,
                     symbol_table,
+                    processus_manager,
                     nodes_reduced_graphs,
                     errors,
                 ),
-            ExpressionKind::Map { .. } => {
-                self.compute_map_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::Fold { .. } => {
-                self.compute_fold_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::Sort { .. } => {
-                self.compute_sort_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
-            ExpressionKind::Zip { .. } => {
-                self.compute_zip_dependencies(symbol_table, nodes_reduced_graphs, errors)
-            }
+            ExpressionKind::Map { .. } => self.compute_map_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Fold { .. } => self.compute_fold_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Sort { .. } => self.compute_sort_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
+            ExpressionKind::Zip { .. } => self.compute_zip_dependencies(
+                graph,
+                symbol_table,
+                processus_manager,
+                nodes_reduced_graphs,
+                errors,
+            ),
         }
     }
 }

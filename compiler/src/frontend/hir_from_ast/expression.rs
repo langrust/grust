@@ -280,7 +280,7 @@ where
                          expression,
                      }| {
                         symbol_table.local();
-                        pattern.store(symbol_table, errors)?;
+                        pattern.store(true, symbol_table, errors)?;
                         let pattern = pattern.hir_from_ast(symbol_table, errors)?;
                         let guard = guard
                             .map(|expression| expression.hir_from_ast(symbol_table, errors))

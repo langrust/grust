@@ -5,7 +5,6 @@ use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::node::Node;
-use crate::hir::stream_expression::StreamExpression;
 use crate::symbol_table::SymbolTable;
 
 use super::add_edge;
@@ -51,7 +50,7 @@ impl Node {
 
         // add other signals with white color (unprocessed)
         for statement in &self.statements {
-            let signals = statement.pattern.identifiers();
+            let signals = statement.get_identifiers();
             signals.iter().for_each(|signal| {
                 hash.insert(*signal, Color::White);
             });
@@ -137,33 +136,8 @@ impl Node {
         self.statements
             .iter()
             .map(|statement| {
-                let signals = statement.pattern.identifiers();
-                for signal in signals {
-                    self.add_signal_dependencies(
-                        graph,
-                        signal,
-                        Some(&statement.expression),
-                        symbol_table,
-                        &mut processus_manager,
-                        nodes_reduced_graphs,
-                        errors,
-                    )?
-                }
-                Ok(())
-            })
-            .collect::<Vec<Result<(), TerminationError>>>()
-            .into_iter()
-            .collect::<Result<(), TerminationError>>()?;
-
-        // add input signals dependencies
-        symbol_table
-            .get_node_inputs(self.id)
-            .iter()
-            .map(|signal| {
-                self.add_signal_dependencies(
+                statement.add_dependencies(
                     graph,
-                    *signal,
-                    None,
                     symbol_table,
                     &mut processus_manager,
                     nodes_reduced_graphs,
@@ -174,83 +148,20 @@ impl Node {
             .into_iter()
             .collect::<Result<(), TerminationError>>()?;
 
-        Ok(())
-    }
-
-    /// Add direct dependencies of a signal.
-    ///
-    /// # Example
-    ///
-    /// ```GR
-    /// node test(i: int) {
-    ///     out o: int = x; // depends on x
-    ///     x: int = i;     // depends on i
-    /// }
-    /// ```
-    fn add_signal_dependencies(
-        &self,
-        graph: &mut DiGraphMap<usize, Label>,
-        signal: usize,
-        optional_expression: Option<&StreamExpression>,
-        symbol_table: &SymbolTable,
-        processus_manager: &mut HashMap<usize, Color>,
-        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        let Node {
-            id: node, location, ..
-        } = self;
-
-        // get signal's color
-        let color = processus_manager
-            .get_mut(&signal)
-            .expect("signal should be in processing manager");
-
-        match color {
-            // if vertex unprocessed
-            Color::White => {
-                // update status: processing
-                *color = Color::Grey;
-
-                optional_expression.map_or(Ok(()), |expression| {
-                    // compute and get dependencies
-                    expression.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
-
-                    // add dependencies as graph's edges:
-                    // s = e depends on s' <=> s -> s'
-                    expression
-                        .get_dependencies()
-                        .iter()
-                        .for_each(|(id, label)| {
-                            // if there was another edge, keep the most important label
-                            add_edge(graph, signal, *id, label.clone())
-                        });
-
-                    Ok(())
-                })?;
-
+        // add input signals dependencies
+        symbol_table
+            .get_node_inputs(self.id)
+            .iter()
+            .for_each(|signal| {
                 // get signal's color
                 let color = processus_manager
                     .get_mut(&signal)
                     .expect("signal should be in processing manager");
                 // update status: processed
                 *color = Color::Black;
+            });
 
-                Ok(())
-            }
-            // if processing: error
-            Color::Grey => {
-                let error = Error::NotCausalSignal {
-                    node: symbol_table.get_name(*node).clone(),
-                    signal: symbol_table.get_name(signal).clone(),
-                    location: location.clone(),
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
-            // if processed: nothing to do
-            Color::Black => Ok(()),
-        }
+        Ok(())
     }
 
     fn construct_reduced_graph(
@@ -276,6 +187,7 @@ impl Node {
                 )
             });
     }
+    
     /// Add dependencies to node's inputs of a signal.
     ///
     /// # Example

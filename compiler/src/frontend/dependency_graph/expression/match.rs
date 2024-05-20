@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use petgraph::graphmap::DiGraphMap;
 
+use crate::common::color::Color;
 use crate::common::label::Label;
 use crate::error::{Error, TerminationError};
 use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
@@ -11,7 +12,9 @@ impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of a match stream expression.
     pub fn compute_match_dependencies(
         &self,
+        graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &SymbolTable,
+        processus_manager: &mut HashMap<usize, Color>,
         nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
         errors: &mut Vec<Error>,
     ) -> Result<Vec<(usize, Label)>, TerminationError> {
@@ -24,13 +27,25 @@ impl ExpressionKind<StreamExpression> {
                 // compute arms dependencies
                 let mut arms_dependencies = arms
                     .iter()
-                    .map(|(pattern, bound, _, arm_expression)| {
+                    .map(|(pattern, bound, body, arm_expression)| {
+                        for statement in body {
+                            statement.add_dependencies(
+                                graph,
+                                symbol_table,
+                                processus_manager,
+                                nodes_reduced_graphs,
+                                errors,
+                            )?
+                        }
+
                         // get local signals defined in pattern
                         let local_signals = pattern.identifiers();
 
                         // get arm expression dependencies
                         arm_expression.compute_dependencies(
+                            graph,
                             symbol_table,
+                            processus_manager,
                             nodes_reduced_graphs,
                             errors,
                         )?;
@@ -45,7 +60,9 @@ impl ExpressionKind<StreamExpression> {
                         let mut bound_dependencies =
                             bound.as_ref().map_or(Ok(vec![]), |bound_expression| {
                                 bound_expression.compute_dependencies(
+                                    graph,
                                     symbol_table,
+                                    processus_manager,
                                     nodes_reduced_graphs,
                                     errors,
                                 )?;
@@ -70,7 +87,13 @@ impl ExpressionKind<StreamExpression> {
                     .collect::<Vec<(usize, Label)>>();
 
                 // get matched expression dependencies
-                expression.compute_dependencies(symbol_table, nodes_reduced_graphs, errors)?;
+                expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let mut expression_dependencies = expression.get_dependencies().clone();
 
                 arms_dependencies.append(&mut expression_dependencies);

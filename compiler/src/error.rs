@@ -245,8 +245,6 @@ pub enum Error {
     },
     /// causality error
     NotCausalSignal {
-        /// node's name
-        node: String,
         /// signal's name
         signal: String,
         /// the error location
@@ -593,13 +591,13 @@ impl Error {
                     format!("please explicit type")
                 ]
             ),
-            Error::NotCausalSignal { node, signal, location } => Diagnostic::error()
+            Error::NotCausalSignal { signal, location } => Diagnostic::error()
                 .with_message("not causal")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
                 ])
                 .with_notes(vec![
-                    format!("signal '{signal}' depends on itself in node '{node}'")
+                    format!("signal '{signal}' depends on itself")
                 ]
             ),
             Error::NotCausalNode { node,  location } => Diagnostic::error()
