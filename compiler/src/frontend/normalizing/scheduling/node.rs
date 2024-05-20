@@ -2,7 +2,15 @@ use std::collections::HashMap;
 
 use petgraph::algo::toposort;
 
-use crate::{common::label::Label, hir::node::Node};
+use crate::{
+    common::label::Label,
+    hir::{
+        expression::ExpressionKind,
+        node::Node,
+        statement::Statement,
+        stream_expression::{StreamExpression, StreamExpressionKind},
+    },
+};
 
 impl Node {
     /// Schedule statements.
@@ -38,6 +46,8 @@ impl Node {
                 _ => debug_assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
             });
 
+        println!("\n{:?}\n", self.graph);
+
         // topological sorting
         let mut schedule = toposort(&subgraph, None).unwrap();
         schedule.reverse();
@@ -48,9 +58,7 @@ impl Node {
             .enumerate()
             .map(|(order, signal_id)| (signal_id, order))
             .collect::<HashMap<_, _>>();
-
-        // sort statements
-        self.statements.sort_by_key(|statement| {
+        let compare = |statement: &Statement<StreamExpression>| {
             statement
                 .pattern
                 .identifiers()
@@ -58,6 +66,20 @@ impl Node {
                 .map(|signal_id| signals_order.get(&signal_id).unwrap())
                 .min()
                 .unwrap()
-        });
+        };
+
+        // sort statements
+        self.statements.sort_by_key(compare);
+        self.statements.iter_mut().for_each(|statement| {
+            match &mut statement.expression.kind {
+                StreamExpressionKind::Expression { expression } => match expression {
+                    ExpressionKind::Match { arms, .. } => arms
+                        .iter_mut()
+                        .for_each(|(_, _, statements, _)| statements.sort_by_key(compare)),
+                    _ => (),
+                },
+                _ => (),
+            };
+        })
     }
 }

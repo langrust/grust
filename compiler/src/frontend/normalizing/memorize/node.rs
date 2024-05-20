@@ -66,20 +66,9 @@ impl Node {
         self.memory.buffers.keys().for_each(|signal_id| {
             graph.add_node(*signal_id);
         });
-        self.statements.iter().for_each(
-            |Statement {
-                 pattern,
-                 expression,
-                 ..
-             }| {
-                let signals = pattern.identifiers();
-                for from in signals {
-                    for (to, label) in expression.get_dependencies() {
-                        graph.add_edge(from, *to, label.clone());
-                    }
-                }
-            },
-        );
+        self.statements
+            .iter()
+            .for_each(|statement| statement.add_to_graph(&mut graph));
         self.graph = graph;
     }
 }

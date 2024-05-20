@@ -6,6 +6,7 @@ use crate::{
     common::label::Label,
     hir::{
         dependencies::Dependencies,
+        expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
         statement::Statement,
         stream_expression::{StreamExpression, StreamExpressionKind},
@@ -105,5 +106,32 @@ impl Statement<StreamExpression> {
 
         // return statements
         statements
+    }
+
+    pub fn add_to_graph(&self, graph: &mut DiGraphMap<usize, Label>) {
+        let Statement {
+            pattern,
+            expression,
+            ..
+        } = self;
+        let signals = pattern.identifiers();
+        for from in signals {
+            for (to, label) in expression.get_dependencies() {
+                graph.add_edge(from, *to, label.clone());
+            }
+        }
+        match &self.expression.kind {
+            StreamExpressionKind::Expression { expression } => match expression {
+                ExpressionKind::Match { arms, .. } => {
+                    arms.iter().for_each(|(_, _, statements, _)| {
+                        statements
+                            .iter()
+                            .for_each(|statement| statement.add_to_graph(graph))
+                    })
+                }
+                _ => (),
+            },
+            _ => (),
+        }
     }
 }
