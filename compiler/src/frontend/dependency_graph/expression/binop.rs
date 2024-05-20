@@ -26,8 +26,17 @@ impl ExpressionKind<StreamExpression> {
                 ..
             } => {
                 // get right and left expressions dependencies
-                left_expression.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
-                right_expression.compute_dependencies(graph, symbol_table, processus_manager, 
+                left_expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
+                right_expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
                     nodes_reduced_graphs,
                     errors,
                 )?;

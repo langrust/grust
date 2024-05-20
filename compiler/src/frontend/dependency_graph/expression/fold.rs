@@ -26,11 +26,20 @@ impl ExpressionKind<StreamExpression> {
                 ..
             } => {
                 // get folded expression dependencies
-                expression.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
+                expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let mut expression_dependencies = expression.get_dependencies().clone();
 
                 // get initialization expression dependencies
-                initialization_expression.compute_dependencies(graph, symbol_table, processus_manager, 
+                initialization_expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
                     nodes_reduced_graphs,
                     errors,
                 )?;

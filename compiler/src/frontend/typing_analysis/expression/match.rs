@@ -43,8 +43,7 @@ where
                                 })?;
 
                             // set types for every pattern
-                            body
-                                .iter_mut()
+                            body.iter_mut()
                                 .map(|statement| {
                                     statement
                                         .pattern
@@ -55,8 +54,7 @@ where
                                 .collect::<Result<(), TerminationError>>()?;
 
                             // type all equations
-                            body
-                                .iter_mut()
+                            body.iter_mut()
                                 .map(|statement| statement.typing(symbol_table, errors))
                                 .collect::<Vec<Result<(), TerminationError>>>()
                                 .into_iter()

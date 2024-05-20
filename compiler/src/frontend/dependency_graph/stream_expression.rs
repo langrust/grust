@@ -136,7 +136,10 @@ impl StreamExpression {
                 Ok(())
             }
             StreamExpressionKind::Expression { expression } => {
-                self.dependencies.set(expression.compute_dependencies(graph, symbol_table, processus_manager, 
+                self.dependencies.set(expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
                     nodes_reduced_graphs,
                     errors,
                 )?);

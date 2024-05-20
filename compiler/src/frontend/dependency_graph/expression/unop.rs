@@ -22,7 +22,13 @@ impl ExpressionKind<StreamExpression> {
             // dependencies of unop are dependencies of the expression
             ExpressionKind::Unop { expression, .. } => {
                 // get expression dependencies
-                expression.compute_dependencies(graph, symbol_table, processus_manager, nodes_reduced_graphs, errors)?;
+                expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
+                    nodes_reduced_graphs,
+                    errors,
+                )?;
                 let expression_dependencies = expression.get_dependencies().clone();
 
                 Ok(expression_dependencies)

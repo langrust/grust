@@ -25,14 +25,20 @@ impl ExpressionKind<StreamExpression> {
                 inputs,
             } => {
                 // propagate dependencies computation
-                function_expression.compute_dependencies(graph, symbol_table, processus_manager, 
+                function_expression.compute_dependencies(
+                    graph,
+                    symbol_table,
+                    processus_manager,
                     nodes_reduced_graphs,
                     errors,
                 )?;
                 inputs
                     .iter()
                     .map(|input_expression| {
-                        input_expression.compute_dependencies(graph, symbol_table, processus_manager, 
+                        input_expression.compute_dependencies(
+                            graph,
+                            symbol_table,
+                            processus_manager,
                             nodes_reduced_graphs,
                             errors,
                         )
