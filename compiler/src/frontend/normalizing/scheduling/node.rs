@@ -46,8 +46,6 @@ impl Node {
                 _ => debug_assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
             });
 
-        println!("\n{:?}\n", self.graph);
-
         // topological sorting
         let mut schedule = toposort(&subgraph, None).unwrap();
         schedule.reverse();
