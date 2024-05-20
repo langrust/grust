@@ -109,67 +109,57 @@ impl Display for Type {
 }
 impl Parse for Type {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if input.fork().call(keyword::int::parse).is_ok() {
+        let mut ty = if input.fork().call(keyword::int::parse).is_ok() {
             let _: keyword::int = input.parse()?;
-            Ok(Type::Integer)
+            Type::Integer
         } else if input.fork().call(keyword::float::parse).is_ok() {
             let _: keyword::float = input.parse()?;
-            Ok(Type::Float)
+            Type::Float
         } else if input.fork().call(keyword::bool::parse).is_ok() {
             let _: keyword::bool = input.parse()?;
-            Ok(Type::Boolean)
+            Type::Boolean
         } else if input.fork().peek(syn::token::Paren) {
             let content;
             let _ = syn::parenthesized!(content in input);
             if content.is_empty() {
-                Ok(Type::Unit)
+                Type::Unit
             } else {
                 let types: Punctuated<Type, Token![,]> = Punctuated::parse_terminated(&content)?;
-                Ok(Type::Tuple(types.into_iter().collect()))
+                Type::Tuple(types.into_iter().collect())
             }
         } else if input.fork().peek(syn::token::Bracket) {
             let content;
             let _ = syn::bracketed!(content in input);
             if content.is_empty() {
-                Err(input.error("expected type: `int`, `float`, etc"))
+                return Err(input.error("expected type: `int`, `float`, etc"));
             } else {
                 let ty = content.parse()?;
                 let _: Token![;] = content.parse()?;
                 let size: syn::LitInt = content.parse()?;
-                Ok(Type::Array(Box::new(ty), size.base10_parse().unwrap()))
-            }
-        } else if input
-            .fork()
-            .call(|ps| {
-                let _: Type = ps.parse()?;
-                let _: Token![?] = ps.parse()?;
-                Ok(())
-            })
-            .is_ok()
-        {
-            let ty = input.parse()?;
-            let _: Token![?] = input.parse()?;
-            Ok(Type::Option(Box::new(ty)))
-        } else if input
-            .fork()
-            .call(|ps| {
-                let _: Type = ps.parse()?;
-                let _: Token![->] = ps.parse()?;
-                Ok(())
-            })
-            .is_ok()
-        {
-            let args_ty = input.parse()?;
-            let _: Token![->] = input.parse()?;
-            let out_ty = input.parse()?;
-            match args_ty {
-                Type::Tuple(v_ty) => Ok(Type::Abstract(v_ty, Box::new(out_ty))),
-                _ => Ok(Type::Abstract(vec![args_ty], Box::new(out_ty))),
+                Type::Array(Box::new(ty), size.base10_parse().unwrap())
             }
         } else {
             let ident: syn::Ident = input.parse()?;
-            Ok(Type::NotDefinedYet(ident.to_string()))
+            Type::NotDefinedYet(ident.to_string())
+        };
+
+        loop {
+            if input.peek(Token![?]) {
+                let _: Token![?] = input.parse()?;
+                ty = Type::Option(Box::new(ty))
+            } else if input.peek(Token![->]) {
+                let _: Token![->] = input.parse()?;
+                let out_ty = input.parse()?;
+                ty = match ty {
+                    Type::Tuple(v_ty) => Type::Abstract(v_ty, Box::new(out_ty)),
+                    _ => Type::Abstract(vec![ty], Box::new(out_ty)),
+                }
+            } else {
+                break;
+            }
         }
+
+        Ok(ty)
     }
 }
 
