@@ -4,9 +4,9 @@ use compiler::{ast::Ast, conf, dump_code, into_token_stream};
 fn should_compile_speed_limiter() {
     let ast: Ast = syn::parse_quote! {
         #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/compiler/tests/macro_outputs/speed_limiter.rs"]
-        
+
         // # Types
-    
+
         // Hysterisis for speed.
         struct Hysterisis {
             value: float,
@@ -15,26 +15,26 @@ fn should_compile_speed_limiter() {
         function new_hysterisis(value: float) -> Hysterisis {
             return Hysterisis { value: value, flag: true };
         }
-    
+
         // Enumerates the kinds of activation resquests.
         enum ActivationResquest { Off, On, Initialization, StandBy }
-    
+
         // Vehicle dynamic control states.
         enum VdcState { On, Off }
-    
+
         // Vacuum brake state.
         enum VacuumBrakeState { BelowMinLevel, AboveMinLevel }
-    
+
         // Tells if the driver presses down hard on the accelerator or not.
         enum KickdownState{ Deactivated, Activated }
-    
+
         // Speed limiter states.
         enum SpeedLimiter {
             Off,
             On,
             Fail,
         }
-    
+
         // Speed limiter 'On' states.
         enum SpeedLimiterOn {
             StandBy,
@@ -42,7 +42,7 @@ fn should_compile_speed_limiter() {
             OverrideVoluntary,
             OverrideInvoluntary,
         }
-    
+
         // # Computation functions
 
         // Updates the previous hysterisis according to the current speed and the calibration.
