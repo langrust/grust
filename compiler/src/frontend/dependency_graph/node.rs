@@ -177,7 +177,8 @@ impl Node {
         // add output dependencies over inputs in reduced graph
         symbol_table
             .get_node_outputs(self.id)
-            .for_each(|output_signal| {
+            .iter()
+            .for_each(|(_, output_signal)| {
                 self.add_signal_dependencies_over_inputs(
                     *output_signal,
                     symbol_table,

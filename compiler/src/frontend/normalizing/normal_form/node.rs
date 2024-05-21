@@ -4,7 +4,7 @@ use petgraph::graphmap::{DiGraphMap, GraphMap};
 
 use crate::{
     common::label::Label,
-    hir::{identifier_creator::IdentifierCreator, node::Node, statement::Statement},
+    hir::{identifier_creator::IdentifierCreator, node::Node},
     symbol_table::SymbolTable,
 };
 

@@ -233,9 +233,10 @@ impl ComponentCall {
 
         // get output signal id
         let signal_name = ident_signal.unwrap().1.to_string();
-        let signal_id = *symbol_table
+        let (_, signal_id) = *symbol_table
             .get_node_outputs(component_id)
-            .find(|output_id| symbol_table.get_name(**output_id) == &signal_name)
+            .iter()
+            .find(|(_, output_id)| symbol_table.get_name(*output_id) == &signal_name)
             .ok_or_else(|| {
                 let error = Error::UnknownOuputSignal {
                     node_name: name,

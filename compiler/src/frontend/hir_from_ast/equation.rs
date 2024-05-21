@@ -5,7 +5,6 @@ use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 use crate::hir::dependencies::Dependencies;
 use crate::hir::expression::ExpressionKind;
-use crate::hir::pattern::{Pattern, PatternKind};
 use crate::hir::stream_expression::StreamExpressionKind;
 use crate::hir::{
     statement::Statement as HIRStatement,

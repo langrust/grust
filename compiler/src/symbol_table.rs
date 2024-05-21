@@ -1,4 +1,4 @@
-use std::collections::{hash_map::Values, HashMap};
+use std::collections::HashMap;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -44,7 +44,7 @@ pub enum SymbolKind {
         /// Node's input identifiers.
         inputs: Vec<usize>,
         /// Node's output identifiers.
-        outputs: HashMap<String, usize>,
+        outputs: Vec<(String, usize)>,
         /// Node's local identifiers.
         locals: HashMap<String, usize>,
         /// Node's period of execution.
@@ -378,7 +378,7 @@ impl SymbolTable {
         is_component: bool,
         local: bool,
         inputs: Vec<usize>,
-        outputs: HashMap<String, usize>,
+        outputs: Vec<(String, usize)>,
         locals: HashMap<String, usize>,
         period: Option<usize>,
         location: Location,
@@ -511,7 +511,7 @@ impl SymbolTable {
                 ..
             } => {
                 self.restore_context_from(inputs.iter());
-                self.restore_context_from(outputs.values());
+                self.restore_context_from(outputs.iter().map(|(_, id)| id));
                 self.restore_context_from(locals.values());
             }
             _ => unreachable!(),
@@ -749,12 +749,12 @@ impl SymbolTable {
     }
 
     /// Get node output identifiers from identifier.
-    pub fn get_node_outputs(&self, id: usize) -> Values<'_, String, usize> {
+    pub fn get_node_outputs(&self, id: usize) -> &Vec<(String, usize)> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Node { outputs, .. } => outputs.values(),
+            SymbolKind::Node { outputs, .. } => outputs,
             _ => unreachable!(),
         }
     }

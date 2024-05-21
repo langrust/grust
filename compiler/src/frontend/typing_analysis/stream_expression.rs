@@ -51,7 +51,8 @@ impl TypeAnalysis for StreamExpression {
                 let node_application_type = {
                     let mut outputs_types = symbol_table
                         .get_node_outputs(node_id)
-                        .map(|output_signal| symbol_table.get_type(*output_signal).clone())
+                        .iter()
+                        .map(|(_, output_signal)| symbol_table.get_type(*output_signal).clone())
                         .collect::<Vec<_>>();
                     if outputs_types.len() == 1 {
                         outputs_types.pop().unwrap()

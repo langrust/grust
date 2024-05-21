@@ -3,7 +3,6 @@ use petgraph::graphmap::GraphMap;
 use crate::hir::identifier_creator::IdentifierCreator;
 use crate::hir::memory::Memory;
 use crate::hir::node::Node;
-use crate::hir::statement::Statement;
 use crate::symbol_table::SymbolTable;
 
 impl Node {

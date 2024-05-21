@@ -47,7 +47,8 @@ impl LIRFromHIR for Node {
         let outputs = symbol_table.get_node_outputs(id);
         let mut output_type = {
             let mut types = outputs
-                .map(|output_id| symbol_table.get_type(*output_id).clone())
+                .iter()
+                .map(|(_, output_id)| symbol_table.get_type(*output_id).clone())
                 .collect::<Vec<_>>();
             if types.len() == 1 {
                 types.pop().unwrap()
@@ -60,7 +61,8 @@ impl LIRFromHIR for Node {
         let outputs = symbol_table.get_node_outputs(id);
         let output_expression = {
             let mut identifiers = outputs
-                .map(|output_id| LIRExpression::Identifier {
+                .iter()
+                .map(|(_, output_id)| LIRExpression::Identifier {
                     identifier: symbol_table.get_name(*output_id).clone(),
                 })
                 .collect::<Vec<_>>();
