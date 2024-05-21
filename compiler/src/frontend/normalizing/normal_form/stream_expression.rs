@@ -82,9 +82,8 @@ impl StreamExpression {
                     inputs
                         .iter()
                         .flat_map(|(input_id, expression)| {
-                            symbol_table
-                                .get_node_outputs(node_id)
-                                .flat_map(|output_id| {
+                            symbol_table.get_node_outputs(node_id).iter().flat_map(
+                                |(_, output_id)| {
                                     reduced_graph.edge_weight(*output_id, *input_id).map_or(
                                         vec![],
                                         |label1| {
@@ -96,7 +95,8 @@ impl StreamExpression {
                                                 .collect()
                                         },
                                     )
-                                })
+                                },
+                            )
                         })
                         .collect(),
                 );

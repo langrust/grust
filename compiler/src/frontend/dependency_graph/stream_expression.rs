@@ -110,7 +110,8 @@ impl StreamExpression {
                             // for each node's output, get dependencies from output to inputs
                             let dependencies = symbol_table
                                 .get_node_outputs(*node_id)
-                                .flat_map(|output_signal| {
+                                .iter()
+                                .flat_map(|(_, output_signal)| {
                                     reduced_graph.edge_weight(*output_signal, *input_id).map_or(
                                         vec![],
                                         |label1| {

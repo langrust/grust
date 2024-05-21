@@ -128,7 +128,7 @@ impl Component {
             )
             .collect::<Vec<Result<_, _>>>()
             .into_iter()
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            .collect::<Result<Vec<_>, _>>()?;
 
         let locals = self
             .equations

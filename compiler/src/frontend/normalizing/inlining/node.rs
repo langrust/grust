@@ -119,8 +119,9 @@ impl Node {
             let signals = pattern.identifiers();
             symbol_table
                 .get_node_outputs(self.id)
+                .iter()
                 .zip(signals)
-                .for_each(|(output_id, new_output_id)| {
+                .for_each(|((_, output_id), new_output_id)| {
                     context_map.insert(*output_id, Union::I1(new_output_id));
                 })
         });
