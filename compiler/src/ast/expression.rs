@@ -37,11 +37,11 @@ where
 }
 impl<E> Parse for Unop<E>
 where
-    E: Parse,
+    E: ParsePrec,
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let op = input.parse()?;
-        let expression = Box::new(input.parse()?);
+        let expression = Box::new(E::parse_term(input)?);
         Ok(Unop { op, expression })
     }
 }
