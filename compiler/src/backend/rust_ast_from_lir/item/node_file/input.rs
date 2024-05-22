@@ -1,6 +1,6 @@
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::common::{convert_case::camel_case, r#type::Type as GRRustType};
-use crate::lir::item::node_file::input::{Input, InputElement};
+use crate::lir::item::state_machine::input::{Input, InputElement};
 use quote::format_ident;
 use syn::*;
 
@@ -45,7 +45,7 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
 mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::item::node_file::input::rust_ast_from_lir;
     use crate::common::r#type::Type;
-    use crate::lir::item::node_file::input::{Input, InputElement};
+    use crate::lir::item::state_machine::input::{Input, InputElement};
     use syn::*;
 
     #[test]

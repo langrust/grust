@@ -5,10 +5,10 @@ use crate::{
     hir::{identifier_creator::IdentifierCreator, node::Node},
     lir::{
         expression::Expression as LIRExpression,
-        item::node_file::{
+        item::state_machine::{
             input::{Input, InputElement},
             state::{init::Init, step::Step, State},
-            NodeFile,
+            StateMachine,
         },
     },
     symbol_table::SymbolTable,
@@ -17,7 +17,7 @@ use crate::{
 use super::LIRFromHIR;
 
 impl LIRFromHIR for Node {
-    type LIR = NodeFile;
+    type LIR = StateMachine;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         let Node {
@@ -113,7 +113,7 @@ impl LIRFromHIR for Node {
         // transform contract
         let contract = contract.lir_from_hir(symbol_table);
 
-        NodeFile {
+        StateMachine {
             name: name.clone(),
             imports,
             input: Input {

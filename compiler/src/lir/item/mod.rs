@@ -1,5 +1,5 @@
 use self::{
-    array_alias::ArrayAlias, enumeration::Enumeration, function::Function, node_file::NodeFile,
+    array_alias::ArrayAlias, enumeration::Enumeration, function::Function, state_machine::StateMachine,
     structure::Structure,
 };
 
@@ -11,8 +11,8 @@ pub mod enumeration;
 pub mod function;
 /// LIR [Import](crate::lir::item::import::Import) module.
 pub mod import;
-/// LIR [NodeFile](crate::lir::item::node_file::NodeFile) module.
-pub mod node_file;
+/// LIR [StateMachine](crate::lir::item::node_file::StateMachine) module.
+pub mod state_machine;
 /// LIR [Structure](crate::lir::item::structure::Structure) module.
 pub mod structure;
 
@@ -20,7 +20,7 @@ pub mod structure;
 #[derive(Debug, PartialEq)]
 pub enum Item {
     /// A node file.
-    NodeFile(NodeFile),
+    StateMachine(StateMachine),
     /// A function definition.
     Function(Function),
     /// An enumeration definition.

@@ -1,6 +1,6 @@
 use crate::lir::item::{
     import::Import,
-    node_file::{input::Input, state::State},
+    state_machine::{input::Input, state::State},
 };
 
 /// LIR [Input](crate::lir::item::node_file::input::Input) module.
@@ -8,9 +8,9 @@ pub mod input;
 /// LIR [State](crate::lir::item::node_file::state::State) module.
 pub mod state;
 
-/// A node-file structure.
+/// A state-machine structure.
 #[derive(Debug, PartialEq)]
-pub struct NodeFile {
+pub struct StateMachine {
     /// The node's name.
     pub name: String,
     /// The imports (used typedefs, functions and nodes).

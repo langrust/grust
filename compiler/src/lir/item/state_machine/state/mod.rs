@@ -1,6 +1,6 @@
 use crate::{
     common::r#type::Type,
-    lir::item::node_file::state::{init::Init, step::Step},
+    lir::item::state_machine::state::{init::Init, step::Step},
 };
 
 /// LIR [Init](crate::lir::item::node_file::state::init::Init) module.

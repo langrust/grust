@@ -5,7 +5,7 @@ use syn::*;
 /// Transform LIR import into RustAST import.
 pub fn rust_ast_from_lir(import: Import, crates: &mut BTreeSet<String>) -> ItemUse {
     match import {
-        Import::NodeFile(name) => {
+        Import::StateMachine(name) => {
             let name = Ident::new(&name, Span::call_site());
             parse_quote! { use crate::#name::*; }
         }
@@ -51,7 +51,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_import_from_lir_node_import() {
-        let import = Import::NodeFile(String::from("my_node"));
+        let import = Import::StateMachine(String::from("my_node"));
 
         let control = parse_quote! { use crate::my_node::*; };
         assert_eq!(rust_ast_from_lir(import, &mut Default::default()), control)

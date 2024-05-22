@@ -5,7 +5,7 @@ use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_as
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
 use crate::common::{convert_case::camel_case, r#type::Type as GRRustType, scope::Scope};
 use crate::lir::contract::{Contract, Term};
-use crate::lir::item::node_file::state::step::{StateElementStep, Step};
+use crate::lir::item::state_machine::state::step::{StateElementStep, Step};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use std::collections::BTreeSet;
@@ -207,7 +207,7 @@ mod rust_ast_from_lir {
     use crate::common::constant::Constant;
     use crate::common::r#type::Type;
     use crate::lir::expression::{Expression, FieldIdentifier};
-    use crate::lir::item::node_file::state::step::{StateElementStep, Step};
+    use crate::lir::item::state_machine::state::step::{StateElementStep, Step};
     use crate::lir::pattern::Pattern;
     use crate::lir::statement::Statement;
     use syn::*;
