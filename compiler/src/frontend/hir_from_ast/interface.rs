@@ -5,19 +5,22 @@ use crate::ast::interface::{
 use crate::common::location::Location;
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
-use crate::hir::pattern::{Pattern, PatternKind};
 use crate::hir::{
     flow_expression::{
         FlowExpression as HIRFlowExpression, FlowExpressionKind as HIRFlowExpressionKind,
     },
-    statement::Statement,
+    flow_statement::{
+        FlowDeclaration as HIRFlowDeclaration, FlowExport as HIRFlowExport,
+        FlowImport as HIRFlowImport, FlowInstanciation as HIRFlowInstanciation,
+        FlowStatement as HIRFlowStatement,
+    },
 };
 use crate::symbol_table::SymbolTable;
 
 use super::HIRFromAST;
 
 impl HIRFromAST for FlowStatement {
-    type HIR = Option<Statement<HIRFlowExpression>>;
+    type HIR = HIRFlowStatement;
 
     fn hir_from_ast(
         self,
@@ -27,10 +30,12 @@ impl HIRFromAST for FlowStatement {
         let location = Location::default();
         match self {
             FlowStatement::Declaration(FlowDeclaration {
+                let_token,
                 kind,
                 typed_ident,
+                eq_token,
                 flow_expression,
-                ..
+                semi_token,
             }) => {
                 let name = typed_ident.left.to_string();
                 let flow_type = {
@@ -45,27 +50,29 @@ impl HIRFromAST for FlowStatement {
                 let id = symbol_table.insert_flow(
                     name,
                     None,
-                    flow_type,
+                    flow_type.clone(),
                     true,
                     location.clone(),
                     errors,
                 )?;
                 let flow_expression = flow_expression.hir_from_ast(symbol_table, errors)?;
 
-                Ok(Some(Statement {
-                    pattern: Pattern {
-                        kind: PatternKind::Identifier { id },
-                        typing: None,
-                        location: location.clone(),
-                    },
-                    expression: flow_expression,
-                    location,
+                Ok(HIRFlowStatement::Declaration(HIRFlowDeclaration {
+                    let_token,
+                    kind,
+                    id,
+                    colon_token: typed_ident.colon,
+                    flow_type,
+                    eq_token,
+                    flow_expression,
+                    semi_token,
                 }))
             }
             FlowStatement::Instanciation(FlowInstanciation {
                 ident,
+                eq_token,
                 flow_expression,
-                ..
+                semi_token,
             }) => {
                 // identifiers are already in symbol table because of flow export
                 let name = ident.to_string();
@@ -74,20 +81,18 @@ impl HIRFromAST for FlowStatement {
                 // transform the expression
                 let flow_expression = flow_expression.hir_from_ast(symbol_table, errors)?;
 
-                Ok(Some(Statement {
-                    pattern: Pattern {
-                        kind: PatternKind::Identifier { id },
-                        typing: None,
-                        location: location.clone(),
-                    },
-                    expression: flow_expression,
-                    location,
+                Ok(HIRFlowStatement::Instanciation(HIRFlowInstanciation {
+                    id,
+                    eq_token,
+                    flow_expression,
+                    semi_token,
                 }))
             }
             FlowStatement::Import(FlowImport {
+                import_token,
                 kind,
                 mut typed_path,
-                ..
+                semi_token,
             }) => {
                 let last = typed_path.left.segments.pop().unwrap().into_value();
                 let name = last.ident.to_string();
@@ -102,20 +107,29 @@ impl HIRFromAST for FlowStatement {
                         FlowKind::Event(_) => Type::Event(Box::new(inner)),
                     }
                 };
-                symbol_table.insert_flow(
+                let id = symbol_table.insert_flow(
                     name,
-                    Some(path),
-                    flow_type,
+                    Some(path.clone()),
+                    flow_type.clone(),
                     true,
                     location.clone(),
                     errors,
                 )?;
-                Ok(None)
+                Ok(HIRFlowStatement::Import(HIRFlowImport {
+                    import_token,
+                    kind,
+                    id,
+                    path,
+                    colon_token: typed_path.colon,
+                    flow_type,
+                    semi_token,
+                }))
             }
             FlowStatement::Export(FlowExport {
+                export_token,
                 kind,
                 mut typed_path,
-                ..
+                semi_token,
             }) => {
                 let last = typed_path.left.segments.pop().unwrap().into_value();
                 let name = last.ident.to_string();
@@ -130,15 +144,23 @@ impl HIRFromAST for FlowStatement {
                         FlowKind::Event(_) => Type::Event(Box::new(inner)),
                     }
                 };
-                symbol_table.insert_flow(
+                let id = symbol_table.insert_flow(
                     name,
-                    Some(path),
-                    flow_type,
+                    Some(path.clone()),
+                    flow_type.clone(),
                     true,
                     location.clone(),
                     errors,
                 )?;
-                Ok(None)
+                Ok(HIRFlowStatement::Export(HIRFlowExport {
+                    export_token,
+                    kind,
+                    id,
+                    path,
+                    colon_token: typed_path.colon,
+                    flow_type,
+                    semi_token,
+                }))
             }
         }
     }
