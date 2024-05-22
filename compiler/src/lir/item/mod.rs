@@ -1,12 +1,13 @@
 use self::{
-    array_alias::ArrayAlias, enumeration::Enumeration, function::Function, state_machine::StateMachine,
-    structure::Structure,
+    array_alias::ArrayAlias, enumeration::Enumeration, execution_machine::ExecutionMachine,
+    function::Function, state_machine::StateMachine, structure::Structure,
 };
 
 /// LIR [ArrayAlias](crate::lir::item::array_alias::ArrayAlias) module.
 pub mod array_alias;
 /// LIR [Enumeration](crate::lir::item::enumeration::Enumeration) module.
 pub mod enumeration;
+pub mod execution_machine;
 /// LIR [Function](crate::lir::item::function::Function) module.
 pub mod function;
 /// LIR [Import](crate::lir::item::import::Import) module.
@@ -19,8 +20,10 @@ pub mod structure;
 /// An item of the project.
 #[derive(Debug, PartialEq)]
 pub enum Item {
-    /// A node file.
+    /// A state-machine.
     StateMachine(StateMachine),
+    /// Ax execution-machine.
+    ExecutionMachine(ExecutionMachine),
     /// A function definition.
     Function(Function),
     /// An enumeration definition.

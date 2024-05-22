@@ -10,9 +10,7 @@ use std::collections::BTreeSet;
 use syn::*;
 
 /// Transform LIR function into RustAST function.
-pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> Vec<Item> {
-    let mut items = vec![];
-
+pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> Item {
     // create generics
     let mut generic_params: Vec<GenericParam> = vec![];
     for (generic_name, generic_type) in function.generics {
@@ -68,9 +66,8 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> V
         sig,
         block: Box::new(block_rust_ast_from_lir(function.body, crates)),
     });
-    items.push(item_function);
 
-    items
+    item_function
 }
 
 #[cfg(test)]
@@ -120,7 +117,7 @@ mod rust_ast_from_lir {
         };
         assert_eq!(
             rust_ast_from_lir(function, &mut Default::default()),
-            vec![control]
+            control
         )
     }
 }

@@ -2,6 +2,7 @@
 pub mod array_alias;
 /// RustAST enumeration construction from LIR enumeration.
 pub mod enumeration;
+pub mod execution_machine;
 /// RustAST function construction from LIR function.
 pub mod function;
 /// RustAST node and function import construction from LIR import.
