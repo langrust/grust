@@ -41,7 +41,10 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
             let identifier = Ident::new(&name, Span::call_site());
             parse_quote!(#identifier)
         }
-        Type::NotDefinedYet(_) | Type::Polymorphism(_) | Type::Event(_) | Type::Signal(_) => {
+        Type::Event(ty) | Type::Signal(ty) => {
+            rust_ast_from_lir(*ty)
+        }
+        Type::NotDefinedYet(_) | Type::Polymorphism(_) => {
             unreachable!()
         }
     }

@@ -4,6 +4,7 @@ use crate::{
     backend::rust_ast_from_lir::item::{
         array_alias::rust_ast_from_lir as array_alias_rust_ast_from_lir,
         enumeration::rust_ast_from_lir as enumeration_rust_ast_from_lir,
+        execution_machine::rust_ast_from_lir as execution_machine_rust_ast_from_lir,
         function::rust_ast_from_lir as function_rust_ast_from_lir,
         state_machine::rust_ast_from_lir as state_machine_rust_ast_from_lir,
         structure::rust_ast_from_lir as structure_rust_ast_from_lir,
@@ -18,13 +19,17 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
     let mut rust_items = vec![];
 
     project.items.into_iter().for_each(|item| match item {
+        Item::ExecutionMachine(execution_machine) => {
+            let mut items = execution_machine_rust_ast_from_lir(execution_machine, &mut crates);
+            rust_items.append(&mut items);
+        }
         Item::StateMachine(state_machine) => {
             let mut items = state_machine_rust_ast_from_lir(state_machine, &mut crates);
             rust_items.append(&mut items);
         }
         Item::Function(function) => {
-            let mut items = function_rust_ast_from_lir(function, &mut crates);
-            rust_items.append(&mut items);
+            let item_function = function_rust_ast_from_lir(function, &mut crates);
+            rust_items.push(item_function);
         }
         Item::Enumeration(enumeration) => {
             let rust_ast_enumeration = enumeration_rust_ast_from_lir(enumeration);
