@@ -1,5 +1,5 @@
-use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir as init_rust_ast_from_lir;
-use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir as step_rust_ast_from_lir;
+use crate::backend::rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir as init_rust_ast_from_lir;
+use crate::backend::rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir as step_rust_ast_from_lir;
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
 use crate::lir::item::state_machine::state::{State, StateElement};

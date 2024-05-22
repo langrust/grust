@@ -5,7 +5,7 @@ use crate::{
         array_alias::rust_ast_from_lir as array_alias_rust_ast_from_lir,
         enumeration::rust_ast_from_lir as enumeration_rust_ast_from_lir,
         function::rust_ast_from_lir as function_rust_ast_from_lir,
-        node_file::rust_ast_from_lir as node_file_rust_ast_from_lir,
+        state_machine::rust_ast_from_lir as state_machine_rust_ast_from_lir,
         structure::rust_ast_from_lir as structure_rust_ast_from_lir,
     },
     lir::{item::Item, project::Project},
@@ -18,8 +18,8 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
     let mut rust_items = vec![];
 
     project.items.into_iter().for_each(|item| match item {
-        Item::StateMachine(node_file) => {
-            let mut items = node_file_rust_ast_from_lir(node_file, &mut crates);
+        Item::StateMachine(state_machine) => {
+            let mut items = state_machine_rust_ast_from_lir(state_machine, &mut crates);
             rust_items.append(&mut items);
         }
         Item::Function(function) => {

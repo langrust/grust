@@ -203,7 +203,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::node_file::state::step::rust_ast_from_lir;
+    use crate::backend::rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::common::r#type::Type;
     use crate::lir::expression::{Expression, FieldIdentifier};
