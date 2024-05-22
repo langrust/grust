@@ -39,3 +39,5 @@ pub mod contract;
 
 /// HIR [Interface](crate::hir::interface::Interface) module.
 pub mod flow_expression;
+
+pub mod flow_statement;

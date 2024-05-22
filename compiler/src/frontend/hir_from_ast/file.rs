@@ -38,12 +38,7 @@ impl HIRFromAST for Ast {
                     (typedefs, functions, nodes, interface)
                 }
                 crate::ast::Item::FlowStatement(flow_statement) => {
-                    if let Some(statement) = flow_statement
-                        .hir_from_ast(symbol_table, errors)
-                        .transpose()
-                    {
-                        interface.push(statement);
-                    }
+                    interface.push(flow_statement.hir_from_ast(symbol_table, errors));
                     (typedefs, functions, nodes, interface)
                 }
             },

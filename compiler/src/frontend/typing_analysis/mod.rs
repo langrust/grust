@@ -28,6 +28,8 @@ pub mod pattern;
 /// LanGRust [Interface](crate::hir::interface::Interface) typing analysis module.
 pub mod flow_expression;
 
+pub mod flow_statement;
+
 /// Performs type analysis.
 pub trait TypeAnalysis {
     /// Tries to type the given construct.

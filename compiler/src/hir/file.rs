@@ -1,10 +1,6 @@
 use crate::common::location::Location;
-use crate::hir::{
-    flow_expression::FlowExpression, function::Function, node::Node, statement::Statement,
-    typedef::Typedef,
-};
+use crate::hir::{flow_statement::FlowStatement, function::Function, node::Node, typedef::Typedef};
 
-#[derive(Debug, PartialEq)]
 /// A LanGRust [File] is composed of functions, nodes,
 /// types defined by the user, components and interface.
 pub struct File {
@@ -15,7 +11,7 @@ pub struct File {
     /// Program nodes. They are functional requirements.
     pub nodes: Vec<Node>,
     /// Program interface. It represents the system.
-    pub interface: Vec<Statement<FlowExpression>>,
+    pub interface: Vec<FlowStatement>,
     /// Program location.
     pub location: Location,
 }
