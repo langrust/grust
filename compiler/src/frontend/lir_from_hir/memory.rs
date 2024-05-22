@@ -4,7 +4,7 @@ use crate::{
     hir::memory::{Buffer, CalledNode, Memory},
     lir::item::{
         import::Import,
-        node_file::state::{init::StateElementInit, step::StateElementStep, StateElement},
+        state_machine::state::{init::StateElementInit, step::StateElementStep, StateElement},
     },
     symbol_table::SymbolTable,
 };
@@ -91,7 +91,7 @@ impl Memory {
             .called_nodes
             .values()
             .flat_map(|CalledNode { node_id, .. }| {
-                vec![Import::NodeFile(symbol_table.get_name(*node_id).clone())]
+                vec![Import::StateMachine(symbol_table.get_name(*node_id).clone())]
             })
             .unique()
             .collect::<Vec<_>>();

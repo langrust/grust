@@ -2,7 +2,7 @@
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Import {
     /// Import of another node.
-    NodeFile(String),
+    StateMachine(String),
     /// Import of a function.
     Function(String),
     /// Import of an enumeration.

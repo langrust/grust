@@ -18,7 +18,7 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
     let mut rust_items = vec![];
 
     project.items.into_iter().for_each(|item| match item {
-        Item::NodeFile(node_file) => {
+        Item::StateMachine(node_file) => {
             let mut items = node_file_rust_ast_from_lir(node_file, &mut crates);
             rust_items.append(&mut items);
         }

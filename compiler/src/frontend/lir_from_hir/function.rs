@@ -68,7 +68,7 @@ impl LIRFromHIR for Function {
                 | Import::ArrayAlias(_)
                 | Import::Creusot(_) => true,
                 Import::Function(_) => false,
-                Import::NodeFile(_) => unreachable!(),
+                Import::StateMachine(_) => unreachable!(),
             })
             .collect::<Vec<_>>();
 

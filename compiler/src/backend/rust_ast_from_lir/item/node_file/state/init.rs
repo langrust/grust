@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
-use crate::lir::item::node_file::state::init::{Init, StateElementInit};
+use crate::lir::item::state_machine::state::init::{Init, StateElementInit};
 use proc_macro2::Span;
 use syn::*;
 
@@ -94,7 +94,7 @@ mod rust_ast_from_lir {
     use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::lir::expression::Expression;
-    use crate::lir::item::node_file::state::init::{Init, StateElementInit};
+    use crate::lir::item::state_machine::state::init::{Init, StateElementInit};
     use syn::*;
 
     #[test]
