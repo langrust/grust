@@ -1,0 +1,16 @@
+[package]
+name = "greact"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+colored = "2.1.0"
+futures = "0.3.30"
+pin-project = "1.1.4"
+rand = "0.8.5"
+tokio = { version = "1.36.0", features = ["full"] }
+tokio-stream = "0.1.14"
+stream_proc_macros = { path = "stream_proc_macros" }
+shared_stream = "0.2.1"

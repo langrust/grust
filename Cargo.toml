@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
-members = [ "proc", "grust", "compiler", "examples/*" ]
+members = [ "proc", "grust", "compiler", "greact", "examples/*" ]
 default-members = [ "grust" ]
