@@ -240,4 +240,12 @@ grust! {
             },
         }
     }
+
+    // # Imports
+    import event  car::hmi::speed_limiter::activation : ActivationResquest;
+    import event  car::hmi::speed_limiter::set_speed : float;
+    import signal car::adas::speed : float;
+    import event  car::adas::vacuum_brake : VacuumBrakeState;
+    import event  car::adas::kickdown: KickdownState;
+    import event  car::adas::vdc: VdcState;
 }
