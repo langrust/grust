@@ -43,7 +43,7 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::node_file::input::rust_ast_from_lir;
+    use crate::backend::rust_ast_from_lir::item::state_machine::input::rust_ast_from_lir;
     use crate::common::r#type::Type;
     use crate::lir::item::state_machine::input::{Input, InputElement};
     use syn::*;

@@ -11,7 +11,7 @@ pub mod enumeration;
 pub mod function;
 /// LIR [Import](crate::lir::item::import::Import) module.
 pub mod import;
-/// LIR [StateMachine](crate::lir::item::node_file::StateMachine) module.
+/// LIR [StateMachine](crate::lir::item::state_machine::StateMachine) module.
 pub mod state_machine;
 /// LIR [Structure](crate::lir::item::structure::Structure) module.
 pub mod structure;

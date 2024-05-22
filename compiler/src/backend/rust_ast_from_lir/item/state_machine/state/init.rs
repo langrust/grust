@@ -91,7 +91,7 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::node_file::state::init::rust_ast_from_lir;
+    use crate::backend::rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir;
     use crate::common::constant::Constant;
     use crate::lir::expression::Expression;
     use crate::lir::item::state_machine::state::init::{Init, StateElementInit};

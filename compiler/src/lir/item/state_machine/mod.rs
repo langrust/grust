@@ -3,9 +3,9 @@ use crate::lir::item::{
     state_machine::{input::Input, state::State},
 };
 
-/// LIR [Input](crate::lir::item::node_file::input::Input) module.
+/// LIR [Input](crate::lir::item::state_machine::input::Input) module.
 pub mod input;
-/// LIR [State](crate::lir::item::node_file::state::State) module.
+/// LIR [State](crate::lir::item::state_machine::state::State) module.
 pub mod state;
 
 /// A state-machine structure.
