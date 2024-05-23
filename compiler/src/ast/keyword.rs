@@ -22,8 +22,10 @@ syn::custom_keyword!(export);
 
 // Greact operators keywords.
 syn::custom_keyword!(sample);
-syn::custom_keyword!(merge);
-syn::custom_keyword!(zip);
+syn::custom_keyword!(scan);
+syn::custom_keyword!(timeout);
+syn::custom_keyword!(throtle);
+syn::custom_keyword!(on_change);
 
 // Types
 syn::custom_keyword!(int);
@@ -38,3 +40,4 @@ syn::custom_keyword!(none);
 syn::custom_keyword!(sort);
 syn::custom_keyword!(fold);
 syn::custom_keyword!(map);
+syn::custom_keyword!(zip);

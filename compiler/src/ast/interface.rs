@@ -40,36 +40,36 @@ impl Parse for Sample {
     }
 }
 
-/// GReact `merge` operator.
-pub struct Merge {
-    pub merge_token: keyword::merge,
+/// GReact `scan` operator.
+pub struct Scan {
+    pub sample_token: keyword::scan,
     pub paren_token: token::Paren,
-    /// Input expression 1.
-    pub flow_expression_1: Box<FlowExpression>,
+    /// Input expression.
+    pub flow_expression: Box<FlowExpression>,
     pub comma_token: Token![,],
-    /// Input expression 2.
-    pub flow_expression_2: Box<FlowExpression>,
+    /// Scaning period in milliseconds.
+    pub period_ms: syn::LitInt,
 }
-impl Merge {
+impl Scan {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        input.peek(keyword::merge)
+        input.peek(keyword::scan)
     }
 }
-impl Parse for Merge {
+impl Parse for Scan {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let merge_token: keyword::merge = input.parse()?;
+        let sample_token: keyword::scan = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression_1: Box<FlowExpression> = Box::new(content.parse()?);
+        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
         let comma_token: Token![,] = content.parse()?;
-        let flow_expression_2: Box<FlowExpression> = Box::new(content.parse()?);
+        let period_ms: syn::LitInt = content.parse()?;
         if content.is_empty() {
-            Ok(Merge {
-                merge_token,
+            Ok(Scan {
+                sample_token,
                 paren_token,
-                flow_expression_1,
+                flow_expression,
                 comma_token,
-                flow_expression_2,
+                period_ms,
             })
         } else {
             Err(content.error("expected two input expressions"))
@@ -77,36 +77,110 @@ impl Parse for Merge {
     }
 }
 
-/// GReact `zip` operator.
-pub struct Zip {
-    pub zip_token: keyword::zip,
+/// GReact `timeout` operator.
+pub struct Timeout {
+    pub sample_token: keyword::timeout,
     pub paren_token: token::Paren,
-    /// Input expression 1.
-    pub flow_expression_1: Box<FlowExpression>,
+    /// Input expression.
+    pub flow_expression: Box<FlowExpression>,
     pub comma_token: Token![,],
-    /// Input expression 2.
-    pub flow_expression_2: Box<FlowExpression>,
+    /// Deadline in milliseconds.
+    pub deadline: syn::LitInt,
 }
-impl Zip {
+impl Timeout {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        input.peek(keyword::zip)
+        input.peek(keyword::timeout)
     }
 }
-impl Parse for Zip {
+impl Parse for Timeout {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let zip_token: keyword::zip = input.parse()?;
+        let sample_token: keyword::timeout = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression_1: Box<FlowExpression> = Box::new(content.parse()?);
+        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
         let comma_token: Token![,] = content.parse()?;
-        let flow_expression_2: Box<FlowExpression> = Box::new(content.parse()?);
+        let deadline: syn::LitInt = content.parse()?;
         if content.is_empty() {
-            Ok(Zip {
-                zip_token,
+            Ok(Timeout {
+                sample_token,
                 paren_token,
-                flow_expression_1,
+                flow_expression,
                 comma_token,
-                flow_expression_2,
+                deadline,
+            })
+        } else {
+            Err(content.error("expected two input expressions"))
+        }
+    }
+}
+
+/// GReact `throtle` operator.
+pub struct Throtle {
+    pub sample_token: keyword::throtle,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub flow_expression: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    /// Deadline in milliseconds.
+    pub deadline: syn::Lit,
+}
+impl Throtle {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::throtle)
+    }
+}
+impl Parse for Throtle {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let sample_token: keyword::throtle = input.parse()?;
+        let content;
+        let paren_token: token::Paren = parenthesized!(content in input);
+        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
+        let comma_token: Token![,] = content.parse()?;
+        let deadline: syn::Lit = content.parse()?;
+        if content.is_empty() {
+            Ok(Throtle {
+                sample_token,
+                paren_token,
+                flow_expression,
+                comma_token,
+                deadline,
+            })
+        } else {
+            Err(content.error("expected two input expressions"))
+        }
+    }
+}
+
+/// GReact `on_change` operator.
+pub struct OnChange {
+    pub sample_token: keyword::on_change,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub flow_expression: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    /// Deadline in milliseconds.
+    pub deadline: syn::Lit,
+}
+impl OnChange {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::on_change)
+    }
+}
+impl Parse for OnChange {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let sample_token: keyword::on_change = input.parse()?;
+        let content;
+        let paren_token: token::Paren = parenthesized!(content in input);
+        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
+        let comma_token: Token![,] = content.parse()?;
+        let deadline: syn::Lit = content.parse()?;
+        if content.is_empty() {
+            Ok(OnChange {
+                sample_token,
+                paren_token,
+                flow_expression,
+                comma_token,
+                deadline,
             })
         } else {
             Err(content.error("expected two input expressions"))
@@ -148,25 +222,33 @@ impl Parse for ComponentCall {
 
 /// Flow expression kinds.
 pub enum FlowExpression {
-    /// GReact `tiemout` operator.
+    /// GReact `sample` operator.
     Sample(Sample),
-    /// GReact `merge` operator.
-    Merge(Merge),
-    /// GReact `zip` operator.
-    Zip(Zip),
+    /// GReact `scan` operator.
+    Scan(Scan),
+    /// GReact `timeout` operator.
+    Timeout(Timeout),
+    /// GReact `throtle` operator.
+    Throtle(Throtle),
+    /// GReact `on_change` operator.
+    OnChange(OnChange),
     /// Component call.
     ComponentCall(ComponentCall),
-    /// Another Rust expression.
+    /// Identifier to flow.
     Ident(syn::Ident),
 }
 impl Parse for FlowExpression {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if Sample::peek(input) {
             Ok(FlowExpression::Sample(input.parse()?))
-        } else if Merge::peek(input) {
-            Ok(FlowExpression::Merge(input.parse()?))
-        } else if Zip::peek(input) {
-            Ok(FlowExpression::Zip(input.parse()?))
+        } else if Scan::peek(input) {
+            Ok(FlowExpression::Scan(input.parse()?))
+        } else if Timeout::peek(input) {
+            Ok(FlowExpression::Timeout(input.parse()?))
+        } else if Throtle::peek(input) {
+            Ok(FlowExpression::Throtle(input.parse()?))
+        } else if OnChange::peek(input) {
+            Ok(FlowExpression::OnChange(input.parse()?))
         } else if input.fork().call(ComponentCall::parse).is_ok() {
             Ok(FlowExpression::ComponentCall(input.parse()?))
         } else {
