@@ -1,4 +1,4 @@
-use crate::common::{location::Location, r#type::Type};
+use crate::common::{constant::Constant, location::Location, r#type::Type};
 
 #[derive(Debug, PartialEq, Clone)]
 /// Flow expression kinds.
@@ -15,19 +15,31 @@ pub enum FlowExpressionKind {
         /// Sampling period in milliseconds.
         period_ms: u64,
     },
-    /// GReact `merge` operator.
-    Merge {
-        /// Input expression 1.
-        flow_expression_1: Box<FlowExpression>,
-        /// Input expression 2.
-        flow_expression_2: Box<FlowExpression>,
+    /// GReact `scan` operator.
+    Scan {
+        /// Input expression.
+        flow_expression: Box<FlowExpression>,
+        /// Scaning period in milliseconds.
+        period_ms: u64,
     },
-    /// GReact `zip` operator.
-    Zip {
-        /// Input expression 1.
-        flow_expression_1: Box<FlowExpression>,
-        /// Input expression 2.
-        flow_expression_2: Box<FlowExpression>,
+    /// GReact `timeout` operator.
+    Timeout {
+        /// Input expression.
+        flow_expression: Box<FlowExpression>,
+        /// Dealine in milliseconds.
+        deadline: u64,
+    },
+    /// GReact `throtle` operator.
+    Throtle {
+        /// Input expression.
+        flow_expression: Box<FlowExpression>,
+        /// Variation that will update the signal.
+        delta: Constant,
+    },
+    /// GReact `on_change` operator.
+    OnChange {
+        /// Input expression.
+        flow_expression: Box<FlowExpression>,
     },
     /// Component call.
     ComponentCall {
