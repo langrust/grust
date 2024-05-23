@@ -219,6 +219,20 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// expect event type
+    ExpectEvent {
+        /// given type instead of the event
+        given_type: Type,
+        /// the error location
+        location: Location,
+    },
+    /// expect signal type
+    ExpectSignal {
+        /// given type instead of the signal
+        given_type: Type,
+        /// the error location
+        location: Location,
+    },
     /// expect option pattern
     ExpectOptionPattern {
         /// the error location
@@ -552,6 +566,26 @@ impl Error {
                     format!("expect array type but '{given_type}' was given")
                 ]
             ),
+            Error::ExpectEvent { given_type, location } => Diagnostic::error()
+                .with_message("incompatible type")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong type")
+                ])
+                .with_notes(vec![
+                    format!("expect event type but '{given_type}' was given")
+                ]
+            ),
+            Error::ExpectSignal { given_type, location } => Diagnostic::error()
+                .with_message("incompatible type")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("wrong type")
+                ])
+                .with_notes(vec![
+                    format!("expect signal type but '{given_type}' was given")
+                ]
+            ),
             Error::ExpectOptionPattern { location } => Diagnostic::error()
                 .with_message("incompatible pattern")
                 .with_labels(vec![
@@ -650,6 +684,8 @@ impl std::fmt::Display for Error {
             Error::ExpectStructure { .. } => write!(f, "Expect Structure"),
             Error::ExpectTuple { .. } => write!(f, "Expect Tuple"),
             Error::ExpectArray { .. } => write!(f, "Expect Array"),
+            Error::ExpectEvent { .. } => write!(f, "Expect Event"),
+            Error::ExpectSignal { .. } => write!(f, "Expect Signal"),
             Error::ExpectOptionPattern { .. } => write!(f, "Expect Option Pattern"),
             Error::ExpectTuplePattern { .. } => write!(f, "Expect Tuple Pattern"),
             Error::IncompatibleLength { .. } => write!(f, "Incompatible Length"),
