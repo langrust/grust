@@ -1,3 +1,4 @@
+use crate::common::location::Location;
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
 use crate::frontend::typing_analysis::TypeAnalysis;
@@ -10,6 +11,8 @@ impl TypeAnalysis for FlowExpression {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
+        let location = Location::default();
+
         match &mut self.kind {
             FlowExpressionKind::Ident { id } => {
                 let typing = symbol_table.get_type(*id);
@@ -22,37 +25,110 @@ impl TypeAnalysis for FlowExpression {
                 flow_expression.typing(symbol_table, errors)?;
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
-                // set typing
-                self.typing = Some(typing.clone());
-                Ok(())
+                match typing {
+                    Type::Event(typing) => {
+                        // set typing
+                        self.typing = Some(Type::Signal(typing.clone()));
+                        Ok(())
+                    }
+                    given_type => {
+                        let error = Error::ExpectEvent {
+                            given_type: given_type.clone(),
+                            location: location,
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
             }
-            FlowExpressionKind::Merge {
-                flow_expression_1,
-                flow_expression_2,
+            FlowExpressionKind::Scan {
+                flow_expression, ..
             } => {
-                flow_expression_1.typing(symbol_table, errors)?;
-                flow_expression_2.typing(symbol_table, errors)?;
-                // get expressions type
-                let typing_1 = flow_expression_1.get_type().unwrap();
-                let typing_2 = flow_expression_2.get_type().unwrap();
-                // check equality
-                typing_1.eq_check(typing_2, self.location.clone(), errors)?;
-                // set typing
-                self.typing = Some(typing_1.clone());
-                Ok(())
+                flow_expression.typing(symbol_table, errors)?;
+                // get expression type
+                let typing = flow_expression.get_type().unwrap();
+                match typing {
+                    Type::Signal(typing) => {
+                        // set typing
+                        self.typing = Some(Type::Event(typing.clone()));
+                        Ok(())
+                    }
+                    given_type => {
+                        let error = Error::ExpectSignal {
+                            given_type: given_type.clone(),
+                            location: location,
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
             }
-            FlowExpressionKind::Zip {
-                flow_expression_1,
-                flow_expression_2,
+            FlowExpressionKind::Timeout {
+                flow_expression, ..
             } => {
-                flow_expression_1.typing(symbol_table, errors)?;
-                flow_expression_2.typing(symbol_table, errors)?;
-                // get expressions type
-                let typing_1 = flow_expression_1.get_type().unwrap();
-                let typing_2 = flow_expression_2.get_type().unwrap();
-                // set typing
-                self.typing = Some(Type::Tuple(vec![typing_1.clone(), typing_2.clone()]));
-                Ok(())
+                flow_expression.typing(symbol_table, errors)?;
+                // get expression type
+                let typing = flow_expression.get_type().unwrap();
+                match typing {
+                    Type::Event(typing) => {
+                        // set typing
+                        self.typing = Some(Type::Event(todo!("timeout event type")));
+                        Ok(())
+                    }
+                    given_type => {
+                        let error = Error::ExpectEvent {
+                            given_type: given_type.clone(),
+                            location: location,
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
+            }
+            FlowExpressionKind::Throtle {
+                flow_expression,
+                delta,
+            } => {
+                flow_expression.typing(symbol_table, errors)?;
+                // get expression type
+                let typing = flow_expression.get_type().unwrap();
+                match typing {
+                    Type::Signal(typing) => {
+                        let delta_ty = delta.get_type();
+                        typing.eq_check(&delta_ty, location, errors)?;
+                        // set typing
+                        self.typing = Some(Type::Signal(typing.clone()));
+                        Ok(())
+                    }
+                    given_type => {
+                        let error = Error::ExpectSignal {
+                            given_type: given_type.clone(),
+                            location: location,
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
+            }
+            FlowExpressionKind::OnChange { flow_expression } => {
+                flow_expression.typing(symbol_table, errors)?;
+                // get expression type
+                let typing = flow_expression.get_type().unwrap();
+                match typing {
+                    Type::Signal(typing) => {
+                        // set typing
+                        self.typing = Some(Type::Event(typing.clone()));
+                        Ok(())
+                    }
+                    given_type => {
+                        let error = Error::ExpectSignal {
+                            given_type: given_type.clone(),
+                            location: location,
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
             }
             FlowExpressionKind::ComponentCall {
                 ref mut inputs,
