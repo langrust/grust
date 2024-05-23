@@ -1,7 +1,7 @@
 use syn::{parenthesized, parse::Parse, punctuated::Punctuated, token, Token};
 
 use super::{colon::Colon, keyword};
-use crate::common::r#type::Type;
+use crate::common::{constant::Constant, r#type::Type};
 
 /// GReact `sample` operator.
 pub struct Sample {
@@ -121,8 +121,8 @@ pub struct Throtle {
     /// Input expression.
     pub flow_expression: Box<FlowExpression>,
     pub comma_token: Token![,],
-    /// Deadline in milliseconds.
-    pub deadline: syn::Lit,
+    /// Variation that will update the signal.
+    pub delta: Constant,
 }
 impl Throtle {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -136,14 +136,14 @@ impl Parse for Throtle {
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
         let comma_token: Token![,] = content.parse()?;
-        let deadline: syn::Lit = content.parse()?;
+        let delta: Constant = content.parse()?;
         if content.is_empty() {
             Ok(Throtle {
                 sample_token,
                 paren_token,
                 flow_expression,
                 comma_token,
-                deadline,
+                delta,
             })
         } else {
             Err(content.error("expected two input expressions"))
@@ -157,9 +157,6 @@ pub struct OnChange {
     pub paren_token: token::Paren,
     /// Input expression.
     pub flow_expression: Box<FlowExpression>,
-    pub comma_token: Token![,],
-    /// Deadline in milliseconds.
-    pub deadline: syn::Lit,
 }
 impl OnChange {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -172,15 +169,11 @@ impl Parse for OnChange {
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
-        let comma_token: Token![,] = content.parse()?;
-        let deadline: syn::Lit = content.parse()?;
         if content.is_empty() {
             Ok(OnChange {
                 sample_token,
                 paren_token,
                 flow_expression,
-                comma_token,
-                deadline,
             })
         } else {
             Err(content.error("expected two input expressions"))

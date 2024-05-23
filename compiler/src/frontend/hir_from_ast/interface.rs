@@ -1,6 +1,6 @@
 use crate::ast::interface::{
     ComponentCall, FlowDeclaration, FlowExport, FlowExpression, FlowImport, FlowInstanciation,
-    FlowKind, FlowStatement, Merge, Sample, Zip,
+    FlowKind, FlowStatement, OnChange, Sample, Scan, Throtle, Timeout,
 };
 use crate::common::location::Location;
 use crate::common::r#type::Type;
@@ -185,40 +185,75 @@ impl Sample {
     }
 }
 
-impl Zip {
+impl Scan {
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<HIRFlowExpressionKind, TerminationError> {
-        let Zip {
-            flow_expression_1,
-            flow_expression_2,
+        let Scan {
+            flow_expression,
+            period_ms,
             ..
         } = self;
-        Ok(HIRFlowExpressionKind::Zip {
-            flow_expression_1: Box::new(flow_expression_1.hir_from_ast(symbol_table, errors)?),
-            flow_expression_2: Box::new(flow_expression_2.hir_from_ast(symbol_table, errors)?),
+        Ok(HIRFlowExpressionKind::Scan {
+            flow_expression: Box::new(flow_expression.hir_from_ast(symbol_table, errors)?),
+            period_ms: period_ms.base10_parse().unwrap(),
         })
     }
 }
 
-impl Merge {
+impl Timeout {
     /// Transforms AST into HIR and check identifiers good use.
     pub fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<HIRFlowExpressionKind, TerminationError> {
-        let Merge {
-            flow_expression_1,
-            flow_expression_2,
+        let Timeout {
+            flow_expression,
+            deadline,
             ..
         } = self;
-        Ok(HIRFlowExpressionKind::Merge {
-            flow_expression_1: Box::new(flow_expression_1.hir_from_ast(symbol_table, errors)?),
-            flow_expression_2: Box::new(flow_expression_2.hir_from_ast(symbol_table, errors)?),
+        Ok(HIRFlowExpressionKind::Timeout {
+            flow_expression: Box::new(flow_expression.hir_from_ast(symbol_table, errors)?),
+            deadline: deadline.base10_parse().unwrap(),
+        })
+    }
+}
+
+impl Throtle {
+    /// Transforms AST into HIR and check identifiers good use.
+    pub fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<HIRFlowExpressionKind, TerminationError> {
+        let Throtle {
+            flow_expression,
+            delta,
+            ..
+        } = self;
+        Ok(HIRFlowExpressionKind::Throtle {
+            flow_expression: Box::new(flow_expression.hir_from_ast(symbol_table, errors)?),
+            delta,
+        })
+    }
+}
+
+impl OnChange {
+    /// Transforms AST into HIR and check identifiers good use.
+    pub fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<HIRFlowExpressionKind, TerminationError> {
+        let OnChange {
+            flow_expression, ..
+        } = self;
+        Ok(HIRFlowExpressionKind::OnChange {
+            flow_expression: Box::new(flow_expression.hir_from_ast(symbol_table, errors)?),
         })
     }
 }
@@ -311,22 +346,28 @@ impl HIRFromAST for FlowExpression {
     ) -> Result<Self::HIR, TerminationError> {
         let location = Location::default();
         let kind = match self {
-            FlowExpression::Sample(flow_expression) => {
-                flow_expression.hir_from_ast(symbol_table, errors)?
-            }
-            FlowExpression::Merge(flow_expression) => {
-                flow_expression.hir_from_ast(symbol_table, errors)?
-            }
-            FlowExpression::Zip(flow_expression) => {
-                flow_expression.hir_from_ast(symbol_table, errors)?
-            }
-            FlowExpression::ComponentCall(flow_expression) => {
-                flow_expression.hir_from_ast(&location, symbol_table, errors)?
-            }
             FlowExpression::Ident(ident) => {
                 let name = ident.to_string();
                 let id = symbol_table.get_flow_id(&name, false, location.clone(), errors)?;
                 HIRFlowExpressionKind::Ident { id }
+            }
+            FlowExpression::ComponentCall(flow_expression) => {
+                flow_expression.hir_from_ast(&location, symbol_table, errors)?
+            }
+            FlowExpression::Sample(flow_expression) => {
+                flow_expression.hir_from_ast(symbol_table, errors)?
+            }
+            FlowExpression::Scan(flow_expression) => {
+                flow_expression.hir_from_ast(symbol_table, errors)?
+            }
+            FlowExpression::Timeout(flow_expression) => {
+                flow_expression.hir_from_ast(symbol_table, errors)?
+            }
+            FlowExpression::Throtle(flow_expression) => {
+                flow_expression.hir_from_ast(symbol_table, errors)?
+            }
+            FlowExpression::OnChange(flow_expression) => {
+                flow_expression.hir_from_ast(symbol_table, errors)?
             }
         };
         Ok(HIRFlowExpression {
