@@ -73,7 +73,12 @@ fn parse_push_stream_impl(
     let poll_fn = match ty {
         StreamType::Push => quote!(poll_update),
         StreamType::PushTimeout => quote!(poll_timeout),
-        StreamType::None => return Err(syn::Error::new(proc_macro2::Span::call_site(), "[push] or [timeout] should be set")),
+        StreamType::None => {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "[push] or [timeout] should be set",
+            ))
+        }
     };
 
     let stream_impl: TokenStream = quote! {

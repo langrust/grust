@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    frontend::normalizing::normal_form::interface::Interface,
-    hir::{file::File, identifier_creator::IdentifierCreator},
+    hir::{file::File, identifier_creator::IdentifierCreator, interface::Interface},
     symbol_table::SymbolTable,
 };
 

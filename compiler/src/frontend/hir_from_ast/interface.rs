@@ -9,7 +9,7 @@ use crate::hir::{
     flow_expression::{
         FlowExpression as HIRFlowExpression, FlowExpressionKind as HIRFlowExpressionKind,
     },
-    flow_statement::{
+    interface::{
         FlowDeclaration as HIRFlowDeclaration, FlowExport as HIRFlowExport,
         FlowImport as HIRFlowImport, FlowInstanciation as HIRFlowInstanciation,
         FlowStatement as HIRFlowStatement,

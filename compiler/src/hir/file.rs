@@ -1,5 +1,5 @@
 use crate::common::location::Location;
-use crate::hir::{flow_statement::FlowStatement, function::Function, node::Node, typedef::Typedef};
+use crate::hir::{function::Function, interface::FlowStatement, node::Node, typedef::Typedef};
 
 /// A LanGRust [File] is composed of functions, nodes,
 /// types defined by the user, components and interface.

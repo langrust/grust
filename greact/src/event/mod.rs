@@ -2,7 +2,7 @@ use std::time::Duration;
 
 pub use filter::filter;
 pub use fold::fold;
-pub use input::{input_channel, input};
+pub use input::{input, input_channel};
 pub use last_filter::last_filter;
 pub use map::map;
 
