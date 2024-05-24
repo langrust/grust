@@ -26,7 +26,7 @@ where
 {
     type LIR = LIRExpression;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
         match self {
             ExpressionKind::Constant { constant, .. } => {
                 LIRExpression::Literal { literal: constant }
@@ -440,7 +440,7 @@ where
 impl LIRFromHIR for Expression {
     type LIR = LIRExpression;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
         self.kind.lir_from_hir(symbol_table)
     }
     fn get_type(&self) -> Option<&Type> {

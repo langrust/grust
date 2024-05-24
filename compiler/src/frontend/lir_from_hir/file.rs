@@ -9,7 +9,7 @@ use super::LIRFromHIR;
 impl LIRFromHIR for File {
     type LIR = Project;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
         let File {
             typedefs,
             functions,

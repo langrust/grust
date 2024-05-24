@@ -15,7 +15,7 @@ impl Memory {
     /// Get state elements from memory.
     pub fn get_state_elements(
         self,
-        symbol_table: &SymbolTable,
+        symbol_table: &mut SymbolTable,
     ) -> (
         Vec<StateElement>,
         Vec<StateElementInit>,
@@ -36,7 +36,7 @@ impl Memory {
                     expression,
                 },
             )| {
-                let memory_name = symbol_table.get_name(memory_id);
+                let memory_name = symbol_table.get_name(memory_id).clone();
                 elements.push(StateElement::Buffer {
                     identifier: memory_name.clone(),
                     r#type: typing,
@@ -46,7 +46,7 @@ impl Memory {
                     initial_expression: initial_expression.lir_from_hir(symbol_table),
                 });
                 steps.push(StateElementStep {
-                    identifier: memory_name.clone(),
+                    identifier: memory_name,
                     expression: expression.lir_from_hir(symbol_table),
                 });
             },
