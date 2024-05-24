@@ -1,10 +1,20 @@
 use crate::{
     ast::interface::FlowKind,
+    common::r#type::Type,
     hir::{
         flow_expression::FlowExpressionKind,
-        interface::{FlowDeclaration, FlowInstanciation, FlowStatement, Interface},
+        identifier_creator::IdentifierCreator,
+        interface::{
+            FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement, Interface,
+        },
     },
-    lir::item::execution_machine::{signals_context::SignalsContext, ExecutionMachine},
+    lir::item::execution_machine::{
+        service_loop::{
+            FlowHandler, FlowInstruction, InterfaceFlow, ServiceLoop, TimingEvent, TimingEventKind,
+        },
+        signals_context::SignalsContext,
+        ExecutionMachine,
+    },
     symbol_table::SymbolTable,
 };
 
@@ -13,14 +23,14 @@ use super::LIRFromHIR;
 impl LIRFromHIR for Interface {
     type LIR = ExecutionMachine;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
         let signals_context = self.get_signals_context(symbol_table);
 
-        let run_loop = todo!();
+        let services_loops = self.get_services_loops(symbol_table, &signals_context);
 
         ExecutionMachine {
             signals_context,
-            run_loop,
+            services_loops,
         }
     }
 }
@@ -34,6 +44,157 @@ impl Interface {
             statement.add_signals_context(&mut signals_context, symbol_table)
         });
         signals_context
+    }
+    fn get_services_loops(
+        self,
+        symbol_table: &mut SymbolTable,
+        signals_context: &SignalsContext,
+    ) -> Vec<ServiceLoop> {
+        let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
+
+        let Interface {
+            statements,
+            mut graph,
+        } = self;
+
+        // collects components, input flows, output flows, timing events that are present in the service
+        let (components, input_flows, output_flows, timing_events) = statements.iter().fold(
+            (vec![], vec![], vec![], vec![]),
+            |(mut components, mut input_flows, mut output_flows, mut timing_events), statement| {
+                match statement {
+                    FlowStatement::Import(FlowImport {
+                        id,
+                        path,
+                        flow_type,
+                        ..
+                    }) => input_flows.push((
+                        *id,
+                        InterfaceFlow {
+                            path: path.clone(),
+                            identifier: symbol_table.get_name(*id).clone(),
+                            r#type: flow_type.clone(),
+                        },
+                    )),
+                    FlowStatement::Export(FlowExport {
+                        id,
+                        path,
+                        flow_type,
+                        ..
+                    }) => output_flows.push((
+                        *id,
+                        InterfaceFlow {
+                            path: path.clone(),
+                            identifier: symbol_table.get_name(*id).clone(),
+                            r#type: flow_type.clone(),
+                        },
+                    )),
+                    FlowStatement::Declaration(FlowDeclaration {
+                        pattern,
+                        flow_expression,
+                        ..
+                    })
+                    | FlowStatement::Instanciation(FlowInstanciation {
+                        pattern,
+                        flow_expression,
+                        ..
+                    }) => match &flow_expression.kind {
+                        FlowExpressionKind::Ident { .. }
+                        | FlowExpressionKind::Throtle { .. }
+                        | FlowExpressionKind::OnChange { .. } => (),
+                        FlowExpressionKind::Sample { period_ms, .. }
+                        | FlowExpressionKind::Scan { period_ms, .. } => {
+                            // add new timing event into the identifier creator
+                            let fresh_name = identifier_creator.new_identifier(
+                                String::from(""),
+                                String::from("period"),
+                                String::from(""),
+                            );
+                            let typing = Type::Event(Box::new(Type::Unit));
+                            let fresh_id =
+                                symbol_table.insert_fresh_flow(fresh_name.clone(), typing);
+
+                            // get the identifier pf the receiving flow
+                            let mut flows_ids = pattern.identifiers();
+                            assert!(flows_ids.len() == 1);
+                            let flow_id = flows_ids.pop().unwrap();
+
+                            // add timing_event in graph
+                            graph.add_edge(fresh_id, flow_id, FlowKind::Event(Default::default()));
+
+                            // push timing_event
+                            timing_events.push(TimingEvent {
+                                identifier: fresh_name,
+                                kind: TimingEventKind::Period(period_ms.clone()),
+                            })
+                        }
+                        FlowExpressionKind::Timeout { deadline, .. } => {
+                            // add new timing event into the identifier creator
+                            let fresh_name = identifier_creator.new_identifier(
+                                String::from(""),
+                                String::from("timeout"),
+                                String::from(""),
+                            );
+                            let typing = Type::Event(Box::new(Type::Unit));
+                            let fresh_id =
+                                symbol_table.insert_fresh_flow(fresh_name.clone(), typing);
+
+                            // get the identifier pf the receiving flow
+                            let mut flows_ids = pattern.identifiers();
+                            assert!(flows_ids.len() == 1);
+                            let flow_id = flows_ids.pop().unwrap();
+
+                            // add timing_event in graph
+                            graph.add_edge(fresh_id, flow_id, FlowKind::Event(Default::default()));
+
+                            // push timing_event
+                            timing_events.push(TimingEvent {
+                                identifier: fresh_name,
+                                kind: TimingEventKind::Timeout(deadline.clone()),
+                            })
+                        }
+                        FlowExpressionKind::ComponentCall { component_id, .. } => {
+                            // todo: add potential period constrains
+                            components.push(symbol_table.get_name(*component_id).clone())
+                        }
+                    },
+                };
+                (components, input_flows, output_flows, timing_events)
+            },
+        );
+
+        let mut flows_handling = input_flows
+            .iter()
+            .map(|(id, input_flow)| {
+                let InterfaceFlow { identifier, .. } = input_flow;
+
+                let mut instructions = vec![];
+                graph
+                    .edges(*id)
+                    .for_each(|(source_flow, next_flow_statement, edge_kind)| {
+                        let source_name = symbol_table.get_name(source_flow);
+                        if signals_context.elements.contains_key(source_name) {
+                            instructions.push(FlowInstruction::Update(source_name.clone()))
+                        }
+                        todo!()
+                    });
+
+                FlowHandler {
+                    arriving_flow: identifier.clone(),
+                    instructions,
+                }
+            })
+            .collect();
+
+        let service_loop = ServiceLoop {
+            service: String::from("toto"),
+            components,
+            input_flows: input_flows.into_iter().unzip::<_, _, Vec<_>, _>().1,
+            timing_events,
+            output_flows: output_flows.into_iter().unzip::<_, _, Vec<_>, _>().1,
+            flows_handling,
+        };
+
+        vec![service_loop]
     }
 }
 impl FlowStatement {
