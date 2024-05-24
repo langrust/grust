@@ -1,31 +1,10 @@
 use crate::hir::flow_expression::{FlowExpression, FlowExpressionKind};
-use crate::hir::flow_statement::{
+use crate::hir::identifier_creator::IdentifierCreator;
+use crate::hir::interface::{
     FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement,
 };
-use crate::hir::identifier_creator::IdentifierCreator;
 use crate::hir::pattern::{Pattern, PatternKind};
 use crate::symbol_table::SymbolTable;
-
-pub struct Interface<'a>(pub &'a Vec<FlowStatement>);
-impl<'a> Interface<'a> {
-    pub fn get_flows_names(self, symbol_table: &SymbolTable) -> Vec<String> {
-        self.0
-            .iter()
-            .flat_map(|statement| match statement {
-                FlowStatement::Declaration(FlowDeclaration { pattern, .. })
-                | FlowStatement::Instanciation(FlowInstanciation { pattern, .. }) => pattern
-                    .identifiers()
-                    .into_iter()
-                    .map(|id| symbol_table.get_name(id).clone())
-                    .collect(),
-                FlowStatement::Import(FlowImport { id, .. })
-                | FlowStatement::Export(FlowExport { id, .. }) => {
-                    vec![symbol_table.get_name(*id).clone()]
-                }
-            })
-            .collect()
-    }
-}
 
 impl FlowStatement {
     /// Change HIR flow statement into a normal form.

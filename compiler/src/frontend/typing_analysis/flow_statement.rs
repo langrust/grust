@@ -1,7 +1,7 @@
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::flow_statement::{
+use crate::hir::interface::{
     FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement,
 };
 use crate::symbol_table::SymbolTable;
