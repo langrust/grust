@@ -16,23 +16,25 @@ impl TypeAnalysis for FlowStatement {
     ) -> Result<(), TerminationError> {
         match self {
             FlowStatement::Declaration(FlowDeclaration {
-                flow_type,
+                pattern,
                 flow_expression,
                 ..
             }) => {
+                let expected_type = pattern.typing.as_ref().unwrap();
                 flow_expression.typing(symbol_table, errors)?;
                 let expression_type = flow_expression.get_type().unwrap();
-                expression_type.eq_check(flow_type, Location::default(), errors)
+                expression_type.eq_check(expected_type, Location::default(), errors)
             }
             FlowStatement::Instanciation(FlowInstanciation {
-                id,
+                pattern,
                 flow_expression,
                 ..
             }) => {
+                pattern.construct_statement_type(symbol_table, errors)?;
+                let expected_type = pattern.typing.as_ref().unwrap();
                 flow_expression.typing(symbol_table, errors)?;
-                let flow_type = symbol_table.get_type(*id);
                 let expression_type = flow_expression.get_type().unwrap();
-                expression_type.eq_check(flow_type, Location::default(), errors)
+                expression_type.eq_check(expected_type, Location::default(), errors)
             }
             FlowStatement::Import(FlowImport { .. }) => Ok(()),
             FlowStatement::Export(FlowExport { .. }) => Ok(()),

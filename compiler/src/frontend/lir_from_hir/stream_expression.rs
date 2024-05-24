@@ -65,7 +65,9 @@ impl LIRFromHIR for StreamExpression {
                     .flat_map(|(_, expression)| expression.get_imports(symbol_table))
                     .unique()
                     .collect::<Vec<_>>();
-                imports.push(Import::StateMachine(symbol_table.get_name(*node_id).clone()));
+                imports.push(Import::StateMachine(
+                    symbol_table.get_name(*node_id).clone(),
+                ));
                 imports
             }
             StreamExpressionKind::FollowedBy { .. } => unreachable!(),

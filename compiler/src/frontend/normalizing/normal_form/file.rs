@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{hir::file::File, symbol_table::SymbolTable};
+use crate::{
+    frontend::normalizing::normal_form::interface::Interface,
+    hir::{file::File, identifier_creator::IdentifierCreator},
+    symbol_table::SymbolTable,
+};
 
 impl File {
     /// Change HIR file into a normal form.
@@ -8,6 +12,10 @@ impl File {
     /// The normal form of a node is as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
+    ///
+    /// The normal form of a flow expression is as follows:
+    /// - flow expressions others than identifiers are root expression
+    /// - then, arguments are only identifiers
     ///
     /// # Example
     ///
@@ -62,10 +70,21 @@ impl File {
                 nodes_reduced_graphs.insert(node.id.clone(), node.graph.clone());
             debug_assert!(test_first_insert.is_none())
         });
-
+        // normalize nodes
         self.nodes
             .iter_mut()
             .for_each(|node| node.normal_form(&nodes_reduced_graphs, symbol_table));
+
+        // normalize flow expressions
+        let interface = std::mem::take(&mut self.interface);
+        let mut identifier_creator =
+            IdentifierCreator::from(Interface(&interface).get_flows_names(symbol_table));
+        self.interface = interface
+            .into_iter()
+            .flat_map(|flow_statement| {
+                flow_statement.normal_form(&mut identifier_creator, symbol_table)
+            })
+            .collect();
 
         // Debug: test it is in normal form
         debug_assert!(self.is_normal_form());

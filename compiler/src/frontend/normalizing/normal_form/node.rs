@@ -54,7 +54,7 @@ impl Node {
         symbol_table: &mut SymbolTable,
     ) {
         // create an IdentifierCreator and a local SymbolTable
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
         symbol_table.local();
 
         let Node { statements, .. } = self;

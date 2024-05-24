@@ -483,6 +483,17 @@ impl SymbolTable {
             .expect("you should not fail") // todo make it local
     }
 
+    /// Insert fresh flow in symbol table.
+    pub fn insert_fresh_flow(&mut self, fresh_name: String, typing: Type) -> usize {
+        let symbol = Symbol {
+            kind: SymbolKind::Flow { path: None, typing },
+            name: fresh_name,
+        };
+
+        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            .expect("you should not fail") // todo make it local
+    }
+
     /// Restore a local context from identifiers.
     fn restore_context_from<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
         ids.for_each(|id| {

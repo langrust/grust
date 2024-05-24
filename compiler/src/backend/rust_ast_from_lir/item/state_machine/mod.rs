@@ -13,7 +13,8 @@ pub mod state;
 pub fn rust_ast_from_lir(state_machine: StateMachine, crates: &mut BTreeSet<String>) -> Vec<Item> {
     let mut items = vec![];
     let input_structure = input_rust_ast_from_lir(state_machine.input);
-    let (state_structure, state_implementation) = state_rust_ast_from_lir(state_machine.state, crates);
+    let (state_structure, state_implementation) =
+        state_rust_ast_from_lir(state_machine.state, crates);
     items.push(Item::Struct(input_structure));
     items.push(Item::Struct(state_structure));
     items.push(Item::Impl(state_implementation));

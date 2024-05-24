@@ -95,6 +95,7 @@ impl Statement<StreamExpression> {
         };
 
         // recreate the new statement with modified expression
+        // todo: isn't it equal to self?
         let normal_formed_statement = Statement {
             pattern,
             expression,

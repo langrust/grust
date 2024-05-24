@@ -47,8 +47,6 @@ pub enum FlowExpressionKind {
         component_id: usize,
         /// Input expressions.
         inputs: Vec<(usize, FlowExpression)>,
-        /// Identifier to the component output signal to call.
-        signal_id: usize,
     },
 }
 
@@ -61,4 +59,9 @@ pub struct FlowExpression {
     pub typing: Option<Type>,
     /// Flow expression location.
     pub location: Location,
+}
+impl FlowExpression {
+    pub fn get_type(&self) -> Option<&Type> {
+        self.typing.as_ref()
+    }
 }
