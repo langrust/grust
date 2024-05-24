@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use strum::IntoEnumIterator;
 
 use crate::{
+    ast::interface::FlowKind,
     common::{
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
@@ -788,6 +789,21 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { is_component, .. } => *is_component,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Get flow's kind from identifier.
+    pub fn get_flow_kind(&self, id: usize) -> FlowKind {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { typing, .. } => match typing {
+                Type::Signal(_) => FlowKind::Signal(Default::default()),
+                Type::Event(_) => FlowKind::Event(Default::default()),
+                _ => unreachable!(),
+            },
             _ => unreachable!(),
         }
     }
