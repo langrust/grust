@@ -1,5 +1,5 @@
 use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
-use crate::lir::item::execution_machine::flow_run_loop::FlowInstruction;
+use crate::lir::item::execution_machine::service_loop::FlowInstruction;
 use proc_macro2::Span;
 use std::collections::BTreeSet;
 use syn::*;
