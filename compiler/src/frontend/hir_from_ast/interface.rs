@@ -37,6 +37,7 @@ impl HIRFromAST for FlowStatement {
                 flow_expression,
                 semi_token,
             }) => {
+                todo!("kinds should be in the pattern");
                 typed_pattern.store(true, symbol_table, errors)?;
                 let pattern = typed_pattern.hir_from_ast(symbol_table, errors)?;
 

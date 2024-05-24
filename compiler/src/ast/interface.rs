@@ -247,6 +247,7 @@ impl Parse for FlowExpression {
     }
 }
 
+#[derive(Clone)]
 pub enum FlowKind {
     Signal(keyword::signal),
     Event(keyword::event),

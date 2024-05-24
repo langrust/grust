@@ -1,10 +1,21 @@
 use crate::hir::flow_expression::{FlowExpression, FlowExpressionKind};
 use crate::hir::identifier_creator::IdentifierCreator;
-use crate::hir::interface::{
-    FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement,
-};
+use crate::hir::interface::{FlowDeclaration, FlowInstanciation, FlowStatement, Interface};
 use crate::hir::pattern::{Pattern, PatternKind};
 use crate::symbol_table::SymbolTable;
+
+impl Interface {
+    pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
+        let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
+        let statements = std::mem::take(&mut self.statements);
+        self.statements = statements
+            .into_iter()
+            .flat_map(|flow_statement| {
+                flow_statement.normal_form(&mut identifier_creator, symbol_table)
+            })
+            .collect();
+    }
+}
 
 impl FlowStatement {
     /// Change HIR flow statement into a normal form.

@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    hir::{file::File, identifier_creator::IdentifierCreator, interface::Interface},
-    symbol_table::SymbolTable,
-};
+use crate::{hir::file::File, symbol_table::SymbolTable};
 
 impl File {
     /// Change HIR file into a normal form.
@@ -74,16 +71,8 @@ impl File {
             .iter_mut()
             .for_each(|node| node.normal_form(&nodes_reduced_graphs, symbol_table));
 
-        // normalize flow expressions
-        let interface = std::mem::take(&mut self.interface);
-        let mut identifier_creator =
-            IdentifierCreator::from(Interface(&interface).get_flows_names(symbol_table));
-        self.interface = interface
-            .into_iter()
-            .flat_map(|flow_statement| {
-                flow_statement.normal_form(&mut identifier_creator, symbol_table)
-            })
-            .collect();
+        // normalize interface
+        self.interface.normal_form(symbol_table);
 
         // Debug: test it is in normal form
         debug_assert!(self.is_normal_form());

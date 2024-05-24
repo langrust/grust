@@ -34,6 +34,7 @@ impl TypeAnalysis for File {
 
         // typing interface
         interface
+            .statements
             .iter_mut()
             .map(|statement| statement.typing(symbol_table, errors))
             .collect::<Vec<Result<(), TerminationError>>>()
