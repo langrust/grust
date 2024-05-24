@@ -19,7 +19,7 @@ use super::LIRFromHIR;
 impl LIRFromHIR for Node {
     type LIR = StateMachine;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
         let Node {
             id,
             statements,
@@ -29,7 +29,7 @@ impl LIRFromHIR for Node {
         } = self;
 
         // get node name
-        let name = symbol_table.get_name(id);
+        let name = symbol_table.get_name(id).clone();
 
         // get node inputs
         let mut inputs = symbol_table
@@ -140,7 +140,7 @@ impl LIRFromHIR for Node {
                     output_expression,
                 },
                 init: Init {
-                    node_name: name.clone(),
+                    node_name: name,
                     state_elements_init,
                     invariant_initialisation: vec![], // TODO
                 },

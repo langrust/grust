@@ -9,7 +9,7 @@ use super::LIRFromHIR;
 impl LIRFromHIR for Contract {
     type LIR = LIRContract;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
         let Contract {
             requires,
             ensures,
@@ -63,7 +63,7 @@ mod term {
     impl LIRFromHIR for Term {
         type LIR = LIRTerm;
 
-        fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+        fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
             match self.kind {
                 TermKind::Constant { constant } => LIRTerm::Constant { constant },
                 TermKind::Identifier { id } => LIRTerm::Identifier {
