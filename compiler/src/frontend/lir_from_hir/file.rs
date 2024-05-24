@@ -14,6 +14,7 @@ impl LIRFromHIR for File {
             typedefs,
             functions,
             nodes,
+            interface,
             ..
         } = self;
 
@@ -26,16 +27,18 @@ impl LIRFromHIR for File {
             .map(|function| function.lir_from_hir(symbol_table))
             .map(Item::Function)
             .collect();
-        let mut nodes = nodes
+        let mut state_machines = nodes
             .into_iter()
             .map(|node| node.lir_from_hir(symbol_table))
             .map(Item::StateMachine)
             .collect();
+        let execution_machine = interface.lir_from_hir(symbol_table);
 
         let mut items = vec![];
         items.append(&mut typedefs);
         items.append(&mut functions);
-        items.append(&mut nodes);
+        items.append(&mut state_machines);
+        items.push(Item::ExecutionMachine(execution_machine));
 
         Project { items }
     }
