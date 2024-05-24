@@ -33,6 +33,8 @@ pub mod pattern;
 /// LIR type construction from HIR type.
 pub mod r#type;
 
+pub mod interface;
+
 /// HIR transformation into LIR.
 pub trait LIRFromHIR {
     /// Corresponding LIR construct.
