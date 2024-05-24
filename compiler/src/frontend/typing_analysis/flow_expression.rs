@@ -131,8 +131,8 @@ impl TypeAnalysis for FlowExpression {
                 }
             }
             FlowExpressionKind::ComponentCall {
+                ref component_id,
                 ref mut inputs,
-                ref signal_id,
                 ..
             } => {
                 // type all inputs and check their types
@@ -149,10 +149,17 @@ impl TypeAnalysis for FlowExpression {
                     .into_iter()
                     .collect::<Result<(), TerminationError>>()?;
 
-                // get the called signal type
-                let node_application_type = symbol_table.get_type(*signal_id);
+                // get the outputs types fo the called component
+                let node_application_type = symbol_table
+                    .get_node_outputs(*component_id)
+                    .iter()
+                    .map(|(_, output_id)| match symbol_table.get_type(*output_id) {
+                        Type::Option(ty) => Type::Event(ty.clone()),
+                        ty => Type::Signal(Box::new(ty.clone())),
+                    })
+                    .collect();
 
-                self.typing = Some(Type::Signal(Box::new(node_application_type.clone())));
+                self.typing = Some(Type::Tuple(node_application_type));
                 Ok(())
             }
         }

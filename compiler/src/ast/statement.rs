@@ -6,7 +6,7 @@ use crate::ast::{expression::Expression, pattern::Pattern};
 /// GRust declaration AST.
 pub struct LetDeclaration<E> {
     pub let_token: Token![let],
-    /// Pattern of instanciated signals and its type.
+    /// Pattern of instanciated signals and their type.
     pub typed_pattern: Pattern,
     pub eq_token: Token![=],
     /// The stream expression defining the signal.

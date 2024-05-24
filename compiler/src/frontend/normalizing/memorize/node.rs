@@ -40,7 +40,7 @@ impl Node {
     /// ```
     pub fn memorize(&mut self, symbol_table: &mut SymbolTable) {
         // create an IdentifierCreator, a local SymbolTable and Memory
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
         symbol_table.local();
         let mut memory = Memory::new();
 

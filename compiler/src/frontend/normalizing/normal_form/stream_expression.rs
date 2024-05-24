@@ -176,15 +176,15 @@ impl StreamExpression {
                     String::from("x"),
                     String::from(""),
                 );
-                let typing = self.get_type().cloned();
+                let typing = self.get_type();
                 let fresh_id =
-                    symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.clone());
+                    symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.cloned());
 
                 // create statement for the expression
                 let new_statement = Statement {
                     pattern: Pattern {
                         kind: PatternKind::Identifier { id: fresh_id },
-                        typing,
+                        typing: typing.cloned(),
                         location: self.location.clone(),
                     },
                     location: self.location.clone(),

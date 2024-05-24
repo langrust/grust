@@ -22,7 +22,7 @@ impl Node {
     }
 
     /// Return vector of unitary node's signals name.
-    pub fn get_signals_name(&self, symbol_table: &SymbolTable) -> Vec<String> {
+    pub fn get_signals_names(&self, symbol_table: &SymbolTable) -> Vec<String> {
         self.statements
             .iter()
             .flat_map(|statement| statement.get_identifiers())
@@ -54,7 +54,7 @@ impl Node {
         symbol_table: &mut SymbolTable,
     ) {
         // create identifier creator containing the signals
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_name(symbol_table));
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
 
         // compute new statements for the unitary node
         let mut new_statements: Vec<Statement<StreamExpression>> = vec![];

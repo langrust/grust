@@ -1,19 +1,14 @@
 use syn::Token;
 
-use crate::{ast::{interface::FlowKind, keyword}, common::r#type::Type};
+use crate::{ast::keyword, common::r#type::Type};
 
-use super::flow_expression::FlowExpression;
-
+use super::{flow_expression::FlowExpression, pattern::Pattern};
 
 /// Flow statement HIR.
 pub struct FlowDeclaration {
     pub let_token: Token![let],
-    /// Flow's kind.
-    pub kind: FlowKind,
-    /// Identifier of the flow and its type.
-    pub id: usize,
-    pub colon_token: Token![:],
-    pub flow_type: Type,
+    /// Pattern of flows and their types.
+    pub pattern: Pattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: FlowExpression,
@@ -21,8 +16,8 @@ pub struct FlowDeclaration {
 }
 /// Flow statement HIR.
 pub struct FlowInstanciation {
-    /// Identifier of the flow.
-    pub id: usize,
+    /// Pattern of flows and their types.
+    pub pattern: Pattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: FlowExpression,
@@ -31,8 +26,6 @@ pub struct FlowInstanciation {
 /// Flow statement HIR.
 pub struct FlowImport {
     pub import_token: keyword::import,
-    /// Flow's kind.
-    pub kind: FlowKind,
     /// Identifier of the flow and its type.
     pub id: usize,
     pub path: syn::Path,
@@ -43,8 +36,6 @@ pub struct FlowImport {
 /// Flow statement HIR.
 pub struct FlowExport {
     pub export_token: keyword::export,
-    /// Flow's kind.
-    pub kind: FlowKind,
     /// Identifier of the flow and its type.
     pub id: usize,
     pub path: syn::Path,

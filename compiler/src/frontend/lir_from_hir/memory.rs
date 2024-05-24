@@ -91,7 +91,9 @@ impl Memory {
             .called_nodes
             .values()
             .flat_map(|CalledNode { node_id, .. }| {
-                vec![Import::StateMachine(symbol_table.get_name(*node_id).clone())]
+                vec![Import::StateMachine(
+                    symbol_table.get_name(*node_id).clone(),
+                )]
             })
             .unique()
             .collect::<Vec<_>>();
