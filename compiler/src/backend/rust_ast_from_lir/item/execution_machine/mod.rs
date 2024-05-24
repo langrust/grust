@@ -3,8 +3,8 @@ use std::collections::BTreeSet;
 
 use service_loop::rust_ast_from_lir as service_loop_rust_ast_from_lir;
 
-pub mod service_loop;
 pub mod instruction_flow;
+pub mod service_loop;
 
 /// Transform LIR execution-machine into items.
 pub fn rust_ast_from_lir(
