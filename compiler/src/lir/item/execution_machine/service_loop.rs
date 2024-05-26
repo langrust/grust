@@ -1,5 +1,5 @@
+use crate::common::constant::Constant;
 use crate::common::r#type::Type;
-use crate::lir::statement::Statement;
 
 #[derive(Debug, PartialEq)]
 pub struct ServiceLoop {
@@ -50,7 +50,54 @@ pub struct FlowHandler {
 
 #[derive(Debug, PartialEq)]
 pub enum FlowInstruction {
-    Update(String),
-    Send(String),
-    Let(Statement), // todo: ComponentCall, ResetTimer, IfBlock
+    Let(Pattern, Expression),
+    Send(String, Expression),
+    IfThortle(String, String, Constant, Vec<FlowInstruction>),
+    IfChange(String, String, Vec<FlowInstruction>),
+    ResetTimer(String, u64),
+    ComponentCall(String),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Pattern {
+    InContext(String),
+    Identifier(String),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Expression {
+    /// A literal expression: `1` or `"hello world"`.
+    Literal {
+        /// The literal.
+        literal: Constant,
+    },
+    /// An identifier call: `x`.
+    Identifier {
+        /// The identifier.
+        identifier: String,
+    },
+    /// A call from the context: `ctxt.s`.
+    InContext {
+        /// The flow called.
+        flow: String,
+    },
+    /// A call from the context that will take the value: `ctxt.s.take()`.
+    TakeFromContext {
+        /// The flow called.
+        flow: String,
+    },
+    /// Some expression: `Some(v)`.
+    Some {
+        /// The value expression inside.
+        expression: Box<Expression>,
+    },
+    /// Ok expression: `Ok(v)`.
+    Ok {
+        /// The value expression inside.
+        expression: Box<Expression>,
+    },
+    /// None expression: `None`.
+    None,
+    /// Err expression: `Err`.
+    Err,
 }
