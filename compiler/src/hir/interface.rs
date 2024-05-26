@@ -50,6 +50,7 @@ impl Interface {
 }
 
 /// Flow statement HIR.
+#[derive(Clone)]
 pub struct FlowDeclaration {
     pub let_token: Token![let],
     /// Pattern of flows and their types.
@@ -60,6 +61,7 @@ pub struct FlowDeclaration {
     pub semi_token: Token![;],
 }
 /// Flow statement HIR.
+#[derive(Clone)]
 pub struct FlowInstanciation {
     /// Pattern of flows and their types.
     pub pattern: Pattern,
@@ -69,6 +71,7 @@ pub struct FlowInstanciation {
     pub semi_token: Token![;],
 }
 /// Flow statement HIR.
+#[derive(Clone)]
 pub struct FlowImport {
     pub import_token: keyword::import,
     /// Identifier of the flow and its type.
@@ -79,6 +82,7 @@ pub struct FlowImport {
     pub semi_token: Token![;],
 }
 /// Flow statement HIR.
+#[derive(Clone)]
 pub struct FlowExport {
     pub export_token: keyword::export,
     /// Identifier of the flow and its type.
@@ -89,6 +93,7 @@ pub struct FlowExport {
     pub semi_token: Token![;],
 }
 
+#[derive(Clone)]
 pub enum FlowStatement {
     Declaration(FlowDeclaration),
     Instanciation(FlowInstanciation),

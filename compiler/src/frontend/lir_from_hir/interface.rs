@@ -1,3 +1,11 @@
+use std::collections::HashMap;
+
+use petgraph::{
+    algo::toposort,
+    graphmap::DiGraphMap,
+    visit::{depth_first_search, DfsEvent},
+};
+
 use crate::{
     ast::interface::FlowKind,
     common::r#type::Type,
@@ -58,46 +66,57 @@ impl Interface {
         } = self;
 
         // collects components, input flows, output flows, timing events that are present in the service
-        let (components, input_flows, output_flows, timing_events) = statements.iter().fold(
-            (vec![], vec![], vec![], vec![]),
-            |(mut components, mut input_flows, mut output_flows, mut timing_events), statement| {
-                match statement {
-                    FlowStatement::Import(FlowImport {
-                        id,
-                        path,
-                        flow_type,
-                        ..
-                    }) => input_flows.push((
+        let (mut components, mut input_flows, mut output_flows, mut timing_events) =
+            (vec![], vec![], vec![], vec![]);
+        let mut hash_statements = HashMap::new();
+        statements.into_iter().for_each(|statement| {
+            match &statement {
+                FlowStatement::Import(FlowImport {
+                    id,
+                    path,
+                    flow_type,
+                    ..
+                }) => {
+                    input_flows.push((
                         *id,
                         InterfaceFlow {
                             path: path.clone(),
                             identifier: symbol_table.get_name(*id).clone(),
                             r#type: flow_type.clone(),
                         },
-                    )),
-                    FlowStatement::Export(FlowExport {
-                        id,
-                        path,
-                        flow_type,
-                        ..
-                    }) => output_flows.push((
+                    ));
+                    hash_statements.insert(*id, statement);
+                }
+                FlowStatement::Export(FlowExport {
+                    id,
+                    path,
+                    flow_type,
+                    ..
+                }) => {
+                    output_flows.push((
                         *id,
                         InterfaceFlow {
                             path: path.clone(),
                             identifier: symbol_table.get_name(*id).clone(),
                             r#type: flow_type.clone(),
                         },
-                    )),
-                    FlowStatement::Declaration(FlowDeclaration {
-                        pattern,
-                        flow_expression,
-                        ..
-                    })
-                    | FlowStatement::Instanciation(FlowInstanciation {
-                        pattern,
-                        flow_expression,
-                        ..
-                    }) => match &flow_expression.kind {
+                    ))
+                    // do not put export statements in hash because already in instanciation
+                }
+                FlowStatement::Declaration(FlowDeclaration {
+                    pattern,
+                    flow_expression,
+                    ..
+                })
+                | FlowStatement::Instanciation(FlowInstanciation {
+                    pattern,
+                    flow_expression,
+                    ..
+                }) => {
+                    pattern.identifiers().into_iter().for_each(|id| {
+                        hash_statements.insert(id, statement.clone());
+                    });
+                    match flow_expression.kind {
                         FlowExpressionKind::Ident { .. }
                         | FlowExpressionKind::Throtle { .. }
                         | FlowExpressionKind::OnChange { .. } => (),
@@ -154,29 +173,63 @@ impl Interface {
                         }
                         FlowExpressionKind::ComponentCall { component_id, .. } => {
                             // todo: add potential period constrains
-                            components.push(symbol_table.get_name(*component_id).clone())
+                            components.push(symbol_table.get_name(component_id).clone())
                         }
-                    },
-                };
-                (components, input_flows, output_flows, timing_events)
-            },
-        );
+                    }
+                }
+            };
+        });
 
         let mut flows_handling = input_flows
             .iter()
             .map(|(id, input_flow)| {
                 let InterfaceFlow { identifier, .. } = input_flow;
-
                 let mut instructions = vec![];
-                graph
-                    .edges(*id)
-                    .for_each(|(source_flow, next_flow_statement, edge_kind)| {
-                        let source_name = symbol_table.get_name(source_flow);
-                        if signals_context.elements.contains_key(source_name) {
-                            instructions.push(FlowInstruction::Update(source_name.clone()))
+
+                // construct subgraph starting from the input flow
+                let mut subgraph = DiGraphMap::new();
+                depth_first_search(&graph, Some(*id), |event| {
+                    use DfsEvent::*;
+                    match event {
+                        CrossForwardEdge(parent, child)
+                        | BackEdge(parent, child)
+                        | TreeEdge(parent, child) => {
+                            let weight = graph
+                                .edge_weight(parent, child)
+                                .expect("there must be an edge")
+                                .clone();
+                            subgraph.add_edge(parent, child, weight);
                         }
-                        todo!()
-                    });
+                        Discover(_, _) | Finish(_, _) => {}
+                    }
+                });
+                // sort statement in dependency order
+                let ordered_flow_statements = toposort(&subgraph, None).expect("should succeed");
+
+                ordered_flow_statements.into_iter().for_each(|id| {
+                    // get flow statement related to id
+                    let flow_statement = hash_statements.get(&id).expect("should be there");
+                    // add instructions related to the nature of the statement (see the draft)
+                    match flow_statement {
+                        FlowStatement::Declaration(FlowDeclaration {
+                            pattern,
+                            flow_expression,
+                            ..
+                        }) => todo!(),
+                        FlowStatement::Instanciation(FlowInstanciation {
+                            pattern,
+                            flow_expression,
+                            ..
+                        }) => todo!(),
+                        FlowStatement::Import(_) => (), // nothing to do
+                        FlowStatement::Export(_) => unreachable!(),
+                    }
+                    let source_name = symbol_table.get_name(id);
+                    if signals_context.elements.contains_key(source_name) {
+                        instructions.push(FlowInstruction::Update(source_name.clone()))
+                    }
+                    todo!()
+                });
 
                 FlowHandler {
                     arriving_flow: identifier.clone(),
