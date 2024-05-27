@@ -49,7 +49,7 @@ pub enum SymbolKind {
         /// Node's local identifiers.
         locals: HashMap<String, usize>,
         /// Node's period of execution.
-        period: Option<usize>,
+        period: Option<u64>,
     },
     /// Structure kind.
     Structure {
@@ -381,7 +381,7 @@ impl SymbolTable {
         inputs: Vec<usize>,
         outputs: Vec<(String, usize)>,
         locals: HashMap<String, usize>,
-        period: Option<usize>,
+        period: Option<u64>,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
@@ -772,7 +772,7 @@ impl SymbolTable {
     }
 
     /// Get node period from identifier.
-    pub fn get_node_period(&self, id: usize) -> Option<usize> {
+    pub fn get_node_period(&self, id: usize) -> Option<u64> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
