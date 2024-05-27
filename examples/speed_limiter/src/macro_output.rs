@@ -344,11 +344,6 @@ pub async fn run_toto_loop(
 ) -> () {
     let context = Context::init();
     loop {
-        tokio::select! {
-            activation = activation_channel.recv() => {} set_speed =
-            set_speed_channel.recv() => {} speed = speed_channel.recv() => {}
-            vacuum_brake = vacuum_brake_channel.recv() => {} kickdown =
-            kickdown_channel.recv() => {} vdc = vdc_channel.recv() => {}
-        }
+        tokio::select! {activation = activation_channel . recv () => {} set_speed = set_speed_channel . recv () => {} speed = speed_channel . recv () => {} vacuum_brake = vacuum_brake_channel . recv () => {} kickdown = kickdown_channel . recv () => {} vdc = vdc_channel . recv () => {}}
     }
 }
