@@ -17,7 +17,7 @@ pub fn rust_ast_from_lir(structure: Structure) -> ItemStruct {
         }
     });
     let name = Ident::new(&structure.name, Span::call_site());
-    parse_quote! { #[derive(Clone, Copy, Debug, PartialEq)] pub struct #name { #(#fields),* } }
+    parse_quote! { #[derive(Clone, Copy, Debug, PartialEq, Default)] pub struct #name { #(#fields),* } }
 }
 
 #[cfg(test)]
