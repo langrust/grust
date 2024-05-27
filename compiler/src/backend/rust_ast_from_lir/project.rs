@@ -20,7 +20,7 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
 
     project.items.into_iter().for_each(|item| match item {
         Item::ExecutionMachine(execution_machine) => {
-            let mut items = execution_machine_rust_ast_from_lir(execution_machine, &mut crates);
+            let mut items = execution_machine_rust_ast_from_lir(execution_machine);
             rust_items.append(&mut items);
         }
         Item::StateMachine(state_machine) => {

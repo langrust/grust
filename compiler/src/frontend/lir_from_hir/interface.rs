@@ -32,8 +32,11 @@ use super::LIRFromHIR;
 
 impl Interface {
     pub fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
-        let mut signals_context = self.get_signals_context(symbol_table);
+        if self.statements.is_empty() {
+            return Default::default();
+        }
 
+        let mut signals_context = self.get_signals_context(symbol_table);
         let services_loops = self.get_services_loops(symbol_table, &mut signals_context);
 
         ExecutionMachine {

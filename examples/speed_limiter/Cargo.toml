@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 grust = { path = "../../grust" }
+tokio = "1.37.0"
