@@ -66,3 +66,10 @@ impl AutomatonState {
         o
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
+pub struct Context {}
+impl Context {
+    fn init() -> Context {
+        Default::default()
+    }
+}

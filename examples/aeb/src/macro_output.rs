@@ -1,11 +1,18 @@
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
+pub struct Context {}
+impl Context {
+    fn init() -> Context {
+        Default::default()
+    }
+}
 pub async fn run_toto_loop(
-    collision_collection_channel: tokio::sync::mpsc::Receiver<i64>,
-    maneuver_acknoledgement_channel: tokio::sync::mpsc::Receiver<i64>,
-    vehicle_data_channel: tokio::sync::mpsc::Receiver<i64>,
-    nvm_inp_channel: tokio::sync::mpsc::Receiver<i64>,
-    cam_obj_info_channel: tokio::sync::mpsc::Receiver<i64>,
-    fused_context_data_channel: tokio::sync::mpsc::Receiver<i64>,
-    common_variant_mngt_channel: tokio::sync::mpsc::Receiver<i64>,
+    mut collision_collection_channel: tokio::sync::mpsc::Receiver<i64>,
+    mut maneuver_acknoledgement_channel: tokio::sync::mpsc::Receiver<i64>,
+    mut vehicle_data_channel: tokio::sync::mpsc::Receiver<i64>,
+    mut nvm_inp_channel: tokio::sync::mpsc::Receiver<i64>,
+    mut cam_obj_info_channel: tokio::sync::mpsc::Receiver<i64>,
+    mut fused_context_data_channel: tokio::sync::mpsc::Receiver<i64>,
+    mut common_variant_mngt_channel: tokio::sync::mpsc::Receiver<i64>,
 ) -> () {
     let context = Context::init();
     loop {

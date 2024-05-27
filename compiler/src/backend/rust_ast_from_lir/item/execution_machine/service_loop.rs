@@ -32,7 +32,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
             let ty = type_rust_ast_from_lir(r#type);
             inputs.push(FnArg::Typed(PatType {
                 attrs: vec![],
-                pat: parse_quote!(#name),
+                pat: parse_quote!(mut #name),
                 colon_token: Default::default(),
                 ty: Box::new(parse_quote!(tokio::sync::mpsc::Receiver<#ty>)),
             }));

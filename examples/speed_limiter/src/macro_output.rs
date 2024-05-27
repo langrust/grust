@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Hysterisis {
     pub value: f64,
     pub flag: bool,
@@ -327,13 +327,20 @@ impl SpeedLimiterState {
         (state, on_state, in_regulation, state_update)
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
+pub struct Context {}
+impl Context {
+    fn init() -> Context {
+        Default::default()
+    }
+}
 pub async fn run_toto_loop(
-    activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
-    set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
-    speed_channel: tokio::sync::mpsc::Receiver<f64>,
-    vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
-    kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
-    vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+    mut activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
+    mut set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
+    mut speed_channel: tokio::sync::mpsc::Receiver<f64>,
+    mut vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
+    mut kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
+    mut vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
 ) -> () {
     let context = Context::init();
     loop {
