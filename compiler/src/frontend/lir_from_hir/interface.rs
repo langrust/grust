@@ -390,8 +390,9 @@ fn compute_flow_instructions(
                     if let Some(event_id) = overlapping_events.next() {
                         // call component with the event
                         instructions.push(FlowInstruction::ComponentCall(
+                            // todo: add outputs
                             component_name.clone(),
-                            Some(symbol_table.get_name(*event_id).clone()),
+                            Some(symbol_table.get_name(*event_id).clone()), // todo: if timing event then it is None
                         ));
                         // update output signals
                         for output_id in outputs_ids.iter() {
