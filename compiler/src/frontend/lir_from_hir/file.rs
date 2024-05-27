@@ -6,10 +6,8 @@ use crate::{
 
 use super::LIRFromHIR;
 
-impl LIRFromHIR for File {
-    type LIR = Project;
-
-    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
+impl File {
+    pub fn lir_from_hir(self, mut symbol_table: SymbolTable) -> Project {
         let File {
             typedefs,
             functions,
@@ -20,19 +18,19 @@ impl LIRFromHIR for File {
 
         let mut typedefs = typedefs
             .into_iter()
-            .map(|typedef| typedef.lir_from_hir(symbol_table))
+            .map(|typedef| typedef.lir_from_hir(&symbol_table))
             .collect();
         let mut functions = functions
             .into_iter()
-            .map(|function| function.lir_from_hir(symbol_table))
+            .map(|function| function.lir_from_hir(&symbol_table))
             .map(Item::Function)
             .collect();
         let mut state_machines = nodes
             .into_iter()
-            .map(|node| node.lir_from_hir(symbol_table))
+            .map(|node| node.lir_from_hir(&symbol_table))
             .map(Item::StateMachine)
             .collect();
-        let execution_machine = interface.lir_from_hir(symbol_table);
+        let execution_machine = interface.lir_from_hir(&mut symbol_table);
 
         let mut items = vec![];
         items.append(&mut typedefs);

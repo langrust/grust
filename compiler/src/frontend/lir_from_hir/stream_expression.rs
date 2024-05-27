@@ -12,7 +12,7 @@ use super::LIRFromHIR;
 impl LIRFromHIR for StreamExpression {
     type LIR = LIRExpression;
 
-    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         match self.kind {
             StreamExpressionKind::NodeApplication {
                 node_id, inputs, ..

@@ -30,10 +30,8 @@ use crate::{
 
 use super::LIRFromHIR;
 
-impl LIRFromHIR for Interface {
-    type LIR = ExecutionMachine;
-
-    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
+impl Interface {
+    pub fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
         let mut signals_context = self.get_signals_context(symbol_table);
 
         let services_loops = self.get_services_loops(symbol_table, &mut signals_context);
@@ -390,7 +388,7 @@ fn compute_flow_instructions(
                     if let Some(event_id) = overlapping_events.next() {
                         // call component with the event
                         instructions.push(FlowInstruction::ComponentCall(
-                            // todo: add outputs
+                            pattern.clone().lir_from_hir(symbol_table),
                             component_name.clone(),
                             Some(symbol_table.get_name(*event_id).clone()), // todo: if timing event then it is None
                         ));

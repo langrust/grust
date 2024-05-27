@@ -15,7 +15,7 @@ impl Memory {
     /// Get state elements from memory.
     pub fn get_state_elements(
         self,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &SymbolTable,
     ) -> (
         Vec<StateElement>,
         Vec<StateElementInit>,

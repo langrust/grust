@@ -41,7 +41,7 @@ pub trait LIRFromHIR {
     type LIR;
 
     /// Transforms HIR into LIR.
-    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR;
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR;
 
     /// Get type from LIR.
     fn get_type(&self) -> Option<&Type> {
