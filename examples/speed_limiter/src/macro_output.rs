@@ -327,3 +327,21 @@ impl SpeedLimiterState {
         (state, on_state, in_regulation, state_update)
     }
 }
+pub async fn run_toto_loop(
+    activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
+    set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
+    speed_channel: tokio::sync::mpsc::Receiver<f64>,
+    vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
+    kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
+    vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+) -> () {
+    let context = Context::init();
+    loop {
+        tokio::select! {
+            activation = activation_channel.recv() => {} set_speed =
+            set_speed_channel.recv() => {} speed = speed_channel.recv() => {}
+            vacuum_brake = vacuum_brake_channel.recv() => {} kickdown =
+            kickdown_channel.recv() => {} vdc = vdc_channel.recv() => {}
+        }
+    }
+}
