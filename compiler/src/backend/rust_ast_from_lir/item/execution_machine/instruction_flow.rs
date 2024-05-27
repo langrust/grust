@@ -24,8 +24,8 @@ pub fn rust_ast_from_lir(
         }
         FlowInstruction::Let(Pattern::Identifier(_), _) => todo!(),
         FlowInstruction::IfThortle(_, _, _, _) => todo!(),
-        FlowInstruction::IfChange(_, _, _) => todo!(),
+        FlowInstruction::IfChange(_, _, _, _) => todo!(),
         FlowInstruction::ResetTimer(_, _) => todo!(),
-        FlowInstruction::ComponentCall(_) => todo!(),
+        FlowInstruction::ComponentCall(_, _) => todo!(),
     }
 }

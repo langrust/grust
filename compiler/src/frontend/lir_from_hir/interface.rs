@@ -120,10 +120,10 @@ impl Interface {
                     });
                     match &flow_expression.kind {
                         FlowExpressionKind::Ident { .. } | FlowExpressionKind::Throtle { .. } => (),
-                        FlowExpressionKind::OnChange { flow_expression } => {
+                        FlowExpressionKind::OnChange { .. } => {
                             // get the identifier of the created event
                             let mut ids = pattern.identifiers();
-                            assert!(ids.len() == 1);
+                            debug_assert!(ids.len() == 1);
                             let event_id = ids.pop().unwrap();
                             let event_name = symbol_table.get_name(event_id).clone();
 
@@ -157,7 +157,7 @@ impl Interface {
 
                             // get the identifier of the receiving flow
                             let mut flows_ids = pattern.identifiers();
-                            assert!(flows_ids.len() == 1);
+                            debug_assert!(flows_ids.len() == 1);
                             let flow_id = flows_ids.pop().unwrap();
 
                             // add timing_event in graph
@@ -188,7 +188,7 @@ impl Interface {
 
                             // get the identifier of the receiving flow
                             let mut flows_ids = pattern.identifiers();
-                            assert!(flows_ids.len() == 1);
+                            debug_assert!(flows_ids.len() == 1);
                             let flow_id = flows_ids.pop().unwrap();
 
                             // add timing_event in graph
@@ -224,11 +224,16 @@ impl Interface {
                 let subgraph = construct_subgraph_from_source(*id, &graph);
                 // sort statement in dependency order
                 let ordered_flow_statements = toposort(&subgraph, None).expect("should succeed");
-
-                let instructions = compute_flow_instructions_from_ordered_flow_statements(
+                // if input flow is an event then store its identifier
+                let encountered_event = match symbol_table.get_flow_kind(*id) {
+                    FlowKind::Signal(_) => None,
+                    FlowKind::Event(_) => Some(*id),
+                };
+                let instructions = compute_flow_instructions_from_inputs_flows(
                     &hash_statements,
                     &on_change_events,
                     &timing_events,
+                    encountered_event,
                     ordered_flow_statements,
                     signals_context,
                     symbol_table,
@@ -244,136 +249,21 @@ impl Interface {
             .iter()
             .map(|(_, (timing_id, timing_event))| {
                 let TimingEvent { identifier, .. } = timing_event;
-                let mut instructions = vec![];
 
-                // construct subgraph starting from the timing flow
-                let mut subgraph = DiGraphMap::new();
-                depth_first_search(&graph, Some(*timing_id), |event| {
-                    use DfsEvent::*;
-                    match event {
-                        CrossForwardEdge(parent, child)
-                        | BackEdge(parent, child)
-                        | TreeEdge(parent, child) => {
-                            let weight = graph
-                                .edge_weight(parent, child)
-                                .expect("there must be an edge")
-                                .clone();
-                            subgraph.add_edge(parent, child, weight);
-                        }
-                        Discover(_, _) | Finish(_, _) => {}
-                    }
-                });
+                // construct subgraph starting from the input flow
+                let subgraph = construct_subgraph_from_source(*timing_id, &graph);
                 // sort statement in dependency order
                 let ordered_flow_statements = toposort(&subgraph, None).expect("should succeed");
-
-                // push instructions in order
-                ordered_flow_statements.into_iter().for_each(|id| {
-                    // get flow statement related to id (if it exists)
-                    if let Some(flow_statement) = hash_statements.get(&id) {
-                        // add instructions related to the nature of the statement (see the draft)
-                        match flow_statement {
-                            FlowStatement::Declaration(FlowDeclaration {
-                                pattern,
-                                flow_expression,
-                                ..
-                            })
-                            | FlowStatement::Instanciation(FlowInstanciation {
-                                pattern,
-                                flow_expression,
-                                ..
-                            }) => match &flow_expression.kind {
-                                FlowExpressionKind::Ident { .. }
-                                | FlowExpressionKind::Throtle { .. }
-                                | FlowExpressionKind::OnChange { .. } => (),
-                                FlowExpressionKind::Sample {
-                                    flow_expression, ..
-                                } => {
-                                    // get the id of pattern's flow (and check their is only one flow)
-                                    let mut ids = pattern.identifiers();
-                                    assert!(ids.len() == 1);
-                                    let id_pattern = ids.pop().unwrap();
-
-                                    // get the id of flow_expression (and check their is only one flow)
-                                    let mut ids = flow_expression.get_dependencies();
-                                    assert!(ids.len() == 1);
-                                    let id_source = ids.pop().unwrap();
-
-                                    // update created signal
-                                    instructions.push(FlowInstruction::Let(
-                                        Pattern::Identifier(
-                                            symbol_table.get_name(id_pattern).clone(),
-                                        ),
-                                        Expression::TakeFromContext {
-                                            flow: symbol_table.get_name(id_source).clone(),
-                                        },
-                                    ))
-                                }
-                                FlowExpressionKind::Scan {
-                                    flow_expression, ..
-                                } => {
-                                    // get the id of pattern's flow (and check their is only one flow)
-                                    let mut ids = pattern.identifiers();
-                                    assert!(ids.len() == 1);
-                                    let id_pattern = ids.pop().unwrap();
-
-                                    // get the id of flow_expression (and check their is only one flow)
-                                    let mut ids = flow_expression.get_dependencies();
-                                    assert!(ids.len() == 1);
-                                    let id_source = ids.pop().unwrap();
-
-                                    // update created signal
-                                    instructions.push(FlowInstruction::Let(
-                                        Pattern::Identifier(
-                                            symbol_table.get_name(id_pattern).clone(),
-                                        ),
-                                        Expression::InContext {
-                                            flow: symbol_table.get_name(id_source).clone(),
-                                        },
-                                    ))
-                                }
-                                FlowExpressionKind::Timeout { deadline, .. } => {
-                                    // get the id of pattern's flow (and check their is only one flow)
-                                    let mut ids = pattern.identifiers();
-                                    assert!(ids.len() == 1);
-                                    let id_pattern = ids.pop().unwrap();
-
-                                    // create event
-                                    instructions.push(FlowInstruction::Let(
-                                        Pattern::Identifier(
-                                            symbol_table.get_name(id_pattern).clone(),
-                                        ),
-                                        Expression::Err,
-                                    ));
-                                    // add reset timer
-                                    let timer_name = timing_events
-                                        .get(&id_pattern)
-                                        .expect("there should be a timing event")
-                                        .1
-                                        .identifier
-                                        .clone();
-                                    instructions
-                                        .push(FlowInstruction::ResetTimer(timer_name, *deadline));
-                                }
-                                FlowExpressionKind::ComponentCall { .. } => {
-                                    // todo add period call
-                                }
-                            },
-                            FlowStatement::Import(FlowImport { id, .. }) => {
-                                // add a flow update if it is in the context
-                                let flow_name = symbol_table.get_name(*id);
-                                if signals_context.elements.contains_key(flow_name) {
-                                    instructions.push(FlowInstruction::Let(
-                                        Pattern::InContext(flow_name.clone()),
-                                        Expression::Identifier {
-                                            identifier: flow_name.clone(),
-                                        },
-                                    ))
-                                }
-                            }
-                            FlowStatement::Export(_) => unreachable!(),
-                        }
-                    }
-                });
+                // if input flow is an event then store its identifier
+                let encountered_event = Some(*timing_id);
+                let instructions = compute_flow_instructions_from_timing_events(
+                    &hash_statements,
+                    &timing_events,
+                    encountered_event,
+                    ordered_flow_statements,
+                    signals_context,
+                    symbol_table,
+                );
 
                 FlowHandler {
                     arriving_flow: identifier.clone(),
@@ -418,10 +308,11 @@ fn construct_subgraph_from_source(
     subgraph
 }
 
-fn compute_flow_instructions_from_ordered_flow_statements(
+fn compute_flow_instructions_from_inputs_flows(
     statements: &HashMap<usize, FlowStatement>,
     on_change_events: &HashMap<usize, usize>,
     timing_events: &HashMap<usize, (usize, TimingEvent)>,
+    mut encountered_event: Option<usize>,
     mut ordered_flow_statements: Vec<usize>,
     signals_context: &SignalsContext,
     symbol_table: &SymbolTable,
@@ -431,9 +322,9 @@ fn compute_flow_instructions_from_ordered_flow_statements(
     // push instructions in right order
     while !ordered_flow_statements.is_empty() {
         // get the next flow statement to transform
-        let id = ordered_flow_statements.pop().unwrap();
+        let ordered_flow_id = ordered_flow_statements.pop().unwrap();
         // get flow statement related to id
-        let flow_statement = statements.get(&id).expect("should be there");
+        let flow_statement = statements.get(&ordered_flow_id).expect("should be there");
 
         // add instructions related to the nature of the statement (see the draft)
         match flow_statement {
@@ -446,164 +337,209 @@ fn compute_flow_instructions_from_ordered_flow_statements(
                 pattern,
                 flow_expression,
                 ..
-            }) => match &flow_expression.kind {
-                FlowExpressionKind::Ident { id } => {
+            }) => {
+                if let FlowExpressionKind::ComponentCall { component_id, .. } =
+                    &flow_expression.kind
+                {
+                    let component_name = symbol_table.get_name(*component_id);
+                    if let Some(event_id) = encountered_event {
+                        let event_input = flow_expression.get_dependencies().contains(&event_id);
+                        // if one of its input is the encountered event
+                        // then put it in the component call
+                        if event_input {
+                            instructions.push(FlowInstruction::ComponentCall(
+                                component_name.clone(),
+                                Some(symbol_table.get_name(event_id).clone()),
+                            ))
+                        }
+                    }
+                    // if no event input is activated, do nothing
+                    // todo: is it true?
+                } else {
                     // get the id of pattern's flow (and check their is only one flow)
                     let mut ids = pattern.identifiers();
-                    assert!(ids.len() == 1);
-                    let id_pattern = ids.pop().unwrap();
-
-                    instructions.push(FlowInstruction::Let(
-                        Pattern::Identifier(symbol_table.get_name(id_pattern).clone()),
-                        Expression::Identifier {
-                            identifier: symbol_table.get_name(*id).clone(),
-                        },
-                    ));
-                }
-                FlowExpressionKind::Sample {
-                    flow_expression, ..
-                } => {
-                    // get the id of pattern's flow (and check their is only one flow)
-                    let mut ids = pattern.identifiers();
-                    assert!(ids.len() == 1);
+                    debug_assert!(ids.len() == 1);
                     let id_pattern = ids.pop().unwrap();
 
                     // get the id of flow_expression (and check their is only one flow)
                     let mut ids = flow_expression.get_dependencies();
-                    assert!(ids.len() == 1);
+                    debug_assert!(ids.len() == 1);
                     let id_source = ids.pop().unwrap();
 
                     let flow_name = symbol_table.get_name(id_pattern);
                     let source_name = symbol_table.get_name(id_source);
 
-                    // set the signal's statement
-                    instructions.push(FlowInstruction::Let(
-                        Pattern::Identifier(flow_name.clone()),
-                        Expression::Some {
-                            expression: Box::new(Expression::Identifier {
-                                identifier: source_name.clone(),
-                            }),
-                        },
-                    ))
-                }
-                FlowExpressionKind::Throtle {
-                    flow_expression,
-                    delta,
-                } => {
-                    // get the id of pattern's flow (and check their is only one flow)
-                    let mut ids = pattern.identifiers();
-                    assert!(ids.len() == 1);
-                    let id_pattern = ids.pop().unwrap();
+                    match &flow_expression.kind {
+                        FlowExpressionKind::Ident { .. } => {
+                            // only set identifier if source is a signal or an activated event
+                            match symbol_table.get_flow_kind(id_source) {
+                                FlowKind::Signal(_) =>
+                                // set the signal's statement
+                                {
+                                    instructions.push(FlowInstruction::Let(
+                                        Pattern::Identifier(flow_name.clone()),
+                                        Expression::Identifier {
+                                            identifier: source_name.clone(),
+                                        },
+                                    ))
+                                }
+                                FlowKind::Event(_) => {
+                                    // if source is an event, look if it is activated
+                                    if let Some(event_id) = encountered_event {
+                                        if event_id == id_source {
+                                            // if activated, then rename the encountered_event
+                                            // and add the 'let' instruction
+                                            encountered_event = Some(id_pattern);
+                                            instructions.push(FlowInstruction::Let(
+                                                Pattern::Identifier(flow_name.clone()),
+                                                Expression::Identifier {
+                                                    identifier: source_name.clone(),
+                                                },
+                                            ))
+                                        }
+                                    }
+                                    // if not activated, do nothing
+                                }
+                            }
+                        }
+                        FlowExpressionKind::Sample { .. } => {
+                            // source is an event, look if it is activated
+                            if let Some(event_id) = encountered_event {
+                                if event_id == id_source {
+                                    // if activated, set the signal's statement
+                                    instructions.push(FlowInstruction::Let(
+                                        Pattern::Identifier(source_name.clone()),
+                                        Expression::Some {
+                                            expression: Box::new(Expression::Identifier {
+                                                identifier: source_name.clone(),
+                                            }),
+                                        },
+                                    ))
+                                }
+                            }
+                            // if not activated, do nothing
+                        }
+                        FlowExpressionKind::Throtle { delta, .. } => {
+                            // update created signal
+                            instructions.push(FlowInstruction::IfThortle(
+                                flow_name.clone(),
+                                source_name.clone(),
+                                delta.clone(),
+                                Box::new(FlowInstruction::Let(
+                                    Pattern::InContext(flow_name.clone()),
+                                    Expression::Identifier {
+                                        identifier: source_name.clone(),
+                                    },
+                                )),
+                            ));
 
-                    // get the id of flow_expression (and check their is only one flow)
-                    let mut ids = flow_expression.get_dependencies();
-                    assert!(ids.len() == 1);
-                    let id_source = ids.pop().unwrap();
-
-                    let flow_name = symbol_table.get_name(id_pattern);
-                    let source_name = symbol_table.get_name(id_source);
-
-                    // update created signal
-                    instructions.push(FlowInstruction::IfThortle(
-                        flow_name.clone(),
-                        source_name.clone(),
-                        delta.clone(),
-                        vec![FlowInstruction::Let(
-                            Pattern::InContext(flow_name.clone()),
-                            Expression::Identifier {
-                                identifier: source_name.clone(),
-                            },
-                        )],
-                    ));
-
-                    // set the signal's statement
-                    instructions.push(FlowInstruction::Let(
-                        Pattern::Identifier(flow_name.clone()),
-                        Expression::InContext {
-                            flow: flow_name.clone(),
-                        },
-                    ));
-                }
-                FlowExpressionKind::OnChange { flow_expression } => {
-                    // get the id of pattern's flow (and check their is only one flow)
-                    let mut ids = pattern.identifiers();
-                    assert!(ids.len() == 1);
-                    let id_pattern = ids.pop().unwrap();
-
-                    // get the id of the pervious event
-                    let id_old_event = on_change_events.get(&id_pattern).expect("should be there");
-
-                    // get the id of flow_expression (and check their is only one flow)
-                    let mut ids = flow_expression.get_dependencies();
-                    assert!(ids.len() == 1);
-                    let id_source = ids.pop().unwrap();
-
-                    let old_event_name = symbol_table.get_name(*id_old_event);
-                    let source_name = symbol_table.get_name(id_source);
-
-                    // create event
-                    instructions.push(FlowInstruction::IfChange(
-                        old_event_name.clone(),
-                        source_name.clone(),
-                        vec![
-                            FlowInstruction::Let(
-                                Pattern::Identifier(symbol_table.get_name(id_pattern).clone()),
-                                Expression::Identifier {
-                                    identifier: source_name.clone(),
+                            // set the signal's statement
+                            instructions.push(FlowInstruction::Let(
+                                Pattern::Identifier(flow_name.clone()),
+                                Expression::InContext {
+                                    flow: flow_name.clone(),
                                 },
-                            ),
-                            FlowInstruction::Let(
-                                Pattern::InContext(old_event_name.clone()),
-                                Expression::Identifier {
-                                    identifier: source_name.clone(),
-                                },
-                            ),
-                        ],
-                    ))
-                }
-                FlowExpressionKind::Timeout {
-                    flow_expression,
-                    deadline,
-                } => {
-                    // get the id of pattern's flow (and check their is only one flow)
-                    let mut ids = pattern.identifiers();
-                    assert!(ids.len() == 1);
-                    let id_pattern = ids.pop().unwrap();
+                            ));
+                        }
+                        FlowExpressionKind::OnChange { .. } => {
+                            // get the id of the pervious event
+                            let id_old_event =
+                                on_change_events.get(&id_pattern).expect("should be there");
 
-                    // get the id of flow_expression (and check their is only one flow)
-                    let mut ids = flow_expression.get_dependencies();
-                    assert!(ids.len() == 1);
-                    let id_source = ids.pop().unwrap();
+                            let old_event_name = symbol_table.get_name(*id_old_event);
 
-                    // create event
-                    instructions.push(FlowInstruction::Let(
-                        Pattern::Identifier(symbol_table.get_name(id_pattern).clone()),
-                        Expression::Ok {
-                            expression: Box::new(Expression::Identifier {
-                                identifier: symbol_table.get_name(id_source).clone(),
-                            }),
-                        },
-                    ));
-                    // add reset timer
-                    let timer_name = timing_events
-                        .get(&id_pattern)
-                        .expect("there should be a timing event")
-                        .1
-                        .identifier
-                        .clone();
-                    instructions.push(FlowInstruction::ResetTimer(timer_name, *deadline));
+                            // if on_change event is activated
+                            debug_assert!(encountered_event.is_none());
+                            let encountered_event = Some(id_pattern);
+                            let mut onchange_instructions = vec![
+                                FlowInstruction::Let(
+                                    Pattern::Identifier(flow_name.clone()),
+                                    Expression::Identifier {
+                                        identifier: source_name.clone(),
+                                    },
+                                ),
+                                FlowInstruction::Let(
+                                    Pattern::InContext(old_event_name.clone()),
+                                    Expression::Identifier {
+                                        identifier: source_name.clone(),
+                                    },
+                                ),
+                            ];
+                            let mut next_onchange_instructions =
+                                compute_flow_instructions_from_inputs_flows(
+                                    statements,
+                                    on_change_events,
+                                    timing_events,
+                                    encountered_event,
+                                    ordered_flow_statements.clone(),
+                                    signals_context,
+                                    symbol_table,
+                                );
+                            onchange_instructions.append(&mut next_onchange_instructions);
+
+                            // if on_change event is NOT activated
+                            let encountered_event = None;
+                            let not_onchange_instructions =
+                                compute_flow_instructions_from_inputs_flows(
+                                    statements,
+                                    on_change_events,
+                                    timing_events,
+                                    encountered_event,
+                                    ordered_flow_statements, // takes ownership
+                                    signals_context,
+                                    symbol_table,
+                                );
+
+                            instructions.push(FlowInstruction::IfChange(
+                                old_event_name.clone(),
+                                source_name.clone(),
+                                onchange_instructions,
+                                not_onchange_instructions,
+                            ));
+
+                            // ends the loop
+                            break;
+                        }
+                        FlowExpressionKind::Timeout { deadline, .. } => {
+                            // source is an event, look if it is activated
+                            if let Some(event_id) = encountered_event {
+                                if event_id == id_source {
+                                    // if activated, create event
+                                    debug_assert!(encountered_event.is_none());
+                                    encountered_event = Some(id_pattern);
+                                    // add event creation in instruction
+                                    instructions.push(FlowInstruction::Let(
+                                        Pattern::Identifier(flow_name.clone()),
+                                        Expression::Ok {
+                                            expression: Box::new(Expression::Identifier {
+                                                identifier: source_name.clone(),
+                                            }),
+                                        },
+                                    ));
+                                    // add reset timer
+                                    let timer_name = timing_events
+                                        .get(&id_pattern)
+                                        .expect("there should be a timing event")
+                                        .1
+                                        .identifier
+                                        .clone();
+                                    instructions
+                                        .push(FlowInstruction::ResetTimer(timer_name, *deadline));
+                                }
+                            }
+                            // if not activated, do nothing
+                        }
+                        FlowExpressionKind::Scan { .. } => (), // nothing to do
+                        FlowExpressionKind::ComponentCall { .. } => unreachable!(),
+                    }
                 }
-                FlowExpressionKind::ComponentCall { component_id, .. } => instructions.push(
-                    FlowInstruction::ComponentCall(symbol_table.get_name(*component_id).clone()),
-                ),
-                FlowExpressionKind::Scan { .. } => (), // nothing to do
-            },
+            }
             FlowStatement::Import(FlowImport { .. }) => (), // nothing to do
             FlowStatement::Export(_) => unreachable!(),
         }
 
         // add a context update if necessary
-        let flow_name = symbol_table.get_name(id);
+        let flow_name = symbol_table.get_name(ordered_flow_id);
         if signals_context.elements.contains_key(flow_name) {
             instructions.push(FlowInstruction::Let(
                 Pattern::InContext(flow_name.clone()),
@@ -613,6 +549,133 @@ fn compute_flow_instructions_from_ordered_flow_statements(
             ))
         }
     }
+
+    instructions
+}
+
+fn compute_flow_instructions_from_timing_events(
+    statements: &HashMap<usize, FlowStatement>,
+    timing_events: &HashMap<usize, (usize, TimingEvent)>,
+    mut encountered_event: Option<usize>,
+    mut ordered_flow_statements: Vec<usize>,
+    signals_context: &SignalsContext,
+    symbol_table: &SymbolTable,
+) -> Vec<FlowInstruction> {
+    let mut instructions = vec![];
+
+    // push instructions in right order
+    while !ordered_flow_statements.is_empty() {
+        // get the next flow statement to transform
+        let ordered_flow_id = ordered_flow_statements.pop().unwrap();
+        // get flow statement related to id
+        let flow_statement = statements.get(&ordered_flow_id).expect("should be there");
+
+        // add instructions related to the nature of the statement (see the draft)
+        match flow_statement {
+            FlowStatement::Declaration(FlowDeclaration {
+                pattern,
+                flow_expression,
+                ..
+            })
+            | FlowStatement::Instanciation(FlowInstanciation {
+                pattern,
+                flow_expression,
+                ..
+            }) => {
+                if let FlowExpressionKind::ComponentCall { component_id, .. } =
+                    &flow_expression.kind
+                {
+                    let component_name = symbol_table.get_name(*component_id);
+                    if let Some(event_id) = encountered_event {
+                        let event_input = flow_expression.get_dependencies().contains(&event_id);
+                        // if one of its input is the encountered event
+                        // then put it in the component call
+                        if event_input {
+                            instructions.push(FlowInstruction::ComponentCall(
+                                component_name.clone(),
+                                Some(symbol_table.get_name(event_id).clone()),
+                            ))
+                        }
+                    }
+                    // if no event input is activated, do nothing
+                    // todo: is it true?
+                } else {
+                    // get the id of pattern's flow (and check their is only one flow)
+                    let mut ids = pattern.identifiers();
+                    debug_assert!(ids.len() == 1);
+                    let id_pattern = ids.pop().unwrap();
+
+                    // get the id of flow_expression (and check their is only one flow)
+                    let mut ids = flow_expression.get_dependencies();
+                    debug_assert!(ids.len() == 1);
+                    let id_source = ids.pop().unwrap();
+
+                    let flow_name = symbol_table.get_name(id_pattern);
+                    let source_name = symbol_table.get_name(id_source);
+
+                    match &flow_expression.kind {
+                        FlowExpressionKind::Sample { .. } => {
+                            // update created signal
+                            instructions.push(FlowInstruction::Let(
+                                Pattern::Identifier(flow_name.clone()),
+                                Expression::TakeFromContext {
+                                    flow: source_name.clone(),
+                                },
+                            ))
+                        }
+                        FlowExpressionKind::Timeout { deadline, .. } => {
+                            // create event
+                            debug_assert!(encountered_event.is_none());
+                            encountered_event = Some(id_pattern);
+                            // add event creation in instructions
+                            instructions.push(FlowInstruction::Let(
+                                Pattern::Identifier(flow_name.clone()),
+                                Expression::Err,
+                            ));
+                            // add reset timer
+                            let timer_name = timing_events
+                                .get(&id_pattern)
+                                .expect("there should be a timing event")
+                                .1
+                                .identifier
+                                .clone();
+                            instructions.push(FlowInstruction::ResetTimer(timer_name, *deadline));
+                        }
+                        FlowExpressionKind::Scan { .. } => {
+                            // create event
+                            debug_assert!(encountered_event.is_none());
+                            encountered_event = Some(id_pattern);
+                            // add event creation in instructions
+                            instructions.push(FlowInstruction::Let(
+                                Pattern::Identifier(flow_name.clone()),
+                                Expression::InContext {
+                                    flow: source_name.clone(),
+                                },
+                            ))
+                        }
+                        FlowExpressionKind::Ident { .. }
+                        | FlowExpressionKind::Throtle { .. }
+                        | FlowExpressionKind::OnChange { .. } => (), // nothing to do
+                        FlowExpressionKind::ComponentCall { .. } => unreachable!(),
+                    }
+                }
+            }
+            FlowStatement::Import(FlowImport { .. }) => (), // nothing to do
+            FlowStatement::Export(_) => unreachable!(),
+        }
+
+        // add a context update if necessary
+        let flow_name = symbol_table.get_name(ordered_flow_id);
+        if signals_context.elements.contains_key(flow_name) {
+            instructions.push(FlowInstruction::Let(
+                Pattern::InContext(flow_name.clone()),
+                Expression::Identifier {
+                    identifier: flow_name.clone(),
+                },
+            ))
+        }
+    }
+
     instructions
 }
 
@@ -636,14 +699,14 @@ impl FlowStatement {
                 FlowExpressionKind::Throtle { .. } => {
                     // get the id of pattern's flow (and check their is only one flow)
                     let mut ids = pattern.identifiers();
-                    assert!(ids.len() == 1);
+                    debug_assert!(ids.len() == 1);
                     let id = ids.pop().unwrap();
 
                     // push in signals context
                     let name = symbol_table.get_name(id).clone();
                     let ty = symbol_table.get_type(id);
                     match signals_context.elements.insert(name, ty.clone()) {
-                        Some(other_ty) => assert!(other_ty.eq(ty)),
+                        Some(other_ty) => debug_assert!(other_ty.eq(ty)),
                         None => (),
                     }
                 }
@@ -664,7 +727,7 @@ impl FlowStatement {
                     let name = symbol_table.get_name(id).clone();
                     let ty = symbol_table.get_type(id);
                     match signals_context.elements.insert(name, ty.clone()) {
-                        Some(other_ty) => assert!(other_ty.eq(ty)),
+                        Some(other_ty) => debug_assert!(other_ty.eq(ty)),
                         None => (),
                     }
                 }
@@ -688,7 +751,7 @@ impl FlowStatement {
                         let name = symbol_table.get_name(id).clone();
                         let ty = symbol_table.get_type(id);
                         match signals_context.elements.insert(name, ty.clone()) {
-                            Some(other_ty) => assert!(other_ty.eq(ty)),
+                            Some(other_ty) => debug_assert!(other_ty.eq(ty)),
                             None => (),
                         }
                     }),
