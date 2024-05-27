@@ -377,6 +377,31 @@ fn compute_flow_instructions(
                     // get outputs' ids
                     let outputs_ids = pattern.identifiers();
 
+                    // get timing event id
+                    let (timer_id, _) = timing_events
+                        .get(&ordered_flow_id)
+                        .expect("there should be a timing event");
+
+                    // if timing event is activated
+                    if encountered_events.contains(timer_id) {
+                        // call component with no event
+                        instructions.push(FlowInstruction::ComponentCall(
+                            pattern.clone().lir_from_hir(symbol_table),
+                            component_name.clone(),
+                            None,
+                        ));
+                        // update output signals
+                        for output_id in outputs_ids.iter() {
+                            let output_name = symbol_table.get_name(*output_id);
+                            instructions.push(FlowInstruction::UpdateContext(
+                                output_name.clone(),
+                                Expression::Identifier {
+                                    identifier: output_name.clone(),
+                                },
+                            ));
+                        }
+                    }
+
                     // get the potential event that will call the component
                     let dependencies: HashSet<usize> =
                         flow_expression.get_dependencies().into_iter().collect();
@@ -390,7 +415,7 @@ fn compute_flow_instructions(
                         instructions.push(FlowInstruction::ComponentCall(
                             pattern.clone().lir_from_hir(symbol_table),
                             component_name.clone(),
-                            Some(symbol_table.get_name(*event_id).clone()), // todo: if timing event then it is None
+                            Some(symbol_table.get_name(*event_id).clone()),
                         ));
                         // update output signals
                         for output_id in outputs_ids.iter() {
@@ -419,6 +444,7 @@ fn compute_flow_instructions(
                     let mut ids = pattern.identifiers();
                     debug_assert!(ids.len() == 1);
                     let id_pattern = ids.pop().unwrap();
+                    debug_assert!(id_pattern == ordered_flow_id); // todo: then remove the id_pattern
 
                     // get the id of flow_expression (and check their is only one flow)
                     let mut ids = flow_expression.get_dependencies();
