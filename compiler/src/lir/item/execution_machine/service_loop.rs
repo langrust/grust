@@ -29,14 +29,14 @@ pub struct InterfaceFlow {
 }
 
 /// A timing event structure.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TimingEvent {
     /// The name of the timing event.
     pub identifier: String,
     /// Kind of timing event.
     pub kind: TimingEventKind,
 }
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TimingEventKind {
     Period(u64),
     Timeout(u64),
@@ -52,7 +52,7 @@ pub struct FlowHandler {
 pub enum FlowInstruction {
     Let(Pattern, Expression),
     Send(String, Expression),
-    IfThortle(String, String, Constant, Box<FlowInstruction>),
+    IfThrotle(String, String, Constant, Box<FlowInstruction>),
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, u64),
     ComponentCall(String, Option<String>),

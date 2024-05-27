@@ -23,7 +23,7 @@ pub fn rust_ast_from_lir(
             vec![parse_quote!(#channel.send(#ident).await.unwrap();)]
         }
         FlowInstruction::Let(Pattern::Identifier(_), _) => todo!(),
-        FlowInstruction::IfThortle(_, _, _, _) => todo!(),
+        FlowInstruction::IfThrotle(_, _, _, _) => todo!(),
         FlowInstruction::IfChange(_, _, _, _) => todo!(),
         FlowInstruction::ResetTimer(_, _) => todo!(),
         FlowInstruction::ComponentCall(_, _) => todo!(),

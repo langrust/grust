@@ -208,7 +208,36 @@ impl Interface {
                             );
                         }
                         FlowExpressionKind::ComponentCall { component_id, .. } => {
-                            // todo: add potential period constrains
+                            // add potential period constrains
+                            if let Some(period) = symbol_table.get_node_period(*component_id) {
+                                // add new timing event into the identifier creator
+                                let fresh_name = identifier_creator.new_identifier(
+                                    String::from(""),
+                                    String::from("period"),
+                                    String::from(""),
+                                );
+                                let typing = Type::Event(Box::new(Type::Unit));
+                                let fresh_id =
+                                    symbol_table.insert_fresh_flow(fresh_name.clone(), typing);
+                                let timing_event = TimingEvent {
+                                    identifier: fresh_name,
+                                    kind: TimingEventKind::Period(period.clone()),
+                                };
+
+                                // get the identifier of the receiving flow
+                                let flows_ids = pattern.identifiers();
+                                for flow_id in flows_ids.into_iter() {
+                                    // add timing_event in graph
+                                    graph.add_edge(
+                                        fresh_id,
+                                        flow_id,
+                                        FlowKind::Event(Default::default()),
+                                    );
+
+                                    // push timing_event
+                                    timing_events.insert(flow_id, (fresh_id, timing_event.clone()));
+                                }
+                            }
                             components.push(symbol_table.get_name(*component_id).clone())
                         }
                     }
@@ -470,7 +499,7 @@ fn compute_flow_instructions(
                         }
                         FlowExpressionKind::Throtle { delta, .. } => {
                             // update created signal
-                            instructions.push(FlowInstruction::IfThortle(
+                            instructions.push(FlowInstruction::IfThrotle(
                                 flow_name.clone(),
                                 source_name.clone(),
                                 delta.clone(),
