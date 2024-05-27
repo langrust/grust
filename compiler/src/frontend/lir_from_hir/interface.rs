@@ -601,6 +601,17 @@ fn compute_flow_instructions(
                 },
             ))
         }
+
+        // add send instructions if necessary, i.e. when the flow statement
+        // is an instanciation (instanciated flows are exported, by design)
+        if let FlowStatement::Instanciation(_) = flow_statement {
+            instructions.push(FlowInstruction::Send(
+                flow_name.clone(),
+                Expression::Identifier {
+                    identifier: flow_name.clone(),
+                },
+            ))
+        }
     }
 
     instructions
