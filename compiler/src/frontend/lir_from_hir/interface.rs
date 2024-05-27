@@ -19,8 +19,8 @@ use crate::{
     },
     lir::item::execution_machine::{
         service_loop::{
-            Expression, FlowHandler, FlowInstruction, InterfaceFlow, Pattern, ServiceLoop,
-            TimingEvent, TimingEventKind,
+            Expression, FlowHandler, FlowInstruction, InterfaceFlow, ServiceLoop, TimingEvent,
+            TimingEventKind,
         },
         signals_context::SignalsContext,
         ExecutionMachine,
@@ -396,8 +396,8 @@ fn compute_flow_instructions(
                         // update output signals
                         for output_id in outputs_ids.iter() {
                             let output_name = symbol_table.get_name(*output_id);
-                            instructions.push(FlowInstruction::Let(
-                                Pattern::InContext(output_name.clone()),
+                            instructions.push(FlowInstruction::UpdateContext(
+                                output_name.clone(),
                                 Expression::Identifier {
                                     identifier: output_name.clone(),
                                 },
@@ -409,7 +409,7 @@ fn compute_flow_instructions(
                     for output_id in outputs_ids.iter() {
                         let output_name = symbol_table.get_name(*output_id);
                         instructions.push(FlowInstruction::Let(
-                            Pattern::Identifier(output_name.clone()),
+                            output_name.clone(),
                             Expression::InContext {
                                 flow: output_name.clone(),
                             },
@@ -437,7 +437,7 @@ fn compute_flow_instructions(
                                 // set the signal's statement
                                 {
                                     instructions.push(FlowInstruction::Let(
-                                        Pattern::Identifier(flow_name.clone()),
+                                        flow_name.clone(),
                                         Expression::Identifier {
                                             identifier: source_name.clone(),
                                         },
@@ -450,7 +450,7 @@ fn compute_flow_instructions(
                                         // and add the 'let' instruction
                                         encountered_events.insert(id_pattern);
                                         instructions.push(FlowInstruction::Let(
-                                            Pattern::Identifier(flow_name.clone()),
+                                            flow_name.clone(),
                                             Expression::Identifier {
                                                 identifier: source_name.clone(),
                                             },
@@ -468,8 +468,8 @@ fn compute_flow_instructions(
                             // source is an event, look if it is activated
                             if encountered_events.contains(&id_source) {
                                 // if activated, store event value
-                                instructions.push(FlowInstruction::Let(
-                                    Pattern::InContext(source_name.clone()),
+                                instructions.push(FlowInstruction::UpdateContext(
+                                    source_name.clone(),
                                     Expression::Some {
                                         expression: Box::new(Expression::Identifier {
                                             identifier: source_name.clone(),
@@ -481,8 +481,8 @@ fn compute_flow_instructions(
                             // if timing event is activated
                             if encountered_events.contains(timer_id) {
                                 // if activated, update signal by taking from stored event value
-                                instructions.push(FlowInstruction::Let(
-                                    Pattern::InContext(flow_name.clone()),
+                                instructions.push(FlowInstruction::UpdateContext(
+                                    flow_name.clone(),
                                     Expression::TakeFromContext {
                                         flow: source_name.clone(),
                                     },
@@ -491,7 +491,7 @@ fn compute_flow_instructions(
 
                             // define signal in any case
                             instructions.push(FlowInstruction::Let(
-                                Pattern::Identifier(flow_name.clone()),
+                                flow_name.clone(),
                                 Expression::InContext {
                                     flow: flow_name.clone(),
                                 },
@@ -503,8 +503,8 @@ fn compute_flow_instructions(
                                 flow_name.clone(),
                                 source_name.clone(),
                                 delta.clone(),
-                                Box::new(FlowInstruction::Let(
-                                    Pattern::InContext(flow_name.clone()),
+                                Box::new(FlowInstruction::UpdateContext(
+                                    flow_name.clone(),
                                     Expression::Identifier {
                                         identifier: source_name.clone(),
                                     },
@@ -513,7 +513,7 @@ fn compute_flow_instructions(
 
                             // set the signal's statement
                             instructions.push(FlowInstruction::Let(
-                                Pattern::Identifier(flow_name.clone()),
+                                flow_name.clone(),
                                 Expression::InContext {
                                     flow: flow_name.clone(),
                                 },
@@ -541,13 +541,13 @@ fn compute_flow_instructions(
                             encountered_events.insert(id_pattern);
                             let mut onchange_instructions = vec![
                                 FlowInstruction::Let(
-                                    Pattern::Identifier(flow_name.clone()),
+                                    flow_name.clone(),
                                     Expression::Identifier {
                                         identifier: source_name.clone(),
                                     },
                                 ),
-                                FlowInstruction::Let(
-                                    Pattern::InContext(old_event_name.clone()),
+                                FlowInstruction::UpdateContext(
+                                    old_event_name.clone(),
                                     Expression::Identifier {
                                         identifier: source_name.clone(),
                                     },
@@ -586,7 +586,7 @@ fn compute_flow_instructions(
                                 encountered_events.insert(id_pattern);
                                 // add event creation in instruction
                                 instructions.push(FlowInstruction::Let(
-                                    Pattern::Identifier(flow_name.clone()),
+                                    flow_name.clone(),
                                     Expression::Ok {
                                         expression: Box::new(Expression::Identifier {
                                             identifier: source_name.clone(),
@@ -605,10 +605,8 @@ fn compute_flow_instructions(
                                 // if activated, create event
                                 encountered_events.insert(id_pattern);
                                 // add event creation in instruction
-                                instructions.push(FlowInstruction::Let(
-                                    Pattern::Identifier(flow_name.clone()),
-                                    Expression::Err,
-                                ));
+                                instructions
+                                    .push(FlowInstruction::Let(flow_name.clone(), Expression::Err));
                                 // add reset timer
                                 instructions.push(FlowInstruction::ResetTimer(
                                     timer_name.clone(),
@@ -627,7 +625,7 @@ fn compute_flow_instructions(
                                 encountered_events.insert(id_pattern);
                                 // add event creation in instructions
                                 instructions.push(FlowInstruction::Let(
-                                    Pattern::Identifier(flow_name.clone()),
+                                    flow_name.clone(),
                                     Expression::InContext {
                                         flow: source_name.clone(),
                                     },
@@ -645,8 +643,8 @@ fn compute_flow_instructions(
         // add a context update if necessary
         let flow_name = symbol_table.get_name(ordered_flow_id);
         if signals_context.elements.contains_key(flow_name) {
-            instructions.push(FlowInstruction::Let(
-                Pattern::InContext(flow_name.clone()),
+            instructions.push(FlowInstruction::UpdateContext(
+                flow_name.clone(),
                 Expression::Identifier {
                     identifier: flow_name.clone(),
                 },
