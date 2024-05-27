@@ -50,18 +50,13 @@ pub struct FlowHandler {
 
 #[derive(Debug, PartialEq)]
 pub enum FlowInstruction {
-    Let(Pattern, Expression),
+    Let(String, Expression),
+    UpdateContext(String, Expression),
     Send(String, Expression),
     IfThrotle(String, String, Constant, Box<FlowInstruction>),
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, u64),
     ComponentCall(String, Option<String>),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Pattern {
-    InContext(String),
-    Identifier(String),
 }
 
 #[derive(Debug, PartialEq)]
