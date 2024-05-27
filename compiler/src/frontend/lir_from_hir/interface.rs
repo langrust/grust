@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use itertools::Itertools;
 use petgraph::{
     algo::toposort,
     graphmap::DiGraphMap,
@@ -226,10 +227,11 @@ impl Interface {
                 let ordered_flow_statements = toposort(&subgraph, None).expect("should succeed");
                 // if input flow is an event then store its identifier
                 let encountered_event = match symbol_table.get_flow_kind(*id) {
-                    FlowKind::Signal(_) => None,
-                    FlowKind::Event(_) => Some(*id),
+                    FlowKind::Signal(_) => HashSet::new(),
+                    FlowKind::Event(_) => HashSet::from([*id]),
                 };
-                let instructions = compute_flow_instructions_from_inputs_flows(
+
+                let instructions = compute_flow_instructions(
                     &hash_statements,
                     &on_change_events,
                     &timing_events,
@@ -255,9 +257,11 @@ impl Interface {
                 // sort statement in dependency order
                 let ordered_flow_statements = toposort(&subgraph, None).expect("should succeed");
                 // if input flow is an event then store its identifier
-                let encountered_event = Some(*timing_id);
-                let instructions = compute_flow_instructions_from_timing_events(
+                let encountered_event = HashSet::from([*timing_id]);
+
+                let instructions = compute_flow_instructions(
                     &hash_statements,
+                    &on_change_events,
                     &timing_events,
                     encountered_event,
                     ordered_flow_statements,
@@ -308,11 +312,11 @@ fn construct_subgraph_from_source(
     subgraph
 }
 
-fn compute_flow_instructions_from_inputs_flows(
+fn compute_flow_instructions(
     statements: &HashMap<usize, FlowStatement>,
     on_change_events: &HashMap<usize, usize>,
     timing_events: &HashMap<usize, (usize, TimingEvent)>,
-    mut encountered_event: Option<usize>,
+    mut encountered_events: HashSet<usize>,
     mut ordered_flow_statements: Vec<usize>,
     signals_context: &SignalsContext,
     symbol_table: &SymbolTable,
@@ -342,19 +346,24 @@ fn compute_flow_instructions_from_inputs_flows(
                     &flow_expression.kind
                 {
                     let component_name = symbol_table.get_name(*component_id);
-                    if let Some(event_id) = encountered_event {
-                        let event_input = flow_expression.get_dependencies().contains(&event_id);
-                        // if one of its input is the encountered event
-                        // then put it in the component call
-                        if event_input {
-                            instructions.push(FlowInstruction::ComponentCall(
-                                component_name.clone(),
-                                Some(symbol_table.get_name(event_id).clone()),
-                            ))
-                        }
+
+                    // get the potential event that will call the component
+                    let dependencies: HashSet<usize> =
+                        flow_expression.get_dependencies().into_iter().collect();
+                    let mut overlapping_ids = dependencies.intersection(&encountered_events);
+                    debug_assert!(overlapping_ids.try_len().unwrap() <= 1);
+
+                    // if one of its input is the encountered event
+                    // then put it in the component call
+                    if let Some(event_id) = overlapping_ids.next() {
+                        instructions.push(FlowInstruction::ComponentCall(
+                            component_name.clone(),
+                            Some(symbol_table.get_name(*event_id).clone()),
+                        ))
                     }
                     // if no event input is activated, do nothing
-                    // todo: is it true?
+                    // todo: is it true? because its output signals won't be defined
+                    // todo: define signals in any case (like in sample)
                 } else {
                     // get the id of pattern's flow (and check their is only one flow)
                     let mut ids = pattern.identifiers();
@@ -385,39 +394,57 @@ fn compute_flow_instructions_from_inputs_flows(
                                 }
                                 FlowKind::Event(_) => {
                                     // if source is an event, look if it is activated
-                                    if let Some(event_id) = encountered_event {
-                                        if event_id == id_source {
-                                            // if activated, then rename the encountered_event
-                                            // and add the 'let' instruction
-                                            encountered_event = Some(id_pattern);
-                                            instructions.push(FlowInstruction::Let(
-                                                Pattern::Identifier(flow_name.clone()),
-                                                Expression::Identifier {
-                                                    identifier: source_name.clone(),
-                                                },
-                                            ))
-                                        }
+                                    if encountered_events.contains(&id_source) {
+                                        // if activated, then rename the encountered_event
+                                        // and add the 'let' instruction
+                                        encountered_events.insert(id_pattern);
+                                        instructions.push(FlowInstruction::Let(
+                                            Pattern::Identifier(flow_name.clone()),
+                                            Expression::Identifier {
+                                                identifier: source_name.clone(),
+                                            },
+                                        ))
                                     }
                                     // if not activated, do nothing
                                 }
                             }
                         }
                         FlowExpressionKind::Sample { .. } => {
+                            let (timer_id, _) = timing_events
+                                .get(&id_pattern)
+                                .expect("there should be a timing event");
+
                             // source is an event, look if it is activated
-                            if let Some(event_id) = encountered_event {
-                                if event_id == id_source {
-                                    // if activated, set the signal's statement
-                                    instructions.push(FlowInstruction::Let(
-                                        Pattern::Identifier(source_name.clone()),
-                                        Expression::Some {
-                                            expression: Box::new(Expression::Identifier {
-                                                identifier: source_name.clone(),
-                                            }),
-                                        },
-                                    ))
-                                }
+                            if encountered_events.contains(&id_source) {
+                                // if activated, store event value
+                                instructions.push(FlowInstruction::Let(
+                                    Pattern::InContext(source_name.clone()),
+                                    Expression::Some {
+                                        expression: Box::new(Expression::Identifier {
+                                            identifier: source_name.clone(),
+                                        }),
+                                    },
+                                ))
                             }
-                            // if not activated, do nothing
+
+                            // if timing event is activated
+                            if encountered_events.contains(timer_id) {
+                                // if activated, update signal by taking from stored event value
+                                instructions.push(FlowInstruction::Let(
+                                    Pattern::InContext(flow_name.clone()),
+                                    Expression::TakeFromContext {
+                                        flow: source_name.clone(),
+                                    },
+                                ))
+                            }
+
+                            // define signal in any case
+                            instructions.push(FlowInstruction::Let(
+                                Pattern::Identifier(flow_name.clone()),
+                                Expression::InContext {
+                                    flow: flow_name.clone(),
+                                },
+                            ))
                         }
                         FlowExpressionKind::Throtle { delta, .. } => {
                             // update created signal
@@ -448,9 +475,19 @@ fn compute_flow_instructions_from_inputs_flows(
 
                             let old_event_name = symbol_table.get_name(*id_old_event);
 
+                            // if on_change event is NOT activated
+                            let not_onchange_instructions = compute_flow_instructions(
+                                statements,
+                                on_change_events,
+                                timing_events,
+                                encountered_events.clone(),
+                                ordered_flow_statements.clone(),
+                                signals_context,
+                                symbol_table,
+                            );
+
                             // if on_change event is activated
-                            debug_assert!(encountered_event.is_none());
-                            let encountered_event = Some(id_pattern);
+                            encountered_events.insert(id_pattern);
                             let mut onchange_instructions = vec![
                                 FlowInstruction::Let(
                                     Pattern::Identifier(flow_name.clone()),
@@ -465,30 +502,16 @@ fn compute_flow_instructions_from_inputs_flows(
                                     },
                                 ),
                             ];
-                            let mut next_onchange_instructions =
-                                compute_flow_instructions_from_inputs_flows(
-                                    statements,
-                                    on_change_events,
-                                    timing_events,
-                                    encountered_event,
-                                    ordered_flow_statements.clone(),
-                                    signals_context,
-                                    symbol_table,
-                                );
+                            let mut next_onchange_instructions = compute_flow_instructions(
+                                statements,
+                                on_change_events,
+                                timing_events,
+                                encountered_events,      // takes ownership
+                                ordered_flow_statements, // takes ownership
+                                signals_context,
+                                symbol_table,
+                            );
                             onchange_instructions.append(&mut next_onchange_instructions);
-
-                            // if on_change event is NOT activated
-                            let encountered_event = None;
-                            let not_onchange_instructions =
-                                compute_flow_instructions_from_inputs_flows(
-                                    statements,
-                                    on_change_events,
-                                    timing_events,
-                                    encountered_event,
-                                    ordered_flow_statements, // takes ownership
-                                    signals_context,
-                                    symbol_table,
-                                );
 
                             instructions.push(FlowInstruction::IfChange(
                                 old_event_name.clone(),
@@ -501,161 +524,65 @@ fn compute_flow_instructions_from_inputs_flows(
                             break;
                         }
                         FlowExpressionKind::Timeout { deadline, .. } => {
-                            // source is an event, look if it is activated
-                            if let Some(event_id) = encountered_event {
-                                if event_id == id_source {
-                                    // if activated, create event
-                                    debug_assert!(encountered_event.is_none());
-                                    encountered_event = Some(id_pattern);
-                                    // add event creation in instruction
-                                    instructions.push(FlowInstruction::Let(
-                                        Pattern::Identifier(flow_name.clone()),
-                                        Expression::Ok {
-                                            expression: Box::new(Expression::Identifier {
-                                                identifier: source_name.clone(),
-                                            }),
-                                        },
-                                    ));
-                                    // add reset timer
-                                    let timer_name = timing_events
-                                        .get(&id_pattern)
-                                        .expect("there should be a timing event")
-                                        .1
-                                        .identifier
-                                        .clone();
-                                    instructions
-                                        .push(FlowInstruction::ResetTimer(timer_name, *deadline));
-                                }
-                            }
-                            // if not activated, do nothing
-                        }
-                        FlowExpressionKind::Scan { .. } => (), // nothing to do
-                        FlowExpressionKind::ComponentCall { .. } => unreachable!(),
-                    }
-                }
-            }
-            FlowStatement::Import(FlowImport { .. }) => (), // nothing to do
-            FlowStatement::Export(_) => unreachable!(),
-        }
-
-        // add a context update if necessary
-        let flow_name = symbol_table.get_name(ordered_flow_id);
-        if signals_context.elements.contains_key(flow_name) {
-            instructions.push(FlowInstruction::Let(
-                Pattern::InContext(flow_name.clone()),
-                Expression::Identifier {
-                    identifier: flow_name.clone(),
-                },
-            ))
-        }
-    }
-
-    instructions
-}
-
-fn compute_flow_instructions_from_timing_events(
-    statements: &HashMap<usize, FlowStatement>,
-    timing_events: &HashMap<usize, (usize, TimingEvent)>,
-    mut encountered_event: Option<usize>,
-    mut ordered_flow_statements: Vec<usize>,
-    signals_context: &SignalsContext,
-    symbol_table: &SymbolTable,
-) -> Vec<FlowInstruction> {
-    let mut instructions = vec![];
-
-    // push instructions in right order
-    while !ordered_flow_statements.is_empty() {
-        // get the next flow statement to transform
-        let ordered_flow_id = ordered_flow_statements.pop().unwrap();
-        // get flow statement related to id
-        let flow_statement = statements.get(&ordered_flow_id).expect("should be there");
-
-        // add instructions related to the nature of the statement (see the draft)
-        match flow_statement {
-            FlowStatement::Declaration(FlowDeclaration {
-                pattern,
-                flow_expression,
-                ..
-            })
-            | FlowStatement::Instanciation(FlowInstanciation {
-                pattern,
-                flow_expression,
-                ..
-            }) => {
-                if let FlowExpressionKind::ComponentCall { component_id, .. } =
-                    &flow_expression.kind
-                {
-                    let component_name = symbol_table.get_name(*component_id);
-                    if let Some(event_id) = encountered_event {
-                        let event_input = flow_expression.get_dependencies().contains(&event_id);
-                        // if one of its input is the encountered event
-                        // then put it in the component call
-                        if event_input {
-                            instructions.push(FlowInstruction::ComponentCall(
-                                component_name.clone(),
-                                Some(symbol_table.get_name(event_id).clone()),
-                            ))
-                        }
-                    }
-                    // if no event input is activated, do nothing
-                    // todo: is it true?
-                } else {
-                    // get the id of pattern's flow (and check their is only one flow)
-                    let mut ids = pattern.identifiers();
-                    debug_assert!(ids.len() == 1);
-                    let id_pattern = ids.pop().unwrap();
-
-                    // get the id of flow_expression (and check their is only one flow)
-                    let mut ids = flow_expression.get_dependencies();
-                    debug_assert!(ids.len() == 1);
-                    let id_source = ids.pop().unwrap();
-
-                    let flow_name = symbol_table.get_name(id_pattern);
-                    let source_name = symbol_table.get_name(id_source);
-
-                    match &flow_expression.kind {
-                        FlowExpressionKind::Sample { .. } => {
-                            // update created signal
-                            instructions.push(FlowInstruction::Let(
-                                Pattern::Identifier(flow_name.clone()),
-                                Expression::TakeFromContext {
-                                    flow: source_name.clone(),
-                                },
-                            ))
-                        }
-                        FlowExpressionKind::Timeout { deadline, .. } => {
-                            // create event
-                            debug_assert!(encountered_event.is_none());
-                            encountered_event = Some(id_pattern);
-                            // add event creation in instructions
-                            instructions.push(FlowInstruction::Let(
-                                Pattern::Identifier(flow_name.clone()),
-                                Expression::Err,
-                            ));
-                            // add reset timer
-                            let timer_name = timing_events
+                            let (timer_id, timer) = timing_events
                                 .get(&id_pattern)
-                                .expect("there should be a timing event")
-                                .1
-                                .identifier
-                                .clone();
-                            instructions.push(FlowInstruction::ResetTimer(timer_name, *deadline));
+                                .expect("there should be a timing event");
+                            let timer_name = &timer.identifier;
+
+                            // source is an event, look if it is activated
+                            if encountered_events.contains(&id_source) {
+                                // if activated, create event
+                                encountered_events.insert(id_pattern);
+                                // add event creation in instruction
+                                instructions.push(FlowInstruction::Let(
+                                    Pattern::Identifier(flow_name.clone()),
+                                    Expression::Ok {
+                                        expression: Box::new(Expression::Identifier {
+                                            identifier: source_name.clone(),
+                                        }),
+                                    },
+                                ));
+                                // add reset timer
+                                instructions.push(FlowInstruction::ResetTimer(
+                                    timer_name.clone(),
+                                    *deadline,
+                                ));
+                            }
+
+                            // timer is an event, look if it is activated
+                            if encountered_events.contains(timer_id) {
+                                // if activated, create event
+                                encountered_events.insert(id_pattern);
+                                // add event creation in instruction
+                                instructions.push(FlowInstruction::Let(
+                                    Pattern::Identifier(flow_name.clone()),
+                                    Expression::Err,
+                                ));
+                                // add reset timer
+                                instructions.push(FlowInstruction::ResetTimer(
+                                    timer_name.clone(),
+                                    *deadline,
+                                ));
+                            }
                         }
                         FlowExpressionKind::Scan { .. } => {
-                            // create event
-                            debug_assert!(encountered_event.is_none());
-                            encountered_event = Some(id_pattern);
-                            // add event creation in instructions
-                            instructions.push(FlowInstruction::Let(
-                                Pattern::Identifier(flow_name.clone()),
-                                Expression::InContext {
-                                    flow: source_name.clone(),
-                                },
-                            ))
+                            let (timer_id, _) = timing_events
+                                .get(&id_pattern)
+                                .expect("there should be a timing event");
+
+                            // timer is an event, look if it is activated
+                            if encountered_events.contains(timer_id) {
+                                // if activated, create event
+                                encountered_events.insert(id_pattern);
+                                // add event creation in instructions
+                                instructions.push(FlowInstruction::Let(
+                                    Pattern::Identifier(flow_name.clone()),
+                                    Expression::InContext {
+                                        flow: source_name.clone(),
+                                    },
+                                ))
+                            }
                         }
-                        FlowExpressionKind::Ident { .. }
-                        | FlowExpressionKind::Throtle { .. }
-                        | FlowExpressionKind::OnChange { .. } => (), // nothing to do
                         FlowExpressionKind::ComponentCall { .. } => unreachable!(),
                     }
                 }
