@@ -1,5 +1,8 @@
 use crate::backend::rust_ast_from_lir::expression::constant_to_syn;
-use crate::backend::rust_ast_from_lir::item::execution_machine::flow_expression::rust_ast_from_lir as flow_expression_rust_ast_from_lir;
+use crate::backend::rust_ast_from_lir::{
+    item::execution_machine::flow_expression::rust_ast_from_lir as flow_expression_rust_ast_from_lir,
+    pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
+};
 use crate::lir::item::execution_machine::service_loop::FlowInstruction;
 use proc_macro2::Span;
 use quote::TokenStreamExt;
@@ -66,18 +69,19 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 #timer_ident.reset(Instant::now() + Duration::from_millis(#deadline));
             }
         }
-        FlowInstruction::ComponentCall(component_name, optional_event) => {
+        FlowInstruction::ComponentCall(pattern, component_name, optional_event) => {
+            let outputs = pattern_rust_ast_from_lir(pattern);
             let component_ident = Ident::new(&component_name, Span::call_site());
             let input_getter =
                 Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
             if let Some(event_name) = optional_event {
                 let event_ident = Ident::new(&event_name, Span::call_site());
                 parse_quote! {
-                    let outputs = #component_ident.step(context.#input_getter(Some(#event_ident)));
+                    let #outputs = #component_ident.step(context.#input_getter(Some(#event_ident)));
                 }
             } else {
                 parse_quote! {
-                    let outputs = #component_ident.step(context.#input_getter(None));
+                    let #outputs = #component_ident.step(context.#input_getter(None));
                 }
             }
         }

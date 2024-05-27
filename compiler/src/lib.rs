@@ -10,7 +10,7 @@ extern crate proc_macro;
 
 use ast::Ast;
 use backend::rust_ast_from_lir::project::rust_ast_from_lir;
-use frontend::{hir_from_ast::HIRFromAST, lir_from_hir::LIRFromHIR, typing_analysis::TypeAnalysis};
+use frontend::{hir_from_ast::HIRFromAST, typing_analysis::TypeAnalysis};
 use hir::file::File;
 use lir::project::Project;
 pub use proc_macro::TokenStream;
@@ -56,7 +56,7 @@ pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
         .unwrap();
     hir.causality_analysis(&symbol_table, &mut errors).unwrap();
     hir.normalize(&mut symbol_table);
-    let lir: Project = hir.lir_from_hir(&mut symbol_table);
+    let lir: Project = hir.lir_from_hir(symbol_table);
     let rust = rust_ast_from_lir(lir);
 
     let mut tokens = proc_macro2::TokenStream::new();

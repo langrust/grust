@@ -11,7 +11,7 @@ use super::LIRFromHIR;
 impl LIRFromHIR for Pattern {
     type LIR = LIRPattern;
 
-    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         match self.kind {
             PatternKind::Identifier { id } => LIRPattern::Identifier {
                 name: symbol_table.get_name(id).clone(),

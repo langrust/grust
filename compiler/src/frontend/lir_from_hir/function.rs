@@ -15,7 +15,7 @@ use super::LIRFromHIR;
 impl LIRFromHIR for Function {
     type LIR = LIRFunction;
 
-    fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> Self::LIR {
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         let Function {
             id,
             statements,

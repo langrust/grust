@@ -1,5 +1,6 @@
 use crate::common::constant::Constant;
 use crate::common::r#type::Type;
+use crate::lir::pattern::Pattern;
 
 #[derive(Debug, PartialEq)]
 pub struct ServiceLoop {
@@ -56,7 +57,7 @@ pub enum FlowInstruction {
     IfThrotle(String, String, Constant, Box<FlowInstruction>),
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, u64),
-    ComponentCall(String, Option<String>),
+    ComponentCall(Pattern, String, Option<String>),
 }
 
 #[derive(Debug, PartialEq)]
