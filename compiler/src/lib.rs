@@ -78,6 +78,8 @@ pub fn dump_code(path_name: &str, tokens: &proc_macro2::TokenStream) {
     writeln!(&mut file, "{}", tokens).expect(&format!("failed to write to `{path_name}`"));
 
     let mut rustfmt = Command::new("rustfmt")
+        .arg("--edition")
+        .arg("2021")
         .arg(path)
         .spawn()
         .expect("failed to spawn `rustfmt`");
