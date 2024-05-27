@@ -52,10 +52,10 @@ pub struct FlowHandler {
 pub enum FlowInstruction {
     Let(Pattern, Expression),
     Send(String, Expression),
-    IfThortle(String, String, Constant, Vec<FlowInstruction>),
-    IfChange(String, String, Vec<FlowInstruction>),
+    IfThortle(String, String, Constant, Box<FlowInstruction>),
+    IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, u64),
-    ComponentCall(String),
+    ComponentCall(String, Option<String>),
 }
 
 #[derive(Debug, PartialEq)]
