@@ -6,4 +6,5 @@ use crate::common::r#type::Type;
 #[derive(Debug, PartialEq, Default)]
 pub struct SignalsContext {
     pub elements: HashMap<String, Type>,
+    pub components: HashMap<String, Vec<(String, String)>>,
 }

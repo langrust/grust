@@ -50,6 +50,7 @@ impl Interface {
     fn get_signals_context(&self, symbol_table: &SymbolTable) -> SignalsContext {
         let mut signals_context = SignalsContext {
             elements: Default::default(),
+            components: Default::default(),
         };
         self.statements.iter().for_each(|statement| {
             statement.add_signals_context(&mut signals_context, symbol_table)
@@ -746,30 +747,46 @@ impl FlowStatement {
                         None => (),
                     }
                 }
-                FlowExpressionKind::ComponentCall { inputs, .. } => inputs
-                    .iter()
-                    .filter_map(|(_, flow_expression)| {
-                        // get the id of flow_expression (and check it is an idnetifier, from normalization)
-                        // but only if they are signals
-                        match &flow_expression.kind {
-                            FlowExpressionKind::Ident { id } => {
-                                match symbol_table.get_flow_kind(*id) {
-                                    FlowKind::Signal(_) => Some(*id),
-                                    FlowKind::Event(_) => None,
+                FlowExpressionKind::ComponentCall {
+                    component_id,
+                    inputs,
+                } => {
+                    let mut input_fields = vec![];
+
+                    inputs
+                        .iter()
+                        .filter_map(|(input_id, flow_expression)| {
+                            match &flow_expression.kind {
+                                // get the id of flow_expression (and check it is an idnetifier, from normalization)
+                                FlowExpressionKind::Ident { id: flow_id } => {
+                                    // push input_field_name and flow_name in input_fields
+                                    let input_field_name = symbol_table.get_name(*input_id).clone();
+                                    let flow_name = symbol_table.get_name(*flow_id).clone();
+                                    input_fields.push((input_field_name, flow_name));
+
+                                    // only retain signals' ids
+                                    match symbol_table.get_flow_kind(*flow_id) {
+                                        FlowKind::Signal(_) => Some(*flow_id),
+                                        FlowKind::Event(_) => None,
+                                    }
                                 }
+                                _ => unreachable!(),
                             }
-                            _ => unreachable!(),
-                        }
-                    })
-                    .for_each(|id| {
-                        // push in signals context
-                        let name = symbol_table.get_name(id).clone();
-                        let ty = symbol_table.get_type(id);
-                        match signals_context.elements.insert(name, ty.clone()) {
-                            Some(other_ty) => debug_assert!(other_ty.eq(ty)),
-                            None => (),
-                        }
-                    }),
+                        })
+                        .for_each(|id| {
+                            // push in signals context
+                            let name = symbol_table.get_name(id).clone();
+                            let ty = symbol_table.get_type(id);
+                            match signals_context.elements.insert(name, ty.clone()) {
+                                Some(other_ty) => debug_assert!(other_ty.eq(ty)),
+                                None => (),
+                            }
+                        });
+
+                    signals_context
+                        .components
+                        .insert(symbol_table.get_name(*component_id).clone(), input_fields);
+                }
                 FlowExpressionKind::Ident { .. } | FlowExpressionKind::Timeout { .. } => (),
             },
             _ => (),
