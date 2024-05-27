@@ -50,7 +50,9 @@ pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
-    let mut hir: File = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    let hir = ast.hir_from_ast(&mut symbol_table, &mut errors);
+    println!("{errors:?}");
+    let mut hir = hir.unwrap();
     hir.typing(&mut symbol_table, &mut errors).unwrap();
     hir.generate_dependency_graphs(&symbol_table, &mut errors)
         .unwrap();

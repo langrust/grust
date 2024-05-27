@@ -239,6 +239,18 @@ fn should_compile_speed_limiter() {
                 },
             }
         }
+
+        // # Imports
+        import signal  car::hmi::speed_limiter::activation : ActivationResquest;
+        import signal  car::hmi::speed_limiter::set_speed : float;
+        import signal car::adas::speed : float;
+        import signal  car::adas::vacuum_brake : VacuumBrakeState;
+        import signal  car::adas::kickdown: KickdownState;
+        import signal  car::adas::vdc: VdcState;
+
+        let signal (v_set: float, v_update: bool) = process_set_speed(set_speed);
+        export signal v_set: float;
+        export signal v_update: bool;
     };
     let tokens = into_token_stream(ast);
     if let Some(path) = conf::dump_code() {
