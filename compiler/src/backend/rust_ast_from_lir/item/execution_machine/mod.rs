@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 
 use service_loop::rust_ast_from_lir as service_loop_rust_ast_from_lir;
 
+pub mod flow_expression;
 pub mod instruction_flow;
 pub mod service_loop;
 
