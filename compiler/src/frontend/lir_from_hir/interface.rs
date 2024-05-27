@@ -347,23 +347,45 @@ fn compute_flow_instructions(
                 {
                     let component_name = symbol_table.get_name(*component_id);
 
+                    // get outputs' ids
+                    let outputs_ids = pattern.identifiers();
+
                     // get the potential event that will call the component
                     let dependencies: HashSet<usize> =
                         flow_expression.get_dependencies().into_iter().collect();
-                    let mut overlapping_ids = dependencies.intersection(&encountered_events);
-                    debug_assert!(overlapping_ids.try_len().unwrap() <= 1);
+                    let mut overlapping_events = dependencies.intersection(&encountered_events);
+                    debug_assert!(overlapping_events.try_len().unwrap() <= 1);
 
-                    // if one of its input is the encountered event
-                    // then put it in the component call
-                    if let Some(event_id) = overlapping_ids.next() {
+                    // if one of its dependencies is the encountered event
+                    // then call component with the event and update output signals
+                    if let Some(event_id) = overlapping_events.next() {
+                        // call component with the event
                         instructions.push(FlowInstruction::ComponentCall(
                             component_name.clone(),
                             Some(symbol_table.get_name(*event_id).clone()),
-                        ))
+                        ));
+                        // update output signals
+                        for output_id in outputs_ids.iter() {
+                            let output_name = symbol_table.get_name(*output_id);
+                            instructions.push(FlowInstruction::Let(
+                                Pattern::InContext(output_name.clone()),
+                                Expression::Identifier {
+                                    identifier: output_name.clone(),
+                                },
+                            ));
+                        }
                     }
-                    // if no event input is activated, do nothing
-                    // todo: is it true? because its output signals won't be defined
-                    // todo: define signals in any case (like in sample)
+
+                    // define output signals in any case
+                    for output_id in outputs_ids.iter() {
+                        let output_name = symbol_table.get_name(*output_id);
+                        instructions.push(FlowInstruction::Let(
+                            Pattern::Identifier(output_name.clone()),
+                            Expression::InContext {
+                                flow: output_name.clone(),
+                            },
+                        ));
+                    }
                 } else {
                     // get the id of pattern's flow (and check their is only one flow)
                     let mut ids = pattern.identifiers();
