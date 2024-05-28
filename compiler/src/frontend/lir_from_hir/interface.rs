@@ -18,11 +18,11 @@ use crate::{
         },
     },
     lir::item::execution_machine::{
+        flows_context::FlowsContext,
         service_loop::{
             Expression, FlowHandler, FlowInstruction, InterfaceFlow, ServiceLoop, TimingEvent,
             TimingEventKind,
         },
-        signals_context::SignalsContext,
         ExecutionMachine,
     },
     symbol_table::SymbolTable,
@@ -36,31 +36,31 @@ impl Interface {
             return Default::default();
         }
 
-        let mut signals_context = self.get_signals_context(symbol_table);
-        let services_loops = self.get_services_loops(symbol_table, &mut signals_context);
+        let mut flows_context = self.get_flows_context(symbol_table);
+        let services_loops = self.get_services_loops(symbol_table, &mut flows_context);
 
         ExecutionMachine {
-            signals_context,
+            flows_context,
             services_loops,
         }
     }
 }
 
 impl Interface {
-    fn get_signals_context(&self, symbol_table: &SymbolTable) -> SignalsContext {
-        let mut signals_context = SignalsContext {
+    fn get_flows_context(&self, symbol_table: &SymbolTable) -> FlowsContext {
+        let mut flows_context = FlowsContext {
             elements: Default::default(),
             components: Default::default(),
         };
-        self.statements.iter().for_each(|statement| {
-            statement.add_signals_context(&mut signals_context, symbol_table)
-        });
-        signals_context
+        self.statements
+            .iter()
+            .for_each(|statement| statement.add_flows_context(&mut flows_context, symbol_table));
+        flows_context
     }
     fn get_services_loops(
         self,
         symbol_table: &mut SymbolTable,
-        signals_context: &mut SignalsContext,
+        flows_context: &mut FlowsContext,
     ) -> Vec<ServiceLoop> {
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
 
@@ -144,8 +144,8 @@ impl Interface {
                                 typing.clone(),
                             );
 
-                            // add event_old in signals_context
-                            signals_context.elements.insert(fresh_name, typing);
+                            // add event_old in flows_context
+                            flows_context.elements.insert(fresh_name, typing);
 
                             // push in on_change_events
                             on_change_events.insert(event_id, fresh_id);
@@ -278,7 +278,7 @@ impl Interface {
                     &timing_events,
                     encountered_event,
                     ordered_flow_statements,
-                    signals_context,
+                    flows_context,
                     symbol_table,
                 );
                 FlowHandler {
@@ -306,7 +306,7 @@ impl Interface {
                     &timing_events,
                     encountered_event,
                     ordered_flow_statements,
-                    signals_context,
+                    flows_context,
                     symbol_table,
                 );
 
@@ -359,7 +359,7 @@ fn compute_flow_instructions(
     timing_events: &HashMap<usize, (usize, TimingEvent)>,
     mut encountered_events: HashSet<usize>,
     mut ordered_flow_statements: Vec<usize>,
-    signals_context: &SignalsContext,
+    flows_context: &FlowsContext,
     symbol_table: &SymbolTable,
 ) -> Vec<FlowInstruction> {
     let mut instructions = vec![];
@@ -570,7 +570,7 @@ fn compute_flow_instructions(
                                 timing_events,
                                 encountered_events.clone(),
                                 ordered_flow_statements.clone(),
-                                signals_context,
+                                flows_context,
                                 symbol_table,
                             );
 
@@ -596,7 +596,7 @@ fn compute_flow_instructions(
                                 timing_events,
                                 encountered_events,      // takes ownership
                                 ordered_flow_statements, // takes ownership
-                                signals_context,
+                                flows_context,
                                 symbol_table,
                             );
                             onchange_instructions.append(&mut next_onchange_instructions);
@@ -679,7 +679,7 @@ fn compute_flow_instructions(
 
         // add a context update if necessary
         let flow_name = symbol_table.get_name(ordered_flow_id);
-        if signals_context.elements.contains_key(flow_name) {
+        if flows_context.elements.contains_key(flow_name) {
             instructions.push(FlowInstruction::UpdateContext(
                 flow_name.clone(),
                 Expression::Identifier {
@@ -704,11 +704,7 @@ fn compute_flow_instructions(
 }
 
 impl FlowStatement {
-    fn add_signals_context(
-        &self,
-        signals_context: &mut SignalsContext,
-        symbol_table: &SymbolTable,
-    ) {
+    fn add_flows_context(&self, flows_context: &mut FlowsContext, symbol_table: &SymbolTable) {
         match self {
             FlowStatement::Declaration(FlowDeclaration {
                 pattern,
@@ -729,7 +725,7 @@ impl FlowStatement {
                     // push in signals context
                     let name = symbol_table.get_name(id).clone();
                     let ty = symbol_table.get_type(id);
-                    match signals_context.elements.insert(name, ty.clone()) {
+                    match flows_context.elements.insert(name, ty.clone()) {
                         Some(other_ty) => debug_assert!(other_ty.eq(ty)),
                         None => (),
                     }
@@ -750,7 +746,7 @@ impl FlowStatement {
                     // push in signals context
                     let name = symbol_table.get_name(id).clone();
                     let ty = symbol_table.get_type(id);
-                    match signals_context.elements.insert(name, ty.clone()) {
+                    match flows_context.elements.insert(name, ty.clone()) {
                         Some(other_ty) => debug_assert!(other_ty.eq(ty)),
                         None => (),
                     }
@@ -785,13 +781,13 @@ impl FlowStatement {
                             // push in signals context
                             let name = symbol_table.get_name(id).clone();
                             let ty = symbol_table.get_type(id);
-                            match signals_context.elements.insert(name, ty.clone()) {
+                            match flows_context.elements.insert(name, ty.clone()) {
                                 Some(other_ty) => debug_assert!(other_ty.eq(ty)),
                                 None => (),
                             }
                         });
 
-                    signals_context
+                    flows_context
                         .components
                         .insert(symbol_table.get_name(*component_id).clone(), input_fields);
                 }
