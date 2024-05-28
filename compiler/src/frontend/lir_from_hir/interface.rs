@@ -725,16 +725,29 @@ impl FlowStatement {
                     // push in signals context
                     let name = symbol_table.get_name(id).clone();
                     let ty = symbol_table.get_type(id);
-                    match flows_context.elements.insert(name, ty.clone()) {
-                        Some(other_ty) => debug_assert!(other_ty.eq(ty)),
-                        None => (),
-                    }
+                    flows_context.add_element(name, ty);
                 }
                 FlowExpressionKind::Sample {
                     flow_expression, ..
+                } => {
+                    // get the id of flow_expression (and check it is an idnetifier, from normalization)
+                    let id = match &flow_expression.kind {
+                        FlowExpressionKind::Ident { id } => *id,
+                        _ => unreachable!(),
+                    };
+                    // get pattern's id
+                    let mut ids = pattern.identifiers();
+                    assert!(ids.len() == 1);
+                    let pattern_id = ids.pop().unwrap();
+
+                    // push in signals context
+                    let source_name = symbol_table.get_name(id).clone();
+                    let flow_name = symbol_table.get_name(pattern_id).clone();
+                    let ty = Type::Option(Box::new(symbol_table.get_type(id).clone()));
+                    flows_context.add_element(source_name, &ty);
+                    flows_context.add_element(flow_name, &ty);
                 }
-                | FlowExpressionKind::OnChange { flow_expression }
-                | FlowExpressionKind::Scan {
+                FlowExpressionKind::Scan {
                     flow_expression, ..
                 } => {
                     // get the id of flow_expression (and check it is an idnetifier, from normalization)
@@ -744,17 +757,24 @@ impl FlowStatement {
                     };
 
                     // push in signals context
-                    let name = symbol_table.get_name(id).clone();
+                    let source_name = symbol_table.get_name(id).clone();
                     let ty = symbol_table.get_type(id);
-                    match flows_context.elements.insert(name, ty.clone()) {
-                        Some(other_ty) => debug_assert!(other_ty.eq(ty)),
-                        None => (),
-                    }
+                    flows_context.add_element(source_name, ty);
                 }
                 FlowExpressionKind::ComponentCall {
                     component_id,
                     inputs,
                 } => {
+                    // get outputs' ids
+                    let outputs_ids = pattern.identifiers();
+
+                    // store output signals in flows_context
+                    for output_id in outputs_ids.iter() {
+                        let output_name = symbol_table.get_name(*output_id);
+                        let output_type = symbol_table.get_type(*output_id);
+                        flows_context.add_element(output_name.clone(), output_type)
+                    }
+
                     let mut input_fields = vec![];
 
                     inputs
@@ -779,19 +799,18 @@ impl FlowStatement {
                         })
                         .for_each(|id| {
                             // push in signals context
-                            let name = symbol_table.get_name(id).clone();
+                            let source_name = symbol_table.get_name(id).clone();
                             let ty = symbol_table.get_type(id);
-                            match flows_context.elements.insert(name, ty.clone()) {
-                                Some(other_ty) => debug_assert!(other_ty.eq(ty)),
-                                None => (),
-                            }
+                            flows_context.add_element(source_name, ty);
                         });
 
                     flows_context
                         .components
                         .insert(symbol_table.get_name(*component_id).clone(), input_fields);
                 }
-                FlowExpressionKind::Ident { .. } | FlowExpressionKind::Timeout { .. } => (),
+                FlowExpressionKind::Ident { .. }
+                | FlowExpressionKind::OnChange { .. }
+                | FlowExpressionKind::Timeout { .. } => (),
             },
             _ => (),
         }
