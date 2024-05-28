@@ -335,19 +335,19 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub vdc: VdcState,
-    pub v_set: f64,
     pub kickdown: KickdownState,
-    pub vacuum_brake: VacuumBrakeState,
     pub on_state: SpeedLimiterOn,
-    pub v_set_aux: f64,
+    pub speed: f64,
+    pub set_speed: f64,
+    pub vdc: VdcState,
     pub in_regulation_aux: bool,
     pub v_update: bool,
+    pub v_set: f64,
+    pub v_set_aux: f64,
     pub activation: ActivationResquest,
-    pub speed: f64,
-    pub state_update: bool,
-    pub set_speed: f64,
     pub state: SpeedLimiter,
+    pub vacuum_brake: VacuumBrakeState,
+    pub state_update: bool,
 }
 impl Context {
     fn init() -> Context {
@@ -381,6 +381,7 @@ pub async fn run_toto_loop(
 ) {
     let process_set_speed = ProcessSetSpeedState::init();
     let speed_limiter = SpeedLimiterState::init();
+    let mut period = tokio::time::interval(std::time::Duration::from_millis(10u64));
     let mut context = Context::init();
     loop {
         tokio::select! {
@@ -439,7 +440,7 @@ pub async fn run_toto_loop(
                 context.state_update.clone(); let in_regulation =
                 in_regulation_aux;
                 in_regulation_channel.send(in_regulation).await.unwrap();
-            }
+            } _ = period.tick() => {}
         }
     }
 }

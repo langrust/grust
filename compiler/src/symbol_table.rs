@@ -796,6 +796,23 @@ impl SymbolTable {
         }
     }
 
+    /// Tell weither the flow is a time flow.
+    pub fn is_time_flow(&self, id: usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { typing, .. } => match typing {
+                Type::Event(ty) | Type::Signal(ty) => match ty.as_ref() {
+                    Type::Time => true,
+                    _ => false,
+                },
+                _ => unreachable!(),
+            },
+            _ => unreachable!(),
+        }
+    }
+
     /// Get structure' field identifiers from identifier.
     pub fn get_struct_fields(&self, id: usize) -> &Vec<usize> {
         let symbol = self

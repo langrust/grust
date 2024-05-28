@@ -21,8 +21,8 @@ use crate::{
     lir::item::execution_machine::{
         flows_context::FlowsContext,
         service_loop::{
-            Expression, FlowHandler, FlowInstruction, InterfaceFlow, ServiceLoop, TimingEvent,
-            TimingEventKind,
+            ArrivingFlow, Expression, FlowHandler, FlowInstruction, InterfaceFlow, ServiceLoop,
+            TimingEvent, TimingEventKind,
         },
         ExecutionMachine,
     },
@@ -159,7 +159,7 @@ impl Interface {
                                     String::from("period"),
                                     String::from(""),
                                 );
-                                let typing = Type::Event(Box::new(Type::Unit));
+                                let typing = Type::Event(Box::new(Type::Time));
                                 let kind = FlowKind::Event(Default::default());
                                 let fresh_id = symbol_table.insert_fresh_flow(
                                     fresh_name.clone(),
@@ -173,7 +173,7 @@ impl Interface {
                                     id: fresh_id,
                                     path: format_ident!("{fresh_name}").into(),
                                     colon_token: Default::default(),
-                                    flow_type: Type::Event(Box::new(Type::Unit)),
+                                    flow_type: Type::Event(Box::new(Type::Time)),
                                     semi_token: Default::default(),
                                 }));
                                 // add timing_event in graph
@@ -199,7 +199,7 @@ impl Interface {
                                     String::from("timeout"),
                                     String::from(""),
                                 );
-                                let typing = Type::Event(Box::new(Type::Unit));
+                                let typing = Type::Event(Box::new(Type::Time));
                                 let kind = FlowKind::Event(Default::default());
                                 let fresh_id = symbol_table.insert_fresh_flow(
                                     fresh_name.clone(),
@@ -213,7 +213,7 @@ impl Interface {
                                     id: fresh_id,
                                     path: format_ident!("{fresh_name}").into(),
                                     colon_token: Default::default(),
-                                    flow_type: Type::Event(Box::new(Type::Unit)),
+                                    flow_type: Type::Event(Box::new(Type::Time)),
                                     semi_token: Default::default(),
                                 }));
                                 // add timing_event in graph
@@ -241,7 +241,7 @@ impl Interface {
                                         String::from("period"),
                                         String::from(""),
                                     );
-                                    let typing = Type::Event(Box::new(Type::Unit));
+                                    let typing = Type::Event(Box::new(Type::Time));
                                     let kind = FlowKind::Event(Default::default());
                                     let fresh_id = symbol_table.insert_fresh_flow(
                                         fresh_name.clone(),
@@ -255,7 +255,7 @@ impl Interface {
                                         id: fresh_id,
                                         path: format_ident!("{fresh_name}").into(),
                                         colon_token: Default::default(),
-                                        flow_type: Type::Event(Box::new(Type::Unit)),
+                                        flow_type: Type::Event(Box::new(Type::Time)),
                                         semi_token: Default::default(),
                                     }));
                                     // add timing_event in graph
@@ -284,7 +284,7 @@ impl Interface {
         // push new_statements into statements
         statements.append(&mut new_statements);
 
-        // for every incomming flows, compute their handlers
+        // for every incoming flows, compute their handlers
         let flows_handling: Vec<_> = statements
             .iter()
             .filter_map(|statement| match statement {
@@ -302,7 +302,7 @@ impl Interface {
                     FlowKind::Signal(_) => HashSet::new(),
                     FlowKind::Event(_) => HashSet::from([flow_id]),
                 };
-
+                // compute instructions that depend on this incoming flow
                 let instructions = compute_flow_instructions(
                     &statements,
                     &on_change_events,
@@ -312,8 +312,15 @@ impl Interface {
                     flows_context,
                     symbol_table,
                 );
+                // determine weither this arriving flow is a timing event
+                let flow_name = symbol_table.get_name(flow_id).clone();
+                let arriving_flow = if symbol_table.is_time_flow(flow_id) {
+                    ArrivingFlow::TimingEvent(flow_name)
+                } else {
+                    ArrivingFlow::Channel(flow_name)
+                };
                 FlowHandler {
-                    arriving_flow: symbol_table.get_name(flow_id).clone(),
+                    arriving_flow,
                     instructions,
                 }
             })
