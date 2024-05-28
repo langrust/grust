@@ -45,8 +45,13 @@ pub enum TimingEventKind {
 
 #[derive(Debug, PartialEq)]
 pub struct FlowHandler {
-    pub arriving_flow: String,
+    pub arriving_flow: ArrivingFlow,
     pub instructions: Vec<FlowInstruction>,
+}
+#[derive(Debug, PartialEq)]
+pub enum ArrivingFlow {
+    Channel(String),
+    TimingEvent(String),
 }
 
 #[derive(Debug, PartialEq)]

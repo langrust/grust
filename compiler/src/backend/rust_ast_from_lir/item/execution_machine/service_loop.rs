@@ -3,7 +3,9 @@ use crate::backend::rust_ast_from_lir::{
     r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
 use crate::common::convert_case::camel_case;
-use crate::lir::item::execution_machine::service_loop::{FlowHandler, InterfaceFlow, ServiceLoop};
+use crate::lir::item::execution_machine::service_loop::{
+    ArrivingFlow, FlowHandler, InterfaceFlow, ServiceLoop, TimingEvent, TimingEventKind,
+};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, TokenStreamExt};
 use syn::punctuated::Punctuated;
@@ -15,7 +17,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
         service,
         components,
         input_flows,
-        timing_events: _,
+        timing_events,
         output_flows,
         flows_handling,
     } = run_loop;
@@ -83,6 +85,33 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
         body_stmts.push(state);
     });
 
+    // create time flows
+    timing_events
+        .into_iter()
+        .for_each(|TimingEvent { identifier, kind }| {
+            let ident = format_ident!("{}", identifier);match kind {
+            TimingEventKind::Period(period) => {
+                let period = Expr::Lit(ExprLit {
+                    attrs: vec![],
+                    lit: syn::Lit::Int(LitInt::new(&format!("{period}u64"), Span::call_site())),
+                });
+                let set_period =  parse_quote! {
+                    let mut #ident = tokio::time::interval(std::time::Duration::from_millis(#period));
+                };
+                body_stmts.push(set_period);
+            }
+            TimingEventKind::Timeout(deadline) => {
+                let deadline = Expr::Lit(ExprLit {
+                    attrs: vec![],
+                    lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
+                });
+                let set_timeout =  parse_quote! {
+                    let mut #ident = tokio::time::sleep_until(tokio::time::Interval::now() + std::time::Duration::from_millis(#deadline));
+                };
+                body_stmts.push(set_timeout);
+            }
+        }});
+
     // instanciate input context
     let context = parse_quote! {
         let mut context = Context::init();
@@ -98,18 +127,35 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
                  instructions,
              }|
              -> TokenStream {
-                let ident: Ident = Ident::new(arriving_flow.as_str(), Span::call_site());
-                let channel: Ident =
-                    Ident::new((arriving_flow + "_channel").as_str(), Span::call_site());
-                let instructions = instructions
-                    .into_iter()
-                    .map(instruction_flow_rust_ast_from_lir);
-                let mut tokens_instructions = proc_macro2::TokenStream::new();
-                tokens_instructions.append_all(instructions);
-                parse_quote! {
-                    #ident = #channel.recv() => {
-                        let #ident = #ident.unwrap();
-                        #tokens_instructions
+                match arriving_flow {
+                    ArrivingFlow::Channel(flow_name) => {
+                        let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
+                        let channel: Ident =
+                            Ident::new((flow_name + "_channel").as_str(), Span::call_site());
+                        let instructions = instructions
+                            .into_iter()
+                            .map(instruction_flow_rust_ast_from_lir);
+                        let mut tokens_instructions = proc_macro2::TokenStream::new();
+                        tokens_instructions.append_all(instructions);
+                        parse_quote! {
+                            #ident = #channel.recv() => {
+                                let #ident = #ident.unwrap();
+                                #tokens_instructions
+                            }
+                        }
+                    }
+                    ArrivingFlow::TimingEvent(time_flow_name) => {
+                        let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
+                        let instructions = instructions
+                            .into_iter()
+                            .map(instruction_flow_rust_ast_from_lir);
+                        let mut tokens_instructions = proc_macro2::TokenStream::new();
+                        tokens_instructions.append_all(instructions);
+                        parse_quote! {
+                            _ = #ident.tick() => {
+                                #tokens_instructions
+                            }
+                        }
                     }
                 }
             },

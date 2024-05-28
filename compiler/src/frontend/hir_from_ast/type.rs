@@ -74,7 +74,7 @@ impl Type {
                 symbol_table,
                 errors,
             )?))),
-            Type::Integer | Type::Float | Type::Boolean | Type::Unit => Ok(self),
+            Type::Integer | Type::Float | Type::Boolean | Type::Unit| Type::Time => Ok(self),
             Type::Enumeration { .. } // no enumeration at this time: they are `NotDefinedYet`
             | Type::Structure { .. } // no structure at this time: they are `NotDefinedYet`
             | Type::Any // users can not write `Any` type
