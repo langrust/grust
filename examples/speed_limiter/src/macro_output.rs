@@ -328,10 +328,17 @@ impl SpeedLimiterState {
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
-pub struct Context {}
+pub struct Context {
+    pub set_speed: f64,
+}
 impl Context {
     fn init() -> Context {
         Default::default()
+    }
+    fn get_process_set_speed_inputs(&self) -> ProcessSetSpeedInput {
+        ProcessSetSpeedInput {
+            set_speed: self.set_speed,
+        }
     }
 }
 pub async fn run_toto_loop(
@@ -342,8 +349,20 @@ pub async fn run_toto_loop(
     mut kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
     mut vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
 ) -> () {
+    let process_set_speed = ProcessSetSpeedState::init();
     let context = Context::init();
     loop {
-        tokio::select! {activation = activation_channel . recv () => {} set_speed = set_speed_channel . recv () => {} speed = speed_channel . recv () => {} vacuum_brake = vacuum_brake_channel . recv () => {} kickdown = kickdown_channel . recv () => {} vdc = vdc_channel . recv () => {}}
+        tokio::select! {
+            activation = activation_channel.recv() => {} set_speed =
+            set_speed_channel.recv() =>
+            {
+                let v_set = context.v_set.clone(); let v_update =
+                context.v_update.clone(); let v_set = context.v_set.clone();
+                let v_update = context.v_update.clone(); context.set_speed =
+                set_speed;
+            } speed = speed_channel.recv() => {} vacuum_brake =
+            vacuum_brake_channel.recv() => {} kickdown =
+            kickdown_channel.recv() => {} vdc = vdc_channel.recv() => {}
+        }
     }
 }

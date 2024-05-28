@@ -104,8 +104,8 @@ pub fn rust_ast_from_lir(signals_context: SignalsContext) -> Vec<Item> {
                         reference: Some((Default::default(), None)),
                         mutability: None,
                         self_token: Default::default(),
-                        colon_token: Default::default(),
-                        ty: Box::new(parse_quote!(Self)),
+                        colon_token: None,
+                        ty: Box::new(parse_quote!(&Self)),
                     })]
                     .into_iter()
                     .collect(),

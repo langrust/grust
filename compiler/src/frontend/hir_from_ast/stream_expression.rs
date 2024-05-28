@@ -35,21 +35,7 @@ impl HIRFromAST for StreamExpression {
                         .expect("there should be a symbol")
                         .clone();
                     match node_symbol.kind() {
-                        SymbolKind::Node {
-                            is_component,
-                            inputs,
-                            ..
-                        } => {
-                            // if component raise error: component can not be called
-                            if *is_component {
-                                let error = Error::ComponentCall {
-                                    name: node.clone(),
-                                    location: location.clone(),
-                                };
-                                errors.push(error);
-                                return Err(TerminationError);
-                            }
-
+                        SymbolKind::Node { inputs, .. } => {
                             // check inputs and node_inputs have the same length
                             if inputs.len() != inputs_stream_expressions.len() {
                                 let error = Error::IncompatibleInputsNumber {

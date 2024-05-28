@@ -1,3 +1,5 @@
+use crate::ast::interface::FlowKind;
+use crate::common::r#type::Type;
 use crate::hir::flow_expression::{FlowExpression, FlowExpressionKind};
 use crate::hir::identifier_creator::IdentifierCreator;
 use crate::hir::interface::{FlowDeclaration, FlowInstanciation, FlowStatement, Interface};
@@ -54,7 +56,7 @@ impl FlowStatement {
             | FlowStatement::Instanciation(FlowInstanciation {
                 ref mut flow_expression,
                 ..
-            }) => flow_expression.into_flow_call(identifier_creator, symbol_table),
+            }) => flow_expression.normal_form(identifier_creator, symbol_table),
             _ => vec![],
         };
         new_statements.push(self);
@@ -134,7 +136,13 @@ impl FlowExpression {
                     String::from(""),
                 );
                 let typing = self.get_type().unwrap();
-                let fresh_id = symbol_table.insert_fresh_flow(fresh_name, typing.clone());
+                let kind = match typing {
+                    Type::Signal(_) => FlowKind::Signal(Default::default()),
+                    Type::Event(_) => FlowKind::Event(Default::default()),
+                    Type::Tuple(_) => panic!("tuple of flows can not be converted into flow"),
+                    _ => unreachable!(),
+                };
+                let fresh_id = symbol_table.insert_fresh_flow(fresh_name, kind, typing.clone());
 
                 // create statement for the expression
                 let new_statement = FlowStatement::Declaration(FlowDeclaration {

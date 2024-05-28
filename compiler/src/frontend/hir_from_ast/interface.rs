@@ -89,6 +89,7 @@ impl HIRFromAST for FlowStatement {
                 let id = symbol_table.insert_flow(
                     name,
                     Some(path.clone()),
+                    kind,
                     flow_type.clone(),
                     true,
                     location.clone(),
@@ -125,6 +126,7 @@ impl HIRFromAST for FlowStatement {
                 let id = symbol_table.insert_flow(
                     name,
                     Some(path.clone()),
+                    kind,
                     flow_type.clone(),
                     true,
                     location.clone(),
@@ -162,9 +164,11 @@ impl HIRFromAST for FlowPattern {
                     FlowKind::Signal(_) => Type::Signal(Box::new(typing)),
                     FlowKind::Event(_) => Type::Event(Box::new(typing)),
                 };
-                let id = symbol_table.insert_identifier(
+                let id = symbol_table.insert_flow(
                     ident.to_string(),
-                    Some(flow_typing.clone()),
+                    None,
+                    kind,
+                    flow_typing.clone(),
                     true,
                     location.clone(),
                     errors,
@@ -315,16 +319,6 @@ impl ComponentCall {
 
         // get called component id
         let component_id = symbol_table.get_node_id(&name, false, location.clone(), errors)?;
-
-        // if not component raise error: only component can be called in interface
-        if !symbol_table.is_component(component_id) {
-            let error = Error::NodeCall {
-                name,
-                location: location.clone(),
-            };
-            errors.push(error);
-            return Err(TerminationError);
-        }
 
         let component_inputs = symbol_table.get_node_inputs(component_id).clone();
 
