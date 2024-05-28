@@ -156,7 +156,22 @@ impl HIRFromAST for FlowPattern {
         let location = Location::default();
 
         match self {
-            FlowPattern::Single {
+            FlowPattern::Single { ident, .. } => {
+                let id = symbol_table.get_flow_id(
+                    &ident.to_string(),
+                    false,
+                    location.clone(),
+                    errors,
+                )?;
+                let typing = symbol_table.get_type(id);
+
+                Ok(Pattern {
+                    kind: PatternKind::Identifier { id },
+                    typing: Some(typing.clone()),
+                    location,
+                })
+            }
+            FlowPattern::SingleTyped {
                 kind, ident, ty, ..
             } => {
                 let typing = ty.hir_from_ast(&location, symbol_table, errors)?;

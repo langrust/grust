@@ -329,9 +329,9 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub set_speed: f64,
-    pub v_set: f64,
     pub v_update: bool,
+    pub v_set: f64,
+    pub set_speed: f64,
 }
 impl Context {
     fn init() -> Context {
@@ -350,6 +350,8 @@ pub async fn run_toto_loop(
     mut vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
     mut kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
     mut vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+    mut v_set_channel: tokio::sync::mpsc::Sender<f64>,
+    mut v_update_channel: tokio::sync::mpsc::Sender<bool>,
 ) {
     let process_set_speed = ProcessSetSpeedState::init();
     let mut context = Context::init();
@@ -361,8 +363,11 @@ pub async fn run_toto_loop(
             {
                 let set_speed = set_speed.unwrap(); let v_set =
                 context.v_set.clone(); let v_update =
-                context.v_update.clone(); let v_set = context.v_set.clone();
-                let v_update = context.v_update.clone();
+                context.v_update.clone();
+                v_update_channel.send(v_update).await.unwrap(); let v_set =
+                context.v_set.clone(); let v_update =
+                context.v_update.clone();
+                v_set_channel.send(v_set).await.unwrap();
             } speed = speed_channel.recv() => { let speed = speed.unwrap(); }
             vacuum_brake = vacuum_brake_channel.recv() =>
             { let vacuum_brake = vacuum_brake.unwrap(); } kickdown =

@@ -678,7 +678,7 @@ fn compute_flow_instructions(
         }
 
         let flow_name = symbol_table.get_name(ordered_flow_id);
-        
+
         // add send instructions if necessary, i.e. when the flow statement
         // is an instanciation (instanciated flows are exported, by design)
         if let FlowStatement::Instanciation(_) = flow_statement {
