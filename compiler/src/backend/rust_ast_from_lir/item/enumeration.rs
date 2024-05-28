@@ -4,7 +4,7 @@ use syn::*;
 
 /// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
-    let attribute = parse_quote!(#[derive(Clone, Copy, Debug, PartialEq)]);
+    let attribute = parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)]);
     ItemEnum {
         attrs: vec![attribute],
         vis: Visibility::Public(Default::default()),
@@ -15,11 +15,19 @@ pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
         variants: enumeration
             .elements
             .iter()
-            .map(|element| Variant {
-                attrs: Default::default(),
-                ident: Ident::new(element, Span::call_site()),
-                fields: Fields::Unit,
-                discriminant: Default::default(),
+            .enumerate()
+            .map(|(index, element)| {
+                let attrs: Vec<Attribute> = if index == 0 {
+                    vec![parse_quote!(#[default])]
+                } else {
+                    vec![]
+                };
+                Variant {
+                    attrs,
+                    ident: Ident::new(element, Span::call_site()),
+                    fields: Fields::Unit,
+                    discriminant: Default::default(),
+                }
             })
             .collect(),
     }
@@ -43,7 +51,7 @@ mod rust_ast_from_lir {
         };
 
         let control = parse_quote! {
-        #[derive(Clone, Copy, Debug, PartialEq)]
+        #[derive(Clone, Copy, Debug, PartialEq, Default)]
         pub enum Color {
             Blue,
             Red,

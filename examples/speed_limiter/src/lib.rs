@@ -133,7 +133,6 @@ grust! {
         vacuum_brake_state: VacuumBrakeState,
         kickdown: KickdownState,
         vdc_disabled: VdcState,
-        failure: bool,
         speed: float,
         v_set: float,
     ) -> (
@@ -142,6 +141,7 @@ grust! {
         in_regulation: bool,
         state_update: bool
     ) {
+        let failure: bool = false;
         let prev_state: SpeedLimiter = SpeedLimiter::Off fby state;
         let prev_on_state: SpeedLimiterOn = SpeedLimiterOn::StandBy fby on_state;
         match prev_state {
@@ -249,8 +249,23 @@ grust! {
     import signal  car::adas::kickdown: KickdownState;
     import signal  car::adas::vdc: VdcState;
 
-    export signal v_set: float;
-    export signal v_update: bool;
+    export signal car::adas::speed_limiter::in_regulation : bool;
+    export signal car::adas::speed_limiter::v_set         : float;
 
-    (v_set, v_update) = process_set_speed(set_speed);
+    let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(set_speed);
+    let (
+        signal state: SpeedLimiter,
+        signal on_state: SpeedLimiterOn,
+        signal in_regulation_aux: bool,
+        signal state_update: bool,
+    ) = speed_limiter(
+        activation,
+        vacuum_brake,
+        kickdown,
+        vdc,
+        speed,
+        v_set,
+    );
+    v_set = v_set_aux;
+    in_regulation = in_regulation_aux;
 }
