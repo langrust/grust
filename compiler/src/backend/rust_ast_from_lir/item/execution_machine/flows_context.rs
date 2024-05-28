@@ -1,16 +1,16 @@
 use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
 use crate::common::convert_case::camel_case;
-use crate::lir::item::execution_machine::signals_context::SignalsContext;
+use crate::lir::item::execution_machine::flows_context::FlowsContext;
 use proc_macro2::Span;
 use quote::format_ident;
 use syn::*;
 
 /// Transform LIR run-loop into items.
-pub fn rust_ast_from_lir(signals_context: SignalsContext) -> Vec<Item> {
-    let SignalsContext {
+pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
+    let FlowsContext {
         elements,
         components,
-    } = signals_context;
+    } = flows_context;
 
     let context_struct = {
         let fields = elements.iter().map(|(element_name, element_ty)| {
