@@ -1,12 +1,12 @@
+use std::collections::HashMap;
+
 use petgraph::graphmap::DiGraphMap;
 
-use crate::{
-    ast::interface::FlowKind,
-    hir::{
-        flow_expression::{FlowExpression, FlowExpressionKind},
-        interface::{FlowDeclaration, FlowInstanciation, FlowStatement, Interface},
+use crate::hir::{
+    flow_expression::{FlowExpression, FlowExpressionKind},
+    interface::{
+        FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement, Interface,
     },
-    symbol_table::SymbolTable,
 };
 
 impl Interface {
@@ -15,37 +15,65 @@ impl Interface {
     /// # Example
     ///
     /// ```GR
-    /// import signal s;
-    /// import event e;
-    /// export signal o;
+    /// statement 1) import signal s;
+    /// statement 2) import event e;
+    /// statement 3) export signal o;                // depends on statement 5)
     ///
-    /// let event e2 = timeout(e, 30);  // depends on e
-    /// o = my_component(s, e2);        // depends on s and e2
+    /// statement 4) let event e2 = timeout(e, 30);  // depends on statement 2)
+    /// statement 5) o = my_component(s, e2);        // depends on statement 1) and 4)
     /// ```
-    pub fn compute_dependencies(&mut self, symbol_table: &SymbolTable) {
+    pub fn compute_dependencies(&mut self) {
         // initiate graph
         let mut graph = self.create_initialized_graph();
+
+        // create map from flow id to statement defining the flow
+        let flows_statements = self.create_map_from_flow_id_to_statement_id();
 
         // complete dependency graphs
         self.statements
             .iter()
-            .for_each(|statement| statement.add_dependencies(&mut graph, symbol_table));
+            .enumerate()
+            .for_each(|(index, statement)| {
+                statement.add_dependencies(index, &flows_statements, &mut graph)
+            });
 
         // set interface's graph
         self.graph = graph;
     }
 
+    fn create_map_from_flow_id_to_statement_id(&self) -> HashMap<usize, usize> {
+        let mut flows_statements = HashMap::new();
+        self.statements
+            .iter()
+            .enumerate()
+            .for_each(|(index, statement)| {
+                match &statement {
+                    FlowStatement::Import(FlowImport { id, .. }) => {
+                        flows_statements.insert(*id, index);
+                    }
+                    FlowStatement::Declaration(FlowDeclaration { pattern, .. })
+                    | FlowStatement::Instanciation(FlowInstanciation { pattern, .. }) => {
+                        pattern.identifiers().into_iter().for_each(|id| {
+                            flows_statements.insert(id, index);
+                        });
+                    }
+                    FlowStatement::Export(_) => (), // flows are computed by the instanciate statement
+                };
+            });
+        flows_statements
+    }
+
     /// Create an initialized graph from an interface.
     ///
-    /// The created graph has every node's signals as vertices.
+    /// The created graph has every statements' indexes as vertices.
     /// But no edges are added.
-    fn create_initialized_graph(&self) -> DiGraphMap<usize, FlowKind> {
+    fn create_initialized_graph(&self) -> DiGraphMap<usize, ()> {
         // create an empty graph
         let mut graph = DiGraphMap::new();
 
         // add flows as vertices
-        for flow in self.get_flows_ids() {
-            graph.add_node(flow);
+        for statement_index in 0..self.statements.len() {
+            graph.add_node(statement_index);
         }
 
         // return graph
@@ -56,33 +84,28 @@ impl Interface {
 impl FlowStatement {
     pub fn add_dependencies(
         &self,
-        graph: &mut DiGraphMap<usize, FlowKind>,
-        symbol_table: &SymbolTable,
+        index: usize,
+        flows_statements: &HashMap<usize, usize>,
+        graph: &mut DiGraphMap<usize, ()>,
     ) {
         match self {
             FlowStatement::Declaration(FlowDeclaration {
-                pattern,
-                flow_expression,
-                ..
+                flow_expression, ..
             })
             | FlowStatement::Instanciation(FlowInstanciation {
-                pattern,
-                flow_expression,
-                ..
+                flow_expression, ..
             }) => {
-                let flows_ids = pattern.identifiers();
                 let dependencies = flow_expression.get_dependencies();
-                for flow_id in flows_ids {
-                    dependencies.iter().for_each(|source_id| {
-                        graph.add_edge(
-                            *source_id,
-                            flow_id,
-                            symbol_table.get_flow_kind(*source_id).clone(),
-                        );
-                    });
-                }
+                dependencies.iter().for_each(|flow_id| {
+                    let index_statement = flows_statements.get(flow_id).expect("should be there");
+                    graph.add_edge(*index_statement, index, ());
+                });
             }
-            FlowStatement::Import(_) | FlowStatement::Export(_) => (),
+            FlowStatement::Export(FlowExport { id, .. }) => {
+                let index_statement = flows_statements.get(id).expect("should be there");
+                graph.add_edge(*index_statement, index, ());
+            }
+            FlowStatement::Import(_) => (), // no dependencies for import
         }
     }
 }

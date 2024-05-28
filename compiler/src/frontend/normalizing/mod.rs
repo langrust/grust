@@ -155,7 +155,7 @@ impl File {
     /// ```
     pub fn normalize(&mut self, symbol_table: &mut SymbolTable) {
         self.normal_form(symbol_table);
-        self.generate_flows_dependency_graphs(symbol_table);
+        self.generate_flows_dependency_graphs();
         self.memorize(symbol_table);
         self.inline_when_needed(symbol_table);
         self.schedule()
