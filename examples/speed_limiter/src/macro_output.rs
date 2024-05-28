@@ -329,6 +329,8 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
+    pub v_set: f64,
+    pub v_update: bool,
     pub set_speed: f64,
 }
 impl Context {
@@ -357,9 +359,10 @@ pub async fn run_toto_loop(
             set_speed_channel.recv() =>
             {
                 let v_set = context.v_set.clone(); let v_update =
-                context.v_update.clone(); let v_set = context.v_set.clone();
-                let v_update = context.v_update.clone(); context.set_speed =
-                set_speed;
+                context.v_update.clone(); context.v_update = v_update; let
+                v_set = context.v_set.clone(); let v_update =
+                context.v_update.clone(); context.v_set = v_set;
+                context.set_speed = set_speed;
             } speed = speed_channel.recv() => {} vacuum_brake =
             vacuum_brake_channel.recv() => {} kickdown =
             kickdown_channel.recv() => {} vdc = vdc_channel.recv() => {}
