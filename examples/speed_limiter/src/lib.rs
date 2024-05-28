@@ -249,5 +249,8 @@ grust! {
     import signal  car::adas::kickdown: KickdownState;
     import signal  car::adas::vdc: VdcState;
 
-    let (signal v_set: float, signal v_update: bool) = process_set_speed(set_speed);
+    export signal v_set: float;
+    export signal v_update: bool;
+
+    (v_set, v_update) = process_set_speed(set_speed);
 }

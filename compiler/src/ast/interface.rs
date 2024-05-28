@@ -1,6 +1,6 @@
 use syn::{parenthesized, parse::Parse, punctuated::Punctuated, token, Token};
 
-use super::{colon::Colon, keyword, pattern::Pattern};
+use super::{colon::Colon, keyword};
 use crate::common::{constant::Constant, r#type::Type};
 
 /// GReact `sample` operator.
@@ -274,11 +274,14 @@ pub enum FlowPattern {
         paren_token: token::Paren,
         patterns: Punctuated<FlowPattern, Token![,]>,
     },
-    Single {
+    SingleTyped {
         kind: FlowKind,
         ident: syn::Ident,
         colon_token: Token![:],
         ty: Type,
+    },
+    Single {
+        ident: syn::Ident,
     },
 }
 impl Parse for FlowPattern {
@@ -292,17 +295,20 @@ impl Parse for FlowPattern {
                 paren_token,
                 patterns,
             })
-        } else {
+        } else if FlowKind::peek(input) {
             let kind: FlowKind = input.parse()?;
             let ident: syn::Ident = input.parse()?;
             let colon_token: Token![:] = input.parse()?;
             let ty: Type = input.parse()?;
-            Ok(FlowPattern::Single {
+            Ok(FlowPattern::SingleTyped {
                 kind,
                 ident,
                 colon_token,
                 ty,
             })
+        } else {
+            let ident: syn::Ident = input.parse()?;
+            Ok(FlowPattern::Single { ident })
         }
     }
 }
@@ -341,7 +347,7 @@ impl Parse for FlowDeclaration {
 /// Flow statement AST.
 pub struct FlowInstanciation {
     /// Pattern of instanciated flows.
-    pub pattern: Pattern,
+    pub pattern: FlowPattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: FlowExpression,
@@ -350,7 +356,7 @@ pub struct FlowInstanciation {
 impl FlowInstanciation {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(Pattern::parse).is_err() {
+        if forked.call(FlowPattern::parse).is_err() {
             return false;
         }
         forked.peek(Token![=])
@@ -358,7 +364,7 @@ impl FlowInstanciation {
 }
 impl Parse for FlowInstanciation {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let pattern: Pattern = input.parse()?;
+        let pattern: FlowPattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
         let flow_expression: FlowExpression = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
