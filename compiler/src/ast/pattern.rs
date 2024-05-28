@@ -149,23 +149,23 @@ impl Parse for Tuple {
 
 /// Some pattern that matches when an optional has a value which match the pattern.
 #[derive(Debug, PartialEq, Clone)]
-pub struct Some {
+pub struct PatSome {
     /// The pattern matching the value.
     pub pattern: Box<Pattern>,
 }
-impl Some {
+impl PatSome {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         input.peek(keyword::some)
     }
 }
-impl Parse for Some {
+impl Parse for PatSome {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: keyword::some = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
         let pattern = Box::new(content.parse()?);
         if content.is_empty() {
-            Ok(Some { pattern })
+            Ok(PatSome { pattern })
         } else {
             Err(input.error("expected only one pattern"))
         }
@@ -188,7 +188,7 @@ pub enum Pattern {
     /// Tuple pattern that matches tuples.
     Tuple(Tuple),
     /// Some pattern that matches when an optional has a value which match the pattern.
-    Some(Some),
+    Some(PatSome),
     /// None pattern.
     None,
     /// Default pattern.
@@ -204,7 +204,7 @@ impl Parse for Pattern {
             Pattern::Tuple(input.parse()?)
         } else if Enumeration::peek(input) {
             Pattern::Enumeration(input.parse()?)
-        } else if Some::peek(input) {
+        } else if PatSome::peek(input) {
             Pattern::Some(input.parse()?)
         } else if input.fork().peek(keyword::none) {
             let _: keyword::none = input.parse()?;
@@ -228,7 +228,7 @@ impl Parse for Pattern {
 #[cfg(test)]
 mod parse_pattern {
     use crate::{
-        ast::pattern::{Enumeration, Pattern, Some, Structure, Tuple},
+        ast::pattern::{Enumeration, PatSome, Pattern, Structure, Tuple},
         common::constant::Constant,
     };
 
@@ -331,7 +331,7 @@ mod parse_pattern {
     #[test]
     fn should_parse_some() {
         let pattern: Pattern = syn::parse_quote! {some(x)};
-        let control = Pattern::Some(Some {
+        let control = Pattern::Some(PatSome {
             pattern: Box::new(Pattern::Identifier(String::from("x"))),
         });
         assert_eq!(pattern, control)

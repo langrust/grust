@@ -1,10 +1,11 @@
 use crate::ast::interface::{
     ComponentCall, FlowDeclaration, FlowExport, FlowExpression, FlowImport, FlowInstanciation,
-    FlowKind, FlowStatement, OnChange, Sample, Scan, Throtle, Timeout,
+    FlowKind, FlowPattern, FlowStatement, OnChange, Sample, Scan, Throtle, Timeout,
 };
 use crate::common::location::Location;
 use crate::common::r#type::Type;
 use crate::error::{Error, TerminationError};
+use crate::hir::pattern::PatternKind;
 use crate::hir::{
     flow_expression::{
         FlowExpression as HIRFlowExpression, FlowExpressionKind as HIRFlowExpressionKind,
@@ -14,6 +15,7 @@ use crate::hir::{
         FlowImport as HIRFlowImport, FlowInstanciation as HIRFlowInstanciation,
         FlowStatement as HIRFlowStatement,
     },
+    pattern::Pattern,
 };
 use crate::symbol_table::SymbolTable;
 
@@ -31,35 +33,12 @@ impl HIRFromAST for FlowStatement {
         match self {
             FlowStatement::Declaration(FlowDeclaration {
                 let_token,
-                kind,
                 typed_pattern,
                 eq_token,
                 flow_expression,
                 semi_token,
             }) => {
-                todo!("kinds should be in the pattern");
-                typed_pattern.store(true, symbol_table, errors)?;
                 let pattern = typed_pattern.hir_from_ast(symbol_table, errors)?;
-
-                // let name = typed_ident.left.to_string();
-                // let flow_type = {
-                //     let inner = typed_ident
-                //         .right
-                //         .hir_from_ast(&location, symbol_table, errors)?;
-                //     match kind {
-                //         FlowKind::Signal(_) => Type::Signal(Box::new(inner)),
-                //         FlowKind::Event(_) => Type::Event(Box::new(inner)),
-                //     }
-                // };
-                // let id = symbol_table.insert_flow(
-                //     name,
-                //     None,
-                //     flow_type.clone(),
-                //     true,
-                //     location.clone(),
-                //     errors,
-                // )?;
-
                 let flow_expression = flow_expression.hir_from_ast(symbol_table, errors)?;
 
                 Ok(HIRFlowStatement::Declaration(HIRFlowDeclaration {
@@ -159,6 +138,68 @@ impl HIRFromAST for FlowStatement {
                     flow_type,
                     semi_token,
                 }))
+            }
+        }
+    }
+}
+
+impl HIRFromAST for FlowPattern {
+    type HIR = Pattern;
+
+    fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<Self::HIR, TerminationError> {
+        let location = Location::default();
+
+        match self {
+            FlowPattern::Single {
+                kind, ident, ty, ..
+            } => {
+                let typing = ty.hir_from_ast(&location, symbol_table, errors)?;
+                let flow_typing = match kind {
+                    FlowKind::Signal(_) => Type::Signal(Box::new(typing)),
+                    FlowKind::Event(_) => Type::Event(Box::new(typing)),
+                };
+                let id = symbol_table.insert_identifier(
+                    ident.to_string(),
+                    Some(flow_typing.clone()),
+                    true,
+                    location.clone(),
+                    errors,
+                )?;
+
+                Ok(Pattern {
+                    kind: PatternKind::Typed {
+                        pattern: Box::new(Pattern {
+                            kind: PatternKind::Identifier { id },
+                            typing: Some(flow_typing.clone()),
+                            location: location.clone(),
+                        }),
+                        typing: flow_typing.clone(),
+                    },
+                    typing: Some(flow_typing),
+                    location,
+                })
+            }
+            FlowPattern::Tuple { patterns, .. } => {
+                let elements = patterns
+                    .into_iter()
+                    .map(|pattern| pattern.hir_from_ast(symbol_table, errors))
+                    .collect::<Vec<Result<_, _>>>()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                let types = elements
+                    .iter()
+                    .map(|pattern| pattern.typing.as_ref().unwrap().clone())
+                    .collect();
+                Ok(Pattern {
+                    kind: PatternKind::Tuple { elements },
+                    typing: Some(Type::Tuple(types)),
+                    location,
+                })
             }
         }
     }

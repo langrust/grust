@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::pattern::{Enumeration, Pattern, Some, Structure, Tuple, Typed};
+use crate::ast::pattern::{Enumeration, PatSome, Pattern, Structure, Tuple, Typed};
 use crate::common::location::Location;
 use crate::error::{Error, TerminationError};
 use crate::hir::pattern::{Pattern as HIRPattern, PatternKind};
@@ -130,13 +130,13 @@ impl Tuple {
     }
 }
 
-impl Some {
+impl PatSome {
     fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> Result<PatternKind, TerminationError> {
-        let Some { pattern } = self;
+        let PatSome { pattern } = self;
         Ok(PatternKind::Some {
             pattern: Box::new(pattern.hir_from_ast(symbol_table, errors)?),
         })
@@ -245,7 +245,9 @@ impl Pattern {
                 .into_iter()
                 .flatten()
                 .collect()),
-            Pattern::Some(Some { pattern }) => pattern.store(is_declaration, symbol_table, errors),
+            Pattern::Some(PatSome { pattern }) => {
+                pattern.store(is_declaration, symbol_table, errors)
+            }
             Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::None | Pattern::Default => {
                 Ok(vec![])
             }
