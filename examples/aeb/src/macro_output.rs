@@ -13,17 +13,26 @@ pub async fn run_toto_loop(
     mut cam_obj_info_channel: tokio::sync::mpsc::Receiver<i64>,
     mut fused_context_data_channel: tokio::sync::mpsc::Receiver<i64>,
     mut common_variant_mngt_channel: tokio::sync::mpsc::Receiver<i64>,
-) -> () {
-    let context = Context::init();
+) {
+    let mut context = Context::init();
     loop {
         tokio::select! {
-            collision_collection = collision_collection_channel.recv() => {}
+            collision_collection = collision_collection_channel.recv() =>
+            { let collision_collection = collision_collection.unwrap(); }
             maneuver_acknoledgement = maneuver_acknoledgement_channel.recv()
-            => {} vehicle_data = vehicle_data_channel.recv() => {} nvm_inp =
-            nvm_inp_channel.recv() => {} cam_obj_info =
-            cam_obj_info_channel.recv() => {} fused_context_data =
-            fused_context_data_channel.recv() => {} common_variant_mngt =
-            common_variant_mngt_channel.recv() => {}
+            =>
+            {
+                let maneuver_acknoledgement =
+                maneuver_acknoledgement.unwrap();
+            } vehicle_data = vehicle_data_channel.recv() =>
+            { let vehicle_data = vehicle_data.unwrap(); } nvm_inp =
+            nvm_inp_channel.recv() => { let nvm_inp = nvm_inp.unwrap(); }
+            cam_obj_info = cam_obj_info_channel.recv() =>
+            { let cam_obj_info = cam_obj_info.unwrap(); } fused_context_data =
+            fused_context_data_channel.recv() =>
+            { let fused_context_data = fused_context_data.unwrap(); }
+            common_variant_mngt = common_variant_mngt_channel.recv() =>
+            { let common_variant_mngt = common_variant_mngt.unwrap(); }
         }
     }
 }

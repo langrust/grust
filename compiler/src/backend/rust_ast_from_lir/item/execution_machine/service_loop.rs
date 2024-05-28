@@ -32,9 +32,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
             let ty = type_rust_ast_from_lir(r#type);
             inputs.push(FnArg::Typed(PatType {
                 attrs: vec![],
-                pat: parse_quote!(mut #name),
+                pat: parse_quote! { mut #name },
                 colon_token: Default::default(),
-                ty: Box::new(parse_quote!(tokio::sync::mpsc::Receiver<#ty>)),
+                ty: Box::new(parse_quote! { tokio::sync::mpsc::Receiver<#ty> }),
             }));
         },
     );
@@ -47,9 +47,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
             let ty = type_rust_ast_from_lir(r#type);
             inputs.push(FnArg::Typed(PatType {
                 attrs: vec![],
-                pat: parse_quote!(#name),
+                pat: parse_quote! { mut #name },
                 colon_token: Default::default(),
-                ty: Box::new(parse_quote!(tokio::sync::mpsc::Sender<#ty>)),
+                ty: Box::new(parse_quote! { tokio::sync::mpsc::Sender<#ty> }),
             }));
         },
     );
@@ -66,7 +66,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
         paren_token: Default::default(),
         inputs,
         variadic: None,
-        output: ReturnType::Type(Default::default(), Box::new(parse_quote!(()))),
+        output: ReturnType::Default,
     };
 
     // initiate body statement
@@ -77,12 +77,16 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
         let component_state_struct =
             format_ident!("{}", camel_case(&format!("{}State", component_name)));
         let component_name = format_ident!("{}", component_name);
-        let state = parse_quote!(let #component_name = #component_state_struct::init(););
+        let state = parse_quote! {
+            let #component_name = #component_state_struct::init();
+        };
         body_stmts.push(state);
     });
 
     // instanciate input context
-    let context = parse_quote!(let context = Context::init(););
+    let context = parse_quote! {
+        let mut context = Context::init();
+    };
     body_stmts.push(context);
 
     // it performs a loop on the [tokio::select!] macro
@@ -102,14 +106,19 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
                     .map(instruction_flow_rust_ast_from_lir);
                 let mut tokens_instructions = proc_macro2::TokenStream::new();
                 tokens_instructions.append_all(instructions);
-                parse_quote!(#ident = #channel.recv() => { #tokens_instructions })
+                parse_quote! {
+                    #ident = #channel.recv() => {
+                        let #ident = #ident.unwrap();
+                        #tokens_instructions
+                    }
+                }
             },
         ));
         let select = Stmt::Expr(
             Expr::Macro(ExprMacro {
                 attrs: Default::default(),
                 mac: Macro {
-                    path: parse_quote!(tokio::select),
+                    path: parse_quote! { tokio::select },
                     bang_token: Default::default(),
                     delimiter: MacroDelimiter::Brace(Default::default()),
                     tokens,

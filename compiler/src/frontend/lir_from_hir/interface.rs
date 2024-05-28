@@ -677,17 +677,8 @@ fn compute_flow_instructions(
             FlowStatement::Export(_) => unreachable!(),
         }
 
-        // add a context update if necessary
         let flow_name = symbol_table.get_name(ordered_flow_id);
-        if flows_context.elements.contains_key(flow_name) {
-            instructions.push(FlowInstruction::UpdateContext(
-                flow_name.clone(),
-                Expression::Identifier {
-                    identifier: flow_name.clone(),
-                },
-            ))
-        }
-
+        
         // add send instructions if necessary, i.e. when the flow statement
         // is an instanciation (instanciated flows are exported, by design)
         if let FlowStatement::Instanciation(_) = flow_statement {
