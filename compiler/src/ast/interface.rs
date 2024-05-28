@@ -269,13 +269,48 @@ impl Parse for FlowKind {
     }
 }
 
+pub enum FlowPattern {
+    Tuple {
+        paren_token: token::Paren,
+        patterns: Punctuated<FlowPattern, Token![,]>,
+    },
+    Single {
+        kind: FlowKind,
+        ident: syn::Ident,
+        colon_token: Token![:],
+        ty: Type,
+    },
+}
+impl Parse for FlowPattern {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.peek(token::Paren) {
+            let content;
+            let paren_token: token::Paren = parenthesized!(content in input);
+            let patterns: Punctuated<FlowPattern, Token![,]> =
+                Punctuated::parse_terminated(&content)?;
+            Ok(FlowPattern::Tuple {
+                paren_token,
+                patterns,
+            })
+        } else {
+            let kind: FlowKind = input.parse()?;
+            let ident: syn::Ident = input.parse()?;
+            let colon_token: Token![:] = input.parse()?;
+            let ty: Type = input.parse()?;
+            Ok(FlowPattern::Single {
+                kind,
+                ident,
+                colon_token,
+                ty,
+            })
+        }
+    }
+}
 /// Flow statement AST.
 pub struct FlowDeclaration {
     pub let_token: Token![let],
-    /// Flow's kind.
-    pub kind: FlowKind,
     /// Pattern of declared flows and their type.
-    pub typed_pattern: Pattern,
+    pub typed_pattern: FlowPattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: FlowExpression,
@@ -289,14 +324,12 @@ impl FlowDeclaration {
 impl Parse for FlowDeclaration {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let let_token: Token![let] = input.parse()?;
-        let kind: FlowKind = input.parse()?;
-        let typed_pattern: Pattern = input.parse()?;
+        let typed_pattern: FlowPattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
         let flow_expression: FlowExpression = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
         Ok(FlowDeclaration {
             let_token,
-            kind,
             typed_pattern,
             eq_token,
             flow_expression,
