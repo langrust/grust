@@ -137,8 +137,12 @@ impl Interface {
                                 String::from(""),
                             );
                             let typing = symbol_table.get_type(event_id).clone();
-                            let fresh_id =
-                                symbol_table.insert_fresh_flow(fresh_name.clone(), typing.clone());
+                            let kind = symbol_table.get_flow_kind(event_id).clone();
+                            let fresh_id = symbol_table.insert_fresh_flow(
+                                fresh_name.clone(),
+                                kind,
+                                typing.clone(),
+                            );
 
                             // add event_old in signals_context
                             signals_context.elements.insert(fresh_name, typing);
@@ -155,8 +159,9 @@ impl Interface {
                                 String::from(""),
                             );
                             let typing = Type::Event(Box::new(Type::Unit));
+                            let kind = FlowKind::Event(Default::default());
                             let fresh_id =
-                                symbol_table.insert_fresh_flow(fresh_name.clone(), typing);
+                                symbol_table.insert_fresh_flow(fresh_name.clone(), kind, typing);
 
                             // get the identifier of the receiving flow
                             let mut flows_ids = pattern.identifiers();
@@ -186,8 +191,9 @@ impl Interface {
                                 String::from(""),
                             );
                             let typing = Type::Event(Box::new(Type::Unit));
+                            let kind = FlowKind::Event(Default::default());
                             let fresh_id =
-                                symbol_table.insert_fresh_flow(fresh_name.clone(), typing);
+                                symbol_table.insert_fresh_flow(fresh_name.clone(), kind, typing);
 
                             // get the identifier of the receiving flow
                             let mut flows_ids = pattern.identifiers();
@@ -219,8 +225,12 @@ impl Interface {
                                     String::from(""),
                                 );
                                 let typing = Type::Event(Box::new(Type::Unit));
-                                let fresh_id =
-                                    symbol_table.insert_fresh_flow(fresh_name.clone(), typing);
+                                let kind = FlowKind::Event(Default::default());
+                                let fresh_id = symbol_table.insert_fresh_flow(
+                                    fresh_name.clone(),
+                                    kind,
+                                    typing,
+                                );
                                 let timing_event = TimingEvent {
                                     identifier: fresh_name,
                                     kind: TimingEventKind::Period(period.clone()),
@@ -381,28 +391,26 @@ fn compute_flow_instructions(
                     // get outputs' ids
                     let outputs_ids = pattern.identifiers();
 
-                    // get timing event id
-                    let (timer_id, _) = timing_events
-                        .get(&ordered_flow_id)
-                        .expect("there should be a timing event");
-
-                    // if timing event is activated
-                    if encountered_events.contains(timer_id) {
-                        // call component with no event
-                        instructions.push(FlowInstruction::ComponentCall(
-                            pattern.clone().lir_from_hir(symbol_table),
-                            component_name.clone(),
-                            None,
-                        ));
-                        // update output signals
-                        for output_id in outputs_ids.iter() {
-                            let output_name = symbol_table.get_name(*output_id);
-                            instructions.push(FlowInstruction::UpdateContext(
-                                output_name.clone(),
-                                Expression::Identifier {
-                                    identifier: output_name.clone(),
-                                },
+                    // get timing event id if it exists
+                    if let Some((timer_id, _)) = timing_events.get(&ordered_flow_id) {
+                        // if timing event is activated
+                        if encountered_events.contains(timer_id) {
+                            // call component with no event
+                            instructions.push(FlowInstruction::ComponentCall(
+                                pattern.clone().lir_from_hir(symbol_table),
+                                component_name.clone(),
+                                None,
                             ));
+                            // update output signals
+                            for output_id in outputs_ids.iter() {
+                                let output_name = symbol_table.get_name(*output_id);
+                                instructions.push(FlowInstruction::UpdateContext(
+                                    output_name.clone(),
+                                    Expression::Identifier {
+                                        identifier: output_name.clone(),
+                                    },
+                                ));
+                            }
                         }
                     }
 

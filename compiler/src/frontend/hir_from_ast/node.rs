@@ -68,7 +68,6 @@ impl Component {
         symbol_table.local();
 
         let name = self.ident.to_string();
-        let is_component = false;
         let period = self
             .period
             .as_ref()
@@ -144,15 +143,7 @@ impl Component {
         symbol_table.global();
 
         let _ = symbol_table.insert_node(
-            name,
-            is_component,
-            false,
-            inputs,
-            outputs,
-            locals,
-            period,
-            location,
-            errors,
+            name, false, inputs, outputs, locals, period, location, errors,
         )?;
 
         Ok(())

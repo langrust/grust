@@ -107,20 +107,6 @@ pub enum Error {
         /// the error location
         location: Location,
     },
-    /// component is called
-    ComponentCall {
-        /// name of the calle Component
-        name: String,
-        /// the error location
-        location: Location,
-    },
-    /// node is called
-    NodeCall {
-        /// name of the calle Component
-        name: String,
-        /// the error location
-        location: Location,
-    },
     /// redefine an already defined element
     AlreadyDefinedElement {
         /// the known identifier
@@ -409,24 +395,6 @@ impl Error {
                     format!("the index is out of bounds")
                 ]
             ),
-            Error::ComponentCall { name, location } => Diagnostic::error()
-                .with_message("component can not be called")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                ])
-                .with_notes(vec![
-                    format!("'{name}' is a component, it can only be called in interface")
-                ]
-            ),
-            Error::NodeCall { name, location } => Diagnostic::error()
-                .with_message("only components can be called in interface")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                ])
-                .with_notes(vec![
-                    format!("'{name}' is a node, it can not be called in interface")
-                ]
-            ),
             Error::AlreadyDefinedElement { name, location } => Diagnostic::error()
                 .with_message("duplicated element")
                 .with_labels(vec![
@@ -668,8 +636,6 @@ impl std::fmt::Display for Error {
             Error::UnknownField { .. } => write!(f, "Unknown Field"),
             Error::MissingField { .. } => write!(f, "Missing Field"),
             Error::IndexOutOfBounds { .. } => write!(f, "Index Out Of Bounds"),
-            Error::ComponentCall { .. } => write!(f, "Component Call"),
-            Error::NodeCall { .. } => write!(f, "Node Call"),
             Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
             Error::IncompatibleTuple { .. } => write!(f, "Incompatible Tuple"),

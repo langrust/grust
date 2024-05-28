@@ -74,7 +74,11 @@ impl FlowStatement {
                 let dependencies = flow_expression.get_dependencies();
                 for flow_id in flows_ids {
                     dependencies.iter().for_each(|source_id| {
-                        graph.add_edge(*source_id, flow_id, symbol_table.get_flow_kind(*source_id));
+                        graph.add_edge(
+                            *source_id,
+                            flow_id,
+                            symbol_table.get_flow_kind(*source_id).clone(),
+                        );
                     });
                 }
             }

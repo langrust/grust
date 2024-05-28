@@ -26,6 +26,8 @@ pub enum SymbolKind {
     Flow {
         /// Flow path (local flows don't have path in real system).
         path: Option<syn::Path>,
+        /// FLow kind.
+        kind: FlowKind,
         /// Flow type.
         typing: Type,
     },
@@ -40,8 +42,6 @@ pub enum SymbolKind {
     },
     /// Node kind.
     Node {
-        /// Is true when the node is a component.
-        is_component: bool,
         /// Node's input identifiers.
         inputs: Vec<usize>,
         /// Node's output identifiers.
@@ -337,13 +337,14 @@ impl SymbolTable {
         &mut self,
         name: String,
         path: Option<syn::Path>,
+        kind: FlowKind,
         typing: Type,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
-            kind: SymbolKind::Flow { path, typing },
+            kind: SymbolKind::Flow { path, kind, typing },
             name,
         };
 
@@ -376,7 +377,6 @@ impl SymbolTable {
     pub fn insert_node(
         &mut self,
         name: String,
-        is_component: bool,
         local: bool,
         inputs: Vec<usize>,
         outputs: Vec<(String, usize)>,
@@ -387,7 +387,6 @@ impl SymbolTable {
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
             kind: SymbolKind::Node {
-                is_component,
                 inputs,
                 outputs,
                 locals,
@@ -485,9 +484,13 @@ impl SymbolTable {
     }
 
     /// Insert fresh flow in symbol table.
-    pub fn insert_fresh_flow(&mut self, fresh_name: String, typing: Type) -> usize {
+    pub fn insert_fresh_flow(&mut self, fresh_name: String, kind: FlowKind, typing: Type) -> usize {
         let symbol = Symbol {
-            kind: SymbolKind::Flow { path: None, typing },
+            kind: SymbolKind::Flow {
+                path: None,
+                kind,
+                typing,
+            },
             name: fresh_name,
         };
 
@@ -782,28 +785,13 @@ impl SymbolTable {
         }
     }
 
-    /// Tell if identifier is a component.
-    pub fn is_component(&self, id: usize) -> bool {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::Node { is_component, .. } => *is_component,
-            _ => unreachable!(),
-        }
-    }
-
     /// Get flow's kind from identifier.
-    pub fn get_flow_kind(&self, id: usize) -> FlowKind {
+    pub fn get_flow_kind(&self, id: usize) -> &FlowKind {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { typing, .. } => match typing {
-                Type::Signal(_) => FlowKind::Signal(Default::default()),
-                Type::Event(_) => FlowKind::Event(Default::default()),
-                _ => unreachable!(),
-            },
+            SymbolKind::Flow { kind, .. } => kind,
             _ => unreachable!(),
         }
     }

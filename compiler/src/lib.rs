@@ -11,7 +11,6 @@ extern crate proc_macro;
 use ast::Ast;
 use backend::rust_ast_from_lir::project::rust_ast_from_lir;
 use frontend::{hir_from_ast::HIRFromAST, typing_analysis::TypeAnalysis};
-use hir::file::File;
 use lir::project::Project;
 pub use proc_macro::TokenStream;
 use quote::TokenStreamExt;
@@ -50,9 +49,7 @@ pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
-    let hir = ast.hir_from_ast(&mut symbol_table, &mut errors);
-    println!("{errors:?}");
-    let mut hir = hir.unwrap();
+    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
     hir.typing(&mut symbol_table, &mut errors).unwrap();
     hir.generate_dependency_graphs(&symbol_table, &mut errors)
         .unwrap();

@@ -149,17 +149,24 @@ impl TypeAnalysis for FlowExpression {
                     .into_iter()
                     .collect::<Result<(), TerminationError>>()?;
 
-                // get the outputs types fo the called component
-                let node_application_type = symbol_table
+                // get the outputs types of the called component
+                let mut outputs_types = symbol_table
                     .get_node_outputs(*component_id)
                     .iter()
                     .map(|(_, output_id)| match symbol_table.get_type(*output_id) {
                         Type::Option(ty) => Type::Event(ty.clone()),
                         ty => Type::Signal(Box::new(ty.clone())),
                     })
-                    .collect();
+                    .collect::<Vec<_>>();
 
-                self.typing = Some(Type::Tuple(node_application_type));
+                // construct node application type
+                let node_application_type = if outputs_types.len() == 1 {
+                    outputs_types.pop().unwrap()
+                } else {
+                    Type::Tuple(outputs_types)
+                };
+
+                self.typing = Some(node_application_type);
                 Ok(())
             }
         }
