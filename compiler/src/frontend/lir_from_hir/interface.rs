@@ -6,6 +6,7 @@ use petgraph::{
     graphmap::DiGraphMap,
     visit::{depth_first_search, DfsEvent},
 };
+use quote::format_ident;
 
 use crate::{
     ast::interface::FlowKind,
@@ -65,159 +66,93 @@ impl Interface {
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
 
         let Interface {
-            statements,
+            mut statements,
             mut graph,
         } = self;
 
         // collects components, input flows, output flows, timing events that are present in the service
-        let (mut components, mut input_flows, mut output_flows) = (vec![], vec![], vec![]);
+        let mut components = vec![];
+        let mut input_flows = vec![];
+        let mut output_flows = vec![];
         let mut timing_events = HashMap::new();
         let mut on_change_events = HashMap::new();
-        let mut hash_statements = HashMap::new();
-        statements.into_iter().for_each(|statement| {
-            match &statement {
-                FlowStatement::Import(FlowImport {
-                    id,
-                    path,
-                    flow_type,
-                    ..
-                }) => {
-                    input_flows.push((
+        let mut new_statements = vec![];
+        let mut fresh_statement_id = statements.len();
+        statements
+            .iter()
+            .enumerate()
+            .for_each(|(index, statement)| {
+                match statement {
+                    FlowStatement::Import(FlowImport {
+                        id,
+                        path,
+                        flow_type,
+                        ..
+                    }) => {
+                        input_flows.push((
+                            *id,
+                            InterfaceFlow {
+                                path: path.clone(),
+                                identifier: symbol_table.get_name(*id).clone(),
+                                r#type: flow_type.clone(),
+                            },
+                        ));
+                    }
+                    FlowStatement::Export(FlowExport {
+                        id,
+                        path,
+                        flow_type,
+                        ..
+                    }) => output_flows.push((
                         *id,
                         InterfaceFlow {
                             path: path.clone(),
                             identifier: symbol_table.get_name(*id).clone(),
                             r#type: flow_type.clone(),
                         },
-                    ));
-                    hash_statements.insert(*id, statement);
-                }
-                FlowStatement::Export(FlowExport {
-                    id,
-                    path,
-                    flow_type,
-                    ..
-                }) => {
-                    output_flows.push((
-                        *id,
-                        InterfaceFlow {
-                            path: path.clone(),
-                            identifier: symbol_table.get_name(*id).clone(),
-                            r#type: flow_type.clone(),
-                        },
-                    ))
-                    // do not put export statements in hash because already in instanciation
-                }
-                FlowStatement::Declaration(FlowDeclaration {
-                    pattern,
-                    flow_expression,
-                    ..
-                })
-                | FlowStatement::Instanciation(FlowInstanciation {
-                    pattern,
-                    flow_expression,
-                    ..
-                }) => {
-                    pattern.identifiers().into_iter().for_each(|id| {
-                        hash_statements.insert(id, statement.clone());
-                    });
-                    match &flow_expression.kind {
-                        FlowExpressionKind::Ident { .. } | FlowExpressionKind::Throtle { .. } => (),
-                        FlowExpressionKind::OnChange { .. } => {
-                            // get the identifier of the created event
-                            let mut ids = pattern.identifiers();
-                            debug_assert!(ids.len() == 1);
-                            let event_id = ids.pop().unwrap();
-                            let event_name = symbol_table.get_name(event_id).clone();
+                    )),
+                    FlowStatement::Declaration(FlowDeclaration {
+                        pattern,
+                        flow_expression,
+                        ..
+                    })
+                    | FlowStatement::Instanciation(FlowInstanciation {
+                        pattern,
+                        flow_expression,
+                        ..
+                    }) => {
+                        match &flow_expression.kind {
+                            FlowExpressionKind::Ident { .. }
+                            | FlowExpressionKind::Throtle { .. } => (),
+                            FlowExpressionKind::OnChange { .. } => {
+                                // get the identifier of the created event
+                                let mut ids = pattern.identifiers();
+                                debug_assert!(ids.len() == 1);
+                                let event_id = ids.pop().unwrap();
+                                let event_name = symbol_table.get_name(event_id).clone();
 
-                            // add new event into the identifier creator
-                            let fresh_name = identifier_creator.new_identifier(
-                                event_name,
-                                String::from("old"),
-                                String::from(""),
-                            );
-                            let typing = symbol_table.get_type(event_id).clone();
-                            let kind = symbol_table.get_flow_kind(event_id).clone();
-                            let fresh_id = symbol_table.insert_fresh_flow(
-                                fresh_name.clone(),
-                                kind,
-                                typing.clone(),
-                            );
+                                // add new event into the identifier creator
+                                let fresh_name = identifier_creator.new_identifier(
+                                    event_name,
+                                    String::from("old"),
+                                    String::from(""),
+                                );
+                                let typing = symbol_table.get_type(event_id).clone();
+                                let kind = symbol_table.get_flow_kind(event_id).clone();
+                                let fresh_id = symbol_table.insert_fresh_flow(
+                                    fresh_name.clone(),
+                                    kind,
+                                    typing.clone(),
+                                );
 
-                            // add event_old in flows_context
-                            flows_context.elements.insert(fresh_name, typing);
+                                // add event_old in flows_context
+                                flows_context.elements.insert(fresh_name, typing);
 
-                            // push in on_change_events
-                            on_change_events.insert(event_id, fresh_id);
-                        }
-                        FlowExpressionKind::Sample { period_ms, .. }
-                        | FlowExpressionKind::Scan { period_ms, .. } => {
-                            // add new timing event into the identifier creator
-                            let fresh_name = identifier_creator.new_identifier(
-                                String::from(""),
-                                String::from("period"),
-                                String::from(""),
-                            );
-                            let typing = Type::Event(Box::new(Type::Unit));
-                            let kind = FlowKind::Event(Default::default());
-                            let fresh_id =
-                                symbol_table.insert_fresh_flow(fresh_name.clone(), kind, typing);
-
-                            // get the identifier of the receiving flow
-                            let mut flows_ids = pattern.identifiers();
-                            debug_assert!(flows_ids.len() == 1);
-                            let flow_id = flows_ids.pop().unwrap();
-
-                            // add timing_event in graph
-                            graph.add_edge(fresh_id, flow_id, FlowKind::Event(Default::default()));
-
-                            // push timing_event
-                            timing_events.insert(
-                                flow_id,
-                                (
-                                    fresh_id,
-                                    TimingEvent {
-                                        identifier: fresh_name,
-                                        kind: TimingEventKind::Period(period_ms.clone()),
-                                    },
-                                ),
-                            );
-                        }
-                        FlowExpressionKind::Timeout { deadline, .. } => {
-                            // add new timing event into the identifier creator
-                            let fresh_name = identifier_creator.new_identifier(
-                                String::from(""),
-                                String::from("timeout"),
-                                String::from(""),
-                            );
-                            let typing = Type::Event(Box::new(Type::Unit));
-                            let kind = FlowKind::Event(Default::default());
-                            let fresh_id =
-                                symbol_table.insert_fresh_flow(fresh_name.clone(), kind, typing);
-
-                            // get the identifier of the receiving flow
-                            let mut flows_ids = pattern.identifiers();
-                            debug_assert!(flows_ids.len() == 1);
-                            let flow_id = flows_ids.pop().unwrap();
-
-                            // add timing_event in graph
-                            graph.add_edge(fresh_id, flow_id, FlowKind::Event(Default::default()));
-
-                            // push timing_event
-                            timing_events.insert(
-                                flow_id,
-                                (
-                                    fresh_id,
-                                    TimingEvent {
-                                        identifier: fresh_name,
-                                        kind: TimingEventKind::Timeout(deadline.clone()),
-                                    },
-                                ),
-                            );
-                        }
-                        FlowExpressionKind::ComponentCall { component_id, .. } => {
-                            // add potential period constrains
-                            if let Some(period) = symbol_table.get_node_period(*component_id) {
+                                // push in on_change_events
+                                on_change_events.insert(event_id, fresh_id);
+                            }
+                            FlowExpressionKind::Sample { period_ms, .. }
+                            | FlowExpressionKind::Scan { period_ms, .. } => {
                                 // add new timing event into the identifier creator
                                 let fresh_name = identifier_creator.new_identifier(
                                     String::from(""),
@@ -231,93 +166,158 @@ impl Interface {
                                     kind,
                                     typing,
                                 );
-                                let timing_event = TimingEvent {
-                                    identifier: fresh_name,
-                                    kind: TimingEventKind::Period(period.clone()),
-                                };
 
-                                // get the identifier of the receiving flow
-                                let flows_ids = pattern.identifiers();
-                                for flow_id in flows_ids.into_iter() {
-                                    // add timing_event in graph
-                                    graph.add_edge(
+                                // add timing_event in new_statements
+                                new_statements.push(FlowStatement::Import(FlowImport {
+                                    import_token: Default::default(),
+                                    id: fresh_id,
+                                    path: format_ident!("{fresh_name}").into(),
+                                    colon_token: Default::default(),
+                                    flow_type: Type::Event(Box::new(Type::Unit)),
+                                    semi_token: Default::default(),
+                                }));
+                                // add timing_event in graph
+                                graph.add_edge(fresh_statement_id, index, ());
+                                fresh_statement_id += 1;
+
+                                // push timing_event
+                                timing_events.insert(
+                                    index,
+                                    (
                                         fresh_id,
-                                        flow_id,
-                                        FlowKind::Event(Default::default()),
+                                        TimingEvent {
+                                            identifier: fresh_name,
+                                            kind: TimingEventKind::Period(period_ms.clone()),
+                                        },
+                                    ),
+                                );
+                            }
+                            FlowExpressionKind::Timeout { deadline, .. } => {
+                                // add new timing event into the identifier creator
+                                let fresh_name = identifier_creator.new_identifier(
+                                    String::from(""),
+                                    String::from("timeout"),
+                                    String::from(""),
+                                );
+                                let typing = Type::Event(Box::new(Type::Unit));
+                                let kind = FlowKind::Event(Default::default());
+                                let fresh_id = symbol_table.insert_fresh_flow(
+                                    fresh_name.clone(),
+                                    kind,
+                                    typing,
+                                );
+
+                                // add timing_event in new_statements
+                                new_statements.push(FlowStatement::Import(FlowImport {
+                                    import_token: Default::default(),
+                                    id: fresh_id,
+                                    path: format_ident!("{fresh_name}").into(),
+                                    colon_token: Default::default(),
+                                    flow_type: Type::Event(Box::new(Type::Unit)),
+                                    semi_token: Default::default(),
+                                }));
+                                // add timing_event in graph
+                                graph.add_edge(fresh_statement_id, index, ());
+                                fresh_statement_id += 1;
+
+                                // push timing_event
+                                timing_events.insert(
+                                    index,
+                                    (
+                                        fresh_id,
+                                        TimingEvent {
+                                            identifier: fresh_name,
+                                            kind: TimingEventKind::Timeout(deadline.clone()),
+                                        },
+                                    ),
+                                );
+                            }
+                            FlowExpressionKind::ComponentCall { component_id, .. } => {
+                                // add potential period constrains
+                                if let Some(period) = symbol_table.get_node_period(*component_id) {
+                                    // add new timing event into the identifier creator
+                                    let fresh_name = identifier_creator.new_identifier(
+                                        String::from(""),
+                                        String::from("period"),
+                                        String::from(""),
+                                    );
+                                    let typing = Type::Event(Box::new(Type::Unit));
+                                    let kind = FlowKind::Event(Default::default());
+                                    let fresh_id = symbol_table.insert_fresh_flow(
+                                        fresh_name.clone(),
+                                        kind,
+                                        typing,
                                     );
 
+                                    // add timing_event in new_statements
+                                    new_statements.push(FlowStatement::Import(FlowImport {
+                                        import_token: Default::default(),
+                                        id: fresh_id,
+                                        path: format_ident!("{fresh_name}").into(),
+                                        colon_token: Default::default(),
+                                        flow_type: Type::Event(Box::new(Type::Unit)),
+                                        semi_token: Default::default(),
+                                    }));
+                                    // add timing_event in graph
+                                    graph.add_edge(fresh_statement_id, index, ());
+                                    fresh_statement_id += 1;
+
                                     // push timing_event
-                                    timing_events.insert(flow_id, (fresh_id, timing_event.clone()));
+                                    timing_events.insert(
+                                        index,
+                                        (
+                                            fresh_id,
+                                            TimingEvent {
+                                                identifier: fresh_name,
+                                                kind: TimingEventKind::Period(period.clone()),
+                                            },
+                                        ),
+                                    );
                                 }
+                                components.push(symbol_table.get_name(*component_id).clone())
                             }
-                            components.push(symbol_table.get_name(*component_id).clone())
                         }
                     }
-                }
-            };
-        });
+                };
+            });
 
-        let mut flows_handling: Vec<_> = input_flows
+        // push new_statements into statements
+        statements.append(&mut new_statements);
+
+        // for every incomming flows, compute their handlers
+        let flows_handling: Vec<_> = statements
             .iter()
-            .map(|(id, input_flow)| {
-                let InterfaceFlow { identifier, .. } = input_flow;
-
+            .filter_map(|statement| match statement {
+                FlowStatement::Import(FlowImport { id, .. }) => Some(*id),
+                _ => None,
+            })
+            .enumerate()
+            .map(|(index, flow_id)| {
                 // construct subgraph starting from the input flow
-                let subgraph = construct_subgraph_from_source(*id, &graph);
+                let subgraph = construct_subgraph_from_source(index, &graph);
                 // sort statement in dependency order
-                let ordered_flow_statements = toposort(&subgraph, None).expect("should succeed");
+                let ordered_statements = toposort(&subgraph, None).expect("should succeed");
                 // if input flow is an event then store its identifier
-                let encountered_event = match symbol_table.get_flow_kind(*id) {
+                let encountered_event = match symbol_table.get_flow_kind(flow_id) {
                     FlowKind::Signal(_) => HashSet::new(),
-                    FlowKind::Event(_) => HashSet::from([*id]),
+                    FlowKind::Event(_) => HashSet::from([flow_id]),
                 };
 
                 let instructions = compute_flow_instructions(
-                    &hash_statements,
+                    &statements,
                     &on_change_events,
                     &timing_events,
                     encountered_event,
-                    ordered_flow_statements,
+                    ordered_statements,
                     flows_context,
                     symbol_table,
                 );
                 FlowHandler {
-                    arriving_flow: identifier.clone(),
+                    arriving_flow: symbol_table.get_name(flow_id).clone(),
                     instructions,
                 }
             })
             .collect();
-
-        let mut other_flows_handling: Vec<_> = timing_events
-            .iter()
-            .map(|(_, (timing_id, timing_event))| {
-                let TimingEvent { identifier, .. } = timing_event;
-
-                // construct subgraph starting from the input flow
-                let subgraph = construct_subgraph_from_source(*timing_id, &graph);
-                // sort statement in dependency order
-                let ordered_flow_statements = toposort(&subgraph, None).expect("should succeed");
-                // if input flow is an event then store its identifier
-                let encountered_event = HashSet::from([*timing_id]);
-
-                let instructions = compute_flow_instructions(
-                    &hash_statements,
-                    &on_change_events,
-                    &timing_events,
-                    encountered_event,
-                    ordered_flow_statements,
-                    flows_context,
-                    symbol_table,
-                );
-
-                FlowHandler {
-                    arriving_flow: identifier.clone(),
-                    instructions,
-                }
-            })
-            .collect();
-
-        flows_handling.append(&mut other_flows_handling);
 
         let service_loop = ServiceLoop {
             service: String::from("toto"),
@@ -333,11 +333,11 @@ impl Interface {
 }
 
 fn construct_subgraph_from_source(
-    source_flow_id: usize,
-    graph: &DiGraphMap<usize, FlowKind>,
-) -> DiGraphMap<usize, FlowKind> {
+    source_id: usize,
+    graph: &DiGraphMap<usize, ()>,
+) -> DiGraphMap<usize, ()> {
     let mut subgraph = DiGraphMap::new();
-    depth_first_search(&graph, Some(source_flow_id), |event| {
+    depth_first_search(&graph, Some(source_id), |event| {
         use DfsEvent::*;
         match event {
             CrossForwardEdge(parent, child) | BackEdge(parent, child) | TreeEdge(parent, child) => {
@@ -354,22 +354,24 @@ fn construct_subgraph_from_source(
 }
 
 fn compute_flow_instructions(
-    statements: &HashMap<usize, FlowStatement>,
+    statements: &Vec<FlowStatement>,
     on_change_events: &HashMap<usize, usize>,
     timing_events: &HashMap<usize, (usize, TimingEvent)>,
     mut encountered_events: HashSet<usize>,
-    mut ordered_flow_statements: Vec<usize>,
+    mut ordered_statements: Vec<usize>,
     flows_context: &FlowsContext,
     symbol_table: &SymbolTable,
 ) -> Vec<FlowInstruction> {
     let mut instructions = vec![];
 
     // push instructions in right order
-    while !ordered_flow_statements.is_empty() {
+    while !ordered_statements.is_empty() {
         // get the next flow statement to transform
-        let ordered_flow_id = ordered_flow_statements.pop().unwrap();
+        let ordered_statement_id = ordered_statements.remove(0);
         // get flow statement related to id
-        let flow_statement = statements.get(&ordered_flow_id).expect("should be there");
+        let flow_statement = statements
+            .get(ordered_statement_id)
+            .expect("should be there");
 
         // add instructions related to the nature of the statement (see the draft)
         match flow_statement {
@@ -392,7 +394,7 @@ fn compute_flow_instructions(
                     let outputs_ids = pattern.identifiers();
 
                     // get timing event id if it exists
-                    if let Some((timer_id, _)) = timing_events.get(&ordered_flow_id) {
+                    if let Some((timer_id, _)) = timing_events.get(&ordered_statement_id) {
                         // if timing event is activated
                         if encountered_events.contains(timer_id) {
                             // call component with no event
@@ -456,7 +458,6 @@ fn compute_flow_instructions(
                     let mut ids = pattern.identifiers();
                     debug_assert!(ids.len() == 1);
                     let id_pattern = ids.pop().unwrap();
-                    debug_assert!(id_pattern == ordered_flow_id); // todo: then remove the id_pattern
 
                     // get the id of flow_expression (and check their is only one flow)
                     let mut ids = flow_expression.get_dependencies();
@@ -569,7 +570,7 @@ fn compute_flow_instructions(
                                 on_change_events,
                                 timing_events,
                                 encountered_events.clone(),
-                                ordered_flow_statements.clone(),
+                                ordered_statements.clone(),
                                 flows_context,
                                 symbol_table,
                             );
@@ -594,8 +595,8 @@ fn compute_flow_instructions(
                                 statements,
                                 on_change_events,
                                 timing_events,
-                                encountered_events,      // takes ownership
-                                ordered_flow_statements, // takes ownership
+                                encountered_events, // takes ownership
+                                ordered_statements, // takes ownership
                                 flows_context,
                                 symbol_table,
                             );
@@ -673,21 +674,17 @@ fn compute_flow_instructions(
                     }
                 }
             }
-            FlowStatement::Import(FlowImport { .. }) => (), // nothing to do
-            FlowStatement::Export(_) => unreachable!(),
-        }
-
-        let flow_name = symbol_table.get_name(ordered_flow_id);
-
-        // add send instructions if necessary, i.e. when the flow statement
-        // is an instanciation (instanciated flows are exported, by design)
-        if let FlowStatement::Instanciation(_) = flow_statement {
-            instructions.push(FlowInstruction::Send(
-                flow_name.clone(),
-                Expression::Identifier {
-                    identifier: flow_name.clone(),
-                },
-            ))
+            FlowStatement::Export(FlowExport { id, .. }) => {
+                let flow_name = symbol_table.get_name(*id);
+                // add send instructions if necessary
+                instructions.push(FlowInstruction::Send(
+                    flow_name.clone(),
+                    Expression::Identifier {
+                        identifier: flow_name.clone(),
+                    },
+                ))
+            }
+            FlowStatement::Import(_) => (), // nothing to do
         }
     }
 

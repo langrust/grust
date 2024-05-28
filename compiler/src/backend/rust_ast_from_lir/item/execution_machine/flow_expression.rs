@@ -19,7 +19,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
         }
         Expression::TakeFromContext { flow } => {
             let flow = Ident::new(&flow, Span::call_site());
-            parse_quote! { std::mem::take(&mut context.#flow.clone()) }
+            parse_quote! { std::mem::take(&mut context.#flow) }
         }
         Expression::Some { expression } => {
             let expression = rust_ast_from_lir(*expression);

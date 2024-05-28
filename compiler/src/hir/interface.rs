@@ -1,18 +1,14 @@
 use petgraph::graphmap::DiGraphMap;
 use syn::Token;
 
-use crate::{
-    ast::{interface::FlowKind, keyword},
-    common::r#type::Type,
-    symbol_table::SymbolTable,
-};
+use crate::{ast::keyword, common::r#type::Type, symbol_table::SymbolTable};
 
 use super::{flow_expression::FlowExpression, pattern::Pattern};
 
 pub struct Interface {
     pub statements: Vec<FlowStatement>,
     /// Flows dependency graph.
-    pub graph: DiGraphMap<usize, FlowKind>,
+    pub graph: DiGraphMap<usize, ()>,
 }
 impl Interface {
     pub fn get_flows_names(&self, symbol_table: &SymbolTable) -> Vec<String> {
