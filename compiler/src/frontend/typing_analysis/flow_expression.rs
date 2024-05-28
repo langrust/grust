@@ -68,11 +68,10 @@ impl TypeAnalysis for FlowExpression {
             } => {
                 flow_expression.typing(symbol_table, errors)?;
                 // get expression type
-                let typing = flow_expression.get_type().unwrap();
-                match typing {
+                match flow_expression.get_type().unwrap() {
                     Type::Event(typing) => {
                         // set typing
-                        self.typing = Some(Type::Event(todo!("timeout event type")));
+                        self.typing = Some(Type::Event(Box::new(Type::Timeout(typing.clone()))));
                         Ok(())
                     }
                     given_type => {

@@ -69,6 +69,11 @@ impl Type {
                 symbol_table,
                 errors,
             )?))),
+            Type::Timeout(timeout_type) => Ok(Type::Timeout(Box::new(timeout_type.hir_from_ast(
+                location,
+                symbol_table,
+                errors,
+            )?))),
             Type::Integer | Type::Float | Type::Boolean | Type::Unit => Ok(self),
             Type::Enumeration { .. } // no enumeration at this time: they are `NotDefinedYet`
             | Type::Structure { .. } // no structure at this time: they are `NotDefinedYet`

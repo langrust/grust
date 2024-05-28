@@ -97,7 +97,12 @@ impl HIRFromAST for Equation {
                     .into_iter()
                     .map(|(pattern, guard, defined_signals, statements)| {
                         if reference.len() != defined_signals.len() {
-                            todo!("create error");
+                            let error = Error::IncompatibleMatchStatements {
+                                expected: reference.len(),
+                                received: defined_signals.len(),
+                                location: location.clone(),
+                            };
+                            errors.push(error);
                             return Err(TerminationError);
                         }
 
@@ -121,7 +126,11 @@ impl HIRFromAST for Equation {
                                         dependencies: Dependencies::new(),
                                     })
                                 } else {
-                                    todo!("create error");
+                                    let error = Error::MissingMatchStatement {
+                                        identifier: signal_name.clone(),
+                                        location: location.clone(),
+                                    };
+                                    errors.push(error);
                                     return Err(TerminationError);
                                 }
                             })
