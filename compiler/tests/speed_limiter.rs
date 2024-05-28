@@ -139,7 +139,7 @@ fn should_compile_speed_limiter() {
             on_state: SpeedLimiterOn,
             in_regulation: bool,
             state_update: bool
-        ) {
+        ) @ 10 ms {
             let failure: bool = false;
             let prev_state: SpeedLimiter = SpeedLimiter::Off fby state;
             let prev_on_state: SpeedLimiterOn = SpeedLimiterOn::StandBy fby on_state;

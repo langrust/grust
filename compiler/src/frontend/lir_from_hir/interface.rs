@@ -297,8 +297,9 @@ impl Interface {
                 let subgraph = construct_subgraph_from_source(index, &graph);
                 // sort statement in dependency order
                 let ordered_statements = toposort(&subgraph, None).expect("should succeed");
+                println!("{ordered_statements:?}");
                 // if input flow is an event then store its identifier
-                let encountered_event = match symbol_table.get_flow_kind(flow_id) {
+                let encountered_events = match symbol_table.get_flow_kind(flow_id) {
                     FlowKind::Signal(_) => HashSet::new(),
                     FlowKind::Event(_) => HashSet::from([flow_id]),
                 };
@@ -307,13 +308,14 @@ impl Interface {
                     &statements,
                     &on_change_events,
                     &timing_events,
-                    encountered_event,
+                    encountered_events,
                     ordered_statements,
                     flows_context,
                     symbol_table,
                 );
                 // determine weither this arriving flow is a timing event
                 let flow_name = symbol_table.get_name(flow_id).clone();
+                println!("{flow_name}");
                 let arriving_flow = if symbol_table.is_time_flow(flow_id) {
                     ArrivingFlow::TimingEvent(flow_name)
                 } else {
@@ -370,6 +372,7 @@ fn compute_flow_instructions(
     symbol_table: &SymbolTable,
 ) -> Vec<FlowInstruction> {
     let mut instructions = vec![];
+    println!("{encountered_events:?}");
 
     // push instructions in right order
     while !ordered_statements.is_empty() {
@@ -404,6 +407,7 @@ fn compute_flow_instructions(
                     if let Some((timer_id, _)) = timing_events.get(&ordered_statement_id) {
                         // if timing event is activated
                         if encountered_events.contains(timer_id) {
+                            println!("OK COOL");
                             // call component with no event
                             instructions.push(FlowInstruction::ComponentCall(
                                 pattern.clone().lir_from_hir(symbol_table),
