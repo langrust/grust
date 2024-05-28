@@ -17,7 +17,8 @@ impl Type {
             Type::Array(typing, _)
             | Type::Option(typing)
             | Type::Signal(typing)
-            | Type::Event(typing) => typing.get_imports(symbol_table),
+            | Type::Event(typing)
+            | Type::Timeout(typing) => typing.get_imports(symbol_table),
             Type::Tuple(elements_types) => elements_types
                 .iter()
                 .flat_map(|typing| typing.get_imports(symbol_table))
@@ -53,7 +54,8 @@ impl Type {
             Type::Array(typing, _)
             | Type::Option(typing)
             | Type::Signal(typing)
-            | Type::Event(typing) => typing.get_generics(identifier_creator),
+            | Type::Event(typing)
+            | Type::Timeout(typing) => typing.get_generics(identifier_creator),
             Type::Abstract(inputs_types, output_type) => {
                 let mut generics = output_type.get_generics(identifier_creator);
                 let mut inputs_generics = inputs_types

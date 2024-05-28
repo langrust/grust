@@ -128,6 +128,22 @@ pub enum Error {
         /// the error location
         location: Location,
     },
+    /// incompatible match statements
+    IncompatibleMatchStatements {
+        /// expected number of statements
+        expected: usize,
+        /// received number of statements
+        received: usize,
+        /// the error location
+        location: Location,
+    },
+    /// missing match statement
+    MissingMatchStatement {
+        /// ident of the missing statement in match
+        identifier: String,
+        /// the error location
+        location: Location,
+    },
     /// not statement pattern error
     NotStatementPattern {
         /// the error location
@@ -421,6 +437,33 @@ impl Error {
                     Label::primary(location.file_id, location.range.clone())
                         .with_message("incompatible tuple type")
                 ]),
+            Error::IncompatibleMatchStatements { expected, received, location } => Diagnostic::error()
+                .with_message("incompatible number of statements in 'match'")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("incompatible statements")
+                ])
+                .with_notes(vec![
+                    format!(
+                        "expected {expected} statement{} but {received} statement{} {} given",
+                        if expected < &2 {""} else {"s"},
+                        if received < &2 {""} else {"s"},
+                        if received < &2 {"was"} else {"were"}
+                    )
+                ]
+            ),
+            Error::MissingMatchStatement { identifier, location } => Diagnostic::error()
+                .with_message("missing statement in 'match'")
+                .with_labels(vec![
+                    Label::primary(location.file_id, location.range.clone())
+                        .with_message("missing statement")
+                ])
+                .with_notes(vec![
+                    format!(
+                        "expected '{identifier}' to be defined in the match arm"
+                    )
+                ]
+            ),
             Error::NotStatementPattern {  location } => Diagnostic::error()
                 .with_message("pattern error")
                 .with_labels(vec![
@@ -639,6 +682,8 @@ impl std::fmt::Display for Error {
             Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
             Error::IncompatibleTuple { .. } => write!(f, "Incompatible Tuple"),
+            Error::IncompatibleMatchStatements { .. } => write!(f, "Incompatible Match Statements"),
+            Error::MissingMatchStatement { .. } => write!(f, "Missing Match Statement"),
             Error::NotStatementPattern { .. } => write!(f, "Not Statement Pattern"),
             Error::IncompatibleInputsNumber { .. } => write!(f, "Incompatible Inputs Number"),
             Error::UnknownOuputSignal { .. } => write!(f, "Unknown Output Signal"),

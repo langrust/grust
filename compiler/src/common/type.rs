@@ -63,6 +63,8 @@ pub enum Type {
     Signal(Box<Type>),
     /// Event type, in interface if `e' = map(e, |x| x + 1)` then `e': event int`
     Event(Box<Type>),
+    /// Timeout type, in interface if `e' = timeout(e, 10)` then `e': event timeout(int)`
+    Timeout(Box<Type>),
     /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
     NotDefinedYet(String),
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Type -> t -> 't -> 't`
@@ -101,6 +103,7 @@ impl Display for Type {
             Type::Generic(name) => write!(f, "{name}"),
             Type::Signal(ty) => write!(f, "Signal<{}>", *ty),
             Type::Event(ty) => write!(f, "Event<{}>", *ty),
+            Type::Timeout(ty) => write!(f, "Timeout<{}>", *ty),
             Type::NotDefinedYet(s) => write!(f, "{s}"),
             Type::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
             Type::Any => write!(f, "any"),
