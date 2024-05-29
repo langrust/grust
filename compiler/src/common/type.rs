@@ -16,10 +16,10 @@ use crate::error::{Error, TerminationError};
 /// - [Type::Integer] are [i64] integers, if `n = 1` then `n: int`
 /// - [Type::Float] are [f64] floats, if `r = 1.0` then `r: float`
 /// - [Type::Boolean] is the [bool] type for booleans, if `b = true` then `b: bool`
-/// - [Type::String] are strings of type [String], if `s = "hello world"` then `s: string`
 /// - [Type::Unit] is the unit type, if `u = ()` then `u: unit`
 /// - [Type::Array] is the array type, if `a = [1, 2, 3]` then `a: [int; 3]`
-/// - [Type::Option] is the option type, if `n = some(1)` then `n: int?`
+/// - [Type::SMEvent] is the event type for StateMachine, noted `n: int?`
+/// - [Type::SMTimeout] is the timeout type for StateMachine, noted `n: int!`
 /// - [Type::Enumeration] is an user defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
 /// - [Type::Structure] is an user defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
 /// - [Type::NotDefinedYet] is not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
@@ -37,8 +37,10 @@ pub enum Type {
     Unit,
     /// Array type, if `a = [1, 2, 3]` then `a: [int; 3]`
     Array(Box<Type>, usize),
-    /// Option type, if `n = some(1)` then `n: int?`
-    Option(Box<Type>),
+    /// SMEvent type, noted `n: int?`
+    SMEvent(Box<Type>),
+    /// SMTimeout type, noted `n: int!`
+    SMTimeout(Box<Type>),
     /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
     Enumeration {
         /// Enumeration's name.
@@ -82,7 +84,8 @@ impl Display for Type {
             Type::Boolean => write!(f, "bool"),
             Type::Unit => write!(f, "()"),
             Type::Array(t, n) => write!(f, "[{}; {n}]", *t),
-            Type::Option(t) => write!(f, "Option<{}>", *t),
+            Type::SMEvent(t) => write!(f, "SMEvent<{}>", *t),
+            Type::SMTimeout(t) => write!(f, "SMTimeout<{}>", *t),
             Type::Enumeration { name, .. } => write!(f, "{name}"),
             Type::Structure { name, .. } => write!(f, "{name}"),
             Type::Abstract(t1, t2) => write!(
@@ -152,7 +155,10 @@ impl Parse for Type {
         loop {
             if input.peek(Token![?]) {
                 let _: Token![?] = input.parse()?;
-                ty = Type::Option(Box::new(ty))
+                ty = Type::SMEvent(Box::new(ty))
+            } else if input.peek(Token![!]) {
+                let _: Token![!] = input.parse()?;
+                ty = Type::SMTimeout(Box::new(ty))
             } else if input.peek(Token![->]) {
                 let _: Token![->] = input.parse()?;
                 let out_ty = input.parse()?;
@@ -311,16 +317,18 @@ impl Type {
 
     /// Convert from FRP types into StateMachine types.
     ///
-    /// Convertes `signal T` into `T` and `event T` into `T?`.
+    /// Convertes `signal T` into `T`, `event T` into `T?` and `timeout T` into `T!`.
     ///
     /// ```rust
     /// use grustine::common::r#type::Type;
     ///
     /// let s_type = Type::Signal(Box::new(Type::Integer));
     /// let e_type = Type::Event(Box::new(Type::Boolean));
+    /// let t_type = Type::Timeout(Box::new(Type::Float));
     ///
     /// assert_eq!(s_type.convert(), Type::Integer);
-    /// assert_eq!(e_type.convert(), Type::Option(Box::new(Type::Boolean)));
+    /// assert_eq!(e_type.convert(), Type::SMEvent(Box::new(Type::Boolean)));
+    /// assert_eq!(t_type.convert(), Type::SMTimeout(Box::new(Type::Float)));
     /// ```
     ///
     /// # Example
@@ -348,7 +356,8 @@ impl Type {
     pub fn convert(&self) -> Self {
         match self {
             Type::Signal(t) => t.as_ref().clone(),
-            Type::Event(t) => Type::Option(t.clone()),
+            Type::Event(t) => Type::SMEvent(t.clone()),
+            Type::Timeout(t) => Type::SMEvent(t.clone()),
             _ => unreachable!(),
         }
     }

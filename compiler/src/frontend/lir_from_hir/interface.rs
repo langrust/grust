@@ -737,7 +737,7 @@ impl FlowStatement {
                     // push in signals context
                     let source_name = symbol_table.get_name(id).clone();
                     let flow_name = symbol_table.get_name(pattern_id).clone();
-                    let ty = Type::Option(Box::new(symbol_table.get_type(id).clone()));
+                    let ty = Type::SMEvent(Box::new(symbol_table.get_type(id).clone()));
                     flows_context.add_element(source_name, &ty);
                     flows_context.add_element(flow_name, &ty);
                 }

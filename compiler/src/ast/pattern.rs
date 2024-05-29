@@ -188,9 +188,9 @@ pub enum Pattern {
     /// Tuple pattern that matches tuples.
     Tuple(Tuple),
     /// Some pattern that matches when an optional has a value which match the pattern.
-    Some(PatSome),
+    Some(PatSome), // todo: remove this pattern
     /// None pattern.
-    None,
+    None, // todo: remove this pattern
     /// Default pattern.
     Default,
 }
@@ -204,11 +204,6 @@ impl Parse for Pattern {
             Pattern::Tuple(input.parse()?)
         } else if Enumeration::peek(input) {
             Pattern::Enumeration(input.parse()?)
-        } else if PatSome::peek(input) {
-            Pattern::Some(input.parse()?)
-        } else if input.fork().peek(keyword::none) {
-            let _: keyword::none = input.parse()?;
-            Pattern::None
         } else if input.fork().peek(Token![_]) {
             let _: Token![_] = input.parse()?;
             Pattern::Default

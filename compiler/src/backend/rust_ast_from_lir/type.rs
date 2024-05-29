@@ -23,10 +23,6 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
 
             parse_quote!([#ty; #size])
         }
-        Type::Option(element) => {
-            let ty = rust_ast_from_lir(*element);
-            parse_quote!(Option<#ty>)
-        }
         Type::Abstract(arguments, output) => {
             let arguments = arguments.into_iter().map(rust_ast_from_lir);
             let output = rust_ast_from_lir(*output);
@@ -41,12 +37,13 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
             let identifier = Ident::new(&name, Span::call_site());
             parse_quote!(#identifier)
         }
+        Type::Event(element) | Type::Signal(element) => rust_ast_from_lir(*element),
         Type::Timeout(element) => {
             let ty = rust_ast_from_lir(*element);
             parse_quote!(Result<#ty, ()>)
         }
         Type::Time => parse_quote!(tokio::time::Interval),
-        Type::Event(ty) | Type::Signal(ty) => rust_ast_from_lir(*ty),
+        Type::SMEvent(_) | Type::SMTimeout(_) => todo!(),
         Type::NotDefinedYet(_) | Type::Polymorphism(_) => {
             unreachable!()
         }
@@ -120,7 +117,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_owned_generic_from_lir_option() {
-        let r#type = Type::Option(Box::new(Type::Float));
+        let r#type = Type::SMEvent(Box::new(Type::Float));
         let control = parse_quote!(Option<f64>);
         assert_eq!(rust_ast_from_lir(r#type), control)
     }

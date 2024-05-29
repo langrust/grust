@@ -153,7 +153,7 @@ impl TypeAnalysis for FlowExpression {
                     .get_node_outputs(*component_id)
                     .iter()
                     .map(|(_, output_id)| match symbol_table.get_type(*output_id) {
-                        Type::Option(ty) => Type::Event(ty.clone()),
+                        Type::SMEvent(ty) => Type::Event(ty.clone()),
                         ty => Type::Signal(Box::new(ty.clone())),
                     })
                     .collect::<Vec<_>>();
