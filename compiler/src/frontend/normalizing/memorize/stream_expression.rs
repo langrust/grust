@@ -43,8 +43,8 @@ impl StreamExpression {
             } => {
                 // create fresh identifier for the new memory buffer
                 let memory_name = identifier_creator.new_identifier(
-                    String::from("mem"),
                     String::from(""),
+                    String::from("mem"),
                     String::from(""),
                 );
                 let typing = self.typing.clone();

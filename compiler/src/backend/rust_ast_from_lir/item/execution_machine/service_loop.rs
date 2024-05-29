@@ -53,7 +53,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
             format_ident!("{}", camel_case(&format!("{}State", component_name)));
         let component_name = format_ident!("{}", component_name);
         let state: Stmt = parse_quote! {
-            let #component_name = #component_state_struct::init();
+            let mut #component_name = #component_state_struct::init();
         };
         state
     });

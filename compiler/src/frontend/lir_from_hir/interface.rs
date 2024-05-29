@@ -133,9 +133,9 @@ impl Interface {
 
                                 // add new event into the identifier creator
                                 let fresh_name = identifier_creator.new_identifier(
+                                    String::from(""),
                                     event_name,
                                     String::from("old"),
-                                    String::from(""),
                                 );
                                 let typing = symbol_table.get_type(event_id).clone();
                                 let kind = symbol_table.get_flow_kind(event_id).clone();
