@@ -3,6 +3,8 @@ use crate::{
     symbol_table::SymbolTable,
 };
 
+/// HIR Node construction from AST Node
+pub mod component;
 /// HIR Contract construction from AST Contract
 pub mod contract;
 /// HIR Equation construction from AST Equation
@@ -15,8 +17,6 @@ pub mod file;
 pub mod function;
 /// HIR Interface construction from AST Interface.
 pub mod interface;
-/// HIR Node construction from AST Node
-pub mod node;
 /// HIR Pattern construction from AST Pattern
 pub mod pattern;
 /// HIR Statement construction from AST Statement

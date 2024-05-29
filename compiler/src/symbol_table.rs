@@ -15,6 +15,20 @@ use crate::{
 /// Symbol kinds.
 #[derive(Clone)]
 pub enum SymbolKind {
+    /// Event kind.
+    Event,
+    /// EventEnumeration kind.
+    EventEnumeration {
+        /// The enumeration's elements.
+        elements: Vec<usize>,
+    },
+    /// EventElement kind.
+    EventElement {
+        /// Enumeration name.
+        enum_name: String,
+        /// Event type.
+        typing: Type,
+    },
     /// Identifier kind.
     Identifier {
         /// Identifier scope.
@@ -44,6 +58,8 @@ pub enum SymbolKind {
     Node {
         /// Node's input identifiers.
         inputs: Vec<usize>,
+        /// Node's event identifiers.
+        events: Vec<usize>,
         /// Node's output identifiers.
         outputs: Vec<(String, usize)>,
         /// Node's local identifiers.
@@ -110,6 +126,11 @@ impl Symbol {
 
     fn hash_as_string(&self) -> String {
         match &self.kind {
+            SymbolKind::Event => format!("event"), // only one event per component
+            SymbolKind::EventEnumeration { .. } => format!("event_enum"), // only one event enumeration per component
+            SymbolKind::EventElement { enum_name, .. } => {
+                format!("event_element {enum_name}::{}", self.name)
+            }
             SymbolKind::Identifier { .. } => format!("identifier {}", self.name),
             SymbolKind::Flow { .. } => format!("flow {}", self.name),
             SymbolKind::Function { .. } => format!("function {}", self.name),
@@ -312,6 +333,57 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert event enumeration in symbol table.
+    pub fn insert_event_enum(
+        &mut self,
+        name: String,
+        elements: Vec<usize>,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::EventEnumeration { elements },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
+    /// Insert event in symbol table.
+    pub fn insert_event(
+        &mut self,
+        name: String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::Event,
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
+    /// Insert event element in symbol table.
+    pub fn insert_event_element(
+        &mut self,
+        name: String,
+        enum_name: String,
+        typing: Type,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol = Symbol {
+            kind: SymbolKind::EventElement { enum_name, typing },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
     /// Insert identifier in symbol table.
     pub fn insert_identifier(
         &mut self,
@@ -379,6 +451,7 @@ impl SymbolTable {
         name: String,
         local: bool,
         inputs: Vec<usize>,
+        events: Vec<usize>,
         outputs: Vec<(String, usize)>,
         locals: HashMap<String, usize>,
         period: Option<u64>,
@@ -388,6 +461,7 @@ impl SymbolTable {
         let symbol = Symbol {
             kind: SymbolKind::Node {
                 inputs,
+                events,
                 outputs,
                 locals,
                 period,
@@ -521,11 +595,13 @@ impl SymbolTable {
             }
             SymbolKind::Node {
                 inputs,
+                events,
                 outputs,
                 locals,
                 ..
             } => {
                 self.restore_context_from(inputs.iter());
+                self.restore_context_from(events.iter());
                 self.restore_context_from(outputs.iter().map(|(_, id)| id));
                 self.restore_context_from(locals.values());
             }
@@ -958,6 +1034,61 @@ impl SymbolTable {
                     name: name.to_string(),
                     location,
                 };
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    /// Get event enumeration symbol identifier.
+    pub fn get_event_enumeration_id(
+        &self,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol_hash = format!("event_enum");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(id),
+            None => {
+                let error = todo!("no events");
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    /// Get event element symbol identifier.
+    pub fn get_event_element_id(
+        &self,
+        name: &String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol_hash = format!("event element {name}");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(id),
+            None => {
+                let error = todo!("unknown event");
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    /// Get event symbol identifier.
+    pub fn get_event_id(
+        &self,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> Result<usize, TerminationError> {
+        let symbol_hash = format!("event");
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(id),
+            None => {
+                let error = todo!("no events");
                 errors.push(error);
                 Err(TerminationError)
             }

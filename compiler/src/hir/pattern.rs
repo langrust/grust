@@ -34,6 +34,15 @@ pub enum PatternKind {
         /// The element id.
         elem_id: usize,
     },
+    /// Event enumeration pattern.
+    Event {
+        /// The event id.
+        event_enum_id: usize,
+        /// The event element id.
+        event_element_id: usize,
+        /// The pattern matching the event.
+        pattern: Box<Pattern>,
+    },
     /// Tuple pattern that matches tuples.
     Tuple {
         /// The elements of the tuple.
@@ -91,9 +100,9 @@ impl Pattern {
                 .iter()
                 .flat_map(|pattern| pattern.identifiers())
                 .collect(),
-            PatternKind::Some { pattern } | PatternKind::Typed { pattern, .. } => {
-                pattern.identifiers()
-            }
+            PatternKind::Some { pattern }
+            | PatternKind::Typed { pattern, .. }
+            | PatternKind::Event { pattern, .. } => pattern.identifiers(),
         }
     }
     /// Get mutable references to pattern's identifiers.
@@ -118,9 +127,9 @@ impl Pattern {
                 .iter_mut()
                 .flat_map(|pattern| pattern.identifiers_mut())
                 .collect(),
-            PatternKind::Some { pattern } | PatternKind::Typed { pattern, .. } => {
-                pattern.identifiers_mut()
-            }
+            PatternKind::Some { pattern }
+            | PatternKind::Typed { pattern, .. }
+            | PatternKind::Event { pattern, .. } => pattern.identifiers_mut(),
         }
     }
 }

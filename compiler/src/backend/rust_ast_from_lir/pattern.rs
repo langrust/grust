@@ -54,15 +54,16 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
         Pattern::Enumeration {
             enum_name,
             elem_name,
+            element,
         } => {
             let ty = Ident::new(&enum_name, Span::call_site());
             let cons = Ident::new(&elem_name, Span::call_site());
-
-            Pat::Path(PatPath {
-                attrs: vec![],
-                qself: None,
-                path: parse_quote! { #ty::#cons },
-            })
+            if let Some(pattern) = element {
+                let inner = rust_ast_from_lir(*pattern);
+                parse_quote! { #ty::#cons(#inner) }
+            } else {
+                parse_quote! { #ty::#cons }
+            }
         }
         Pattern::Tuple { elements } => Pat::Tuple(PatTuple {
             attrs: vec![],

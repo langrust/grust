@@ -5,6 +5,10 @@ use crate::hir::{dependencies::Dependencies, expression::ExpressionKind};
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression kind AST.
 pub enum StreamExpressionKind {
+    Event {
+        /// The identifier to the event enumeration.
+        event_id: usize,
+    },
     /// Expression.
     Expression {
         /// The expression kind.
@@ -65,6 +69,7 @@ impl StreamExpression {
             StreamExpressionKind::NodeApplication { inputs, .. } => {
                 inputs.iter().all(|(_, expression)| expression.no_fby())
             }
+            StreamExpressionKind::Event { .. } => true,
         }
     }
     /// Tell if it is in normal form.
@@ -78,6 +83,7 @@ impl StreamExpression {
             StreamExpressionKind::NodeApplication { inputs, .. } => inputs
                 .iter()
                 .all(|(_, expression)| expression.no_node_application()),
+            StreamExpressionKind::Event { .. } => true,
         }
     }
     /// Tell if there is no node application.
@@ -89,6 +95,7 @@ impl StreamExpression {
                 }),
             StreamExpressionKind::FollowedBy { expression, .. } => expression.no_node_application(),
             StreamExpressionKind::NodeApplication { .. } => false,
+            StreamExpressionKind::Event { .. } => true,
         }
     }
 }

@@ -12,6 +12,7 @@ impl StreamExpression {
     /// Get nodes applications identifiers.
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self.kind {
+            StreamExpressionKind::Event { .. } => vec![],
             StreamExpressionKind::Expression { expression } => expression.get_called_nodes(),
             StreamExpressionKind::FollowedBy { expression, .. } => expression.get_called_nodes(),
             StreamExpressionKind::NodeApplication {
@@ -52,6 +53,10 @@ impl StreamExpression {
         errors: &mut Vec<Error>,
     ) -> Result<(), TerminationError> {
         match &self.kind {
+            StreamExpressionKind::Event { event_id } => {
+                self.dependencies.set(vec![(*event_id, Label::Weight(0))]);
+                Ok(())
+            }
             StreamExpressionKind::FollowedBy {
                 ref constant,
                 ref expression,

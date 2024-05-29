@@ -33,6 +33,8 @@ pub enum Pattern {
         enum_name: String,
         /// The element name.
         elem_name: String,
+        /// The optional element of the enumeration.
+        element: Option<Box<Pattern>>,
     },
     /// Tuple pattern that matches tuples.
     Tuple {

@@ -41,6 +41,8 @@ pub enum Type {
     SMEvent(Box<Type>),
     /// SMTimeout type, noted `n: int!`
     SMTimeout(Box<Type>),
+    /// Component event
+    ComponentEvent,
     /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
     Enumeration {
         /// Enumeration's name.
@@ -86,6 +88,7 @@ impl Display for Type {
             Type::Array(t, n) => write!(f, "[{}; {n}]", *t),
             Type::SMEvent(t) => write!(f, "SMEvent<{}>", *t),
             Type::SMTimeout(t) => write!(f, "SMTimeout<{}>", *t),
+            Type::ComponentEvent => write!(f, "ComponentEvent"),
             Type::Enumeration { name, .. } => write!(f, "{name}"),
             Type::Structure { name, .. } => write!(f, "{name}"),
             Type::Abstract(t1, t2) => write!(
@@ -359,6 +362,13 @@ impl Type {
             Type::Event(t) => Type::SMEvent(t.clone()),
             Type::Timeout(t) => Type::SMEvent(t.clone()),
             _ => unreachable!(),
+        }
+    }
+
+    pub fn is_event(&self) -> bool {
+        match self {
+            Type::SMEvent(_) | Type::SMTimeout(_) => true,
+            _ => false,
         }
     }
 }

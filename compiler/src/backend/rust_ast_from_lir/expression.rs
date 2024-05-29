@@ -616,6 +616,7 @@ mod rust_ast_from_lir {
                     Pattern::Enumeration {
                         enum_name: String::from("Color"),
                         elem_name: format!("Blue"),
+                        element: None,
                     },
                     None,
                     Expression::Literal {
@@ -626,6 +627,7 @@ mod rust_ast_from_lir {
                     Pattern::Enumeration {
                         enum_name: String::from("Color"),
                         elem_name: format!("Green"),
+                        element: None,
                     },
                     None,
                     Expression::Literal {
