@@ -6,6 +6,7 @@ use crate::{
     lir::{
         expression::Expression as LIRExpression,
         item::state_machine::{
+            event::{Event, EventElement},
             input::{Input, InputElement},
             state::{init::Init, step::Step, State},
             StateMachine,
@@ -27,6 +28,7 @@ impl LIRFromHIR for Node {
             contract,
             ..
         } = self;
+        let mut identifier_creator = IdentifierCreator::from(vec![]);
 
         // get node name
         let name = symbol_table.get_name(id).clone();
@@ -42,6 +44,48 @@ impl LIRFromHIR for Node {
                 )
             })
             .collect::<Vec<_>>();
+
+        // create the event structure
+        let event = if let Some(event_enum_id) = symbol_table.get_node_event_enum(id) {
+            // add the event input
+            let event_id = symbol_table.get_node_event(id).unwrap();
+            inputs.push((
+                symbol_table.get_name(event_id).clone(),
+                Type::Enumeration {
+                    name: symbol_table.get_name(event_enum_id).clone(),
+                    id: event_enum_id,
+                },
+            ));
+
+            // get enum elements
+            let mut elements = symbol_table
+                .get_event_enum_elements(event_enum_id)
+                .iter()
+                .map(|element_id| EventElement::InputEvent {
+                    identifier: symbol_table.get_name(*element_id).clone(),
+                    r#type: symbol_table.get_type(*element_id).clone(),
+                })
+                .collect::<Vec<_>>();
+
+            // get generics
+            let generics = elements
+                .iter_mut()
+                .flat_map(|event_elem| match event_elem {
+                    EventElement::InputEvent { r#type, .. } => {
+                        r#type.get_generics(&mut identifier_creator)
+                    }
+                    EventElement::NoEvent => vec![],
+                })
+                .collect::<Vec<_>>();
+
+            Some(Event {
+                node_name: name.clone(),
+                elements,
+                generics,
+            })
+        } else {
+            None
+        };
 
         // get node output type
         let outputs = symbol_table.get_node_outputs(id);
@@ -98,7 +142,6 @@ impl LIRFromHIR for Node {
         let imports = imports.into_iter().unique().collect::<Vec<_>>();
 
         // get input's generics: function types in inputs
-        let mut identifier_creator = IdentifierCreator::from(vec![]);
         let mut generics = inputs
             .iter_mut()
             .flat_map(|(_, typing)| typing.get_generics(&mut identifier_creator))
@@ -124,6 +167,7 @@ impl LIRFromHIR for Node {
                     .collect(),
                 generics: generics.clone(),
             },
+            event,
             state: State {
                 node_name: name.clone(),
                 elements,

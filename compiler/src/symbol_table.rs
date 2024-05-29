@@ -19,6 +19,8 @@ pub enum SymbolKind {
     Event,
     /// EventEnumeration kind.
     EventEnumeration {
+        /// The event of this type.
+        event_id: usize,
         /// The enumeration's elements.
         elements: Vec<usize>,
     },
@@ -59,7 +61,7 @@ pub enum SymbolKind {
         /// Node's input identifiers.
         inputs: Vec<usize>,
         /// Node's event identifiers.
-        events: Vec<usize>,
+        event_enum: Option<usize>,
         /// Node's output identifiers.
         outputs: Vec<(String, usize)>,
         /// Node's local identifiers.
@@ -337,13 +339,14 @@ impl SymbolTable {
     pub fn insert_event_enum(
         &mut self,
         name: String,
+        event_id: usize,
         elements: Vec<usize>,
         local: bool,
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
-            kind: SymbolKind::EventEnumeration { elements },
+            kind: SymbolKind::EventEnumeration { event_id, elements },
             name,
         };
 
@@ -451,7 +454,7 @@ impl SymbolTable {
         name: String,
         local: bool,
         inputs: Vec<usize>,
-        events: Vec<usize>,
+        event_enum: Option<usize>,
         outputs: Vec<(String, usize)>,
         locals: HashMap<String, usize>,
         period: Option<u64>,
@@ -461,7 +464,7 @@ impl SymbolTable {
         let symbol = Symbol {
             kind: SymbolKind::Node {
                 inputs,
-                events,
+                event_enum,
                 outputs,
                 locals,
                 period,
@@ -574,13 +577,14 @@ impl SymbolTable {
 
     /// Restore a local context from identifiers.
     fn restore_context_from<'a>(&mut self, ids: impl Iterator<Item = &'a usize>) {
-        ids.for_each(|id| {
-            let symbol = self
-                .get_symbol(*id)
-                .expect(&format!("expect symbol for {id}"))
-                .clone();
-            self.known_symbols.add_symbol(symbol, *id);
-        })
+        ids.for_each(|id| self.restore_context_from_id(*id))
+    }
+    fn restore_context_from_id(&mut self, id: usize) {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"))
+            .clone();
+        self.known_symbols.add_symbol(symbol, id);
     }
 
     /// Restore node or function body context.
@@ -595,15 +599,29 @@ impl SymbolTable {
             }
             SymbolKind::Node {
                 inputs,
-                events,
+                event_enum,
                 outputs,
                 locals,
                 ..
             } => {
                 self.restore_context_from(inputs.iter());
-                self.restore_context_from(events.iter());
                 self.restore_context_from(outputs.iter().map(|(_, id)| id));
                 self.restore_context_from(locals.values());
+                // retore event enumeration and elements (if they exist)
+                if let Some(event_enum_id) = event_enum {
+                    let symbol = self
+                        .get_symbol(*event_enum_id)
+                        .expect(&format!("expect symbol for {event_enum_id}"))
+                        .clone();
+                    match symbol.kind() {
+                        SymbolKind::EventEnumeration { event_id, elements } => {
+                            self.restore_context_from_id(*event_id);
+                            self.restore_context_from(elements.iter());
+                        }
+                        _ => unreachable!(),
+                    }
+                    self.known_symbols.add_symbol(symbol, *event_enum_id);
+                }
             }
             _ => unreachable!(),
         }
@@ -629,6 +647,7 @@ impl SymbolTable {
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
             SymbolKind::Flow { typing, .. } => typing,
+            SymbolKind::EventElement { typing, .. } => typing,
             SymbolKind::Function { typing, .. } => typing
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
@@ -850,6 +869,40 @@ impl SymbolTable {
         }
     }
 
+    /// Get node event_enum from identifier.
+    pub fn get_node_event_enum(&self, id: usize) -> Option<usize> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Node { event_enum, .. } => *event_enum,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Get node event from identifier.
+    pub fn get_node_event(&self, id: usize) -> Option<usize> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Node { event_enum, .. } => {
+                if let Some(event_enum) = event_enum {
+                    let symbol = self
+                        .get_symbol(*event_enum)
+                        .expect(&format!("expect symbol for {id}"));
+                    match symbol.kind() {
+                        SymbolKind::EventEnumeration { event_id, .. } => Some(*event_id),
+                        _ => unreachable!(),
+                    }
+                } else {
+                    None
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
     /// Get node period from identifier.
     pub fn get_node_period(&self, id: usize) -> Option<u64> {
         let symbol = self
@@ -857,6 +910,17 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { period, .. } => *period,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Get event_enum's elements from identifier.
+    pub fn get_event_enum_elements(&self, id: usize) -> &Vec<usize> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::EventEnumeration { elements, .. } => elements,
             _ => unreachable!(),
         }
     }

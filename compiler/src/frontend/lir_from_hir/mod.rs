@@ -7,7 +7,7 @@ pub mod file;
 pub mod function;
 
 /// LIR node files construction from HIR node.
-pub mod node;
+pub mod component;
 
 /// LIR expression construction from HIR expression.
 pub mod expression;
