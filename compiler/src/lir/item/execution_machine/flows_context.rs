@@ -6,6 +6,7 @@ use crate::common::r#type::Type;
 #[derive(Debug, PartialEq, Default)]
 pub struct FlowsContext {
     pub elements: HashMap<String, Type>,
+    pub event_components: HashMap<String, (Vec<(String, String)>, String)>,
     pub components: HashMap<String, Vec<(String, String)>>,
 }
 impl FlowsContext {
@@ -17,6 +18,17 @@ impl FlowsContext {
     }
     pub fn add_component(&mut self, component_name: String, input_fields: Vec<(String, String)>) {
         let already_inserted = self.components.insert(component_name, input_fields);
+        debug_assert!(already_inserted.is_none())
+    }
+    pub fn add_event_component(
+        &mut self,
+        component_name: String,
+        input_fields: Vec<(String, String)>,
+        event: String,
+    ) {
+        let already_inserted = self
+            .event_components
+            .insert(component_name, (input_fields, event));
         debug_assert!(already_inserted.is_none())
     }
 }

@@ -50,6 +50,7 @@ impl Interface {
     fn get_flows_context(&self, symbol_table: &SymbolTable) -> FlowsContext {
         let mut flows_context = FlowsContext {
             elements: Default::default(),
+            event_components: Default::default(),
             components: Default::default(),
         };
         self.statements
@@ -145,7 +146,7 @@ impl Interface {
                                 );
 
                                 // add event_old in flows_context
-                                flows_context.elements.insert(fresh_name, typing);
+                                flows_context.add_element(fresh_name, &typing);
 
                                 // push in on_change_events
                                 on_change_events.insert(event_id, fresh_id);
@@ -399,16 +400,25 @@ fn compute_flow_instructions(
                     // get outputs' ids
                     let outputs_ids = pattern.identifiers();
 
-                    // get timing event id if it exists
+                    // get timing event identifier if it exists
                     if let Some((timer_id, _)) = timing_events.get(&ordered_statement_id) {
                         // if timing event is activated
                         if encountered_events.contains(timer_id) {
-                            // call component with no event
-                            instructions.push(FlowInstruction::ComponentCall(
-                                pattern.clone().lir_from_hir(symbol_table),
-                                component_name.clone(),
-                                None,
-                            ));
+                            // if component computes on event
+                            if symbol_table.has_events(*component_id) {
+                                // call component with 'no event'
+                                instructions.push(FlowInstruction::EventComponentCall(
+                                    pattern.clone().lir_from_hir(symbol_table),
+                                    component_name.clone(),
+                                    None,
+                                ));
+                            } else {
+                                // call component without
+                                instructions.push(FlowInstruction::ComponentCall(
+                                    pattern.clone().lir_from_hir(symbol_table),
+                                    component_name.clone(),
+                                ));
+                            }
                             // update output signals
                             for output_id in outputs_ids.iter() {
                                 let output_name = symbol_table.get_name(*output_id);
@@ -432,7 +442,7 @@ fn compute_flow_instructions(
                     // then call component with the event and update output signals
                     if let Some(event_id) = overlapping_events.next() {
                         // call component with the event
-                        instructions.push(FlowInstruction::ComponentCall(
+                        instructions.push(FlowInstruction::EventComponentCall(
                             pattern.clone().lir_from_hir(symbol_table),
                             component_name.clone(),
                             Some(symbol_table.get_name(*event_id).clone()),
@@ -798,9 +808,18 @@ impl FlowStatement {
                             flows_context.add_element(source_name, ty);
                         });
 
-                    flows_context
-                        .components
-                        .insert(symbol_table.get_name(*component_id).clone(), input_fields);
+                    if let Some(event_id) = symbol_table.get_node_event(*component_id) {
+                        flows_context.add_event_component(
+                            symbol_table.get_name(*component_id).clone(),
+                            input_fields,
+                            symbol_table.get_name(event_id).clone(),
+                        )
+                    } else {
+                        flows_context.add_component(
+                            symbol_table.get_name(*component_id).clone(),
+                            input_fields,
+                        )
+                    }
                 }
                 FlowExpressionKind::Ident { .. }
                 | FlowExpressionKind::OnChange { .. }

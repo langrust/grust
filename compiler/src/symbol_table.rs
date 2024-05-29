@@ -880,6 +880,17 @@ impl SymbolTable {
         }
     }
 
+    /// Tell if the node has events.
+    pub fn has_events(&self, id: usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Node { event_enum, .. } => event_enum.is_some(),
+            _ => unreachable!(),
+        }
+    }
+
     /// Get node event from identifier.
     pub fn get_node_event(&self, id: usize) -> Option<usize> {
         let symbol = self

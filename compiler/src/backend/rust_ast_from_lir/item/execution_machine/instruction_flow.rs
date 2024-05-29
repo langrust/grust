@@ -69,7 +69,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 #timer_ident.reset(Instant::now() + Duration::from_millis(#deadline));
             }
         }
-        FlowInstruction::ComponentCall(pattern, component_name, optional_event) => {
+        FlowInstruction::EventComponentCall(pattern, component_name, optional_event) => {
             let outputs = pattern_rust_ast_from_lir(pattern);
             let component_ident = Ident::new(&component_name, Span::call_site());
             let input_getter =
@@ -83,6 +83,15 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 parse_quote! {
                     let #outputs = #component_ident.step(context.#input_getter(None));
                 }
+            }
+        }
+        FlowInstruction::ComponentCall(pattern, component_name) => {
+            let outputs = pattern_rust_ast_from_lir(pattern);
+            let component_ident = Ident::new(&component_name, Span::call_site());
+            let input_getter =
+                Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
+            parse_quote! {
+                let #outputs = #component_ident.step(context.#input_getter());
             }
         }
     }
