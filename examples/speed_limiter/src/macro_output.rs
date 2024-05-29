@@ -335,19 +335,19 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub v_set: f64,
     pub vacuum_brake: VacuumBrakeState,
-    pub vdc: VdcState,
-    pub v_update: bool,
-    pub speed: f64,
-    pub set_speed: f64,
-    pub state_update: bool,
-    pub kickdown: KickdownState,
-    pub on_state: SpeedLimiterOn,
     pub activation: ActivationResquest,
     pub state: SpeedLimiter,
+    pub set_speed: f64,
+    pub state_update: bool,
     pub in_regulation_aux: bool,
+    pub vdc: VdcState,
+    pub v_update: bool,
     pub v_set_aux: f64,
+    pub kickdown: KickdownState,
+    pub on_state: SpeedLimiterOn,
+    pub speed: f64,
+    pub v_set: f64,
 }
 impl Context {
     fn init() -> Context {

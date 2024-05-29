@@ -107,7 +107,7 @@ impl Component {
 
         // store input events as element of an "event enumeration"
         let enum_name = camel_case(&format!("{name}Event"));
-        let mut element_ids = self
+        let element_ids = self
             .args
             .iter()
             .filter(|Colon { right: typing, .. }| typing.is_event())
@@ -136,26 +136,25 @@ impl Component {
             .into_iter()
             .collect::<Result<Vec<_>, _>>()?;
 
-        let events = if !element_ids.is_empty() {
+        let event_enum = if !element_ids.is_empty() {
+            // create identifier for event
+            let event_name = format!("{name}_event");
+            let event_id =
+                symbol_table.insert_event(event_name.clone(), true, location.clone(), errors)?;
+
             // create enumeration of events
-            let id = symbol_table.insert_event_enum(
-                enum_name.clone(),
-                element_ids.clone(),
+            let event_enum_id = symbol_table.insert_event_enum(
+                enum_name,
+                event_id,
+                element_ids,
                 true,
                 location.clone(),
                 errors,
             )?;
-            element_ids.push(id);
 
-            // create identifier for event
-            let event_name = format!("{name}_event");
-            let id =
-                symbol_table.insert_event(event_name.clone(), true, location.clone(), errors)?;
-            element_ids.push(id);
-
-            element_ids
+            Some(event_enum_id)
         } else {
-            vec![]
+            None
         };
 
         // store outputs and get their ids
@@ -202,7 +201,7 @@ impl Component {
         symbol_table.global();
 
         let _ = symbol_table.insert_node(
-            name, false, inputs, events, outputs, locals, period, location, errors,
+            name, false, inputs, event_enum, outputs, locals, period, location, errors,
         )?;
 
         Ok(())

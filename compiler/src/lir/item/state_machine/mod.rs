@@ -1,8 +1,10 @@
 use crate::lir::item::{
     import::Import,
-    state_machine::{input::Input, state::State},
+    state_machine::{event::Event, input::Input, state::State},
 };
 
+/// LIR [Event](crate::lir::item::state_machine::event::Event) module.
+pub mod event;
 /// LIR [Input](crate::lir::item::state_machine::input::Input) module.
 pub mod input;
 /// LIR [State](crate::lir::item::state_machine::state::State) module.
@@ -17,6 +19,8 @@ pub struct StateMachine {
     pub imports: Vec<Import>,
     /// The input structure.
     pub input: Input,
+    /// The event structure.
+    pub event: Option<Event>,
     /// The state structure.
     pub state: State,
 }
