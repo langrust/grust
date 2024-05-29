@@ -335,30 +335,30 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub v_update: bool,
-    pub in_regulation_aux: bool,
-    pub activation: ActivationResquest,
-    pub kickdown: KickdownState,
     pub vdc: VdcState,
-    pub vacuum_brake: VacuumBrakeState,
-    pub v_set: f64,
-    pub v_set_aux: f64,
-    pub on_state: SpeedLimiterOn,
-    pub set_speed: f64,
-    pub state: SpeedLimiter,
-    pub state_update: bool,
+    pub in_regulation_aux: bool,
     pub speed: f64,
+    pub v_set: f64,
+    pub vacuum_brake: VacuumBrakeState,
+    pub on_state: SpeedLimiterOn,
+    pub kickdown: KickdownState,
+    pub set_speed: f64,
+    pub v_set_aux: f64,
+    pub state_update: bool,
+    pub v_update: bool,
+    pub state: SpeedLimiter,
+    pub activation: ActivationResquest,
 }
 impl Context {
     fn init() -> Context {
         Default::default()
     }
-    fn get_process_set_speed_inputs(&self) -> ProcessSetSpeedInput {
+    fn get_process_set_speed_inputs(&self, event: ProcessSetSpeedEvent) -> ProcessSetSpeedInput {
         ProcessSetSpeedInput {
             set_speed: self.set_speed,
         }
     }
-    fn get_speed_limiter_inputs(&self) -> SpeedLimiterInput {
+    fn get_speed_limiter_inputs(&self, event: SpeedLimiterEvent) -> SpeedLimiterInput {
         SpeedLimiterInput {
             activation_req: self.activation,
             vacuum_brake_state: self.vacuum_brake,
@@ -440,7 +440,20 @@ pub async fn run_toto_loop(
                 context.state_update.clone(); let in_regulation =
                 in_regulation_aux;
                 in_regulation_channel.send(in_regulation).await.unwrap();
-            } _ = period.tick() => {}
+            } _ = period.tick() =>
+            {
+                let (state, on_state, in_regulation_aux, state_update) =
+                speed_limiter.step(context.get_speed_limiter_inputs(None));
+                context.state = state; context.on_state = on_state;
+                context.in_regulation_aux = in_regulation_aux;
+                context.state_update = state_update; let state =
+                context.state.clone(); let on_state =
+                context.on_state.clone(); let in_regulation_aux =
+                context.in_regulation_aux.clone(); let state_update =
+                context.state_update.clone(); let in_regulation =
+                in_regulation_aux;
+                in_regulation_channel.send(in_regulation).await.unwrap();
+            }
         }
     }
 }

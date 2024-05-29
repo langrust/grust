@@ -5,13 +5,15 @@ use proc_macro2::Span;
 use quote::format_ident;
 use syn::*;
 
-/// Transform LIR run-loop into items.
+/// Transform LIR flows context into a 'Context' structure
+/// that implements some useful functions.
 pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
     let FlowsContext {
         elements,
         components,
     } = flows_context;
 
+    // construct Context structure type
     let context_struct = {
         let fields = elements.iter().map(|(element_name, element_ty)| {
             let name = Ident::new(element_name, Span::call_site());
@@ -26,47 +28,22 @@ pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
             }
         });
         let name = Ident::new("Context", Span::call_site());
-        parse_quote! { #[derive(Clone, Copy, Debug, PartialEq, Default)] pub struct #name { #(#fields),* } }
+        parse_quote! {
+            #[derive(Clone, Copy, Debug, PartialEq, Default)]
+            pub struct #name {
+                #(#fields),*
+            }
+        }
     };
 
-    let mut impl_items = vec![ImplItem::Fn(ImplItemFn {
-        attrs: Default::default(),
-        vis: Visibility::Inherited,
-        defaultness: None,
-        sig: Signature {
-            constness: None,
-            asyncness: None,
-            unsafety: None,
-            abi: None,
-            fn_token: Default::default(),
-            ident: Ident::new("init", Span::call_site()),
-            generics: Default::default(),
-            paren_token: Default::default(),
-            inputs: Default::default(),
-            variadic: None,
-            output: {
-                let identifier = Ident::new("Context", Span::call_site());
-                ReturnType::Type(Default::default(), Box::new(parse_quote!(#identifier)))
-            },
-        },
-        block: Block {
-            brace_token: Default::default(),
-            stmts: vec![Stmt::Expr(
-                Expr::Call(ExprCall {
-                    attrs: vec![],
-                    func: Box::new(Expr::Path(ExprPath {
-                        attrs: vec![],
-                        qself: None,
-                        path: parse_quote!(Default::default),
-                    })),
-                    paren_token: Default::default(),
-                    args: Default::default(),
-                }),
-                None,
-            )],
-        },
-    })];
-    // todo: for all components, create its input generator
+    // create an 'init' function
+    let mut impl_items: Vec<ImplItem> = vec![parse_quote! {
+        fn init() -> Context {
+            Default::default()
+        }
+    }];
+
+    // for all components, create its input generator
     components
         .into_iter()
         .for_each(|(component_name, input_fields)| {
@@ -74,6 +51,8 @@ pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
                 Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
             let component_input_name =
                 format_ident!("{}", camel_case(&format!("{component_name}Input")));
+            let component_event_name =
+                format_ident!("{}", camel_case(&format!("{component_name}Event")));
 
             let input_fields: Vec<FieldValue> = input_fields
                 .into_iter()
@@ -84,59 +63,21 @@ pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
                     parse_quote! { #field_id : #expr }
                 })
                 .collect();
-            let result: ExprStruct = parse_quote! { #component_input_name { #(#input_fields),* }};
 
-            let function = ImplItem::Fn(ImplItemFn {
-                attrs: Default::default(),
-                vis: Visibility::Inherited,
-                defaultness: None,
-                sig: Signature {
-                    constness: None,
-                    asyncness: None,
-                    unsafety: None,
-                    abi: None,
-                    fn_token: Default::default(),
-                    ident: input_getter,
-                    generics: Default::default(),
-                    paren_token: Default::default(),
-                    inputs: vec![FnArg::Receiver(Receiver {
-                        attrs: vec![],
-                        reference: Some((Default::default(), None)),
-                        mutability: None,
-                        self_token: Default::default(),
-                        colon_token: None,
-                        ty: Box::new(parse_quote!(&Self)),
-                    })]
-                    .into_iter()
-                    .collect(),
-                    variadic: None,
-                    output: {
-                        ReturnType::Type(
-                            Default::default(),
-                            Box::new(parse_quote!(#component_input_name)),
-                        )
-                    },
-                },
-                block: Block {
-                    brace_token: Default::default(),
-                    stmts: vec![Stmt::Expr(Expr::Struct(result), None)],
-                },
-            });
+            let function: ImplItem = parse_quote! {
+                fn #input_getter(&self, event: #component_event_name) -> #component_input_name {
+                    #component_input_name { #(#input_fields),* }
+                }
+            };
 
             impl_items.push(function)
         });
 
-    let context_impl = Item::Impl(ItemImpl {
-        attrs: Default::default(),
-        defaultness: None,
-        unsafety: None,
-        impl_token: Default::default(),
-        generics: Default::default(),
-        trait_: None,
-        self_ty: Box::new(parse_quote!(Context)),
-        brace_token: Default::default(),
-        items: impl_items,
-    });
-
+    // create the 'Context' implementation
+    let context_impl: Item = parse_quote! {
+        impl Context {
+            #(#impl_items)*
+        }
+    };
     vec![context_struct, context_impl]
 }

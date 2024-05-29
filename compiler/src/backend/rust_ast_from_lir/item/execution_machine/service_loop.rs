@@ -7,12 +7,12 @@ use crate::lir::item::execution_machine::service_loop::{
     ArrivingFlow, FlowHandler, InterfaceFlow, ServiceLoop, TimingEvent, TimingEventKind,
 };
 use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, TokenStreamExt};
+use quote::format_ident;
 use syn::punctuated::Punctuated;
 use syn::*;
 
-/// Transform LIR run-loop into items.
-pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
+/// Transform LIR run-loop into an async function performing a loop over events.
+pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
     let ServiceLoop {
         service,
         components,
@@ -22,22 +22,15 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
         flows_handling,
     } = run_loop;
 
-    let mut items = vec![];
-
     // inputs are channels's receivers
-    let mut inputs = Punctuated::new();
+    let mut inputs: Punctuated<FnArg, token::Comma> = Punctuated::new();
     input_flows.into_iter().for_each(
         |InterfaceFlow {
              identifier, r#type, ..
          }| {
             let name = Ident::new((identifier + "_channel").as_str(), Span::call_site());
             let ty = type_rust_ast_from_lir(r#type);
-            inputs.push(FnArg::Typed(PatType {
-                attrs: vec![],
-                pat: parse_quote! { mut #name },
-                colon_token: Default::default(),
-                ty: Box::new(parse_quote! { tokio::sync::mpsc::Receiver<#ty> }),
-            }));
+            inputs.push(parse_quote! { mut #name: tokio::sync::mpsc::Receiver<#ty> });
         },
     );
     // outputs are channels's senders
@@ -47,81 +40,59 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
          }| {
             let name = Ident::new((identifier + "_channel").as_str(), Span::call_site());
             let ty = type_rust_ast_from_lir(r#type);
-            inputs.push(FnArg::Typed(PatType {
-                attrs: vec![],
-                pat: parse_quote! { mut #name },
-                colon_token: Default::default(),
-                ty: Box::new(parse_quote! { tokio::sync::mpsc::Sender<#ty> }),
-            }));
+            inputs.push(parse_quote! { mut #name: tokio::sync::mpsc::Sender<#ty> });
         },
     );
 
     // the async function is called 'run_{service}_loop'
-    let sig = syn::Signature {
-        constness: None,
-        asyncness: Some(Default::default()),
-        unsafety: None,
-        abi: None,
-        fn_token: Default::default(),
-        ident: Ident::new(&format!("run_{service}_loop"), Span::call_site()),
-        generics: Default::default(),
-        paren_token: Default::default(),
-        inputs,
-        variadic: None,
-        output: ReturnType::Default,
-    };
-
-    // initiate body statement
-    let mut body_stmts = vec![];
+    let service_loop_name = Ident::new(&format!("run_{service}_loop"), Span::call_site());
 
     // create components states
-    components.into_iter().for_each(|component_name| {
+    let components_states = components.into_iter().map(|component_name| {
         let component_state_struct =
             format_ident!("{}", camel_case(&format!("{}State", component_name)));
         let component_name = format_ident!("{}", component_name);
-        let state = parse_quote! {
+        let state: Stmt = parse_quote! {
             let #component_name = #component_state_struct::init();
         };
-        body_stmts.push(state);
+        state
     });
 
     // create time flows
-    timing_events
+    let time_flows = timing_events
         .into_iter()
-        .for_each(|TimingEvent { identifier, kind }| {
+        .map(|TimingEvent { identifier, kind }| {
             let ident = format_ident!("{}", identifier);match kind {
             TimingEventKind::Period(period) => {
                 let period = Expr::Lit(ExprLit {
                     attrs: vec![],
                     lit: syn::Lit::Int(LitInt::new(&format!("{period}u64"), Span::call_site())),
                 });
-                let set_period =  parse_quote! {
+                let set_period: Stmt =  parse_quote! {
                     let mut #ident = tokio::time::interval(std::time::Duration::from_millis(#period));
                 };
-                body_stmts.push(set_period);
+                set_period
             }
             TimingEventKind::Timeout(deadline) => {
                 let deadline = Expr::Lit(ExprLit {
                     attrs: vec![],
                     lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
                 });
-                let set_timeout =  parse_quote! {
+                let set_timeout: Stmt =  parse_quote! {
                     let mut #ident = tokio::time::sleep_until(tokio::time::Interval::now() + std::time::Duration::from_millis(#deadline));
                 };
-                body_stmts.push(set_timeout);
+                set_timeout
             }
         }});
 
     // instanciate input context
-    let context = parse_quote! {
+    let context: Stmt = parse_quote! {
         let mut context = Context::init();
     };
-    body_stmts.push(context);
 
     // it performs a loop on the [tokio::select!] macro
-    let loop_select = {
-        let mut tokens = proc_macro2::TokenStream::new();
-        tokens.append_all(flows_handling.into_iter().map(
+    let loop_select: Stmt = {
+        let arms = flows_handling.into_iter().map(
             |FlowHandler {
                  arriving_flow,
                  instructions,
@@ -135,12 +106,10 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
                         let instructions = instructions
                             .into_iter()
                             .map(instruction_flow_rust_ast_from_lir);
-                        let mut tokens_instructions = proc_macro2::TokenStream::new();
-                        tokens_instructions.append_all(instructions);
                         parse_quote! {
                             #ident = #channel.recv() => {
                                 let #ident = #ident.unwrap();
-                                #tokens_instructions
+                                #(#instructions)*
                             }
                         }
                     }
@@ -149,54 +118,33 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<syn::Item> {
                         let instructions = instructions
                             .into_iter()
                             .map(instruction_flow_rust_ast_from_lir);
-                        let mut tokens_instructions = proc_macro2::TokenStream::new();
-                        tokens_instructions.append_all(instructions);
                         parse_quote! {
                             _ = #ident.tick() => {
-                                #tokens_instructions
+                                #(#instructions)*
                             }
                         }
                     }
                 }
             },
-        ));
-        let select = Stmt::Expr(
-            Expr::Macro(ExprMacro {
-                attrs: Default::default(),
-                mac: Macro {
-                    path: parse_quote! { tokio::select },
-                    bang_token: Default::default(),
-                    delimiter: MacroDelimiter::Brace(Default::default()),
-                    tokens,
-                },
-            }),
-            None,
         );
-        Stmt::Expr(
-            Expr::Loop(ExprLoop {
-                attrs: Default::default(),
-                label: Default::default(),
-                loop_token: Default::default(),
-                body: syn::Block {
-                    stmts: vec![select],
-                    brace_token: Default::default(),
-                },
-            }),
-            None,
-        )
+        parse_quote! {
+            loop{
+                tokio::select! {
+                    #(#arms)*
+                }
+            }
+        }
     };
-    body_stmts.push(loop_select);
 
-    let item_run_loop = Item::Fn(ItemFn {
-        attrs: Default::default(),
-        vis: Visibility::Public(Default::default()),
-        sig,
-        block: Box::new(syn::Block {
-            stmts: body_stmts,
-            brace_token: Default::default(),
-        }),
-    });
-    items.push(item_run_loop);
+    // create the async function
+    let item_run_loop: Item = parse_quote! {
+        pub async fn #service_loop_name(#inputs) {
+            #(#components_states)*
+            #(#time_flows)*
+            #context
+            #loop_select
+        }
+    };
 
-    items
+    item_run_loop
 }
