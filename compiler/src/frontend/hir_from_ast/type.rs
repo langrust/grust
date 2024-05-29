@@ -18,7 +18,12 @@ impl Type {
                 Box::new(array_type.hir_from_ast(location, symbol_table, errors)?),
                 array_size,
             )),
-            Type::Option(option_type) => Ok(Type::Option(Box::new(option_type.hir_from_ast(
+            Type::SMEvent(event_type) => Ok(Type::SMEvent(Box::new(event_type.hir_from_ast(
+                location,
+                symbol_table,
+                errors,
+            )?))),
+            Type::SMTimeout(timeout_type) => Ok(Type::SMTimeout(Box::new(timeout_type.hir_from_ast(
                 location,
                 symbol_table,
                 errors,

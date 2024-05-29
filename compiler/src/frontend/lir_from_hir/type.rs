@@ -15,7 +15,8 @@ impl Type {
             Type::Enumeration { name, .. } => vec![Import::Enumeration(name.clone())],
             Type::Structure { name, .. } => vec![Import::Structure(name.clone())],
             Type::Array(typing, _)
-            | Type::Option(typing)
+            | Type::SMEvent(typing)
+            | Type::SMTimeout(typing)
             | Type::Signal(typing)
             | Type::Event(typing)
             | Type::Timeout(typing) => typing.get_imports(symbol_table),
@@ -53,7 +54,8 @@ impl Type {
             | Type::Unit
             | Type::Time => vec![],
             Type::Array(typing, _)
-            | Type::Option(typing)
+            | Type::SMEvent(typing)
+            | Type::SMTimeout(typing)
             | Type::Signal(typing)
             | Type::Event(typing)
             | Type::Timeout(typing) => typing.get_generics(identifier_creator),

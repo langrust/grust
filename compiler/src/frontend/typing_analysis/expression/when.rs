@@ -29,7 +29,7 @@ where
 
                 let option_type = option.get_type().unwrap();
                 match option_type {
-                    Type::Option(unwraped_type) => {
+                    Type::SMEvent(unwraped_type) => {
                         symbol_table.set_type(*id, *unwraped_type.clone());
                         present.typing(symbol_table, errors)?;
                         default.typing(symbol_table, errors)?;

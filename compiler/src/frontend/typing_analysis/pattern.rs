@@ -97,10 +97,10 @@ impl Pattern {
                 }
             },
             PatternKind::Some { ref mut pattern } => match expected_type {
-                Type::Option(expected_type) => {
+                Type::SMEvent(expected_type) => {
                     pattern.typing(expected_type, symbol_table, errors)?;
                     let pattern_type = pattern.get_type().unwrap().clone();
-                    self.typing = Some(Type::Option(Box::new(pattern_type)));
+                    self.typing = Some(Type::SMEvent(Box::new(pattern_type)));
                     Ok(())
                 }
                 _ => {
@@ -112,7 +112,7 @@ impl Pattern {
                 }
             },
             PatternKind::None => {
-                self.typing = Some(Type::Option(Box::new(Type::Any)));
+                self.typing = Some(Type::SMEvent(Box::new(Type::Any)));
                 Ok(())
             }
             PatternKind::Default => {
