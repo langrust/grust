@@ -335,19 +335,19 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub kickdown: KickdownState,
-    pub v_set: f64,
+    pub set_speed: f64,
+    pub activation: ActivationResquest,
+    pub v_update: bool,
+    pub vacuum_brake: VacuumBrakeState,
     pub vdc: VdcState,
     pub state_update: bool,
     pub v_set_aux: f64,
-    pub in_regulation_aux: bool,
     pub speed: f64,
     pub on_state: SpeedLimiterOn,
-    pub activation: ActivationResquest,
-    pub vacuum_brake: VacuumBrakeState,
+    pub in_regulation_aux: bool,
+    pub kickdown: KickdownState,
+    pub v_set: f64,
     pub state: SpeedLimiter,
-    pub v_update: bool,
-    pub set_speed: f64,
 }
 impl Context {
     fn init() -> Context {
@@ -376,8 +376,8 @@ pub async fn run_toto_loop(
     mut vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
     mut kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
     mut vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
-    mut in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
-    mut v_set_channel: tokio::sync::mpsc::Sender<f64>,
+    in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
+    v_set_channel: tokio::sync::mpsc::Sender<f64>,
 ) {
     let mut process_set_speed = ProcessSetSpeedState::init();
     let mut speed_limiter = SpeedLimiterState::init();
