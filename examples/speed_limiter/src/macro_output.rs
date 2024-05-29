@@ -335,30 +335,30 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub vacuum_brake: VacuumBrakeState,
-    pub activation: ActivationResquest,
-    pub state: SpeedLimiter,
-    pub set_speed: f64,
-    pub state_update: bool,
-    pub in_regulation_aux: bool,
-    pub vdc: VdcState,
-    pub v_update: bool,
-    pub v_set_aux: f64,
-    pub kickdown: KickdownState,
-    pub on_state: SpeedLimiterOn,
-    pub speed: f64,
     pub v_set: f64,
+    pub state_update: bool,
+    pub on_state: SpeedLimiterOn,
+    pub v_set_aux: f64,
+    pub vacuum_brake: VacuumBrakeState,
+    pub vdc: VdcState,
+    pub kickdown: KickdownState,
+    pub activation: ActivationResquest,
+    pub set_speed: f64,
+    pub v_update: bool,
+    pub state: SpeedLimiter,
+    pub in_regulation_aux: bool,
+    pub speed: f64,
 }
 impl Context {
     fn init() -> Context {
         Default::default()
     }
-    fn get_process_set_speed_inputs(&self, event: ProcessSetSpeedEvent) -> ProcessSetSpeedInput {
+    fn get_process_set_speed_inputs(&self) -> ProcessSetSpeedInput {
         ProcessSetSpeedInput {
             set_speed: self.set_speed,
         }
     }
-    fn get_speed_limiter_inputs(&self, event: SpeedLimiterEvent) -> SpeedLimiterInput {
+    fn get_speed_limiter_inputs(&self) -> SpeedLimiterInput {
         SpeedLimiterInput {
             activation_req: self.activation,
             vacuum_brake_state: self.vacuum_brake,
@@ -443,7 +443,7 @@ pub async fn run_toto_loop(
             } _ = period.tick() =>
             {
                 let (state, on_state, in_regulation_aux, state_update) =
-                speed_limiter.step(context.get_speed_limiter_inputs(None));
+                speed_limiter.step(context.get_speed_limiter_inputs());
                 context.state = state; context.on_state = on_state;
                 context.in_regulation_aux = in_regulation_aux;
                 context.state_update = state_update; let state =
