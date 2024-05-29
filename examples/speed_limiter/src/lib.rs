@@ -1,7 +1,5 @@
-#![allow(warnings)]
-
 use grust::grust;
-mod macro_output;
+pub mod macro_output;
 
 grust! {
     #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/examples/speed_limiter/src/macro_output.rs"]

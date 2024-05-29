@@ -7,39 +7,39 @@ pub struct CounterInput {
     pub tick: bool,
 }
 pub struct CounterState {
-    mem_: i64,
+    mem: i64,
 }
 impl CounterState {
     pub fn init() -> CounterState {
-        CounterState { mem_: 0 }
+        CounterState { mem: 0 }
     }
     pub fn step(&mut self, input: CounterInput) -> i64 {
         let inc = if input.tick { 1 } else { 0 };
-        let o = if input.res { 0 } else { (add)(self.mem_, inc) };
-        self.mem_ = o;
+        let o = if input.res { 0 } else { (add)(self.mem, inc) };
+        self.mem = o;
         o
     }
 }
 pub struct TestInput {}
 pub struct TestState {
-    mem_: bool,
-    mem__1: bool,
+    mem: bool,
+    mem_1: bool,
     counter: CounterState,
 }
 impl TestState {
     pub fn init() -> TestState {
         TestState {
-            mem_: false,
-            mem__1: true,
+            mem: false,
+            mem_1: true,
             counter: CounterState::init(),
         }
     }
     pub fn step(&mut self, input: TestInput) -> i64 {
-        let x = self.mem_;
-        let half = self.mem__1;
+        let x = self.mem;
+        let half = self.mem_1;
         let y = self.counter.step(CounterInput { res: x, tick: half });
-        self.mem_ = y > 35;
-        self.mem__1 = !half;
+        self.mem = y > 35;
+        self.mem_1 = !half;
         y
     }
 }

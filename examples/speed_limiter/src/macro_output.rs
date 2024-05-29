@@ -129,17 +129,17 @@ pub struct ProcessSetSpeedInput {
     pub set_speed: f64,
 }
 pub struct ProcessSetSpeedState {
-    mem_: f64,
+    mem: f64,
 }
 impl ProcessSetSpeedState {
     pub fn init() -> ProcessSetSpeedState {
-        ProcessSetSpeedState { mem_: 0.0 }
+        ProcessSetSpeedState { mem: 0.0 }
     }
     pub fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
         let v_set = (threshold_set_speed)(input.set_speed);
-        let prev_v_set = self.mem_;
+        let prev_v_set = self.mem;
         let v_update = prev_v_set != v_set;
-        self.mem_ = v_set;
+        self.mem = v_set;
         (v_set, v_update)
     }
 }
@@ -152,16 +152,16 @@ pub struct SpeedLimiterOnInput {
     pub v_set: f64,
 }
 pub struct SpeedLimiterOnState {
-    mem_: Hysterisis,
+    mem: Hysterisis,
 }
 impl SpeedLimiterOnState {
     pub fn init() -> SpeedLimiterOnState {
         SpeedLimiterOnState {
-            mem_: (new_hysterisis)(0.0),
+            mem: (new_hysterisis)(0.0),
         }
     }
     pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool) {
-        let prev_hysterisis = self.mem_;
+        let prev_hysterisis = self.mem;
         let (on_state, hysterisis) = match input.prev_on_state {
             SpeedLimiterOn::StandBy
                 if (activation_condition)(
@@ -240,7 +240,7 @@ impl SpeedLimiterOnState {
             }
         };
         let in_reg = (in_regulation)(hysterisis);
-        self.mem_ = hysterisis;
+        self.mem = hysterisis;
         (on_state, in_reg)
     }
 }
@@ -253,24 +253,24 @@ pub struct SpeedLimiterInput {
     pub v_set: f64,
 }
 pub struct SpeedLimiterState {
-    mem_: SpeedLimiter,
-    mem__1: SpeedLimiterOn,
-    mem__2: bool,
+    mem: SpeedLimiter,
+    mem_1: SpeedLimiterOn,
+    mem_2: bool,
     speed_limiter_on: SpeedLimiterOnState,
 }
 impl SpeedLimiterState {
     pub fn init() -> SpeedLimiterState {
         SpeedLimiterState {
-            mem_: SpeedLimiter::Off,
-            mem__1: SpeedLimiterOn::StandBy,
-            mem__2: false,
+            mem: SpeedLimiter::Off,
+            mem_1: SpeedLimiterOn::StandBy,
+            mem_2: false,
             speed_limiter_on: SpeedLimiterOnState::init(),
         }
     }
     pub fn step(&mut self, input: SpeedLimiterInput) -> (SpeedLimiter, SpeedLimiterOn, bool, bool) {
         let failure = false;
-        let prev_state = self.mem_;
-        let prev_on_state = self.mem__1;
+        let prev_state = self.mem;
+        let prev_on_state = self.mem_1;
         let (state, on_state, in_regulation) = match prev_state {
             _ if (off_condition)(input.activation_req, input.vdc_disabled) => {
                 let state = SpeedLimiter::Off;
@@ -322,32 +322,32 @@ impl SpeedLimiterState {
             _ => {
                 let state = prev_state;
                 let on_state = prev_on_state;
-                let in_regulation = self.mem__2;
+                let in_regulation = self.mem_2;
                 (state, on_state, in_regulation)
             }
         };
         let state_update = state != prev_state || on_state != prev_on_state;
-        self.mem_ = state;
-        self.mem__1 = on_state;
-        self.mem__2 = in_regulation;
+        self.mem = state;
+        self.mem_1 = on_state;
+        self.mem_2 = in_regulation;
         (state, on_state, in_regulation, state_update)
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub v_set: f64,
-    pub state_update: bool,
-    pub on_state: SpeedLimiterOn,
-    pub v_set_aux: f64,
-    pub vacuum_brake: VacuumBrakeState,
-    pub vdc: VdcState,
     pub kickdown: KickdownState,
-    pub activation: ActivationResquest,
-    pub set_speed: f64,
-    pub v_update: bool,
-    pub state: SpeedLimiter,
+    pub v_set: f64,
+    pub vdc: VdcState,
+    pub state_update: bool,
+    pub v_set_aux: f64,
     pub in_regulation_aux: bool,
     pub speed: f64,
+    pub on_state: SpeedLimiterOn,
+    pub activation: ActivationResquest,
+    pub vacuum_brake: VacuumBrakeState,
+    pub state: SpeedLimiter,
+    pub v_update: bool,
+    pub set_speed: f64,
 }
 impl Context {
     fn init() -> Context {
@@ -379,8 +379,8 @@ pub async fn run_toto_loop(
     mut in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
     mut v_set_channel: tokio::sync::mpsc::Sender<f64>,
 ) {
-    let process_set_speed = ProcessSetSpeedState::init();
-    let speed_limiter = SpeedLimiterState::init();
+    let mut process_set_speed = ProcessSetSpeedState::init();
+    let mut speed_limiter = SpeedLimiterState::init();
     let mut period = tokio::time::interval(std::time::Duration::from_millis(10u64));
     let mut context = Context::init();
     loop {
