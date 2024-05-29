@@ -26,6 +26,7 @@ impl StreamExpression {
         context_map: &HashMap<usize, Union<usize, StreamExpression>>,
     ) {
         match self.kind {
+            StreamExpressionKind::Event { .. } => (),
             StreamExpressionKind::Expression { ref mut expression } => {
                 let option_new_expression =
                     expression.replace_by_context(&mut self.dependencies, context_map);

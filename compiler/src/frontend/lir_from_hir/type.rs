@@ -9,7 +9,13 @@ impl Type {
     /// Get imports from type.
     pub fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
         match self {
-            Type::Any | Type::Integer | Type::Float | Type::Boolean | Type::Unit | Type::Time => {
+            Type::Any
+            | Type::Integer
+            | Type::Float
+            | Type::Boolean
+            | Type::Unit
+            | Type::Time
+            | Type::ComponentEvent => {
                 vec![]
             }
             Type::Enumeration { name, .. } => vec![Import::Enumeration(name.clone())],
@@ -52,7 +58,8 @@ impl Type {
             | Type::Structure { .. }
             | Type::Any
             | Type::Unit
-            | Type::Time => vec![],
+            | Type::Time
+            | Type::ComponentEvent => vec![],
             Type::Array(typing, _)
             | Type::SMEvent(typing)
             | Type::SMTimeout(typing)

@@ -80,11 +80,12 @@ impl Type {
                 errors,
             )?))),
             Type::Integer | Type::Float | Type::Boolean | Type::Unit| Type::Time => Ok(self),
-            Type::Enumeration { .. } // no enumeration at this time: they are `NotDefinedYet`
-            | Type::Structure { .. } // no structure at this time: they are `NotDefinedYet`
-            | Type::Any // users can not write `Any` type
-            | Type::Polymorphism(_) // users can not write `Polymorphism` type
-            | Type::Generic(_) // users can not write `Generic` type
+            Type::Enumeration { .. }    // no enumeration at this time: they are `NotDefinedYet`
+            | Type::Structure { .. }    // no structure at this time: they are `NotDefinedYet`
+            | Type::ComponentEvent      // users can not write `ComponentEvent` type
+            | Type::Any                 // users can not write `Any` type
+            | Type::Polymorphism(_)     // users can not write `Polymorphism` type
+            | Type::Generic(_)          // users can not write `Generic` type
              => unreachable!(),
         }
     }

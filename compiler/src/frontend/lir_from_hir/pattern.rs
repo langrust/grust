@@ -41,6 +41,7 @@ impl LIRFromHIR for Pattern {
             PatternKind::Enumeration { enum_id, elem_id } => LIRPattern::Enumeration {
                 enum_name: symbol_table.get_name(enum_id).clone(),
                 elem_name: symbol_table.get_name(elem_id).clone(),
+                element: None,
             },
             PatternKind::Tuple { elements } => LIRPattern::Tuple {
                 elements: elements
@@ -53,6 +54,15 @@ impl LIRFromHIR for Pattern {
             },
             PatternKind::None => LIRPattern::None,
             PatternKind::Default => LIRPattern::Default,
+            PatternKind::Event {
+                event_enum_id,
+                event_element_id,
+                pattern,
+            } => LIRPattern::Enumeration {
+                enum_name: symbol_table.get_name(event_enum_id).clone(),
+                elem_name: symbol_table.get_name(event_element_id).clone(),
+                element: Some(Box::new(pattern.lir_from_hir(symbol_table))),
+            },
         }
     }
 
@@ -84,9 +94,9 @@ impl LIRFromHIR for Pattern {
                 .flat_map(|pattern| pattern.get_imports(symbol_table))
                 .unique()
                 .collect(),
-            PatternKind::Some { pattern } | PatternKind::Typed { pattern, .. } => {
-                pattern.get_imports(symbol_table)
-            }
+            PatternKind::Some { pattern }
+            | PatternKind::Typed { pattern, .. }
+            | PatternKind::Event { pattern, .. } => pattern.get_imports(symbol_table),
         }
     }
 }

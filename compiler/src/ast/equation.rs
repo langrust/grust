@@ -6,6 +6,8 @@ use crate::ast::{
     pattern::Pattern, statement::LetDeclaration, stream_expression::StreamExpression,
 };
 
+use super::keyword;
+
 pub struct Instanciation {
     /// Pattern of instanciated signals.
     pub pattern: Pattern,
@@ -98,16 +100,95 @@ impl Parse for Match {
     }
 }
 
+/// ArmWhen for matching expression.
+pub struct ArmWhen {
+    /// The pattern receiving the value of the event.
+    pub pattern: Pattern,
+    pub eq_token: Token![=],
+    /// The event to match.
+    pub event: syn::Ident,
+    /// The optional guard.
+    pub guard: Option<(Token![if], StreamExpression)>,
+    pub arrow_token: Token![=>],
+    pub brace_token: token::Brace,
+    /// The equations.
+    pub equations: Vec<Equation>,
+}
+impl Parse for ArmWhen {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let pattern = input.parse()?;
+        let eq_token = input.parse()?;
+        let event = input.parse()?;
+        let guard = {
+            if input.fork().peek(Token![if]) {
+                let token = input.parse()?;
+                let guard = input.parse()?;
+                Some((token, guard))
+            } else {
+                None
+            }
+        };
+        let arrow_token = input.parse()?;
+        let content;
+        let brace_token = braced!(content in input);
+        let equations = {
+            let mut equations = Vec::new();
+            while !content.is_empty() {
+                equations.push(content.parse()?);
+            }
+            equations
+        };
+        Ok(ArmWhen {
+            pattern,
+            eq_token,
+            event,
+            guard,
+            arrow_token,
+            brace_token,
+            equations,
+        })
+    }
+}
+
+pub struct MatchWhen {
+    pub match_token: Token![match],
+    pub when_token: keyword::when,
+    pub brace_token: token::Brace,
+    /// The different matching cases.
+    pub arms: Punctuated<ArmWhen, Token![,]>,
+}
+impl Parse for MatchWhen {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let match_token = input.parse()?;
+        let when_token = input.parse()?;
+        let content;
+        let brace_token = braced!(content in input);
+        let arms: Punctuated<ArmWhen, Token![,]> = Punctuated::parse_terminated(&content)?;
+
+        Ok(MatchWhen {
+            match_token,
+            when_token,
+            brace_token,
+            arms,
+        })
+    }
+}
+
 /// GRust equation AST.
 pub enum Equation {
     LocalDef(LetDeclaration<StreamExpression>),
     OutputDef(Instanciation),
     Match(Match),
+    MatchWhen(MatchWhen),
 }
 impl Parse for Equation {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(Token![match]) {
-            Ok(Equation::Match(input.parse()?))
+            if input.peek(keyword::when) {
+                Ok(Equation::MatchWhen(input.parse()?))
+            } else {
+                Ok(Equation::Match(input.parse()?))
+            }
         } else if input.peek(Token![let]) {
             Ok(Equation::LocalDef(input.parse()?))
         } else {
@@ -167,6 +248,23 @@ mod parse_equation {
                             .map(|arm| {
                                 (
                                     &arm.pattern,
+                                    arm.guard.as_ref().map(|(_, expr)| expr),
+                                    &arm.equations,
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                    .finish(),
+                Equation::MatchWhen(arg0) => f
+                    .debug_tuple("MatchWhen")
+                    .field(
+                        &arg0
+                            .arms
+                            .iter()
+                            .map(|arm| {
+                                (
+                                    &arm.pattern,
+                                    &arm.event,
                                     arm.guard.as_ref().map(|(_, expr)| expr),
                                     &arm.equations,
                                 )

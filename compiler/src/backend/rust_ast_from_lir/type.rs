@@ -43,7 +43,7 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
             parse_quote!(Result<#ty, ()>)
         }
         Type::Time => parse_quote!(tokio::time::Interval),
-        Type::SMEvent(_) | Type::SMTimeout(_) => todo!(),
+        Type::SMEvent(_) | Type::SMTimeout(_) | Type::ComponentEvent => todo!(),
         Type::NotDefinedYet(_) | Type::Polymorphism(_) => {
             unreachable!()
         }

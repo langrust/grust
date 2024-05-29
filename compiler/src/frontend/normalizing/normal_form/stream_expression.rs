@@ -40,6 +40,7 @@ impl StreamExpression {
         symbol_table: &mut SymbolTable,
     ) -> Vec<Statement<StreamExpression>> {
         match self.kind {
+            StreamExpressionKind::Event { .. } => vec![],
             StreamExpressionKind::FollowedBy {
                 ref mut expression,
                 ref constant,

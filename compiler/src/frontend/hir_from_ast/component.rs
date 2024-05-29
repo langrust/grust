@@ -4,6 +4,7 @@ use petgraph::graphmap::DiGraphMap;
 
 use crate::ast::colon::Colon;
 use crate::ast::component::Component;
+use crate::common::convert_case::camel_case;
 use crate::common::location::Location;
 use crate::common::scope::Scope;
 use crate::error::{Error, TerminationError};
@@ -73,9 +74,12 @@ impl Component {
             .as_ref()
             .map(|(_, literal, _)| literal.base10_parse().unwrap());
         let location = Location::default();
+
+        // store input signals and get their ids
         let inputs = self
             .args
             .iter()
+            .filter(|Colon { right: typing, .. }| !typing.is_event())
             .map(
                 |Colon {
                      left: ident,
@@ -101,6 +105,60 @@ impl Component {
             .into_iter()
             .collect::<Result<Vec<_>, _>>()?;
 
+        // store input events as element of an "event enumeration"
+        let enum_name = camel_case(&format!("{name}Event"));
+        let mut element_ids = self
+            .args
+            .iter()
+            .filter(|Colon { right: typing, .. }| typing.is_event())
+            .map(
+                |Colon {
+                     left: ident,
+                     right: typing,
+                     ..
+                 }| {
+                    let name = ident.to_string();
+                    let typing = typing
+                        .clone()
+                        .hir_from_ast(&location, symbol_table, errors)?;
+                    let id = symbol_table.insert_event_element(
+                        name,
+                        enum_name.clone(),
+                        typing,
+                        true,
+                        location.clone(),
+                        errors,
+                    )?;
+                    Ok(id)
+                },
+            )
+            .collect::<Vec<Result<_, _>>>()
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let events = if !element_ids.is_empty() {
+            // create enumeration of events
+            let id = symbol_table.insert_event_enum(
+                enum_name.clone(),
+                element_ids.clone(),
+                true,
+                location.clone(),
+                errors,
+            )?;
+            element_ids.push(id);
+
+            // create identifier for event
+            let event_name = format!("{name}_event");
+            let id =
+                symbol_table.insert_event(event_name.clone(), true, location.clone(), errors)?;
+            element_ids.push(id);
+
+            element_ids
+        } else {
+            vec![]
+        };
+
+        // store outputs and get their ids
         let outputs = self
             .outs
             .iter()
@@ -129,6 +187,7 @@ impl Component {
             .into_iter()
             .collect::<Result<Vec<_>, _>>()?;
 
+        // store locals and get their ids
         let locals = self
             .equations
             .iter()
@@ -143,7 +202,7 @@ impl Component {
         symbol_table.global();
 
         let _ = symbol_table.insert_node(
-            name, false, inputs, outputs, locals, period, location, errors,
+            name, false, inputs, events, outputs, locals, period, location, errors,
         )?;
 
         Ok(())

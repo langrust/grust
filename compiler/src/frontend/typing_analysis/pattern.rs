@@ -119,6 +119,13 @@ impl Pattern {
                 self.typing = Some(Type::Any);
                 Ok(())
             }
+            PatternKind::Event {
+                ref mut pattern, ..
+            } => {
+                pattern.typing(expected_type, symbol_table, errors)?;
+                self.typing = Some(Type::ComponentEvent);
+                Ok(())
+            }
         }
     }
 
@@ -133,6 +140,7 @@ impl Pattern {
             | PatternKind::Structure { .. }
             | PatternKind::Enumeration { .. }
             | PatternKind::Some { .. }
+            | PatternKind::Event { .. }
             | PatternKind::None
             | PatternKind::Default => {
                 let error = Error::NotStatementPattern {
