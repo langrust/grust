@@ -40,7 +40,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
          }| {
             let name = Ident::new((identifier + "_channel").as_str(), Span::call_site());
             let ty = type_rust_ast_from_lir(r#type);
-            inputs.push(parse_quote! { mut #name: tokio::sync::mpsc::Sender<#ty> });
+            inputs.push(parse_quote! { #name: tokio::sync::mpsc::Sender<#ty> });
         },
     );
 
