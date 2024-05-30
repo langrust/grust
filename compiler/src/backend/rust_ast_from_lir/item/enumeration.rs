@@ -53,6 +53,7 @@ mod rust_ast_from_lir {
         let control = parse_quote! {
         #[derive(Clone, Copy, Debug, PartialEq, Default)]
         pub enum Color {
+            #[default]
             Blue,
             Red,
             Green

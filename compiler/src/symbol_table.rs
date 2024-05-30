@@ -1250,7 +1250,7 @@ impl SymbolTable {
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
-                // println!("{name}");
+                println!("{name}");
                 todo!("unknown event")
                 // let error = <#TODO>;
                 // errors.push(error);
