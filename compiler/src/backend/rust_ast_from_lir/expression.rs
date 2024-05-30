@@ -448,7 +448,7 @@ mod rust_ast_from_lir {
                             name: String::from("x"),
                         },
                         expression: Expression::Literal {
-                            literal: Constant::Integer(parse_quote!(1)),
+                            literal: Constant::Integer(parse_quote!(1i64)),
                         },
                     },
                     Statement::ExpressionLast {
