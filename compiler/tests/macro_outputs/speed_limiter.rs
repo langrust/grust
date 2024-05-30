@@ -335,19 +335,19 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub v_set: f64,
-    pub activation: ActivationResquest,
-    pub v_set_aux: f64,
-    pub vdc: VdcState,
-    pub kickdown: KickdownState,
-    pub on_state: SpeedLimiterOn,
-    pub vacuum_brake: VacuumBrakeState,
-    pub state_update: bool,
     pub speed: f64,
-    pub v_update: bool,
-    pub in_regulation_aux: bool,
-    pub set_speed: f64,
     pub state: SpeedLimiter,
+    pub v_update: bool,
+    pub set_speed: f64,
+    pub on_state: SpeedLimiterOn,
+    pub activation: ActivationResquest,
+    pub v_set: f64,
+    pub vacuum_brake: VacuumBrakeState,
+    pub in_regulation_aux: bool,
+    pub state_update: bool,
+    pub v_set_aux: f64,
+    pub kickdown: KickdownState,
+    pub vdc: VdcState,
 }
 impl Context {
     fn init() -> Context {
@@ -384,6 +384,6 @@ pub async fn run_toto_loop(
     let mut period = tokio::time::interval(std::time::Duration::from_millis(10u64));
     let mut context = Context::init();
     loop {
-        tokio::select! { activation = activation_channel . recv () => { let activation = activation . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } set_speed = set_speed_channel . recv () => { let set_speed = set_speed . unwrap () ; let v_set_aux = context . v_set_aux . clone () ; let v_update = context . v_update . clone () ; let v_set = v_set_aux ; v_set_channel . send (v_set) . await . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } speed = speed_channel . recv () => { let speed = speed . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } vacuum_brake = vacuum_brake_channel . recv () => { let vacuum_brake = vacuum_brake . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } kickdown = kickdown_channel . recv () => { let kickdown = kickdown . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } vdc = vdc_channel . recv () => { let vdc = vdc . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } _ = period . tick () => { let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs ()) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } }
+        tokio::select! { activation = activation_channel . recv () => { let activation = activation . unwrap () ; context . activation = activation ; } set_speed = set_speed_channel . recv () => { let set_speed = set_speed . unwrap () ; context . set_speed = set_speed ; } speed = speed_channel . recv () => { let speed = speed . unwrap () ; context . speed = speed ; } vacuum_brake = vacuum_brake_channel . recv () => { let vacuum_brake = vacuum_brake . unwrap () ; context . vacuum_brake = vacuum_brake ; } kickdown = kickdown_channel . recv () => { let kickdown = kickdown . unwrap () ; context . kickdown = kickdown ; } vdc = vdc_channel . recv () => { let vdc = vdc . unwrap () ; context . vdc = vdc ; } _ = period . tick () => { let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs ()) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; let in_regulation = context . in_regulation_aux . clone () ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } }
     }
 }
