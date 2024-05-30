@@ -164,7 +164,7 @@ impl HIRFromAST for Pattern {
             Pattern::Enumeration(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
             Pattern::Tuple(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
             Pattern::Some(pattern) => pattern.hir_from_ast(symbol_table, errors)?,
-            Pattern::None => PatternKind::None,
+            // Pattern::None => PatternKind::None,
             Pattern::Default => PatternKind::Default,
         };
 
@@ -248,9 +248,7 @@ impl Pattern {
             Pattern::Some(PatSome { pattern }) => {
                 pattern.store(is_declaration, symbol_table, errors)
             }
-            Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::None | Pattern::Default => {
-                Ok(vec![])
-            }
+            Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::Default => Ok(vec![]),
         }
     }
 
