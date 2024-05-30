@@ -64,9 +64,13 @@ impl StreamExpression {
                 };
                 self.dependencies = Dependencies::from(vec![(memory_id, Label::Weight(0))]);
             }
-            StreamExpressionKind::NodeApplication { node_id, inputs } => {
+            StreamExpressionKind::NodeApplication {
+                called_node_id,
+                inputs,
+                ..
+            } => {
                 // create fresh identifier for the new memory buffer
-                let node_name = symbol_table.get_name(*node_id);
+                let node_name = symbol_table.get_name(*called_node_id);
                 let memory_name = identifier_creator.new_identifier(
                     String::from(""),
                     node_name.clone(),
@@ -74,7 +78,16 @@ impl StreamExpression {
                 );
                 let memory_id = symbol_table.insert_fresh_signal(memory_name, Scope::Memory, None);
 
-                memory.add_called_node(memory_id, *node_id);
+                let inputs_map = inputs
+                    .iter()
+                    .map(|(input_id, expression)| {
+                        let mut dependencies = expression.get_dependencies().clone();
+                        debug_assert!(dependencies.len() == 1); // normalization makes them identifier expressions
+                        let (given_id, _) = dependencies.pop().unwrap();
+                        (*input_id, given_id)
+                    })
+                    .collect::<Vec<_>>();
+                memory.add_called_node(memory_id, *called_node_id, inputs_map);
 
                 self.dependencies = Dependencies::from(
                     inputs

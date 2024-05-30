@@ -100,8 +100,8 @@ impl Parse for Match {
     }
 }
 
-/// ArmWhen for matching expression.
-pub struct ArmWhen {
+/// ArmWhenEvent for matching event.
+pub struct ArmWhenEvent {
     /// The pattern receiving the value of the event.
     pub pattern: Pattern,
     pub eq_token: Token![=],
@@ -114,7 +114,7 @@ pub struct ArmWhen {
     /// The equations.
     pub equations: Vec<Equation>,
 }
-impl Parse for ArmWhen {
+impl Parse for ArmWhenEvent {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let pattern = input.parse()?;
         let eq_token = input.parse()?;
@@ -138,7 +138,7 @@ impl Parse for ArmWhen {
             }
             equations
         };
-        Ok(ArmWhen {
+        Ok(ArmWhenEvent {
             pattern,
             eq_token,
             event,
@@ -150,8 +150,52 @@ impl Parse for ArmWhen {
     }
 }
 
+/// DefaultArmWhen for absence of events.
+pub struct DefaultArmWhen {
+    pub otherwise_token: keyword::otherwise,
+    pub arrow_token: Token![=>],
+    pub brace_token: token::Brace,
+    /// The equations.
+    pub equations: Vec<Equation>,
+}
+impl Parse for DefaultArmWhen {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let otherwise_token = input.parse()?;
+        let arrow_token = input.parse()?;
+        let content;
+        let brace_token = braced!(content in input);
+        let equations = {
+            let mut equations = Vec::new();
+            while !content.is_empty() {
+                equations.push(content.parse()?);
+            }
+            equations
+        };
+        Ok(DefaultArmWhen {
+            otherwise_token,
+            arrow_token,
+            brace_token,
+            equations,
+        })
+    }
+}
+
+/// ArmWhen for matching expression.
+pub enum ArmWhen {
+    ArmWhenEvent(ArmWhenEvent),
+    Default(DefaultArmWhen),
+}
+impl Parse for ArmWhen {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.peek(keyword::otherwise) {
+            Ok(ArmWhen::Default(input.parse()?))
+        } else {
+            Ok(ArmWhen::ArmWhenEvent(input.parse()?))
+        }
+    }
+}
+
 pub struct MatchWhen {
-    pub match_token: Token![match],
     pub when_token: keyword::when,
     pub brace_token: token::Brace,
     /// The different matching cases.
@@ -159,14 +203,12 @@ pub struct MatchWhen {
 }
 impl Parse for MatchWhen {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let match_token = input.parse()?;
         let when_token = input.parse()?;
         let content;
         let brace_token = braced!(content in input);
         let arms: Punctuated<ArmWhen, Token![,]> = Punctuated::parse_terminated(&content)?;
 
         Ok(MatchWhen {
-            match_token,
             when_token,
             brace_token,
             arms,
@@ -184,11 +226,9 @@ pub enum Equation {
 impl Parse for Equation {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(Token![match]) {
-            if input.peek(keyword::when) {
-                Ok(Equation::MatchWhen(input.parse()?))
-            } else {
-                Ok(Equation::Match(input.parse()?))
-            }
+            Ok(Equation::Match(input.parse()?))
+        } else if input.peek(keyword::when) {
+            Ok(Equation::MatchWhen(input.parse()?))
         } else if input.peek(Token![let]) {
             Ok(Equation::LocalDef(input.parse()?))
         } else {
@@ -261,13 +301,16 @@ mod parse_equation {
                         &arg0
                             .arms
                             .iter()
-                            .map(|arm| {
-                                (
-                                    &arm.pattern,
-                                    &arm.event,
-                                    arm.guard.as_ref().map(|(_, expr)| expr),
+                            .map(|arm| match arm {
+                                super::ArmWhen::ArmWhenEvent(arm) => (
+                                    Some((
+                                        &arm.pattern,
+                                        &arm.event,
+                                        arm.guard.as_ref().map(|(_, expr)| expr),
+                                    )),
                                     &arm.equations,
-                                )
+                                ),
+                                super::ArmWhen::Default(arm) => (None, &arm.equations),
                             })
                             .collect::<Vec<_>>(),
                     )

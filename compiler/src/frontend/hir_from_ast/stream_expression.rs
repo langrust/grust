@@ -28,10 +28,10 @@ impl HIRFromAST for StreamExpression {
                 inputs: inputs_stream_expressions,
             }) => match *function_expression {
                 StreamExpression::Identifier(node) if symbol_table.is_node(&node, false) => {
-                    let node_id =
+                    let called_node_id =
                         symbol_table.get_node_id(&node, false, location.clone(), errors)?;
                     let node_symbol = symbol_table
-                        .get_symbol(node_id)
+                        .get_symbol(called_node_id)
                         .expect("there should be a symbol")
                         .clone();
                     match node_symbol.kind() {
@@ -48,7 +48,8 @@ impl HIRFromAST for StreamExpression {
                             }
 
                             StreamExpressionKind::NodeApplication {
-                                node_id,
+                                calling_node_id: symbol_table.get_current_node_id(),
+                                called_node_id,
                                 inputs: inputs_stream_expressions
                                     .into_iter()
                                     .zip(inputs)

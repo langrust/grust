@@ -35,12 +35,12 @@ impl StreamExpression {
                 }
             }
             StreamExpressionKind::NodeApplication {
-                ref mut node_id,
+                ref mut called_node_id,
                 ref mut inputs,
                 ..
             } => {
                 // replace the id of the called node
-                if let Some(element) = context_map.get(node_id) {
+                if let Some(element) = context_map.get(called_node_id) {
                     match element {
                         Union::I1(new_id)
                         | Union::I2(StreamExpression {
@@ -50,7 +50,7 @@ impl StreamExpression {
                                 },
                             ..
                         }) => {
-                            *node_id = new_id.clone();
+                            *called_node_id = new_id.clone();
                         }
                         Union::I2(_) => unreachable!(),
                     }

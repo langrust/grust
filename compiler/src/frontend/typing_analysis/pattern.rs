@@ -120,9 +120,46 @@ impl Pattern {
                 Ok(())
             }
             PatternKind::Event {
-                ref mut pattern, ..
+                event_element_id,
+                ref mut pattern,
+                ..
             } => {
-                pattern.typing(expected_type, symbol_table, errors)?;
+                let typing = Type::ComponentEvent;
+                expected_type.eq_check(&typing, self.location.clone(), errors)?;
+
+                match symbol_table.get_type(event_element_id) {
+                    Type::SMEvent(expected_type) => {
+                        pattern.typing(&expected_type.clone(), symbol_table, errors)?
+                    }
+                    Type::SMTimeout(expected_type) => {
+                        pattern.typing(&expected_type.clone(), symbol_table, errors)?
+                    }
+                    _ => unreachable!(),
+                };
+
+                self.typing = Some(typing);
+                Ok(())
+            }
+            PatternKind::TimeoutEvent {
+                event_element_id,
+                ref mut pattern,
+                ..
+            } => {
+                let typing = Type::ComponentEvent;
+                expected_type.eq_check(&typing, self.location.clone(), errors)?;
+
+                match symbol_table.get_type(event_element_id) {
+                    Type::SMEvent(_) => todo!("error, event should be timeout"),
+                    Type::SMTimeout(expected_type) => {
+                        pattern.typing(&expected_type.clone(), symbol_table, errors)?
+                    }
+                    _ => unreachable!(),
+                };
+
+                self.typing = Some(typing);
+                Ok(())
+            }
+            PatternKind::NoEvent { .. } => {
                 self.typing = Some(Type::ComponentEvent);
                 Ok(())
             }
@@ -140,7 +177,9 @@ impl Pattern {
             | PatternKind::Structure { .. }
             | PatternKind::Enumeration { .. }
             | PatternKind::Some { .. }
+            | PatternKind::NoEvent { .. }
             | PatternKind::Event { .. }
+            | PatternKind::TimeoutEvent { .. }
             | PatternKind::None
             | PatternKind::Default => {
                 let error = Error::NotStatementPattern {

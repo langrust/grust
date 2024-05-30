@@ -37,6 +37,7 @@ impl HIRFromAST for Component {
         // create local context with all signals
         symbol_table.local();
         symbol_table.restore_context(id);
+        symbol_table.enter_in_node(id);
 
         let statements = equations
             .into_iter()
@@ -46,6 +47,7 @@ impl HIRFromAST for Component {
             .collect::<Result<Vec<_>, _>>()?;
         let contract = contract.hir_from_ast(symbol_table, errors)?;
 
+        symbol_table.leave_node();
         symbol_table.global();
 
         Ok(HIRNode {
@@ -79,7 +81,6 @@ impl Component {
         let inputs = self
             .args
             .iter()
-            .filter(|Colon { right: typing, .. }| !typing.is_event())
             .map(
                 |Colon {
                      left: ident,

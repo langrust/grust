@@ -147,7 +147,9 @@ impl Statement<StreamExpression> {
     ) -> Vec<Statement<StreamExpression>> {
         match &self.expression.kind {
             StreamExpressionKind::NodeApplication {
-                node_id, inputs, ..
+                called_node_id,
+                inputs,
+                ..
             } => {
                 // a loop in the graph induces that "node call" inputs depends on output
                 let signals = self.pattern.identifiers();
@@ -161,7 +163,7 @@ impl Statement<StreamExpression> {
 
                 // then node call must be inlined
                 if is_loop {
-                    let called_unitary_node = nodes.get(&node_id).unwrap();
+                    let called_unitary_node = nodes.get(&called_node_id).unwrap();
 
                     // get statements from called node, with corresponding inputs
                     let (retrieved_statements, retrieved_memory) = called_unitary_node
@@ -173,7 +175,7 @@ impl Statement<StreamExpression> {
                         );
 
                     // remove called node from memory
-                    memory.remove_called_node(*node_id);
+                    memory.remove_called_node(*called_node_id);
 
                     memory.combine(retrieved_memory);
                     retrieved_statements

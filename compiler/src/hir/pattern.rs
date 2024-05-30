@@ -43,6 +43,20 @@ pub enum PatternKind {
         /// The pattern matching the event.
         pattern: Box<Pattern>,
     },
+    /// TimeoutEvent enumeration pattern.
+    TimeoutEvent {
+        /// The event id.
+        event_enum_id: usize,
+        /// The event element id.
+        event_element_id: usize,
+        /// The pattern matching the event.
+        pattern: Box<Pattern>,
+    },
+    /// NoEvent enumeration pattern.
+    NoEvent {
+        /// The event id.
+        event_enum_id: usize,
+    },
     /// Tuple pattern that matches tuples.
     Tuple {
         /// The elements of the tuple.
@@ -84,6 +98,7 @@ impl Pattern {
             PatternKind::Identifier { id } => vec![*id],
             PatternKind::Constant { .. }
             | PatternKind::Enumeration { .. }
+            | PatternKind::NoEvent { .. }
             | PatternKind::None
             | PatternKind::Default => vec![],
             PatternKind::Structure { fields, .. } => fields
@@ -102,7 +117,8 @@ impl Pattern {
                 .collect(),
             PatternKind::Some { pattern }
             | PatternKind::Typed { pattern, .. }
-            | PatternKind::Event { pattern, .. } => pattern.identifiers(),
+            | PatternKind::Event { pattern, .. }
+            | PatternKind::TimeoutEvent { pattern, .. } => pattern.identifiers(),
         }
     }
     /// Get mutable references to pattern's identifiers.
@@ -111,6 +127,7 @@ impl Pattern {
             PatternKind::Identifier { id } => vec![id],
             PatternKind::Constant { .. }
             | PatternKind::Enumeration { .. }
+            | PatternKind::NoEvent { .. }
             | PatternKind::None
             | PatternKind::Default => vec![],
             PatternKind::Structure { fields, .. } => fields
@@ -129,7 +146,8 @@ impl Pattern {
                 .collect(),
             PatternKind::Some { pattern }
             | PatternKind::Typed { pattern, .. }
-            | PatternKind::Event { pattern, .. } => pattern.identifiers_mut(),
+            | PatternKind::Event { pattern, .. }
+            | PatternKind::TimeoutEvent { pattern, .. } => pattern.identifiers_mut(),
         }
     }
 }
