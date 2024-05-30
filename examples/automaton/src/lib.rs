@@ -4,7 +4,7 @@ use grust::grust;
 mod macro_output;
 
 grust! {
-    #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/examples/automaton/src/macro_output.rs"]
+    #![dump = "examples/automaton/src/macro_output.rs"]
 
     enum State {
         On,

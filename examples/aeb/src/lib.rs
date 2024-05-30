@@ -4,7 +4,7 @@ use grust::grust;
 mod macro_output;
 
 grust! {
-    #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/examples/aeb/src/macro_output.rs"]
+    #![dump = "examples/aeb/src/macro_output.rs"]
 
     import signal collision_collection: int;
     import signal maneuver_acknoledgement: int;

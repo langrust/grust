@@ -4,7 +4,7 @@ use grust::grust;
 mod macro_output;
 
 grust! {
-    #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/examples/counter/src/macro_output.rs"]
+    #![dump = "examples/counter/src/macro_output.rs"]
 
     function add(x: int, y: int) -> int {
         let res: int = x + y;

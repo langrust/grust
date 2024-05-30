@@ -2,7 +2,7 @@ use grust::grust;
 pub mod macro_output;
 
 grust! {
-    #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/examples/speed_limiter_events/src/macro_output.rs"]
+    #![dump = "examples/speed_limiter_events/src/macro_output.rs"]
 
     // # Types
 
