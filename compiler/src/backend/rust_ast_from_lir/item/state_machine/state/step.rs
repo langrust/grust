@@ -203,13 +203,19 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir;
-    use crate::common::constant::Constant;
-    use crate::common::r#type::Type;
-    use crate::lir::expression::{Expression, FieldIdentifier};
-    use crate::lir::item::state_machine::state::step::{StateElementStep, Step};
-    use crate::lir::pattern::Pattern;
-    use crate::lir::statement::Statement;
+    prelude! {
+        backend::rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir,
+        common::{
+            constant::Constant,
+            r#type::Type,
+        },
+        lir::{
+            expression::{Expression, FieldIdentifier},
+            item::state_machine::state::step::{StateElementStep, Step},
+            pattern::Pattern,
+            statement::Statement,
+        },
+    }
     use syn::*;
 
     #[test]
@@ -221,43 +227,31 @@ mod rust_ast_from_lir {
             output_type: Type::Integer,
             body: vec![
                 Statement::Let {
-                    pattern: Pattern::Identifier {
-                        name: String::from("o"),
-                    },
-                    expression: Expression::FieldAccess {
-                        expression: Box::new(Expression::Identifier {
-                            identifier: format!("self"),
-                        }),
-                        field: FieldIdentifier::Named(format!("mem_i")),
-                    },
+                    pattern: Pattern::ident("o"),
+                    expression: Expression::field_access(
+                        Expression::ident("self"),
+                        FieldIdentifier::Named(format!("mem_i")),
+                    ),
                 },
                 Statement::Let {
                     pattern: Pattern::Identifier {
                         name: String::from("y"),
                     },
-                    expression: Expression::NodeCall {
-                        node_identifier: format!("called_node_state"),
-                        input_name: format!("CalledNodeInput"),
-                        input_fields: vec![],
-                    },
+                    expression: Expression::node_call(
+                        "called_node_state",
+                        "CalledNodeInput",
+                        vec![],
+                    ),
                 },
             ],
             state_elements_step: vec![
                 StateElementStep {
                     identifier: format!("mem_i"),
-                    expression: Expression::FunctionCall {
-                        function: Box::new(Expression::Identifier {
-                            identifier: format!(" + "),
-                        }),
-                        arguments: vec![
-                            Expression::Identifier {
-                                identifier: format!("o"),
-                            },
-                            Expression::Literal {
-                                literal: Constant::Integer(parse_quote!(1i64)),
-                            },
-                        ],
-                    },
+                    expression: Expression::binop(
+                        crate::common::operator::BinaryOperator::Add,
+                        Expression::ident("o"),
+                        Expression::literal(Constant::Integer(parse_quote!(1i64))),
+                    ),
                 },
                 StateElementStep {
                     identifier: format!("called_node_state"),
@@ -266,19 +260,11 @@ mod rust_ast_from_lir {
                     },
                 },
             ],
-            output_expression: Expression::FunctionCall {
-                function: Box::new(Expression::Identifier {
-                    identifier: format!(" + "),
-                }),
-                arguments: vec![
-                    Expression::Identifier {
-                        identifier: format!("o"),
-                    },
-                    Expression::Identifier {
-                        identifier: format!("y"),
-                    },
-                ],
-            },
+            output_expression: Expression::binop(
+                crate::common::operator::BinaryOperator::Add,
+                Expression::ident("o"),
+                Expression::ident("y"),
+            ),
         };
 
         let control = parse_quote! {

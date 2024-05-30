@@ -105,9 +105,11 @@ pub fn rust_ast_from_lir(event: Event) -> Vec<Item> {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::state_machine::event::rust_ast_from_lir;
-    use crate::common::r#type::Type;
-    use crate::lir::item::state_machine::event::{Event, EventElement, IntoOtherEvent};
+    prelude! {
+        backend::rust_ast_from_lir::item::state_machine::event::rust_ast_from_lir,
+        common::r#type::Type,
+        lir::item::state_machine::event::{Event, EventElement, IntoOtherEvent},
+    }
     use syn::*;
 
     #[test]

@@ -60,8 +60,10 @@ pub fn rust_ast_from_lir(r#type: Type) -> syn::Type {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir;
-    use crate::common::r#type::Type;
+    prelude! {
+        backend::rust_ast_from_lir::r#type::rust_ast_from_lir,
+        common::r#type::Type,
+    }
     use syn::*;
 
     #[test]
