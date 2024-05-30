@@ -218,10 +218,10 @@ impl Parse for Pattern {
 
 #[cfg(test)]
 mod parse_pattern {
-    use crate::{
-        ast::pattern::{Enumeration, PatSome, Pattern, Structure, Tuple},
+    prelude! {
+        ast::pattern::{Enumeration, Pattern, Structure, Tuple},
         common::constant::Constant,
-    };
+    }
 
     #[test]
     fn should_parse_constant() {

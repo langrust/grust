@@ -50,22 +50,40 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
+    macro_rules! present_errors {
+        {
+            $desc:literal, $work:expr $(,)?
+        } => {{
+            let res = $work;
+            if !errors.is_empty() {
+                let desc = $desc;
+                let count = errors.len();
+                let plural = if count > 1 { "s" } else { "" };
+                eprintln!("{count} error{plural} occurred during {desc}:");
+                for err in &errors {
+                    println!("- {err}")
+                }
+            }
+            res.expect(concat!("failure during ", $desc))
+        }}
+    }
 
-    let res = ast.hir_from_ast(&mut symbol_table, &mut errors);
-    println!("HIR construction {errors:?}");
-    let mut hir = res.unwrap();
+    let mut hir = present_errors!(
+        "HIR generation from AST",
+        ast.hir_from_ast(&mut symbol_table, &mut errors)
+    );
 
-    let res = hir.typing(&mut symbol_table, &mut errors);
-    println!("Typing: {errors:?}");
-    res.unwrap();
+    present_errors!("HIR typing", hir.typing(&mut symbol_table, &mut errors));
 
-    let res = hir.generate_dependency_graphs(&symbol_table, &mut errors);
-    println!("Causality 1: {errors:?}");
-    res.unwrap();
+    present_errors!(
+        "dependency graph generation",
+        hir.generate_dependency_graphs(&symbol_table, &mut errors)
+    );
 
-    let res = hir.causality_analysis(&symbol_table, &mut errors);
-    println!("Causality 2: {errors:?}");
-    res.unwrap();
+    present_errors!(
+        "causality analysis",
+        hir.causality_analysis(&symbol_table, &mut errors)
+    );
 
     hir.normalize(&mut symbol_table);
     let lir: Project = hir.lir_from_hir(symbol_table);

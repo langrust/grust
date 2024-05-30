@@ -131,7 +131,8 @@ impl Tuple {
 }
 
 impl PatSome {
-    fn hir_from_ast(
+    // #TODO: why is this dead code?
+    fn _hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
