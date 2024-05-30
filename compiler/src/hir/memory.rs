@@ -1,8 +1,5 @@
 prelude! {
-    common::{
-        HashMap,
-        r#type::Type,
-    },
+    common::r#type::Type,
     hir::stream_expression::StreamExpression
 }
 
@@ -57,8 +54,8 @@ impl Memory {
     /// ```
     pub fn new() -> Self {
         Memory {
-            buffers: common::new_hmap(),
-            called_nodes: common::new_hmap(),
+            buffers: HashMap::new(),
+            called_nodes: HashMap::new(),
         }
     }
 

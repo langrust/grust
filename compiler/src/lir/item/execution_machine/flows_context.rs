@@ -1,8 +1,5 @@
 prelude! {
-    common::{
-        HashMap,
-        r#type::Type,
-    },
+    common::r#type::Type,
 }
 
 /// A signals context from where components will get their inputs.

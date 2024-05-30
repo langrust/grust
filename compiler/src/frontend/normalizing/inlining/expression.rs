@@ -1,8 +1,5 @@
 prelude! {
-    common::{
-        HashMap,
-        label::Label,
-    },
+    common::label::Label,
     hir::{
         dependencies::Dependencies, expression::ExpressionKind, stream_expression::StreamExpression,
     },

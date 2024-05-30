@@ -2,7 +2,6 @@ use petgraph::graphmap::DiGraphMap;
 
 prelude! {
     common::{
-        HashMap,
         label::Label,
         scope::Scope,
     },

@@ -1,13 +1,13 @@
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::color::Color;
-use crate::common::label::Label;
-use crate::error::{Error, TerminationError};
-use crate::hir::node::Node;
-use crate::symbol_table::SymbolTable;
-
 prelude! {
-    common::HashMap,
+    common::{
+        color::Color,
+        label::Label,
+    },
+    error::{Error, TerminationError},
+    hir::node::Node,
+    symbol_table::SymbolTable,
 }
 
 use super::add_edge;
@@ -48,7 +48,7 @@ impl Node {
         symbol_table: &SymbolTable,
     ) -> HashMap<usize, Color> {
         // create an empty hash
-        let mut hash = common::new_hmap();
+        let mut hash = HashMap::new();
 
         // add input signals with white color (unprocessed)
         symbol_table

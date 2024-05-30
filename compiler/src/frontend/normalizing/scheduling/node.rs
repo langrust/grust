@@ -1,7 +1,7 @@
 use petgraph::algo::toposort;
 
 prelude! {
-    common::{label::Label, HashMap},
+    common::label::Label,
     hir::{
         expression::ExpressionKind,
         node::Node,

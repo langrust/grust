@@ -1,7 +1,7 @@
 use petgraph::graphmap::DiGraphMap;
 
 prelude! {
-    common::{HashMap, color::Color, label::Label},
+    common::{color::Color, label::Label},
     error::{Error, TerminationError},
     hir::{
         expression::ExpressionKind,

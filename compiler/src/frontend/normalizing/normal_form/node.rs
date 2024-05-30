@@ -1,10 +1,7 @@
 use petgraph::graphmap::{DiGraphMap, GraphMap};
 
 prelude! {
-    common::{
-        HashMap,
-        label::Label,
-    },
+    common::label::Label,
     hir::{identifier_creator::IdentifierCreator, node::Node},
     symbol_table::SymbolTable,
 }
