@@ -3,7 +3,6 @@ use strum::IntoEnumIterator;
 prelude! {
     ast::interface::FlowKind,
     common::{
-        HashMap,
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         r#type::Type,
@@ -187,7 +186,7 @@ pub struct Context {
 impl Default for Context {
     fn default() -> Self {
         Self {
-            current: common::new_hmap(),
+            current: HashMap::new(),
             global_context: None,
         }
     }
@@ -195,7 +194,7 @@ impl Default for Context {
 impl Context {
     fn new() -> Self {
         Self {
-            current: common::new_hmap(),
+            current: HashMap::new(),
             global_context: None,
         }
     }
@@ -228,7 +227,7 @@ impl Context {
     }
     fn create_local_context(self) -> Context {
         Context {
-            current: common::new_hmap(),
+            current: HashMap::new(),
             global_context: Some(Box::new(self)),
         }
     }
@@ -251,7 +250,7 @@ pub struct SymbolTable {
 impl Default for SymbolTable {
     fn default() -> Self {
         Self {
-            table: common::new_hmap(),
+            table: HashMap::new(),
             fresh_id: 0,
             known_symbols: Default::default(),
             current_node: None,
@@ -262,7 +261,7 @@ impl SymbolTable {
     /// Create new symbol table.
     pub fn new() -> Self {
         Self {
-            table: common::new_hmap(),
+            table: HashMap::new(),
             fresh_id: 0,
             known_symbols: Context::new(),
             current_node: None,

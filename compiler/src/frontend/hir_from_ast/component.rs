@@ -6,7 +6,6 @@ prelude! {
         component::Component,
     },
     common::{
-        HashMap,
         convert_case::camel_case,
         location::Location,
         scope::Scope,

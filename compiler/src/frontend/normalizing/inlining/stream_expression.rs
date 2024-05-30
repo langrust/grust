@@ -1,5 +1,4 @@
 prelude! {
-    common::HashMap,
     hir::{
         dependencies::Dependencies,
         expression::ExpressionKind,

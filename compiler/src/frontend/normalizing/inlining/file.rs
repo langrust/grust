@@ -1,5 +1,4 @@
 prelude! {
-    common::HashMap,
     hir::file::File,
     symbol_table::SymbolTable,
 }

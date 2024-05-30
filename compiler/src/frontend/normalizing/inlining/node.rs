@@ -1,7 +1,6 @@
 use petgraph::graphmap::GraphMap;
 
 prelude! {
-    common::HashMap,
     hir::{
         identifier_creator::IdentifierCreator, memory::Memory, node::Node, pattern::Pattern,
         statement::Statement, stream_expression::StreamExpression,

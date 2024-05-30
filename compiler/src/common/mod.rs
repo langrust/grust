@@ -15,7 +15,7 @@
 macro_rules! prelude {
     { $($imports:tt)* } => {
         #[allow(unused_imports)]
-        use crate::{common, $($imports)*};
+        use crate::{common::hash_map::*, $($imports)*};
     }
 }
 
@@ -46,13 +46,21 @@ pub mod label;
 /// Graph color module.
 pub mod color;
 
-/// An alias for a hashmap using `twox_hash::XxHash64`.
-pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
+pub mod hash_map {
+    /// An alias for a hashmap using `twox_hash::XxHash64`.
+    pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
-pub fn hmap_with_capacity<K, V>(capacity: usize) -> HashMap<K, V> {
-    HashMap::with_capacity_and_hasher(capacity, Default::default())
-}
+    pub trait HashMapNew {
+        fn new() -> Self;
+        fn with_capacity(capacity: usize) -> Self;
+    }
 
-pub fn new_hmap<K, V>() -> HashMap<K, V> {
-    hmap_with_capacity(111)
+    impl<K, V> HashMapNew for HashMap<K, V> {
+        fn new() -> Self {
+            Default::default()
+        }
+        fn with_capacity(capacity: usize) -> Self {
+            HashMap::with_capacity_and_hasher(capacity, Default::default())
+        }
+    }
 }

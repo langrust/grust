@@ -1,12 +1,11 @@
 use petgraph::algo::toposort;
 use petgraph::graphmap::DiGraphMap;
 
-use crate::error::{Error, TerminationError};
-use crate::hir::file::File;
-use crate::symbol_table::SymbolTable;
-
 prelude! {
-    common::HashMap,
+    error::{Error, TerminationError},
+    hir::file::File,
+    symbol_table::SymbolTable,
+
 }
 
 impl File {
@@ -19,7 +18,7 @@ impl File {
         let File { nodes, .. } = self;
 
         // initialize dictionariy for reduced graphs
-        let mut nodes_reduced_graphs = common::new_hmap();
+        let mut nodes_reduced_graphs = HashMap::new();
 
         // create graph of nodes
         let mut nodes_graph = DiGraphMap::new();

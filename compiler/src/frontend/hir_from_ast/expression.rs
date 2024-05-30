@@ -3,10 +3,7 @@ prelude! {
         Application, Arm, Array, Binop, Enumeration, Expression, FieldAccess, Fold, IfThenElse, Map,
         Match, Sort, Structure, Tuple, TupleElementAccess, TypedAbstraction, Unop, Zip,
     },
-    common::{
-        HashMap,
-        location::Location,
-    },
+    common::location::Location,
     error::{Error, TerminationError},
     hir::{
         dependencies::Dependencies,

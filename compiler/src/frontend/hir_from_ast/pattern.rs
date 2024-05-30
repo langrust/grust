@@ -1,6 +1,6 @@
 prelude! {
     ast::pattern::{Enumeration, PatSome, Pattern, Structure, Tuple, Typed},
-    common::{HashMap, location::Location},
+    common::location::Location,
     error::{Error, TerminationError},
     hir::pattern::{Pattern as HIRPattern, PatternKind},
     symbol_table::SymbolTable,

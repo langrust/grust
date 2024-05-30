@@ -1,8 +1,5 @@
 prelude! {
-    common::{
-        HashMap,
-        scope::Scope,
-    },
+    common::scope::Scope,
     hir::{
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,

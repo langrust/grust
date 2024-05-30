@@ -1,7 +1,6 @@
 use petgraph::graphmap::DiGraphMap;
 
 prelude! {
-    common::HashMap,
     hir::{
         flow_expression::{FlowExpression, FlowExpressionKind},
         interface::{
@@ -43,7 +42,7 @@ impl Interface {
     }
 
     fn create_map_from_flow_id_to_statement_id(&self) -> HashMap<usize, usize> {
-        let mut flows_statements = common::new_hmap();
+        let mut flows_statements = HashMap::new();
         self.statements
             .iter()
             .enumerate()

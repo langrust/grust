@@ -1,10 +1,7 @@
 use petgraph::{algo::all_simple_paths, graphmap::DiGraphMap};
 
 prelude! {
-    common::{
-        HashMap,
-        label::Label,
-    },
+    common::label::Label,
     hir::{
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
