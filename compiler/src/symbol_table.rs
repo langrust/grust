@@ -3,7 +3,7 @@ use strum::IntoEnumIterator;
 prelude! {
     ast::interface::FlowKind,
     common::{
-        HMap,
+        HashMap,
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         r#type::Type,
@@ -65,7 +65,7 @@ pub enum SymbolKind {
         /// Node's output identifiers.
         outputs: Vec<(String, usize)>,
         /// Node's local identifiers.
-        locals: HMap<String, usize>,
+        locals: HashMap<String, usize>,
         /// Node's period of execution.
         period: Option<u64>,
     },
@@ -180,7 +180,7 @@ pub enum SymbolKey {
 /// Context table.
 pub struct Context {
     /// Current scope context.
-    current: HMap<SymbolKey, usize>,
+    current: HashMap<SymbolKey, usize>,
     /// Global context.
     global_context: Option<Box<Context>>,
 }
@@ -240,7 +240,7 @@ impl Context {
 /// Symbol table.
 pub struct SymbolTable {
     /// Table.
-    table: HMap<usize, Symbol>,
+    table: HashMap<usize, Symbol>,
     /// The next fresh identifier.
     fresh_id: usize,
     /// Context of known symbols.
@@ -508,7 +508,7 @@ impl SymbolTable {
         inputs: Vec<usize>,
         event_enum: Option<usize>,
         outputs: Vec<(String, usize)>,
-        locals: HMap<String, usize>,
+        locals: HashMap<String, usize>,
         period: Option<u64>,
         location: Location,
         errors: &mut Vec<Error>,
@@ -806,7 +806,7 @@ impl SymbolTable {
     // }
 
     // /// Get unitary node hashmap of used inputs from identifier.
-    // pub fn get_unitary_node_used_inputs(&self, id: usize) -> HMap<usize, bool> {
+    // pub fn get_unitary_node_used_inputs(&self, id: usize) -> HashMap<usize, bool> {
     //     let symbol = self
     //         .get_symbol(id)
     //         .expect(&format!("expect symbol for {id}"));

@@ -1,6 +1,8 @@
-use std::collections::HashMap;
-
-use crate::{hir::file::File, symbol_table::SymbolTable};
+prelude! {
+    common::HashMap,
+    hir::file::File,
+    symbol_table::SymbolTable,
+}
 
 impl File {
     /// Inline node application when it is needed.

@@ -1,6 +1,7 @@
-use std::collections::HashMap;
-
-use crate::hir::{dependencies::Dependencies, stream_expression::StreamExpression};
+prelude! {
+    common::HashMap,
+    hir::{dependencies::Dependencies, stream_expression::StreamExpression},
+}
 
 use super::Union;
 

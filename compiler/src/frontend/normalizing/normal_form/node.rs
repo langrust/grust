@@ -1,12 +1,13 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::{DiGraphMap, GraphMap};
 
-use crate::{
-    common::label::Label,
+prelude! {
+    common::{
+        HashMap,
+        label::Label,
+    },
     hir::{identifier_creator::IdentifierCreator, node::Node},
     symbol_table::SymbolTable,
-};
+}
 
 impl Node {
     /// Change HIR node into a normal form.

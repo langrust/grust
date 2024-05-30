@@ -1,7 +1,8 @@
-use std::collections::HashMap;
-
-use crate::{
-    common::scope::Scope,
+prelude! {
+    common::{
+        HashMap,
+        scope::Scope,
+    },
     hir::{
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
@@ -9,7 +10,7 @@ use crate::{
         stream_expression::{StreamExpression, StreamExpressionKind},
     },
     symbol_table::SymbolTable,
-};
+}
 
 use super::Union;
 

@@ -46,9 +46,13 @@ pub mod label;
 /// Graph color module.
 pub mod color;
 
-pub type HMap<K, V> =
-    std::collections::HashMap<K, V, std::hash::BuildHasherDefault<twox_hash::XxHash64>>;
+/// An alias for a hashmap using `twox_hash::XxHash64`.
+pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
-pub fn new_hmap<K, V>() -> HMap<K, V> {
-    Default::default()
+pub fn hmap_with_capacity<K, V>(capacity: usize) -> HashMap<K, V> {
+    HashMap::with_capacity_and_hasher(capacity, Default::default())
+}
+
+pub fn new_hmap<K, V>() -> HashMap<K, V> {
+    hmap_with_capacity(111)
 }

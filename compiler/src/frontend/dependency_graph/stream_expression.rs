@@ -1,12 +1,15 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::color::Color;
-use crate::common::label::Label;
-use crate::error::{Error, TerminationError};
-use crate::hir::stream_expression::{StreamExpression, StreamExpressionKind};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    common::{
+        HashMap,
+        color::Color,
+        label::Label,
+    },
+    error::{Error, TerminationError},
+    hir::stream_expression::{StreamExpression, StreamExpressionKind},
+    symbol_table::SymbolTable,
+}
 
 impl StreamExpression {
     /// Get nodes applications identifiers.

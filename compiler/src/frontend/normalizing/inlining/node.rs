@@ -1,14 +1,13 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::GraphMap;
 
-use crate::{
+prelude! {
+    common::HashMap,
     hir::{
         identifier_creator::IdentifierCreator, memory::Memory, node::Node, pattern::Pattern,
         statement::Statement, stream_expression::StreamExpression,
     },
     symbol_table::SymbolTable,
-};
+}
 
 use super::Union;
 

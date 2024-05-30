@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-
-use crate::ast::pattern::{Enumeration, PatSome, Pattern, Structure, Tuple, Typed};
-use crate::common::location::Location;
-use crate::error::{Error, TerminationError};
-use crate::hir::pattern::{Pattern as HIRPattern, PatternKind};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::pattern::{Enumeration, PatSome, Pattern, Structure, Tuple, Typed},
+    common::{HashMap, location::Location},
+    error::{Error, TerminationError},
+    hir::pattern::{Pattern as HIRPattern, PatternKind},
+    symbol_table::SymbolTable,
+}
 
 use super::HIRFromAST;
 

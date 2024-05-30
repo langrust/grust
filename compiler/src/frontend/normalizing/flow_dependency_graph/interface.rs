@@ -1,13 +1,14 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::DiGraphMap;
 
-use crate::hir::{
-    flow_expression::{FlowExpression, FlowExpressionKind},
-    interface::{
-        FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement, Interface,
+prelude! {
+    common::HashMap,
+    hir::{
+        flow_expression::{FlowExpression, FlowExpressionKind},
+        interface::{
+            FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement, Interface,
+        },
     },
-};
+}
 
 impl Interface {
     /// Compute the dependency graph of the interface.
@@ -42,7 +43,7 @@ impl Interface {
     }
 
     fn create_map_from_flow_id_to_statement_id(&self) -> HashMap<usize, usize> {
-        let mut flows_statements = HashMap::new();
+        let mut flows_statements = common::new_hmap();
         self.statements
             .iter()
             .enumerate()

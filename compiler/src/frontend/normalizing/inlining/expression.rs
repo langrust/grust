@@ -1,11 +1,12 @@
-use std::collections::HashMap;
-
-use crate::{
-    common::label::Label,
+prelude! {
+    common::{
+        HashMap,
+        label::Label,
+    },
     hir::{
         dependencies::Dependencies, expression::ExpressionKind, stream_expression::StreamExpression,
     },
-};
+}
 
 use super::Union;
 

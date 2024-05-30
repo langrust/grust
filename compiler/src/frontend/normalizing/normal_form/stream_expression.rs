@@ -1,17 +1,22 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::label::Label;
-use crate::common::scope::Scope;
-use crate::hir::expression::ExpressionKind;
-use crate::hir::pattern::{Pattern, PatternKind};
-use crate::hir::stream_expression::StreamExpressionKind;
-use crate::hir::{
-    dependencies::Dependencies, identifier_creator::IdentifierCreator, statement::Statement,
-    stream_expression::StreamExpression,
-};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    common::{
+        HashMap,
+        label::Label,
+        scope::Scope,
+    },
+    hir::{
+        expression::ExpressionKind,
+        pattern::{Pattern, PatternKind},
+        stream_expression::StreamExpressionKind,
+        dependencies::Dependencies,
+        identifier_creator::IdentifierCreator,
+        statement::Statement,
+        stream_expression::StreamExpression,
+    },
+    symbol_table::SymbolTable,
+}
 
 impl StreamExpression {
     /// Change HIR expression into a normal form.

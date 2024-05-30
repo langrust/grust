@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::DiGraphMap;
 
-use crate::{
-    common::{color::Color, label::Label},
+prelude! {
+    common::{HashMap, color::Color, label::Label},
     error::{Error, TerminationError},
     hir::{
         expression::ExpressionKind,
@@ -11,7 +9,7 @@ use crate::{
         stream_expression::{StreamExpression, StreamExpressionKind},
     },
     symbol_table::SymbolTable,
-};
+}
 
 use super::add_edge;
 
