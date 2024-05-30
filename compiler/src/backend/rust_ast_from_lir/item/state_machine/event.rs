@@ -41,13 +41,13 @@ pub fn rust_ast_from_lir(event: Event) -> Vec<Item> {
     let enum_item: ItemEnum = if generics.is_empty() {
         parse_quote! {
             pub enum #event_name {
-                #(#elements),*
+                #(#elements,)*
             }
         }
     } else {
         parse_quote! {
             pub enum #event_name<#(#generics),*> {
-                #(#elements),*
+                #(#elements,)*
             }
         }
     };
