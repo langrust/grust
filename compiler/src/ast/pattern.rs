@@ -330,14 +330,6 @@ mod parse_pattern {
         assert_eq!(pattern, control)
     }
 
-    // #[test]
-    // fn should_parse_none() {
-    //     let pattern: Pattern = syn::parse_quote! {Option::None};
-    //     let control = Pattern::None;
-    //     println!("pattern: {:?}, expected: {:?}", pattern, control);
-    //     assert_eq!(pattern, control)
-    // }
-
     #[test]
     fn should_parse_default() {
         let pattern: Pattern = syn::parse_quote! {_};
