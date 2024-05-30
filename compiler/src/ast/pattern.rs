@@ -187,8 +187,6 @@ pub enum Pattern {
     Enumeration(Enumeration),
     /// Tuple pattern that matches tuples.
     Tuple(Tuple),
-    /// Some pattern that matches when an optional has a value which match the pattern.
-    Some(PatSome), // todo: remove this pattern
     /// Default pattern.
     Default,
 }
@@ -317,15 +315,6 @@ mod parse_pattern {
         let control = Pattern::Enumeration(Enumeration {
             enum_name: String::from("Color"),
             elem_name: String::from("Pink"),
-        });
-        assert_eq!(pattern, control)
-    }
-
-    #[test]
-    fn should_parse_some() {
-        let pattern: Pattern = syn::parse_quote! {some(x)};
-        let control = Pattern::Some(PatSome {
-            pattern: Box::new(Pattern::Identifier(String::from("x"))),
         });
         assert_eq!(pattern, control)
     }
