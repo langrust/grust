@@ -45,7 +45,7 @@ mod rust_ast_from_lir {
                 name: String::from("x"),
             },
             expression: Expression::Literal {
-                literal: Constant::Integer(parse_quote!(1)),
+                literal: Constant::Integer(parse_quote!(1i64)),
             },
         };
 
@@ -70,7 +70,7 @@ mod rust_ast_from_lir {
                 input_fields: vec![(
                     String::from("i"),
                     Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(1)),
+                        literal: Constant::Integer(parse_quote!(1i64)),
                     },
                 )],
             },
@@ -87,7 +87,7 @@ mod rust_ast_from_lir {
     fn should_create_rust_ast_last_expression_from_lir_last_expression() {
         let statement = Statement::ExpressionLast {
             expression: Expression::Literal {
-                literal: Constant::Integer(parse_quote!(1)),
+                literal: Constant::Integer(parse_quote!(1i64)),
             },
         };
 

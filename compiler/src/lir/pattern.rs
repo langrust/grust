@@ -51,3 +51,49 @@ pub enum Pattern {
     /// The default pattern that matches anything.
     Default,
 }
+
+impl Pattern {
+    pub fn ident(name: impl Into<String>) -> Self {
+        Self::Identifier { name: name.into() }
+    }
+    pub fn literal(literal: Constant) -> Self {
+        Self::Literal { literal }
+    }
+    pub fn typed(pat: Pattern, typing: Type) -> Self {
+        Self::Typed {
+            pattern: Box::new(pat),
+            typing,
+        }
+    }
+    pub fn structure(name: impl Into<String>, fields: Vec<(String, Pattern)>) -> Self {
+        Self::Structure {
+            name: name.into(),
+            fields,
+        }
+    }
+    pub fn enumeration(
+        enum_name: impl Into<String>,
+        elem_name: impl Into<String>,
+        element: Option<Self>,
+    ) -> Self {
+        Self::Enumeration {
+            enum_name: enum_name.into(),
+            elem_name: elem_name.into(),
+            element: element.map(Box::new),
+        }
+    }
+    pub fn tuple(elements: Vec<Self>) -> Self {
+        Self::Tuple { elements }
+    }
+    pub fn some(pat: Self) -> Self {
+        Self::Some {
+            pattern: Box::new(pat),
+        }
+    }
+    pub fn none() -> Self {
+        Self::None
+    }
+    pub fn default() -> Self {
+        Self::Default
+    }
+}
