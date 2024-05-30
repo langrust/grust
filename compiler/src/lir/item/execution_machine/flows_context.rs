@@ -1,6 +1,9 @@
-use std::collections::HashMap;
-
-use crate::common::r#type::Type;
+prelude! {
+    common::{
+        HashMap,
+        r#type::Type,
+    },
+}
 
 /// A signals context from where components will get their inputs.
 #[derive(Debug, PartialEq, Default)]

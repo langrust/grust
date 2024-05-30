@@ -1,12 +1,15 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::DiGraphMap;
 
-use crate::common::color::Color;
-use crate::common::label::Label;
-use crate::error::{Error, TerminationError};
-use crate::hir::{expression::ExpressionKind, stream_expression::StreamExpression};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    common::{
+        HashMap,
+        color::Color,
+        label::Label,
+    },
+    error::{Error, TerminationError},
+    hir::{expression::ExpressionKind, stream_expression::StreamExpression},
+    symbol_table::SymbolTable,
+}
 
 impl ExpressionKind<StreamExpression> {
     /// Compute dependencies of an array stream expression.

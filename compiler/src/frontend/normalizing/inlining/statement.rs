@@ -1,9 +1,10 @@
-use std::collections::HashMap;
-
 use petgraph::{algo::all_simple_paths, graphmap::DiGraphMap};
 
-use crate::{
-    common::label::Label,
+prelude! {
+    common::{
+        HashMap,
+        label::Label,
+    },
     hir::{
         expression::ExpressionKind,
         identifier_creator::IdentifierCreator,
@@ -13,7 +14,7 @@ use crate::{
         stream_expression::{StreamExpression, StreamExpressionKind},
     },
     symbol_table::SymbolTable,
-};
+}
 
 use super::Union;
 

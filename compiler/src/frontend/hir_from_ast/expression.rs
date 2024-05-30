@@ -1,16 +1,19 @@
-use std::collections::HashMap;
-
-use crate::ast::expression::{
-    Application, Arm, Array, Binop, Enumeration, Expression, FieldAccess, Fold, IfThenElse, Map,
-    Match, Sort, Structure, Tuple, TupleElementAccess, TypedAbstraction, Unop, Zip,
-};
-use crate::common::location::Location;
-use crate::error::{Error, TerminationError};
-use crate::hir::{
-    dependencies::Dependencies,
-    expression::{Expression as HIRExpression, ExpressionKind},
-};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::expression::{
+        Application, Arm, Array, Binop, Enumeration, Expression, FieldAccess, Fold, IfThenElse, Map,
+        Match, Sort, Structure, Tuple, TupleElementAccess, TypedAbstraction, Unop, Zip,
+    },
+    common::{
+        HashMap,
+        location::Location,
+    },
+    error::{Error, TerminationError},
+    hir::{
+        dependencies::Dependencies,
+        expression::{Expression as HIRExpression, ExpressionKind},
+    },
+    symbol_table::SymbolTable,
+}
 
 use super::HIRFromAST;
 

@@ -1,8 +1,10 @@
-use std::collections::HashMap;
-
-use crate::common::r#type::Type;
-
-use crate::hir::stream_expression::StreamExpression;
+prelude! {
+    common::{
+        HashMap,
+        r#type::Type,
+    },
+    hir::stream_expression::StreamExpression
+}
 
 /// Memory of an unitary node.
 ///
@@ -55,8 +57,8 @@ impl Memory {
     /// ```
     pub fn new() -> Self {
         Memory {
-            buffers: HashMap::new(),
-            called_nodes: HashMap::new(),
+            buffers: common::new_hmap(),
+            called_nodes: common::new_hmap(),
         }
     }
 

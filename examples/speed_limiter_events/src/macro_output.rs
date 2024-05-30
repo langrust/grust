@@ -300,14 +300,14 @@ impl SpeedLimiterState {
 pub struct Context {
     pub state_update: bool,
     pub state: SpeedLimiter,
-    pub v_set_aux: f64,
-    pub on_state: SpeedLimiterOn,
-    pub in_regulation_aux: bool,
     pub vdc: VdcState,
-    pub v_set: f64,
     pub speed: f64,
+    pub v_set_aux: f64,
+    pub v_set: f64,
+    pub in_regulation_aux: bool,
     pub vacuum_brake: VacuumBrakeState,
     pub v_update: bool,
+    pub on_state: SpeedLimiterOn,
 }
 impl Context {
     fn init() -> Context {

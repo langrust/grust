@@ -1,16 +1,14 @@
-use std::collections::HashMap;
-
 use petgraph::algo::toposort;
 
-use crate::{
-    common::label::Label,
+prelude! {
+    common::{label::Label, HashMap},
     hir::{
         expression::ExpressionKind,
         node::Node,
         statement::Statement,
         stream_expression::{StreamExpression, StreamExpressionKind},
     },
-};
+}
 
 impl Node {
     /// Schedule statements.

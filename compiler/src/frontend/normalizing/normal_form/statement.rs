@@ -1,9 +1,10 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::DiGraphMap;
 
-use crate::{
-    common::label::Label,
+prelude! {
+    common::{
+        HashMap,
+        label::Label,
+    },
     hir::{
         dependencies::Dependencies,
         expression::ExpressionKind,
@@ -12,7 +13,7 @@ use crate::{
         stream_expression::{StreamExpression, StreamExpressionKind},
     },
     symbol_table::SymbolTable,
-};
+}
 
 impl Statement<StreamExpression> {
     /// Change HIR statement into a normal form.

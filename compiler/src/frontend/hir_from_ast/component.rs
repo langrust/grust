@@ -6,7 +6,7 @@ prelude! {
         component::Component,
     },
     common::{
-        HMap,
+        HashMap,
         convert_case::camel_case,
         location::Location,
         scope::Scope,
@@ -204,7 +204,7 @@ impl Component {
             .collect::<Result<Vec<Vec<_>>, _>>()?
             .into_iter()
             .flatten()
-            .collect::<HMap<String, usize>>();
+            .collect::<HashMap<String, usize>>();
 
         symbol_table.global();
 
