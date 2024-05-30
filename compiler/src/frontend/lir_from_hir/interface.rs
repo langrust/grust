@@ -305,12 +305,14 @@ impl Interface {
                     };
                 // compute instructions that depend on this incoming flow
                 let instructions = compute_flow_instructions(
+                    vec![index],
                     &statements,
-                    &on_change_events,
-                    &timing_events,
+                    &subgraph,
+                    &ordered_statements,
                     encountered_events,
                     defined_signals,
-                    ordered_statements,
+                    &on_change_events,
+                    &timing_events,
                     flows_context,
                     symbol_table,
                 );
@@ -363,25 +365,34 @@ fn construct_subgraph_from_source(
 }
 
 fn compute_flow_instructions(
+    mut working_stack: Vec<usize>,
     statements: &Vec<FlowStatement>,
-    on_change_events: &HashMap<usize, usize>,
-    timing_events: &HashMap<usize, (usize, TimingEvent)>,
+    graph: &DiGraphMap<usize, ()>,
+    ordered_statements: &Vec<usize>,
     mut encountered_events: HashSet<usize>,
     mut defined_signals: HashSet<usize>,
-    mut ordered_statements: Vec<usize>,
+    on_change_events: &HashMap<usize, usize>,
+    timing_events: &HashMap<usize, (usize, TimingEvent)>,
     flows_context: &FlowsContext,
     symbol_table: &SymbolTable,
 ) -> Vec<FlowInstruction> {
     let mut instructions = vec![];
+    let statements_order = ordered_statements
+        .into_iter()
+        .enumerate()
+        .map(|(order, statement_id)| (statement_id, order))
+        .collect::<HashMap<_, _>>();
+    let compare_statements = |statement_id: &usize| *statements_order.get(statement_id).unwrap();
 
     // push instructions in right order
-    while !ordered_statements.is_empty() {
+    while !working_stack.is_empty() {
         // get the next flow statement to transform
-        let ordered_statement_id = ordered_statements.remove(0);
+        let statement_id = working_stack.remove(0);
         // get flow statement related to id
-        let flow_statement = statements
-            .get(ordered_statement_id)
-            .expect("should be there");
+        let flow_statement = statements.get(statement_id).expect("should be there");
+
+        // remember next statements should be stacked into working_stack
+        let mut add_dependent_statements = false;
 
         // add instructions related to the nature of the statement (see the draft)
         match flow_statement {
@@ -406,7 +417,7 @@ fn compute_flow_instructions(
                     let outputs_ids = pattern.identifiers();
 
                     // get timing event identifier if it exists
-                    if let Some((timer_id, _)) = timing_events.get(&ordered_statement_id) {
+                    if let Some((timer_id, _)) = timing_events.get(&statement_id) {
                         // if timing event is activated
                         if encountered_events.contains(timer_id) {
                             // if component computes on event
@@ -424,6 +435,10 @@ fn compute_flow_instructions(
                                     component_name.clone(),
                                 ));
                             }
+
+                            // propagate computations
+                            add_dependent_statements = true;
+
                             // update output signals
                             for output_id in outputs_ids.iter() {
                                 let output_name = symbol_table.get_name(*output_id);
@@ -474,6 +489,10 @@ fn compute_flow_instructions(
                                 symbol_table.get_name(*flow_event_id).clone(),
                             )),
                         ));
+
+                        // propagate computations
+                        add_dependent_statements = true;
+
                         // update output signals
                         for output_id in outputs_ids.iter() {
                             let output_name = symbol_table.get_name(*output_id);
@@ -525,6 +544,9 @@ fn compute_flow_instructions(
                                     }
                                     // add the flow to the set of defined signals
                                     defined_signals.insert(id_pattern);
+
+                                    // propagate computations
+                                    add_dependent_statements = true;
                                 }
                                 FlowKind::Event(_) => {
                                     // if source is an event, look if it is activated
@@ -537,16 +559,20 @@ fn compute_flow_instructions(
                                             Expression::Identifier {
                                                 identifier: source_name.clone(),
                                             },
-                                        ))
+                                        ));
+
+                                        // add the flow to the set of encountered events
+                                        encountered_events.insert(id_pattern);
+
+                                        // propagate computations
+                                        add_dependent_statements = true;
                                     }
-                                    // add the flow to the set of encountered events
-                                    encountered_events.insert(id_pattern);
                                 }
                             }
                         }
                         FlowExpressionKind::Sample { .. } => {
                             let (timer_id, _) = timing_events
-                                .get(&ordered_statement_id)
+                                .get(&statement_id)
                                 .expect("there should be a timing event");
 
                             // source is an event, look if it is activated
@@ -570,7 +596,10 @@ fn compute_flow_instructions(
                                     Expression::TakeFromContext {
                                         flow: source_name.clone(),
                                     },
-                                ))
+                                ));
+
+                                // propagate computations
+                                add_dependent_statements = true;
                             }
                         }
                         FlowExpressionKind::Throtle { delta, .. } => {
@@ -599,6 +628,9 @@ fn compute_flow_instructions(
                                     },
                                 )),
                             ));
+
+                            // propagate computations
+                            add_dependent_statements = true;
                         }
                         FlowExpressionKind::OnChange { .. } => {
                             // source is a signal, if it is not defined, then define it
@@ -622,12 +654,14 @@ fn compute_flow_instructions(
 
                             // if on_change event is NOT activated
                             let not_onchange_instructions = compute_flow_instructions(
+                                working_stack.clone(),
                                 statements,
-                                on_change_events,
-                                timing_events,
+                                graph,
+                                ordered_statements,
                                 encountered_events.clone(),
                                 defined_signals.clone(),
-                                ordered_statements.clone(),
+                                on_change_events,
+                                timing_events,
                                 flows_context,
                                 symbol_table,
                             );
@@ -648,13 +682,25 @@ fn compute_flow_instructions(
                                     },
                                 ),
                             ];
+                            // insert statements that are dependent from on_change event
+                            graph.neighbors(statement_id).for_each(|next_statement_id| {
+                                // insert statements into the sorted vector 'working_stack'
+                                match working_stack
+                                    .binary_search_by_key(&next_statement_id, compare_statements)
+                                {
+                                    Err(pos) => working_stack.insert(pos, next_statement_id),
+                                    Ok(_) => unreachable!(), // loop in the graph, impossible
+                                }
+                            });
                             let mut next_onchange_instructions = compute_flow_instructions(
+                                working_stack, // takes ownership
                                 statements,
-                                on_change_events,
-                                timing_events,
+                                graph,
+                                ordered_statements,
                                 encountered_events, // takes ownership
                                 defined_signals,    // takes ownership
-                                ordered_statements, // takes ownership
+                                on_change_events,
+                                timing_events,
                                 flows_context,
                                 symbol_table,
                             );
@@ -672,7 +718,7 @@ fn compute_flow_instructions(
                         }
                         FlowExpressionKind::Timeout { deadline, .. } => {
                             let (timer_id, timer) = timing_events
-                                .get(&ordered_statement_id)
+                                .get(&statement_id)
                                 .expect("there should be a timing event");
                             let timer_name = &timer.identifier;
 
@@ -680,6 +726,7 @@ fn compute_flow_instructions(
                             if encountered_events.contains(&id_source) {
                                 // if activated, create event
                                 encountered_events.insert(id_pattern);
+
                                 // add event creation in instruction
                                 instructions.push(FlowInstruction::Let(
                                     flow_name.clone(),
@@ -689,30 +736,39 @@ fn compute_flow_instructions(
                                         }),
                                     },
                                 ));
+
                                 // add reset timer
                                 instructions.push(FlowInstruction::ResetTimer(
                                     timer_name.clone(),
                                     *deadline,
                                 ));
+
+                                // propagate computations
+                                add_dependent_statements = true;
                             }
 
                             // timer is an event, look if it is activated
                             if encountered_events.contains(timer_id) {
                                 // if activated, create event
                                 encountered_events.insert(id_pattern);
+
                                 // add event creation in instruction
                                 instructions
                                     .push(FlowInstruction::Let(flow_name.clone(), Expression::Err));
+
                                 // add reset timer
                                 instructions.push(FlowInstruction::ResetTimer(
                                     timer_name.clone(),
                                     *deadline,
                                 ));
+
+                                // propagate computations
+                                add_dependent_statements = true;
                             }
                         }
                         FlowExpressionKind::Scan { .. } => {
                             let (timer_id, _) = timing_events
-                                .get(&ordered_statement_id)
+                                .get(&statement_id)
                                 .expect("there should be a timing event");
 
                             // timer is an event, look if it is activated
@@ -738,6 +794,9 @@ fn compute_flow_instructions(
                                         },
                                     ))
                                 }
+
+                                // propagate computations
+                                add_dependent_statements = true;
                             }
                         }
                         FlowExpressionKind::ComponentCall { .. } => unreachable!(),
@@ -768,7 +827,21 @@ fn compute_flow_instructions(
                         },
                     ))
                 }
+
+                // propagate computations
+                add_dependent_statements = true;
             }
+        }
+
+        // insert dependent statements if needed
+        if add_dependent_statements {
+            graph.neighbors(statement_id).for_each(|next_statement_id| {
+                // insert statements into the sorted vector 'working_stack'
+                match working_stack.binary_search_by_key(&next_statement_id, compare_statements) {
+                    Err(pos) => working_stack.insert(pos, next_statement_id),
+                    Ok(_) => unreachable!(), // loop in the graph, impossible
+                }
+            });
         }
     }
 
