@@ -367,7 +367,7 @@ impl Type {
 
     pub fn is_event(&self) -> bool {
         match self {
-            Type::SMEvent(_) | Type::SMTimeout(_) => true,
+            Type::Event(_) | Type::SMEvent(_) | Type::SMTimeout(_) => true,
             _ => false,
         }
     }

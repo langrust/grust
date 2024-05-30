@@ -546,7 +546,7 @@ fn compute_flow_instructions(
                         }
                         FlowExpressionKind::Sample { .. } => {
                             let (timer_id, _) = timing_events
-                                .get(&id_pattern)
+                                .get(&ordered_statement_id)
                                 .expect("there should be a timing event");
 
                             // source is an event, look if it is activated
@@ -672,7 +672,7 @@ fn compute_flow_instructions(
                         }
                         FlowExpressionKind::Timeout { deadline, .. } => {
                             let (timer_id, timer) = timing_events
-                                .get(&id_pattern)
+                                .get(&ordered_statement_id)
                                 .expect("there should be a timing event");
                             let timer_name = &timer.identifier;
 
@@ -712,7 +712,7 @@ fn compute_flow_instructions(
                         }
                         FlowExpressionKind::Scan { .. } => {
                             let (timer_id, _) = timing_events
-                                .get(&id_pattern)
+                                .get(&ordered_statement_id)
                                 .expect("there should be a timing event");
 
                             // timer is an event, look if it is activated
@@ -745,16 +745,30 @@ fn compute_flow_instructions(
                 }
             }
             FlowStatement::Export(FlowExport { id, .. }) => {
-                let flow_name = symbol_table.get_name(*id);
-                // add send instructions if necessary
-                instructions.push(FlowInstruction::Send(
-                    flow_name.clone(),
-                    Expression::Identifier {
-                        identifier: flow_name.clone(),
-                    },
-                ))
+                let source_name = symbol_table.get_name(*id);
+                // if source flow is an encountered event or a defined signal
+                if encountered_events.contains(id) || defined_signals.contains(id) {
+                    // add send instruction
+                    instructions.push(FlowInstruction::Send(
+                        source_name.clone(),
+                        Expression::Identifier {
+                            identifier: source_name.clone(),
+                        },
+                    ));
+                }
             }
-            FlowStatement::Import(_) => (), // nothing to do
+            FlowStatement::Import(FlowImport { id, .. }) => {
+                // if flow is in context, add context_update instruction
+                if flows_context.contains_element(symbol_table.get_name(*id)) {
+                    let flow_name = symbol_table.get_name(*id);
+                    instructions.push(FlowInstruction::UpdateContext(
+                        flow_name.clone(),
+                        Expression::Identifier {
+                            identifier: flow_name.clone(),
+                        },
+                    ))
+                }
+            }
         }
     }
 
@@ -778,12 +792,12 @@ impl FlowStatement {
                     // get the id of pattern's flow (and check their is only one flow)
                     let mut ids = pattern.identifiers();
                     debug_assert!(ids.len() == 1);
-                    let id = ids.pop().unwrap();
+                    let pattern_id = ids.pop().unwrap();
 
                     // push in signals context
-                    let name = symbol_table.get_name(id).clone();
-                    let ty = symbol_table.get_type(id);
-                    flows_context.add_element(name, ty);
+                    let flow_name = symbol_table.get_name(pattern_id).clone();
+                    let ty = symbol_table.get_type(pattern_id);
+                    flows_context.add_element(flow_name, ty);
                 }
                 FlowExpressionKind::Sample {
                     flow_expression, ..

@@ -298,20 +298,27 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
+    pub state: SpeedLimiter,
+    pub on_state: SpeedLimiterOn,
+    pub speed: f64,
     pub vacuum_brake: VacuumBrakeState,
-    pub v_set_aux: f64,
     pub v_update: bool,
+    pub v_set: f64,
     pub in_regulation_aux: bool,
     pub state_update: bool,
+    pub x: f64,
     pub vdc: VdcState,
-    pub state: SpeedLimiter,
-    pub speed: f64,
-    pub on_state: SpeedLimiterOn,
-    pub v_set: f64,
+    pub changed_set_speed_old: f64,
+    pub v_set_aux: f64,
 }
 impl Context {
     fn init() -> Context {
         Default::default()
+    }
+    fn get_process_set_speed_inputs(&self, event: ProcessSetSpeedEvent) -> ProcessSetSpeedInput {
+        ProcessSetSpeedInput {
+            process_set_speed_event: event,
+        }
     }
     fn get_speed_limiter_inputs(&self, event: SpeedLimiterEvent) -> SpeedLimiterInput {
         SpeedLimiterInput {
@@ -320,11 +327,6 @@ impl Context {
             speed: self.speed,
             v_set: self.v_set,
             speed_limiter_event: event,
-        }
-    }
-    fn get_process_set_speed_inputs(&self, event: ProcessSetSpeedEvent) -> ProcessSetSpeedInput {
-        ProcessSetSpeedInput {
-            process_set_speed_event: event,
         }
     }
 }
@@ -341,9 +343,10 @@ pub async fn run_toto_loop(
 ) {
     let mut process_set_speed = ProcessSetSpeedState::init();
     let mut speed_limiter = SpeedLimiterState::init();
+    let mut period_1 = tokio::time::interval(std::time::Duration::from_millis(10u64));
     let mut period = tokio::time::interval(std::time::Duration::from_millis(10u64));
     let mut context = Context::init();
     loop {
-        tokio::select! { activation = activation_channel . recv () => { let activation = activation . unwrap () ; let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs (SpeedLimiterEvent :: activation_req (activation))) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } set_speed = set_speed_channel . recv () => { let set_speed = set_speed . unwrap () ; let (v_set_aux , v_update) = process_set_speed . step (context . get_process_set_speed_inputs (ProcessSetSpeedEvent :: set_speed (set_speed))) ; context . v_set_aux = v_set_aux ; context . v_update = v_update ; let v_set_aux = context . v_set_aux . clone () ; let v_update = context . v_update . clone () ; let v_set = v_set_aux ; v_set_channel . send (v_set) . await . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } speed = speed_channel . recv () => { let speed = speed . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } vacuum_brake = vacuum_brake_channel . recv () => { let vacuum_brake = vacuum_brake . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } kickdown = kickdown_channel . recv () => { let kickdown = kickdown . unwrap () ; let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs (SpeedLimiterEvent :: kickdown (kickdown))) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } failure = failure_channel . recv () => { let failure = failure . unwrap () ; let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs (SpeedLimiterEvent :: failure (failure))) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } vdc = vdc_channel . recv () => { let vdc = vdc . unwrap () ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } _ = period . tick () => { let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs (SpeedLimiterEvent :: NoEvent)) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; let state = context . state . clone () ; let on_state = context . on_state . clone () ; let in_regulation_aux = context . in_regulation_aux . clone () ; let state_update = context . state_update . clone () ; let in_regulation = in_regulation_aux ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } }
+        tokio::select! { activation = activation_channel . recv () => { let activation = activation . unwrap () ; let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs (SpeedLimiterEvent :: activation_req (activation))) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } set_speed = set_speed_channel . recv () => { let set_speed = set_speed . unwrap () ; if (context . x - set_speed) >= 1.0 { context . x = set_speed ; } let x = context . x . clone () ; if context . changed_set_speed_old != x { let changed_set_speed = x ; context . changed_set_speed_old = x ; let (v_set_aux , v_update) = process_set_speed . step (context . get_process_set_speed_inputs (ProcessSetSpeedEvent :: set_speed (changed_set_speed))) ; context . v_set_aux = v_set_aux ; context . v_update = v_update ; let v_set = context . v_set_aux . clone () ; v_set_channel . send (v_set) . await . unwrap () ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } else { let v_set = context . v_set_aux . clone () ; v_set_channel . send (v_set) . await . unwrap () ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } } speed = speed_channel . recv () => { let speed = speed . unwrap () ; context . speed = speed ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } vacuum_brake = vacuum_brake_channel . recv () => { let vacuum_brake = vacuum_brake . unwrap () ; context . vacuum_brake = vacuum_brake ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } kickdown = kickdown_channel . recv () => { let kickdown = kickdown . unwrap () ; let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs (SpeedLimiterEvent :: kickdown (kickdown))) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } failure = failure_channel . recv () => { let failure = failure . unwrap () ; let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs (SpeedLimiterEvent :: failure (failure))) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } vdc = vdc_channel . recv () => { let vdc = vdc . unwrap () ; context . vdc = vdc ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } _ = period . tick () => { let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs (SpeedLimiterEvent :: NoEvent)) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } _ = period_1 . tick () => { let in_regulation = context . in_regulation_aux . clone () ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } }
     }
 }

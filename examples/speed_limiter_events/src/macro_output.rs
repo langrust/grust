@@ -298,20 +298,27 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub v_update: bool,
     pub vacuum_brake: VacuumBrakeState,
-    pub state_update: bool,
-    pub vdc: VdcState,
-    pub on_state: SpeedLimiterOn,
     pub in_regulation_aux: bool,
-    pub state: SpeedLimiter,
-    pub speed: f64,
     pub v_set: f64,
+    pub vdc: VdcState,
+    pub x: f64,
+    pub changed_set_speed_old: f64,
+    pub v_update: bool,
     pub v_set_aux: f64,
+    pub on_state: SpeedLimiterOn,
+    pub state_update: bool,
+    pub speed: f64,
+    pub state: SpeedLimiter,
 }
 impl Context {
     fn init() -> Context {
         Default::default()
+    }
+    fn get_process_set_speed_inputs(&self, event: ProcessSetSpeedEvent) -> ProcessSetSpeedInput {
+        ProcessSetSpeedInput {
+            process_set_speed_event: event,
+        }
     }
     fn get_speed_limiter_inputs(&self, event: SpeedLimiterEvent) -> SpeedLimiterInput {
         SpeedLimiterInput {
@@ -320,11 +327,6 @@ impl Context {
             speed: self.speed,
             v_set: self.v_set,
             speed_limiter_event: event,
-        }
-    }
-    fn get_process_set_speed_inputs(&self, event: ProcessSetSpeedEvent) -> ProcessSetSpeedInput {
-        ProcessSetSpeedInput {
-            process_set_speed_event: event,
         }
     }
 }
@@ -357,23 +359,35 @@ pub async fn run_toto_loop(
                 in_regulation_channel.send(in_regulation).await.unwrap();
             } set_speed = set_speed_channel.recv() =>
             {
-                let set_speed = set_speed.unwrap(); let (v_set_aux, v_update)
-                =
-                process_set_speed.step(context.get_process_set_speed_inputs(ProcessSetSpeedEvent
-                :: set_speed(set_speed))); context.v_set_aux = v_set_aux;
-                context.v_update = v_update; let v_set =
-                context.v_set_aux.clone();
-                v_set_channel.send(v_set).await.unwrap(); let in_regulation =
-                context.in_regulation_aux.clone();
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                let set_speed = set_speed.unwrap(); if (context.x - set_speed)
+                >= 1.0 { context.x = set_speed; } let x = context.x.clone();
+                if context.changed_set_speed_old != x
+                {
+                    let changed_set_speed = x; context.changed_set_speed_old =
+                    x; let (v_set_aux, v_update) =
+                    process_set_speed.step(context.get_process_set_speed_inputs(ProcessSetSpeedEvent
+                    :: set_speed(changed_set_speed))); context.v_set_aux =
+                    v_set_aux; context.v_update = v_update; let v_set =
+                    context.v_set_aux.clone();
+                    v_set_channel.send(v_set).await.unwrap(); let in_regulation
+                    = context.in_regulation_aux.clone();
+                    in_regulation_channel.send(in_regulation).await.unwrap();
+                } else
+                {
+                    let v_set = context.v_set_aux.clone();
+                    v_set_channel.send(v_set).await.unwrap(); let in_regulation
+                    = context.in_regulation_aux.clone();
+                    in_regulation_channel.send(in_regulation).await.unwrap();
+                }
             } speed = speed_channel.recv() =>
             {
-                let speed = speed.unwrap(); let in_regulation =
-                context.in_regulation_aux.clone();
+                let speed = speed.unwrap(); context.speed = speed; let
+                in_regulation = context.in_regulation_aux.clone();
                 in_regulation_channel.send(in_regulation).await.unwrap();
             } vacuum_brake = vacuum_brake_channel.recv() =>
             {
-                let vacuum_brake = vacuum_brake.unwrap(); let in_regulation =
+                let vacuum_brake = vacuum_brake.unwrap(); context.vacuum_brake
+                = vacuum_brake; let in_regulation =
                 context.in_regulation_aux.clone();
                 in_regulation_channel.send(in_regulation).await.unwrap();
             } kickdown = kickdown_channel.recv() =>
@@ -398,7 +412,7 @@ pub async fn run_toto_loop(
                 in_regulation_channel.send(in_regulation).await.unwrap();
             } vdc = vdc_channel.recv() =>
             {
-                let vdc = vdc.unwrap(); let in_regulation =
+                let vdc = vdc.unwrap(); context.vdc = vdc; let in_regulation =
                 context.in_regulation_aux.clone();
                 in_regulation_channel.send(in_regulation).await.unwrap();
             } _ = period.tick() =>

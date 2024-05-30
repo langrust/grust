@@ -223,7 +223,7 @@ grust! {
 
     // # Imports
     import event    car::hmi::speed_limiter::activation : ActivationResquest;
-    import event    car::hmi::speed_limiter::set_speed  : float;
+    import signal   car::hmi::speed_limiter::set_speed  : float;
     import signal   car::adas::speed                    : float;
     import signal   car::adas::vacuum_brake             : VacuumBrakeState;
     import event    car::adas::kickdown                 : Kickdown;
@@ -233,7 +233,9 @@ grust! {
     export signal   car::adas::speed_limiter::in_regulation : bool;
     export signal   car::adas::speed_limiter::v_set         : float;
 
-    let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(set_speed);
+    let event changed_set_speed: float = on_change(throtle(set_speed, 1.0));
+
+    let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(changed_set_speed);
     let (
         signal state: SpeedLimiter,
         signal on_state: SpeedLimiterOn,
