@@ -1,16 +1,16 @@
-use std::collections::HashMap;
 use strum::IntoEnumIterator;
 
-use crate::{
+prelude! {
     ast::interface::FlowKind,
     common::{
+        HMap,
         location::Location,
         operator::{BinaryOperator, OtherOperator, UnaryOperator},
         r#type::Type,
         scope::Scope,
     },
     error::{Error, TerminationError},
-};
+}
 
 /// Symbol kinds.
 #[derive(Clone)]
@@ -65,7 +65,7 @@ pub enum SymbolKind {
         /// Node's output identifiers.
         outputs: Vec<(String, usize)>,
         /// Node's local identifiers.
-        locals: HashMap<String, usize>,
+        locals: HMap<String, usize>,
         /// Node's period of execution.
         period: Option<u64>,
     },
@@ -180,14 +180,14 @@ pub enum SymbolKey {
 /// Context table.
 pub struct Context {
     /// Current scope context.
-    current: HashMap<SymbolKey, usize>,
+    current: HMap<SymbolKey, usize>,
     /// Global context.
     global_context: Option<Box<Context>>,
 }
 impl Default for Context {
     fn default() -> Self {
         Self {
-            current: HashMap::new(),
+            current: common::new_hmap(),
             global_context: None,
         }
     }
@@ -195,7 +195,7 @@ impl Default for Context {
 impl Context {
     fn new() -> Self {
         Self {
-            current: HashMap::new(),
+            current: common::new_hmap(),
             global_context: None,
         }
     }
@@ -228,7 +228,7 @@ impl Context {
     }
     fn create_local_context(self) -> Context {
         Context {
-            current: HashMap::new(),
+            current: common::new_hmap(),
             global_context: Some(Box::new(self)),
         }
     }
@@ -240,7 +240,7 @@ impl Context {
 /// Symbol table.
 pub struct SymbolTable {
     /// Table.
-    table: HashMap<usize, Symbol>,
+    table: HMap<usize, Symbol>,
     /// The next fresh identifier.
     fresh_id: usize,
     /// Context of known symbols.
@@ -251,7 +251,7 @@ pub struct SymbolTable {
 impl Default for SymbolTable {
     fn default() -> Self {
         Self {
-            table: HashMap::new(),
+            table: common::new_hmap(),
             fresh_id: 0,
             known_symbols: Default::default(),
             current_node: None,
@@ -262,7 +262,7 @@ impl SymbolTable {
     /// Create new symbol table.
     pub fn new() -> Self {
         Self {
-            table: HashMap::new(),
+            table: common::new_hmap(),
             fresh_id: 0,
             known_symbols: Context::new(),
             current_node: None,
@@ -508,7 +508,7 @@ impl SymbolTable {
         inputs: Vec<usize>,
         event_enum: Option<usize>,
         outputs: Vec<(String, usize)>,
-        locals: HashMap<String, usize>,
+        locals: HMap<String, usize>,
         period: Option<u64>,
         location: Location,
         errors: &mut Vec<Error>,
@@ -806,7 +806,7 @@ impl SymbolTable {
     // }
 
     // /// Get unitary node hashmap of used inputs from identifier.
-    // pub fn get_unitary_node_used_inputs(&self, id: usize) -> HashMap<usize, bool> {
+    // pub fn get_unitary_node_used_inputs(&self, id: usize) -> HMap<usize, bool> {
     //     let symbol = self
     //         .get_symbol(id)
     //         .expect(&format!("expect symbol for {id}"));
@@ -1178,9 +1178,10 @@ impl SymbolTable {
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
-                let error = todo!("no events");
-                errors.push(error);
-                Err(TerminationError)
+                todo!("no events")
+                // let error = <#TODO>;
+                // errors.push(error);
+                // Err(TerminationError)
             }
         }
     }
@@ -1198,9 +1199,10 @@ impl SymbolTable {
             Some(id) => Ok(id),
             None => {
                 println!("{name}");
-                let error = todo!("unknown event");
-                errors.push(error);
-                Err(TerminationError)
+                todo!("unknown event")
+                // let error = <#TODO>;
+                // errors.push(error);
+                // Err(TerminationError)
             }
         }
     }
@@ -1216,9 +1218,10 @@ impl SymbolTable {
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
-                let error = todo!("no events");
-                errors.push(error);
-                Err(TerminationError)
+                todo!("no events")
+                // let error = <#TODO>;
+                // errors.push(error);
+                // Err(TerminationError)
             }
         }
     }

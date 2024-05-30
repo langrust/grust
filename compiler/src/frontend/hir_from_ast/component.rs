@@ -1,16 +1,23 @@
-use std::collections::HashMap;
-
 use petgraph::graphmap::DiGraphMap;
 
-use crate::ast::colon::Colon;
-use crate::ast::component::Component;
-use crate::common::convert_case::camel_case;
-use crate::common::location::Location;
-use crate::common::scope::Scope;
-use crate::error::{Error, TerminationError};
-use crate::hir::memory::Memory;
-use crate::hir::node::Node as HIRNode;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::{
+        colon::Colon,
+        component::Component,
+    },
+    common::{
+        HMap,
+        convert_case::camel_case,
+        location::Location,
+        scope::Scope,
+    },
+    error::{Error, TerminationError},
+    hir::{
+        memory::Memory,
+        node::Node as HIRNode,
+    },
+    symbol_table::SymbolTable,
+}
 
 use super::HIRFromAST;
 
@@ -197,7 +204,7 @@ impl Component {
             .collect::<Result<Vec<Vec<_>>, _>>()?
             .into_iter()
             .flatten()
-            .collect::<HashMap<String, usize>>();
+            .collect::<HMap<String, usize>>();
 
         symbol_table.global();
 

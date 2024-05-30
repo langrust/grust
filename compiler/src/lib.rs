@@ -16,12 +16,14 @@ pub use proc_macro::TokenStream;
 use quote::TokenStreamExt;
 use symbol_table::SymbolTable;
 
+/// GRust common domain or application module.
+#[macro_use]
+pub mod common;
+
 /// GRust AST module.
 pub mod ast;
 /// GRust backend transformations.
 pub mod backend;
-/// GRust common domain or application module.
-pub mod common;
 pub mod conf;
 /// GRust error handler module.
 pub mod error;
