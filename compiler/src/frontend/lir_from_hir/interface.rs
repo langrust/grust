@@ -298,16 +298,18 @@ impl Interface {
                 // sort statement in dependency order
                 let ordered_statements = toposort(&subgraph, None).expect("should succeed");
                 // if input flow is an event then store its identifier
-                let encountered_events = match symbol_table.get_flow_kind(flow_id) {
-                    FlowKind::Signal(_) => HashSet::new(),
-                    FlowKind::Event(_) => HashSet::from([flow_id]),
-                };
+                let (encountered_events, defined_signals) =
+                    match symbol_table.get_flow_kind(flow_id) {
+                        FlowKind::Signal(_) => (HashSet::new(), HashSet::from([flow_id])),
+                        FlowKind::Event(_) => (HashSet::from([flow_id]), HashSet::new()),
+                    };
                 // compute instructions that depend on this incoming flow
                 let instructions = compute_flow_instructions(
                     &statements,
                     &on_change_events,
                     &timing_events,
                     encountered_events,
+                    defined_signals,
                     ordered_statements,
                     flows_context,
                     symbol_table,
@@ -365,6 +367,7 @@ fn compute_flow_instructions(
     on_change_events: &HashMap<usize, usize>,
     timing_events: &HashMap<usize, (usize, TimingEvent)>,
     mut encountered_events: HashSet<usize>,
+    mut defined_signals: HashSet<usize>,
     mut ordered_statements: Vec<usize>,
     flows_context: &FlowsContext,
     symbol_table: &SymbolTable,
@@ -482,17 +485,6 @@ fn compute_flow_instructions(
                             ));
                         }
                     }
-
-                    // define output signals in any case
-                    for output_id in outputs_ids.iter() {
-                        let output_name = symbol_table.get_name(*output_id);
-                        instructions.push(FlowInstruction::Let(
-                            output_name.clone(),
-                            Expression::InContext {
-                                flow: output_name.clone(),
-                            },
-                        ));
-                    }
                 } else {
                     // get the id of pattern's flow (and check their is only one flow)
                     let mut ids = pattern.identifiers();
@@ -514,12 +506,25 @@ fn compute_flow_instructions(
                                 FlowKind::Signal(_) =>
                                 // set the signal's statement
                                 {
-                                    instructions.push(FlowInstruction::Let(
-                                        flow_name.clone(),
-                                        Expression::Identifier {
-                                            identifier: source_name.clone(),
-                                        },
-                                    ))
+                                    // if source is a signal, look if it is defined
+                                    if defined_signals.contains(&id_source) {
+                                        instructions.push(FlowInstruction::Let(
+                                            flow_name.clone(),
+                                            Expression::Identifier {
+                                                identifier: source_name.clone(),
+                                            },
+                                        ))
+                                    } else {
+                                        // if not defined, then get it from the context
+                                        instructions.push(FlowInstruction::Let(
+                                            flow_name.clone(),
+                                            Expression::InContext {
+                                                flow: source_name.clone(),
+                                            },
+                                        ))
+                                    }
+                                    // add the flow to the set of defined signals
+                                    defined_signals.insert(id_pattern);
                                 }
                                 FlowKind::Event(_) => {
                                     // if source is an event, look if it is activated
@@ -534,7 +539,8 @@ fn compute_flow_instructions(
                                             },
                                         ))
                                     }
-                                    // if not activated, do nothing
+                                    // add the flow to the set of encountered events
+                                    encountered_events.insert(id_pattern);
                                 }
                             }
                         }
@@ -566,16 +572,21 @@ fn compute_flow_instructions(
                                     },
                                 ))
                             }
-
-                            // define signal in any case
-                            instructions.push(FlowInstruction::Let(
-                                flow_name.clone(),
-                                Expression::InContext {
-                                    flow: flow_name.clone(),
-                                },
-                            ))
                         }
                         FlowExpressionKind::Throtle { delta, .. } => {
+                            // source is a signal, if it is not defined, then define it
+                            if !defined_signals.contains(&id_source) {
+                                instructions.push(FlowInstruction::Let(
+                                    source_name.clone(),
+                                    Expression::InContext {
+                                        flow: source_name.clone(),
+                                    },
+                                ));
+
+                                // add the flow to the set of defined signals
+                                defined_signals.insert(id_source);
+                            }
+
                             // update created signal
                             instructions.push(FlowInstruction::IfThrotle(
                                 flow_name.clone(),
@@ -588,16 +599,21 @@ fn compute_flow_instructions(
                                     },
                                 )),
                             ));
-
-                            // set the signal's statement
-                            instructions.push(FlowInstruction::Let(
-                                flow_name.clone(),
-                                Expression::InContext {
-                                    flow: flow_name.clone(),
-                                },
-                            ));
                         }
                         FlowExpressionKind::OnChange { .. } => {
+                            // source is a signal, if it is not defined, then define it
+                            if !defined_signals.contains(&id_source) {
+                                instructions.push(FlowInstruction::Let(
+                                    source_name.clone(),
+                                    Expression::InContext {
+                                        flow: source_name.clone(),
+                                    },
+                                ));
+
+                                // add the flow to the set of defined signals
+                                defined_signals.insert(id_source);
+                            }
+
                             // get the id of the pervious event
                             let id_old_event =
                                 on_change_events.get(&id_pattern).expect("should be there");
@@ -610,6 +626,7 @@ fn compute_flow_instructions(
                                 on_change_events,
                                 timing_events,
                                 encountered_events.clone(),
+                                defined_signals.clone(),
                                 ordered_statements.clone(),
                                 flows_context,
                                 symbol_table,
@@ -636,6 +653,7 @@ fn compute_flow_instructions(
                                 on_change_events,
                                 timing_events,
                                 encountered_events, // takes ownership
+                                defined_signals,    // takes ownership
                                 ordered_statements, // takes ownership
                                 flows_context,
                                 symbol_table,
@@ -701,13 +719,25 @@ fn compute_flow_instructions(
                             if encountered_events.contains(timer_id) {
                                 // if activated, create event
                                 encountered_events.insert(id_pattern);
+
                                 // add event creation in instructions
-                                instructions.push(FlowInstruction::Let(
-                                    flow_name.clone(),
-                                    Expression::InContext {
-                                        flow: source_name.clone(),
-                                    },
-                                ))
+                                // source is a signal, look if it is defined
+                                if defined_signals.contains(&id_source) {
+                                    instructions.push(FlowInstruction::Let(
+                                        flow_name.clone(),
+                                        Expression::Identifier {
+                                            identifier: source_name.clone(),
+                                        },
+                                    ))
+                                } else {
+                                    // if not defined, then get it from the context
+                                    instructions.push(FlowInstruction::Let(
+                                        flow_name.clone(),
+                                        Expression::InContext {
+                                            flow: source_name.clone(),
+                                        },
+                                    ))
+                                }
                             }
                         }
                         FlowExpressionKind::ComponentCall { .. } => unreachable!(),

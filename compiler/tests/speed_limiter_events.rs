@@ -93,11 +93,15 @@ fn should_compile_speed_limiter_events() {
 
         // Processes the speed setted by the driver.
         component process_set_speed(set_speed: float?) -> (v_set: float, v_update: bool) {
+            let prev_v_set: float = 0.0 fby v_set;
             when {
                 v = set_speed => {
                     v_set = threshold_set_speed(v);
                     v_update = prev_v_set != v_set;
-                    let prev_v_set: float = 0.0 fby v_set;
+                },
+                otherwise => {
+                    v_set = prev_v_set;
+                    v_update = false;
                 }
             }
         }
