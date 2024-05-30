@@ -128,8 +128,8 @@ impl Interface {
                                 // get the identifier of the created event
                                 let mut ids = pattern.identifiers();
                                 debug_assert!(ids.len() == 1);
-                                let event_id = ids.pop().unwrap();
-                                let event_name = symbol_table.get_name(event_id).clone();
+                                let flow_event_id = ids.pop().unwrap();
+                                let event_name = symbol_table.get_name(flow_event_id).clone();
 
                                 // add new event into the identifier creator
                                 let fresh_name = identifier_creator.new_identifier(
@@ -137,8 +137,8 @@ impl Interface {
                                     event_name,
                                     String::from("old"),
                                 );
-                                let typing = symbol_table.get_type(event_id).clone();
-                                let kind = symbol_table.get_flow_kind(event_id).clone();
+                                let typing = symbol_table.get_type(flow_event_id).clone();
+                                let kind = symbol_table.get_flow_kind(flow_event_id).clone();
                                 let fresh_id = symbol_table.insert_fresh_flow(
                                     fresh_name.clone(),
                                     kind,
@@ -149,7 +149,7 @@ impl Interface {
                                 flows_context.add_element(fresh_name, &typing);
 
                                 // push in on_change_events
-                                on_change_events.insert(event_id, fresh_id);
+                                on_change_events.insert(flow_event_id, fresh_id);
                             }
                             FlowExpressionKind::Sample { period_ms, .. }
                             | FlowExpressionKind::Scan { period_ms, .. } => {
@@ -392,8 +392,10 @@ fn compute_flow_instructions(
                 flow_expression,
                 ..
             }) => {
-                if let FlowExpressionKind::ComponentCall { component_id, .. } =
-                    &flow_expression.kind
+                if let FlowExpressionKind::ComponentCall {
+                    component_id,
+                    inputs,
+                } = &flow_expression.kind
                 {
                     let component_name = symbol_table.get_name(*component_id);
 
@@ -440,12 +442,34 @@ fn compute_flow_instructions(
 
                     // if one of its dependencies is the encountered event
                     // then call component with the event and update output signals
-                    if let Some(event_id) = overlapping_events.next() {
+                    if let Some(flow_event_id) = overlapping_events.next() {
+                        // get event id in the component
+                        let mut component_event_element_ids = inputs
+                            .iter()
+                            .filter_map(|(component_event_element_id, flow_expression)| {
+                                match flow_expression.kind {
+                                    FlowExpressionKind::Ident { id } => {
+                                        if id.eq(flow_event_id) {
+                                            Some(*component_event_element_id)
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                    _ => unreachable!(), // normalized
+                                }
+                            })
+                            .collect::<Vec<_>>();
+                        debug_assert!(component_event_element_ids.len() == 1);
+                        let component_event_element_id = component_event_element_ids.pop().unwrap();
+
                         // call component with the event
                         instructions.push(FlowInstruction::EventComponentCall(
                             pattern.clone().lir_from_hir(symbol_table),
                             component_name.clone(),
-                            Some(symbol_table.get_name(*event_id).clone()),
+                            Some((
+                                symbol_table.get_name(component_event_element_id).clone(),
+                                symbol_table.get_name(*flow_event_id).clone(),
+                            )),
                         ));
                         // update output signals
                         for output_id in outputs_ids.iter() {
@@ -783,6 +807,7 @@ impl FlowStatement {
 
                     inputs
                         .iter()
+                        .filter(|(input_id, _)| !symbol_table.get_type(*input_id).is_event())
                         .filter_map(|(input_id, flow_expression)| {
                             match &flow_expression.kind {
                                 // get the id of flow_expression (and check it is an idnetifier, from normalization)

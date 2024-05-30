@@ -1,4 +1,6 @@
-use crate::ast::equation::{Arm, ArmWhen, Equation, Instanciation, Match, MatchWhen};
+use crate::ast::equation::{
+    Arm, ArmWhen, ArmWhenEvent, DefaultArmWhen, Equation, Instanciation, Match, MatchWhen,
+};
 use crate::ast::pattern::{Pattern as ASTPattern, Tuple};
 use crate::ast::statement::LetDeclaration;
 use crate::common::location::Location;
@@ -180,14 +182,14 @@ impl HIRFromAST for Equation {
                 // for each arm construct hir pattern, guard and statements
                 let new_arms = arms
                     .into_iter()
-                    .map(
-                        |ArmWhen {
-                             pattern,
-                             event,
-                             guard,
-                             equations,
-                             ..
-                         }| {
+                    .map(|arm| match arm {
+                        ArmWhen::ArmWhenEvent(ArmWhenEvent {
+                            pattern,
+                            event,
+                            guard,
+                            equations,
+                            ..
+                        }) => {
                             symbol_table.local();
 
                             // set local context: pattern signals + equations' signals
@@ -240,8 +242,44 @@ impl HIRFromAST for Equation {
                             symbol_table.global();
 
                             Ok((pattern, guard, defined_signals, statements))
-                        },
-                    )
+                        }
+                        ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
+                            symbol_table.local();
+
+                            // set local context: pattern signals + equations' signals
+                            let mut defined_signals = vec![];
+                            equations
+                                .iter()
+                                .map(|equation| {
+                                    // store equations' signals in the local context
+                                    let mut equation_signals =
+                                        equation.store_signals(symbol_table, errors)?;
+                                    defined_signals.append(&mut equation_signals);
+                                    Ok(())
+                                })
+                                .collect::<Vec<Result<_, _>>>()
+                                .into_iter()
+                                .collect::<Result<(), _>>()?;
+
+                            // transform into HIR
+                            let pattern = Pattern {
+                                kind: PatternKind::NoEvent { event_enum_id },
+                                typing: None,
+                                location: location.clone(),
+                            };
+                            let guard = None;
+                            let statements = equations
+                                .into_iter()
+                                .map(|equation| equation.hir_from_ast(symbol_table, errors))
+                                .collect::<Vec<Result<_, _>>>()
+                                .into_iter()
+                                .collect::<Result<Vec<_>, _>>()?;
+
+                            symbol_table.global();
+
+                            Ok((pattern, guard, defined_signals, statements))
+                        }
+                    })
                     .collect::<Vec<Result<_, _>>>()
                     .into_iter()
                     .collect::<Result<Vec<_>, _>>()?;
@@ -357,18 +395,20 @@ impl Equation {
                     ASTPattern::Tuple(Tuple { elements })
                 }
             }
-            Equation::MatchWhen(MatchWhen { arms, .. }) => {
-                let ArmWhen { equations, .. } = arms.first().unwrap();
-                let mut elements = equations
-                    .iter()
-                    .flat_map(|equation| equation.get_pattern().get_simple_patterns())
-                    .collect::<Vec<_>>();
-                if elements.len() == 1 {
-                    elements.pop().unwrap()
-                } else {
-                    ASTPattern::Tuple(Tuple { elements })
+            Equation::MatchWhen(MatchWhen { arms, .. }) => match arms.first().unwrap() {
+                ArmWhen::ArmWhenEvent(ArmWhenEvent { equations, .. })
+                | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
+                    let mut elements = equations
+                        .iter()
+                        .flat_map(|equation| equation.get_pattern().get_simple_patterns())
+                        .collect::<Vec<_>>();
+                    if elements.len() == 1 {
+                        elements.pop().unwrap()
+                    } else {
+                        ASTPattern::Tuple(Tuple { elements })
+                    }
                 }
-            }
+            },
         }
     }
 
@@ -394,8 +434,9 @@ impl Equation {
                     .collect::<Vec<_>>();
                 Ok(local_declarations)
             }),
-            Equation::MatchWhen(MatchWhen { arms, .. }) => {
-                arms.first().map(|ArmWhen { equations, .. }| {
+            Equation::MatchWhen(MatchWhen { arms, .. }) => arms.first().map(|arm| match arm {
+                ArmWhen::ArmWhenEvent(ArmWhenEvent { equations, .. })
+                | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
                     let local_declarations = equations
                         .iter()
                         .filter_map(|equation| {
@@ -408,8 +449,8 @@ impl Equation {
                         .flatten()
                         .collect::<Vec<_>>();
                     Ok(local_declarations)
-                })
-            }
+                }
+            }),
         }
     }
 
@@ -439,18 +480,18 @@ impl Equation {
                 })
             }
             Equation::MatchWhen(MatchWhen { arms, .. }) => {
-                arms.first()
-                    .map_or(Ok(vec![]), |ArmWhen { equations, .. }| {
-                        Ok(equations
-                            .iter()
-                            .map(|equation| equation.store_signals(symbol_table, errors))
-                            .collect::<Vec<Result<_, _>>>()
-                            .into_iter()
-                            .collect::<Result<Vec<_>, _>>()?
-                            .into_iter()
-                            .flatten()
-                            .collect())
-                    })
+                arms.first().map_or(Ok(vec![]), |arm| match arm {
+                    ArmWhen::ArmWhenEvent(ArmWhenEvent { equations, .. })
+                    | ArmWhen::Default(DefaultArmWhen { equations, .. }) => Ok(equations
+                        .iter()
+                        .map(|equation| equation.store_signals(symbol_table, errors))
+                        .collect::<Vec<Result<_, _>>>()
+                        .into_iter()
+                        .collect::<Result<Vec<_>, _>>()?
+                        .into_iter()
+                        .flatten()
+                        .collect()),
+                })
             }
         }
     }

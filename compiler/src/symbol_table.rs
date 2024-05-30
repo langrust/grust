@@ -126,31 +126,61 @@ impl Symbol {
         &mut self.kind
     }
 
-    fn hash_as_string(&self) -> String {
+    fn hash(&self) -> SymbolKey {
         match &self.kind {
-            SymbolKind::Event => format!("event"), // only one event per component
-            SymbolKind::EventEnumeration { .. } => format!("event_enum"), // only one event enumeration per component
-            SymbolKind::EventElement { enum_name, .. } => {
-                format!("event_element {enum_name}::{}", self.name)
-            }
-            SymbolKind::Identifier { .. } => format!("identifier {}", self.name),
-            SymbolKind::Flow { .. } => format!("flow {}", self.name),
-            SymbolKind::Function { .. } => format!("function {}", self.name),
-            SymbolKind::Node { .. } => format!("node {}", self.name),
-            SymbolKind::Structure { .. } => format!("struct {}", self.name),
-            SymbolKind::Enumeration { .. } => format!("enum {}", self.name),
-            SymbolKind::EnumerationElement { enum_name } => {
-                format!("enum_elem {enum_name}::{}", self.name)
-            }
-            SymbolKind::Array { .. } => format!("array {}", self.name),
+            SymbolKind::Event => SymbolKey::Event,
+            SymbolKind::EventEnumeration { .. } => SymbolKey::EventEnumeration,
+            SymbolKind::EventElement { .. } => SymbolKey::EventElement {
+                name: self.name.clone(),
+            },
+            SymbolKind::Identifier { .. } => SymbolKey::Identifier {
+                name: self.name.clone(),
+            },
+            SymbolKind::Flow { .. } => SymbolKey::Flow {
+                name: self.name.clone(),
+            },
+            SymbolKind::Function { .. } => SymbolKey::Function {
+                name: self.name.clone(),
+            },
+            SymbolKind::Node { .. } => SymbolKey::Node {
+                name: self.name.clone(),
+            },
+            SymbolKind::Structure { .. } => SymbolKey::Structure {
+                name: self.name.clone(),
+            },
+            SymbolKind::Enumeration { .. } => SymbolKey::Enumeration {
+                name: self.name.clone(),
+            },
+            SymbolKind::EnumerationElement { enum_name } => SymbolKey::EnumerationElement {
+                enum_name: enum_name.clone(),
+                name: self.name.clone(),
+            },
+            SymbolKind::Array { .. } => SymbolKey::Array {
+                name: self.name.clone(),
+            },
         }
     }
 }
 
+/// Key of symbol in the context table.
+#[derive(PartialEq, Eq, Hash)]
+pub enum SymbolKey {
+    Event,            // only one event per component
+    EventEnumeration, // only one event enumeration per component
+    EventElement { name: String },
+    Identifier { name: String },
+    Flow { name: String },
+    Function { name: String },
+    Node { name: String },
+    Structure { name: String },
+    Enumeration { name: String },
+    EnumerationElement { name: String, enum_name: String },
+    Array { name: String },
+}
 /// Context table.
 pub struct Context {
     /// Current scope context.
-    current: HashMap<String, usize>,
+    current: HashMap<SymbolKey, usize>,
     /// Global context.
     global_context: Option<Box<Context>>,
 }
@@ -169,29 +199,29 @@ impl Context {
             global_context: None,
         }
     }
-    fn add_symbol(&mut self, symbol: Symbol, id: usize) {
-        self.current.insert(symbol.hash_as_string(), id);
+    fn add_symbol(&mut self, key: SymbolKey, id: usize) {
+        self.current.insert(key, id);
     }
-    fn contains(&self, symbol: &Symbol, local: bool) -> bool {
-        let contains = self.current.contains_key(&symbol.hash_as_string());
+    fn contains(&self, key: &SymbolKey, local: bool) -> bool {
+        let contains = self.current.contains_key(key);
         if local {
             contains
         } else {
             match &self.global_context {
-                Some(context) => contains || context.contains(symbol, local),
+                Some(context) => contains || context.contains(key, local),
                 None => contains,
             }
         }
     }
-    fn get_id(&self, symbol_hash: &String, local: bool) -> Option<usize> {
-        let contains = self.current.get(symbol_hash).cloned();
+    fn get_id(&self, key: &SymbolKey, local: bool) -> Option<usize> {
+        let contains = self.current.get(key).cloned();
         if local {
             contains
         } else {
             contains.or_else(|| {
                 self.global_context
                     .as_ref()
-                    .map(|context| context.get_id(symbol_hash, local))
+                    .map(|context| context.get_id(key, local))
                     .flatten()
             })
         }
@@ -215,6 +245,8 @@ pub struct SymbolTable {
     fresh_id: usize,
     /// Context of known symbols.
     known_symbols: Context,
+    /// Current node.
+    current_node: Option<usize>,
 }
 impl Default for SymbolTable {
     fn default() -> Self {
@@ -222,6 +254,7 @@ impl Default for SymbolTable {
             table: HashMap::new(),
             fresh_id: 0,
             known_symbols: Default::default(),
+            current_node: None,
         }
     }
 }
@@ -232,6 +265,7 @@ impl SymbolTable {
             table: HashMap::new(),
             fresh_id: 0,
             known_symbols: Context::new(),
+            current_node: None,
         }
     }
 
@@ -291,6 +325,23 @@ impl SymbolTable {
         self.known_symbols = prev.get_global_context();
     }
 
+    /// Set the current node identifier, just to remember it.
+    pub fn enter_in_node(&mut self, node_id: usize) {
+        debug_assert!(self.current_node.is_none());
+        self.current_node = Some(node_id)
+    }
+
+    /// Erase the current node id.
+    pub fn leave_node(&mut self) {
+        self.current_node = None
+    }
+
+    /// Get the current node identifier.
+    pub fn get_current_node_id(&self) -> usize {
+        debug_assert!(self.current_node.is_some());
+        self.current_node.expect("current node should be set")
+    }
+
     /// Insert raw symbol in symbol table.
     fn insert_symbol(
         &mut self,
@@ -299,7 +350,8 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        if self.known_symbols.contains(&symbol, local) {
+        let key = symbol.hash();
+        if self.known_symbols.contains(&key, local) {
             let error = Error::AlreadyDefinedElement {
                 name: symbol.name.clone(),
                 location,
@@ -311,7 +363,7 @@ impl SymbolTable {
             // update symbol table
             self.table.insert(id, symbol.clone());
             self.fresh_id += 1;
-            self.known_symbols.add_symbol(symbol, id);
+            self.known_symbols.add_symbol(key, id);
             // return symbol's id
             Ok(id)
         }
@@ -580,11 +632,11 @@ impl SymbolTable {
         ids.for_each(|id| self.restore_context_from_id(*id))
     }
     fn restore_context_from_id(&mut self, id: usize) {
-        let symbol = self
+        let key = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"))
-            .clone();
-        self.known_symbols.add_symbol(symbol, id);
+            .hash();
+        self.known_symbols.add_symbol(key, id);
     }
 
     /// Restore node or function body context.
@@ -620,7 +672,7 @@ impl SymbolTable {
                         }
                         _ => unreachable!(),
                     }
-                    self.known_symbols.add_symbol(symbol, *event_enum_id);
+                    self.known_symbols.add_symbol(symbol.hash(), *event_enum_id);
                 }
             }
             _ => unreachable!(),
@@ -793,7 +845,7 @@ impl SymbolTable {
         match &mut symbol.kind {
             SymbolKind::Identifier { ref mut typing, .. } => {
                 if typing.is_some() {
-                    panic!("a symbol type of {} can not be modified", symbol.name)
+                    panic!("type of {} can not be modified", symbol.name)
                 }
                 *typing = Some(new_type)
             }
@@ -809,7 +861,7 @@ impl SymbolTable {
         match &mut symbol.kind {
             SymbolKind::Flow { ref mut path, .. } => {
                 if path.is_some() {
-                    panic!("a symbol path can not be modified")
+                    panic!("path of {} can not be modified", symbol.name)
                 }
                 *path = Some(new_path)
             }
@@ -988,7 +1040,7 @@ impl SymbolTable {
 
     /// Tell if identifier is a node.
     pub fn is_node(&self, name: &String, local: bool) -> bool {
-        let symbol_hash = format!("node {name}");
+        let symbol_hash = SymbolKey::Node { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(_) => true,
             None => false,
@@ -1057,7 +1109,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("identifier {name}");
+        let symbol_hash = SymbolKey::Identifier { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1079,7 +1131,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("function {name}");
+        let symbol_hash = SymbolKey::Function { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1101,7 +1153,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("identifier {name}");
+        let symbol_hash = SymbolKey::Identifier { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1122,7 +1174,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("event_enum");
+        let symbol_hash = SymbolKey::EventEnumeration;
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1141,10 +1193,11 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("event element {name}");
+        let symbol_hash = SymbolKey::EventElement { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
+                println!("{name}");
                 let error = todo!("unknown event");
                 errors.push(error);
                 Err(TerminationError)
@@ -1159,7 +1212,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("event");
+        let symbol_hash = SymbolKey::Event;
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1178,7 +1231,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("flow {name}");
+        let symbol_hash = SymbolKey::Flow { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1200,7 +1253,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("node {name}");
+        let symbol_hash = SymbolKey::Node { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1222,7 +1275,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("struct {name}");
+        let symbol_hash = SymbolKey::Structure { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1244,7 +1297,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("enum {name}");
+        let symbol_hash = SymbolKey::Enumeration { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1267,7 +1320,10 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("enum_elem {enum_name}::{elem_name}");
+        let symbol_hash = SymbolKey::EnumerationElement {
+            enum_name: enum_name.clone(),
+            name: elem_name.clone(),
+        };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1289,7 +1345,7 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
-        let symbol_hash = format!("array {name}");
+        let symbol_hash = SymbolKey::Array { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
@@ -1301,13 +1357,5 @@ impl SymbolTable {
                 Err(TerminationError)
             }
         }
-    }
-
-    /// Get unitary node symbol identifier.
-    pub fn get_unitary_node_id(&self, node_name: &String, output_name: &String) -> usize {
-        let symbol_hash = format!("unitary_node {node_name}_{}", output_name);
-        self.known_symbols
-            .get_id(&symbol_hash, false)
-            .expect("there should be an unitary node")
     }
 }

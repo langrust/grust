@@ -23,8 +23,10 @@ pub enum StreamExpressionKind {
     },
     /// Node application stream expression.
     NodeApplication {
-        /// Node's id in Symbol Table.
-        node_id: usize,
+        /// Calling node's id in Symbol Table.
+        calling_node_id: usize,
+        /// Called node's id in Symbol Table.
+        called_node_id: usize,
         /// The inputs to the expression.
         inputs: Vec<(usize, StreamExpression)>,
     },

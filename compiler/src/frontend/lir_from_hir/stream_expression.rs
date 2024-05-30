@@ -16,24 +16,45 @@ impl LIRFromHIR for StreamExpression {
         match self.kind {
             StreamExpressionKind::Event { event_id } => {
                 let name = symbol_table.get_name(event_id).clone();
-                LIRExpression::Identifier { identifier: name }
+                LIRExpression::InputAccess { identifier: name }
             }
             StreamExpressionKind::NodeApplication {
-                node_id, inputs, ..
+                calling_node_id,
+                called_node_id,
+                inputs,
+                ..
             } => {
-                let name = symbol_table.get_name(node_id).clone();
+                let name = symbol_table.get_name(called_node_id).clone();
+                let mut input_fields = inputs
+                    .into_iter()
+                    .filter(|(id, _)| !symbol_table.get_type(*id).is_event())
+                    .map(|(id, expression)| {
+                        (
+                            symbol_table.get_name(id).clone(),
+                            expression.lir_from_hir(symbol_table),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                if let Some(event_id) = symbol_table.get_node_event(called_node_id) {
+                    input_fields.push((
+                        symbol_table.get_name(event_id).clone(),
+                        LIRExpression::IntoMethod {
+                            expression: Box::new(LIRExpression::InputAccess {
+                                identifier: symbol_table
+                                    .get_name(
+                                        symbol_table
+                                            .get_node_event(calling_node_id)
+                                            .expect("there should be event"),
+                                    )
+                                    .clone(),
+                            }),
+                        },
+                    ))
+                }
                 LIRExpression::NodeCall {
                     node_identifier: name.clone(),
                     input_name: camel_case(&format!("{name}Input")),
-                    input_fields: inputs
-                        .into_iter()
-                        .map(|(id, expression)| {
-                            (
-                                symbol_table.get_name(id).clone(),
-                                expression.lir_from_hir(symbol_table),
-                            )
-                        })
-                        .collect(),
+                    input_fields,
                 }
             }
             StreamExpressionKind::Expression { expression } => {
@@ -63,7 +84,9 @@ impl LIRFromHIR for StreamExpression {
             StreamExpressionKind::Event { .. } => vec![],
             StreamExpressionKind::Expression { expression } => expression.get_imports(symbol_table),
             StreamExpressionKind::NodeApplication {
-                node_id, inputs, ..
+                called_node_id,
+                inputs,
+                ..
             } => {
                 let mut imports = inputs
                     .iter()
@@ -71,7 +94,7 @@ impl LIRFromHIR for StreamExpression {
                     .unique()
                     .collect::<Vec<_>>();
                 imports.push(Import::StateMachine(
-                    symbol_table.get_name(*node_id).clone(),
+                    symbol_table.get_name(*called_node_id).clone(),
                 ));
                 imports
             }

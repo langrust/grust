@@ -133,10 +133,11 @@ impl Statement<StreamExpression> {
             StreamExpressionKind::Expression { expression } => match expression {
                 ExpressionKind::Match { arms, .. } => arms
                     .iter()
-                    .flat_map(|(_, _, statements, _)| {
+                    .flat_map(|(pattern, _, statements, _)| {
                         statements
                             .iter()
                             .flat_map(|statement| statement.get_identifiers())
+                            .chain(pattern.identifiers())
                     })
                     .collect(),
                 _ => vec![],

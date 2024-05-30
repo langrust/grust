@@ -16,13 +16,15 @@ impl StreamExpression {
             StreamExpressionKind::Expression { expression } => expression.get_called_nodes(),
             StreamExpressionKind::FollowedBy { expression, .. } => expression.get_called_nodes(),
             StreamExpressionKind::NodeApplication {
-                node_id, inputs, ..
+                called_node_id,
+                inputs,
+                ..
             } => {
                 let mut nodes = inputs
                     .iter()
                     .flat_map(|(_, expression)| expression.get_called_nodes())
                     .collect::<Vec<_>>();
-                nodes.push(*node_id);
+                nodes.push(*called_node_id);
                 nodes
             }
         }
@@ -91,8 +93,9 @@ impl StreamExpression {
                 Ok(())
             }
             StreamExpressionKind::NodeApplication {
-                ref node_id,
+                ref called_node_id,
                 ref inputs,
+                ..
             } => {
                 // function "dependencies to inputs" and "input expressions's dependencies"
                 // of node application
@@ -110,11 +113,12 @@ impl StreamExpression {
                             )?;
 
                             // get reduced graph (graph with only inputs/outputs signals)
-                            let reduced_graph = nodes_reduced_graphs.get_mut(node_id).unwrap();
+                            let reduced_graph =
+                                nodes_reduced_graphs.get_mut(called_node_id).unwrap();
 
                             // for each node's output, get dependencies from output to inputs
                             let dependencies = symbol_table
-                                .get_node_outputs(*node_id)
+                                .get_node_outputs(*called_node_id)
                                 .iter()
                                 .flat_map(|(_, output_signal)| {
                                     reduced_graph.edge_weight(*output_signal, *input_id).map_or(

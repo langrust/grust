@@ -62,7 +62,7 @@ pub enum FlowInstruction {
     IfThrotle(String, String, Constant, Box<FlowInstruction>),
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, u64),
-    EventComponentCall(Pattern, String, Option<String>),
+    EventComponentCall(Pattern, String, Option<(String, String)>),
     ComponentCall(Pattern, String),
 }
 

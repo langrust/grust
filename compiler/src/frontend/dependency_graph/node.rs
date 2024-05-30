@@ -19,9 +19,13 @@ impl Node {
         let mut graph = DiGraphMap::new();
 
         // add input signals as vertices
-        for input in symbol_table.get_node_inputs(self.id) {
-            graph.add_node(*input);
-        }
+        symbol_table
+            .get_node_inputs(self.id)
+            .into_iter()
+            .filter(|id| !symbol_table.get_type(**id).is_event())
+            .for_each(|input| {
+                graph.add_node(*input);
+            });
 
         // add other signals as vertices
         for statement in &self.statements {
@@ -44,8 +48,17 @@ impl Node {
         let mut hash = HashMap::new();
 
         // add input signals with white color (unprocessed)
-        for input in symbol_table.get_node_inputs(self.id) {
-            hash.insert(*input, Color::White);
+        symbol_table
+            .get_node_inputs(self.id)
+            .into_iter()
+            .filter(|id| !symbol_table.get_type(**id).is_event())
+            .for_each(|input| {
+                hash.insert(*input, Color::White);
+            });
+
+        // if component has events, add 'event' with white color (unprocessed)
+        if let Some(event) = symbol_table.get_node_event(self.id) {
+            hash.insert(event, Color::White);
         }
 
         // add other signals with white color (unprocessed)
@@ -152,6 +165,7 @@ impl Node {
         symbol_table
             .get_node_inputs(self.id)
             .iter()
+            .filter(|id| !symbol_table.get_type(**id).is_event())
             .for_each(|signal| {
                 // get signal's color
                 let color = processus_manager
@@ -210,9 +224,10 @@ impl Node {
         let Node { id: node, .. } = self;
 
         // get signal's color
-        let color = processus_manager
-            .get_mut(&signal)
-            .expect("signal should be in processing manager");
+        let color = processus_manager.get_mut(&signal).expect(&format!(
+            "signal '{}' should be in processus manager",
+            symbol_table.get_name(signal)
+        ));
 
         match color {
             Color::White => {

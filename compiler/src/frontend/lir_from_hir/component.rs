@@ -21,22 +21,16 @@ impl LIRFromHIR for Node {
     type LIR = StateMachine;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
-        let Node {
-            id,
-            statements,
-            memory,
-            contract,
-            ..
-        } = self;
         let mut identifier_creator = IdentifierCreator::from(vec![]);
 
         // get node name
-        let name = symbol_table.get_name(id).clone();
+        let name = symbol_table.get_name(self.id).clone();
 
         // get node inputs
         let mut inputs = symbol_table
-            .get_node_inputs(id)
+            .get_node_inputs(self.id)
             .into_iter()
+            .filter(|id| !symbol_table.get_type(**id).is_event())
             .map(|id| {
                 (
                     symbol_table.get_name(*id).clone(),
@@ -46,9 +40,9 @@ impl LIRFromHIR for Node {
             .collect::<Vec<_>>();
 
         // create the event structure
-        let event = if let Some(event_enum_id) = symbol_table.get_node_event_enum(id) {
+        let event = if let Some(event_enum_id) = symbol_table.get_node_event_enum(self.id) {
             // add the event input
-            let event_id = symbol_table.get_node_event(id).unwrap();
+            let event_id = symbol_table.get_node_event(self.id).unwrap();
             inputs.push((
                 symbol_table.get_name(event_id).clone(),
                 Type::Enumeration {
@@ -66,6 +60,7 @@ impl LIRFromHIR for Node {
                     r#type: symbol_table.get_type(*element_id).clone(),
                 })
                 .collect::<Vec<_>>();
+            elements.push(EventElement::NoEvent);
 
             // get generics
             let generics = elements
@@ -78,9 +73,13 @@ impl LIRFromHIR for Node {
                 })
                 .collect::<Vec<_>>();
 
+            // get event conversions
+            let intos = self.memory.get_event_convertions(symbol_table);
+
             Some(Event {
                 node_name: name.clone(),
                 elements,
+                intos,
                 generics,
             })
         } else {
@@ -88,7 +87,7 @@ impl LIRFromHIR for Node {
         };
 
         // get node output type
-        let outputs = symbol_table.get_node_outputs(id);
+        let outputs = symbol_table.get_node_outputs(self.id);
         let mut output_type = {
             let mut types = outputs
                 .iter()
@@ -102,7 +101,7 @@ impl LIRFromHIR for Node {
         };
 
         // get node output expression
-        let outputs = symbol_table.get_node_outputs(id);
+        let outputs = symbol_table.get_node_outputs(self.id);
         let output_expression = {
             let mut identifiers = outputs
                 .iter()
@@ -120,7 +119,8 @@ impl LIRFromHIR for Node {
         };
 
         // collect imports from statements, inputs and output types, memory and contracts
-        let mut imports = statements
+        let mut imports = self
+            .statements
             .iter()
             .flat_map(|equation| equation.get_imports(symbol_table))
             .unique()
@@ -131,8 +131,8 @@ impl LIRFromHIR for Node {
             .unique()
             .collect::<Vec<_>>();
         let mut output_type_imports = output_type.get_imports(symbol_table);
-        let mut memory_imports = memory.get_imports(symbol_table);
-        let mut contract_imports = contract.get_imports(symbol_table);
+        let mut memory_imports = self.memory.get_imports(symbol_table);
+        let mut contract_imports = self.contract.get_imports(symbol_table);
 
         // combining all imports and eliminate duplicates
         imports.append(&mut inputs_type_imports);
@@ -151,10 +151,10 @@ impl LIRFromHIR for Node {
 
         // get memory/state elements
         let (elements, state_elements_init, state_elements_step) =
-            memory.get_state_elements(symbol_table);
+            self.memory.get_state_elements(symbol_table);
 
         // transform contract
-        let contract = contract.lir_from_hir(symbol_table);
+        let contract = self.contract.lir_from_hir(symbol_table);
 
         StateMachine {
             name: name.clone(),
@@ -176,7 +176,8 @@ impl LIRFromHIR for Node {
                     node_name: name.clone(),
                     generics,
                     output_type,
-                    body: statements
+                    body: self
+                        .statements
                         .into_iter()
                         .map(|equation| equation.lir_from_hir(symbol_table))
                         .collect(),

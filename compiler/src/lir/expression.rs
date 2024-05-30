@@ -153,6 +153,11 @@ pub enum Expression {
         /// The arrays expression.
         arrays: Vec<Expression>,
     },
+    /// Into method.
+    IntoMethod {
+        /// The expression.
+        expression: Box<Expression>,
+    },
 }
 
 /// LIR field access member.

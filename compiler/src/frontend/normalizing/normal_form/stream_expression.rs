@@ -62,7 +62,7 @@ impl StreamExpression {
                 new_statements
             }
             StreamExpressionKind::NodeApplication {
-                node_id,
+                called_node_id,
                 ref mut inputs,
                 ..
             } => {
@@ -78,13 +78,15 @@ impl StreamExpression {
                     .collect::<Vec<_>>();
 
                 // change dependencies to be the sum of inputs dependencies
-                let reduced_graph = nodes_reduced_graphs.get(&node_id).unwrap();
+                let reduced_graph = nodes_reduced_graphs.get(&called_node_id).unwrap();
                 self.dependencies = Dependencies::from(
                     inputs
                         .iter()
                         .flat_map(|(input_id, expression)| {
-                            symbol_table.get_node_outputs(node_id).iter().flat_map(
-                                |(_, output_id)| {
+                            symbol_table
+                                .get_node_outputs(called_node_id)
+                                .iter()
+                                .flat_map(|(_, output_id)| {
                                     reduced_graph.edge_weight(*output_id, *input_id).map_or(
                                         vec![],
                                         |label1| {
@@ -96,8 +98,7 @@ impl StreamExpression {
                                                 .collect()
                                         },
                                     )
-                                },
-                            )
+                                })
                         })
                         .collect(),
                 );

@@ -17,8 +17,8 @@ pub fn rust_ast_from_lir(state_machine: StateMachine, crates: &mut BTreeSet<Stri
     let mut items = vec![];
 
     if let Some(event) = state_machine.event {
-        let event_enumeration = event_rust_ast_from_lir(event);
-        items.push(Item::Enum(event_enumeration));
+        let mut enum_items = event_rust_ast_from_lir(event);
+        items.append(&mut enum_items);
     }
 
     let input_structure = input_rust_ast_from_lir(state_machine.input);

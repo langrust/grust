@@ -37,6 +37,8 @@ pub struct Buffer {
 pub struct CalledNode {
     /// Node name.
     pub node_id: usize,
+    /// Maps called node inputs with given input identifier.
+    pub inputs_map: Vec<(usize, usize)>,
 }
 
 impl Memory {
@@ -80,10 +82,21 @@ impl Memory {
     }
 
     /// Add called node to memory.
-    pub fn add_called_node(&mut self, memory_id: usize, node_id: usize) {
+    pub fn add_called_node(
+        &mut self,
+        memory_id: usize,
+        node_id: usize,
+        inputs_map: Vec<(usize, usize)>,
+    ) {
         debug_assert!(self
             .called_nodes
-            .insert(memory_id, CalledNode { node_id })
+            .insert(
+                memory_id,
+                CalledNode {
+                    node_id,
+                    inputs_map
+                }
+            )
             .is_none())
     }
 }

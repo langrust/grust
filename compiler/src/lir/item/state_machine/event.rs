@@ -7,6 +7,8 @@ pub struct Event {
     pub node_name: String,
     /// The event's elements.
     pub elements: Vec<EventElement>,
+    /// The event's convertions.
+    pub intos: Vec<IntoOtherEvent>,
     /// The event's generic types.
     pub generics: Vec<(String, Type)>,
 }
@@ -21,4 +23,13 @@ pub enum EventElement {
         r#type: Type,
     },
     NoEvent,
+}
+
+/// An event element structure.
+#[derive(Debug, PartialEq)]
+pub struct IntoOtherEvent {
+    /// The other node's name.
+    pub other_node_name: String,
+    /// Maps an event from the current node to the other node.
+    pub convertions: Vec<(String, String)>,
 }

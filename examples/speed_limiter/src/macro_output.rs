@@ -335,28 +335,23 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub set_speed: f64,
-    pub activation: ActivationResquest,
-    pub v_update: bool,
-    pub vacuum_brake: VacuumBrakeState,
-    pub vdc: VdcState,
-    pub state_update: bool,
-    pub v_set_aux: f64,
     pub speed: f64,
-    pub on_state: SpeedLimiterOn,
-    pub in_regulation_aux: bool,
+    pub vdc: VdcState,
+    pub v_update: bool,
     pub kickdown: KickdownState,
     pub v_set: f64,
+    pub on_state: SpeedLimiterOn,
+    pub state_update: bool,
+    pub in_regulation_aux: bool,
+    pub v_set_aux: f64,
+    pub activation: ActivationResquest,
+    pub vacuum_brake: VacuumBrakeState,
     pub state: SpeedLimiter,
+    pub set_speed: f64,
 }
 impl Context {
     fn init() -> Context {
         Default::default()
-    }
-    fn get_process_set_speed_inputs(&self) -> ProcessSetSpeedInput {
-        ProcessSetSpeedInput {
-            set_speed: self.set_speed,
-        }
     }
     fn get_speed_limiter_inputs(&self) -> SpeedLimiterInput {
         SpeedLimiterInput {
@@ -366,6 +361,11 @@ impl Context {
             vdc_disabled: self.vdc,
             speed: self.speed,
             v_set: self.v_set,
+        }
+    }
+    fn get_process_set_speed_inputs(&self) -> ProcessSetSpeedInput {
+        ProcessSetSpeedInput {
+            set_speed: self.set_speed,
         }
     }
 }

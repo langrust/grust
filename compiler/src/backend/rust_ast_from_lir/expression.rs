@@ -327,6 +327,11 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 std::array::from_fn(|_| iter.next().unwrap())
             })
         }
+        Expression::IntoMethod { expression } => {
+            let receiver = rust_ast_from_lir(*expression, crates);
+            let method_call = parse_quote! { #receiver.into() };
+            syn::Expr::MethodCall(method_call)
+        }
     }
 }
 

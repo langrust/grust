@@ -29,7 +29,7 @@ impl TypeAnalysis for StreamExpression {
             }
 
             StreamExpressionKind::NodeApplication {
-                node_id,
+                called_node_id,
                 ref mut inputs,
                 ..
             } => {
@@ -50,7 +50,7 @@ impl TypeAnalysis for StreamExpression {
                 // get the called signal type
                 let node_application_type = {
                     let mut outputs_types = symbol_table
-                        .get_node_outputs(node_id)
+                        .get_node_outputs(called_node_id)
                         .iter()
                         .map(|(_, output_signal)| symbol_table.get_type(*output_signal).clone())
                         .collect::<Vec<_>>();
