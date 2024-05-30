@@ -298,16 +298,16 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
-    pub vdc: VdcState,
-    pub in_regulation_aux: bool,
     pub vacuum_brake: VacuumBrakeState,
     pub state_update: bool,
-    pub speed: f64,
-    pub v_set: f64,
-    pub v_update: bool,
-    pub state: SpeedLimiter,
-    pub v_set_aux: f64,
+    pub vdc: VdcState,
     pub on_state: SpeedLimiterOn,
+    pub speed: f64,
+    pub v_set_aux: f64,
+    pub state: SpeedLimiter,
+    pub in_regulation_aux: bool,
+    pub v_update: bool,
+    pub v_set: f64,
 }
 impl Context {
     fn init() -> Context {
@@ -347,100 +347,100 @@ pub async fn run_toto_loop(
         tokio::select! {
             activation = activation_channel.recv() =>
             {
-                let activation = activation.unwrap(); let
-                (state, on_state, in_regulation_aux, state_update) =
+                let activation = activation.unwrap() ;
+                let(state, on_state, in_regulation_aux, state_update) =
                 speed_limiter.step(context.get_speed_limiter_inputs(SpeedLimiterEvent
-                :: activation_req(activation))); context.state = state;
-                context.on_state = on_state; context.in_regulation_aux =
-                in_regulation_aux; context.state_update = state_update; let
-                state = context.state.clone(); let on_state =
-                context.on_state.clone(); let in_regulation_aux =
-                context.in_regulation_aux.clone(); let state_update =
-                context.state_update.clone(); let in_regulation =
-                in_regulation_aux;
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                :: activation_req(activation))) ; context.state = state ;
+                context.on_state = on_state ; context.in_regulation_aux =
+                in_regulation_aux ; context.state_update = state_update ; let
+                state = context.state.clone() ; let on_state =
+                context.on_state.clone() ; let in_regulation_aux =
+                context.in_regulation_aux.clone() ; let state_update =
+                context.state_update.clone() ; let in_regulation =
+                in_regulation_aux ;
+                in_regulation_channel.send(in_regulation).await.unwrap() ;
             } set_speed = set_speed_channel.recv() =>
             {
-                let set_speed = set_speed.unwrap(); let (v_set_aux, v_update)
+                let set_speed = set_speed.unwrap() ; let(v_set_aux, v_update)
                 =
                 process_set_speed.step(context.get_process_set_speed_inputs(ProcessSetSpeedEvent
-                :: set_speed(set_speed))); context.v_set_aux = v_set_aux;
-                context.v_update = v_update; let v_set_aux =
-                context.v_set_aux.clone(); let v_update =
-                context.v_update.clone(); let v_set = v_set_aux;
-                v_set_channel.send(v_set).await.unwrap(); let state =
-                context.state.clone(); let on_state =
-                context.on_state.clone(); let in_regulation_aux =
-                context.in_regulation_aux.clone(); let state_update =
-                context.state_update.clone(); let in_regulation =
-                in_regulation_aux;
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                :: set_speed(set_speed))) ; context.v_set_aux = v_set_aux ;
+                context.v_update = v_update ; let v_set_aux =
+                context.v_set_aux.clone() ; let v_update =
+                context.v_update.clone() ; let v_set = v_set_aux ;
+                v_set_channel.send(v_set).await.unwrap() ; let state =
+                context.state.clone() ; let on_state =
+                context.on_state.clone() ; let in_regulation_aux =
+                context.in_regulation_aux.clone() ; let state_update =
+                context.state_update.clone() ; let in_regulation =
+                in_regulation_aux ;
+                in_regulation_channel.send(in_regulation).await.unwrap() ;
             } speed = speed_channel.recv() =>
             {
-                let speed = speed.unwrap(); let state = context.state.clone();
-                let on_state = context.on_state.clone(); let in_regulation_aux
-                = context.in_regulation_aux.clone(); let state_update =
-                context.state_update.clone(); let in_regulation =
-                in_regulation_aux;
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                let speed = speed.unwrap() ; let state = context.state.clone()
+                ; let on_state = context.on_state.clone() ; let
+                in_regulation_aux = context.in_regulation_aux.clone() ; let
+                state_update = context.state_update.clone() ; let
+                in_regulation = in_regulation_aux ;
+                in_regulation_channel.send(in_regulation).await.unwrap() ;
             } vacuum_brake = vacuum_brake_channel.recv() =>
             {
-                let vacuum_brake = vacuum_brake.unwrap(); let state =
-                context.state.clone(); let on_state =
-                context.on_state.clone(); let in_regulation_aux =
-                context.in_regulation_aux.clone(); let state_update =
-                context.state_update.clone(); let in_regulation =
-                in_regulation_aux;
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                let vacuum_brake = vacuum_brake.unwrap() ; let state =
+                context.state.clone() ; let on_state =
+                context.on_state.clone() ; let in_regulation_aux =
+                context.in_regulation_aux.clone() ; let state_update =
+                context.state_update.clone() ; let in_regulation =
+                in_regulation_aux ;
+                in_regulation_channel.send(in_regulation).await.unwrap() ;
             } kickdown = kickdown_channel.recv() =>
             {
-                let kickdown = kickdown.unwrap(); let
-                (state, on_state, in_regulation_aux, state_update) =
+                let kickdown = kickdown.unwrap() ;
+                let(state, on_state, in_regulation_aux, state_update) =
                 speed_limiter.step(context.get_speed_limiter_inputs(SpeedLimiterEvent
-                :: kickdown(kickdown))); context.state = state;
-                context.on_state = on_state; context.in_regulation_aux =
-                in_regulation_aux; context.state_update = state_update; let
-                state = context.state.clone(); let on_state =
-                context.on_state.clone(); let in_regulation_aux =
-                context.in_regulation_aux.clone(); let state_update =
-                context.state_update.clone(); let in_regulation =
-                in_regulation_aux;
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                :: kickdown(kickdown))) ; context.state = state ;
+                context.on_state = on_state ; context.in_regulation_aux =
+                in_regulation_aux ; context.state_update = state_update ; let
+                state = context.state.clone() ; let on_state =
+                context.on_state.clone() ; let in_regulation_aux =
+                context.in_regulation_aux.clone() ; let state_update =
+                context.state_update.clone() ; let in_regulation =
+                in_regulation_aux ;
+                in_regulation_channel.send(in_regulation).await.unwrap() ;
             } failure = failure_channel.recv() =>
             {
-                let failure = failure.unwrap(); let
-                (state, on_state, in_regulation_aux, state_update) =
+                let failure = failure.unwrap() ;
+                let(state, on_state, in_regulation_aux, state_update) =
                 speed_limiter.step(context.get_speed_limiter_inputs(SpeedLimiterEvent
-                :: failure(failure))); context.state = state; context.on_state
-                = on_state; context.in_regulation_aux = in_regulation_aux;
-                context.state_update = state_update; let state =
-                context.state.clone(); let on_state =
-                context.on_state.clone(); let in_regulation_aux =
-                context.in_regulation_aux.clone(); let state_update =
-                context.state_update.clone(); let in_regulation =
-                in_regulation_aux;
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                :: failure(failure))) ; context.state = state ;
+                context.on_state = on_state ; context.in_regulation_aux =
+                in_regulation_aux ; context.state_update = state_update ; let
+                state = context.state.clone() ; let on_state =
+                context.on_state.clone() ; let in_regulation_aux =
+                context.in_regulation_aux.clone() ; let state_update =
+                context.state_update.clone() ; let in_regulation =
+                in_regulation_aux ;
+                in_regulation_channel.send(in_regulation).await.unwrap() ;
             } vdc = vdc_channel.recv() =>
             {
-                let vdc = vdc.unwrap(); let state = context.state.clone(); let
-                on_state = context.on_state.clone(); let in_regulation_aux =
-                context.in_regulation_aux.clone(); let state_update =
-                context.state_update.clone(); let in_regulation =
-                in_regulation_aux;
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                let vdc = vdc.unwrap() ; let state = context.state.clone() ;
+                let on_state = context.on_state.clone() ; let
+                in_regulation_aux = context.in_regulation_aux.clone() ; let
+                state_update = context.state_update.clone() ; let
+                in_regulation = in_regulation_aux ;
+                in_regulation_channel.send(in_regulation).await.unwrap() ;
             } _ = period.tick() =>
             {
-                let (state, on_state, in_regulation_aux, state_update) =
+                let(state, on_state, in_regulation_aux, state_update) =
                 speed_limiter.step(context.get_speed_limiter_inputs(SpeedLimiterEvent
-                :: NoEvent)); context.state = state; context.on_state =
-                on_state; context.in_regulation_aux = in_regulation_aux;
-                context.state_update = state_update; let state =
-                context.state.clone(); let on_state =
-                context.on_state.clone(); let in_regulation_aux =
-                context.in_regulation_aux.clone(); let state_update =
-                context.state_update.clone(); let in_regulation =
-                in_regulation_aux;
-                in_regulation_channel.send(in_regulation).await.unwrap();
+                :: NoEvent)) ; context.state = state ; context.on_state =
+                on_state ; context.in_regulation_aux = in_regulation_aux ;
+                context.state_update = state_update ; let state =
+                context.state.clone() ; let on_state =
+                context.on_state.clone() ; let in_regulation_aux =
+                context.in_regulation_aux.clone() ; let state_update =
+                context.state_update.clone() ; let in_regulation =
+                in_regulation_aux ;
+                in_regulation_channel.send(in_regulation).await.unwrap() ;
             }
         }
     }
