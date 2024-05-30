@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 use grust::grust;
 pub mod macro_output;
 

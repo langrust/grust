@@ -706,7 +706,7 @@ impl SymbolTable {
                 self.restore_context_from(inputs.iter());
                 self.restore_context_from(outputs.iter().map(|(_, id)| id));
                 self.restore_context_from(locals.values());
-                // retore event enumeration and elements (if they exist)
+                // restore event enumeration and elements (if they exist)
                 if let Some(event_enum_id) = event_enum {
                     let symbol = self
                         .get_symbol(*event_enum_id)
@@ -1223,8 +1223,8 @@ impl SymbolTable {
     pub fn get_event_enumeration_id(
         &self,
         local: bool,
-        location: Location,
-        errors: &mut Vec<Error>,
+        _location: Location,
+        _errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol_hash = SymbolKey::EventEnumeration;
         match self.known_symbols.get_id(&symbol_hash, local) {
@@ -1243,14 +1243,14 @@ impl SymbolTable {
         &self,
         name: &String,
         local: bool,
-        location: Location,
-        errors: &mut Vec<Error>,
+        _location: Location,
+        _errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol_hash = SymbolKey::EventElement { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
-                println!("{name}");
+                // println!("{name}");
                 todo!("unknown event")
                 // let error = <#TODO>;
                 // errors.push(error);
@@ -1263,8 +1263,8 @@ impl SymbolTable {
     pub fn get_event_id(
         &self,
         local: bool,
-        location: Location,
-        errors: &mut Vec<Error>,
+        _location: Location,
+        _errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol_hash = SymbolKey::Event;
         match self.known_symbols.get_id(&symbol_hash, local) {
