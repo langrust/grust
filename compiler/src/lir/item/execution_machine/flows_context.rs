@@ -16,6 +16,9 @@ impl FlowsContext {
             None => (),
         }
     }
+    pub fn contains_element(&self, element_name: &String) -> bool {
+        self.elements.contains_key(element_name)
+    }
     pub fn add_component(&mut self, component_name: String, input_fields: Vec<(String, String)>) {
         let already_inserted = self.components.insert(component_name, input_fields);
         debug_assert!(already_inserted.is_none())
