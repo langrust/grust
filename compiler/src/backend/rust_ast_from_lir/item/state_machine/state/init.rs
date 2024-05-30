@@ -91,10 +91,14 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir;
-    use crate::common::constant::Constant;
-    use crate::lir::expression::Expression;
-    use crate::lir::item::state_machine::state::init::{Init, StateElementInit};
+    prelude! {
+        backend::rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir,
+        common::constant::Constant,
+        lir::{
+            expression::Expression,
+            item::state_machine::state::init::{Init, StateElementInit},
+        },
+    }
     use syn::*;
 
     #[test]
@@ -106,7 +110,7 @@ mod rust_ast_from_lir {
                 StateElementInit::BufferInit {
                     identifier: format!("mem_i"),
                     initial_expression: Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(0)),
+                        literal: Constant::Integer(parse_quote!(0i64)),
                     },
                 },
                 StateElementInit::CalledNodeInit {

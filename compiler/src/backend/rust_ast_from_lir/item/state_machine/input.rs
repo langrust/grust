@@ -29,13 +29,13 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
     if generics.is_empty() {
         parse_quote! {
             pub struct #name {
-                #(#fields),*
+                #(#fields,)*
             }
         }
     } else {
         parse_quote! {
             pub struct #name<#(#generics),*> {
-                #(#fields),*
+                #(#fields,)*
             }
         }
     }
@@ -43,9 +43,11 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::state_machine::input::rust_ast_from_lir;
-    use crate::common::r#type::Type;
-    use crate::lir::item::state_machine::input::{Input, InputElement};
+    prelude! {
+        backend::rust_ast_from_lir::item::state_machine::input::rust_ast_from_lir,
+        common::r#type::Type,
+        lir::item::state_machine::input::{Input, InputElement},
+    }
     use syn::*;
 
     #[test]

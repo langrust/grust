@@ -217,6 +217,9 @@ impl Expression {
     pub fn tuple(elements: Vec<Self>) -> Self {
         Self::Tuple { elements }
     }
+    pub fn block(block: Block) -> Self {
+        Self::Block { block }
+    }
     pub fn function_call(f: Self, arguments: Vec<Self>) -> Self {
         Self::FunctionCall {
             function: f.into(),

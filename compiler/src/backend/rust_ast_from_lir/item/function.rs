@@ -72,39 +72,32 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> I
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::function::rust_ast_from_lir;
-    use crate::common::r#type::Type;
-    use crate::lir::block::Block;
-    use crate::lir::expression::Expression;
-    use crate::lir::item::function::Function;
-    use crate::lir::statement::Statement;
+    prelude! {
+        backend::rust_ast_from_lir::item::function::rust_ast_from_lir,
+        common::r#type::Type,
+        lir::{
+            block::Block,
+            expression::Expression,
+            item::function::Function,
+            statement::Statement,
+        },
+    }
     use syn::*;
 
     #[test]
     fn should_create_rust_ast_function_from_lir_function() {
         let function = Function {
-            name: String::from("foo"),
+            name: "foo".into(),
             generics: vec![],
-            inputs: vec![
-                (String::from("a"), Type::Integer),
-                (String::from("b"), Type::Integer),
-            ],
+            inputs: vec![("a".into(), Type::Integer), ("b".into(), Type::Integer)],
             output: Type::Integer,
             body: Block {
                 statements: vec![Statement::ExpressionLast {
-                    expression: Expression::FunctionCall {
-                        function: Box::new(Expression::Identifier {
-                            identifier: String::from(" + "),
-                        }),
-                        arguments: vec![
-                            Expression::Identifier {
-                                identifier: String::from("a"),
-                            },
-                            Expression::Identifier {
-                                identifier: String::from("b"),
-                            },
-                        ],
-                    },
+                    expression: Expression::binop(
+                        crate::common::operator::BinaryOperator::Add,
+                        Expression::ident("a"),
+                        Expression::ident("b"),
+                    ),
                 }],
             },
             imports: vec![],
