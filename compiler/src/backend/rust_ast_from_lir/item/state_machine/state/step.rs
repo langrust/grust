@@ -254,7 +254,7 @@ mod rust_ast_from_lir {
                                 identifier: format!("o"),
                             },
                             Expression::Literal {
-                                literal: Constant::Integer(parse_quote!(1)),
+                                literal: Constant::Integer(parse_quote!(1i64)),
                             },
                         ],
                     },

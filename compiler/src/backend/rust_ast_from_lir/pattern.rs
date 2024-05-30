@@ -110,7 +110,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_a_rust_ast_literal_pattern_from_a_lir_constant_pattern() {
         let pattern = Pattern::Literal {
-            literal: Constant::Integer(parse_quote!(1)),
+            literal: Constant::Integer(parse_quote!(1i64)),
         };
 
         let control = parse_quote! { 1i64 };

@@ -160,6 +160,128 @@ pub enum Expression {
     },
 }
 
+impl Expression {
+    pub fn literal(literal: Constant) -> Self {
+        Self::Literal { literal }
+    }
+    pub fn ident(ident: impl Into<String>) -> Self {
+        Self::Identifier {
+            identifier: ident.into(),
+        }
+    }
+    pub fn unop(op: UnaryOperator, expr: Self) -> Self {
+        Self::Unop {
+            op,
+            expression: Box::new(expr),
+        }
+    }
+    pub fn binop(op: BinaryOperator, lhs: Self, rhs: Self) -> Self {
+        Self::Binop {
+            op,
+            left_expression: Box::new(lhs),
+            right_expression: Box::new(rhs),
+        }
+    }
+    pub fn ite(c: Self, t: Block, e: Block) -> Self {
+        Self::IfThenElse {
+            condition: Box::new(c),
+            then_branch: t,
+            else_branch: e,
+        }
+    }
+    pub fn memory_access(ident: impl Into<String>) -> Self {
+        Self::MemoryAccess {
+            identifier: ident.into(),
+        }
+    }
+    pub fn input_access(ident: impl Into<String>) -> Self {
+        Self::InputAccess {
+            identifier: ident.into(),
+        }
+    }
+    pub fn structure(name: impl Into<String>, fields: Vec<(String, Self)>) -> Self {
+        Self::Structure {
+            name: name.into(),
+            fields,
+        }
+    }
+    pub fn enumeration(name: impl Into<String>, elem: impl Into<String>) -> Self {
+        Self::Enumeration {
+            name: name.into(),
+            element: elem.into(),
+        }
+    }
+    pub fn array(elements: Vec<Self>) -> Self {
+        Self::Array { elements }
+    }
+    pub fn tuple(elements: Vec<Self>) -> Self {
+        Self::Tuple { elements }
+    }
+    pub fn function_call(f: Self, arguments: Vec<Self>) -> Self {
+        Self::FunctionCall {
+            function: f.into(),
+            arguments,
+        }
+    }
+    pub fn node_call(
+        node_ident: impl Into<String>,
+        input_name: impl Into<String>,
+        input_fields: Vec<(String, Self)>,
+    ) -> Self {
+        Self::NodeCall {
+            node_identifier: node_ident.into(),
+            input_name: input_name.into(),
+            input_fields,
+        }
+    }
+    pub fn field_access(expr: Self, field: FieldIdentifier) -> Self {
+        Self::FieldAccess {
+            expression: Box::new(expr),
+            field,
+        }
+    }
+    pub fn lambda(inputs: Vec<(String, Type)>, output: Type, body: Self) -> Self {
+        Self::Lambda {
+            inputs,
+            output,
+            body: Box::new(body),
+        }
+    }
+    pub fn pat_match(pat: Self, arms: Vec<(Pattern, Option<Self>, Self)>) -> Self {
+        Self::Match {
+            matched: pat.into(),
+            arms,
+        }
+    }
+    pub fn map(expr: Self, f: Self) -> Self {
+        Self::Map {
+            mapped: Box::new(expr),
+            function: Box::new(f),
+        }
+    }
+    pub fn fold(expr: Self, init: Self, f: Self) -> Self {
+        Self::Fold {
+            folded: Box::new(expr),
+            initialization: Box::new(init),
+            function: Box::new(f),
+        }
+    }
+    pub fn sort(expr: Self, f: Self) -> Self {
+        Self::Sort {
+            sorted: Box::new(expr),
+            function: Box::new(f),
+        }
+    }
+    pub fn zip(arrays: Vec<Self>) -> Self {
+        Self::Zip { arrays }
+    }
+    pub fn into_call(expr: Self) -> Self {
+        Self::IntoMethod {
+            expression: Box::new(expr),
+        }
+    }
+}
+
 /// LIR field access member.
 #[derive(Debug, PartialEq)]
 pub enum FieldIdentifier {

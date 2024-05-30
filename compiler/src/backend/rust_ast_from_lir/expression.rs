@@ -348,7 +348,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_literal_from_lir_literal() {
         let expression = Expression::Literal {
-            literal: Constant::Integer(parse_quote!(1)),
+            literal: Constant::Integer(parse_quote!(1i64)),
         };
         let control = parse_quote! { 1i64 };
         assert_eq!(
@@ -401,13 +401,13 @@ mod rust_ast_from_lir {
                 (
                     String::from("x"),
                     Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(1)),
+                        literal: Constant::Integer(parse_quote!(1i64)),
                     },
                 ),
                 (
                     String::from("y"),
                     Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(2)),
+                        literal: Constant::Integer(parse_quote!(2i64)),
                     },
                 ),
             ],
@@ -424,10 +424,10 @@ mod rust_ast_from_lir {
         let expression = Expression::Array {
             elements: vec![
                 Expression::Literal {
-                    literal: Constant::Integer(parse_quote!(1)),
+                    literal: Constant::Integer(parse_quote!(1i64)),
                 },
                 Expression::Literal {
-                    literal: Constant::Integer(parse_quote!(2)),
+                    literal: Constant::Integer(parse_quote!(2i64)),
                 },
             ],
         };
@@ -491,18 +491,14 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_binary_from_lir_function_call() {
-        let expression = Expression::FunctionCall {
-            function: Box::new(Expression::Identifier {
-                identifier: String::from(" + "),
+        let expression = Expression::Binop {
+            op: super::BinaryOperator::Add,
+            left_expression: Box::new(Expression::Identifier {
+                identifier: String::from("a"),
             }),
-            arguments: vec![
-                Expression::Identifier {
-                    identifier: String::from("a"),
-                },
-                Expression::Identifier {
-                    identifier: String::from("b"),
-                },
-            ],
+            right_expression: Box::new(Expression::Identifier {
+                identifier: String::from("b"),
+            }),
         };
 
         let control = parse_quote! { a + b };
@@ -520,7 +516,7 @@ mod rust_ast_from_lir {
             input_fields: vec![(
                 String::from("i"),
                 Expression::Literal {
-                    literal: Constant::Integer(parse_quote!(1)),
+                    literal: Constant::Integer(parse_quote!(1i64)),
                 },
             )],
         };
@@ -590,7 +586,7 @@ mod rust_ast_from_lir {
             then_branch: Block {
                 statements: vec![Statement::ExpressionLast {
                     expression: Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(1)),
+                        literal: Constant::Integer(parse_quote!(1i64)),
                     },
                 }],
             },
@@ -612,35 +608,23 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_match_from_lir_match() {
-        let expression = Expression::Match {
-            matched: Box::new(Expression::Identifier {
-                identifier: String::from("my_color"),
-            }),
-            arms: vec![
+        let expression = Expression::pat_match(
+            Expression::ident("my_color"),
+            vec![
                 (
-                    Pattern::Enumeration {
-                        enum_name: String::from("Color"),
-                        elem_name: format!("Blue"),
-                        element: None,
-                    },
+                    Pattern::enumeration("Color", "Blue", None),
                     None,
-                    Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(1)),
-                    },
+                    Expression::literal(Constant::Integer(parse_quote!(1i64))),
                 ),
                 (
-                    Pattern::Enumeration {
-                        enum_name: String::from("Color"),
-                        elem_name: format!("Green"),
-                        element: None,
-                    },
+                    Pattern::enumeration("Color", "Green", None),
                     None,
                     Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(0)),
+                        literal: Constant::Integer(parse_quote!(0i64)),
                     },
                 ),
             ],
-        };
+        );
 
         let control =
             parse_quote! { match my_color { Color::Blue => 1i64, Color::Green => 0i64, } };
