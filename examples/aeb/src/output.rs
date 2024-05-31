@@ -36,7 +36,7 @@ impl BrakingStateState {
     }
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
         let state = match input.braking_state_event {
-            BrakingStateEvent::pedest(d) => {
+            BrakingStateEvent::pedest(Ok(d)) => {
                 let state = brakes(d, input.speed);
                 state
             }
@@ -62,42 +62,16 @@ impl Context {
     fn init() -> Context {
         Default::default()
     }
-}
-pub async fn run_toto_loop(
-    mut collision_collection_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut maneuver_acknoledgement_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut vehicle_data_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut nvm_inp_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut cam_obj_info_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut fused_context_data_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut common_variant_mngt_channel: tokio::sync::mpsc::Receiver<i64>,
-) {
-    let mut context = Context::init();
-    loop {
-        tokio::select! {
-            collision_collection = collision_collection_channel.recv() =>
-            { let collision_collection = collision_collection.unwrap() ; }
-            maneuver_acknoledgement = maneuver_acknoledgement_channel.recv()
-            =>
-            {
-                let maneuver_acknoledgement = maneuver_acknoledgement.unwrap()
-                ;
-            } vehicle_data = vehicle_data_channel.recv() =>
-            { let vehicle_data = vehicle_data.unwrap() ; } nvm_inp =
-            nvm_inp_channel.recv() => { let nvm_inp = nvm_inp.unwrap() ; }
-            cam_obj_info = cam_obj_info_channel.recv() =>
-            { let cam_obj_info = cam_obj_info.unwrap() ; } fused_context_data
-            = fused_context_data_channel.recv() =>
-            { let fused_context_data = fused_context_data.unwrap() ; }
-            common_variant_mngt = common_variant_mngt_channel.recv() =>
-            { let common_variant_mngt = common_variant_mngt.unwrap() ; }
+    fn get_braking_state_inputs(&self, event: BrakingStateEvent) -> BrakingStateInput {
+        BrakingStateInput {
+            speed: self.speed_km_h,
+            braking_state_event: event,
         }
     }
 }
 pub struct TotoService {
     context: Context,
     braking_state: BrakingStateState,
-    timeout: tokio::time::Sleep,
     speed_km_h_channel: tokio::sync::mpsc::Receiver<f64>,
     pedestrian_l_channel: tokio::sync::mpsc::Receiver<f64>,
     pedestrian_r_channel: tokio::sync::mpsc::Receiver<f64>,
@@ -111,14 +85,11 @@ impl TotoService {
         brakes_channel: tokio::sync::mpsc::Sender<Braking>,
     ) -> TotoService {
         let braking_state = BrakingStateState::init();
-        let timeout = tokio::time::sleep_until(
-            tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
-        );
         let context = Context::init();
+
         TotoService {
             context,
             braking_state,
-            timeout,
             speed_km_h_channel,
             pedestrian_l_channel,
             pedestrian_r_channel,
@@ -137,17 +108,19 @@ impl TotoService {
             pedestrian_r_channel,
             brakes_channel,
         );
+        let timeout = tokio::time::sleep_until(
+            tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
+        );
+        tokio::pin!(timeout);
         loop {
             tokio::select! {
                 speed_km_h = service.speed_km_h_channel.recv() =>
                 service.handle_speed_km_h(speed_km_h.unwrap()).await,
                 pedestrian_l = service.pedestrian_l_channel.recv() =>
-                service.handle_pedestrian_l(pedestrian_l.unwrap(),
-                timeout.as_mut()).await, pedestrian_r =
-                service.pedestrian_r_channel.recv() =>
+                service.handle_pedestrian_l(pedestrian_l.unwrap(),timeout.as_mut()).await,
+                pedestrian_r = service.pedestrian_r_channel.recv() =>
                 service.handle_pedestrian_r(pedestrian_r.unwrap()).await, _ =
-                timeout.as_mut() =>
-                service.handle_timeout(timeout.as_mut()).await,
+                timeout.as_mut() => service.handle_timeout(timeout.as_mut()).await,
             }
         }
     }
@@ -168,7 +141,7 @@ impl TotoService {
         self.context.brakes = brakes;
     }
     async fn handle_pedestrian_r(&mut self, pedestrian_r: f64) {}
-    async fn handle_timeout(&mut self) {
+    async fn handle_timeout(&mut self, timeout: std::pin::Pin<&mut tokio::time::Sleep>) {
         let pedestrian = Err(());
         timeout.reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
         let brakes = self.braking_state.step(

@@ -314,8 +314,19 @@ impl Interface {
                     let flow_type = symbol_table.get_type(flow_id);
                     ArrivingFlow::Channel(flow_name, flow_type.clone())
                 };
+                // get the name of timeout events from reset instructions
+                let deadline_args = instructions
+                    .iter()
+                    .filter_map(|instruction| match instruction {
+                        FlowInstruction::ResetTimer(deadline_name, _) => {
+                            Some(deadline_name.clone())
+                        }
+                        _ => None,
+                    })
+                    .collect();
                 FlowHandler {
                     arriving_flow,
+                    deadline_args,
                     instructions,
                 }
             })
