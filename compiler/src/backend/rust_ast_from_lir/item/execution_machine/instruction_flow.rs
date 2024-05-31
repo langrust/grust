@@ -67,7 +67,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
             });
             parse_quote! {
-                self.#timer_ident.reset(Instant::now() + Duration::from_millis(#deadline));
+                self.#timer_ident.reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(#deadline));
             }
         }
         FlowInstruction::EventComponentCall(pattern, component_name, optional_event) => {
