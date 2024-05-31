@@ -38,7 +38,7 @@ fn should_compile_aeb() {
                 d = pedest => {
                     state = brakes(d, speed);
                 },
-                _ = timeout pedest => {
+                timeout pedest => {
                     state = Braking::NoBrake;
                 },
                 otherwise => {

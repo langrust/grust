@@ -39,7 +39,7 @@ grust! {
             d = pedest => {
                 state = brakes(d, speed);
             },
-            _ = timeout pedest => {
+            timeout pedest => {
                 state = Braking::NoBrake;
             },
             otherwise => {

@@ -36,11 +36,11 @@ impl BrakingStateState {
     }
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
         let state = match input.braking_state_event {
-            BrakingStateEvent::pedest(d) => {
+            BrakingStateEvent::pedest(Ok(d)) => {
                 let state = brakes(d, input.speed);
                 state
             }
-            BrakingStateEvent::pedest(_) => {
+            BrakingStateEvent::pedest(Err(())) => {
                 let state = Braking::NoBrake;
                 state
             }

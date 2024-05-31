@@ -380,21 +380,104 @@ impl Context {
         }
     }
 }
-pub async fn run_toto_loop(
-    mut activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
-    mut set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
-    mut speed_channel: tokio::sync::mpsc::Receiver<f64>,
-    mut vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
-    mut kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
-    mut vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+pub struct TotoService {
+    context: Context,
+    process_set_speed: ProcessSetSpeedState,
+    speed_limiter: SpeedLimiterState,
+    period: tokio::time::Interval,
+    activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
+    set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
+    speed_channel: tokio::sync::mpsc::Receiver<f64>,
+    vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
+    kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
+    vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
     in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
     v_set_channel: tokio::sync::mpsc::Sender<f64>,
-) {
-    let mut process_set_speed = ProcessSetSpeedState::init();
-    let mut speed_limiter = SpeedLimiterState::init();
-    let mut period = tokio::time::interval(std::time::Duration::from_millis(10u64));
-    let mut context = Context::init();
-    loop {
-        tokio::select! { activation = activation_channel . recv () => { let activation = activation . unwrap () ; context . activation = activation ; } set_speed = set_speed_channel . recv () => { let set_speed = set_speed . unwrap () ; context . set_speed = set_speed ; } speed = speed_channel . recv () => { let speed = speed . unwrap () ; context . speed = speed ; } vacuum_brake = vacuum_brake_channel . recv () => { let vacuum_brake = vacuum_brake . unwrap () ; context . vacuum_brake = vacuum_brake ; } kickdown = kickdown_channel . recv () => { let kickdown = kickdown . unwrap () ; context . kickdown = kickdown ; } vdc = vdc_channel . recv () => { let vdc = vdc . unwrap () ; context . vdc = vdc ; } _ = period . tick () => { let (state , on_state , in_regulation_aux , state_update) = speed_limiter . step (context . get_speed_limiter_inputs ()) ; context . state = state ; context . on_state = on_state ; context . in_regulation_aux = in_regulation_aux ; context . state_update = state_update ; let in_regulation = context . in_regulation_aux . clone () ; in_regulation_channel . send (in_regulation) . await . unwrap () ; } }
+}
+impl TotoService {
+    fn new(
+        activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
+        set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
+        speed_channel: tokio::sync::mpsc::Receiver<f64>,
+        vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
+        kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
+        vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+        in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
+        v_set_channel: tokio::sync::mpsc::Sender<f64>,
+    ) -> TotoService {
+        let process_set_speed = ProcessSetSpeedState::init();
+        let speed_limiter = SpeedLimiterState::init();
+        let period = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
+        let context = Context::init();
+        TotoService {
+            context,
+            process_set_speed,
+            speed_limiter,
+            period,
+            activation_channel,
+            set_speed_channel,
+            speed_channel,
+            vacuum_brake_channel,
+            kickdown_channel,
+            vdc_channel,
+            in_regulation_channel,
+            v_set_channel,
+        }
+    }
+    pub async fn run_loop(
+        activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
+        set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
+        speed_channel: tokio::sync::mpsc::Receiver<f64>,
+        vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
+        kickdown_channel: tokio::sync::mpsc::Receiver<KickdownState>,
+        vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+        in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
+        v_set_channel: tokio::sync::mpsc::Sender<f64>,
+    ) {
+        let mut service = TotoService::new(
+            activation_channel,
+            set_speed_channel,
+            speed_channel,
+            vacuum_brake_channel,
+            kickdown_channel,
+            vdc_channel,
+            in_regulation_channel,
+            v_set_channel,
+        );
+        loop {
+            tokio::select! { activation = service . activation_channel . recv () => service . handle_activation (activation . unwrap ()) . await , set_speed = service . set_speed_channel . recv () => service . handle_set_speed (set_speed . unwrap ()) . await , speed = service . speed_channel . recv () => service . handle_speed (speed . unwrap ()) . await , vacuum_brake = service . vacuum_brake_channel . recv () => service . handle_vacuum_brake (vacuum_brake . unwrap ()) . await , kickdown = service . kickdown_channel . recv () => service . handle_kickdown (kickdown . unwrap ()) . await , vdc = service . vdc_channel . recv () => service . handle_vdc (vdc . unwrap ()) . await , _ = service . period . tick () => service . handle_period () . await , }
+        }
+    }
+    async fn handle_activation(&mut self, activation: ActivationResquest) {
+        self.context.activation = activation;
+    }
+    async fn handle_set_speed(&mut self, set_speed: f64) {
+        self.context.set_speed = set_speed;
+    }
+    async fn handle_speed(&mut self, speed: f64) {
+        self.context.speed = speed;
+    }
+    async fn handle_vacuum_brake(&mut self, vacuum_brake: VacuumBrakeState) {
+        self.context.vacuum_brake = vacuum_brake;
+    }
+    async fn handle_kickdown(&mut self, kickdown: KickdownState) {
+        self.context.kickdown = kickdown;
+    }
+    async fn handle_vdc(&mut self, vdc: VdcState) {
+        self.context.vdc = vdc;
+    }
+    async fn handle_period(&mut self) {
+        let (state, on_state, in_regulation_aux, state_update) = self
+            .speed_limiter
+            .step(self.context.get_speed_limiter_inputs());
+        self.context.state = state;
+        self.context.on_state = on_state;
+        self.context.in_regulation_aux = in_regulation_aux;
+        self.context.state_update = state_update;
+        let in_regulation = self.context.in_regulation_aux.clone();
+        self.in_regulation_channel
+            .send(in_regulation)
+            .await
+            .unwrap();
     }
 }
