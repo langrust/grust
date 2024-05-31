@@ -359,7 +359,7 @@ impl TotoService {
     ) -> TotoService {
         let process_set_speed = ProcessSetSpeedState::init();
         let speed_limiter = SpeedLimiterState::init();
-        let period = tokio::time::interval(std::time::Duration::from_millis(10u64));
+        let period = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
         let context = Context::init();
         TotoService {
             context,

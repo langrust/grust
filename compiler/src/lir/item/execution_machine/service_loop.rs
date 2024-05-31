@@ -51,7 +51,8 @@ pub struct FlowHandler {
 #[derive(Debug, PartialEq)]
 pub enum ArrivingFlow {
     Channel(String, Type),
-    TimingEvent(String),
+    Period(String),
+    Deadline(String),
 }
 
 #[derive(Debug, PartialEq)]

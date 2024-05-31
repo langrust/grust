@@ -34,6 +34,7 @@ impl BrakingStateState {
             mem: Braking::NoBrake,
         }
     }
+    # [requires (0. <= input . speed && input . speed < 50.)]
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
         let state = match input.braking_state_event {
             BrakingStateEvent::pedest(d) => {
@@ -87,7 +88,7 @@ impl TotoService {
     ) -> TotoService {
         let braking_state = BrakingStateState::init();
         let timeout = tokio::time::sleep_until(
-            tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
+            tokio::time::Interval::now() + std::time::Duration::from_millis(500u64),
         );
         let context = Context::init();
         TotoService {
@@ -113,15 +114,7 @@ impl TotoService {
             brakes_channel,
         );
         loop {
-            tokio::select! {
-                speed_km_h = service.speed_km_h_channel.recv() =>
-                service.handle_speed_km_h(speed_km_h.unwrap()).await,
-                pedestrian_l = service.pedestrian_l_channel.recv() =>
-                service.handle_pedestrian_l(pedestrian_l.unwrap()).await,
-                pedestrian_r = service.pedestrian_r_channel.recv() =>
-                service.handle_pedestrian_r(pedestrian_r.unwrap()).await, _ =
-                service.timeout => service.handle_timeout().await,
-            }
+            tokio::select! { speed_km_h = service . speed_km_h_channel . recv () => service . handle_speed_km_h (speed_km_h . unwrap ()) . await , pedestrian_l = service . pedestrian_l_channel . recv () => service . handle_pedestrian_l (pedestrian_l . unwrap ()) . await , pedestrian_r = service . pedestrian_r_channel . recv () => service . handle_pedestrian_r (pedestrian_r . unwrap ()) . await , _ = service . timeout . tick () => service . handle_timeout () . await , }
         }
     }
     async fn handle_speed_km_h(&mut self, speed_km_h: f64) {
@@ -130,7 +123,7 @@ impl TotoService {
     async fn handle_pedestrian_l(&mut self, pedestrian_l: f64) {
         let pedestrian = Ok(pedestrian_l);
         self.timeout
-            .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
+            .reset(Instant::now() + Duration::from_millis(500u64));
         let brakes = self.braking_state.step(
             self.context
                 .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
@@ -141,7 +134,7 @@ impl TotoService {
     async fn handle_timeout(&mut self) {
         let pedestrian = Err(());
         self.timeout
-            .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
+            .reset(Instant::now() + Duration::from_millis(500u64));
         let brakes = self.braking_state.step(
             self.context
                 .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
