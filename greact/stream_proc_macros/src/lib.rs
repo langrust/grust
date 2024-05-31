@@ -9,18 +9,23 @@ enum StreamType {
     None,
 }
 
-/// # Proc macro.
+/// # Stream attribute macro
+///
+/// Only applies to types that have a `greact::stream::PushStream`-style `poll_update` function.
 ///
 /// ## Usage
 ///
-/// ```rust
+/// ```rust, compile_fail
 /// #[stream(push, item = T)]
 /// struct MyPush<T, U, Push>
-///     where T: Clone,
+///     where T: Clone + Default,
 /// {
 ///     first: T,
 ///     second: U,
 ///     third: Push,
+/// }
+/// impl<T, U, Push> greact::stream::PushStream for MyPush<T, U, Push> {
+///     // ...
 /// }
 /// ```
 #[proc_macro_attribute]

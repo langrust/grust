@@ -28,9 +28,7 @@ impl std::error::Error for TerminationError {}
 ///
 /// # Example
 /// ```rust
-/// use grustine::common::location::Location;
-/// use grustine::error::Error;
-///
+/// # use compiler::{common::location::Location, error::Error};
 /// let mut errors = vec![];
 ///
 /// let name = String::from("unknown");
@@ -292,14 +290,12 @@ impl Error {
     ///
     /// # Example
     /// ```rust
+    /// # use compiler::{common::location::Location, error::Error};
     /// use codespan_reporting::{
     ///     files::SimpleFiles,
     ///     term::termcolor::{StandardStream, ColorChoice},
     ///     term,
     /// };
-    ///
-    /// use grustine::common::location::Location;
-    /// use grustine::error::Error;
     ///
     /// let mut errors: Vec<Error> = vec![];
     /// let mut files = SimpleFiles::new();
@@ -532,7 +528,7 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect function type of the form '({}) -> t' but '{given_type}' was given", 
+                    format!("expect function type of the form '({}) -> t' but '{given_type}' was given",
                     input_types.into_iter().map(|input_type| input_type.to_string()).collect::<Vec<_>>().join(", ")
                 )
                 ]
