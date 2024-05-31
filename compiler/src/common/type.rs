@@ -150,6 +150,12 @@ impl Parse for Type {
                 let size: syn::LitInt = content.parse()?;
                 Type::Array(Box::new(ty), size.base10_parse().unwrap())
             }
+        } else if input.peek(keyword::timeout) {
+            let _: keyword::timeout = input.parse()?;
+            let content;
+            let _ = syn::parenthesized!(content in input);
+            let ty = content.parse()?;
+            Type::Timeout(Box::new(ty))
         } else {
             let ident: syn::Ident = input.parse()?;
             Type::NotDefinedYet(ident.to_string())
