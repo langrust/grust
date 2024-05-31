@@ -4,7 +4,7 @@
 /// Camel case strings are lowercase, but for every word the first letter is capitalized.
 ///
 /// ```
-/// use grustine::common::convert_case::camel_case;
+/// # use compiler::common::convert_case::camel_case;
 ///
 /// let string = camel_case("my_node_o");
 /// let control = format!("MyNodeO");
