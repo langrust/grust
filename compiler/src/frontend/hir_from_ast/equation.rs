@@ -189,6 +189,7 @@ impl HIRFromAST for Equation {
                     .map(|arm| match arm {
                         ArmWhen::ArmWhenEvent(ArmWhenEvent {
                             pattern,
+                            timeout_token,
                             event,
                             guard,
                             equations,
@@ -222,14 +223,26 @@ impl HIRFromAST for Equation {
 
                             // transform into HIR
                             let inner_pattern = pattern.hir_from_ast(symbol_table, errors)?;
-                            let pattern = Pattern {
-                                kind: PatternKind::Event {
-                                    event_enum_id,
-                                    event_element_id,
-                                    pattern: Box::new(inner_pattern),
-                                },
-                                typing: None,
-                                location: location.clone(),
+                            let pattern = if timeout_token.is_none() {
+                                Pattern {
+                                    kind: PatternKind::Event {
+                                        event_enum_id,
+                                        event_element_id,
+                                        pattern: Box::new(inner_pattern),
+                                    },
+                                    typing: None,
+                                    location: location.clone(),
+                                }
+                            } else {
+                                Pattern {
+                                    kind: PatternKind::TimeoutEvent {
+                                        event_enum_id,
+                                        event_element_id,
+                                        pattern: Box::new(inner_pattern),
+                                    },
+                                    typing: None,
+                                    location: location.clone(),
+                                }
                             };
                             let guard = guard
                                 .map(|(_, expression)| {
