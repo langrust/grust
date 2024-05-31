@@ -156,7 +156,7 @@ impl HIRFromAST for FlowPattern {
         let location = Location::default();
 
         match self {
-            FlowPattern::Single { ident, .. } => {
+            FlowPattern::Single { ident } => {
                 let id = symbol_table.get_flow_id(
                     &ident.to_string(),
                     false,
