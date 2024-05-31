@@ -41,7 +41,7 @@ impl MainState {
 /// }
 /// ```
 #[tokio::test]
-async fn main() {
+async fn main() -> Result<(), String> {
     // signals management
     let (tx_i, i) = input_channel(0);
     let (tx_o, mut rx_o) = channel::<i64>(1);
@@ -80,11 +80,16 @@ async fn main() {
     // launch computation
     let b = b.push();
     tokio::pin!(b);
+    let run = crate::Run::new();
     loop {
+        if run.should_stop() {
+            break;
+        }
         let b = b.next().await.expect("should not end");
-        if let Err(_) = tx_o.send(b).await {
-            println!("output receiver dropped");
-            return;
+        if let Err(e) = tx_o.send(b).await {
+            return Err(format!("output receiver dropped ({e})"));
         }
     }
+
+    Ok(())
 }
