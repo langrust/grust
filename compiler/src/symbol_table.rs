@@ -43,6 +43,10 @@ pub enum SymbolKind {
         path: Option<syn::Path>,
         /// FLow kind.
         kind: FlowKind,
+        /// Is periodic timer.
+        period: bool,
+        /// Is deadline timer.
+        deadline: bool,
         /// Flow type.
         typing: Type,
     },
@@ -164,6 +168,8 @@ impl Symbol {
 /// Key of symbol in the context table.
 #[derive(PartialEq, Eq, Hash)]
 pub enum SymbolKey {
+    Period,
+    Deadline,
     Event,            // only one event per component
     EventEnumeration, // only one event enumeration per component
     EventElement { name: String },
@@ -470,7 +476,13 @@ impl SymbolTable {
         errors: &mut Vec<Error>,
     ) -> Result<usize, TerminationError> {
         let symbol = Symbol {
-            kind: SymbolKind::Flow { path, kind, typing },
+            kind: SymbolKind::Flow {
+                path,
+                kind,
+                period: false,
+                deadline: false,
+                typing,
+            },
             name,
         };
 
@@ -617,7 +629,43 @@ impl SymbolTable {
             kind: SymbolKind::Flow {
                 path: None,
                 kind,
+                period: false,
+                deadline: false,
                 typing,
+            },
+            name: fresh_name,
+        };
+
+        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            .expect("you should not fail") // todo make it local
+    }
+
+    /// Insert fresh period timer in symbol table.
+    pub fn insert_fresh_period(&mut self, fresh_name: String) -> usize {
+        let symbol = Symbol {
+            kind: SymbolKind::Flow {
+                path: None,
+                kind: FlowKind::Event(Default::default()),
+                period: true,
+                deadline: false,
+                typing: Type::Event(Box::new(Type::Time)),
+            },
+            name: fresh_name,
+        };
+
+        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            .expect("you should not fail") // todo make it local
+    }
+
+    /// Insert fresh deadline timer in symbol table.
+    pub fn insert_fresh_deadline(&mut self, fresh_name: String) -> usize {
+        let symbol = Symbol {
+            kind: SymbolKind::Flow {
+                path: None,
+                kind: FlowKind::Event(Default::default()),
+                period: false,
+                deadline: true,
+                typing: Type::Event(Box::new(Type::Time)),
             },
             name: fresh_name,
         };
@@ -988,29 +1036,34 @@ impl SymbolTable {
     }
 
     /// Get flow's kind from identifier.
-    pub fn get_flow_kind(&self, id: usize) -> &FlowKind {
+    pub fn get_flow_kind(&self, id: usize) -> FlowKind {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { kind, .. } => kind,
+            SymbolKind::Flow { kind, .. } => kind.clone(),
             _ => unreachable!(),
         }
     }
 
-    /// Tell weither the flow is a time flow.
-    pub fn is_time_flow(&self, id: usize) -> bool {
+    /// Tell weither the id is a deadline timer.
+    pub fn is_deadline(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { typing, .. } => match typing {
-                Type::Event(ty) | Type::Signal(ty) => match ty.as_ref() {
-                    Type::Time => true,
-                    _ => false,
-                },
-                _ => unreachable!(),
-            },
+            SymbolKind::Flow { deadline, .. } => *deadline,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Tell weither the id is a periodic timer.
+    pub fn is_period(&self, id: usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { period, .. } => *period,
             _ => unreachable!(),
         }
     }

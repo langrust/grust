@@ -160,12 +160,7 @@ impl Interface {
                                     String::from(""),
                                 );
                                 let typing = Type::Event(Box::new(Type::Time));
-                                let kind = FlowKind::Event(Default::default());
-                                let fresh_id = symbol_table.insert_fresh_flow(
-                                    fresh_name.clone(),
-                                    kind,
-                                    typing,
-                                );
+                                let fresh_id = symbol_table.insert_fresh_period(fresh_name.clone());
 
                                 // add timing_event in new_statements
                                 new_statements.push(FlowStatement::Import(FlowImport {
@@ -173,7 +168,7 @@ impl Interface {
                                     id: fresh_id,
                                     path: format_ident!("{fresh_name}").into(),
                                     colon_token: Default::default(),
-                                    flow_type: Type::Event(Box::new(Type::Time)),
+                                    flow_type: typing,
                                     semi_token: Default::default(),
                                 }));
                                 // add timing_event in graph
@@ -200,12 +195,8 @@ impl Interface {
                                     String::from(""),
                                 );
                                 let typing = Type::Event(Box::new(Type::Time));
-                                let kind = FlowKind::Event(Default::default());
-                                let fresh_id = symbol_table.insert_fresh_flow(
-                                    fresh_name.clone(),
-                                    kind,
-                                    typing,
-                                );
+                                let fresh_id =
+                                    symbol_table.insert_fresh_deadline(fresh_name.clone());
 
                                 // add timing_event in new_statements
                                 new_statements.push(FlowStatement::Import(FlowImport {
@@ -213,7 +204,7 @@ impl Interface {
                                     id: fresh_id,
                                     path: format_ident!("{fresh_name}").into(),
                                     colon_token: Default::default(),
-                                    flow_type: Type::Event(Box::new(Type::Time)),
+                                    flow_type: typing,
                                     semi_token: Default::default(),
                                 }));
                                 // add timing_event in graph
@@ -242,12 +233,8 @@ impl Interface {
                                         String::from(""),
                                     );
                                     let typing = Type::Event(Box::new(Type::Time));
-                                    let kind = FlowKind::Event(Default::default());
-                                    let fresh_id = symbol_table.insert_fresh_flow(
-                                        fresh_name.clone(),
-                                        kind,
-                                        typing,
-                                    );
+                                    let fresh_id =
+                                        symbol_table.insert_fresh_period(fresh_name.clone());
 
                                     // add timing_event in new_statements
                                     new_statements.push(FlowStatement::Import(FlowImport {
@@ -255,7 +242,7 @@ impl Interface {
                                         id: fresh_id,
                                         path: format_ident!("{fresh_name}").into(),
                                         colon_token: Default::default(),
-                                        flow_type: Type::Event(Box::new(Type::Time)),
+                                        flow_type: typing,
                                         semi_token: Default::default(),
                                     }));
                                     // add timing_event in graph
@@ -318,10 +305,12 @@ impl Interface {
                 );
                 // determine weither this arriving flow is a timing event
                 let flow_name = symbol_table.get_name(flow_id).clone();
-                let flow_type = symbol_table.get_type(flow_id);
-                let arriving_flow = if symbol_table.is_time_flow(flow_id) {
-                    ArrivingFlow::TimingEvent(flow_name)
+                let arriving_flow = if symbol_table.is_period(flow_id) {
+                    ArrivingFlow::Period(flow_name)
+                } else if symbol_table.is_deadline(flow_id) {
+                    ArrivingFlow::Deadline(flow_name)
                 } else {
+                    let flow_type = symbol_table.get_type(flow_id);
                     ArrivingFlow::Channel(flow_name, flow_type.clone())
                 };
                 FlowHandler {
@@ -388,7 +377,7 @@ fn compute_flow_instructions(
     // push instructions in right order
     while !working_stack.is_empty() {
         // get the next flow statement to transform
-        let statement_id = working_stack.remove(0);
+        let statement_id = working_stack.pop().unwrap();
         // get flow statement related to id
         let flow_statement = statements.get(statement_id).expect("should be there");
 
