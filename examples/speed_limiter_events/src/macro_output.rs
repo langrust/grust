@@ -330,85 +330,182 @@ impl Context {
         }
     }
 }
-pub async fn run_toto_loop(
-    mut activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
-    mut set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
-    mut speed_channel: tokio::sync::mpsc::Receiver<f64>,
-    mut vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
-    mut kickdown_channel: tokio::sync::mpsc::Receiver<Kickdown>,
-    mut failure_channel: tokio::sync::mpsc::Receiver<Failure>,
-    mut vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+pub struct TotoService {
+    context: Context,
+    process_set_speed: ProcessSetSpeedState,
+    speed_limiter: SpeedLimiterState,
+    period: tokio::time::Interval,
+    activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
+    set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
+    speed_channel: tokio::sync::mpsc::Receiver<f64>,
+    vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
+    kickdown_channel: tokio::sync::mpsc::Receiver<Kickdown>,
+    failure_channel: tokio::sync::mpsc::Receiver<Failure>,
+    vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
     in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
     v_set_channel: tokio::sync::mpsc::Sender<f64>,
-) {
-    let mut process_set_speed = ProcessSetSpeedState::init();
-    let mut speed_limiter = SpeedLimiterState::init();
-    let mut period = tokio::time::interval(std::time::Duration::from_millis(10u64));
-    let mut context = Context::init();
-    loop {
-        tokio::select! {
-            activation = activation_channel.recv() =>
-            {
-                let activation = activation.unwrap(); let
-                (state, on_state, in_regulation_aux, state_update) =
-                speed_limiter.step(context.get_speed_limiter_inputs(SpeedLimiterEvent
-                :: activation_req(activation))); context.state = state;
-                context.on_state = on_state; context.in_regulation_aux =
-                in_regulation_aux; context.state_update = state_update; let
-                in_regulation = context.in_regulation_aux.clone();
-                in_regulation_channel.send(in_regulation).await.unwrap();
-            } set_speed = set_speed_channel.recv() =>
-            {
-                let set_speed = set_speed.unwrap(); if (context.x - set_speed)
-                >= 1.0 { context.x = set_speed; } let x = context.x.clone();
-                if context.changed_set_speed_old != x
-                {
-                    let changed_set_speed = x; context.changed_set_speed_old =
-                    x; let (v_set_aux, v_update) =
-                    process_set_speed.step(context.get_process_set_speed_inputs(ProcessSetSpeedEvent
-                    :: set_speed(changed_set_speed))); context.v_set_aux =
-                    v_set_aux; context.v_update = v_update; let v_set =
-                    context.v_set_aux.clone();
-                    v_set_channel.send(v_set).await.unwrap();
-                } else {}
-            } speed = speed_channel.recv() =>
-            { let speed = speed.unwrap(); context.speed = speed; }
-            vacuum_brake = vacuum_brake_channel.recv() =>
-            {
-                let vacuum_brake = vacuum_brake.unwrap(); context.vacuum_brake
-                = vacuum_brake;
-            } kickdown = kickdown_channel.recv() =>
-            {
-                let kickdown = kickdown.unwrap(); let
-                (state, on_state, in_regulation_aux, state_update) =
-                speed_limiter.step(context.get_speed_limiter_inputs(SpeedLimiterEvent
-                :: kickdown(kickdown))); context.state = state;
-                context.on_state = on_state; context.in_regulation_aux =
-                in_regulation_aux; context.state_update = state_update; let
-                in_regulation = context.in_regulation_aux.clone();
-                in_regulation_channel.send(in_regulation).await.unwrap();
-            } failure = failure_channel.recv() =>
-            {
-                let failure = failure.unwrap(); let
-                (state, on_state, in_regulation_aux, state_update) =
-                speed_limiter.step(context.get_speed_limiter_inputs(SpeedLimiterEvent
-                :: failure(failure))); context.state = state; context.on_state
-                = on_state; context.in_regulation_aux = in_regulation_aux;
-                context.state_update = state_update; let in_regulation =
-                context.in_regulation_aux.clone();
-                in_regulation_channel.send(in_regulation).await.unwrap();
-            } vdc = vdc_channel.recv() =>
-            { let vdc = vdc.unwrap(); context.vdc = vdc; } _ = period.tick()
-            =>
-            {
-                let (state, on_state, in_regulation_aux, state_update) =
-                speed_limiter.step(context.get_speed_limiter_inputs(SpeedLimiterEvent
-                :: NoEvent)); context.state = state; context.on_state =
-                on_state; context.in_regulation_aux = in_regulation_aux;
-                context.state_update = state_update; let in_regulation =
-                context.in_regulation_aux.clone();
-                in_regulation_channel.send(in_regulation).await.unwrap();
+}
+impl TotoService {
+    fn new(
+        activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
+        set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
+        speed_channel: tokio::sync::mpsc::Receiver<f64>,
+        vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
+        kickdown_channel: tokio::sync::mpsc::Receiver<Kickdown>,
+        failure_channel: tokio::sync::mpsc::Receiver<Failure>,
+        vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+        in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
+        v_set_channel: tokio::sync::mpsc::Sender<f64>,
+    ) -> TotoService {
+        let process_set_speed = ProcessSetSpeedState::init();
+        let speed_limiter = SpeedLimiterState::init();
+        let period = tokio::time::interval(std::time::Duration::from_millis(10u64));
+        let context = Context::init();
+        TotoService {
+            context,
+            process_set_speed,
+            speed_limiter,
+            period,
+            activation_channel,
+            set_speed_channel,
+            speed_channel,
+            vacuum_brake_channel,
+            kickdown_channel,
+            failure_channel,
+            vdc_channel,
+            in_regulation_channel,
+            v_set_channel,
+        }
+    }
+    pub async fn run_loop(
+        activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
+        set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
+        speed_channel: tokio::sync::mpsc::Receiver<f64>,
+        vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
+        kickdown_channel: tokio::sync::mpsc::Receiver<Kickdown>,
+        failure_channel: tokio::sync::mpsc::Receiver<Failure>,
+        vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
+        in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
+        v_set_channel: tokio::sync::mpsc::Sender<f64>,
+    ) {
+        let mut service = TotoService::new(
+            activation_channel,
+            set_speed_channel,
+            speed_channel,
+            vacuum_brake_channel,
+            kickdown_channel,
+            failure_channel,
+            vdc_channel,
+            in_regulation_channel,
+            v_set_channel,
+        );
+        loop {
+            tokio::select! {
+                activation = service.activation_channel.recv() =>
+                service.handle_activation(activation.unwrap()).await,
+                set_speed = service.set_speed_channel.recv() =>
+                service.handle_set_speed(set_speed.unwrap()).await, speed =
+                service.speed_channel.recv() =>
+                service.handle_speed(speed.unwrap()).await, vacuum_brake =
+                service.vacuum_brake_channel.recv() =>
+                service.handle_vacuum_brake(vacuum_brake.unwrap()).await,
+                kickdown = service.kickdown_channel.recv() =>
+                service.handle_kickdown(kickdown.unwrap()).await, failure =
+                service.failure_channel.recv() =>
+                service.handle_failure(failure.unwrap()).await, vdc =
+                service.vdc_channel.recv() =>
+                service.handle_vdc(vdc.unwrap()).await, _ =
+                service.period.tick() => service.handle_period().await,
             }
         }
+    }
+    async fn handle_activation(&mut self, activation: ActivationResquest) {
+        let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
+            self.context
+                .get_speed_limiter_inputs(SpeedLimiterEvent::activation_req(activation)),
+        );
+        self.context.state = state;
+        self.context.on_state = on_state;
+        self.context.in_regulation_aux = in_regulation_aux;
+        self.context.state_update = state_update;
+        let in_regulation = self.context.in_regulation_aux.clone();
+        self.in_regulation_channel
+            .send(in_regulation)
+            .await
+            .unwrap();
+    }
+    async fn handle_set_speed(&mut self, set_speed: f64) {
+        if (self.context.x - set_speed) >= 1.0 {
+            self.context.x = set_speed;
+        }
+        let x = self.context.x.clone();
+        if self.context.changed_set_speed_old != x {
+            let changed_set_speed = x;
+            self.context.changed_set_speed_old = x;
+            let (v_set_aux, v_update) =
+                self.process_set_speed
+                    .step(self.context.get_process_set_speed_inputs(
+                        ProcessSetSpeedEvent::set_speed(changed_set_speed),
+                    ));
+            self.context.v_set_aux = v_set_aux;
+            self.context.v_update = v_update;
+            let v_set = self.context.v_set_aux.clone();
+            self.v_set_channel.send(v_set).await.unwrap();
+        } else {
+        }
+    }
+    async fn handle_speed(&mut self, speed: f64) {
+        self.context.speed = speed;
+    }
+    async fn handle_vacuum_brake(&mut self, vacuum_brake: VacuumBrakeState) {
+        self.context.vacuum_brake = vacuum_brake;
+    }
+    async fn handle_kickdown(&mut self, kickdown: Kickdown) {
+        let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
+            self.context
+                .get_speed_limiter_inputs(SpeedLimiterEvent::kickdown(kickdown)),
+        );
+        self.context.state = state;
+        self.context.on_state = on_state;
+        self.context.in_regulation_aux = in_regulation_aux;
+        self.context.state_update = state_update;
+        let in_regulation = self.context.in_regulation_aux.clone();
+        self.in_regulation_channel
+            .send(in_regulation)
+            .await
+            .unwrap();
+    }
+    async fn handle_failure(&mut self, failure: Failure) {
+        let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
+            self.context
+                .get_speed_limiter_inputs(SpeedLimiterEvent::failure(failure)),
+        );
+        self.context.state = state;
+        self.context.on_state = on_state;
+        self.context.in_regulation_aux = in_regulation_aux;
+        self.context.state_update = state_update;
+        let in_regulation = self.context.in_regulation_aux.clone();
+        self.in_regulation_channel
+            .send(in_regulation)
+            .await
+            .unwrap();
+    }
+    async fn handle_vdc(&mut self, vdc: VdcState) {
+        self.context.vdc = vdc;
+    }
+    async fn handle_period(&mut self) {
+        let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
+            self.context
+                .get_speed_limiter_inputs(SpeedLimiterEvent::NoEvent),
+        );
+        self.context.state = state;
+        self.context.on_state = on_state;
+        self.context.in_regulation_aux = in_regulation_aux;
+        self.context.state_update = state_update;
+        let in_regulation = self.context.in_regulation_aux.clone();
+        self.in_regulation_channel
+            .send(in_regulation)
+            .await
+            .unwrap();
     }
 }

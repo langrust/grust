@@ -14,7 +14,7 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> Vec<syn::Item> 
     let mut other_items = execution_machine
         .services_loops
         .into_iter()
-        .map(service_loop_rust_ast_from_lir)
+        .flat_map(service_loop_rust_ast_from_lir)
         .collect();
     items.append(&mut other_items);
     items
