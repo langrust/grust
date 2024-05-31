@@ -41,6 +41,13 @@ pub enum Pattern {
         /// The elements of the tuple.
         elements: Vec<Pattern>,
     },
+    /// Ok pattern that matches when a result has a value which match the pattern.
+    Ok {
+        /// The pattern matching the value.
+        pattern: Box<Pattern>,
+    },
+    /// Err pattern, matches when the result does not have a value.
+    Err,
     /// Some pattern that matches when an optional has a value which match the pattern.
     Some {
         /// The pattern matching the value.
@@ -84,6 +91,14 @@ impl Pattern {
     }
     pub fn tuple(elements: Vec<Self>) -> Self {
         Self::Tuple { elements }
+    }
+    pub fn ok(pat: Self) -> Self {
+        Self::Ok {
+            pattern: Box::new(pat),
+        }
+    }
+    pub fn err() -> Self {
+        Self::Err
     }
     pub fn some(pat: Self) -> Self {
         Self::Some {
