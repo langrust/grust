@@ -254,9 +254,9 @@ impl BinaryOperator {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::common::operator::BinaryOperator;
-    ///
+    /// # use compiler::common::operator::BinaryOperator;
     /// let add_type = BinaryOperator::Add.get_type();
+    /// assert!(add_type.is_polymorphic());
     /// ```
     pub fn get_type(&self) -> Type {
         match self {
@@ -355,9 +355,9 @@ impl UnaryOperator {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::common::operator::UnaryOperator;
-    ///
+    /// # use compiler::common::operator::UnaryOperator;
     /// let neg_type = UnaryOperator::Neg.get_type();
+    /// assert!(neg_type.is_polymorphic());
     /// ```
     pub fn get_type(&self) -> Type {
         match self {
@@ -429,9 +429,9 @@ impl OtherOperator {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::common::operator::OtherOperator;
-    ///
+    /// # use compiler::common::operator::OtherOperator;
     /// let ifthenelse_type = OtherOperator::IfThenElse.get_type();
+    /// assert!(ifthenelse_type.is_polymorphic());
     /// ```
     pub fn get_type(&self) -> Type {
         match self {

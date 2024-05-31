@@ -379,6 +379,65 @@ impl Type {
             _ => false,
         }
     }
+
+    pub fn is_polymorphic(&self) -> bool {
+        use Type::*;
+        let mut stack = vec![];
+        let mut curr = self;
+
+        'go_down: loop {
+            match curr {
+                // early return, bypass the whole stack
+                Polymorphism { .. } | NotDefinedYet(_) | Generic(_) => return true,
+                // leaves that don't require going down
+                Integer
+                | Float
+                | Boolean
+                | Unit
+                | ComponentEvent
+                | Enumeration { .. }
+                | Structure { .. }
+                | Time
+                | Any => (),
+                // nodes we need to go down into
+                Array(ty, _)
+                | SMEvent(ty)
+                | SMTimeout(ty)
+                | Signal(ty)
+                | Event(ty)
+                | Timeout(ty) => {
+                    curr = ty;
+                    continue 'go_down;
+                }
+                Abstract(tys, ty) => {
+                    for ty in tys {
+                        stack.push(ty);
+                    }
+                    curr = ty;
+                    continue 'go_down;
+                }
+                Tuple(tys) => {
+                    let mut tys = tys.iter();
+                    if let Some(ty) = tys.next() {
+                        curr = ty;
+                        for ty in tys {
+                            stack.push(ty);
+                        }
+                        continue 'go_down;
+                    }
+                    // otherwise just go up
+                }
+            }
+
+            if let Some(next) = stack.pop() {
+                curr = next;
+                continue 'go_down;
+            } else {
+                debug_assert!(stack.is_empty());
+                return false;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
