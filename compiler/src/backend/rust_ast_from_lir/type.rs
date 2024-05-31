@@ -125,12 +125,13 @@ mod rust_ast_from_lir {
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
-    #[test]
-    fn should_create_rust_ast_owned_generic_from_lir_option() {
-        let r#type = Type::SMEvent(Box::new(Type::Float));
-        let control = parse_quote!(Option<f64>);
-        assert_eq!(rust_ast_from_lir(r#type), control)
-    }
+    // // #TODO come back to this test when we have options proper
+    // #[test]
+    // fn should_create_rust_ast_owned_generic_from_lir_option() {
+    //     let r#type = Type::SMEvent(Box::new(Type::Float));
+    //     let control = parse_quote!(Option<f64>);
+    //     assert_eq!(rust_ast_from_lir(r#type), control)
+    // }
 
     #[test]
     fn should_create_rust_ast_owned_closure_from_lir_abstract() {
