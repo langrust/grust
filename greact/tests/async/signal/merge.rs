@@ -42,7 +42,7 @@ impl MainState {
 /// }
 /// ```
 #[tokio::test]
-async fn main() {
+async fn main() -> Result<(), String> {
     // signals management
     let (tx_i, i) = input_channel(0);
     let (tx_j, j) = input_channel(0);
@@ -89,14 +89,19 @@ async fn main() {
     // synchronous state-machine launched
     let m = m.push();
     tokio::pin!(m);
+    let run = crate::Run::new();
     loop {
+        if run.should_stop() {
+            break;
+        }
         let a = m.next().await.expect("should not end");
         println!("{}", format!("input received: {a:?}").red());
         let b = state.step(MainInput { a });
         println!("{}", format!("compute: {b}").blue());
-        if let Err(_) = tx_o.send(b).await {
-            println!("output receiver dropped");
-            return;
+        if let Err(e) = tx_o.send(b).await {
+            return Err(format!("output receiver dropped ({e})"));
         }
     }
+
+    Ok(())
 }

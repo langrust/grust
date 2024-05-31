@@ -44,7 +44,7 @@ impl MainState {
 /// }
 /// ```
 #[test]
-fn main() {
+fn main() -> Result<(), String> {
     // events management
     let (tx_i, i) = input_channel::<i64>();
     let (tx_o, mut rx_o) = channel::<i64>(1);
@@ -73,15 +73,20 @@ fn main() {
     // synchronous state-machine launched
     let mut i = i.pull();
     thread::sleep(Duration::from_millis(1));
+    let run = crate::Run::new();
     loop {
+        if run.should_stop() {
+            break;
+        }
         let a = i.pick();
         println!("{}", format!("input sampled: {a:?}").red());
         let b = state.step(MainInput { a });
         println!("{}", format!("compute: {b}").blue());
-        if let Err(_) = tx_o.blocking_send(b) {
-            println!("output receiver dropped");
-            return;
+        if let Err(e) = tx_o.blocking_send(b) {
+            return Err(format!("output receiver dropped ({e})"));
         }
         thread::sleep(Duration::from_millis(100));
     }
+
+    Ok(())
 }
