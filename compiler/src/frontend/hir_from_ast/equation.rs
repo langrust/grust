@@ -1,5 +1,6 @@
 use crate::ast::equation::{
-    Arm, ArmWhen, ArmWhenEvent, DefaultArmWhen, Equation, Instanciation, Match, MatchWhen,
+    Arm, ArmWhen, DefaultArmWhen, Equation, EventArmWhen, Instanciation, Match, MatchWhen,
+    TimeoutArmWhen,
 };
 use crate::ast::pattern::{Pattern as ASTPattern, Tuple};
 use crate::ast::statement::LetDeclaration;
@@ -187,9 +188,8 @@ impl HIRFromAST for Equation {
                 let new_arms = arms
                     .into_iter()
                     .map(|arm| match arm {
-                        ArmWhen::ArmWhenEvent(ArmWhenEvent {
+                        ArmWhen::EventArmWhen(EventArmWhen {
                             pattern,
-                            timeout_token,
                             event,
                             guard,
                             equations,
@@ -223,32 +223,69 @@ impl HIRFromAST for Equation {
 
                             // transform into HIR
                             let inner_pattern = pattern.hir_from_ast(symbol_table, errors)?;
-                            let pattern = if timeout_token.is_none() {
-                                Pattern {
-                                    kind: PatternKind::Event {
-                                        event_enum_id,
-                                        event_element_id,
-                                        pattern: Box::new(inner_pattern),
-                                    },
-                                    typing: None,
-                                    location: location.clone(),
-                                }
-                            } else {
-                                Pattern {
-                                    kind: PatternKind::TimeoutEvent {
-                                        event_enum_id,
-                                        event_element_id,
-                                        pattern: Box::new(inner_pattern),
-                                    },
-                                    typing: None,
-                                    location: location.clone(),
-                                }
+                            let pattern = Pattern {
+                                kind: PatternKind::Event {
+                                    event_enum_id,
+                                    event_element_id,
+                                    pattern: Box::new(inner_pattern),
+                                },
+                                typing: None,
+                                location: location.clone(),
                             };
                             let guard = guard
                                 .map(|(_, expression)| {
                                     expression.hir_from_ast(symbol_table, errors)
                                 })
                                 .transpose()?;
+                            let statements = equations
+                                .into_iter()
+                                .map(|equation| equation.hir_from_ast(symbol_table, errors))
+                                .collect::<Vec<Result<_, _>>>()
+                                .into_iter()
+                                .collect::<Result<Vec<_>, _>>()?;
+
+                            symbol_table.global();
+
+                            Ok((pattern, guard, defined_signals, statements))
+                        }
+                        ArmWhen::TimeoutArmWhen(TimeoutArmWhen {
+                            event, equations, ..
+                        }) => {
+                            symbol_table.local();
+
+                            // set local context: equations' signals
+                            let mut defined_signals = vec![];
+                            equations
+                                .iter()
+                                .map(|equation| {
+                                    // store equations' signals in the local context
+                                    let mut equation_signals =
+                                        equation.store_signals(symbol_table, errors)?;
+                                    defined_signals.append(&mut equation_signals);
+                                    Ok(())
+                                })
+                                .collect::<Vec<Result<_, _>>>()
+                                .into_iter()
+                                .collect::<Result<(), _>>()?;
+
+                            // get the event element identifier
+                            let event_element_id: usize = symbol_table.get_event_element_id(
+                                &event.to_string(),
+                                false,
+                                location.clone(),
+                                errors,
+                            )?;
+
+                            // transform into HIR
+                            let pattern = Pattern {
+                                kind: PatternKind::TimeoutEvent {
+                                    event_enum_id,
+                                    event_element_id,
+                                },
+                                typing: None,
+                                location: location.clone(),
+                            };
+                            let guard = None;
                             let statements = equations
                                 .into_iter()
                                 .map(|equation| equation.hir_from_ast(symbol_table, errors))
@@ -417,7 +454,8 @@ impl Equation {
                 }
             }
             Equation::MatchWhen(MatchWhen { arms, .. }) => match arms.first().unwrap() {
-                ArmWhen::ArmWhenEvent(ArmWhenEvent { equations, .. })
+                ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
+                | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
                 | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
                     let mut elements = equations
                         .iter()
@@ -456,7 +494,8 @@ impl Equation {
                 Ok(local_declarations)
             }),
             Equation::MatchWhen(MatchWhen { arms, .. }) => arms.first().map(|arm| match arm {
-                ArmWhen::ArmWhenEvent(ArmWhenEvent { equations, .. })
+                ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
+                | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
                 | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
                     let local_declarations = equations
                         .iter()
@@ -502,7 +541,8 @@ impl Equation {
             }
             Equation::MatchWhen(MatchWhen { arms, .. }) => {
                 arms.first().map_or(Ok(vec![]), |arm| match arm {
-                    ArmWhen::ArmWhenEvent(ArmWhenEvent { equations, .. })
+                    ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
+                    | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
                     | ArmWhen::Default(DefaultArmWhen { equations, .. }) => Ok(equations
                         .iter()
                         .map(|equation| equation.store_signals(symbol_table, errors))
