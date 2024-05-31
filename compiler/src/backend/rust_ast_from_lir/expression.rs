@@ -112,11 +112,16 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
             function,
             arguments,
         } => {
+            let function_parens = function.as_function_requires_parens();
             let function = rust_ast_from_lir(*function, crates);
             let arguments = arguments
                 .into_iter()
                 .map(|expression| rust_ast_from_lir(expression, crates));
-            parse_quote! { (#function)(#(#arguments),*) }
+            if function_parens {
+                parse_quote! { (#function)(#(#arguments),*) }
+            } else {
+                parse_quote! { #function(#(#arguments),*) }
+            }
         }
         Expression::Unop { op, expression } => {
             let op = unary_to_syn(op);
