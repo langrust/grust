@@ -97,7 +97,6 @@ pub async fn run_toto_loop(
 pub struct TotoService {
     context: Context,
     braking_state: BrakingStateState,
-    timeout: tokio::time::Sleep,
     speed_km_h_channel: tokio::sync::mpsc::Receiver<f64>,
     pedestrian_l_channel: tokio::sync::mpsc::Receiver<f64>,
     pedestrian_r_channel: tokio::sync::mpsc::Receiver<f64>,
@@ -111,14 +110,10 @@ impl TotoService {
         brakes_channel: tokio::sync::mpsc::Sender<Braking>,
     ) -> TotoService {
         let braking_state = BrakingStateState::init();
-        let timeout = tokio::time::sleep_until(
-            tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
-        );
         let context = Context::init();
         TotoService {
             context,
             braking_state,
-            timeout,
             speed_km_h_channel,
             pedestrian_l_channel,
             pedestrian_r_channel,
@@ -137,6 +132,10 @@ impl TotoService {
             pedestrian_r_channel,
             brakes_channel,
         );
+        let timeout = tokio::time::sleep_until(
+            tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
+        );
+        tokio::pin!(timeout);
         loop {
             tokio::select! {
                 speed_km_h = service.speed_km_h_channel.recv() =>
@@ -168,7 +167,7 @@ impl TotoService {
         self.context.brakes = brakes;
     }
     async fn handle_pedestrian_r(&mut self, pedestrian_r: f64) {}
-    async fn handle_timeout(&mut self) {
+    async fn handle_timeout(&mut self, timeout: std::pin::Pin<&mut tokio::time::Sleep>) {
         let pedestrian = Err(());
         timeout.reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
         let brakes = self.braking_state.step(
