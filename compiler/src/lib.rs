@@ -51,13 +51,22 @@ pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
 
-    let mut hir = ast.hir_from_ast(&mut symbol_table, &mut errors).unwrap();
+    let res = ast.hir_from_ast(&mut symbol_table, &mut errors);
+    println!("HIR construction {errors:?}");
+    let mut hir = res.unwrap();
+
     let res = hir.typing(&mut symbol_table, &mut errors);
-    println!("{errors:?}");
+    println!("Typing: {errors:?}");
     res.unwrap();
-    hir.generate_dependency_graphs(&symbol_table, &mut errors)
-        .unwrap();
-    hir.causality_analysis(&symbol_table, &mut errors).unwrap();
+
+    let res = hir.generate_dependency_graphs(&symbol_table, &mut errors);
+    println!("Causality 1: {errors:?}");
+    res.unwrap();
+
+    let res = hir.causality_analysis(&symbol_table, &mut errors);
+    println!("Causality 2: {errors:?}");
+    res.unwrap();
+
     hir.normalize(&mut symbol_table);
     let lir: Project = hir.lir_from_hir(symbol_table);
     let rust = rust_ast_from_lir(lir);
