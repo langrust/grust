@@ -1,6 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
+    common::r#type::Type,
     hir::pattern::{Pattern, PatternKind},
     lir::{item::import::Import, pattern::Pattern as LIRPattern},
     symbol_table::SymbolTable,
@@ -58,20 +59,27 @@ impl LIRFromHIR for Pattern {
                 event_enum_id,
                 event_element_id,
                 pattern,
-            } => LIRPattern::Enumeration {
-                enum_name: symbol_table.get_name(event_enum_id).clone(),
-                elem_name: symbol_table.get_name(event_element_id).clone(),
-                element: Some(Box::new(pattern.lir_from_hir(symbol_table))),
+            } => match symbol_table.get_type(event_element_id) {
+                Type::SMEvent(_) => LIRPattern::enumeration(
+                    symbol_table.get_name(event_enum_id).clone(),
+                    symbol_table.get_name(event_element_id).clone(),
+                    Some(pattern.lir_from_hir(symbol_table)),
+                ),
+                Type::SMTimeout(_) => LIRPattern::enumeration(
+                    symbol_table.get_name(event_enum_id).clone(),
+                    symbol_table.get_name(event_element_id).clone(),
+                    Some(LIRPattern::ok(pattern.lir_from_hir(symbol_table))),
+                ),
+                _ => unreachable!(),
             },
             PatternKind::TimeoutEvent {
                 event_enum_id,
                 event_element_id,
-                pattern,
-            } => LIRPattern::Enumeration {
-                enum_name: symbol_table.get_name(event_enum_id).clone(),
-                elem_name: symbol_table.get_name(event_element_id).clone(),
-                element: Some(Box::new(pattern.lir_from_hir(symbol_table))), // todo
-            },
+            } => LIRPattern::enumeration(
+                symbol_table.get_name(event_enum_id).clone(),
+                symbol_table.get_name(event_element_id).clone(),
+                Some(LIRPattern::err()),
+            ),
             PatternKind::NoEvent { .. } => LIRPattern::Default,
         }
     }
@@ -81,6 +89,7 @@ impl LIRFromHIR for Pattern {
             PatternKind::Identifier { .. }
             | PatternKind::Constant { .. }
             | PatternKind::NoEvent { .. }
+            | PatternKind::TimeoutEvent { .. }
             | PatternKind::None
             | PatternKind::Default => vec![],
             PatternKind::Structure { id, fields } => {
@@ -107,8 +116,7 @@ impl LIRFromHIR for Pattern {
                 .collect(),
             PatternKind::Some { pattern }
             | PatternKind::Typed { pattern, .. }
-            | PatternKind::Event { pattern, .. }
-            | PatternKind::TimeoutEvent { pattern, .. } => pattern.get_imports(symbol_table),
+            | PatternKind::Event { pattern, .. } => pattern.get_imports(symbol_table),
         }
     }
 }

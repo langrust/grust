@@ -49,8 +49,6 @@ pub enum PatternKind {
         event_enum_id: usize,
         /// The event element id.
         event_element_id: usize,
-        /// The pattern matching the event.
-        pattern: Box<Pattern>,
     },
     /// NoEvent enumeration pattern.
     NoEvent {
@@ -99,6 +97,7 @@ impl Pattern {
             PatternKind::Constant { .. }
             | PatternKind::Enumeration { .. }
             | PatternKind::NoEvent { .. }
+            | PatternKind::TimeoutEvent { .. }
             | PatternKind::None
             | PatternKind::Default => vec![],
             PatternKind::Structure { fields, .. } => fields
@@ -117,8 +116,7 @@ impl Pattern {
                 .collect(),
             PatternKind::Some { pattern }
             | PatternKind::Typed { pattern, .. }
-            | PatternKind::Event { pattern, .. }
-            | PatternKind::TimeoutEvent { pattern, .. } => pattern.identifiers(),
+            | PatternKind::Event { pattern, .. } => pattern.identifiers(),
         }
     }
     /// Get mutable references to pattern's identifiers.
@@ -128,6 +126,7 @@ impl Pattern {
             PatternKind::Constant { .. }
             | PatternKind::Enumeration { .. }
             | PatternKind::NoEvent { .. }
+            | PatternKind::TimeoutEvent { .. }
             | PatternKind::None
             | PatternKind::Default => vec![],
             PatternKind::Structure { fields, .. } => fields
@@ -146,8 +145,7 @@ impl Pattern {
                 .collect(),
             PatternKind::Some { pattern }
             | PatternKind::Typed { pattern, .. }
-            | PatternKind::Event { pattern, .. }
-            | PatternKind::TimeoutEvent { pattern, .. } => pattern.identifiers_mut(),
+            | PatternKind::Event { pattern, .. } => pattern.identifiers_mut(),
         }
     }
 }
