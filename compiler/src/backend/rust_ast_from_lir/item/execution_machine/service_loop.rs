@@ -124,7 +124,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                     lit: syn::Lit::Int(LitInt::new(&format!("{period}u64"), Span::call_site())),
                 });
                 let set_period: Stmt =  parse_quote! {
-                    let #ident = tokio::time::interval(std::time::Duration::from_millis(#period));
+                    let #ident = tokio::time::interval(tokio::time::Duration::from_millis(#period));
                 };
                 set_period
             }
@@ -134,7 +134,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                     lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
                 });
                 let set_timeout: Stmt =  parse_quote! {
-                    let #ident = tokio::time::sleep_until(tokio::time::Interval::now() + std::time::Duration::from_millis(#deadline));
+                    let #ident = tokio::time::sleep_until(tokio::time::Instant::now() + tokio::time::Duration::from_millis(#deadline));
                 };
                 set_timeout
             }
@@ -172,11 +172,18 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                             #ident = service.#channel.recv() => service.#function_name(#ident.unwrap()).await,
                         }
                     }
-                    ArrivingFlow::TimingEvent(time_flow_name) => {
+                    ArrivingFlow::Period(time_flow_name) => {
                         let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
                         parse_quote! {
                             _ = service.#ident.tick() => service.#function_name().await,
+                        }
+                    }
+                    ArrivingFlow::Deadline(time_flow_name) => {
+                        let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
+                        let function_name: Ident = format_ident!("handle_{time_flow_name}");
+                        parse_quote! {
+                            _ = service.#ident => service.#function_name().await,
                         }
                     }
                 }
@@ -218,7 +225,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                         }
                     })
                 }
-                ArrivingFlow::TimingEvent(time_flow_name) => {
+                ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
                     let function_name: Ident = format_ident!("handle_{time_flow_name}");
                     let instructions = instructions
                         .into_iter()
