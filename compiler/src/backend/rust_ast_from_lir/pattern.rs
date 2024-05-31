@@ -22,6 +22,18 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
             ident: Ident::new(&name, Span::call_site()),
             subpat: None,
         }),
+        Pattern::Default => Pat::Wild(PatWild {
+            attrs: vec![],
+            underscore_token: Default::default(),
+        }),
+        Pattern::Ok { pattern } => Pat::TupleStruct(PatTupleStruct {
+            attrs: vec![],
+            path: parse_quote! { Ok },
+            elems: vec![rust_ast_from_lir(*pattern)].into_iter().collect(),
+            paren_token: Default::default(),
+            qself: None,
+        }),
+        Pattern::Err => parse_quote! { Err(()) },
         Pattern::Some { pattern } => Pat::TupleStruct(PatTupleStruct {
             attrs: vec![],
             path: parse_quote! { Some },
@@ -30,10 +42,6 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
             qself: None,
         }),
         Pattern::None => parse_quote! { None },
-        Pattern::Default => Pat::Wild(PatWild {
-            attrs: vec![],
-            underscore_token: Default::default(),
-        }),
         Pattern::Typed { pattern, .. } => rust_ast_from_lir(*pattern),
         Pattern::Structure { name, fields } => Pat::Struct(PatStruct {
             attrs: vec![],
