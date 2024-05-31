@@ -121,16 +121,16 @@ impl Display for Type {
 }
 impl Parse for Type {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let mut ty = if input.fork().call(keyword::int::parse).is_ok() {
+        let mut ty = if input.peek(keyword::int) {
             let _: keyword::int = input.parse()?;
             Type::Integer
-        } else if input.fork().call(keyword::float::parse).is_ok() {
+        } else if input.peek(keyword::float) {
             let _: keyword::float = input.parse()?;
             Type::Float
-        } else if input.fork().call(keyword::bool::parse).is_ok() {
+        } else if input.peek(keyword::bool) {
             let _: keyword::bool = input.parse()?;
             Type::Boolean
-        } else if input.fork().peek(syn::token::Paren) {
+        } else if input.peek(syn::token::Paren) {
             let content;
             let _ = syn::parenthesized!(content in input);
             if content.is_empty() {
@@ -139,7 +139,7 @@ impl Parse for Type {
                 let types: Punctuated<Type, Token![,]> = Punctuated::parse_terminated(&content)?;
                 Type::Tuple(types.into_iter().collect())
             }
-        } else if input.fork().peek(syn::token::Bracket) {
+        } else if input.peek(syn::token::Bracket) {
             let content;
             let _ = syn::bracketed!(content in input);
             if content.is_empty() {
@@ -350,7 +350,7 @@ impl Type {
     /// interface exemple {
     ///     import signal int  s;
     ///     import event  bool e;
-    ///     
+    ///
     ///     signal int res = my_comp(s, e);
     ///
     ///     export res;
@@ -359,8 +359,10 @@ impl Type {
     pub fn convert(&self) -> Self {
         match self {
             Type::Signal(t) => t.as_ref().clone(),
-            Type::Event(t) => Type::SMEvent(t.clone()),
-            Type::Timeout(t) => Type::SMEvent(t.clone()),
+            Type::Event(t) => match t.as_ref() {
+                Type::Timeout(t) => Type::SMTimeout(t.clone()),
+                _ => Type::SMEvent(t.clone()),
+            },
             _ => unreachable!(),
         }
     }
