@@ -105,6 +105,8 @@ pub struct ArmWhenEvent {
     /// The pattern receiving the value of the event.
     pub pattern: Pattern,
     pub eq_token: Token![=],
+    /// The optional timeout.
+    pub timeout_token: Option<keyword::timeout>,
     /// The event to match.
     pub event: syn::Ident,
     /// The optional guard.
@@ -118,6 +120,13 @@ impl Parse for ArmWhenEvent {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let pattern = input.parse()?;
         let eq_token = input.parse()?;
+        let timeout_token = {
+            if input.fork().peek(keyword::timeout) {
+                Some(input.parse()?)
+            } else {
+                None
+            }
+        };
         let event = input.parse()?;
         let guard = {
             if input.fork().peek(Token![if]) {
@@ -141,6 +150,7 @@ impl Parse for ArmWhenEvent {
         Ok(ArmWhenEvent {
             pattern,
             eq_token,
+            timeout_token,
             event,
             guard,
             arrow_token,
