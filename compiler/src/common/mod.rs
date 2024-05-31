@@ -4,7 +4,7 @@
 ///
 /// ```rust
 /// # use compiler::prelude;
-/// prelude! { ast::Item };
+/// prelude! { ast::Item }
 /// pub type I = Item;
 /// ```
 ///
@@ -15,7 +15,7 @@
 macro_rules! prelude {
     { $($imports:tt)* } => {
         #[allow(unused_imports)]
-        use crate::{common::hash_map::*, $($imports)*};
+        use $crate::{common::hash_map::*, $($imports)*};
     }
 }
 
