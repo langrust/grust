@@ -20,12 +20,12 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
         FlowInstruction::UpdateContext(ident, flow_expression) => {
             let ident = Ident::new(&ident, Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
-            parse_quote! { context.#ident = #expression; }
+            parse_quote! { self.context.#ident = #expression; }
         }
         FlowInstruction::Send(ident, flow_expression) => {
             let channel: Ident = Ident::new((ident + "_channel").as_str(), Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
-            parse_quote!(#channel.send(#expression).await.unwrap();)
+            parse_quote!(self.#channel.send(#expression).await.unwrap();)
         }
         FlowInstruction::IfThrotle(receiver_name, source_name, delta, instruction) => {
             let receiver_ident = Ident::new(&receiver_name, Span::call_site());
@@ -34,7 +34,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let instruction = rust_ast_from_lir(*instruction);
 
             parse_quote! {
-                if (context.#receiver_ident - #source_ident) >= #delta {
+                if (self.context.#receiver_ident - #source_ident) >= #delta {
                     #instruction
                 }
             }
@@ -53,7 +53,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             not_onchange_tokens
                 .append_all(not_onchange_instructions.into_iter().map(rust_ast_from_lir));
             parse_quote! {
-                if context.#old_event_ident != #source_ident {
+                if self.context.#old_event_ident != #source_ident {
                     #onchange_tokens
                 } else {
                     #not_onchange_tokens
@@ -67,7 +67,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
             });
             parse_quote! {
-                #timer_ident.reset(Instant::now() + Duration::from_millis(#deadline));
+                self.#timer_ident.reset(Instant::now() + Duration::from_millis(#deadline));
             }
         }
         FlowInstruction::EventComponentCall(pattern, component_name, optional_event) => {
@@ -82,11 +82,11 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                     Ident::new(&component_event_elem, Span::call_site());
                 let flow_event_ident = Ident::new(&flow_event_name, Span::call_site());
                 parse_quote! {
-                    let #outputs = #component_ident.step(context.#input_getter(#component_event_enum::#component_event_elem_ident(#flow_event_ident)));
+                    let #outputs = self.#component_ident.step(self.context.#input_getter(#component_event_enum::#component_event_elem_ident(#flow_event_ident)));
                 }
             } else {
                 parse_quote! {
-                    let #outputs = #component_ident.step(context.#input_getter(#component_event_enum::NoEvent));
+                    let #outputs = self.#component_ident.step(self.context.#input_getter(#component_event_enum::NoEvent));
                 }
             }
         }
@@ -96,7 +96,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let input_getter =
                 Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
             parse_quote! {
-                let #outputs = #component_ident.step(context.#input_getter());
+                let #outputs = self.#component_ident.step(self.context.#input_getter());
             }
         }
     }

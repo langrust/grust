@@ -19,7 +19,7 @@ pub struct ServiceLoop {
 }
 
 /// A flow structure.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct InterfaceFlow {
     /// Path of the flow.
     pub path: syn::Path,
@@ -50,7 +50,7 @@ pub struct FlowHandler {
 }
 #[derive(Debug, PartialEq)]
 pub enum ArrivingFlow {
-    Channel(String),
+    Channel(String, Type),
     TimingEvent(String),
 }
 

@@ -318,10 +318,11 @@ impl Interface {
                 );
                 // determine weither this arriving flow is a timing event
                 let flow_name = symbol_table.get_name(flow_id).clone();
+                let flow_type = symbol_table.get_type(flow_id);
                 let arriving_flow = if symbol_table.is_time_flow(flow_id) {
                     ArrivingFlow::TimingEvent(flow_name)
                 } else {
-                    ArrivingFlow::Channel(flow_name)
+                    ArrivingFlow::Channel(flow_name, flow_type.clone())
                 };
                 FlowHandler {
                     arriving_flow,

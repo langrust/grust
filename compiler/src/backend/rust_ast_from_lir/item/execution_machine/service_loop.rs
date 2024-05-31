@@ -8,11 +8,10 @@ use crate::lir::item::execution_machine::service_loop::{
 };
 use proc_macro2::{Span, TokenStream};
 use quote::format_ident;
-use syn::punctuated::Punctuated;
 use syn::*;
 
 /// Transform LIR run-loop into an async function performing a loop over events.
-pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
+pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
     let ServiceLoop {
         service,
         components,
@@ -22,18 +21,77 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
         flows_handling,
     } = run_loop;
 
-    // inputs are channels's receivers
-    let mut inputs: Punctuated<FnArg, token::Comma> = Punctuated::new();
+    // result
+    let mut items = vec![];
+
+    // create service structure
+    let mut fields: Vec<Field> = vec![parse_quote! { context: Context }];
+    let mut field_values: Vec<FieldValue> = vec![parse_quote! { context }];
+    components.iter().for_each(|component_name| {
+        let component_state_struct =
+            format_ident!("{}", camel_case(&format!("{}State", component_name)));
+        let component_name = format_ident!("{}", component_name);
+        fields.push(parse_quote! { #component_name: #component_state_struct });
+        field_values.push(parse_quote! { #component_name });
+    });
+    timing_events
+        .iter()
+        .for_each(|TimingEvent { identifier, kind }| {
+            let ident = format_ident!("{}", identifier);
+            match kind {
+                TimingEventKind::Period(_) => {
+                    fields.push(parse_quote! { #ident: tokio::time::Interval });
+                    field_values.push(parse_quote! { #ident });
+                }
+                TimingEventKind::Timeout(_) => {
+                    fields.push(parse_quote! { #ident: tokio::time::Sleep });
+                    field_values.push(parse_quote! { #ident });
+                }
+            }
+        });
+    input_flows.clone().into_iter().for_each(
+        |InterfaceFlow {
+             identifier, r#type, ..
+         }| {
+            let name = Ident::new((identifier + "_channel").as_str(), Span::call_site());
+            let ty = type_rust_ast_from_lir(r#type);
+            fields.push(parse_quote! { #name: tokio::sync::mpsc::Receiver<#ty> });
+            field_values.push(parse_quote! { #name });
+        },
+    );
+    output_flows.clone().into_iter().for_each(
+        |InterfaceFlow {
+             identifier, r#type, ..
+         }| {
+            let name = Ident::new((identifier + "_channel").as_str(), Span::call_site());
+            let ty = type_rust_ast_from_lir(r#type);
+            fields.push(parse_quote! { #name: tokio::sync::mpsc::Sender<#ty> });
+            field_values.push(parse_quote! { #name });
+        },
+    );
+    let service_name = format_ident!("{}", camel_case(&format!("{service}Service")));
+    items.push(Item::Struct(parse_quote! {
+        pub struct #service_name {
+            #(#fields),*
+        }
+    }));
+
+    // implement the service with `new`, `run_loop` and branchs functions
+    let mut impl_items: Vec<ImplItem> = vec![];
+
+    // inputs for the `new` and `run_loop` functions
+    let mut inputs: Vec<FnArg> = vec![];
+    let mut input_values: Vec<Expr> = vec![];
     input_flows.into_iter().for_each(
         |InterfaceFlow {
              identifier, r#type, ..
          }| {
             let name = Ident::new((identifier + "_channel").as_str(), Span::call_site());
             let ty = type_rust_ast_from_lir(r#type);
-            inputs.push(parse_quote! { mut #name: tokio::sync::mpsc::Receiver<#ty> });
+            inputs.push(parse_quote! { #name: tokio::sync::mpsc::Receiver<#ty> });
+            input_values.push(parse_quote! { #name });
         },
     );
-    // outputs are channels's senders
     output_flows.into_iter().for_each(
         |InterfaceFlow {
              identifier, r#type, ..
@@ -41,11 +99,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
             let name = Ident::new((identifier + "_channel").as_str(), Span::call_site());
             let ty = type_rust_ast_from_lir(r#type);
             inputs.push(parse_quote! { #name: tokio::sync::mpsc::Sender<#ty> });
+            input_values.push(parse_quote! { #name });
         },
     );
-
-    // the async function is called 'run_{service}_loop'
-    let service_loop_name = Ident::new(&format!("run_{service}_loop"), Span::call_site());
 
     // create components states
     let components_states = components.into_iter().map(|component_name| {
@@ -53,11 +109,10 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
             format_ident!("{}", camel_case(&format!("{}State", component_name)));
         let component_name = format_ident!("{}", component_name);
         let state: Stmt = parse_quote! {
-            let mut #component_name = #component_state_struct::init();
+            let #component_name = #component_state_struct::init();
         };
         state
     });
-
     // create time flows
     let time_flows = timing_events
         .into_iter()
@@ -69,7 +124,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
                     lit: syn::Lit::Int(LitInt::new(&format!("{period}u64"), Span::call_site())),
                 });
                 let set_period: Stmt =  parse_quote! {
-                    let mut #ident = tokio::time::interval(std::time::Duration::from_millis(#period));
+                    let #ident = tokio::time::interval(std::time::Duration::from_millis(#period));
                 };
                 set_period
             }
@@ -79,49 +134,49 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
                     lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
                 });
                 let set_timeout: Stmt =  parse_quote! {
-                    let mut #ident = tokio::time::sleep_until(tokio::time::Interval::now() + std::time::Duration::from_millis(#deadline));
+                    let #ident = tokio::time::sleep_until(tokio::time::Interval::now() + std::time::Duration::from_millis(#deadline));
                 };
                 set_timeout
             }
         }});
-
     // instanciate input context
     let context: Stmt = parse_quote! {
-        let mut context = Context::init();
+        let context = Context::init();
     };
+    // `new` function
+    impl_items.push(parse_quote! {
+        fn new(#(#inputs),*) -> #service_name {
+            #(#components_states)*
+            #(#time_flows)*
+            #context
+            #service_name {
+                #(#field_values),*
+            }
+        }
+    });
 
-    // it performs a loop on the [tokio::select!] macro
+    // loop on the [tokio::select!] macro
     let loop_select: Stmt = {
-        let arms = flows_handling.into_iter().map(
+        let arms = flows_handling.iter().map(
             |FlowHandler {
                  arriving_flow,
-                 instructions,
+                 ..
              }|
              -> TokenStream {
                 match arriving_flow {
-                    ArrivingFlow::Channel(flow_name) => {
+                    ArrivingFlow::Channel(flow_name, _) => {
                         let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
-                        let channel: Ident =
-                            Ident::new((flow_name + "_channel").as_str(), Span::call_site());
-                        let instructions = instructions
-                            .into_iter()
-                            .map(instruction_flow_rust_ast_from_lir);
+                        let channel: Ident =format_ident!("{flow_name}_channel");
+                        let function_name: Ident = format_ident!("handle_{flow_name}");
                         parse_quote! {
-                            #ident = #channel.recv() => {
-                                let #ident = #ident.unwrap();
-                                #(#instructions)*
-                            }
+                            #ident = service.#channel.recv() => service.#function_name(#ident.unwrap()).await,
                         }
                     }
                     ArrivingFlow::TimingEvent(time_flow_name) => {
                         let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
-                        let instructions = instructions
-                            .into_iter()
-                            .map(instruction_flow_rust_ast_from_lir);
+                        let function_name: Ident = format_ident!("handle_{time_flow_name}");
                         parse_quote! {
-                            _ = #ident.tick() => {
-                                #(#instructions)*
-                            }
+                            _ = service.#ident.tick() => service.#function_name().await,
                         }
                     }
                 }
@@ -135,16 +190,54 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> syn::Item {
             }
         }
     };
-
-    // create the async function
-    let item_run_loop: Item = parse_quote! {
-        pub async fn #service_loop_name(#inputs) {
-            #(#components_states)*
-            #(#time_flows)*
-            #context
+    // `run_loop` function
+    impl_items.push(parse_quote! {
+        pub async fn run_loop(#(#inputs),*) {
+            let mut service = #service_name::new(#(#input_values),*);
             #loop_select
         }
-    };
+    });
 
-    item_run_loop
+    // flows handler functions
+    flows_handling.into_iter().for_each(
+        |FlowHandler {
+             arriving_flow,
+             instructions,
+         }| {
+            match arriving_flow {
+                ArrivingFlow::Channel(flow_name, flow_type) => {
+                    let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
+                    let function_name: Ident = format_ident!("handle_{flow_name}");
+                    let ty = type_rust_ast_from_lir(flow_type);
+                    let instructions = instructions
+                        .into_iter()
+                        .map(instruction_flow_rust_ast_from_lir);
+                    impl_items.push(parse_quote! {
+                        async fn #function_name(&mut self, #ident: #ty) {
+                            #(#instructions)*
+                        }
+                    })
+                }
+                ArrivingFlow::TimingEvent(time_flow_name) => {
+                    let function_name: Ident = format_ident!("handle_{time_flow_name}");
+                    let instructions = instructions
+                        .into_iter()
+                        .map(instruction_flow_rust_ast_from_lir);
+                    impl_items.push(parse_quote! {
+                        async fn #function_name(&mut self) {
+                            #(#instructions)*
+                        }
+                    })
+                }
+            }
+        },
+    );
+
+    items.push(parse_quote! {
+        impl #service_name {
+            #(#impl_items)*
+        }
+    });
+
+    items
 }
