@@ -105,7 +105,7 @@ impl ProcessSetSpeedState {
         let prev_v_set = self.mem;
         let (v_set, v_update) = match input.process_set_speed_event {
             ProcessSetSpeedEvent::set_speed(v) => {
-                let v_set = (threshold_set_speed)(v);
+                let v_set = threshold_set_speed(v);
                 let v_update = prev_v_set != v_set;
                 (v_set, v_update)
             }
@@ -136,7 +136,7 @@ pub struct SpeedLimiterOnState {
 impl SpeedLimiterOnState {
     pub fn init() -> SpeedLimiterOnState {
         SpeedLimiterOnState {
-            mem: (new_hysterisis)(0.0),
+            mem: new_hysterisis(0.0),
         }
     }
     pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool, bool) {
@@ -151,21 +151,21 @@ impl SpeedLimiterOnState {
             _ => {
                 let (on_state, hysterisis, state_update) = match input.prev_on_state {
                     SpeedLimiterOn::StandBy
-                        if (activation_condition)(input.vacuum_brake_state, input.v_set) =>
+                        if activation_condition(input.vacuum_brake_state, input.v_set) =>
                     {
                         let on_state = SpeedLimiterOn::Actif;
-                        let hysterisis = (new_hysterisis)(0.0);
+                        let hysterisis = new_hysterisis(0.0);
                         let state_update = true;
                         (on_state, hysterisis, state_update)
                     }
                     SpeedLimiterOn::OverrideVoluntary if input.speed <= input.v_set => {
                         let on_state = SpeedLimiterOn::Actif;
-                        let hysterisis = (new_hysterisis)(0.0);
+                        let hysterisis = new_hysterisis(0.0);
                         let state_update = true;
                         (on_state, hysterisis, state_update)
                     }
                     SpeedLimiterOn::Actif
-                        if (standby_condition)(input.vacuum_brake_state, input.v_set) =>
+                        if standby_condition(input.vacuum_brake_state, input.v_set) =>
                     {
                         let on_state = SpeedLimiterOn::StandBy;
                         let hysterisis = prev_hysterisis;
@@ -175,7 +175,7 @@ impl SpeedLimiterOnState {
                     SpeedLimiterOn::Actif => {
                         let on_state = input.prev_on_state;
                         let hysterisis =
-                            (update_hysterisis)(prev_hysterisis, input.speed, input.v_set);
+                            update_hysterisis(prev_hysterisis, input.speed, input.v_set);
                         let state_update = false;
                         (on_state, hysterisis, state_update)
                     }
@@ -189,7 +189,7 @@ impl SpeedLimiterOnState {
                 (on_state, hysterisis, state_update)
             }
         };
-        let in_reg = (in_regulation)(hysterisis);
+        let in_reg = in_regulation(hysterisis);
         self.mem = hysterisis;
         (on_state, in_reg, state_update)
     }

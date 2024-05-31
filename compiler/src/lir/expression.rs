@@ -283,6 +283,38 @@ impl Expression {
             expression: Box::new(expr),
         }
     }
+
+    /// True on expressions that require parens to be used as a function in a function call.
+    ///
+    /// More precisely assume a call like `<expr>(<params>)`, then this function returns `true` iff
+    /// `<expr>` should be wrapped in parens for the whole call to be legal rust.
+    pub fn as_function_requires_parens(&self) -> bool {
+        use Expression::*;
+        match self {
+            Literal { .. }
+            | Identifier { .. }
+            | MemoryAccess { .. }
+            | InputAccess { .. }
+            | Enumeration { .. }
+            | Array { .. }
+            | Tuple { .. }
+            | Block { .. }
+            | FieldAccess { .. } => false,
+            Unop { .. }
+            | Binop { .. }
+            | IfThenElse { .. }
+            | Structure { .. }
+            | FunctionCall { .. }
+            | NodeCall { .. }
+            | Lambda { .. }
+            | Match { .. }
+            | Map { .. }
+            | Fold { .. }
+            | Sort { .. }
+            | Zip { .. }
+            | IntoMethod { .. } => true,
+        }
+    }
 }
 
 /// LIR field access member.

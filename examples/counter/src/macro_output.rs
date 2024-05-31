@@ -15,7 +15,7 @@ impl CounterState {
     }
     pub fn step(&mut self, input: CounterInput) -> i64 {
         let inc = if input.tick { 1 } else { 0 };
-        let o = if input.res { 0 } else { (add)(self.mem, inc) };
+        let o = if input.res { 0 } else { add(self.mem, inc) };
         self.mem = o;
         o
     }

@@ -20,7 +20,7 @@ impl SumState {
         SumState { mem: 0 }
     }
     pub fn step(&mut self, input: SumInput) -> i64 {
-        let x = (add)(self.mem, input.i);
+        let x = add(self.mem, input.i);
         let o = if input.reset { 0 } else { x };
         self.mem = o;
         o
