@@ -100,13 +100,11 @@ impl Parse for Match {
     }
 }
 
-/// ArmWhenEvent for matching event.
-pub struct ArmWhenEvent {
+/// EventArmWhen for matching event.
+pub struct EventArmWhen {
     /// The pattern receiving the value of the event.
     pub pattern: Pattern,
     pub eq_token: Token![=],
-    /// The optional timeout.
-    pub timeout_token: Option<keyword::timeout>,
     /// The event to match.
     pub event: syn::Ident,
     /// The optional guard.
@@ -116,17 +114,10 @@ pub struct ArmWhenEvent {
     /// The equations.
     pub equations: Vec<Equation>,
 }
-impl Parse for ArmWhenEvent {
+impl Parse for EventArmWhen {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let pattern = input.parse()?;
         let eq_token = input.parse()?;
-        let timeout_token = {
-            if input.fork().peek(keyword::timeout) {
-                Some(input.parse()?)
-            } else {
-                None
-            }
-        };
         let event = input.parse()?;
         let guard = {
             if input.fork().peek(Token![if]) {
@@ -147,12 +138,46 @@ impl Parse for ArmWhenEvent {
             }
             equations
         };
-        Ok(ArmWhenEvent {
+        Ok(EventArmWhen {
             pattern,
             eq_token,
-            timeout_token,
             event,
             guard,
+            arrow_token,
+            brace_token,
+            equations,
+        })
+    }
+}
+
+/// EventArmWhen for matching event.
+pub struct TimeoutArmWhen {
+    /// The timeout.
+    pub timeout_token: keyword::timeout,
+    /// The event to match.
+    pub event: syn::Ident,
+    pub arrow_token: Token![=>],
+    pub brace_token: token::Brace,
+    /// The equations.
+    pub equations: Vec<Equation>,
+}
+impl Parse for TimeoutArmWhen {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let timeout_token = input.parse()?;
+        let event = input.parse()?;
+        let arrow_token = input.parse()?;
+        let content;
+        let brace_token = braced!(content in input);
+        let equations = {
+            let mut equations = Vec::new();
+            while !content.is_empty() {
+                equations.push(content.parse()?);
+            }
+            equations
+        };
+        Ok(TimeoutArmWhen {
+            timeout_token,
+            event,
             arrow_token,
             brace_token,
             equations,
@@ -192,15 +217,18 @@ impl Parse for DefaultArmWhen {
 
 /// ArmWhen for matching expression.
 pub enum ArmWhen {
-    ArmWhenEvent(ArmWhenEvent),
+    EventArmWhen(EventArmWhen),
+    TimeoutArmWhen(TimeoutArmWhen),
     Default(DefaultArmWhen),
 }
 impl Parse for ArmWhen {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(keyword::otherwise) {
             Ok(ArmWhen::Default(input.parse()?))
+        } else if input.peek(keyword::timeout) {
+            Ok(ArmWhen::TimeoutArmWhen(input.parse()?))
         } else {
-            Ok(ArmWhen::ArmWhenEvent(input.parse()?))
+            Ok(ArmWhen::EventArmWhen(input.parse()?))
         }
     }
 }
@@ -312,7 +340,7 @@ mod parse_equation {
                             .arms
                             .iter()
                             .map(|arm| match arm {
-                                super::ArmWhen::ArmWhenEvent(arm) => (
+                                super::ArmWhen::EventArmWhen(arm) => (
                                     Some((
                                         &arm.pattern,
                                         &arm.event,
@@ -320,6 +348,9 @@ mod parse_equation {
                                     )),
                                     &arm.equations,
                                 ),
+                                super::ArmWhen::TimeoutArmWhen(arm) => {
+                                    (Some((&Pattern::Default, &arm.event, None)), &arm.equations)
+                                }
                                 super::ArmWhen::Default(arm) => (None, &arm.equations),
                             })
                             .collect::<Vec<_>>(),
