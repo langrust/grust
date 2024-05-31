@@ -283,7 +283,8 @@ impl Interface {
                 // construct subgraph starting from the input flow
                 let subgraph = construct_subgraph_from_source(index, &graph);
                 // sort statement in dependency order
-                let ordered_statements = toposort(&subgraph, None).expect("should succeed");
+                let mut ordered_statements = toposort(&subgraph, None).expect("should succeed");
+                ordered_statements.reverse();
                 // if input flow is an event then store its identifier
                 let (encountered_events, defined_signals) =
                     match symbol_table.get_flow_kind(flow_id) {
