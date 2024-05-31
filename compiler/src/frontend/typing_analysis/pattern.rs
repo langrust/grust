@@ -141,18 +141,14 @@ impl Pattern {
                 Ok(())
             }
             PatternKind::TimeoutEvent {
-                event_element_id,
-                ref mut pattern,
-                ..
+                event_element_id, ..
             } => {
                 let typing = Type::ComponentEvent;
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
                 match symbol_table.get_type(event_element_id) {
                     Type::SMEvent(_) => todo!("error, event should be timeout"),
-                    Type::SMTimeout(expected_type) => {
-                        pattern.typing(&expected_type.clone(), symbol_table, errors)?
-                    }
+                    Type::SMTimeout(_) => (),
                     _ => unreachable!(),
                 };
 
