@@ -109,7 +109,7 @@ impl HIRFromAST for Equation {
                             return Err(TerminationError);
                         }
 
-                        let elements = reference
+                        let mut elements = reference
                             .iter()
                             .map(|(signal_name, signal_id)| {
                                 let signal_scope = symbol_table.get_scope(*signal_id);
@@ -141,13 +141,17 @@ impl HIRFromAST for Equation {
                             .into_iter()
                             .collect::<Result<Vec<_>, _>>()?;
 
-                        let expression = HIRStreamExpression {
-                            kind: StreamExpressionKind::Expression {
-                                expression: ExpressionKind::Tuple { elements },
-                            },
-                            typing: None,
-                            location: location.clone(),
-                            dependencies: Dependencies::new(),
+                        let expression = if elements.len() == 1 {
+                            elements.pop().unwrap()
+                        } else {
+                            HIRStreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Tuple { elements },
+                                },
+                                typing: None,
+                                location: location.clone(),
+                                dependencies: Dependencies::new(),
+                            }
                         };
                         Ok((pattern, guard, statements, expression))
                     })
@@ -300,7 +304,7 @@ impl HIRFromAST for Equation {
                             return Err(TerminationError);
                         }
 
-                        let elements = reference
+                        let mut elements = reference
                             .iter()
                             .map(|(signal_name, signal_id)| {
                                 let signal_scope = symbol_table.get_scope(*signal_id);
@@ -332,13 +336,17 @@ impl HIRFromAST for Equation {
                             .into_iter()
                             .collect::<Result<Vec<_>, _>>()?;
 
-                        let expression = HIRStreamExpression {
-                            kind: StreamExpressionKind::Expression {
-                                expression: ExpressionKind::Tuple { elements },
-                            },
-                            typing: None,
-                            location: location.clone(),
-                            dependencies: Dependencies::new(),
+                        let expression = if elements.len() == 1 {
+                            elements.pop().unwrap()
+                        } else {
+                            HIRStreamExpression {
+                                kind: StreamExpressionKind::Expression {
+                                    expression: ExpressionKind::Tuple { elements },
+                                },
+                                typing: None,
+                                location: location.clone(),
+                                dependencies: Dependencies::new(),
+                            }
                         };
                         Ok((pattern, guard, statements, expression))
                     })
