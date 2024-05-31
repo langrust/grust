@@ -3,7 +3,7 @@ use compiler::{ast::Ast, conf, dump_code, into_token_stream};
 #[test]
 fn should_compile_speed_limiter() {
     let ast: Ast = syn::parse_quote! {
-        #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/compiler/tests/macro_outputs/speed_limiter.rs"]
+        #![dump = "tests/macro_outputs/speed_limiter.rs"]
 
         // # Types
 

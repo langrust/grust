@@ -3,7 +3,7 @@ use compiler::{ast::Ast, conf, dump_code, into_token_stream};
 #[test]
 fn should_compile_counter() {
     let ast: Ast = syn::parse_quote! {
-        #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/compiler/tests/macro_outputs/counter.rs"]
+        #![dump = "tests/macro_outputs/counter.rs"]
 
         function add(x: int, y: int) -> int {
             let res: int = x + y;

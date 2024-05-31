@@ -100,7 +100,7 @@ pub fn exit_override_condition(
     v_set: f64,
     speed: f64,
 ) -> bool {
-    (on_condition)(activation_req) && kickdown != KickdownState::Activated && speed <= v_set
+    on_condition(activation_req) && kickdown != KickdownState::Activated && speed <= v_set
 }
 pub fn involuntary_override_condition(
     activation_req: ActivationResquest,
@@ -108,13 +108,13 @@ pub fn involuntary_override_condition(
     v_set: f64,
     speed: f64,
 ) -> bool {
-    (on_condition)(activation_req) && kickdown != KickdownState::Activated && speed > v_set
+    on_condition(activation_req) && kickdown != KickdownState::Activated && speed > v_set
 }
 pub fn voluntary_override_condition(
     activation_req: ActivationResquest,
     kickdown: KickdownState,
 ) -> bool {
-    (on_condition)(activation_req) && kickdown == KickdownState::Activated
+    on_condition(activation_req) && kickdown == KickdownState::Activated
 }
 pub fn standby_condition(
     activation_req: ActivationResquest,
@@ -136,7 +136,7 @@ impl ProcessSetSpeedState {
         ProcessSetSpeedState { mem: 0.0 }
     }
     pub fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
-        let v_set = (threshold_set_speed)(input.set_speed);
+        let v_set = threshold_set_speed(input.set_speed);
         let prev_v_set = self.mem;
         let v_update = prev_v_set != v_set;
         self.mem = v_set;
@@ -157,49 +157,49 @@ pub struct SpeedLimiterOnState {
 impl SpeedLimiterOnState {
     pub fn init() -> SpeedLimiterOnState {
         SpeedLimiterOnState {
-            mem: (new_hysterisis)(0.0),
+            mem: new_hysterisis(0.0),
         }
     }
     pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool) {
         let prev_hysterisis = self.mem;
         let (on_state, hysterisis) = match input.prev_on_state {
             SpeedLimiterOn::StandBy
-                if (activation_condition)(
+                if activation_condition(
                     input.activation_req,
                     input.vacuum_brake_state,
                     input.v_set,
                 ) =>
             {
-                let hysterisis = (new_hysterisis)(0.0);
+                let hysterisis = new_hysterisis(0.0);
                 let on_state = SpeedLimiterOn::Actif;
                 (on_state, hysterisis)
             }
             SpeedLimiterOn::OverrideVoluntary
-                if (exit_override_condition)(
+                if exit_override_condition(
                     input.activation_req,
                     input.kickdown,
                     input.v_set,
                     input.speed,
                 ) =>
             {
-                let hysterisis = (new_hysterisis)(0.0);
+                let hysterisis = new_hysterisis(0.0);
                 let on_state = SpeedLimiterOn::Actif;
                 (on_state, hysterisis)
             }
             SpeedLimiterOn::OverrideInvoluntary
-                if (exit_override_condition)(
+                if exit_override_condition(
                     input.activation_req,
                     input.kickdown,
                     input.v_set,
                     input.speed,
                 ) =>
             {
-                let hysterisis = (new_hysterisis)(0.0);
+                let hysterisis = new_hysterisis(0.0);
                 let on_state = SpeedLimiterOn::Actif;
                 (on_state, hysterisis)
             }
             SpeedLimiterOn::OverrideVoluntary
-                if (involuntary_override_condition)(
+                if involuntary_override_condition(
                     input.activation_req,
                     input.kickdown,
                     input.v_set,
@@ -211,14 +211,14 @@ impl SpeedLimiterOnState {
                 (on_state, hysterisis)
             }
             SpeedLimiterOn::Actif
-                if (voluntary_override_condition)(input.activation_req, input.kickdown) =>
+                if voluntary_override_condition(input.activation_req, input.kickdown) =>
             {
                 let hysterisis = prev_hysterisis;
                 let on_state = SpeedLimiterOn::OverrideVoluntary;
                 (on_state, hysterisis)
             }
             SpeedLimiterOn::Actif
-                if (standby_condition)(
+                if standby_condition(
                     input.activation_req,
                     input.vacuum_brake_state,
                     input.v_set,
@@ -229,7 +229,7 @@ impl SpeedLimiterOnState {
                 (on_state, hysterisis)
             }
             SpeedLimiterOn::Actif => {
-                let hysterisis = (update_hysterisis)(prev_hysterisis, input.speed, input.v_set);
+                let hysterisis = update_hysterisis(prev_hysterisis, input.speed, input.v_set);
                 let on_state = input.prev_on_state;
                 (on_state, hysterisis)
             }
@@ -239,7 +239,7 @@ impl SpeedLimiterOnState {
                 (on_state, hysterisis)
             }
         };
-        let in_reg = (in_regulation)(hysterisis);
+        let in_reg = in_regulation(hysterisis);
         self.mem = hysterisis;
         (on_state, in_reg)
     }
@@ -272,13 +272,13 @@ impl SpeedLimiterState {
         let prev_state = self.mem;
         let prev_on_state = self.mem_1;
         let (state, on_state, in_regulation) = match prev_state {
-            _ if (off_condition)(input.activation_req, input.vdc_disabled) => {
+            _ if off_condition(input.activation_req, input.vdc_disabled) => {
                 let state = SpeedLimiter::Off;
                 let on_state = prev_on_state;
                 let in_regulation = false;
                 (state, on_state, in_regulation)
             }
-            SpeedLimiter::Off if (on_condition)(input.activation_req) => {
+            SpeedLimiter::Off if on_condition(input.activation_req) => {
                 let (state, on_state, in_regulation) = match failure {
                     true => {
                         let state = SpeedLimiter::Fail;
@@ -335,7 +335,18 @@ impl SpeedLimiterState {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Context {
+    pub state_update: bool,
+    pub v_update: bool,
+    pub activation: ActivationResquest,
+    pub kickdown: KickdownState,
+    pub vdc: VdcState,
+    pub set_speed: f64,
+    pub v_set_aux: f64,
     pub speed: f64,
+    pub v_set: f64,
+    pub in_regulation_aux: bool,
+    pub vacuum_brake: VacuumBrakeState,
+    pub on_state: SpeedLimiterOn,
     pub state: SpeedLimiter,
     pub v_update: bool,
     pub set_speed: f64,

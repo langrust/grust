@@ -1,5 +1,6 @@
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum State {
+    #[default]
     On,
     Off,
 }
@@ -12,16 +13,16 @@ pub struct SumInput {
     pub i: i64,
 }
 pub struct SumState {
-    mem_: i64,
+    mem: i64,
 }
 impl SumState {
     pub fn init() -> SumState {
-        SumState { mem_: 0 }
+        SumState { mem: 0 }
     }
     pub fn step(&mut self, input: SumInput) -> i64 {
-        let x = (add)(self.mem_, input.i);
+        let x = add(self.mem, input.i);
         let o = if input.reset { 0 } else { x };
-        self.mem_ = o;
+        self.mem = o;
         o
     }
 }
@@ -30,24 +31,24 @@ pub struct AutomatonInput {
     pub i: i64,
 }
 pub struct AutomatonState {
-    mem_: State,
-    mem__1: i64,
+    mem: State,
+    mem_1: i64,
     sum: SumState,
 }
 impl AutomatonState {
     pub fn init() -> AutomatonState {
         AutomatonState {
-            mem_: State::Off,
-            mem__1: 0,
+            mem: State::Off,
+            mem_1: 0,
             sum: SumState::init(),
         }
     }
     pub fn step(&mut self, input: AutomatonInput) -> i64 {
-        let state = self.mem_;
+        let state = self.mem;
         let (next_state, x, o) = match state {
             State::Off => {
                 let next_state = if input.switch { State::On } else { state };
-                let x = self.mem__1;
+                let x = self.mem_1;
                 let o = 0;
                 (next_state, x, o)
             }
@@ -61,8 +62,15 @@ impl AutomatonState {
                 (next_state, x, o)
             }
         };
-        self.mem_ = next_state;
-        self.mem__1 = x;
+        self.mem = next_state;
+        self.mem_1 = x;
         o
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
+pub struct Context {}
+impl Context {
+    fn init() -> Context {
+        Default::default()
     }
 }
