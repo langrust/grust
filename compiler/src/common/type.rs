@@ -185,6 +185,73 @@ impl Parse for Type {
 }
 
 impl Type {
+    pub fn int() -> Self {
+        Self::Integer
+    }
+    pub fn float() -> Self {
+        Self::Float
+    }
+    pub fn bool() -> Self {
+        Self::Boolean
+    }
+    pub fn unit() -> Self {
+        Self::Unit
+    }
+    pub fn array(ty: Self, size: usize) -> Self {
+        Self::Array(Box::new(ty), size)
+    }
+    pub fn sm_event(ty: Self) -> Self {
+        Self::SMEvent(Box::new(ty))
+    }
+    pub fn sm_timeout(ty: Self) -> Self {
+        Self::SMTimeout(Box::new(ty))
+    }
+    pub fn component_event() -> Self {
+        Self::ComponentEvent
+    }
+    pub fn enumeration(name: impl Into<String>, id: usize) -> Self {
+        Self::Enumeration {
+            name: name.into(),
+            id,
+        }
+    }
+    pub fn structure(name: impl Into<String>, id: usize) -> Self {
+        Self::Structure {
+            name: name.into(),
+            id,
+        }
+    }
+    pub fn function(args: Vec<Self>, ret: Type) -> Self {
+        Self::Abstract(args, Box::new(ret))
+    }
+    pub fn tuple(tys: Vec<Self>) -> Self {
+        Self::Tuple(tys)
+    }
+    pub fn generic(name: impl Into<String>) -> Self {
+        Self::Generic(name.into())
+    }
+    pub fn signal(ty: Self) -> Self {
+        Self::Signal(Box::new(ty))
+    }
+    pub fn event(ty: Self) -> Self {
+        Self::Event(Box::new(ty))
+    }
+    pub fn timeout(ty: Self) -> Self {
+        Self::Timeout(Box::new(ty))
+    }
+    pub fn time() -> Self {
+        Self::Time
+    }
+    pub fn undef(name: impl Into<String>) -> Self {
+        Self::NotDefinedYet(name.into())
+    }
+    pub fn poly(f: fn(Vec<Self>, Location) -> Result<Self, Error>) -> Self {
+        Self::Polymorphism(f)
+    }
+    pub fn any() -> Self {
+        Self::Any
+    }
+
     /// Type application with errors handling.
     ///
     /// This function tries to apply the input type to the self type.
@@ -194,8 +261,7 @@ impl Type {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::common::{location::Location, r#type::Type};
-    ///
+    /// # use compiler::common::{location::Location, r#type::Type};
     /// let mut errors = vec![];
     ///
     /// let input_types = vec![Type::Integer];
@@ -270,9 +336,7 @@ impl Type {
     ///
     /// # Example
     /// ```rust
-    /// use grustine::common::{location::Location, r#type::Type};
-    /// use grustine::error::Error;
-    ///
+    /// # use compiler::{common::{location::Location, r#type::Type}, error::Error};
     /// let mut errors = vec![];
     ///
     /// let given_type = Type::Integer;
@@ -308,8 +372,7 @@ impl Type {
     /// # Example
     ///
     /// ```rust
-    /// use grustine::common::r#type::Type;
-    ///
+    /// # use compiler::common::r#type::Type;
     /// let abstraction_type = Type::Abstract(
     ///     vec![Type::Integer, Type::Integer],
     ///     Box::new(Type::Integer)
@@ -324,20 +387,25 @@ impl Type {
         }
     }
 
-    /// Convert from FRP types into StateMachine types.
+    /// Conversion from FRP types to StateMachine types.
     ///
-    /// Convertes `signal T` into `T`, `event T` into `T?` and `timeout T` into `T!`.
+    /// Converts `signal T` into `T`, `event T` into `T?` and `timeout T` into `T!`.
+    ///
+    /// **NB:** this function panics on any other input.
     ///
     /// ```rust
-    /// use grustine::common::r#type::Type;
-    ///
+    /// # use compiler::common::r#type::Type;
     /// let s_type = Type::Signal(Box::new(Type::Integer));
     /// let e_type = Type::Event(Box::new(Type::Boolean));
     /// let t_type = Type::Timeout(Box::new(Type::Float));
     ///
-    /// assert_eq!(s_type.convert(), Type::Integer);
-    /// assert_eq!(e_type.convert(), Type::SMEvent(Box::new(Type::Boolean)));
-    /// assert_eq!(t_type.convert(), Type::SMTimeout(Box::new(Type::Float)));
+    /// assert_eq!(s_type, Type::signal(Type::int()));
+    /// assert_eq!(e_type, Type::event(Type::bool()));
+    /// assert_eq!(t_type, Type::timeout(Type::float()));
+    ///
+    /// assert_eq!(s_type.convert(), Type::int());
+    /// assert_eq!(e_type.convert(), Type::sm_event(Type::bool()));
+    /// assert_eq!(t_type.convert(), Type::sm_timeout(Type::float()));
     /// ```
     ///
     /// # Example
@@ -365,10 +433,8 @@ impl Type {
     pub fn convert(&self) -> Self {
         match self {
             Type::Signal(t) => t.as_ref().clone(),
-            Type::Event(t) => match t.as_ref() {
-                Type::Timeout(t) => Type::SMTimeout(t.clone()),
-                _ => Type::SMEvent(t.clone()),
-            },
+            Type::Event(t) => Type::SMEvent(t.clone()),
+            Type::Timeout(t) => Type::SMTimeout(t.clone()),
             _ => unreachable!(),
         }
     }

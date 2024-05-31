@@ -44,10 +44,7 @@ impl Memory {
     /// Create empty memory.
     ///
     /// ```rust
-    /// use std::collections::HashMap;
-    ///
-    /// use grustine::hir::memory::Memory;
-    ///
+    /// # compiler::prelude! { hir::memory::Memory }
     /// let memory = Memory::new();
     /// assert!(memory.buffers.is_empty());
     /// assert!(memory.called_nodes.is_empty());

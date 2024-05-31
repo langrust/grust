@@ -5,8 +5,7 @@
 ///
 /// # Example
 /// ```
-/// use grustine::hir::once_cell::OnceCell;
-///
+/// # use compiler::hir::once_cell::OnceCell;
 /// let cell: OnceCell<String> = OnceCell::new();
 /// assert!(cell.get().is_none());
 ///
