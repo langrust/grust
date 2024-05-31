@@ -1,6 +1,5 @@
 use grust::grust;
 pub mod macro_output;
-pub mod output;
 
 grust! {
     #![dump = "examples/speed_limiter_events/src/macro_output.rs"]
