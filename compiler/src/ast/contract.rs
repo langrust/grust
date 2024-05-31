@@ -5,7 +5,7 @@ use crate::common::{
     operator::{BinaryOperator, UnaryOperator},
 };
 
-use super::keyword;
+use super::{expression::ParsePrec, keyword};
 
 #[derive(Debug, PartialEq, Clone)]
 /// Implication term.
@@ -60,11 +60,32 @@ pub struct Binary {
 }
 impl Binary {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        if forked.call(Term::parse).is_err() {
-            return false;
-        }
-        BinaryOperator::peek(&forked)
+        BinaryOperator::peek(input)
+    }
+    pub fn parse_term(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right = Box::new(Term::parse_term(input)?);
+        Ok(Binary { op, left, right })
+    }
+    pub fn parse_prec1(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right = Box::new(Term::parse_prec1(input)?);
+        Ok(Binary { op, left, right })
+    }
+    pub fn parse_prec2(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right = Box::new(Term::parse_prec2(input)?);
+        Ok(Binary { op, left, right })
+    }
+    pub fn parse_prec3(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right = Box::new(Term::parse_prec3(input)?);
+        Ok(Binary { op, left, right })
+    }
+    pub fn parse_prec4(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let op = input.parse()?;
+        let right = Box::new(Term::parse_prec4(input)?);
+        Ok(Binary { op, left, right })
     }
 }
 impl Parse for Binary {
@@ -85,17 +106,84 @@ pub enum Term {
     Constant(Constant),
     Identifier(syn::Ident),
 }
+impl ParsePrec for Term {
+    fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let term = if input.fork().call(Constant::parse).is_ok() {
+            Term::Constant(input.parse()?)
+        } else if Unary::peek(input) {
+            Term::Unary(input.parse()?)
+        } else if input.fork().call(syn::Ident::parse).is_ok() {
+            Term::Identifier(input.parse()?)
+        } else {
+            return Err(input.error("expected expression"));
+        };
+
+        Ok(term)
+    }
+
+    fn parse_prec1(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut term = Term::parse_term(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec1(input) {
+                term = Term::Binary(Binary::parse_term(Box::new(term), input)?);
+            } else {
+                break;
+            }
+        }
+        Ok(term)
+    }
+
+    fn parse_prec2(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut term = Term::parse_prec1(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec2(input) {
+                term = Term::Binary(Binary::parse_prec1(Box::new(term), input)?);
+            } else {
+                break;
+            }
+        }
+        Ok(term)
+    }
+
+    fn parse_prec3(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut term = Term::parse_prec2(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec3(input) {
+                term = Term::Binary(Binary::parse_prec2(Box::new(term), input)?);
+            } else {
+                break;
+            }
+        }
+        Ok(term)
+    }
+
+    fn parse_prec4(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut term = Term::parse_prec3(input)?;
+
+        loop {
+            if BinaryOperator::peek_prec4(input) {
+                term = Term::Binary(Binary::parse_prec3(Box::new(term), input)?);
+            } else {
+                break;
+            }
+        }
+
+        loop {
+            if input.peek(Token![=>]) {
+                term = Term::Implication(Implication::parse(input)?);
+            } else {
+                break;
+            }
+        }
+        Ok(term)
+    }
+}
 impl Parse for Term {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if Implication::peek(input) {
-            Ok(Term::Implication(input.parse()?))
-        } else if Unary::peek(input) {
-            Ok(Term::Unary(input.parse()?))
-        } else if Binary::peek(input) {
-            Ok(Term::Binary(input.parse()?))
-        } else {
-            Ok(Term::Constant(input.parse()?))
-        }
+        Term::parse_prec4(input)
     }
 }
 
