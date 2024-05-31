@@ -389,7 +389,7 @@ impl Type {
 
     /// Conversion from FRP types to StateMachine types.
     ///
-    /// Converts `signal T` into `T`, `event T` into `T?` and `timeout T` into `T!`.
+    /// Converts `signal T` into `T`, `event T` into `T?` and `event timeout T` into `T!`.
     ///
     /// **NB:** this function panics on any other input.
     ///
@@ -397,11 +397,11 @@ impl Type {
     /// # use compiler::common::r#type::Type;
     /// let s_type = Type::Signal(Box::new(Type::Integer));
     /// let e_type = Type::Event(Box::new(Type::Boolean));
-    /// let t_type = Type::Timeout(Box::new(Type::Float));
+    /// let t_type = Type::Event(Box::new(Type::Timeout(Box::new(Type::Float))));
     ///
     /// assert_eq!(s_type, Type::signal(Type::int()));
     /// assert_eq!(e_type, Type::event(Type::bool()));
-    /// assert_eq!(t_type, Type::timeout(Type::float()));
+    /// assert_eq!(t_type, Type::event(Type::timeout(Type::float())));
     ///
     /// assert_eq!(s_type.convert(), Type::int());
     /// assert_eq!(e_type.convert(), Type::sm_event(Type::bool()));
