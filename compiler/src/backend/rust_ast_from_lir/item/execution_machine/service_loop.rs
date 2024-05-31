@@ -43,10 +43,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                     fields.push(parse_quote! { #ident: tokio::time::Interval });
                     field_values.push(parse_quote! { #ident });
                 }
-                TimingEventKind::Timeout(_) => {
-                    fields.push(parse_quote! { #ident: tokio::time::Sleep });
-                    field_values.push(parse_quote! { #ident });
-                }
+                TimingEventKind::Timeout(_) => (),
             }
         });
     input_flows.clone().into_iter().for_each(
@@ -113,10 +110,10 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
         };
         state
     });
-    // create time flows
-    let time_flows = timing_events
-        .into_iter()
-        .map(|TimingEvent { identifier, kind }| {
+    // create periods time flows
+    let periods = timing_events
+        .iter()
+        .filter_map(|TimingEvent { identifier, kind }| {
             let ident = format_ident!("{}", identifier);match kind {
             TimingEventKind::Period(period) => {
                 let period = Expr::Lit(ExprLit {
@@ -126,18 +123,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                 let set_period: Stmt =  parse_quote! {
                     let #ident = tokio::time::interval(tokio::time::Duration::from_millis(#period));
                 };
-                set_period
+                Some(set_period)
             }
-            TimingEventKind::Timeout(deadline) => {
-                let deadline = Expr::Lit(ExprLit {
-                    attrs: vec![],
-                    lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
-                });
-                let set_timeout: Stmt =  parse_quote! {
-                    let #ident = tokio::time::sleep_until(tokio::time::Instant::now() + tokio::time::Duration::from_millis(#deadline));
-                };
-                set_timeout
-            }
+            TimingEventKind::Timeout(_) => None
         }});
     // instanciate input context
     let context: Stmt = parse_quote! {
@@ -147,7 +135,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
     impl_items.push(parse_quote! {
         fn new(#(#inputs),*) -> #service_name {
             #(#components_states)*
-            #(#time_flows)*
+            #(#periods)*
             #context
             #service_name {
                 #(#field_values),*
@@ -155,6 +143,24 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
         }
     });
 
+    // create deadline time flows
+    let deadlines = timing_events
+    .iter()
+    .filter_map(|TimingEvent { identifier, kind }| {
+        let ident = format_ident!("{}", identifier);match kind {
+        TimingEventKind::Period(_) => None,
+        TimingEventKind::Timeout(deadline) =>{
+            let deadline = Expr::Lit(ExprLit {
+                attrs: vec![],
+                lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
+            });
+            let set_timeout: Stmt =  parse_quote! {
+                let #ident = tokio::time::sleep_until(tokio::time::Instant::now() + tokio::time::Duration::from_millis(#deadline));
+            };
+            let pin_timeout = parse_quote! { tokio::pin!(#ident); };
+            Some(vec![set_timeout, pin_timeout])
+        }
+    }}).flatten();
     // loop on the [tokio::select!] macro
     let loop_select: Stmt = {
         let arms = flows_handling.iter().map(
@@ -183,10 +189,10 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                     ArrivingFlow::Period(time_flow_name) => {
                         let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
-                        let fn_args: Vec<Expr> = deadline_args.into_iter().map(|deadline_name| {
+                        let fn_args = deadline_args.into_iter().map(|deadline_name| -> Expr {
                             let deadline_ident: Ident = format_ident!("{deadline_name}");
                             parse_quote!(#deadline_ident.as_mut())
-                        }).collect();
+                        });
                         parse_quote! {
                             _ = service.#ident.tick() => service.#function_name(#(#fn_args),*).await,
                         }
@@ -194,10 +200,10 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                     ArrivingFlow::Deadline(time_flow_name) => {
                         let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
-                        let fn_args: Vec<Expr> = deadline_args.into_iter().map(|deadline_name| {
+                        let fn_args = deadline_args.into_iter().map(|deadline_name| -> Expr{
                             let deadline_ident: Ident = format_ident!("{deadline_name}");
                             parse_quote!(#deadline_ident.as_mut())
-                        }).collect();
+                        });
                         parse_quote! {
                             _ = #ident.as_mut() => service.#function_name(#(#fn_args),*).await,
                         }
@@ -217,6 +223,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
     impl_items.push(parse_quote! {
         pub async fn run_loop(#(#inputs),*) {
             let mut service = #service_name::new(#(#input_values),*);
+            #(#deadlines)*
             #loop_select
         }
     });
@@ -263,7 +270,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                         .into_iter()
                         .map(instruction_flow_rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        async fn #function_name(&mut self) {
+                        async fn #function_name(#(#fn_args),*) {
                             #(#instructions)*
                         }
                     })
