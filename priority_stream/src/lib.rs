@@ -5,97 +5,59 @@ use std::{
 };
 use tokio_stream::Stream;
 
-#[derive(Debug)]
-pub enum Union<T1, T2> {
-    E1(T1),
-    E2(T2),
-}
-
-pub fn prio_queue<S1, S2>(stream_1: S1, stream_2: S2) -> PrioQueue<S1, S2>
+pub fn prio_queue<S>(stream: S) -> PrioQueue<S>
 where
-    S1: Stream,
-    S2: Stream,
+    S: Stream,
 {
     PrioQueue {
-        stream_1,
-        end_1: false,
-        stream_2,
-        end_2: false,
+        stream,
+        end: false,
         queue: vec![],
     }
 }
 
 /// # Combine two streams into a priority queue.
 #[pin_project(project = PrioQueueProj)]
-pub struct PrioQueue<S1, S2>
+pub struct PrioQueue<S>
 where
-    S1: Stream,
-    S2: Stream,
+    S: Stream,
 {
     #[pin]
-    stream_1: S1,
-    end_1: bool,
-    #[pin]
-    stream_2: S2,
-    end_2: bool,
-    queue: Vec<Union<<S1 as Stream>::Item, <S2 as Stream>::Item>>,
+    stream: S,
+    end: bool,
+    queue: Vec<S::Item>,
 }
-impl<S1, S2> Stream for PrioQueue<S1, S2>
+impl<S> Stream for PrioQueue<S>
 where
-    S1: Stream,
-    S2: Stream,
+    S: Stream,
 {
-    type Item = Union<S1::Item, S2::Item>;
+    type Item = S::Item;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let mut project = self.project();
         let queue = project.queue;
 
-        // collect arriving values
-        if !*project.end_1 || !*project.end_2 {
+        if !*project.end {
             loop {
-                let queuing = if !*project.end_1 {
-                    match project.stream_1.as_mut().poll_next(cx) {
-                        // the first stream have a value
-                        Poll::Ready(Some(value)) => {
-                            queue.push(Union::E1(value));
-                            true
-                        }
-                        // the first stream is waiting
-                        Poll::Pending => false,
-                        // the first stream ended
-                        Poll::Ready(None) => {
-                            *project.end_1 = false;
-                            false
-                        }
+                // collect arriving values
+                match project.stream.as_mut().poll_next(cx) {
+                    // the first stream have a value
+                    Poll::Ready(Some(value)) => {
+                        queue.push(value);
                     }
-                } else {
-                    false
-                };
-                if !*project.end_2 {
-                    match project.stream_2.as_mut().poll_next(cx) {
-                        // the second stream have a value
-                        Poll::Ready(Some(value)) => queue.push(Union::E2(value)),
-                        // both streams are waiting
-                        Poll::Pending => {
-                            if !queuing {
-                                break;
-                            }
-                        }
-                        // the second stream ended
-                        Poll::Ready(None) => {
-                            *project.end_2 = false;
-                            if !queuing {
-                                break;
-                            }
-                        }
+                    // the first stream is waiting
+                    Poll::Pending => break,
+                    // the first stream ended
+                    Poll::Ready(None) => {
+                        *project.end = true;
+                        break;
                     }
                 }
             }
         }
 
         if queue.is_empty() {
-            if *project.end_1 && *project.end_2 {
+            if *project.end {
                 Poll::Ready(None)
             } else {
                 Poll::Pending
@@ -109,7 +71,7 @@ where
 #[cfg(test)]
 mod test {
     use colored::Colorize;
-    use std::time::Duration;
+    use std::{sync::Arc, time::Duration};
     use tokio::{
         join,
         sync::mpsc::channel,
@@ -119,24 +81,32 @@ mod test {
 
     use crate::prio_queue;
 
+    #[derive(Debug)]
+    pub enum Union<T1, T2> {
+        E1(T1),
+        E2(T2),
+    }
+
     #[tokio::test]
     async fn main() -> Result<(), String> {
-        let (tx_1, rx_1) = channel::<i64>(1);
-        let (tx_2, rx_2) = channel::<&str>(1);
-        let stream_1 = ReceiverStream::new(rx_1);
-        let stream_2 = ReceiverStream::new(rx_2);
-        let mut prio = prio_queue(stream_1, stream_2);
+        let (tx, rx) = channel::<Union<i64, &str>>(1);
+        let sender = Arc::new(tx);
+        let stream = ReceiverStream::new(rx);
+        let mut prio = prio_queue(stream);
 
-        let handler_1 = tokio::spawn(async move {
-            let end = Instant::now() + Duration::from_millis(100);
-            loop {
-                if Instant::now() > end {
-                    return Ok(());
-                }
-                println!("{}", format!("big sleep").green());
-                sleep(Duration::from_millis(10)).await;
-                if let Err(e) = tx_1.send(0).await {
-                    return Err(format!("output receiver dropped ({e})"));
+        let handler_1 = tokio::spawn({
+            let sender = sender.clone();
+            async move {
+                let end = Instant::now() + Duration::from_millis(100);
+                loop {
+                    if Instant::now() > end {
+                        return Ok(());
+                    }
+                    sleep(Duration::from_millis(10)).await;
+                    println!("{}", format!("E1(0)").green());
+                    if let Err(e) = sender.send(Union::E1(0)).await {
+                        return Err(format!("output receiver dropped ({e})"));
+                    }
                 }
             }
         });
@@ -147,15 +117,17 @@ mod test {
                 if Instant::now() > end {
                     return Ok(());
                 }
-                println!("{}", format!("small sleep").blue());
                 sleep(Duration::from_millis(5)).await;
-                if let Err(e) = tx_2.send("a").await {
+                println!("{}", format!("E2(\"a\")").blue());
+                if let Err(e) = sender.send(Union::E2("a")).await {
                     return Err(format!("output receiver dropped ({e})"));
                 }
-                if let Err(e) = tx_2.send("a").await {
+                println!("{}", format!("E2(\"a\")").blue());
+                if let Err(e) = sender.send(Union::E2("a")).await {
                     return Err(format!("output receiver dropped ({e})"));
                 }
-                if let Err(e) = tx_2.send("a").await {
+                println!("{}", format!("E2(\"a\")").blue());
+                if let Err(e) = sender.send(Union::E2("a")).await {
                     return Err(format!("output receiver dropped ({e})"));
                 }
             }
@@ -163,7 +135,6 @@ mod test {
 
         let handler_3 = tokio::spawn(async move {
             loop {
-                println!("{}", format!("tiny sleep").yellow());
                 sleep(Duration::from_millis(1)).await;
                 if let Some(x) = prio.next().await {
                     println!("{}", format!("{x:?}").red());
