@@ -259,7 +259,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn main() {
+    async fn should_give_elements_in_order() {
         let stream = tokio_stream::iter(vec![
             Union::E1(0),
             Union::E2("a"),
