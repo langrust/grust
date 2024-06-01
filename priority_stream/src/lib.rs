@@ -1,35 +1,59 @@
 use pin_project::pin_project;
 use std::{
+    cmp::Ordering,
     pin::Pin,
     task::{Context, Poll},
 };
 use tokio_stream::Stream;
 
-pub fn prio_stream<S>(stream: S) -> PrioStream<S>
+pub struct PrioQueue<T, F, const N: usize>
 where
-    S: Stream,
+    F: FnMut(&T, &T) -> Ordering,
 {
-    PrioStream {
-        stream,
-        end: false,
-        queue: vec![],
+    queue: [T; N],
+    order: F,
+    len: usize,
+}
+impl<T, F, const N: usize> PrioQueue<T, F, N>
+where
+    T: Default,
+    F: FnMut(&T, &T) -> Ordering,
+{
+    pub fn new(order: F) -> Self {
+        PrioQueue {
+            queue: array_init::array_init(|_| Default::default()),
+            order,
+            len: 0,
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+    pub fn push(&mut self, value: T) {
+        todo!()
+    }
+    pub fn pop(&mut self) -> Option<T> {
+        todo!()
     }
 }
 
 /// # Combine two streams into a priority queue.
 #[pin_project(project = PrioStreamProj)]
-pub struct PrioStream<S>
+pub struct PrioStream<S, F, const N: usize>
 where
     S: Stream,
+    F: FnMut(&S::Item, &S::Item) -> Ordering,
 {
     #[pin]
     stream: S,
     end: bool,
-    queue: Vec<S::Item>,
+    queue: PrioQueue<S::Item, F, N>,
 }
-impl<S> Stream for PrioStream<S>
+impl<S, F, const N: usize> Stream for PrioStream<S, F, N>
 where
     S: Stream,
+    S::Item: Default,
+    F: FnMut(&S::Item, &S::Item) -> Ordering,
 {
     type Item = S::Item;
 
@@ -68,10 +92,23 @@ where
     }
 }
 
+pub fn prio_stream<S, F, const N: usize>(stream: S, order: F) -> PrioStream<S, F, N>
+where
+    S: Stream,
+    S::Item: Default,
+    F: FnMut(&S::Item, &S::Item) -> Ordering,
+{
+    PrioStream {
+        stream,
+        end: false,
+        queue: PrioQueue::new(order),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use colored::Colorize;
-    use std::{sync::Arc, time::Duration};
+    use std::{cmp::Ordering, sync::Arc, time::Duration};
     use tokio::{
         join,
         sync::mpsc::channel,
@@ -81,10 +118,17 @@ mod test {
 
     use crate::prio_stream;
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub enum Union<T1, T2> {
+        #[default]
+        E0,
         E1(T1),
         E2(T2),
+    }
+    impl<T1, T2> Union<T1, T2> {
+        pub fn order(v1: &Self, v2: &Self) -> Ordering {
+            todo!()
+        }
     }
 
     #[tokio::test]
@@ -92,7 +136,7 @@ mod test {
         let (tx, rx) = channel::<Union<i64, &str>>(1);
         let sender = Arc::new(tx);
         let stream = ReceiverStream::new(rx);
-        let mut prio = prio_stream(stream);
+        let mut prio = prio_stream::<_, _, 10>(stream, Union::order);
 
         let handler_1 = tokio::spawn({
             let sender = sender.clone();
