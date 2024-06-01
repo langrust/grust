@@ -1,6 +1,7 @@
 use pin_project::pin_project;
 use std::{
     cmp::Ordering,
+    fmt::Debug,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -74,6 +75,21 @@ where
             let res = std::mem::take(&mut self.queue[self.len - 1]);
             self.len -= 1;
             Some(res)
+        }
+    }
+    pub fn println(&self)
+    where
+        T: Debug,
+    {
+        if self.is_empty() {
+            println!("[]")
+        } else {
+            print!("[");
+            self.queue
+                .iter()
+                .take(self.len - 1)
+                .for_each(|t| print!("{t:?}, "));
+            println!("{:?}]", self.queue[self.len - 1])
         }
     }
 }
