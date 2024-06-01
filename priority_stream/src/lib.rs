@@ -19,6 +19,7 @@ where
     T: Default,
     F: FnMut(&T, &T) -> Ordering,
 {
+    /// Create empty queue.
     pub fn new(order: F) -> Self {
         PrioQueue {
             queue: array_init::array_init(|_| Default::default()),
@@ -26,14 +27,29 @@ where
             len: 0,
         }
     }
+    /// Tell if the queue is empty.
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
+    /// Push a value in ordered queue.
     pub fn push(&mut self, value: T) {
-        todo!()
+        let index = self.len - 1;
+        while index > 0 {
+            match (self.order)(&value, &self.queue[index]) {
+                Ordering::Less => todo!("push value here"),
+                _ => todo!("continue"),
+            }
+        }
     }
+    /// Pop the smallest element of the queue.
     pub fn pop(&mut self) -> Option<T> {
-        todo!()
+        if self.is_empty() {
+            None
+        } else {
+            let res = std::mem::take(&mut self.queue[self.len - 1]);
+            self.len -= 1;
+            Some(res)
+        }
     }
 }
 
