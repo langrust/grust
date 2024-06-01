@@ -27,19 +27,44 @@ where
             len: 0,
         }
     }
+    /// Give the length of the queue.
+    pub fn len(&self) -> usize {
+        self.len
+    }
     /// Tell if the queue is empty.
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
+    /// Tell if the queue is full.
+    pub fn is_full(&self) -> bool {
+        self.len == N
+    }
     /// Push a value in ordered queue.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the queue is full.
     pub fn push(&mut self, value: T) {
-        let index = self.len - 1;
-        while index > 0 {
+        // safety: panics if pushed out of bound
+        if self.is_full() {
+            panic!("out of bound")
+        }
+
+        // puts the value at the right place
+        for index in 0..self.len {
             match (self.order)(&value, &self.queue[index]) {
-                Ordering::Less => todo!("push value here"),
-                _ => todo!("continue"),
+                Ordering::Greater | Ordering::Equal => {
+                    self.queue[index..=self.len].rotate_right(1);
+                    self.queue[index] = value;
+                    self.len += 1;
+                    return;
+                }
+                Ordering::Less => (),
             }
         }
+        // if not inserted, then put it at the end
+        self.queue[self.len] = value;
+        self.len += 1;
     }
     /// Pop the smallest element of the queue.
     pub fn pop(&mut self) -> Option<T> {
@@ -50,6 +75,76 @@ where
             self.len -= 1;
             Some(res)
         }
+    }
+}
+impl<T, F, const N: usize> Into<Vec<T>> for PrioQueue<T, F, N>
+where
+    T: Default,
+    F: FnMut(&T, &T) -> Ordering,
+{
+    fn into(self) -> Vec<T> {
+        let v = self.queue.into_iter().take(self.len).collect::<Vec<_>>();
+        debug_assert!(v.len() == self.len);
+        v
+    }
+}
+
+#[cfg(test)]
+mod prio_queue {
+    use std::cmp::Ordering;
+
+    use crate::PrioQueue;
+
+    fn order(a: &i32, b: &i32) -> Ordering {
+        if a < b {
+            Ordering::Less
+        } else if a == b {
+            Ordering::Equal
+        } else {
+            Ordering::Greater
+        }
+    }
+
+    #[test]
+    fn new_should_create_empty_queue() {
+        let prio_queue = PrioQueue::<_, _, 10>::new(order);
+        assert!(prio_queue.is_empty())
+    }
+
+    #[test]
+    fn push_should_insert_elements_according_to_order() {
+        let mut prio_queue = PrioQueue::<_, _, 10>::new(order);
+        prio_queue.push(3);
+        prio_queue.push(4);
+        prio_queue.push(-1);
+        prio_queue.push(2);
+        prio_queue.push(5);
+        let v: Vec<_> = prio_queue.into();
+        assert_eq!(v, vec![5, 4, 3, 2, -1])
+    }
+
+    #[test]
+    fn pop_should_remove_the_smallest_element() {
+        let mut prio_queue = PrioQueue::<_, _, 10>::new(order);
+        prio_queue.push(3);
+        prio_queue.push(4);
+        prio_queue.push(2);
+        prio_queue.push(5);
+        assert!(prio_queue.len() == 4);
+        assert_eq!(prio_queue.pop(), Some(2));
+        assert!(prio_queue.len() == 3);
+        prio_queue.push(-1);
+        assert!(prio_queue.len() == 4);
+        assert_eq!(prio_queue.pop(), Some(-1));
+        assert!(prio_queue.len() == 3);
+        assert_eq!(prio_queue.pop(), Some(3));
+        assert!(prio_queue.len() == 2);
+        assert_eq!(prio_queue.pop(), Some(4));
+        assert!(prio_queue.len() == 1);
+        assert_eq!(prio_queue.pop(), Some(5));
+        assert!(prio_queue.len() == 0);
+        assert_eq!(prio_queue.pop(), None);
+        assert!(prio_queue.len() == 0);
     }
 }
 
