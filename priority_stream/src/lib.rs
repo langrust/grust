@@ -234,7 +234,8 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::cmp::Ordering;
+    use std::{cmp::Ordering, time::Duration};
+    use tokio::time::sleep;
     use tokio_stream::StreamExt;
 
     use crate::prio_stream;
@@ -284,5 +285,39 @@ mod test {
                 Union::E2("a"),
             ]
         )
+    }
+
+    #[tokio::test]
+    async fn should_give_elements_in_order_with_delay() {
+        let stream = tokio_stream::iter(vec![
+            Union::E1(0),
+            Union::E2("a"),
+            Union::E1(0),
+            Union::E2("a"),
+            Union::E1(0),
+            Union::E2("a"),
+        ])
+        .chain(
+            tokio_stream::iter(vec![
+                Union::E1(0),
+                Union::E2("a"),
+                Union::E1(0),
+                Union::E2("a"),
+                Union::E1(0),
+                Union::E2("a"),
+            ])
+            .then(|e| async move {
+                sleep(Duration::from_millis(5)).await;
+                e
+            }),
+        );
+        tokio::pin!(stream);
+        let mut prio = prio_stream::<_, _, 10>(stream, Union::order);
+        let mut v = vec![];
+        while let Some(value) = prio.next().await {
+            v.push(value);
+            sleep(Duration::from_millis(1)).await;
+        }
+        println!("{v:?}")
     }
 }
