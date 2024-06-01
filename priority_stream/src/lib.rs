@@ -179,7 +179,7 @@ where
 impl<S, F, const N: usize> Stream for PrioStream<S, F, N>
 where
     S: Stream,
-    S::Item: Default,
+    S::Item: Default + Debug,
     F: FnMut(&S::Item, &S::Item) -> Ordering,
 {
     type Item = S::Item;
@@ -234,18 +234,12 @@ where
 
 #[cfg(test)]
 mod test {
-    use colored::Colorize;
-    use std::{cmp::Ordering, sync::Arc, time::Duration};
-    use tokio::{
-        join,
-        sync::mpsc::channel,
-        time::{sleep, Instant},
-    };
-    use tokio_stream::{wrappers::ReceiverStream, StreamExt};
+    use std::cmp::Ordering;
+    use tokio_stream::StreamExt;
 
     use crate::prio_stream;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, PartialEq)]
     pub enum Union<T1, T2> {
         #[default]
         E0,
@@ -254,71 +248,41 @@ mod test {
     }
     impl<T1, T2> Union<T1, T2> {
         pub fn order(v1: &Self, v2: &Self) -> Ordering {
-            todo!()
+            match (v1, v2) {
+                (Union::E0, Union::E0)
+                | (Union::E1(_), Union::E1(_))
+                | (Union::E2(_), Union::E2(_)) => Ordering::Equal,
+                (Union::E0, _) | (Union::E1(_), Union::E2(_)) => Ordering::Less,
+                (_, Union::E0) | (Union::E2(_), Union::E1(_)) => Ordering::Greater,
+            }
         }
     }
 
     #[tokio::test]
-    async fn main() -> Result<(), String> {
-        let (tx, rx) = channel::<Union<i64, &str>>(1);
-        let sender = Arc::new(tx);
-        let stream = ReceiverStream::new(rx);
+    async fn main() {
+        let stream = tokio_stream::iter(vec![
+            Union::E1(0),
+            Union::E2("a"),
+            Union::E1(0),
+            Union::E2("a"),
+            Union::E1(0),
+            Union::E2("a"),
+        ]);
         let mut prio = prio_stream::<_, _, 10>(stream, Union::order);
-
-        let handler_1 = tokio::spawn({
-            let sender = sender.clone();
-            async move {
-                let end = Instant::now() + Duration::from_millis(100);
-                loop {
-                    if Instant::now() > end {
-                        return Ok(());
-                    }
-                    sleep(Duration::from_millis(10)).await;
-                    println!("{}", format!("E1(0)").green());
-                    if let Err(e) = sender.send(Union::E1(0)).await {
-                        return Err(format!("output receiver dropped ({e})"));
-                    }
-                }
-            }
-        });
-
-        let handler_2 = tokio::spawn(async move {
-            let end = Instant::now() + Duration::from_millis(100);
-            loop {
-                if Instant::now() > end {
-                    return Ok(());
-                }
-                sleep(Duration::from_millis(5)).await;
-                println!("{}", format!("E2(\"a\")").blue());
-                if let Err(e) = sender.send(Union::E2("a")).await {
-                    return Err(format!("output receiver dropped ({e})"));
-                }
-                println!("{}", format!("E2(\"a\")").blue());
-                if let Err(e) = sender.send(Union::E2("a")).await {
-                    return Err(format!("output receiver dropped ({e})"));
-                }
-                println!("{}", format!("E2(\"a\")").blue());
-                if let Err(e) = sender.send(Union::E2("a")).await {
-                    return Err(format!("output receiver dropped ({e})"));
-                }
-            }
-        });
-
-        let handler_3 = tokio::spawn(async move {
-            loop {
-                sleep(Duration::from_millis(1)).await;
-                if let Some(x) = prio.next().await {
-                    println!("{}", format!("{x:?}").red());
-                } else {
-                    return;
-                }
-            }
-        });
-
-        let (res_1, res_2, res_3) = join!(handler_1, handler_2, handler_3);
-        res_1.unwrap()?;
-        res_2.unwrap()?;
-        res_3.unwrap();
-        Ok(())
+        let mut v = vec![];
+        while let Some(value) = prio.next().await {
+            v.push(value)
+        }
+        assert_eq!(
+            v,
+            vec![
+                Union::E1(0),
+                Union::E1(0),
+                Union::E1(0),
+                Union::E2("a"),
+                Union::E2("a"),
+                Union::E2("a"),
+            ]
+        )
     }
 }
