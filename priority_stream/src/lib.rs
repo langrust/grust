@@ -5,11 +5,11 @@ use std::{
 };
 use tokio_stream::Stream;
 
-pub fn prio_queue<S>(stream: S) -> PrioQueue<S>
+pub fn prio_stream<S>(stream: S) -> PrioStream<S>
 where
     S: Stream,
 {
-    PrioQueue {
+    PrioStream {
         stream,
         end: false,
         queue: vec![],
@@ -17,8 +17,8 @@ where
 }
 
 /// # Combine two streams into a priority queue.
-#[pin_project(project = PrioQueueProj)]
-pub struct PrioQueue<S>
+#[pin_project(project = PrioStreamProj)]
+pub struct PrioStream<S>
 where
     S: Stream,
 {
@@ -27,7 +27,7 @@ where
     end: bool,
     queue: Vec<S::Item>,
 }
-impl<S> Stream for PrioQueue<S>
+impl<S> Stream for PrioStream<S>
 where
     S: Stream,
 {
@@ -79,7 +79,7 @@ mod test {
     };
     use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
-    use crate::prio_queue;
+    use crate::prio_stream;
 
     #[derive(Debug)]
     pub enum Union<T1, T2> {
@@ -92,7 +92,7 @@ mod test {
         let (tx, rx) = channel::<Union<i64, &str>>(1);
         let sender = Arc::new(tx);
         let stream = ReceiverStream::new(rx);
-        let mut prio = prio_queue(stream);
+        let mut prio = prio_stream(stream);
 
         let handler_1 = tokio::spawn({
             let sender = sender.clone();
