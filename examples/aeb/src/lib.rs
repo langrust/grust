@@ -35,17 +35,9 @@ grust! {
         // requires { 0. <= speed && speed < 50. } // urban limit
         //ensures { pedest? => state != NoBrake } // safety
     {
-        when {
-            d = pedest => {
-                state = brakes(d, speed);
-            },
-            timeout pedest => {
-                state = Braking::NoBrake;
-            },
-            otherwise => {
-                state = Braking::NoBrake fby state;
-            }
-        }
+        state = when d = pedest? then brakes(d, speed)
+                timeout Braking::NoBrake otherwise previous_state;
+        let previous_state: Braking = Braking::NoBrake fby state;
     }
 
     import signal car::speed_km_h                   : float;
