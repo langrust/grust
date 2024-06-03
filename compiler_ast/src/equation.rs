@@ -121,6 +121,7 @@ pub struct EventArmWhen {
     pub eq_token: Token![=],
     /// The event to match.
     pub event: syn::Ident,
+    pub question_token: Token![?],
     /// The optional guard.
     pub guard: Option<(Token![if], stream::Expr)>,
     pub arrow_token: Token![=>],
@@ -134,6 +135,7 @@ mk_new! { impl EventArmWhen =>
         pattern: Pattern,
         eq_token: Token![=],
         event: syn::Ident,
+        question_token: Token![?],
         guard: Option<(Token![if], stream::Expr)>,
         arrow_token: Token![=>],
         brace_token: token::Brace,
@@ -146,6 +148,7 @@ impl Parse for EventArmWhen {
         let pat = input.parse()?;
         let eq = input.parse()?;
         let event = input.parse()?;
+        let question_token = input.parse()?;
         let guard = {
             if input.fork().peek(Token![if]) {
                 let token = input.parse()?;
@@ -166,7 +169,14 @@ impl Parse for EventArmWhen {
             equations
         };
         Ok(EventArmWhen::new(
-            pat, eq, event, guard, arrow, brace, equations,
+            pat,
+            eq,
+            event,
+            question_token,
+            guard,
+            arrow,
+            brace,
+            equations,
         ))
     }
 }

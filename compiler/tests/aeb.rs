@@ -38,7 +38,7 @@ fn should_compile_aeb() {
             //ensures { pedest? => state != NoBrake } // safety
         {
             when {
-                d = pedest => {
+                d = pedest? => {
                     state = brakes(d, speed);
                 },
                 timeout pedest => {
