@@ -1,10 +1,8 @@
-use crate::hir::{
-    contract::Contract, expression::ExpressionKind, identifier_creator::IdentifierCreator,
-    memory::Memory, stream_expression::StreamExpression,
-};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    hir::{ Contract, IdentifierCreator, Memory, stream },
+}
 
-impl ExpressionKind<StreamExpression> {
+impl hir::expr::Kind<stream::Expr> {
     /// Increment memory with expression.
     ///
     /// Store buffer for followed by expressions and unitary node applications.
@@ -27,14 +25,14 @@ impl ExpressionKind<StreamExpression> {
         symbol_table: &mut SymbolTable,
     ) {
         match self {
-            ExpressionKind::Constant { .. }
-            | ExpressionKind::Identifier { .. }
-            | ExpressionKind::Abstraction { .. }
-            | ExpressionKind::Enumeration { .. } => (),
-            ExpressionKind::Unop { expression, .. } => {
+            Self::Constant { .. }
+            | Self::Identifier { .. }
+            | Self::Abstraction { .. }
+            | Self::Enumeration { .. } => (),
+            Self::Unop { expression, .. } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            ExpressionKind::Binop {
+            Self::Binop {
                 left_expression,
                 right_expression,
                 ..
@@ -42,7 +40,7 @@ impl ExpressionKind<StreamExpression> {
                 left_expression.memorize(identifier_creator, memory, contract, symbol_table);
                 right_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            ExpressionKind::IfThenElse {
+            Self::IfThenElse {
                 expression,
                 true_expression,
                 false_expression,
@@ -51,7 +49,7 @@ impl ExpressionKind<StreamExpression> {
                 true_expression.memorize(identifier_creator, memory, contract, symbol_table);
                 false_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            ExpressionKind::Application {
+            Self::Application {
                 function_expression,
                 inputs,
             } => {
@@ -60,17 +58,15 @@ impl ExpressionKind<StreamExpression> {
                     expression.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
-            ExpressionKind::Structure { fields, .. } => {
-                fields.iter_mut().for_each(|(_, expression)| {
-                    expression.memorize(identifier_creator, memory, contract, symbol_table)
-                })
-            }
-            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
+            Self::Structure { fields, .. } => fields.iter_mut().for_each(|(_, expression)| {
+                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            }),
+            Self::Array { elements } | Self::Tuple { elements } => {
                 elements.iter_mut().for_each(|expression| {
                     expression.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
-            ExpressionKind::Match { expression, arms } => {
+            Self::Match { expression, arms } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table);
                 arms.iter_mut().for_each(|(_, option, block, expression)| {
                     option.as_mut().map(|expression| {
@@ -82,7 +78,7 @@ impl ExpressionKind<StreamExpression> {
                     expression.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
-            ExpressionKind::When {
+            Self::When {
                 option,
                 present,
                 present_body,
@@ -100,20 +96,20 @@ impl ExpressionKind<StreamExpression> {
                     statement.memorize(identifier_creator, memory, contract, symbol_table)
                 });
             }
-            ExpressionKind::FieldAccess { expression, .. } => {
+            Self::FieldAccess { expression, .. } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            ExpressionKind::TupleElementAccess { expression, .. } => {
+            Self::TupleElementAccess { expression, .. } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            ExpressionKind::Map {
+            Self::Map {
                 expression,
                 function_expression,
             } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table);
                 function_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            ExpressionKind::Fold {
+            Self::Fold {
                 expression,
                 initialization_expression,
                 function_expression,
@@ -127,14 +123,14 @@ impl ExpressionKind<StreamExpression> {
                 );
                 function_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            ExpressionKind::Sort {
+            Self::Sort {
                 expression,
                 function_expression,
             } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table);
                 function_expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            ExpressionKind::Zip { arrays } => arrays.iter_mut().for_each(|expression| {
+            Self::Zip { arrays } => arrays.iter_mut().for_each(|expression| {
                 expression.memorize(identifier_creator, memory, contract, symbol_table)
             }),
         }

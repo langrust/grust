@@ -1,17 +1,12 @@
-use crate::common::r#type::Type;
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::stream_expression::{StreamExpression, StreamExpressionKind};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::TypeAnalysis,
+    hir::stream,
+}
 
-impl TypeAnalysis for StreamExpression {
-    fn typing(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+impl TypeAnalysis for stream::Expr {
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
-            StreamExpressionKind::FollowedBy {
+            stream::Kind::FollowedBy {
                 ref mut constant,
                 ref mut expression,
             } => {
@@ -28,7 +23,7 @@ impl TypeAnalysis for StreamExpression {
                 Ok(())
             }
 
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::NodeApplication {
                 called_node_id,
                 ref mut inputs,
                 ..
@@ -43,9 +38,7 @@ impl TypeAnalysis for StreamExpression {
                         let expected_type = symbol_table.get_type(*id);
                         input_type.eq_check(expected_type, self.location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), TerminationError>>>()
-                    .into_iter()
-                    .collect::<Result<(), TerminationError>>()?;
+                    .collect::<TRes<()>>()?;
 
                 // get the called signal type
                 let node_application_type = {
@@ -57,7 +50,7 @@ impl TypeAnalysis for StreamExpression {
                     if outputs_types.len() == 1 {
                         outputs_types.pop().unwrap()
                     } else {
-                        Type::Tuple(outputs_types)
+                        Typ::Tuple(outputs_types)
                     }
                 };
 
@@ -65,22 +58,22 @@ impl TypeAnalysis for StreamExpression {
                 Ok(())
             }
 
-            StreamExpressionKind::Expression { ref mut expression } => {
+            stream::Kind::Expression { ref mut expression } => {
                 self.typing = Some(expression.typing(&self.location, symbol_table, errors)?);
                 Ok(())
             }
-            StreamExpressionKind::Event { .. } => {
-                self.typing = Some(Type::ComponentEvent);
+            stream::Kind::Event { .. } => {
+                self.typing = Some(Typ::ComponentEvent);
                 Ok(())
             }
         }
     }
 
-    fn get_type(&self) -> Option<&Type> {
+    fn get_type(&self) -> Option<&Typ> {
         self.typing.as_ref()
     }
 
-    fn get_type_mut(&mut self) -> Option<&mut Type> {
+    fn get_type_mut(&mut self) -> Option<&mut Typ> {
         self.typing.as_mut()
     }
 }

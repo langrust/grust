@@ -1,4 +1,6 @@
-use crate::lir::item::execution_machine::ExecutionMachine;
+prelude! {
+    lir::item::execution_machine::ExecutionMachine,
+}
 
 use flows_context::rust_ast_from_lir as flows_context_rust_ast_from_lir;
 use service_loop::rust_ast_from_lir as service_loop_rust_ast_from_lir;

@@ -1,29 +1,28 @@
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::{SymbolKind, SymbolTable};
+prelude! {
+    frontend::TypeAnalysis,
+    ast::symbol::SymbolKind,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the field access expression.
+    /// Add a [Typ] to the field access expression.
     pub fn typing_field_access(
         &mut self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
-            ExpressionKind::FieldAccess {
+            hir::expr::Kind::FieldAccess {
                 ref mut expression,
                 ref field,
             } => {
                 expression.typing(symbol_table, errors)?;
 
                 match expression.get_type().unwrap() {
-                    Type::Structure { name, id } => {
+                    Typ::Structure { name, id } => {
                         let symbol = symbol_table
                             .get_symbol(*id)
                             .expect("there should be a symbole");

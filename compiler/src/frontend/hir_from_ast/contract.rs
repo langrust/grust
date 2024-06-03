@@ -1,7 +1,7 @@
-use crate::ast::contract::{ClauseKind, Contract};
-use crate::error::{Error, TerminationError};
-use crate::hir::contract::Contract as HIRContract;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::contract::{ClauseKind, Contract},
+    hir::contract::Contract as HIRContract,
+}
 
 use super::HIRFromAST;
 
@@ -12,7 +12,7 @@ impl HIRFromAST for Contract {
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Self::HIR, TerminationError> {
+    ) -> TRes<Self::HIR> {
         let (requires, ensures, invariant) = self.clauses.into_iter().fold(
             (vec![], vec![], vec![]),
             |(mut requires, mut ensures, mut invariant), clause| {
@@ -33,20 +33,19 @@ impl HIRFromAST for Contract {
         );
 
         Ok(HIRContract {
-            requires: requires.into_iter().collect::<Result<Vec<_>, _>>()?,
-            ensures: ensures.into_iter().collect::<Result<Vec<_>, _>>()?,
-            invariant: invariant.into_iter().collect::<Result<Vec<_>, _>>()?,
+            requires: requires.into_iter().collect::<TRes<Vec<_>>>()?,
+            ensures: ensures.into_iter().collect::<TRes<Vec<_>>>()?,
+            invariant: invariant.into_iter().collect::<TRes<Vec<_>>>()?,
         })
     }
 }
 
 mod term {
-    use crate::ast::contract::{Binary, Implication, Term, Unary};
-    use crate::common::location::Location;
-    use crate::common::operator::{BinaryOperator, UnaryOperator};
-    use crate::error::{Error, TerminationError};
-    use crate::hir::contract::{Term as HIRTerm, TermKind};
-    use crate::symbol_table::SymbolTable;
+    prelude! {
+        ast::contract::{Binary, Implication, Term, Unary},
+        operator::{BinaryOperator, UnaryOperator},
+        hir::contract::{Term as HIRTerm, TermKind},
+    }
 
     use super::HIRFromAST;
 
@@ -57,7 +56,7 @@ mod term {
             self,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> Result<Self::HIR, TerminationError> {
+        ) -> TRes<Self::HIR> {
             let location = Location::default();
             match self {
                 Term::Implication(Implication { left, right, .. }) => {

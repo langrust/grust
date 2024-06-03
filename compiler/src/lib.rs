@@ -8,33 +8,23 @@
 
 extern crate proc_macro;
 
-use ast::Ast;
-use backend::rust_ast_from_lir::project::rust_ast_from_lir;
-use frontend::{hir_from_ast::HIRFromAST, typing_analysis::TypeAnalysis};
-use lir::project::Project;
 pub use proc_macro::TokenStream;
-use quote::TokenStreamExt;
-use symbol_table::SymbolTable;
 
-/// GRust common domain or application module.
 #[macro_use]
-pub mod common;
+pub mod prelude;
 
-/// GRust AST module.
-pub mod ast;
-/// GRust backend transformations.
+prelude! {
+    backend::rust_ast_from_lir::project::rust_ast_from_lir,
+    frontend::{hir_from_ast::HIRFromAST, typing_analysis::TypeAnalysis},
+    lir::Project,
+    quote::TokenStreamExt,
+}
+
+mod ext;
+
 pub mod backend;
-pub mod conf;
-/// GRust error handler module.
-pub mod error;
-/// GRust frontend transformations.
 pub mod frontend;
-/// GRust HIR module.
 pub mod hir;
-/// GRust LIR module.
-pub mod lir;
-/// GRust symbol table module.
-pub mod symbol_table;
 
 /// Compiles input GRust tokens into output Rust tokens.
 pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
@@ -47,7 +37,7 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 }
 
 /// Creates RustAST from GRust file.
-pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
+pub fn into_token_stream(ast: Ast) -> macro2::TokenStream {
     let mut symbol_table = SymbolTable::new();
     let mut errors = vec![];
     macro_rules! present_errors {
@@ -89,13 +79,13 @@ pub fn into_token_stream(ast: Ast) -> proc_macro2::TokenStream {
     let lir: Project = hir.lir_from_hir(symbol_table);
     let rust = rust_ast_from_lir(lir);
 
-    let mut tokens = proc_macro2::TokenStream::new();
+    let mut tokens = macro2::TokenStream::new();
     tokens.append_all(rust);
     tokens
 }
 
 /// Writes the generated code at the given filepath.
-pub fn dump_code(path_name: &str, tokens: &proc_macro2::TokenStream) {
+pub fn dump_code(path_name: &str, tokens: &macro2::TokenStream) {
     use std::{fs::OpenOptions, io::Write, path::Path, process::Command};
     let path = Path::new(path_name);
 

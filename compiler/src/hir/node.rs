@@ -1,6 +1,9 @@
-use crate::common::{label::Label, location::Location};
-use crate::hir::{contract::Contract, statement::Statement, stream_expression::StreamExpression};
-use petgraph::graphmap::DiGraphMap;
+//! HIR [Node](crate::hir::node::Node) module.
+
+prelude! {
+    graph::*,
+    hir::{Contract, Stmt, stream},
+}
 
 use super::memory::Memory;
 
@@ -10,7 +13,7 @@ pub struct Node {
     /// Node identifier.
     pub id: usize,
     /// Node's statements.
-    pub statements: Vec<Statement<StreamExpression>>,
+    pub statements: Vec<Stmt<stream::Expr>>,
     /// Node's contract.
     pub contract: Contract,
     /// Node location.

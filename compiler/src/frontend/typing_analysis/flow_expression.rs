@@ -1,34 +1,28 @@
-use crate::common::location::Location;
-use crate::common::r#type::Type;
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::flow_expression::{FlowExpression, FlowExpressionKind};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::TypeAnalysis,
+    hir::flow,
+}
 
-impl TypeAnalysis for FlowExpression {
-    fn typing(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+impl TypeAnalysis for flow::Expr {
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let location = Location::default();
 
         match &mut self.kind {
-            FlowExpressionKind::Ident { id } => {
+            flow::Kind::Ident { id } => {
                 let typing = symbol_table.get_type(*id);
                 self.typing = Some(typing.clone());
                 Ok(())
             }
-            FlowExpressionKind::Sample {
+            flow::Kind::Sample {
                 flow_expression, ..
             } => {
                 flow_expression.typing(symbol_table, errors)?;
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
                 match typing {
-                    Type::Event(typing) => {
+                    Typ::Event(typing) => {
                         // set typing
-                        self.typing = Some(Type::Signal(typing.clone()));
+                        self.typing = Some(Typ::signal((**typing).clone()));
                         Ok(())
                     }
                     given_type => {
@@ -41,16 +35,16 @@ impl TypeAnalysis for FlowExpression {
                     }
                 }
             }
-            FlowExpressionKind::Scan {
+            flow::Kind::Scan {
                 flow_expression, ..
             } => {
                 flow_expression.typing(symbol_table, errors)?;
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
                 match typing {
-                    Type::Signal(typing) => {
+                    Typ::Signal(typing) => {
                         // set typing
-                        self.typing = Some(Type::Event(typing.clone()));
+                        self.typing = Some(Typ::event((**typing).clone()));
                         Ok(())
                     }
                     given_type => {
@@ -63,15 +57,15 @@ impl TypeAnalysis for FlowExpression {
                     }
                 }
             }
-            FlowExpressionKind::Timeout {
+            flow::Kind::Timeout {
                 flow_expression, ..
             } => {
                 flow_expression.typing(symbol_table, errors)?;
                 // get expression type
                 match flow_expression.get_type().unwrap() {
-                    Type::Event(typing) => {
+                    Typ::Event(typing) => {
                         // set typing
-                        self.typing = Some(Type::Event(Box::new(Type::Timeout(typing.clone()))));
+                        self.typing = Some(Typ::event(Typ::timeout((**typing).clone())));
                         Ok(())
                     }
                     given_type => {
@@ -84,7 +78,7 @@ impl TypeAnalysis for FlowExpression {
                     }
                 }
             }
-            FlowExpressionKind::Throtle {
+            flow::Kind::Throtle {
                 flow_expression,
                 delta,
             } => {
@@ -92,11 +86,11 @@ impl TypeAnalysis for FlowExpression {
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
                 match typing {
-                    Type::Signal(typing) => {
+                    Typ::Signal(typing) => {
                         let delta_ty = delta.get_type();
                         typing.eq_check(&delta_ty, location, errors)?;
                         // set typing
-                        self.typing = Some(Type::Signal(typing.clone()));
+                        self.typing = Some(Typ::signal((**typing).clone()));
                         Ok(())
                     }
                     given_type => {
@@ -109,14 +103,14 @@ impl TypeAnalysis for FlowExpression {
                     }
                 }
             }
-            FlowExpressionKind::OnChange { flow_expression } => {
+            flow::Kind::OnChange { flow_expression } => {
                 flow_expression.typing(symbol_table, errors)?;
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
                 match typing {
-                    Type::Signal(typing) => {
+                    Typ::Signal(typing) => {
                         // set typing
-                        self.typing = Some(Type::Event(typing.clone()));
+                        self.typing = Some(Typ::event((**typing).clone()));
                         Ok(())
                     }
                     given_type => {
@@ -129,7 +123,7 @@ impl TypeAnalysis for FlowExpression {
                     }
                 }
             }
-            FlowExpressionKind::ComponentCall {
+            flow::Kind::ComponentCall {
                 ref component_id,
                 ref mut inputs,
                 ..
@@ -144,18 +138,16 @@ impl TypeAnalysis for FlowExpression {
                         let expected_type = symbol_table.get_type(*id);
                         input_type.eq_check(expected_type, self.location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), TerminationError>>>()
-                    .into_iter()
-                    .collect::<Result<(), TerminationError>>()?;
+                    .collect::<TRes<()>>()?;
 
                 // get the outputs types of the called component
                 let mut outputs_types = symbol_table
                     .get_node_outputs(*component_id)
                     .iter()
                     .map(|(_, output_id)| match symbol_table.get_type(*output_id) {
-                        Type::SMTimeout(ty) => Type::Event(Box::new(Type::Timeout(ty.clone()))),
-                        Type::SMEvent(ty) => Type::Event(ty.clone()),
-                        ty => Type::Signal(Box::new(ty.clone())),
+                        Typ::SMTimeout(ty) => Typ::event(Typ::timeout((**ty).clone())),
+                        Typ::SMEvent(ty) => Typ::event((**ty).clone()),
+                        ty => Typ::signal(ty.clone()),
                     })
                     .collect::<Vec<_>>();
 
@@ -163,7 +155,7 @@ impl TypeAnalysis for FlowExpression {
                 let node_application_type = if outputs_types.len() == 1 {
                     outputs_types.pop().unwrap()
                 } else {
-                    Type::Tuple(outputs_types)
+                    Typ::tuple(outputs_types)
                 };
 
                 self.typing = Some(node_application_type);
@@ -172,11 +164,11 @@ impl TypeAnalysis for FlowExpression {
         }
     }
 
-    fn get_type(&self) -> Option<&Type> {
+    fn get_type(&self) -> Option<&Typ> {
         self.typing.as_ref()
     }
 
-    fn get_type_mut(&mut self) -> Option<&mut Type> {
+    fn get_type_mut(&mut self) -> Option<&mut Typ> {
         self.typing.as_mut()
     }
 }

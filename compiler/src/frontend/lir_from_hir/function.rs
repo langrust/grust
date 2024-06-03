@@ -1,14 +1,9 @@
 use itertools::Itertools;
 
-use crate::{
-    hir::{function::Function, identifier_creator::IdentifierCreator},
-    lir::{
-        block::Block,
-        item::{function::Function as LIRFunction, import::Import},
-        statement::Statement,
-    },
-    symbol_table::SymbolTable,
-};
+prelude! {
+    hir::{Function, IdentifierCreator},
+    lir::{ Block, item::{Function as LIRFunction, Import}, Stmt },
+}
 
 use super::LIRFromHIR;
 
@@ -86,7 +81,7 @@ impl LIRFromHIR for Function {
             .into_iter()
             .map(|statement| statement.lir_from_hir(symbol_table))
             .collect::<Vec<_>>();
-        statements.push(Statement::ExpressionLast {
+        statements.push(Stmt::ExprLast {
             expression: returned.lir_from_hir(symbol_table),
         });
 

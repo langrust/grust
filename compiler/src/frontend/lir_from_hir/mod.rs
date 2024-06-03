@@ -1,4 +1,6 @@
-use crate::{common::r#type::Type, lir::item::import::Import, symbol_table::SymbolTable};
+prelude! {
+    lir::item::import::Import,
+}
 
 /// LIR file construction from HIR project.
 pub mod file;
@@ -30,9 +32,6 @@ pub mod memory;
 /// LIR pattern construction from HIR pattern.
 pub mod pattern;
 
-/// LIR type construction from HIR type.
-pub mod r#type;
-
 pub mod interface;
 
 /// HIR transformation into LIR.
@@ -44,7 +43,7 @@ pub trait LIRFromHIR {
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR;
 
     /// Get type from LIR.
-    fn get_type(&self) -> Option<&Type> {
+    fn get_type(&self) -> Option<&Typ> {
         None
     }
 

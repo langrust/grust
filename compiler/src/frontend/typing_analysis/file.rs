@@ -1,14 +1,10 @@
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::file::File;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+    hir::File,
+}
 
 impl TypeAnalysis for File {
-    fn typing(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let File {
             functions,
             nodes,
@@ -20,25 +16,19 @@ impl TypeAnalysis for File {
         nodes
             .iter_mut()
             .map(|node| node.typing(symbol_table, errors))
-            .collect::<Vec<Result<(), TerminationError>>>()
-            .into_iter()
-            .collect::<Result<(), TerminationError>>()?;
+            .collect::<TRes<()>>()?;
 
         // typing functions
         functions
             .iter_mut()
             .map(|function| function.typing(symbol_table, errors))
-            .collect::<Vec<Result<(), TerminationError>>>()
-            .into_iter()
-            .collect::<Result<(), TerminationError>>()?;
+            .collect::<TRes<()>>()?;
 
         // typing interface
         interface
             .statements
             .iter_mut()
             .map(|statement| statement.typing(symbol_table, errors))
-            .collect::<Vec<Result<(), TerminationError>>>()
-            .into_iter()
-            .collect::<Result<(), TerminationError>>()
+            .collect::<TRes<()>>()
     }
 }

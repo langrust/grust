@@ -1,5 +1,10 @@
+//! HIR [Dependencies](crate::hir::dependencies::Dependencies) module.
+
+prelude! { just
+    graph::Label,
+}
+
 use super::once_cell::OnceCell;
-use crate::common::label::Label;
 
 /// Dependencies structure.
 ///
@@ -12,7 +17,7 @@ impl Dependencies {
     /// Create unset dependencies.
     ///
     /// ```rust
-    /// # use compiler::hir::dependencies::Dependencies;
+    /// # use compiler::hir::Dependencies;
     /// let dependencies = Dependencies::new();
     /// assert!(dependencies.get().is_none());
     /// ```
@@ -23,7 +28,7 @@ impl Dependencies {
     /// Create dependencies according to input.
     ///
     /// ```rust
-    /// # use compiler::{common::label::Label, hir::dependencies::Dependencies};
+    /// # compiler::prelude! {graph::Label, hir::Dependencies}
     /// let v = vec![(1, Label::Weight(0))];
     /// let dependencies = Dependencies::from(v.clone());
     /// assert_eq!(*dependencies.get().unwrap(), v);
@@ -40,7 +45,7 @@ impl Dependencies {
     /// setting the dependencies.
     ///
     /// ```rust
-    /// # use compiler::{common::label::Label, hir::dependencies::Dependencies};
+    /// # compiler::prelude! { graph::Label, hir::Dependencies}
     /// let v = vec![(1, Label::Weight(0))];
     /// let dependencies = Dependencies::new();
     /// dependencies.set(v.clone());
@@ -58,7 +63,7 @@ impl Dependencies {
     /// Return `None` otherwise.
     ///
     /// ```rust
-    /// # use compiler::{common::label::Label, hir::dependencies::Dependencies};
+    /// # compiler::prelude! {graph::Label, hir::Dependencies}
     /// let v = vec![(1, Label::Weight(0))];
     /// let dependencies = Dependencies::new();
     /// dependencies.set(v.clone());

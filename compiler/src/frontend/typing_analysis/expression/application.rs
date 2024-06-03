@@ -1,24 +1,22 @@
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the application expression.
+    /// Add a [Typ] to the application expression.
     pub fn typing_application(
         &mut self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
             // an application expression type is the result of the application
             // of the inputs types to the abstraction/function type
-            ExpressionKind::Application {
+            hir::expr::Kind::Application {
                 ref mut function_expression,
                 ref mut inputs,
             } => {
@@ -26,9 +24,7 @@ where
                 inputs
                     .iter_mut()
                     .map(|input| input.typing(symbol_table, errors))
-                    .collect::<Vec<Result<(), TerminationError>>>()
-                    .into_iter()
-                    .collect::<Result<(), TerminationError>>()?;
+                    .collect::<TRes<()>>()?;
 
                 let input_types = inputs
                     .iter()

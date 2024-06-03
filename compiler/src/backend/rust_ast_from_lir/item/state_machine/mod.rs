@@ -1,9 +1,13 @@
+use std::collections::BTreeSet;
+
+prelude! { just
+    syn::*,
+    lir::item::state_machine::StateMachine,
+}
+
 use self::event::rust_ast_from_lir as event_rust_ast_from_lir;
 use self::input::rust_ast_from_lir as input_rust_ast_from_lir;
 use self::state::rust_ast_from_lir as state_rust_ast_from_lir;
-use crate::lir::item::state_machine::StateMachine;
-use std::collections::BTreeSet;
-use syn::*;
 
 /// RustAST event structure construction from LIR event.
 pub mod event;

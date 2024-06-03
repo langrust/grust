@@ -1,6 +1,5 @@
 prelude! {
-    hir::file::File,
-    symbol_table::SymbolTable,
+    hir::File,
 }
 
 impl File {

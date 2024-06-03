@@ -1,19 +1,14 @@
-use crate::common::location::Location;
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::interface::{
-    FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement,
-};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+    hir::interface::{
+        FlowDeclaration, FlowExport, FlowImport, FlowInstantiation, FlowStatement,
+    },
+}
 
 impl TypeAnalysis for FlowStatement {
     // precondition: identifiers associated with statement is already typed
     // postcondition: expression associated with statement is typed and checked
-    fn typing(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match self {
             FlowStatement::Declaration(FlowDeclaration {
                 pattern,
@@ -25,7 +20,7 @@ impl TypeAnalysis for FlowStatement {
                 let expression_type = flow_expression.get_type().unwrap();
                 expression_type.eq_check(expected_type, Location::default(), errors)
             }
-            FlowStatement::Instanciation(FlowInstanciation {
+            FlowStatement::Instantiation(FlowInstantiation {
                 pattern,
                 flow_expression,
                 ..

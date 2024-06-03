@@ -1,9 +1,7 @@
-use petgraph::graphmap::{DiGraphMap, GraphMap};
-
 prelude! {
-    common::label::Label,
-    hir::{identifier_creator::IdentifierCreator, node::Node},
-    symbol_table::SymbolTable,
+    petgraph::graphmap::GraphMap,
+    graph::*,
+    hir::{IdentifierCreator, Node},
 }
 
 impl Node {

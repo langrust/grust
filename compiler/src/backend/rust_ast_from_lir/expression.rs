@@ -1,18 +1,21 @@
+use std::collections::BTreeSet;
+
+prelude! {
+    macro2::{Span, TokenStream},
+    quote::format_ident,
+    syn::*,
+    operator::*,
+    lir::FieldIdentifier,
+}
+
 use super::{
     block::rust_ast_from_lir as block_rust_ast_from_lir,
     pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
     r#type::rust_ast_from_lir as type_rust_ast_from_lir,
 };
-use crate::common::constant::Constant;
-use crate::common::operator::{BinaryOperator, UnaryOperator};
-use crate::lir::expression::{Expression, FieldIdentifier};
-use proc_macro2::{Span, TokenStream};
-use quote::format_ident;
-use std::collections::BTreeSet;
-use syn::*;
 
 /// Transforms binary operator into syn's binary operator.
-pub fn binary_to_syn(op: BinaryOperator) -> syn::BinOp {
+pub fn binary_to_syn(op: BinaryOperator) -> BinOp {
     match op {
         BinaryOperator::Mul => BinOp::Mul(Default::default()),
         BinaryOperator::Div => BinOp::Div(Default::default()),
@@ -61,22 +64,22 @@ pub fn constant_to_syn(literal: Constant) -> Expr {
 }
 
 /// Transform LIR expression into RustAST expression.
-pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) -> Expr {
+pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -> Expr {
     match expression {
-        Expression::Literal { literal } => constant_to_syn(literal),
-        Expression::Identifier { identifier } => {
+        lir::Expr::Literal { literal } => constant_to_syn(literal),
+        lir::Expr::Identifier { identifier } => {
             let identifier = Ident::new(&identifier, Span::call_site());
             parse_quote! { #identifier }
         }
-        Expression::MemoryAccess { identifier } => {
+        lir::Expr::MemoryAccess { identifier } => {
             let identifier = Ident::new(&identifier, Span::call_site());
             parse_quote!( self . #identifier )
         }
-        Expression::InputAccess { identifier } => {
+        lir::Expr::InputAccess { identifier } => {
             let identifier = format_ident!("{identifier}");
             parse_quote!( input . #identifier )
         }
-        Expression::Structure { name, fields } => {
+        lir::Expr::Structure { name, fields } => {
             let fields: Vec<FieldValue> = fields
                 .into_iter()
                 .map(|(name, expression)| {
@@ -88,27 +91,27 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
             let name = format_ident!("{name}");
             parse_quote!(#name { #(#fields),* })
         }
-        Expression::Enumeration { name, element } => {
+        lir::Expr::Enumeration { name, element } => {
             syn::parse_str(&format!("{name}::{element}")).unwrap()
         }
-        Expression::Array { elements } => {
+        lir::Expr::Array { elements } => {
             let elements = elements
                 .into_iter()
                 .map(|expression| rust_ast_from_lir(expression, crates));
             parse_quote! { [#(#elements),*]}
         }
-        Expression::Tuple { elements } => {
+        lir::Expr::Tuple { elements } => {
             let elements = elements
                 .into_iter()
                 .map(|expression| rust_ast_from_lir(expression, crates));
             parse_quote! { (#(#elements),*)}
         }
-        Expression::Block { block } => Expr::Block(ExprBlock {
+        lir::Expr::Block { block } => Expr::Block(ExprBlock {
             attrs: vec![],
             label: None,
             block: block_rust_ast_from_lir(block, crates),
         }),
-        Expression::FunctionCall {
+        lir::Expr::FunctionCall {
             function,
             arguments,
         } => {
@@ -123,12 +126,12 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 parse_quote! { #function(#(#arguments),*) }
             }
         }
-        Expression::Unop { op, expression } => {
+        lir::Expr::Unop { op, expression } => {
             let op = unary_to_syn(op);
             let expr = rust_ast_from_lir(*expression, crates);
             Expr::Unary(parse_quote! { #op #expr})
         }
-        Expression::Binop {
+        lir::Expr::Binop {
             op,
             left_expression,
             right_expression,
@@ -138,7 +141,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
             let binary = binary_to_syn(op);
             Expr::Binary(parse_quote! { #left #binary #right })
         }
-        Expression::NodeCall {
+        lir::Expr::NodeCall {
             node_identifier,
             input_name,
             input_fields,
@@ -159,7 +162,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
 
             Expr::MethodCall(parse_quote! { #receiver . step (#argument) })
         }
-        Expression::FieldAccess { expression, field } => {
+        lir::Expr::FieldAccess { expression, field } => {
             let expression = rust_ast_from_lir(*expression, crates);
             match field {
                 FieldIdentifier::Named(name) => {
@@ -172,7 +175,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 }
             }
         }
-        Expression::Lambda {
+        lir::Expr::Lambda {
             inputs,
             output,
             body,
@@ -184,7 +187,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                         attrs: Vec::new(),
                         by_ref: None,
                         mutability: None,
-                        ident: syn::Ident::new(&identifier, proc_macro2::Span::call_site()),
+                        ident: syn::Ident::new(&identifier, Span::call_site()),
                         subpat: None,
                     });
                     let pattern = syn::Pat::Type(syn::PatType {
@@ -201,7 +204,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 asyncness: None,
                 movability: None,
                 capture: Some(syn::token::Move {
-                    span: proc_macro2::Span::call_site(),
+                    span: Span::call_site(),
                 }),
                 or1_token: Default::default(),
                 inputs,
@@ -216,7 +219,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
             };
             syn::Expr::Closure(closure)
         }
-        Expression::IfThenElse {
+        lir::Expr::IfThenElse {
             condition,
             then_branch,
             else_branch,
@@ -234,7 +237,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 else_branch,
             })
         }
-        Expression::Match { matched, arms } => {
+        lir::Expr::Match { matched, arms } => {
             let arms = arms
                 .into_iter()
                 .map(|(pattern, guard, body)| syn::Arm {
@@ -256,9 +259,9 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 arms,
             })
         }
-        Expression::Map { mapped, function } => {
+        lir::Expr::Map { mapped, function } => {
             let receiver = Box::new(rust_ast_from_lir(*mapped, crates));
-            let method = syn::Ident::new("map", proc_macro2::Span::call_site());
+            let method = syn::Ident::new("map", Span::call_site());
             let arguments = vec![rust_ast_from_lir(*function, crates)];
             let method_call = syn::ExprMethodCall {
                 attrs: Vec::new(),
@@ -271,7 +274,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
             };
             syn::Expr::MethodCall(method_call)
         }
-        Expression::Fold {
+        lir::Expr::Fold {
             folded,
             initialization,
             function,
@@ -280,13 +283,13 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
             receiver: Box::new(syn::Expr::MethodCall(syn::ExprMethodCall {
                 attrs: Vec::new(),
                 receiver: Box::new(rust_ast_from_lir(*folded, crates)),
-                method: syn::Ident::new("into_iter", proc_macro2::Span::call_site()),
+                method: syn::Ident::new("into_iter", Span::call_site()),
                 turbofish: None,
                 paren_token: Default::default(),
                 args: syn::punctuated::Punctuated::new(),
                 dot_token: Default::default(),
             })),
-            method: syn::Ident::new("fold", proc_macro2::Span::call_site()),
+            method: syn::Ident::new("fold", Span::call_site()),
             turbofish: None,
             paren_token: Default::default(),
             args: syn::punctuated::Punctuated::from_iter(vec![
@@ -295,7 +298,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
             ]),
             dot_token: Default::default(),
         }),
-        Expression::Sort { sorted, function } => {
+        lir::Expr::Sort { sorted, function } => {
             let token_sorted = rust_ast_from_lir(*sorted, crates);
             let token_function = rust_ast_from_lir(*function, crates);
 
@@ -311,8 +314,8 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 x
             })
         }
-        Expression::Zip { arrays } => {
-            crates.insert(String::from("itertools = \"0.12.1\""));
+        lir::Expr::Zip { arrays } => {
+            crates.insert("itertools = \"0.12.1\"".into());
             let arguments = arrays
                 .into_iter()
                 .map(|expression| rust_ast_from_lir(expression, crates));
@@ -332,7 +335,7 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
                 std::array::from_fn(|_| iter.next().unwrap())
             })
         }
-        Expression::IntoMethod { expression } => {
+        lir::Expr::IntoMethod { expression } => {
             let receiver = rust_ast_from_lir(*expression, crates);
             let method_call = parse_quote! { #receiver.into() };
             syn::Expr::MethodCall(method_call)
@@ -344,22 +347,13 @@ pub fn rust_ast_from_lir(expression: Expression, crates: &mut BTreeSet<String>) 
 mod rust_ast_from_lir {
     prelude! {
         backend::rust_ast_from_lir::expression::rust_ast_from_lir,
-        common::{
-            constant::Constant,
-            r#type::Type,
-        },
-        lir::{
-            block::Block,
-            expression::{Expression, FieldIdentifier},
-            pattern::Pattern,
-            statement::Statement,
-        },
+        lir::{ Block, FieldIdentifier, Pattern, Stmt },
+        syn::parse_quote,
     }
-    use syn::*;
 
     #[test]
     fn should_create_rust_ast_literal_from_lir_literal() {
-        let expression = Expression::literal(Constant::Integer(parse_quote!(1i64)));
+        let expression = lir::Expr::lit(Constant::Integer(parse_quote!(1i64)));
         let control = parse_quote! { 1i64 };
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
@@ -369,7 +363,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_identifier_from_lir_identifier() {
-        let expression = Expression::ident("x");
+        let expression = lir::Expr::ident("x");
         let control = parse_quote! { x };
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
@@ -379,7 +373,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_field_access_to_self_from_lir_memory_access() {
-        let expression = Expression::memory_access("mem_x");
+        let expression = lir::Expr::memory_access("mem_x");
         let control = parse_quote! { self . mem_x};
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
@@ -389,7 +383,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_field_access_to_input_from_lir_input_access() {
-        let expression = Expression::input_access("i");
+        let expression = lir::Expr::input_access("i");
         let control = parse_quote! { input . i};
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
@@ -399,16 +393,16 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_structure_from_lir_structure() {
-        let expression = Expression::structure(
+        let expression = lir::Expr::structure(
             "Point",
             vec![
                 (
                     "x".into(),
-                    Expression::literal(Constant::Integer(parse_quote!(1i64))),
+                    lir::Expr::lit(Constant::Integer(parse_quote!(1i64))),
                 ),
                 (
                     "y".into(),
-                    Expression::literal(Constant::Integer(parse_quote!(2i64))),
+                    lir::Expr::lit(Constant::Integer(parse_quote!(2i64))),
                 ),
             ],
         );
@@ -421,9 +415,9 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_array_from_lir_array() {
-        let expression = Expression::array(vec![
-            Expression::literal(Constant::Integer(parse_quote!(1i64))),
-            Expression::literal(Constant::Integer(parse_quote!(2i64))),
+        let expression = lir::Expr::array(vec![
+            lir::Expr::lit(Constant::Integer(parse_quote!(1i64))),
+            lir::Expr::lit(Constant::Integer(parse_quote!(2i64))),
         ]);
         let control = parse_quote! { [1i64, 2i64] };
         assert_eq!(
@@ -434,14 +428,14 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_block_from_lir_block() {
-        let expression = Expression::block(Block {
+        let expression = lir::Expr::block(Block {
             statements: vec![
-                Statement::Let {
+                Stmt::Let {
                     pattern: Pattern::ident("x"),
-                    expression: Expression::literal(Constant::Integer(parse_quote!(1i64))),
+                    expression: lir::Expr::lit(Constant::Integer(parse_quote!(1i64))),
                 },
-                Statement::ExpressionLast {
-                    expression: Expression::ident("x"),
+                Stmt::ExprLast {
+                    expression: lir::Expr::ident("x"),
                 },
             ],
         });
@@ -454,9 +448,9 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_function_call_from_lir_function_call() {
-        let expression = Expression::function_call(
-            Expression::ident("foo"),
-            vec![Expression::ident("a"), Expression::ident("b")],
+        let expression = lir::Expr::function_call(
+            lir::Expr::ident("foo"),
+            vec![lir::Expr::ident("a"), lir::Expr::ident("b")],
         );
 
         let control = parse_quote! { foo (a, b) };
@@ -468,10 +462,10 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_binary_from_lir_function_call() {
-        let expression = Expression::binop(
+        let expression = lir::Expr::binop(
             super::BinaryOperator::Add,
-            Expression::ident("a"),
-            Expression::ident("b"),
+            lir::Expr::ident("a"),
+            lir::Expr::ident("b"),
         );
 
         let control = parse_quote! { a + b };
@@ -483,12 +477,12 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_method_call_from_lir_node_call() {
-        let expression = Expression::node_call(
+        let expression = lir::Expr::node_call(
             "node_state",
             "NodeInput",
             vec![(
-                String::from("i"),
-                Expression::Literal {
+                "i".into(),
+                lir::Expr::Literal {
                     literal: Constant::Integer(parse_quote!(1i64)),
                 },
             )],
@@ -503,8 +497,8 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_field_access_from_lir_field_access() {
-        let expression = Expression::field_access(
-            Expression::ident("my_point"),
+        let expression = lir::Expr::field_access(
+            lir::Expr::ident("my_point"),
             FieldIdentifier::Named("x".into()),
         );
 
@@ -517,24 +511,13 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_closure_from_lir_lambda() {
-        let expression = Expression::lambda(
-            vec![(String::from("x"), Type::Integer)],
-            Type::Integer,
-            Expression::block(Block {
+        let expression = lir::Expr::lambda(
+            vec![("x".into(), Typ::Integer)],
+            Typ::int(),
+            lir::Expr::block(Block {
                 statements: vec![
-                    Statement::Let {
-                        pattern: Pattern::Identifier {
-                            name: String::from("y"),
-                        },
-                        expression: Expression::Identifier {
-                            identifier: String::from("x"),
-                        },
-                    },
-                    Statement::ExpressionLast {
-                        expression: Expression::Identifier {
-                            identifier: String::from("y"),
-                        },
-                    },
+                    Stmt::let_binding(Pattern::ident("y"), lir::Expr::ident("x")),
+                    Stmt::expression_last(lir::Expr::ident("y")),
                 ],
             }),
         );
@@ -542,28 +525,20 @@ mod rust_ast_from_lir {
         let control = parse_quote! { move |x: i64| -> i64 { let y = x; y } };
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
-            control
+            control,
         )
     }
 
     #[test]
     fn should_create_rust_ast_ifthenelse_from_lir_ifthenelse() {
-        let expression = Expression::ite(
-            Expression::ident("test"),
-            Block {
-                statements: vec![Statement::ExpressionLast {
-                    expression: Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(1i64)),
-                    },
-                }],
-            },
-            Block {
-                statements: vec![Statement::ExpressionLast {
-                    expression: Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(0i64)),
-                    },
-                }],
-            },
+        let expression = lir::Expr::ite(
+            lir::Expr::ident("test"),
+            Block::new(vec![Stmt::expression_last(lir::Expr::lit(Constant::int(
+                parse_quote!(1i64),
+            )))]),
+            Block::new(vec![Stmt::expression_last(lir::Expr::lit(Constant::int(
+                parse_quote!(0i64),
+            )))]),
         );
 
         let control = parse_quote! { if test { 1i64 } else { 0i64 } };
@@ -575,18 +550,18 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_match_from_lir_match() {
-        let expression = Expression::pat_match(
-            Expression::ident("my_color"),
+        let expression = lir::Expr::pat_match(
+            lir::Expr::ident("my_color"),
             vec![
                 (
                     Pattern::enumeration("Color", "Blue", None),
                     None,
-                    Expression::literal(Constant::Integer(parse_quote!(1i64))),
+                    lir::Expr::lit(Constant::Integer(parse_quote!(1i64))),
                 ),
                 (
                     Pattern::enumeration("Color", "Green", None),
                     None,
-                    Expression::Literal {
+                    lir::Expr::Literal {
                         literal: Constant::Integer(parse_quote!(0i64)),
                     },
                 ),
@@ -603,7 +578,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_map_operation_from_lir_map() {
-        let expression = Expression::map(Expression::ident("a"), Expression::ident("f"));
+        let expression = lir::Expr::map(lir::Expr::ident("a"), lir::Expr::ident("f"));
 
         let control = parse_quote! { a . map (f) };
         assert_eq!(
@@ -614,10 +589,10 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_fold_iterator_from_lir_fold() {
-        let expression = Expression::fold(
-            Expression::ident("a"),
-            Expression::literal(Constant::Integer(parse_quote!(0i64))),
-            Expression::ident("sum"),
+        let expression = lir::Expr::fold(
+            lir::Expr::ident("a"),
+            lir::Expr::lit(Constant::Integer(parse_quote!(0i64))),
+            lir::Expr::ident("sum"),
         );
 
         let control = parse_quote! { a . into_iter().fold(0i64, sum) };
@@ -629,7 +604,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_sort_iterator_from_lir_sort() {
-        let expression = Expression::sort(Expression::ident("a"), Expression::ident("compare"));
+        let expression = lir::Expr::sort(lir::Expr::ident("a"), lir::Expr::ident("compare"));
 
         let control = parse_quote!({
             let mut x = a.clone();
@@ -654,7 +629,7 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_macro_from_lir_zip() {
-        let expression = Expression::zip(vec![Expression::ident("a"), Expression::ident("b")]);
+        let expression = lir::Expr::zip(vec![lir::Expr::ident("a"), lir::Expr::ident("b")]);
 
         let control = parse_quote!({
             let mut iter = itertools::izip!(a, b);

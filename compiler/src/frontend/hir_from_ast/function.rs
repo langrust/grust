@@ -1,15 +1,11 @@
-use crate::ast::colon::Colon;
-use crate::ast::function::Function;
-use crate::ast::statement::{ReturnInstruction, Statement};
-use crate::common::location::Location;
-use crate::error::{Error, TerminationError};
-use crate::hir::function::Function as HIRFunction;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::{ Function, stmt::Return },
+}
 
 use super::HIRFromAST;
 
 impl HIRFromAST for Function {
-    type HIR = HIRFunction;
+    type HIR = hir::Function;
 
     // precondition: function and its inputs are already stored in symbol table
     // postcondition: construct HIR function and check identifiers good use
@@ -17,7 +13,7 @@ impl HIRFromAST for Function {
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Self::HIR, TerminationError> {
+    ) -> TRes<Self::HIR> {
         let Function {
             ident,
             output_type,
@@ -39,11 +35,11 @@ impl HIRFromAST for Function {
         let (statements, returned) = statements.into_iter().fold(
             (vec![], None),
             |(mut declarations, option_returned), statement| match statement {
-                Statement::Declaration(declaration) => {
+                ast::Stmt::Declaration(declaration) => {
                     declarations.push(declaration.hir_from_ast(symbol_table, errors));
                     (declarations, option_returned)
                 }
-                Statement::Return(ReturnInstruction { expression, .. }) => {
+                ast::Stmt::Return(Return { expression, .. }) => {
                     assert!(option_returned.is_none());
                     (
                         declarations,
@@ -55,63 +51,11 @@ impl HIRFromAST for Function {
 
         symbol_table.global();
 
-        Ok(HIRFunction {
+        Ok(hir::Function {
             id,
-            statements: statements.into_iter().collect::<Result<Vec<_>, _>>()?,
+            statements: statements.into_iter().collect::<TRes<Vec<_>>>()?,
             returned: returned.unwrap()?,
             location,
         })
-    }
-}
-
-impl Function {
-    /// Store function's identifiers in symbol table.
-    pub fn store(
-        &self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        symbol_table.local();
-
-        let location = Location::default();
-        let inputs = self
-            .args
-            .iter()
-            .map(
-                |Colon {
-                     left: ident,
-                     right: typing,
-                     ..
-                 }| {
-                    let name = ident.to_string();
-                    let typing = typing
-                        .clone()
-                        .hir_from_ast(&location, symbol_table, errors)?;
-                    let id = symbol_table.insert_identifier(
-                        name.clone(),
-                        Some(typing),
-                        true,
-                        location.clone(),
-                        errors,
-                    )?;
-                    Ok(id)
-                },
-            )
-            .collect::<Vec<Result<_, _>>>()
-            .into_iter()
-            .collect::<Result<Vec<_>, _>>()?;
-
-        symbol_table.global();
-
-        let _ = symbol_table.insert_function(
-            self.ident.to_string(),
-            inputs,
-            None,
-            false,
-            location,
-            errors,
-        )?;
-
-        Ok(())
     }
 }

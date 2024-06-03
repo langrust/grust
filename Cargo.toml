@@ -1,3 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["proc", "grust", "compiler", "greact", "examples/*"]
+members = [
+    "proc",
+    "grust",
+    "compiler",
+    "greact",
+    "examples/*",
+    "compiler_ast",
+    "compiler_common",
+    "compiler_lir",
+]

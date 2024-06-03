@@ -1,4 +1,6 @@
-use compiler::{ast::Ast, conf, dump_code, into_token_stream};
+compiler::prelude! {
+    ast::Ast, conf
+}
 
 #[test]
 fn should_compile_speed_limiter_events() {
@@ -254,8 +256,8 @@ fn should_compile_speed_limiter_events() {
         v_set = v_set_aux;
         in_regulation = scan(in_regulation_aux, 10);
     };
-    let tokens = into_token_stream(ast);
+    let tokens = compiler::into_token_stream(ast);
     if let Some(path) = conf::dump_code() {
-        dump_code(&path, &tokens);
+        compiler::dump_code(&path, &tokens);
     }
 }

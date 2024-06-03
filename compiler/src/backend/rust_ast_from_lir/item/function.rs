@@ -1,20 +1,22 @@
-use crate::backend::rust_ast_from_lir::{
-    block::rust_ast_from_lir as block_rust_ast_from_lir,
-    r#type::rust_ast_from_lir as type_rust_ast_from_lir,
-};
-use crate::common::r#type::Type as GRRustType;
-use crate::lir::item::function::Function;
-use proc_macro2::Span;
-use quote::format_ident;
 use std::collections::BTreeSet;
-use syn::*;
+
+prelude! {
+    backend::rust_ast_from_lir::{
+        block::rust_ast_from_lir as block_rust_ast_from_lir,
+        r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    },
+    lir::item::function::Function,
+    macro2::Span,
+    quote::format_ident,
+    syn::*,
+}
 
 /// Transform LIR function into RustAST function.
 pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> Item {
     // create generics
     let mut generic_params: Vec<GenericParam> = vec![];
     for (generic_name, generic_type) in function.generics {
-        if let GRRustType::Abstract(arguments, output) = generic_type {
+        if let Typ::Abstract(arguments, output) = generic_type {
             let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
             let output = type_rust_ast_from_lir(*output);
             let identifier = format_ident!("{generic_name}");
@@ -74,13 +76,7 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> I
 mod rust_ast_from_lir {
     prelude! {
         backend::rust_ast_from_lir::item::function::rust_ast_from_lir,
-        common::r#type::Type,
-        lir::{
-            block::Block,
-            expression::Expression,
-            item::function::Function,
-            statement::Statement,
-        },
+        lir::{ Block, item::Function, Stmt },
     }
     use syn::*;
 
@@ -89,14 +85,14 @@ mod rust_ast_from_lir {
         let function = Function {
             name: "foo".into(),
             generics: vec![],
-            inputs: vec![("a".into(), Type::Integer), ("b".into(), Type::Integer)],
-            output: Type::Integer,
+            inputs: vec![("a".into(), Typ::Integer), ("b".into(), Typ::Integer)],
+            output: Typ::Integer,
             body: Block {
-                statements: vec![Statement::ExpressionLast {
-                    expression: Expression::binop(
-                        crate::common::operator::BinaryOperator::Add,
-                        Expression::ident("a"),
-                        Expression::ident("b"),
+                statements: vec![Stmt::ExprLast {
+                    expression: lir::Expr::binop(
+                        operator::BinaryOperator::Add,
+                        lir::Expr::ident("a"),
+                        lir::Expr::ident("b"),
                     ),
                 }],
             },

@@ -1,8 +1,10 @@
-use crate::common::location::Location;
+//! HIR [Typedef](crate::hir::typedef::Typedef) module.
+
+prelude! {}
 
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust user defined type AST.
-pub enum TypedefKind {
+pub enum Kind {
     /// Represents a structure definition.
     Structure {
         /// The structure's fields: a field has an identifier and a type.
@@ -23,7 +25,7 @@ pub struct Typedef {
     /// Typedef identifier.
     pub id: usize,
     /// Typedef kind.
-    pub kind: TypedefKind,
+    pub kind: Kind,
     /// Typedef location.
     pub location: Location,
 }

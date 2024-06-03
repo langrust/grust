@@ -1,8 +1,4 @@
-use crate::{
-    common::r#type::Type,
-    error::{Error, TerminationError},
-    symbol_table::SymbolTable,
-};
+prelude! {}
 
 /// LanGRust [File](crate::hir::file::File) typing analysis module.
 pub mod file;
@@ -33,19 +29,15 @@ pub mod flow_statement;
 /// Performs type analysis.
 pub trait TypeAnalysis {
     /// Tries to type the given construct.
-    fn typing(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError>;
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()>;
 
     /// Get type from construct.
-    fn get_type(&self) -> Option<&Type> {
+    fn get_type(&self) -> Option<&Typ> {
         None
     }
 
     /// Get mutable type from construct.
-    fn get_type_mut(&mut self) -> Option<&mut Type> {
+    fn get_type_mut(&mut self) -> Option<&mut Typ> {
         None
     }
 }

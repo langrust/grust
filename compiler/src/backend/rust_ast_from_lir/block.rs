@@ -1,7 +1,10 @@
 use std::collections::BTreeSet;
 
+prelude! {
+    lir::Block,
+}
+
 use super::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
-use crate::lir::block::Block;
 
 /// Transform LIR block into RustAST block.
 pub fn rust_ast_from_lir(block: Block, crates: &mut BTreeSet<String>) -> syn::Block {
@@ -18,31 +21,21 @@ pub fn rust_ast_from_lir(block: Block, crates: &mut BTreeSet<String>) -> syn::Bl
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::block::rust_ast_from_lir;
-    use crate::common::constant::Constant;
-    use crate::lir::block::Block;
-    use crate::lir::expression::Expression;
-    use crate::lir::pattern::Pattern;
-    use crate::lir::statement::Statement;
-    use syn::*;
+    prelude! {
+        syn::*,
+        backend::rust_ast_from_lir::block::rust_ast_from_lir,
+        lir::{ Block, Pattern, Stmt },
+    }
 
     #[test]
     fn should_create_rust_ast_block_from_lir_block() {
         let block = Block {
             statements: vec![
-                Statement::Let {
-                    pattern: Pattern::Identifier {
-                        name: String::from("x"),
-                    },
-                    expression: Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(1i64)),
-                    },
-                },
-                Statement::ExpressionLast {
-                    expression: Expression::Identifier {
-                        identifier: String::from("x"),
-                    },
-                },
+                Stmt::let_binding(
+                    Pattern::ident("x"),
+                    lir::Expr::lit(Constant::int(parse_quote!(1i64))),
+                ),
+                Stmt::expression_last(lir::Expr::ident("x")),
             ],
         };
 

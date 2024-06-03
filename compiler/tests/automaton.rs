@@ -1,4 +1,4 @@
-use compiler::{ast::Ast, conf, dump_code, into_token_stream};
+compiler::prelude! {}
 
 #[test]
 fn should_compile_automaton() {
@@ -36,8 +36,8 @@ fn should_compile_automaton() {
             }
         }
     };
-    let tokens = into_token_stream(ast);
+    let tokens = compiler::into_token_stream(ast);
     if let Some(path) = conf::dump_code() {
-        dump_code(&path, &tokens);
+        compiler::dump_code(&path, &tokens);
     }
 }

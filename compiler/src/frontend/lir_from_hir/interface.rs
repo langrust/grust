@@ -1,20 +1,15 @@
-use std::collections::{HashMap, HashSet};
-
 use petgraph::{
     algo::toposort,
     graphmap::DiGraphMap,
     visit::{depth_first_search, DfsEvent},
 };
-use quote::format_ident;
 
-use crate::{
+prelude! {
+    quote::format_ident,
     ast::interface::FlowKind,
-    common::r#type::Type,
     hir::{
-        flow_expression::FlowExpressionKind,
-        identifier_creator::IdentifierCreator,
-        interface::{
-            FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement, Interface,
+        flow, IdentifierCreator, interface::{
+            FlowDeclaration, FlowExport, FlowImport, FlowInstantiation, FlowStatement, Interface,
         },
     },
     lir::item::execution_machine::{
@@ -25,8 +20,7 @@ use crate::{
         },
         ExecutionMachine,
     },
-    symbol_table::SymbolTable,
-};
+}
 
 use super::LIRFromHIR;
 
@@ -116,15 +110,14 @@ impl Interface {
                         flow_expression,
                         ..
                     })
-                    | FlowStatement::Instanciation(FlowInstanciation {
+                    | FlowStatement::Instantiation(FlowInstantiation {
                         pattern,
                         flow_expression,
                         ..
                     }) => {
                         match &flow_expression.kind {
-                            FlowExpressionKind::Ident { .. }
-                            | FlowExpressionKind::Throtle { .. } => (),
-                            FlowExpressionKind::OnChange { .. } => {
+                            flow::Kind::Ident { .. } | flow::Kind::Throtle { .. } => (),
+                            flow::Kind::OnChange { .. } => {
                                 // get the identifier of the created event
                                 let mut ids = pattern.identifiers();
                                 debug_assert!(ids.len() == 1);
@@ -132,11 +125,8 @@ impl Interface {
                                 let event_name = symbol_table.get_name(flow_event_id).clone();
 
                                 // add new event into the identifier creator
-                                let fresh_name = identifier_creator.new_identifier(
-                                    String::from(""),
-                                    event_name,
-                                    String::from("old"),
-                                );
+                                let fresh_name =
+                                    identifier_creator.new_identifier_with("", &event_name, "old");
                                 let typing = symbol_table.get_type(flow_event_id).clone();
                                 let kind = symbol_table.get_flow_kind(flow_event_id).clone();
                                 let fresh_id = symbol_table.insert_fresh_flow(
@@ -151,15 +141,11 @@ impl Interface {
                                 // push in on_change_events
                                 on_change_events.insert(flow_event_id, fresh_id);
                             }
-                            FlowExpressionKind::Sample { period_ms, .. }
-                            | FlowExpressionKind::Scan { period_ms, .. } => {
+                            flow::Kind::Sample { period_ms, .. }
+                            | flow::Kind::Scan { period_ms, .. } => {
                                 // add new timing event into the identifier creator
-                                let fresh_name = identifier_creator.new_identifier(
-                                    String::from(""),
-                                    String::from("period"),
-                                    String::from(""),
-                                );
-                                let typing = Type::Event(Box::new(Type::Time));
+                                let fresh_name = identifier_creator.fresh_identifier("period");
+                                let typing = Typ::Event(Box::new(Typ::Time));
                                 let fresh_id = symbol_table.insert_fresh_period(fresh_name.clone());
 
                                 // add timing_event in new_statements
@@ -187,14 +173,10 @@ impl Interface {
                                     ),
                                 );
                             }
-                            FlowExpressionKind::Timeout { deadline, .. } => {
+                            flow::Kind::Timeout { deadline, .. } => {
                                 // add new timing event into the identifier creator
-                                let fresh_name = identifier_creator.new_identifier(
-                                    String::from(""),
-                                    String::from("timeout"),
-                                    String::from(""),
-                                );
-                                let typing = Type::Event(Box::new(Type::Time));
+                                let fresh_name = identifier_creator.fresh_identifier("timeout");
+                                let typing = Typ::Event(Box::new(Typ::Time));
                                 let fresh_id =
                                     symbol_table.insert_fresh_deadline(fresh_name.clone());
 
@@ -223,16 +205,12 @@ impl Interface {
                                     ),
                                 );
                             }
-                            FlowExpressionKind::ComponentCall { component_id, .. } => {
+                            flow::Kind::ComponentCall { component_id, .. } => {
                                 // add potential period constrains
                                 if let Some(period) = symbol_table.get_node_period(*component_id) {
                                     // add new timing event into the identifier creator
-                                    let fresh_name = identifier_creator.new_identifier(
-                                        String::from(""),
-                                        String::from("period"),
-                                        String::from(""),
-                                    );
-                                    let typing = Type::Event(Box::new(Type::Time));
+                                    let fresh_name = identifier_creator.fresh_identifier("period");
+                                    let typing = Typ::Event(Box::new(Typ::Time));
                                     let fresh_id =
                                         symbol_table.insert_fresh_period(fresh_name.clone());
 
@@ -286,11 +264,13 @@ impl Interface {
                 let mut ordered_statements = toposort(&subgraph, None).expect("should succeed");
                 ordered_statements.reverse();
                 // if input flow is an event then store its identifier
-                let (encountered_events, defined_signals) =
+                let (encountered_events, defined_signals) = {
+                    let flow_id_set = [flow_id].into_iter().collect();
                     match symbol_table.get_flow_kind(flow_id) {
-                        FlowKind::Signal(_) => (HashSet::new(), HashSet::from([flow_id])),
-                        FlowKind::Event(_) => (HashSet::from([flow_id]), HashSet::new()),
-                    };
+                        FlowKind::Signal(_) => (HashSet::new(), flow_id_set),
+                        FlowKind::Event(_) => (flow_id_set, HashSet::new()),
+                    }
+                };
                 // compute instructions that depend on this incoming flow
                 let instructions = compute_flow_instructions(
                     vec![index],
@@ -333,7 +313,7 @@ impl Interface {
             .collect();
 
         let service_loop = ServiceLoop {
-            service: String::from("toto"),
+            service: "toto".into(),
             components,
             input_flows: input_flows.into_iter().unzip::<_, _, Vec<_>, _>().1,
             timing_events: timing_events.into_values().unzip::<_, _, Vec<_>, _>().1,
@@ -403,12 +383,12 @@ fn compute_flow_instructions(
                 flow_expression,
                 ..
             })
-            | FlowStatement::Instanciation(FlowInstanciation {
+            | FlowStatement::Instantiation(FlowInstantiation {
                 pattern,
                 flow_expression,
                 ..
             }) => {
-                if let FlowExpressionKind::ComponentCall {
+                if let flow::Kind::ComponentCall {
                     component_id,
                     inputs,
                 } = &flow_expression.kind
@@ -468,7 +448,7 @@ fn compute_flow_instructions(
                             .iter()
                             .filter_map(|(component_event_element_id, flow_expression)| {
                                 match flow_expression.kind {
-                                    FlowExpressionKind::Ident { id } => {
+                                    flow::Kind::Ident { id } => {
                                         if id.eq(flow_event_id) {
                                             Some(*component_event_element_id)
                                         } else {
@@ -521,7 +501,7 @@ fn compute_flow_instructions(
                     let source_name = symbol_table.get_name(id_source);
 
                     match &flow_expression.kind {
-                        FlowExpressionKind::Ident { .. } => {
+                        flow::Kind::Ident { .. } => {
                             // only set identifier if source is a signal or an activated event
                             match symbol_table.get_flow_kind(id_source) {
                                 FlowKind::Signal(_) =>
@@ -572,7 +552,7 @@ fn compute_flow_instructions(
                                 }
                             }
                         }
-                        FlowExpressionKind::Sample { .. } => {
+                        flow::Kind::Sample { .. } => {
                             let (timer_id, _) = timing_events
                                 .get(&statement_id)
                                 .expect("there should be a timing event");
@@ -604,7 +584,7 @@ fn compute_flow_instructions(
                                 add_dependent_statements = true;
                             }
                         }
-                        FlowExpressionKind::Throtle { delta, .. } => {
+                        flow::Kind::Throtle { delta, .. } => {
                             // source is a signal, if it is not defined, then define it
                             if !defined_signals.contains(&id_source) {
                                 instructions.push(FlowInstruction::Let(
@@ -634,7 +614,7 @@ fn compute_flow_instructions(
                             // propagate computations
                             add_dependent_statements = true;
                         }
-                        FlowExpressionKind::OnChange { .. } => {
+                        flow::Kind::OnChange { .. } => {
                             // source is a signal, if it is not defined, then define it
                             if !defined_signals.contains(&id_source) {
                                 instructions.push(FlowInstruction::Let(
@@ -718,7 +698,7 @@ fn compute_flow_instructions(
                             // ends the loop
                             break;
                         }
-                        FlowExpressionKind::Timeout { deadline, .. } => {
+                        flow::Kind::Timeout { deadline, .. } => {
                             let (timer_id, timer) = timing_events
                                 .get(&statement_id)
                                 .expect("there should be a timing event");
@@ -768,7 +748,7 @@ fn compute_flow_instructions(
                                 add_dependent_statements = true;
                             }
                         }
-                        FlowExpressionKind::Scan { .. } => {
+                        flow::Kind::Scan { .. } => {
                             let (timer_id, _) = timing_events
                                 .get(&statement_id)
                                 .expect("there should be a timing event");
@@ -801,7 +781,7 @@ fn compute_flow_instructions(
                                 add_dependent_statements = true;
                             }
                         }
-                        FlowExpressionKind::ComponentCall { .. } => unreachable!(),
+                        flow::Kind::ComponentCall { .. } => unreachable!(),
                     }
                 }
             }
@@ -858,12 +838,12 @@ impl FlowStatement {
                 flow_expression,
                 ..
             })
-            | FlowStatement::Instanciation(FlowInstanciation {
+            | FlowStatement::Instantiation(FlowInstantiation {
                 pattern,
                 flow_expression,
                 ..
             }) => match &flow_expression.kind {
-                FlowExpressionKind::Throtle { .. } => {
+                flow::Kind::Throtle { .. } => {
                     // get the id of pattern's flow (and check their is only one flow)
                     let mut ids = pattern.identifiers();
                     debug_assert!(ids.len() == 1);
@@ -874,12 +854,12 @@ impl FlowStatement {
                     let ty = symbol_table.get_type(pattern_id);
                     flows_context.add_element(flow_name, ty);
                 }
-                FlowExpressionKind::Sample {
+                flow::Kind::Sample {
                     flow_expression, ..
                 } => {
                     // get the id of flow_expression (and check it is an idnetifier, from normalization)
                     let id = match &flow_expression.kind {
-                        FlowExpressionKind::Ident { id } => *id,
+                        flow::Kind::Ident { id } => *id,
                         _ => unreachable!(),
                     };
                     // get pattern's id
@@ -890,16 +870,16 @@ impl FlowStatement {
                     // push in signals context
                     let source_name = symbol_table.get_name(id).clone();
                     let flow_name = symbol_table.get_name(pattern_id).clone();
-                    let ty = Type::SMEvent(Box::new(symbol_table.get_type(id).clone()));
+                    let ty = Typ::SMEvent(Box::new(symbol_table.get_type(id).clone()));
                     flows_context.add_element(source_name, &ty);
                     flows_context.add_element(flow_name, &ty);
                 }
-                FlowExpressionKind::Scan {
+                flow::Kind::Scan {
                     flow_expression, ..
                 } => {
                     // get the id of flow_expression (and check it is an idnetifier, from normalization)
                     let id = match &flow_expression.kind {
-                        FlowExpressionKind::Ident { id } => *id,
+                        flow::Kind::Ident { id } => *id,
                         _ => unreachable!(),
                     };
 
@@ -908,7 +888,7 @@ impl FlowStatement {
                     let ty = symbol_table.get_type(id);
                     flows_context.add_element(source_name, ty);
                 }
-                FlowExpressionKind::ComponentCall {
+                flow::Kind::ComponentCall {
                     component_id,
                     inputs,
                 } => {
@@ -930,7 +910,7 @@ impl FlowStatement {
                         .filter_map(|(input_id, flow_expression)| {
                             match &flow_expression.kind {
                                 // get the id of flow_expression (and check it is an idnetifier, from normalization)
-                                FlowExpressionKind::Ident { id: flow_id } => {
+                                flow::Kind::Ident { id: flow_id } => {
                                     // push input_field_name and flow_name in input_fields
                                     let input_field_name = symbol_table.get_name(*input_id).clone();
                                     let flow_name = symbol_table.get_name(*flow_id).clone();
@@ -965,9 +945,9 @@ impl FlowStatement {
                         )
                     }
                 }
-                FlowExpressionKind::Ident { .. }
-                | FlowExpressionKind::OnChange { .. }
-                | FlowExpressionKind::Timeout { .. } => (),
+                flow::Kind::Ident { .. }
+                | flow::Kind::OnChange { .. }
+                | flow::Kind::Timeout { .. } => (),
             },
             _ => (),
         }

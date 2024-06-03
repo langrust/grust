@@ -1,10 +1,8 @@
 use itertools::Itertools;
 
-use crate::{
-    common::r#type::Type,
-    hir::{identifier_creator::IdentifierCreator, node::Node},
+prelude! {
+    hir::{IdentifierCreator, Node},
     lir::{
-        expression::Expression as LIRExpression,
         item::state_machine::{
             event::{Event, EventElement},
             input::{Input, InputElement},
@@ -12,8 +10,7 @@ use crate::{
             StateMachine,
         },
     },
-    symbol_table::SymbolTable,
-};
+}
 
 use super::LIRFromHIR;
 
@@ -45,7 +42,7 @@ impl LIRFromHIR for Node {
             let event_id = symbol_table.get_node_event(self.id).unwrap();
             inputs.push((
                 symbol_table.get_name(event_id).clone(),
-                Type::Enumeration {
+                Typ::Enumeration {
                     name: symbol_table.get_name(event_enum_id).clone(),
                     id: event_enum_id,
                 },
@@ -74,7 +71,7 @@ impl LIRFromHIR for Node {
                 .collect::<Vec<_>>();
 
             // get event conversions
-            let intos = self.memory.get_event_convertions(symbol_table);
+            let intos = self.memory.get_event_conversions(symbol_table);
 
             Some(Event {
                 node_name: name.clone(),
@@ -96,7 +93,7 @@ impl LIRFromHIR for Node {
             if types.len() == 1 {
                 types.pop().unwrap()
             } else {
-                Type::Tuple(types)
+                Typ::Tuple(types)
             }
         };
 
@@ -105,14 +102,14 @@ impl LIRFromHIR for Node {
         let output_expression = {
             let mut identifiers = outputs
                 .iter()
-                .map(|(_, output_id)| LIRExpression::Identifier {
+                .map(|(_, output_id)| lir::Expr::Identifier {
                     identifier: symbol_table.get_name(*output_id).clone(),
                 })
                 .collect::<Vec<_>>();
             if identifiers.len() == 1 {
                 identifiers.pop().unwrap()
             } else {
-                LIRExpression::Tuple {
+                lir::Expr::Tuple {
                     elements: identifiers,
                 }
             }

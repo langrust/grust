@@ -1,11 +1,16 @@
+//! HIR [OnceCell](crate::hir::once_cell::OnceCell) module.
+
+prelude! {}
+
 /// A thread-safe cell which can be written to only once.
 ///
 /// `OnceCell` provides `&` references to the contents.
 ///  From the `once_cell` crate API.
 ///
 /// # Example
+///
 /// ```
-/// # use compiler::hir::once_cell::OnceCell;
+/// # use compiler::hir::OnceCell;
 /// let cell: OnceCell<String> = OnceCell::new();
 /// assert!(cell.get().is_none());
 ///

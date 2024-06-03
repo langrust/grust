@@ -1,13 +1,8 @@
 use petgraph::algo::toposort;
 
 prelude! {
-    common::label::Label,
-    hir::{
-        expression::ExpressionKind,
-        node::Node,
-        statement::Statement,
-        stream_expression::{StreamExpression, StreamExpressionKind},
-    },
+    graph::*,
+    hir::{ Node, Stmt, stream },
 }
 
 impl Node {
@@ -23,9 +18,9 @@ impl Node {
     /// }
     /// ```
     ///
-    /// In the node above, signal `y` depends on the current value of `x`,
-    /// `o_1` depends on the memory of `x` and `x` depends on `v` and `o_1`.
-    /// The node is causal and should be scheduled as bellow:
+    /// In the node above, signal `y` depends on the current value of `x`, `o_1` depends on the
+    /// memory of `x` and `x` depends on `v` and `o_1`. The node is causal and should be scheduled
+    /// as bellow:
     ///
     /// ```GR
     /// node test(v: int) {
@@ -54,7 +49,7 @@ impl Node {
             .enumerate()
             .map(|(order, signal_id)| (signal_id, order))
             .collect::<HashMap<_, _>>();
-        let compare = |statement: &Statement<StreamExpression>| {
+        let compare = |statement: &Stmt<stream::Expr>| {
             statement
                 .pattern
                 .identifiers()
@@ -68,8 +63,8 @@ impl Node {
         self.statements.sort_by_key(compare);
         self.statements.iter_mut().for_each(|statement| {
             match &mut statement.expression.kind {
-                StreamExpressionKind::Expression { expression } => match expression {
-                    ExpressionKind::Match { arms, .. } => arms
+                stream::Kind::Expression { expression } => match expression {
+                    hir::expr::Kind::Match { arms, .. } => arms
                         .iter_mut()
                         .for_each(|(_, _, statements, _)| statements.sort_by_key(compare)),
                     _ => (),

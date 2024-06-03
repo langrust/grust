@@ -1,14 +1,11 @@
-use crate::ast::colon::Colon;
-use crate::ast::typedef::Typedef;
-use crate::common::location::Location;
-use crate::error::{Error, TerminationError};
-use crate::hir::typedef::{Typedef as HIRTypedef, TypedefKind};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::{Colon, Typedef},
+}
 
 use super::HIRFromAST;
 
 impl HIRFromAST for Typedef {
-    type HIR = HIRTypedef;
+    type HIR = hir::Typedef;
 
     // precondition: typedefs are already stored in symbol table
     // postcondition: construct HIR typedef and check identifiers good use
@@ -16,7 +13,7 @@ impl HIRFromAST for Typedef {
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Self::HIR, TerminationError> {
+    ) -> TRes<Self::HIR> {
         let location = Location::default();
         match self {
             Typedef::Structure { ident, fields, .. } => {
@@ -43,13 +40,11 @@ impl HIRFromAST for Typedef {
                             Ok(symbol_table.set_type(*id, typing))
                         },
                     )
-                    .collect::<Vec<Result<_, _>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?;
+                    .collect::<TRes<Vec<_>>>()?;
 
-                Ok(HIRTypedef {
+                Ok(hir::Typedef {
                     id: type_id,
-                    kind: TypedefKind::Structure { fields: field_ids },
+                    kind: hir::typedef::Kind::Structure { fields: field_ids },
                     location,
                 })
             }
@@ -58,9 +53,9 @@ impl HIRFromAST for Typedef {
                 let id = ident.to_string();
                 let type_id = symbol_table.get_enum_id(&id, false, location.clone(), errors)?;
                 let element_ids = symbol_table.get_enum_elements(type_id).clone();
-                Ok(HIRTypedef {
+                Ok(hir::Typedef {
                     id: type_id,
-                    kind: TypedefKind::Enumeration {
+                    kind: hir::typedef::Kind::Enumeration {
                         elements: element_ids,
                     },
                     location,
@@ -77,99 +72,12 @@ impl HIRFromAST for Typedef {
                 let typing = array_type.hir_from_ast(&location, symbol_table, errors)?;
                 symbol_table.set_array_type(type_id, typing);
 
-                Ok(HIRTypedef {
+                Ok(hir::Typedef {
                     id: type_id,
-                    kind: TypedefKind::Array,
+                    kind: hir::typedef::Kind::Array,
                     location,
                 })
             }
         }
-    }
-}
-
-impl Typedef {
-    /// Store typedef's identifiers in symbol table.
-    pub fn store(
-        &self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        let location = Location::default();
-        match self {
-            Typedef::Structure { ident, fields, .. } => {
-                let id = ident.to_string();
-                symbol_table.local();
-
-                let field_ids = fields
-                    .iter()
-                    .map(|Colon { left: ident, .. }| {
-                        let field_name = ident.to_string();
-                        let field_id = symbol_table.insert_identifier(
-                            field_name.clone(),
-                            None,
-                            true,
-                            location.clone(),
-                            errors,
-                        )?;
-                        Ok(field_id)
-                    })
-                    .collect::<Vec<Result<_, _>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?;
-
-                symbol_table.global();
-
-                let _ = symbol_table.insert_struct(
-                    id.clone(),
-                    field_ids.clone(),
-                    false,
-                    location.clone(),
-                    errors,
-                )?;
-            }
-            Typedef::Enumeration {
-                ident, elements, ..
-            } => {
-                let id = ident.to_string();
-                let element_ids = elements
-                    .iter()
-                    .map(|element_ident| {
-                        let element_name = element_ident.to_string();
-                        let element_id = symbol_table.insert_enum_elem(
-                            element_name.clone(),
-                            id.clone(),
-                            false,
-                            location.clone(),
-                            errors,
-                        )?;
-                        Ok(element_id)
-                    })
-                    .collect::<Vec<Result<_, _>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?;
-
-                let _ = symbol_table.insert_enum(
-                    id.clone(),
-                    element_ids.clone(),
-                    false,
-                    location.clone(),
-                    errors,
-                )?;
-            }
-            Typedef::Array { ident, size, .. } => {
-                let id = ident.to_string();
-                let size = size.base10_parse().unwrap();
-                let _ = symbol_table.insert_array(
-                    id.clone(),
-                    None,
-                    size,
-                    false,
-                    location.clone(),
-                    errors,
-                )?;
-            }
-        }
-
-        Ok(())
     }
 }

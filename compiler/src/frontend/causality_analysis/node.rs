@@ -1,11 +1,9 @@
 use petgraph::algo::toposort;
 
-use crate::{
-    common::label::Label,
-    error::{Error, TerminationError},
-    hir::node::Node,
-    symbol_table::SymbolTable,
-};
+prelude! {
+    graph::Label,
+    hir::Node,
+}
 
 impl Node {
     /// Check the causality of the node.
@@ -37,11 +35,7 @@ impl Node {
     ///     x: int = o;
     /// }
     /// ```
-    pub fn causal(
-        &self,
-        symbol_table: &SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    pub fn causal(&self, symbol_table: &SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         // construct node's subgraph containing only 0-label weight
         let graph = &self.graph;
         let mut subgraph = graph.clone();

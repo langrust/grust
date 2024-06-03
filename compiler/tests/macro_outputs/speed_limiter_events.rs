@@ -304,9 +304,8 @@ pub struct Context {
     pub speed: f64,
     pub v_set_aux: f64,
     pub v_set: f64,
+    pub flow_expression_fresh_ident: f64,
     pub in_regulation_aux: bool,
-    pub vacuum_brake: VacuumBrakeState,
-    pub v_update: bool,
     pub on_state: SpeedLimiterOn,
 }
 impl Context {
@@ -332,8 +331,8 @@ pub struct TotoService {
     context: Context,
     process_set_speed: ProcessSetSpeedState,
     speed_limiter: SpeedLimiterState,
-    period_1: tokio::time::Interval,
-    period: tokio::time::Interval,
+    period_fresh_ident: tokio::time::Interval,
+    period_fresh_ident_1: tokio::time::Interval,
     activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
     set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
     speed_channel: tokio::sync::mpsc::Receiver<f64>,
@@ -358,15 +357,15 @@ impl TotoService {
     ) -> TotoService {
         let process_set_speed = ProcessSetSpeedState::init();
         let speed_limiter = SpeedLimiterState::init();
-        let period_1 = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
-        let period = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
+        let period_fresh_ident = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
+        let period_fresh_ident_1 = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
         let context = Context::init();
         TotoService {
             context,
             process_set_speed,
             speed_limiter,
-            period_1,
-            period,
+            period_fresh_ident,
+            period_fresh_ident_1,
             activation_channel,
             set_speed_channel,
             speed_channel,
@@ -401,7 +400,7 @@ impl TotoService {
             v_set_channel,
         );
         loop {
-            tokio::select! { activation = service . activation_channel . recv () => service . handle_activation (activation . unwrap ()) . await , set_speed = service . set_speed_channel . recv () => service . handle_set_speed (set_speed . unwrap ()) . await , speed = service . speed_channel . recv () => service . handle_speed (speed . unwrap ()) . await , vacuum_brake = service . vacuum_brake_channel . recv () => service . handle_vacuum_brake (vacuum_brake . unwrap ()) . await , kickdown = service . kickdown_channel . recv () => service . handle_kickdown (kickdown . unwrap ()) . await , failure = service . failure_channel . recv () => service . handle_failure (failure . unwrap ()) . await , vdc = service . vdc_channel . recv () => service . handle_vdc (vdc . unwrap ()) . await , _ = service . period . tick () => service . handle_period () . await , _ = service . period_1 . tick () => service . handle_period_1 () . await , }
+            tokio::select! { activation = service . activation_channel . recv () => service . handle_activation (activation . unwrap ()) . await , set_speed = service . set_speed_channel . recv () => service . handle_set_speed (set_speed . unwrap ()) . await , speed = service . speed_channel . recv () => service . handle_speed (speed . unwrap ()) . await , vacuum_brake = service . vacuum_brake_channel . recv () => service . handle_vacuum_brake (vacuum_brake . unwrap ()) . await , kickdown = service . kickdown_channel . recv () => service . handle_kickdown (kickdown . unwrap ()) . await , failure = service . failure_channel . recv () => service . handle_failure (failure . unwrap ()) . await , vdc = service . vdc_channel . recv () => service . handle_vdc (vdc . unwrap ()) . await , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , _ = service . period_fresh_ident_1 . tick () => service . handle_period_fresh_ident_1 () . await , }
         }
     }
     async fn handle_activation(&mut self, activation: ActivationResquest) {
@@ -415,13 +414,13 @@ impl TotoService {
         self.context.state_update = state_update;
     }
     async fn handle_set_speed(&mut self, set_speed: f64) {
-        if (self.context.x - set_speed) >= 1.0 {
-            self.context.x = set_speed;
+        if (self.context.flow_expression_fresh_ident - set_speed) >= 1.0 {
+            self.context.flow_expression_fresh_ident = set_speed;
         }
-        let x = self.context.x.clone();
-        if self.context.changed_set_speed_old != x {
-            let changed_set_speed = x;
-            self.context.changed_set_speed_old = x;
+        let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident.clone();
+        if self.context.changed_set_speed_old != flow_expression_fresh_ident {
+            let changed_set_speed = flow_expression_fresh_ident;
+            self.context.changed_set_speed_old = flow_expression_fresh_ident;
             let (v_set_aux, v_update) =
                 self.process_set_speed
                     .step(self.context.get_process_set_speed_inputs(
@@ -463,7 +462,7 @@ impl TotoService {
     async fn handle_vdc(&mut self, vdc: VdcState) {
         self.context.vdc = vdc;
     }
-    async fn handle_period(&mut self) {
+    async fn handle_period_fresh_ident(&mut self) {
         let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
             self.context
                 .get_speed_limiter_inputs(SpeedLimiterEvent::NoEvent),
@@ -473,7 +472,7 @@ impl TotoService {
         self.context.in_regulation_aux = in_regulation_aux;
         self.context.state_update = state_update;
     }
-    async fn handle_period_1(&mut self) {
+    async fn handle_period_fresh_ident_1(&mut self) {
         let in_regulation = self.context.in_regulation_aux.clone();
         self.in_regulation_channel
             .send(in_regulation)

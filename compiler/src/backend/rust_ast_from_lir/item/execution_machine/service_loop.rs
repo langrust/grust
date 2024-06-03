@@ -1,14 +1,15 @@
-use crate::backend::rust_ast_from_lir::{
-    item::execution_machine::instruction_flow::rust_ast_from_lir as instruction_flow_rust_ast_from_lir,
-    r#type::rust_ast_from_lir as type_rust_ast_from_lir,
-};
-use crate::common::convert_case::camel_case;
-use crate::lir::item::execution_machine::service_loop::{
-    ArrivingFlow, FlowHandler, InterfaceFlow, ServiceLoop, TimingEvent, TimingEventKind,
-};
-use proc_macro2::{Span, TokenStream};
-use quote::format_ident;
-use syn::*;
+prelude! {
+    macro2::{Span, TokenStream},
+    syn::*,
+    quote::format_ident,
+    backend::rust_ast_from_lir::{
+        item::execution_machine::instruction_flow::rust_ast_from_lir as instruction_flow_rust_ast_from_lir,
+        r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    },
+    lir::item::execution_machine::service_loop::{
+        ArrivingFlow, FlowHandler, InterfaceFlow, ServiceLoop, TimingEvent, TimingEventKind,
+    },
+}
 
 /// Transform LIR run-loop into an async function performing a loop over events.
 pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
@@ -29,7 +30,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
     let mut field_values: Vec<FieldValue> = vec![parse_quote! { context }];
     components.iter().for_each(|component_name| {
         let component_state_struct =
-            format_ident!("{}", camel_case(&format!("{}State", component_name)));
+            format_ident!("{}", to_camel_case(&format!("{}State", component_name)));
         let component_name = format_ident!("{}", component_name);
         fields.push(parse_quote! { #component_name: #component_state_struct });
         field_values.push(parse_quote! { #component_name });
@@ -66,7 +67,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
             field_values.push(parse_quote! { #name });
         },
     );
-    let service_name = format_ident!("{}", camel_case(&format!("{service}Service")));
+    let service_name = format_ident!("{}", to_camel_case(&format!("{service}Service")));
     items.push(Item::Struct(parse_quote! {
         pub struct #service_name {
             #(#fields),*
@@ -103,7 +104,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
     // create components states
     let components_states = components.into_iter().map(|component_name| {
         let component_state_struct =
-            format_ident!("{}", camel_case(&format!("{}State", component_name)));
+            format_ident!("{}", to_camel_case(&format!("{}State", component_name)));
         let component_name = format_ident!("{}", component_name);
         let state: Stmt = parse_quote! {
             let #component_name = #component_state_struct::init();
@@ -127,7 +128,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
             }
             TimingEventKind::Timeout(_) => None
         }});
-    // instanciate input context
+    // instantiate input context
     let context: Stmt = parse_quote! {
         let context = Context::init();
     };

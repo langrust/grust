@@ -1,6 +1,8 @@
 use std::collections::BTreeSet;
 
-use crate::{
+use itertools::Itertools;
+
+prelude! {
     backend::rust_ast_from_lir::item::{
         array_alias::rust_ast_from_lir as array_alias_rust_ast_from_lir,
         enumeration::rust_ast_from_lir as enumeration_rust_ast_from_lir,
@@ -9,9 +11,8 @@ use crate::{
         state_machine::rust_ast_from_lir as state_machine_rust_ast_from_lir,
         structure::rust_ast_from_lir as structure_rust_ast_from_lir,
     },
-    lir::{item::Item, project::Project},
-};
-use itertools::Itertools;
+    lir::{Item, Project},
+}
 
 /// Transform LIR item into RustAST item.
 pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {

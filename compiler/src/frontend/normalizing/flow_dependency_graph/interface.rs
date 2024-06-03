@@ -1,10 +1,8 @@
-use petgraph::graphmap::DiGraphMap;
-
 prelude! {
+    graph::DiGraphMap,
     hir::{
-        flow_expression::{FlowExpression, FlowExpressionKind},
-        interface::{
-            FlowDeclaration, FlowExport, FlowImport, FlowInstanciation, FlowStatement, Interface,
+        flow, interface::{
+            FlowDeclaration, FlowExport, FlowImport, FlowInstantiation, FlowStatement, Interface,
         },
     },
 }
@@ -52,12 +50,12 @@ impl Interface {
                         flows_statements.insert(*id, index);
                     }
                     FlowStatement::Declaration(FlowDeclaration { pattern, .. })
-                    | FlowStatement::Instanciation(FlowInstanciation { pattern, .. }) => {
+                    | FlowStatement::Instantiation(FlowInstantiation { pattern, .. }) => {
                         pattern.identifiers().into_iter().for_each(|id| {
                             flows_statements.insert(id, index);
                         });
                     }
-                    FlowStatement::Export(_) => (), // flows are computed by the instanciate statement
+                    FlowStatement::Export(_) => (), // flows are computed by the instantiate statement
                 };
             });
         flows_statements
@@ -92,7 +90,7 @@ impl FlowStatement {
             FlowStatement::Declaration(FlowDeclaration {
                 flow_expression, ..
             })
-            | FlowStatement::Instanciation(FlowInstanciation {
+            | FlowStatement::Instantiation(FlowInstantiation {
                 flow_expression, ..
             }) => {
                 let dependencies = flow_expression.get_dependencies();
@@ -110,26 +108,24 @@ impl FlowStatement {
     }
 }
 
-impl FlowExpression {
+impl flow::Expr {
     pub fn get_dependencies(&self) -> Vec<usize> {
         match &self.kind {
-            FlowExpressionKind::Ident { id } => vec![*id],
-            FlowExpressionKind::Sample {
+            flow::Kind::Ident { id } => vec![*id],
+            flow::Kind::Sample {
                 flow_expression, ..
             }
-            | FlowExpressionKind::Scan {
+            | flow::Kind::Scan {
                 flow_expression, ..
             }
-            | FlowExpressionKind::Timeout {
+            | flow::Kind::Timeout {
                 flow_expression, ..
             }
-            | FlowExpressionKind::Throtle {
+            | flow::Kind::Throtle {
                 flow_expression, ..
             }
-            | FlowExpressionKind::OnChange { flow_expression } => {
-                flow_expression.get_dependencies()
-            }
-            FlowExpressionKind::ComponentCall { inputs, .. } => inputs
+            | flow::Kind::OnChange { flow_expression } => flow_expression.get_dependencies(),
+            flow::Kind::ComponentCall { inputs, .. } => inputs
                 .iter()
                 .flat_map(|(_, flow_expression)| flow_expression.get_dependencies())
                 .collect(),

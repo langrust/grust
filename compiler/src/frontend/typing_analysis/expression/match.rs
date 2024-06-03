@@ -1,23 +1,21 @@
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the match expression.
+    /// Add a [Typ] to the match expression.
     pub fn typing_match(
         &mut self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
             // the type of a match expression is the type of all branches expressions
-            ExpressionKind::Match {
+            hir::expr::Kind::Match {
                 ref mut expression,
                 ref mut arms,
             } => {
@@ -36,7 +34,7 @@ where
                                 .map_or(Ok(()), |expression| {
                                     expression.typing(symbol_table, errors)?;
                                     expression.get_type().unwrap().eq_check(
-                                        &Type::Boolean,
+                                        &Typ::Boolean,
                                         location.clone(),
                                         errors,
                                     )
@@ -49,23 +47,17 @@ where
                                         .pattern
                                         .construct_statement_type(symbol_table, errors)
                                 })
-                                .collect::<Vec<Result<(), TerminationError>>>()
-                                .into_iter()
-                                .collect::<Result<(), TerminationError>>()?;
+                                .collect::<TRes<()>>()?;
 
                             // type all equations
                             body.iter_mut()
                                 .map(|statement| statement.typing(symbol_table, errors))
-                                .collect::<Vec<Result<(), TerminationError>>>()
-                                .into_iter()
-                                .collect::<Result<(), TerminationError>>()?;
+                                .collect::<TRes<()>>()?;
 
                             arm_expression.typing(symbol_table, errors)
                         },
                     )
-                    .collect::<Vec<Result<(), TerminationError>>>()
-                    .into_iter()
-                    .collect::<Result<(), TerminationError>>()?;
+                    .collect::<TRes<()>>()?;
 
                 let first_type = arms[0].3.get_type().unwrap();
                 arms.iter()
@@ -73,9 +65,7 @@ where
                         let arm_expression_type = arm_expression.get_type().unwrap();
                         arm_expression_type.eq_check(first_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), TerminationError>>>()
-                    .into_iter()
-                    .collect::<Result<(), TerminationError>>()?;
+                    .collect::<TRes<()>>()?;
 
                 // todo: patterns should be exhaustive
                 Ok(first_type.clone())

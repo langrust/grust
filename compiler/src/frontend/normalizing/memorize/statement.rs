@@ -1,12 +1,8 @@
-use crate::{
-    hir::{
-        contract::Contract, identifier_creator::IdentifierCreator, memory::Memory,
-        statement::Statement, stream_expression::StreamExpression,
-    },
-    symbol_table::SymbolTable,
-};
+prelude! {
+    hir::{ Contract, IdentifierCreator, Memory, Stmt, stream },
+}
 
-impl Statement<StreamExpression> {
+impl Stmt<stream::Expr> {
     /// Increment memory with statement's expression.
     ///
     /// Store buffer for followed by expressions and unitary node applications.

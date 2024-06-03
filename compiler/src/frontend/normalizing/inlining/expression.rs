@@ -1,35 +1,31 @@
 prelude! {
-    common::label::Label,
-    hir::{
-        dependencies::Dependencies, expression::ExpressionKind, stream_expression::StreamExpression,
-    },
+    graph::Label,
+    hir::{ Dependencies, stream, },
 }
 
 use super::Union;
 
-impl ExpressionKind<StreamExpression> {
-    /// Replace identifier occurence by element in context.
+impl hir::expr::Kind<stream::Expr> {
+    /// Replace identifier occurrence by element in context.
     ///
     /// It will modify the expression according to the context:
-    /// - if an identifier is mapped to another identifier, then rename all
-    /// occurence of the identifier by the new one
-    /// - if the identifer is mapped to an expression, then replace all call to
-    /// the identifier by the expression
+    ///
+    /// - if an identifier is mapped to another identifier, then rename all occurrence of the
+    ///   identifier by the new one
+    /// - if the identifier is mapped to an expression, then replace all call to the identifier by
+    ///   the expression
     ///
     /// # Example
     ///
-    /// With a context `[x -> a, y -> b/2]`, the expression `x + y` will become
-    /// `a + b/2`.
+    /// With a context `[x -> a, y -> b/2]`, the expression `x + y` will become `a + b/2`.
     pub fn replace_by_context(
         &mut self,
         dependencies: &mut Dependencies,
-        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
-    ) -> Option<StreamExpression> {
+        context_map: &HashMap<usize, Union<usize, stream::Expr>>,
+    ) -> Option<stream::Expr> {
         match self {
-            ExpressionKind::Constant { .. }
-            | ExpressionKind::Abstraction { .. }
-            | ExpressionKind::Enumeration { .. } => None,
-            ExpressionKind::Identifier { ref mut id } => {
+            Self::Constant { .. } | Self::Abstraction { .. } | Self::Enumeration { .. } => None,
+            Self::Identifier { ref mut id } => {
                 if let Some(element) = context_map.get(id) {
                     match element {
                         Union::I1(new_id) => {
@@ -43,12 +39,12 @@ impl ExpressionKind<StreamExpression> {
                     None
                 }
             }
-            ExpressionKind::Unop { expression, .. } => {
+            Self::Unop { expression, .. } => {
                 expression.replace_by_context(context_map);
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
                 None
             }
-            ExpressionKind::Binop {
+            Self::Binop {
                 left_expression,
                 right_expression,
                 ..
@@ -63,7 +59,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            ExpressionKind::IfThenElse {
+            Self::IfThenElse {
                 expression,
                 true_expression,
                 false_expression,
@@ -81,7 +77,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            ExpressionKind::Application { ref mut inputs, .. } => {
+            Self::Application { ref mut inputs, .. } => {
                 inputs
                     .iter_mut()
                     .for_each(|expression| expression.replace_by_context(context_map));
@@ -94,7 +90,7 @@ impl ExpressionKind<StreamExpression> {
                 );
                 None
             }
-            ExpressionKind::Structure { ref mut fields, .. } => {
+            Self::Structure { ref mut fields, .. } => {
                 fields
                     .iter_mut()
                     .for_each(|(_, expression)| expression.replace_by_context(context_map));
@@ -107,8 +103,7 @@ impl ExpressionKind<StreamExpression> {
                 );
                 None
             }
-            ExpressionKind::Array { ref mut elements }
-            | ExpressionKind::Tuple { ref mut elements } => {
+            Self::Array { ref mut elements } | Self::Tuple { ref mut elements } => {
                 elements
                     .iter_mut()
                     .for_each(|expression| expression.replace_by_context(context_map));
@@ -121,7 +116,7 @@ impl ExpressionKind<StreamExpression> {
                 );
                 None
             }
-            ExpressionKind::Match {
+            Self::Match {
                 ref mut expression,
                 ref mut arms,
                 ..
@@ -168,7 +163,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            ExpressionKind::When {
+            Self::When {
                 ref mut option,
                 ref mut present_body,
                 ref mut present,
@@ -200,7 +195,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(option_dependencies);
                 None
             }
-            ExpressionKind::FieldAccess {
+            Self::FieldAccess {
                 ref mut expression, ..
             } => {
                 expression.replace_by_context(context_map);
@@ -210,7 +205,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            ExpressionKind::TupleElementAccess {
+            Self::TupleElementAccess {
                 ref mut expression, ..
             } => {
                 expression.replace_by_context(context_map);
@@ -220,7 +215,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            ExpressionKind::Map {
+            Self::Map {
                 ref mut expression, ..
             } => {
                 expression.replace_by_context(context_map);
@@ -230,7 +225,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            ExpressionKind::Fold {
+            Self::Fold {
                 ref mut expression,
                 ref mut initialization_expression,
                 ..
@@ -247,7 +242,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            ExpressionKind::Sort {
+            Self::Sort {
                 ref mut expression, ..
             } => {
                 expression.replace_by_context(context_map);
@@ -257,7 +252,7 @@ impl ExpressionKind<StreamExpression> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            ExpressionKind::Zip { ref mut arrays, .. } => {
+            Self::Zip { ref mut arrays, .. } => {
                 arrays
                     .iter_mut()
                     .for_each(|array| array.replace_by_context(context_map));

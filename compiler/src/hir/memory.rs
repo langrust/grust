@@ -1,12 +1,13 @@
+//! HIR [Memory](crate::hir::memory::Memory) module.
+
 prelude! {
-    common::r#type::Type,
-    hir::stream_expression::StreamExpression
+    hir::stream
 }
 
 /// Memory of an unitary node.
 ///
-/// Memory structure for unitary node.
-/// It stores initial_valuezed buffers and called unitary nodes' names.
+/// Memory structure for unitary node. It stores initial_valuezed buffers and called unitary nodes'
+/// names.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Memory {
     /// Initialized buffers.
@@ -17,21 +18,21 @@ pub struct Memory {
 
 /// Initialized buffer.
 ///
-/// Buffer initial_valueized by a constant.
+/// Buffer `initial_value`-ized by a constant.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Buffer {
     /// Buffer type.
-    pub typing: Type,
+    pub typing: Typ,
     /// Buffer initial value.
-    pub initial_expression: StreamExpression,
+    pub initial_expression: stream::Expr,
     /// Buffer update expression.
-    pub expression: StreamExpression,
+    pub expression: stream::Expr,
 }
 
 /// Called unitary node' name.
 ///
-/// Unitary node's name is composed of the name of the mother
-/// node and the name of the called output signal.
+/// Unitary node's name is composed of the name of the mother node and the name of the called output
+/// signal.
 #[derive(Debug, PartialEq, Clone)]
 pub struct CalledNode {
     /// Node name.
@@ -41,7 +42,7 @@ pub struct CalledNode {
 }
 
 impl Memory {
-    /// Create empty memory.
+    /// Creates empty memory.
     ///
     /// ```rust
     /// # compiler::prelude! { hir::memory::Memory }
@@ -56,12 +57,12 @@ impl Memory {
         }
     }
 
-    /// Add an initialized buffer to memory.
+    /// Adds an initialized buffer to memory.
     pub fn add_buffer(
         &mut self,
         memory_id: usize,
-        initial_expression: StreamExpression,
-        expression: StreamExpression,
+        initial_expression: stream::Expr,
+        expression: stream::Expr,
     ) {
         let typing = initial_expression.get_type().unwrap().clone();
         debug_assert!(self
@@ -77,7 +78,7 @@ impl Memory {
             .is_none())
     }
 
-    /// Add called node to memory.
+    /// Adds called node to memory.
     pub fn add_called_node(
         &mut self,
         memory_id: usize,

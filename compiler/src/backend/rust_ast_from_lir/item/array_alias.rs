@@ -1,7 +1,10 @@
-use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::lir::item::array_alias::ArrayAlias;
-use proc_macro2::Span;
-use syn::*;
+prelude! { just
+    macro2::Span,
+    syn::*,
+    backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    lir::item::array_alias::ArrayAlias,
+}
+
 /// Transform LIR array alias into RustAST type alias.
 pub fn rust_ast_from_lir(array_alias: ArrayAlias) -> ItemType {
     let size = array_alias.size;
@@ -25,16 +28,17 @@ pub fn rust_ast_from_lir(array_alias: ArrayAlias) -> ItemType {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::array_alias::rust_ast_from_lir;
-    use crate::common::r#type::Type;
-    use crate::lir::item::array_alias::ArrayAlias;
+    prelude! {
+        backend::rust_ast_from_lir::item::array_alias::rust_ast_from_lir,
+        lir::item::array_alias::ArrayAlias,
+    }
 
     use syn::*;
     #[test]
     fn should_create_rust_ast_type_alias_from_lir_array_alias() {
         let array_alias = ArrayAlias {
-            name: String::from("Matrix5x5"),
-            array_type: Type::Array(Box::new(Type::Integer), 5),
+            name: "Matrix5x5".into(),
+            array_type: Typ::array(Typ::int(), 5),
             size: 5,
         };
 

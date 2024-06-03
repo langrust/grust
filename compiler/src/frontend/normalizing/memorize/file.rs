@@ -1,5 +1,6 @@
-use crate::hir::file::File;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    hir::File,
+}
 
 impl File {
     /// Create memory for HIR nodes' unitary nodes.

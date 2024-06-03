@@ -1,22 +1,20 @@
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the fold expression.
+    /// Add a [Typ] to the fold expression.
     pub fn typing_fold(
         &mut self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
-            ExpressionKind::Fold {
+            hir::expr::Kind::Fold {
                 ref mut expression,
                 ref mut initialization_expression,
                 ref mut function_expression,
@@ -26,7 +24,7 @@ where
 
                 // verify it is an array
                 match expression.get_type().unwrap() {
-                    Type::Array(element_type, _) => {
+                    Typ::Array(element_type, _) => {
                         // type the initialization expression
                         initialization_expression.typing(symbol_table, errors)?;
                         let initialization_type = initialization_expression.get_type().unwrap();

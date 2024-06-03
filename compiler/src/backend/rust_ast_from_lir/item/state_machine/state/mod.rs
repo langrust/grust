@@ -1,11 +1,19 @@
-use crate::backend::rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir as init_rust_ast_from_lir;
-use crate::backend::rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir as step_rust_ast_from_lir;
-use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::common::convert_case::camel_case;
-use crate::lir::item::state_machine::state::{State, StateElement};
-use quote::format_ident;
 use std::collections::BTreeSet;
-use syn::*;
+
+prelude! {
+    backend::{
+        rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir
+            as init_rust_ast_from_lir,
+        rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir
+            as step_rust_ast_from_lir,
+        rust_ast_from_lir::r#type::rust_ast_from_lir
+            as type_rust_ast_from_lir,
+    },
+    lir::item::state_machine::state::{State, StateElement},
+    quote::format_ident,
+    syn::*,
+}
+
 /// RustAST init method construction from LIR init.
 pub mod init;
 /// RustAST step method construction from LIR step.
@@ -26,7 +34,7 @@ pub fn rust_ast_from_lir(state: State, crates: &mut BTreeSet<String>) -> (ItemSt
                 identifier,
                 node_name,
             } => {
-                let name = format_ident!("{}", camel_case(&format!("{}State", node_name)));
+                let name = format_ident!("{}", to_camel_case(&format!("{}State", node_name)));
                 let identifier = format_ident!("{identifier}");
 
                 parse_quote! { #identifier : #name }
@@ -34,7 +42,7 @@ pub fn rust_ast_from_lir(state: State, crates: &mut BTreeSet<String>) -> (ItemSt
         })
         .collect();
 
-    let name = format_ident!("{}", camel_case(&format!("{}State", state.node_name)));
+    let name = format_ident!("{}", to_camel_case(&format!("{}State", state.node_name)));
     let structure = parse_quote!(
         pub struct #name { #(#fields),* }
     );

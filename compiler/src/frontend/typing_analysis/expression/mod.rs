@@ -1,8 +1,6 @@
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::{Expression, ExpressionKind};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+}
 
 mod abstraction;
 mod application;
@@ -24,7 +22,7 @@ mod unop;
 mod when;
 mod zip;
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
@@ -34,54 +32,50 @@ where
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
-            ExpressionKind::Constant { .. } => self.typing_constant(),
-            ExpressionKind::Identifier { .. } => self.typing_identifier(symbol_table),
-            ExpressionKind::Unop { .. } => self.typing_unop(location, symbol_table, errors),
-            ExpressionKind::Binop { .. } => self.typing_binop(location, symbol_table, errors),
-            ExpressionKind::IfThenElse { .. } => {
+            hir::expr::Kind::Constant { .. } => self.typing_constant(),
+            hir::expr::Kind::Identifier { .. } => self.typing_identifier(symbol_table),
+            hir::expr::Kind::Unop { .. } => self.typing_unop(location, symbol_table, errors),
+            hir::expr::Kind::Binop { .. } => self.typing_binop(location, symbol_table, errors),
+            hir::expr::Kind::IfThenElse { .. } => {
                 self.typing_if_then_else(location, symbol_table, errors)
             }
-            ExpressionKind::Application { .. } => {
+            hir::expr::Kind::Application { .. } => {
                 self.typing_application(location, symbol_table, errors)
             }
-            ExpressionKind::Abstraction { .. } => self.typing_abstraction(symbol_table, errors),
-            ExpressionKind::Structure { .. } => {
+            hir::expr::Kind::Abstraction { .. } => self.typing_abstraction(symbol_table, errors),
+            hir::expr::Kind::Structure { .. } => {
                 self.typing_structure(location, symbol_table, errors)
             }
-            ExpressionKind::Array { .. } => self.typing_array(location, symbol_table, errors),
-            ExpressionKind::Tuple { .. } => self.typing_tuple(symbol_table, errors),
-            ExpressionKind::When { .. } => self.typing_when(location, symbol_table, errors),
-            ExpressionKind::Match { .. } => self.typing_match(location, symbol_table, errors),
-            ExpressionKind::FieldAccess { .. } => {
+            hir::expr::Kind::Array { .. } => self.typing_array(location, symbol_table, errors),
+            hir::expr::Kind::Tuple { .. } => self.typing_tuple(symbol_table, errors),
+            hir::expr::Kind::When { .. } => self.typing_when(location, symbol_table, errors),
+            hir::expr::Kind::Match { .. } => self.typing_match(location, symbol_table, errors),
+            hir::expr::Kind::FieldAccess { .. } => {
                 self.typing_field_access(location, symbol_table, errors)
             }
-            ExpressionKind::Map { .. } => self.typing_map(location, symbol_table, errors),
-            ExpressionKind::Fold { .. } => self.typing_fold(location, symbol_table, errors),
-            ExpressionKind::Sort { .. } => self.typing_sort(location, symbol_table, errors),
-            ExpressionKind::Zip { .. } => self.typing_zip(location, symbol_table, errors),
-            ExpressionKind::TupleElementAccess { .. } => {
+            hir::expr::Kind::Map { .. } => self.typing_map(location, symbol_table, errors),
+            hir::expr::Kind::Fold { .. } => self.typing_fold(location, symbol_table, errors),
+            hir::expr::Kind::Sort { .. } => self.typing_sort(location, symbol_table, errors),
+            hir::expr::Kind::Zip { .. } => self.typing_zip(location, symbol_table, errors),
+            hir::expr::Kind::TupleElementAccess { .. } => {
                 self.typing_tuple_element_access(location, symbol_table, errors)
             }
-            ExpressionKind::Enumeration { .. } => self.typing_enumeration(symbol_table),
+            hir::expr::Kind::Enumeration { .. } => self.typing_enumeration(symbol_table),
         }
     }
 }
 
-impl TypeAnalysis for Expression {
-    fn typing(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+impl TypeAnalysis for hir::Expr {
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         self.typing = Some(self.kind.typing(&self.location, symbol_table, errors)?);
         Ok(())
     }
-    fn get_type(&self) -> Option<&Type> {
+    fn get_type(&self) -> Option<&Typ> {
         self.typing.as_ref()
     }
-    fn get_type_mut(&mut self) -> Option<&mut Type> {
+    fn get_type_mut(&mut self) -> Option<&mut Typ> {
         self.typing.as_mut()
     }
 }

@@ -1,8 +1,6 @@
-use crate::{
-    error::{Error, TerminationError},
-    hir::file::File,
-    symbol_table::SymbolTable,
-};
+prelude! {
+    hir::File,
+}
 
 impl File {
     /// Check the causality of the file.
@@ -40,13 +38,13 @@ impl File {
         &self,
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    ) -> TRes<()> {
         // check causality for each node
         self.nodes
             .iter()
             .map(|node| node.causal(symbol_table, errors))
             .collect::<Vec<_>>()
             .into_iter()
-            .collect::<Result<_, _>>()
+            .collect::<TRes<_>>()
     }
 }

@@ -1,10 +1,5 @@
-use crate::{
-    error::{Error, TerminationError},
-    symbol_table::SymbolTable,
-};
+prelude! {}
 
-/// HIR Node construction from AST Node
-pub mod component;
 /// HIR Contract construction from AST Contract
 pub mod contract;
 /// HIR Equation construction from AST Equation
@@ -23,8 +18,6 @@ pub mod pattern;
 pub mod statement;
 /// HIR StreamExpression construction from AST StreamExpression
 pub mod stream_expression;
-/// HIR Type construction from AST Type
-pub mod r#type;
 /// HIR Typedef construction from AST Typedef.
 pub mod typedef;
 
@@ -38,5 +31,50 @@ pub trait HIRFromAST {
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Self::HIR, TerminationError>;
+    ) -> TRes<Self::HIR>;
+}
+
+impl HIRFromAST for ast::Component {
+    type HIR = hir::Node;
+
+    // precondition: node and its signals are already stored in symbol table
+    // postcondition: construct HIR node and check identifiers good use
+    fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<Self::HIR> {
+        let ast::Component {
+            ident,
+            contract,
+            equations,
+            ..
+        } = self;
+        let name = ident.to_string();
+        let location = Location::default();
+        let id = symbol_table.get_node_id(&name, false, location.clone(), errors)?;
+
+        // create local context with all signals
+        symbol_table.local();
+        symbol_table.restore_context(id);
+        symbol_table.enter_in_node(id);
+
+        let statements = equations
+            .into_iter()
+            .map(|equation| equation.hir_from_ast(symbol_table, errors))
+            .collect::<TRes<Vec<_>>>()?;
+        let contract = contract.hir_from_ast(symbol_table, errors)?;
+
+        symbol_table.leave_node();
+        symbol_table.global();
+
+        Ok(hir::Node {
+            id,
+            statements,
+            contract,
+            location,
+            graph: graph::DiGraphMap::new(),
+            memory: hir::Memory::new(),
+        })
+    }
 }

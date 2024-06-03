@@ -1,19 +1,10 @@
-use petgraph::graphmap::DiGraphMap;
-
 prelude! {
-    common::{color::Color, label::Label},
-    error::{Error, TerminationError},
-    hir::{
-        expression::ExpressionKind,
-        statement::Statement,
-        stream_expression::{StreamExpression, StreamExpressionKind},
-    },
-    symbol_table::SymbolTable,
+    graph::*,
+    hir::{ Stmt, stream },
+    frontend::ctx::*,
 }
 
-use super::add_edge;
-
-impl Statement<StreamExpression> {
+impl Stmt<stream::Expr> {
     /// Add direct dependencies of a statement.
     ///
     /// # Example
@@ -24,24 +15,10 @@ impl Statement<StreamExpression> {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn add_dependencies(
-        &self,
-        graph: &mut DiGraphMap<usize, Label>,
-        symbol_table: &SymbolTable,
-        processus_manager: &mut HashMap<usize, Color>,
-        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    pub fn add_dependencies(&self, ctx: &mut GraphProcCtx) -> TRes<()> {
         let signals = self.pattern.identifiers();
         for signal in signals {
-            self.add_signal_dependencies(
-                signal,
-                graph,
-                symbol_table,
-                processus_manager,
-                nodes_reduced_graphs,
-                errors,
-            )?
+            self.add_signal_dependencies(signal, ctx)?
         }
         Ok(())
     }
@@ -56,23 +33,16 @@ impl Statement<StreamExpression> {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn add_signal_dependencies(
-        &self,
-        signal: usize,
-        graph: &mut DiGraphMap<usize, Label>,
-        symbol_table: &SymbolTable,
-        processus_manager: &mut HashMap<usize, Color>,
-        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        let Statement {
+    pub fn add_signal_dependencies(&self, signal: usize, ctx: &mut GraphProcCtx) -> TRes<()> {
+        let Stmt {
             expression,
             location,
             ..
         } = self;
 
         // get signal's color
-        let color = processus_manager
+        let color = ctx
+            .proc_manager
             .get_mut(&signal)
             .expect("signal should be in processing manager");
 
@@ -84,13 +54,7 @@ impl Statement<StreamExpression> {
 
                 // compute and get dependencies
                 if expression.dependencies.get().is_none() {
-                    expression.compute_dependencies(
-                        graph,
-                        symbol_table,
-                        processus_manager,
-                        nodes_reduced_graphs,
-                        errors,
-                    )?;
+                    expression.compute_dependencies(ctx)?;
                 }
 
                 // add dependencies as graph's edges:
@@ -100,11 +64,12 @@ impl Statement<StreamExpression> {
                     .iter()
                     .for_each(|(id, label)| {
                         // if there was another edge, keep the most important label
-                        add_edge(graph, signal, *id, label.clone())
+                        add_edge(ctx.graph, signal, *id, label.clone())
                     });
 
                 // get signal's color
-                let color = processus_manager
+                let color = ctx
+                    .proc_manager
                     .get_mut(&signal)
                     .expect("signal should be in processing manager");
                 // update status: processed
@@ -115,10 +80,10 @@ impl Statement<StreamExpression> {
             // if processing: error
             Color::Grey => {
                 let error = Error::NotCausalSignal {
-                    signal: symbol_table.get_name(signal).clone(),
+                    signal: ctx.symbol_table.get_name(signal).clone(),
                     location: location.clone(),
                 };
-                errors.push(error);
+                ctx.errors.push(error);
                 Err(TerminationError)
             }
             // if processed: nothing to do
@@ -128,8 +93,8 @@ impl Statement<StreamExpression> {
 
     pub fn get_identifiers(&self) -> Vec<usize> {
         let mut identifiers = match &self.expression.kind {
-            StreamExpressionKind::Expression { expression } => match expression {
-                ExpressionKind::Match { arms, .. } => arms
+            stream::Kind::Expression { expression } => match expression {
+                hir::expr::Kind::Match { arms, .. } => arms
                     .iter()
                     .flat_map(|(pattern, _, statements, _)| {
                         statements
