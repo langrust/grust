@@ -784,6 +784,7 @@ mod stream_expr {
                 // Not constant by default
                 stream::Expr::TypedAbstraction { .. }
                 | stream::Expr::Match { .. }
+                | stream::Expr::When { .. }
                 | stream::Expr::FieldAccess { .. }
                 | stream::Expr::TupleElementAccess { .. }
                 | stream::Expr::Map { .. }
