@@ -1,3 +1,5 @@
+use syn::Token;
+
 prelude! {
     syn::parse::Parse,
     expr::*, operator::BinaryOperator,
@@ -29,12 +31,128 @@ impl Fby {
         Ok(Fby::new(constant, expression))
     }
 }
-impl Parse for Fby {
+
+/// Matching event presence.
+#[derive(Debug, PartialEq, Clone)]
+pub struct EventWhen {
+    /// The pattern receiving the value of the event.
+    pub pattern: Pattern,
+    /// The event to match.
+    pub event: String,
+    /// The optional guard.
+    pub then_token: keyword::then,
+    /// The expression to do.
+    pub expression: Box<Expr>,
+}
+
+mk_new! { impl EventWhen =>
+    new {
+        pattern: Pattern,
+        event: impl Into<String> = event.into(),
+        then_token: keyword::then,
+        expression: Expr = expression.into(),
+    }
+}
+
+impl Parse for EventWhen {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let constant = input.parse()?;
-        let _: keyword::fby = input.parse()?;
-        let expression = input.parse()?;
-        Ok(Fby::new(constant, expression))
+        let pattern: Pattern = input.parse()?;
+        let _: Token![=] = input.parse()?;
+        let event: syn::Ident = input.parse()?;
+        let _: Token![?] = input.parse()?;
+        let then_token: keyword::then = input.parse()?;
+        let expression: Expr = input.parse()?;
+        Ok(EventWhen::new(
+            pattern,
+            event.to_string(),
+            then_token,
+            expression,
+        ))
+    }
+}
+
+/// Matching event timeout.
+#[derive(Debug, PartialEq, Clone)]
+pub struct TimeoutWhen {
+    /// The timeout.
+    pub timeout_token: keyword::timeout,
+    /// The expression to do.
+    pub expression: Box<Expr>,
+}
+
+mk_new! { impl TimeoutWhen =>
+    new {
+        timeout_token: keyword::timeout,
+        expression: Expr = expression.into(),
+    }
+}
+
+impl Parse for TimeoutWhen {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let timeout_token: keyword::timeout = input.parse()?;
+        let expression: Expr = input.parse()?;
+        Ok(TimeoutWhen::new(timeout_token, expression))
+    }
+}
+
+/// Matching absence of events.
+#[derive(Debug, PartialEq, Clone)]
+pub struct DefaultWhen {
+    pub otherwise_token: keyword::otherwise,
+    /// The expression to do.
+    pub expression: Box<Expr>,
+}
+
+mk_new! { impl DefaultWhen =>
+    new {
+        otherwise_token: keyword::otherwise,
+        expression: Expr = expression.into(),
+    }
+}
+
+impl Parse for DefaultWhen {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let otherwise_token: keyword::otherwise = input.parse()?;
+        let expression: Expr = input.parse()?;
+        Ok(DefaultWhen::new(otherwise_token, expression))
+    }
+}
+
+/// Pattern matching for event expression.
+#[derive(Debug, PartialEq, Clone)]
+pub struct When {
+    /// Matching event presence.
+    pub presence: EventWhen,
+    /// Optional, matching event timeout.
+    pub timeout: Option<TimeoutWhen>,
+    /// Matching event presence.
+    pub absence: DefaultWhen,
+}
+
+mk_new! { impl When =>
+    new {
+        presence: EventWhen,
+        timeout: Option<TimeoutWhen>,
+        absence: DefaultWhen,
+    }
+}
+
+impl When {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::when)
+    }
+}
+impl Parse for When {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: keyword::when = input.parse()?;
+        let presence = input.parse()?;
+        let timeout = if input.peek(keyword::timeout) {
+            Some(input.parse()?)
+        } else {
+            None
+        };
+        let absence = input.parse()?;
+        Ok(When::new(presence, timeout, absence))
     }
 }
 
@@ -79,6 +197,8 @@ pub enum Expr {
     Zip(Zip<Self>),
     /// Initialized buffer stream expression.
     Fby(Fby),
+    /// Pattern matching event.
+    When(When),
 }
 
 mk_new! { impl Expr =>
@@ -101,6 +221,7 @@ mk_new! { impl Expr =>
     Sort: sort(arg: Sort<Self> = arg)
     Zip: zip(arg: Zip<Self> = arg)
     Fby: fby(arg: Fby = arg)
+    When: when_match(arg: When = arg)
 }
 
 impl ParsePrec for Expr {
@@ -208,6 +329,8 @@ impl Parse for Expr {
             Self::TypedAbstraction(input.parse()?)
         } else if IfThenElse::<Self>::peek(input) {
             Self::IfThenElse(input.parse()?)
+        } else if When::peek(input) {
+            Self::When(input.parse()?)
         } else {
             Self::parse_prec4(input)?
         };
@@ -224,6 +347,8 @@ impl Parse for Expr {
 
 #[cfg(test)]
 mod parse_stream_expression {
+    use stream::{DefaultWhen, EventWhen, TimeoutWhen, When};
+
     prelude! {
         expr::{
             Application, Arm, Array, Binop, Enumeration, FieldAccess, Fold, Map, Match, Sort,
@@ -438,6 +563,38 @@ mod parse_stream_expression {
             Expr::ident("b"),
             Expr::ident("c"),
         ]));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_when_with_timeout() {
+        let expression: Expr = syn::parse_quote! {when d = p? then x timeout y otherwise z};
+        let control = Expr::when_match(When::new(
+            EventWhen::new(
+                Pattern::ident("d"),
+                "p",
+                Default::default(),
+                Expr::ident("x"),
+            ),
+            Some(TimeoutWhen::new(Default::default(), Expr::ident("y"))),
+            DefaultWhen::new(Default::default(), Expr::ident("z")),
+        ));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_when_without_timeout() {
+        let expression: Expr = syn::parse_quote! {when d = p? then x otherwise z};
+        let control = Expr::when_match(When::new(
+            EventWhen::new(
+                Pattern::ident("d"),
+                "p",
+                Default::default(),
+                Expr::ident("x"),
+            ),
+            None,
+            DefaultWhen::new(Default::default(), Expr::ident("z")),
+        ));
         assert_eq!(expression, control)
     }
 }
