@@ -35,19 +35,11 @@ impl BrakingStateState {
         }
     }
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
+        let previous_state = self.mem;
         let state = match input.braking_state_event {
-            BrakingStateEvent::pedest(Ok(d)) => {
-                let state = brakes(d, input.speed);
-                state
-            }
-            BrakingStateEvent::pedest(Err(())) => {
-                let state = Braking::NoBrake;
-                state
-            }
-            _ => {
-                let state = self.mem;
-                state
-            }
+            BrakingStateEvent::pedest(Ok(d)) => brakes(d, input.speed),
+            BrakingStateEvent::pedest(Err(())) => Braking::NoBrake,
+            _ => previous_state,
         };
         self.mem = state;
         state
