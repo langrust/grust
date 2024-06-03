@@ -4,6 +4,97 @@ prelude! {
 
 use super::HIRFromAST;
 
+impl HIRFromAST for stream::When {
+    type HIR = hir::stream::Kind;
+    /// Transforms AST into HIR and check identifiers good use.
+    fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<Self::HIR> {
+        let stream::When {
+            presence,
+            timeout,
+            absence,
+        } = self;
+        let location = Location::default();
+        let mut arms = vec![];
+
+        // precondition: identifiers are stored in symbol table
+        // postcondition: construct HIR expression kind and check identifiers good use
+
+        // get the event enumeration identifier
+        let event_enum_id =
+            symbol_table.get_event_enumeration_id(false, location.clone(), errors)?;
+        // get the event element identifier
+        let event_element_id: usize = symbol_table.get_event_element_id(
+            &presence.event.to_string(),
+            false,
+            location.clone(),
+            errors,
+        )?;
+        // create presence arm
+        {
+            symbol_table.local();
+            // set pattern signals in local context
+            presence.pattern.store(true, symbol_table, errors)?;
+            // transform into HIR
+            let inner_pattern = presence.pattern.hir_from_ast(symbol_table, errors)?;
+            let pattern = hir::Pattern {
+                kind: hir::pattern::Kind::Event {
+                    event_enum_id,
+                    event_element_id,
+                    pattern: Box::new(inner_pattern),
+                },
+                typing: None,
+                location: location.clone(),
+            };
+            let expression = presence.expression.hir_from_ast(symbol_table, errors)?;
+            symbol_table.global();
+            arms.push((pattern, None, vec![], expression))
+        }
+        // create timeout arm if present
+        if let Some(timeout) = timeout {
+            let pattern = hir::Pattern {
+                kind: hir::pattern::Kind::TimeoutEvent {
+                    event_enum_id,
+                    event_element_id,
+                },
+                typing: None,
+                location: location.clone(),
+            };
+            let expression = timeout.expression.hir_from_ast(symbol_table, errors)?;
+            arms.push((pattern, None, vec![], expression))
+        }
+        // create absence arm
+        {
+            let pattern = hir::Pattern {
+                kind: hir::pattern::Kind::NoEvent { event_enum_id },
+                typing: None,
+                location: location.clone(),
+            };
+            let expression = absence.expression.hir_from_ast(symbol_table, errors)?;
+            arms.push((pattern, None, vec![], expression))
+        }
+
+        // expression to match is the event enumeration
+        let event_id = symbol_table.get_event_id(false, location.clone(), errors)?;
+        let event_enum_expression = hir::stream::Expr {
+            kind: hir::stream::Kind::Event { event_id },
+            typing: None,
+            location: location.clone(),
+            dependencies: hir::Dependencies::new(),
+        };
+
+        Ok(hir::stream::Kind::Expression {
+            expression: hir::expr::Kind::Match {
+                expression: Box::new(event_enum_expression),
+                arms,
+            },
+        })
+    }
+}
+
 impl HIRFromAST for stream::Expr {
     type HIR = hir::stream::Expr;
 
@@ -80,6 +171,7 @@ impl HIRFromAST for stream::Expr {
                     expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
                 }
             }
+            stream::Expr::When(expression) => expression.hir_from_ast(symbol_table, errors)?,
             stream::Expr::Constant(constant) => hir::stream::Kind::Expression {
                 expression: hir::expr::Kind::Constant { constant },
             },
