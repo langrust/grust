@@ -28,6 +28,15 @@ pub struct Unop<E> {
     /// The input expression.
     pub expression: Box<E>,
 }
+
+mk_new! { impl{E} Unop<E> =>
+    new {
+        op : UnaryOperator,
+        expression: E = expression.into(),
+    }
+
+}
+
 impl<E> Unop<E>
 where
     E: Parse,
@@ -1022,13 +1031,24 @@ mod parse_expression {
         let control = Expr::binop(Binop::new(
             BinaryOperator::Add,
             Expr::ident("a"),
-            Expr::Binop(Binop::new(
+            Expr::binop(Binop::new(
                 BinaryOperator::Mul,
                 Expr::ident("b"),
                 Expr::ident("c"),
             )),
         ));
         assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_binop_with_unop() {
+        let term: Expr = syn::parse_quote! {-x + 1};
+        let control = Expr::binop(Binop::new(
+            BinaryOperator::Add,
+            Expr::unop(Unop::new(UnaryOperator::Neg, Expr::ident("x"))),
+            Expr::constant(Constant::int(syn::parse_quote! {1})),
+        ));
+        assert_eq!(term, control)
     }
 
     #[test]
