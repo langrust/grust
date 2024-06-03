@@ -1,25 +1,23 @@
-use crate::common::operator::OtherOperator;
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    operator::OtherOperator,
+    frontend::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the if_then_else expression.
+    /// Add a [Typ] to the if_then_else expression.
     pub fn typing_if_then_else(
         &mut self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
             // an if_then_else expression type is the result of the if_then_else
             // of the inputs types to the abstraction/function type
-            ExpressionKind::IfThenElse {
+            hir::expr::Kind::IfThenElse {
                 expression,
                 true_expression,
                 false_expression,

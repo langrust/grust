@@ -1,10 +1,12 @@
+prelude! {
+    hir::File,
+}
+
 mod flow_dependency_graph;
 mod inlining;
 mod memorize;
 mod normal_form;
 mod scheduling;
-
-use crate::{hir::file::File, symbol_table::SymbolTable};
 
 impl File {
     /// Normalize HIR nodes in file.

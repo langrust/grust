@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::{
+prelude! {
     hir::memory::{Buffer, CalledNode, Memory},
     lir::item::{
         import::Import,
@@ -9,8 +9,7 @@ use crate::{
             state::{init::StateElementInit, step::StateElementStep, StateElement},
         },
     },
-    symbol_table::SymbolTable,
-};
+}
 
 use super::LIRFromHIR;
 
@@ -106,7 +105,7 @@ impl Memory {
     }
 
     /// Get event conversion.
-    pub fn get_event_convertions(&self, symbol_table: &SymbolTable) -> Vec<IntoOtherEvent> {
+    pub fn get_event_conversions(&self, symbol_table: &SymbolTable) -> Vec<IntoOtherEvent> {
         self.called_nodes
             .values()
             .filter_map(
@@ -117,7 +116,7 @@ impl Memory {
                     if symbol_table.has_events(*node_id) {
                         let intos = IntoOtherEvent {
                             other_node_name: symbol_table.get_name(*node_id).clone(),
-                            convertions: inputs_map
+                            conversions: inputs_map
                                 .iter()
                                 .filter(|(id, _)| symbol_table.get_type(*id).is_event())
                                 .map(|(other_event_id, given_event_id)| {

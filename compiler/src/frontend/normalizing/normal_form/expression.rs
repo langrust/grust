@@ -1,16 +1,9 @@
-use petgraph::graphmap::DiGraphMap;
-
 prelude! {
-    common::label::Label,
-    hir::{
-        dependencies::Dependencies, expression::ExpressionKind,
-        identifier_creator::IdentifierCreator, statement::Statement,
-        stream_expression::StreamExpression,
-    },
-    symbol_table::SymbolTable,
+    graph::*,
+    hir::{ Dependencies, IdentifierCreator, Stmt, stream },
 }
 
-impl ExpressionKind<StreamExpression> {
+impl hir::expr::Kind<stream::Expr> {
     /// Change HIR expression into a normal form.
     ///
     /// The normal form of an expression is as follows:
@@ -36,15 +29,15 @@ impl ExpressionKind<StreamExpression> {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
-    ) -> Vec<Statement<StreamExpression>> {
+    ) -> Vec<Stmt<stream::Expr>> {
         match self {
-            ExpressionKind::Constant { .. }
-            | ExpressionKind::Identifier { .. }
-            | ExpressionKind::Enumeration { .. }
-            | ExpressionKind::Abstraction { .. } => {
+            Self::Constant { .. }
+            | Self::Identifier { .. }
+            | Self::Enumeration { .. }
+            | Self::Abstraction { .. } => {
                 vec![]
             }
-            ExpressionKind::Unop { expression, .. } => {
+            Self::Unop { expression, .. } => {
                 let new_statements =
                     expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
@@ -53,7 +46,7 @@ impl ExpressionKind<StreamExpression> {
                 new_statements
             }
 
-            ExpressionKind::Binop {
+            Self::Binop {
                 left_expression,
                 right_expression,
                 ..
@@ -79,7 +72,7 @@ impl ExpressionKind<StreamExpression> {
                 new_statements
             }
 
-            ExpressionKind::IfThenElse {
+            Self::IfThenElse {
                 expression,
                 true_expression,
                 false_expression,
@@ -110,7 +103,7 @@ impl ExpressionKind<StreamExpression> {
                 new_statements
             }
 
-            ExpressionKind::Application { ref mut inputs, .. } => {
+            Self::Application { ref mut inputs, .. } => {
                 let new_statements = inputs
                     .iter_mut()
                     .flat_map(|expression| {
@@ -132,7 +125,7 @@ impl ExpressionKind<StreamExpression> {
                 new_statements
             }
 
-            ExpressionKind::Structure { fields, .. } => {
+            Self::Structure { fields, .. } => {
                 let new_statements = fields
                     .iter_mut()
                     .flat_map(|(_, expression)| {
@@ -153,7 +146,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => {
+            Self::Array { elements } | Self::Tuple { elements } => {
                 let new_statements = elements
                     .iter_mut()
                     .flat_map(|expression| {
@@ -174,7 +167,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::Match {
+            Self::Match {
                 expression, arms, ..
             } => {
                 let mut statements =
@@ -237,7 +230,7 @@ impl ExpressionKind<StreamExpression> {
 
                 statements
             }
-            ExpressionKind::When {
+            Self::When {
                 option,
                 present_body,
                 present,
@@ -265,7 +258,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::FieldAccess { expression, .. } => {
+            Self::FieldAccess { expression, .. } => {
                 let new_statements =
                     expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
@@ -273,7 +266,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::TupleElementAccess { expression, .. } => {
+            Self::TupleElementAccess { expression, .. } => {
                 let new_statements =
                     expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
@@ -281,7 +274,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::Map { expression, .. } => {
+            Self::Map { expression, .. } => {
                 let new_statements =
                     expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
@@ -289,7 +282,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::Fold {
+            Self::Fold {
                 expression,
                 initialization_expression,
                 ..
@@ -314,7 +307,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::Sort { expression, .. } => {
+            Self::Sort { expression, .. } => {
                 let new_statements =
                     expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
@@ -322,7 +315,7 @@ impl ExpressionKind<StreamExpression> {
 
                 new_statements
             }
-            ExpressionKind::Zip { arrays, .. } => {
+            Self::Zip { arrays, .. } => {
                 let new_statements = arrays
                     .iter_mut()
                     .flat_map(|array| {

@@ -1,4 +1,6 @@
-use crate::hir::file::File;
+prelude! {
+    just hir::File,
+}
 
 impl File {
     /// Schedule unitary nodes' equations.

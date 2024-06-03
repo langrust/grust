@@ -1,8 +1,7 @@
-use crate::{
+prelude! {
     hir::contract::Contract,
     lir::{contract::Contract as LIRContract, item::import::Import},
-    symbol_table::SymbolTable,
-};
+}
 
 use super::LIRFromHIR;
 
@@ -36,14 +35,14 @@ impl LIRFromHIR for Contract {
         let mut imports = vec![];
 
         if !self.invariant.is_empty() {
-            imports.push(Import::Creusot(String::from("ensures")));
-            imports.push(Import::Creusot(String::from("requires")))
+            imports.push(Import::creusot("ensures"));
+            imports.push(Import::creusot("requires"));
         } else {
             if !self.ensures.is_empty() {
-                imports.push(Import::Creusot(String::from("ensures")))
+                imports.push(Import::creusot("ensures"));
             }
             if !self.requires.is_empty() {
-                imports.push(Import::Creusot(String::from("requires")))
+                imports.push(Import::creusot("requires"));
             }
         }
 
@@ -52,15 +51,12 @@ impl LIRFromHIR for Contract {
 }
 
 mod term {
-    use crate::{
+    prelude! {
         hir::contract::{Term, TermKind},
         lir::contract::Term as LIRTerm,
-        symbol_table::SymbolTable,
-    };
+    }
 
-    use super::LIRFromHIR;
-
-    impl LIRFromHIR for Term {
+    impl super::LIRFromHIR for Term {
         type LIR = LIRTerm;
 
         fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {

@@ -1,23 +1,17 @@
-use petgraph::graphmap::DiGraphMap;
-
 prelude! {
-    common::{
-        color::Color,
-        label::Label,
-    },
-    error::{Error, TerminationError},
-    hir::stream_expression::{StreamExpression, StreamExpressionKind},
-    symbol_table::SymbolTable,
+    graph::*,
+    hir::stream,
+    frontend::ctx::*,
 }
 
-impl StreamExpression {
+impl stream::Expr {
     /// Get nodes applications identifiers.
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self.kind {
-            StreamExpressionKind::Event { .. } => vec![],
-            StreamExpressionKind::Expression { expression } => expression.get_called_nodes(),
-            StreamExpressionKind::FollowedBy { expression, .. } => expression.get_called_nodes(),
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::Event { .. } => vec![],
+            stream::Kind::Expression { expression } => expression.get_called_nodes(),
+            stream::Kind::FollowedBy { expression, .. } => expression.get_called_nodes(),
+            stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
                 ..
@@ -48,31 +42,18 @@ impl StreamExpression {
     /// The stream expression `my_node(f(x), 1).o` depends on the signal `x` with
     /// a dependency label weight of 2. Indeed, the expression depends on the memory
     /// of the memory of `x` (the signal is behind 2 fby operations).
-    pub fn compute_dependencies(
-        &self,
-        graph: &mut DiGraphMap<usize, Label>,
-        symbol_table: &SymbolTable,
-        processus_manager: &mut HashMap<usize, Color>,
-        nodes_reduced_graphs: &mut HashMap<usize, DiGraphMap<usize, Label>>,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    pub fn compute_dependencies(&self, ctx: &mut GraphProcCtx) -> TRes<()> {
         match &self.kind {
-            StreamExpressionKind::Event { event_id } => {
+            stream::Kind::Event { event_id } => {
                 self.dependencies.set(vec![(*event_id, Label::Weight(0))]);
                 Ok(())
             }
-            StreamExpressionKind::FollowedBy {
+            stream::Kind::FollowedBy {
                 ref constant,
                 ref expression,
             } => {
                 // propagate dependencies computation in expression
-                expression.compute_dependencies(
-                    graph,
-                    symbol_table,
-                    processus_manager,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
+                expression.compute_dependencies(ctx)?;
                 // dependencies with the memory delay
                 let dependencies = expression
                     .get_dependencies()
@@ -82,19 +63,13 @@ impl StreamExpression {
                     .collect();
 
                 // constant should not have dependencies
-                constant.compute_dependencies(
-                    graph,
-                    symbol_table,
-                    processus_manager,
-                    nodes_reduced_graphs,
-                    errors,
-                )?;
+                constant.compute_dependencies(ctx)?;
                 debug_assert!({ constant.get_dependencies().is_empty() });
 
                 self.dependencies.set(dependencies);
                 Ok(())
             }
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::NodeApplication {
                 ref called_node_id,
                 ref inputs,
                 ..
@@ -106,17 +81,11 @@ impl StreamExpression {
                         .iter()
                         .map(|(input_id, input_expression)| {
                             // compute input expression dependencies
-                            input_expression.compute_dependencies(
-                                graph,
-                                symbol_table,
-                                processus_manager,
-                                nodes_reduced_graphs,
-                                errors,
-                            )?;
+                            input_expression.compute_dependencies(ctx)?;
 
+                            let symbol_table = ctx.symbol_table;
                             // get reduced graph (graph with only inputs/outputs signals)
-                            let reduced_graph =
-                                nodes_reduced_graphs.get_mut(called_node_id).unwrap();
+                            let reduced_graph = ctx.reduced_graphs.get_mut(called_node_id).unwrap();
 
                             // for each node's output, get dependencies from output to inputs
                             let dependencies = symbol_table
@@ -139,7 +108,7 @@ impl StreamExpression {
 
                             Ok(dependencies)
                         })
-                        .collect::<Result<Vec<Vec<(usize, Label)>>, TerminationError>>()?
+                        .collect::<TRes<Vec<Vec<(usize, Label)>>>>()?
                         .into_iter()
                         .flatten()
                         .collect::<Vec<(usize, Label)>>(),
@@ -147,14 +116,8 @@ impl StreamExpression {
 
                 Ok(())
             }
-            StreamExpressionKind::Expression { expression } => {
-                self.dependencies.set(expression.compute_dependencies(
-                    graph,
-                    symbol_table,
-                    processus_manager,
-                    nodes_reduced_graphs,
-                    errors,
-                )?);
+            stream::Kind::Expression { expression } => {
+                self.dependencies.set(expression.compute_dependencies(ctx)?);
                 Ok(())
             }
         }

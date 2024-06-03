@@ -1,38 +1,28 @@
-use petgraph::{algo::all_simple_paths, graphmap::DiGraphMap};
-
 prelude! {
-    common::label::Label,
-    hir::{
-        expression::ExpressionKind,
-        identifier_creator::IdentifierCreator,
-        memory::Memory,
-        node::Node,
-        statement::Statement,
-        stream_expression::{StreamExpression, StreamExpressionKind},
-    },
-    symbol_table::SymbolTable,
+    petgraph::{algo::all_simple_paths},
+    graph::*,
+    hir::{ IdentifierCreator, Memory, Node, Stmt, stream },
 }
 
 use super::Union;
 
-impl Statement<StreamExpression> {
+impl Stmt<stream::Expr> {
     /// Add the statement identifier to the identifier creator.
     ///
-    /// It will add the statement identifier to the identifier creator.
-    /// If the identifier already exists, then the new identifer created by
-    /// the identifier creator will be added to the renaming context.
+    /// It will add the statement identifier to the identifier creator. If the identifier already
+    /// exists, then the new identifier created by the identifier creator will be added to the
+    /// renaming context.
     pub fn add_necessary_renaming(
         &self,
         identifier_creator: &mut IdentifierCreator,
-        context_map: &mut HashMap<usize, Union<usize, StreamExpression>>,
+        context_map: &mut HashMap<usize, Union<usize, stream::Expr>>,
         symbol_table: &mut SymbolTable,
     ) {
         // create fresh identifiers for the new statement
         let local_signals = self.pattern.identifiers();
         for signal_id in local_signals {
             let name = symbol_table.get_name(signal_id);
-            let fresh_name =
-                identifier_creator.new_identifier(String::new(), name.clone(), String::new());
+            let fresh_name = identifier_creator.new_identifier(name);
             if &fresh_name != name {
                 // TODO: should we just replace anyway?
                 let scope = symbol_table.get_scope(signal_id).clone();
@@ -44,23 +34,24 @@ impl Statement<StreamExpression> {
         }
     }
 
-    /// Replace identifier occurence by element in context.
+    /// Replace identifier occurrence by element in context.
     ///
-    /// It will return a new statement where the expression has been modified
-    /// according to the context:
-    /// - if an identifier is mapped to another identifier, then rename all
-    /// occurence of the identifier by the new one
-    /// - if the identifer is mapped to an expression, then replace all call to
-    /// the identifier by the expression
+    /// It will return a new statement where the expression has been modified according to the
+    /// context:
+    ///
+    /// - if an identifier is mapped to another identifier, then rename all occurrence of the
+    ///   identifier by the new one
+    /// - if the identifier is mapped to an expression, then replace all call to the identifier by
+    ///   the expression
     ///
     /// # Example
     ///
-    /// With a context `[x -> a, y -> b/2, z -> c]`, a call to the function
-    /// with the statement `z = x + y` will return `c = a + b/2`.
+    /// With a context `[x -> a, y -> b/2, z -> c]`, a call to the function with the statement `z =
+    /// x + y` will return `c = a + b/2`.
     pub fn replace_by_context(
         &self,
-        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
-    ) -> Statement<StreamExpression> {
+        context_map: &HashMap<usize, Union<usize, stream::Expr>>,
+    ) -> Stmt<stream::Expr> {
         let mut new_statement = self.clone();
 
         // replace statement's identifiers by the new ones
@@ -69,10 +60,10 @@ impl Statement<StreamExpression> {
             if let Some(element) = context_map.get(&signal_id) {
                 match element {
                     Union::I1(new_id)
-                    | Union::I2(StreamExpression {
+                    | Union::I2(stream::Expr {
                         kind:
-                            StreamExpressionKind::Expression {
-                                expression: ExpressionKind::Identifier { id: new_id },
+                            stream::Kind::Expression {
+                                expression: hir::expr::Kind::Identifier { id: new_id },
                             },
                         ..
                     }) => {
@@ -105,14 +96,14 @@ impl Statement<StreamExpression> {
     ///
     /// We need to inline the code, the output `fib` is defined before the input `fib`,
     /// which can not be computed by a function call.
-    pub fn inline_when_needed_reccursive(
+    pub fn inline_when_needed_recursive(
         self,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
         nodes: &HashMap<usize, Node>,
-    ) -> Vec<Statement<StreamExpression>> {
+    ) -> Vec<Stmt<stream::Expr>> {
         let mut current_statements = vec![self.clone()];
         let mut new_statements =
             self.inline_when_needed(memory, identifier_creator, graph, symbol_table, nodes);
@@ -142,9 +133,9 @@ impl Statement<StreamExpression> {
         graph: &DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
         nodes: &HashMap<usize, Node>,
-    ) -> Vec<Statement<StreamExpression>> {
+    ) -> Vec<Stmt<stream::Expr>> {
         match &self.expression.kind {
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
                 ..

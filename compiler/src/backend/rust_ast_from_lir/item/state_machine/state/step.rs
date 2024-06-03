@@ -1,16 +1,21 @@
-use crate::backend::rust_ast_from_lir::expression::{
-    binary_to_syn, constant_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
-};
-use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir;
-use crate::common::{convert_case::camel_case, r#type::Type as GRRustType, scope::Scope};
-use crate::lir::contract::{Contract, Term};
-use crate::lir::item::state_machine::state::step::{StateElementStep, Step};
-use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote};
 use std::collections::BTreeSet;
-use syn::parse_quote;
-use syn::*;
+
+prelude! {
+    macro2::{Span, TokenStream},
+    quote::{format_ident, quote},
+    syn::*,
+    backend::{
+        rust_ast_from_lir::expression::{
+            binary_to_syn, constant_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
+        },
+        rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+        rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir,
+    },
+    lir::{
+        contract::{Contract, Term},
+        item::state_machine::state::step::{StateElementStep, Step},
+    },
+}
 
 fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
     match term {
@@ -75,7 +80,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
         .into_iter()
         .flat_map(|term| {
             let ts_pre = term_to_token_stream(term.clone(), false);
-            let ts_post = term_to_token_stream(term, true); // state postcondition
+            let ts_post = term_to_token_stream(term, true); // state post-condition
             vec![
                 parse_quote!(#[requires(#ts_pre)]),
                 parse_quote!(#[ensures(#ts_post)]),
@@ -89,7 +94,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
     let mut generic_params: Vec<GenericParam> = vec![];
     let mut generic_idents: Vec<Ident> = vec![];
     for (generic_name, generic_type) in step.generics {
-        if let GRRustType::Abstract(arguments, output) = generic_type {
+        if let Typ::Abstract(arguments, output) = generic_type {
             let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
             let output = type_rust_ast_from_lir(*output);
             let identifier = format_ident!("{generic_name}");
@@ -106,7 +111,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
     };
 
     let input_ty_name = Ident::new(
-        &camel_case(&format!("{}Input", step.node_name)),
+        &to_camel_case(&format!("{}Input", step.node_name)),
         Span::call_site(),
     );
     let ty = if generic_idents.is_empty() {
@@ -204,19 +209,13 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! {
+        syn::*,
         backend::rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir,
-        common::{
-            constant::Constant,
-            r#type::Type,
-        },
         lir::{
-            expression::{Expression, FieldIdentifier},
+            FieldIdentifier, Pattern, Stmt,
             item::state_machine::state::step::{StateElementStep, Step},
-            pattern::Pattern,
-            statement::Statement,
         },
     }
-    use syn::*;
 
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
@@ -224,20 +223,18 @@ mod rust_ast_from_lir {
             contract: Default::default(),
             node_name: format!("Node"),
             generics: vec![],
-            output_type: Type::Integer,
+            output_type: Typ::Integer,
             body: vec![
-                Statement::Let {
+                Stmt::Let {
                     pattern: Pattern::ident("o"),
-                    expression: Expression::field_access(
-                        Expression::ident("self"),
-                        FieldIdentifier::Named(format!("mem_i")),
+                    expression: lir::Expr::field_access(
+                        lir::Expr::ident("self"),
+                        FieldIdentifier::named("mem_i"),
                     ),
                 },
-                Statement::Let {
-                    pattern: Pattern::Identifier {
-                        name: String::from("y"),
-                    },
-                    expression: Expression::node_call(
+                Stmt::Let {
+                    pattern: Pattern::ident("y"),
+                    expression: lir::Expr::node_call(
                         "called_node_state",
                         "CalledNodeInput",
                         vec![],
@@ -245,25 +242,23 @@ mod rust_ast_from_lir {
                 },
             ],
             state_elements_step: vec![
-                StateElementStep {
-                    identifier: format!("mem_i"),
-                    expression: Expression::binop(
-                        crate::common::operator::BinaryOperator::Add,
-                        Expression::ident("o"),
-                        Expression::literal(Constant::Integer(parse_quote!(1i64))),
+                StateElementStep::new(
+                    "mem_i",
+                    lir::Expr::binop(
+                        operator::BinaryOperator::Add,
+                        lir::Expr::ident("o"),
+                        lir::Expr::lit(Constant::Integer(parse_quote!(1i64))),
                     ),
-                },
-                StateElementStep {
-                    identifier: format!("called_node_state"),
-                    expression: Expression::Identifier {
-                        identifier: format!("new_called_node_state"),
-                    },
-                },
+                ),
+                StateElementStep::new(
+                    "called_node_state",
+                    lir::Expr::ident("new_called_node_state"),
+                ),
             ],
-            output_expression: Expression::binop(
-                crate::common::operator::BinaryOperator::Add,
-                Expression::ident("o"),
-                Expression::ident("y"),
+            output_expression: lir::Expr::binop(
+                operator::BinaryOperator::Add,
+                lir::Expr::ident("o"),
+                lir::Expr::ident("y"),
             ),
         };
 

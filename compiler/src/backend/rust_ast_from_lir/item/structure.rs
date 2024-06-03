@@ -1,7 +1,10 @@
-use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::lir::item::structure::Structure;
-use proc_macro2::Span;
-use syn::*;
+prelude! { just
+    macro2::Span,
+    syn::*,
+    backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    lir::item::structure::Structure,
+}
+
 /// Transform LIR structure into RustAST structure.
 pub fn rust_ast_from_lir(structure: Structure) -> ItemStruct {
     let fields = structure.fields.into_iter().map(|(name, r#type)| {
@@ -22,20 +25,18 @@ pub fn rust_ast_from_lir(structure: Structure) -> ItemStruct {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::structure::rust_ast_from_lir;
-    use crate::common::r#type::Type;
-    use crate::lir::item::structure::Structure;
-    use syn::*;
+    prelude! {
+        syn::*,
+        backend::rust_ast_from_lir::item::structure::rust_ast_from_lir,
+        lir::item::structure::Structure,
+    }
 
     #[test]
     fn should_create_rust_ast_structure_from_lir_structure() {
-        let structure = Structure {
-            name: String::from("Point"),
-            fields: vec![
-                (String::from("x"), Type::Integer),
-                (String::from("y"), Type::Integer),
-            ],
-        };
+        let structure = Structure::new(
+            "Point",
+            vec![("x".into(), Typ::int()), ("y".into(), Typ::int())],
+        );
 
         let control = parse_quote! {
             #[derive(Clone, Copy, Debug, PartialEq, Default)]

@@ -1,11 +1,14 @@
-use compiler::{ast::Ast, conf, dump_code, into_token_stream};
+compiler::prelude! {
+    ast::Ast,
+    conf,
+}
 
 #[test]
 fn should_compile_aeb() {
     let ast: Ast = syn::parse_quote! {
-        #![dump = "C:/Users/az03049/Documents/gitlab/langrust/grustine/compiler/tests/macro_outputs/aeb.rs"]
+        #![dump = "tests/macro_outputs/aeb.rs"]
 
-        // Branking type
+        // Braking type
         enum Braking {
             UrgentBrake,
             SoftBrake,
@@ -56,8 +59,8 @@ fn should_compile_aeb() {
         brakes = braking_state(pedestrian, speed_km_h);
 
     };
-    let tokens = into_token_stream(ast);
+    let tokens = compiler::into_token_stream(ast);
     if let Some(path) = conf::dump_code() {
-        dump_code(&path, &tokens);
+        compiler::dump_code(&path, &tokens);
     }
 }

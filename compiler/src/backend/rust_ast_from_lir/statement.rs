@@ -4,13 +4,15 @@ use super::{
     expression::rust_ast_from_lir as expression_rust_ast_from_lir,
     pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
 };
-use crate::lir::statement::Statement;
-use syn::*;
+
+prelude! {
+    syn::*,
+}
 
 /// Transform LIR statement into RustAST statement.
-pub fn rust_ast_from_lir(statement: Statement, crates: &mut BTreeSet<String>) -> Stmt {
+pub fn rust_ast_from_lir(statement: lir::Stmt, crates: &mut BTreeSet<String>) -> Stmt {
     match statement {
-        Statement::Let {
+        lir::Stmt::Let {
             pattern,
             expression,
         } => Stmt::Local(Local {
@@ -24,7 +26,7 @@ pub fn rust_ast_from_lir(statement: Statement, crates: &mut BTreeSet<String>) ->
             }),
             semi_token: Default::default(),
         }),
-        Statement::ExpressionLast { expression } => {
+        lir::Stmt::ExprLast { expression } => {
             Stmt::Expr(expression_rust_ast_from_lir(expression, crates), None)
         }
     }
@@ -32,22 +34,18 @@ pub fn rust_ast_from_lir(statement: Statement, crates: &mut BTreeSet<String>) ->
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::statement::rust_ast_from_lir;
-    use crate::common::constant::Constant;
-    use crate::lir::expression::Expression;
-    use crate::lir::pattern::Pattern;
-    use crate::lir::statement::Statement;
-    use syn::*;
+    prelude! {
+        syn::*,
+        backend::rust_ast_from_lir::statement::rust_ast_from_lir,
+        lir::Pattern,
+    }
+
     #[test]
     fn should_create_rust_ast_let_statement_from_lir_let_statement() {
-        let statement = Statement::Let {
-            pattern: Pattern::Identifier {
-                name: String::from("x"),
-            },
-            expression: Expression::Literal {
-                literal: Constant::Integer(parse_quote!(1i64)),
-            },
-        };
+        let statement = lir::Stmt::let_binding(
+            Pattern::ident("x"),
+            lir::Expr::lit(Constant::int(parse_quote!(1i64))),
+        );
 
         let control = parse_quote! {
             let x = 1i64;
@@ -60,21 +58,17 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_let_statement_from_lir_let_statement_with_node_call() {
-        let statement = Statement::Let {
-            pattern: Pattern::Identifier {
-                name: String::from("o"),
-            },
-            expression: Expression::NodeCall {
-                node_identifier: String::from("node_state"),
-                input_name: String::from("NodeInput"),
-                input_fields: vec![(
-                    String::from("i"),
-                    Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(1i64)),
-                    },
+        let statement = lir::Stmt::let_binding(
+            Pattern::ident("o"),
+            lir::Expr::node_call(
+                "node_state",
+                "NodeInput",
+                vec![(
+                    "i".into(),
+                    lir::Expr::lit(Constant::int(parse_quote!(1i64))),
                 )],
-            },
-        };
+            ),
+        );
 
         let control = parse_quote! { let o = self.node_state.step(NodeInput { i: 1i64 }); };
         assert_eq!(
@@ -85,11 +79,8 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_last_expression_from_lir_last_expression() {
-        let statement = Statement::ExpressionLast {
-            expression: Expression::Literal {
-                literal: Constant::Integer(parse_quote!(1i64)),
-            },
-        };
+        let statement =
+            lir::Stmt::expression_last(lir::Expr::lit(Constant::int(parse_quote!(1i64))));
 
         let control = Stmt::Expr(parse_quote! { 1i64 }, None);
         assert_eq!(

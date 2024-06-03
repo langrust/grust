@@ -1,41 +1,38 @@
-use crate::ast::equation::{
-    Arm, ArmWhen, DefaultArmWhen, Equation, EventArmWhen, Instanciation, Match, MatchWhen,
-    TimeoutArmWhen,
-};
-use crate::ast::pattern::{Pattern as ASTPattern, Tuple};
-use crate::ast::statement::LetDeclaration;
-use crate::common::location::Location;
-use crate::error::{Error, TerminationError};
-use crate::hir::dependencies::Dependencies;
-use crate::hir::expression::ExpressionKind;
-use crate::hir::pattern::{Pattern, PatternKind};
-use crate::hir::stream_expression::StreamExpressionKind;
-use crate::hir::{
-    statement::Statement as HIRStatement,
-    stream_expression::StreamExpression as HIRStreamExpression,
-};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::{
+        equation::{
+            Arm, ArmWhen, DefaultArmWhen, Equation, EventArmWhen, Instantiation, Match, MatchWhen,
+            TimeoutArmWhen,
+        },
+        stmt::LetDecl,
+    },
+    hir::{
+        Dependencies, Pattern, pattern,
+        stream,
+    },
+}
 
 use super::HIRFromAST;
 
 impl HIRFromAST for Equation {
-    type HIR = HIRStatement<HIRStreamExpression>;
+    type HIR = hir::Stmt<stream::Expr>;
 
-    // precondition: equation's signal is already stored in symbol table
-    // postcondition: construct HIR equation and check identifiers good use
+    /// Pre-condition: equation's signal is already stored in symbol table.
+    ///
+    /// Post-condition: construct HIR equation and check identifiers good use.
     fn hir_from_ast(
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Self::HIR, TerminationError> {
+    ) -> TRes<Self::HIR> {
         let location = Location::default();
 
         let declared_pattern = self.get_pattern();
         let pattern = declared_pattern.hir_from_ast(symbol_table, errors)?;
 
         match self {
-            Equation::LocalDef(LetDeclaration { expression, .. })
-            | Equation::OutputDef(Instanciation { expression, .. }) => Ok(HIRStatement {
+            Equation::LocalDef(LetDecl { expression, .. })
+            | Equation::OutputDef(Instantiation { expression, .. }) => Ok(hir::Stmt {
                 pattern,
                 expression: expression.hir_from_ast(symbol_table, errors)?,
                 location,
@@ -67,9 +64,7 @@ impl HIRFromAST for Equation {
                                     defined_signals.append(&mut equation_signals);
                                     Ok(())
                                 })
-                                .collect::<Vec<Result<_, _>>>()
-                                .into_iter()
-                                .collect::<Result<(), _>>()?;
+                                .collect::<TRes<()>>()?;
 
                             // transform into HIR
                             let pattern = pattern.hir_from_ast(symbol_table, errors)?;
@@ -81,18 +76,14 @@ impl HIRFromAST for Equation {
                             let statements = equations
                                 .into_iter()
                                 .map(|equation| equation.hir_from_ast(symbol_table, errors))
-                                .collect::<Vec<Result<_, _>>>()
-                                .into_iter()
-                                .collect::<Result<Vec<_>, _>>()?;
+                                .collect::<TRes<Vec<_>>>()?;
 
                             symbol_table.global();
 
                             Ok((pattern, guard, defined_signals, statements))
                         },
                     )
-                    .collect::<Vec<Result<_, _>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?;
+                    .collect::<TRes<Vec<_>>>()?;
 
                 // for every arm, check signals are all the same
                 // and create the tuple expression
@@ -121,9 +112,9 @@ impl HIRFromAST for Equation {
                                     });
                                 if let Some(index) = position {
                                     let (_, id) = defined_signals.get(index).unwrap();
-                                    Ok(HIRStreamExpression {
-                                        kind: StreamExpressionKind::Expression {
-                                            expression: ExpressionKind::Identifier { id: *id },
+                                    Ok(stream::Expr {
+                                        kind: stream::Kind::Expression {
+                                            expression: hir::expr::Kind::Identifier { id: *id },
                                         },
                                         typing: None,
                                         location: location.clone(),
@@ -138,16 +129,14 @@ impl HIRFromAST for Equation {
                                     return Err(TerminationError);
                                 }
                             })
-                            .collect::<Vec<Result<_, _>>>()
-                            .into_iter()
-                            .collect::<Result<Vec<_>, _>>()?;
+                            .collect::<TRes<Vec<_>>>()?;
 
                         let expression = if elements.len() == 1 {
                             elements.pop().unwrap()
                         } else {
-                            HIRStreamExpression {
-                                kind: StreamExpressionKind::Expression {
-                                    expression: ExpressionKind::Tuple { elements },
+                            stream::Expr {
+                                kind: stream::Kind::Expression {
+                                    expression: hir::expr::Kind::Tuple { elements },
                                 },
                                 typing: None,
                                 location: location.clone(),
@@ -156,14 +145,12 @@ impl HIRFromAST for Equation {
                         };
                         Ok((pattern, guard, statements, expression))
                     })
-                    .collect::<Vec<Result<_, _>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?;
+                    .collect::<TRes<Vec<_>>>()?;
 
                 // construct the match expression
-                let expression = HIRStreamExpression {
-                    kind: StreamExpressionKind::Expression {
-                        expression: ExpressionKind::Match {
+                let expression = stream::Expr {
+                    kind: stream::Kind::Expression {
+                        expression: hir::expr::Kind::Match {
                             expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
                             arms,
                         },
@@ -173,7 +160,7 @@ impl HIRFromAST for Equation {
                     dependencies: Dependencies::new(),
                 };
 
-                Ok(HIRStatement {
+                Ok(hir::Stmt {
                     pattern,
                     expression,
                     location,
@@ -209,9 +196,7 @@ impl HIRFromAST for Equation {
                                     defined_signals.append(&mut equation_signals);
                                     Ok(())
                                 })
-                                .collect::<Vec<Result<_, _>>>()
-                                .into_iter()
-                                .collect::<Result<(), _>>()?;
+                                .collect::<TRes<()>>()?;
 
                             // get the event element identifier
                             let event_element_id: usize = symbol_table.get_event_element_id(
@@ -224,7 +209,7 @@ impl HIRFromAST for Equation {
                             // transform into HIR
                             let inner_pattern = pattern.hir_from_ast(symbol_table, errors)?;
                             let pattern = Pattern {
-                                kind: PatternKind::Event {
+                                kind: pattern::Kind::Event {
                                     event_enum_id,
                                     event_element_id,
                                     pattern: Box::new(inner_pattern),
@@ -240,9 +225,7 @@ impl HIRFromAST for Equation {
                             let statements = equations
                                 .into_iter()
                                 .map(|equation| equation.hir_from_ast(symbol_table, errors))
-                                .collect::<Vec<Result<_, _>>>()
-                                .into_iter()
-                                .collect::<Result<Vec<_>, _>>()?;
+                                .collect::<TRes<Vec<_>>>()?;
 
                             symbol_table.global();
 
@@ -264,9 +247,7 @@ impl HIRFromAST for Equation {
                                     defined_signals.append(&mut equation_signals);
                                     Ok(())
                                 })
-                                .collect::<Vec<Result<_, _>>>()
-                                .into_iter()
-                                .collect::<Result<(), _>>()?;
+                                .collect::<TRes<()>>()?;
 
                             // get the event element identifier
                             let event_element_id: usize = symbol_table.get_event_element_id(
@@ -278,7 +259,7 @@ impl HIRFromAST for Equation {
 
                             // transform into HIR
                             let pattern = Pattern {
-                                kind: PatternKind::TimeoutEvent {
+                                kind: pattern::Kind::TimeoutEvent {
                                     event_enum_id,
                                     event_element_id,
                                 },
@@ -289,9 +270,7 @@ impl HIRFromAST for Equation {
                             let statements = equations
                                 .into_iter()
                                 .map(|equation| equation.hir_from_ast(symbol_table, errors))
-                                .collect::<Vec<Result<_, _>>>()
-                                .into_iter()
-                                .collect::<Result<Vec<_>, _>>()?;
+                                .collect::<TRes<Vec<_>>>()?;
 
                             symbol_table.global();
 
@@ -311,13 +290,11 @@ impl HIRFromAST for Equation {
                                     defined_signals.append(&mut equation_signals);
                                     Ok(())
                                 })
-                                .collect::<Vec<Result<_, _>>>()
-                                .into_iter()
-                                .collect::<Result<(), _>>()?;
+                                .collect::<TRes<()>>()?;
 
                             // transform into HIR
                             let pattern = Pattern {
-                                kind: PatternKind::NoEvent { event_enum_id },
+                                kind: pattern::Kind::NoEvent { event_enum_id },
                                 typing: None,
                                 location: location.clone(),
                             };
@@ -325,18 +302,14 @@ impl HIRFromAST for Equation {
                             let statements = equations
                                 .into_iter()
                                 .map(|equation| equation.hir_from_ast(symbol_table, errors))
-                                .collect::<Vec<Result<_, _>>>()
-                                .into_iter()
-                                .collect::<Result<Vec<_>, _>>()?;
+                                .collect::<TRes<Vec<_>>>()?;
 
                             symbol_table.global();
 
                             Ok((pattern, guard, defined_signals, statements))
                         }
                     })
-                    .collect::<Vec<Result<_, _>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?;
+                    .collect::<TRes<Vec<_>>>()?;
 
                 // for every arm, check signals are all the same
                 // and create the tuple expression
@@ -365,9 +338,9 @@ impl HIRFromAST for Equation {
                                     });
                                 if let Some(index) = position {
                                     let (_, id) = defined_signals.get(index).unwrap();
-                                    Ok(HIRStreamExpression {
-                                        kind: StreamExpressionKind::Expression {
-                                            expression: ExpressionKind::Identifier { id: *id },
+                                    Ok(stream::Expr {
+                                        kind: stream::Kind::Expression {
+                                            expression: hir::expr::Kind::Identifier { id: *id },
                                         },
                                         typing: None,
                                         location: location.clone(),
@@ -382,16 +355,14 @@ impl HIRFromAST for Equation {
                                     return Err(TerminationError);
                                 }
                             })
-                            .collect::<Vec<Result<_, _>>>()
-                            .into_iter()
-                            .collect::<Result<Vec<_>, _>>()?;
+                            .collect::<TRes<Vec<_>>>()?;
 
                         let expression = if elements.len() == 1 {
                             elements.pop().unwrap()
                         } else {
-                            HIRStreamExpression {
-                                kind: StreamExpressionKind::Expression {
-                                    expression: ExpressionKind::Tuple { elements },
+                            stream::Expr {
+                                kind: stream::Kind::Expression {
+                                    expression: hir::expr::Kind::Tuple { elements },
                                 },
                                 typing: None,
                                 location: location.clone(),
@@ -400,23 +371,21 @@ impl HIRFromAST for Equation {
                         };
                         Ok((pattern, guard, statements, expression))
                     })
-                    .collect::<Vec<Result<_, _>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?;
+                    .collect::<TRes<Vec<_>>>()?;
 
                 // expression to match is the event enumeration
                 let event_id = symbol_table.get_event_id(false, location.clone(), errors)?;
-                let event_enum_expression = HIRStreamExpression {
-                    kind: StreamExpressionKind::Event { event_id },
+                let event_enum_expression = stream::Expr {
+                    kind: stream::Kind::Event { event_id },
                     typing: None,
                     location: location.clone(),
                     dependencies: Dependencies::new(),
                 };
 
                 // construct the match expression
-                let expression = HIRStreamExpression {
-                    kind: StreamExpressionKind::Expression {
-                        expression: ExpressionKind::Match {
+                let expression = stream::Expr {
+                    kind: stream::Kind::Expression {
+                        expression: hir::expr::Kind::Match {
                             expression: Box::new(event_enum_expression),
                             arms,
                         },
@@ -426,132 +395,10 @@ impl HIRFromAST for Equation {
                     dependencies: Dependencies::new(),
                 };
 
-                Ok(HIRStatement {
+                Ok(hir::Stmt {
                     pattern,
                     expression,
                     location,
-                })
-            }
-        }
-    }
-}
-
-impl Equation {
-    pub fn get_pattern(&self) -> ASTPattern {
-        match self {
-            Equation::LocalDef(declaration) => declaration.typed_pattern.clone(),
-            Equation::OutputDef(instanciation) => instanciation.pattern.clone(),
-            Equation::Match(Match { arms, .. }) => {
-                let Arm { equations, .. } = arms.first().unwrap();
-                let mut elements = equations
-                    .iter()
-                    .flat_map(|equation| equation.get_pattern().get_simple_patterns())
-                    .collect::<Vec<_>>();
-                if elements.len() == 1 {
-                    elements.pop().unwrap()
-                } else {
-                    ASTPattern::Tuple(Tuple { elements })
-                }
-            }
-            Equation::MatchWhen(MatchWhen { arms, .. }) => match arms.first().unwrap() {
-                ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
-                | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
-                    let mut elements = equations
-                        .iter()
-                        .flat_map(|equation| equation.get_pattern().get_simple_patterns())
-                        .collect::<Vec<_>>();
-                    if elements.len() == 1 {
-                        elements.pop().unwrap()
-                    } else {
-                        ASTPattern::Tuple(Tuple { elements })
-                    }
-                }
-            },
-        }
-    }
-
-    pub fn store_local_declarations(
-        &self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Option<Result<Vec<(String, usize)>, TerminationError>> {
-        match self {
-            Equation::LocalDef(declaration) => {
-                Some(declaration.typed_pattern.store(true, symbol_table, errors))
-            }
-            Equation::OutputDef(_) => None,
-            Equation::Match(Match { arms, .. }) => arms.first().map(|Arm { equations, .. }| {
-                let local_declarations = equations
-                    .iter()
-                    .filter_map(|equation| equation.store_local_declarations(symbol_table, errors))
-                    .collect::<Vec<Result<_, _>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?
-                    .into_iter()
-                    .flatten()
-                    .collect::<Vec<_>>();
-                Ok(local_declarations)
-            }),
-            Equation::MatchWhen(MatchWhen { arms, .. }) => arms.first().map(|arm| match arm {
-                ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
-                | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
-                    let local_declarations = equations
-                        .iter()
-                        .filter_map(|equation| {
-                            equation.store_local_declarations(symbol_table, errors)
-                        })
-                        .collect::<Vec<Result<_, _>>>()
-                        .into_iter()
-                        .collect::<Result<Vec<_>, _>>()?
-                        .into_iter()
-                        .flatten()
-                        .collect::<Vec<_>>();
-                    Ok(local_declarations)
-                }
-            }),
-        }
-    }
-
-    pub fn store_signals(
-        &self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<Vec<(String, usize)>, TerminationError> {
-        match self {
-            Equation::LocalDef(declaration) => {
-                declaration.typed_pattern.store(true, symbol_table, errors)
-            }
-            Equation::OutputDef(instanciation) => {
-                instanciation.pattern.store(false, symbol_table, errors)
-            }
-            Equation::Match(Match { arms, .. }) => {
-                arms.first().map_or(Ok(vec![]), |Arm { equations, .. }| {
-                    Ok(equations
-                        .iter()
-                        .map(|equation| equation.store_signals(symbol_table, errors))
-                        .collect::<Vec<Result<_, _>>>()
-                        .into_iter()
-                        .collect::<Result<Vec<_>, _>>()?
-                        .into_iter()
-                        .flatten()
-                        .collect())
-                })
-            }
-            Equation::MatchWhen(MatchWhen { arms, .. }) => {
-                arms.first().map_or(Ok(vec![]), |arm| match arm {
-                    ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                    | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
-                    | ArmWhen::Default(DefaultArmWhen { equations, .. }) => Ok(equations
-                        .iter()
-                        .map(|equation| equation.store_signals(symbol_table, errors))
-                        .collect::<Vec<Result<_, _>>>()
-                        .into_iter()
-                        .collect::<Result<Vec<_>, _>>()?
-                        .into_iter()
-                        .flatten()
-                        .collect()),
                 })
             }
         }

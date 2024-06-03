@@ -1,24 +1,22 @@
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the structure expression.
+    /// Add a [Typ] to the structure expression.
     pub fn typing_structure(
         &mut self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
             // the type of the structure is the corresponding structure type
             // if fields match their expected types
-            ExpressionKind::Structure {
+            hir::expr::Kind::Structure {
                 ref id,
                 ref mut fields,
             } => {
@@ -31,11 +29,9 @@ where
                         let expected_type = symbol_table.get_type(*id);
                         expression_type.eq_check(expected_type, location.clone(), errors)
                     })
-                    .collect::<Vec<Result<(), TerminationError>>>()
-                    .into_iter()
-                    .collect::<Result<(), TerminationError>>()?;
+                    .collect::<TRes<()>>()?;
 
-                Ok(Type::Structure {
+                Ok(Typ::Structure {
                     name: symbol_table.get_name(*id).clone(),
                     id: *id,
                 })

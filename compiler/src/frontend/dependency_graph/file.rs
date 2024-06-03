@@ -1,11 +1,9 @@
 use petgraph::algo::toposort;
-use petgraph::graphmap::DiGraphMap;
 
 prelude! {
-    error::{Error, TerminationError},
-    hir::file::File,
-    symbol_table::SymbolTable,
-
+    graph::*,
+    hir::File,
+    frontend::ctx::*,
 }
 
 impl File {
@@ -14,7 +12,7 @@ impl File {
         &mut self,
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    ) -> TRes<()> {
         let File { nodes, .. } = self;
 
         // initialize dictionariy for reduced graphs
@@ -49,12 +47,11 @@ impl File {
         });
 
         // ordered nodes complete their dependency graphs
+        let mut ctx = Ctx::new(symbol_table, &mut nodes_reduced_graphs, errors);
         nodes
             .iter_mut()
-            .map(|node| node.compute_dependencies(symbol_table, &mut nodes_reduced_graphs, errors))
-            .collect::<Vec<Result<(), TerminationError>>>()
-            .into_iter()
-            .collect::<Result<(), TerminationError>>()?;
+            .map(|node| node.compute_dependencies(&mut ctx))
+            .collect::<TRes<()>>()?;
 
         Ok(())
     }

@@ -1,40 +1,33 @@
 prelude! {
-    hir::{
-        dependencies::Dependencies,
-        expression::ExpressionKind,
-        stream_expression::{StreamExpression, StreamExpressionKind},
-    },
+    hir::{ Dependencies, stream },
 }
 
 use super::Union;
 
-impl StreamExpression {
-    /// Replace identifier occurence by element in context.
+impl stream::Expr {
+    /// Replace identifier occurrence by element in context.
     ///
     /// It will modify the expression according to the context:
-    /// - if an identifier is mapped to another identifier, then rename all
-    /// occurence of the identifier by the new one
-    /// - if the identifer is mapped to an expression, then replace all call to
-    /// the identifier by the expression
+    ///
+    /// - if an identifier is mapped to another identifier, then rename all occurrence of the
+    ///   identifier by the new one
+    /// - if the identifier is mapped to an expression, then replace all call to the identifier by
+    ///   the expression
     ///
     /// # Example
     ///
-    /// With a context `[x -> a, y -> b/2]`, the expression `x + y` will become
-    /// `a + b/2`.
-    pub fn replace_by_context(
-        &mut self,
-        context_map: &HashMap<usize, Union<usize, StreamExpression>>,
-    ) {
+    /// With a context `[x -> a, y -> b/2]`, the expression `x + y` will become `a + b/2`.
+    pub fn replace_by_context(&mut self, context_map: &HashMap<usize, Union<usize, stream::Expr>>) {
         match self.kind {
-            StreamExpressionKind::Event { .. } => (),
-            StreamExpressionKind::Expression { ref mut expression } => {
+            stream::Kind::Event { .. } => (),
+            stream::Kind::Expression { ref mut expression } => {
                 let option_new_expression =
                     expression.replace_by_context(&mut self.dependencies, context_map);
                 if let Some(new_expression) = option_new_expression {
                     *self = new_expression;
                 }
             }
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::NodeApplication {
                 ref mut called_node_id,
                 ref mut inputs,
                 ..
@@ -43,10 +36,10 @@ impl StreamExpression {
                 if let Some(element) = context_map.get(called_node_id) {
                     match element {
                         Union::I1(new_id)
-                        | Union::I2(StreamExpression {
+                        | Union::I2(stream::Expr {
                             kind:
-                                StreamExpressionKind::Expression {
-                                    expression: ExpressionKind::Identifier { id: new_id },
+                                stream::Kind::Expression {
+                                    expression: hir::expr::Kind::Identifier { id: new_id },
                                 },
                             ..
                         }) => {
@@ -68,7 +61,7 @@ impl StreamExpression {
                         .collect(),
                 );
             }
-            StreamExpressionKind::FollowedBy { .. } => unreachable!(),
+            stream::Kind::FollowedBy { .. } => unreachable!(),
         }
     }
 }

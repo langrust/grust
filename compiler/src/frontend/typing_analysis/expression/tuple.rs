@@ -1,23 +1,21 @@
-use crate::common::r#type::Type;
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the tuple expression.
+    /// Add a [Typ] to the tuple expression.
     pub fn typing_tuple(
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
             // an tuple is composed of `n` elements of the different type `t_k` and
             // its type is `(t_1, ..., t_n)`
-            ExpressionKind::Tuple { ref mut elements } => {
+            hir::expr::Kind::Tuple { ref mut elements } => {
                 debug_assert!(elements.len() >= 1);
 
                 let elements_types = elements
@@ -26,11 +24,9 @@ where
                         element.typing(symbol_table, errors)?;
                         Ok(element.get_type().expect("should be typed").clone())
                     })
-                    .collect::<Vec<Result<Type, TerminationError>>>()
-                    .into_iter()
-                    .collect::<Result<Vec<Type>, TerminationError>>()?;
+                    .collect::<TRes<Vec<Typ>>>()?;
 
-                let tuple_type = Type::Tuple(elements_types);
+                let tuple_type = Typ::Tuple(elements_types);
 
                 Ok(tuple_type)
             }

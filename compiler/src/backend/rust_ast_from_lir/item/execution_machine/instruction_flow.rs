@@ -1,13 +1,21 @@
-use crate::backend::rust_ast_from_lir::expression::constant_to_syn;
-use crate::backend::rust_ast_from_lir::{
-    item::execution_machine::flow_expression::rust_ast_from_lir as flow_expression_rust_ast_from_lir,
-    pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
-};
-use crate::common::convert_case::camel_case;
-use crate::lir::item::execution_machine::service_loop::FlowInstruction;
-use proc_macro2::Span;
-use quote::{format_ident, TokenStreamExt};
-use syn::*;
+prelude! {
+    macro2::Span,
+    quote::{format_ident, TokenStreamExt},
+    syn::*,
+}
+
+prelude! { just
+    backend::{
+        rust_ast_from_lir::expression::constant_to_syn,
+        rust_ast_from_lir::{
+            item::execution_machine::flow_expression::rust_ast_from_lir
+                as flow_expression_rust_ast_from_lir,
+            pattern::rust_ast_from_lir
+                as pattern_rust_ast_from_lir,
+        },
+    },
+    lir::item::execution_machine::service_loop::FlowInstruction,
+}
 
 /// Transform LIR instruction on flows into statement.
 pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
@@ -47,9 +55,9 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
         ) => {
             let old_event_ident = Ident::new(&old_event_name, Span::call_site());
             let source_ident = Ident::new(&source_name, Span::call_site());
-            let mut onchange_tokens = proc_macro2::TokenStream::new();
+            let mut onchange_tokens = macro2::TokenStream::new();
             onchange_tokens.append_all(onchange_instructions.into_iter().map(rust_ast_from_lir));
-            let mut not_onchange_tokens = proc_macro2::TokenStream::new();
+            let mut not_onchange_tokens = macro2::TokenStream::new();
             not_onchange_tokens
                 .append_all(not_onchange_instructions.into_iter().map(rust_ast_from_lir));
             parse_quote! {
@@ -76,7 +84,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let input_getter =
                 Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
             let component_event_enum =
-                format_ident!("{}", camel_case(&format!("{}Event", component_name)));
+                format_ident!("{}", to_camel_case(&format!("{}Event", component_name)));
             if let Some((component_event_elem, flow_event_name)) = optional_event {
                 let component_event_elem_ident =
                     Ident::new(&component_event_elem, Span::call_site());

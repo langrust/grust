@@ -1,9 +1,9 @@
-use petgraph::graphmap::DiGraphMap;
-use syn::Token;
-
-use crate::{ast::keyword, common::r#type::Type, symbol_table::SymbolTable};
-
-use super::{flow_expression::FlowExpression, pattern::Pattern};
+prelude! {
+    syn::Token,
+    graph::DiGraphMap,
+    ast::keyword,
+    hir::{flow, Pattern},
+}
 
 pub struct Interface {
     pub statements: Vec<FlowStatement>,
@@ -16,7 +16,7 @@ impl Interface {
             .iter()
             .flat_map(|statement| match statement {
                 FlowStatement::Declaration(FlowDeclaration { pattern, .. })
-                | FlowStatement::Instanciation(FlowInstanciation { pattern, .. }) => pattern
+                | FlowStatement::Instantiation(FlowInstantiation { pattern, .. }) => pattern
                     .identifiers()
                     .into_iter()
                     .map(|id| symbol_table.get_name(id).clone())
@@ -33,7 +33,7 @@ impl Interface {
             .iter()
             .flat_map(|statement| match statement {
                 FlowStatement::Declaration(FlowDeclaration { pattern, .. })
-                | FlowStatement::Instanciation(FlowInstanciation { pattern, .. }) => {
+                | FlowStatement::Instantiation(FlowInstantiation { pattern, .. }) => {
                     pattern.identifiers()
                 }
                 FlowStatement::Import(FlowImport { id, .. })
@@ -53,17 +53,17 @@ pub struct FlowDeclaration {
     pub pattern: Pattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
-    pub flow_expression: FlowExpression,
+    pub flow_expression: flow::Expr,
     pub semi_token: Token![;],
 }
 /// Flow statement HIR.
 #[derive(Clone)]
-pub struct FlowInstanciation {
+pub struct FlowInstantiation {
     /// Pattern of flows and their types.
     pub pattern: Pattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
-    pub flow_expression: FlowExpression,
+    pub flow_expression: flow::Expr,
     pub semi_token: Token![;],
 }
 /// Flow statement HIR.
@@ -74,7 +74,7 @@ pub struct FlowImport {
     pub id: usize,
     pub path: syn::Path,
     pub colon_token: Token![:],
-    pub flow_type: Type,
+    pub flow_type: Typ,
     pub semi_token: Token![;],
 }
 /// Flow statement HIR.
@@ -85,14 +85,14 @@ pub struct FlowExport {
     pub id: usize,
     pub path: syn::Path,
     pub colon_token: Token![:],
-    pub flow_type: Type,
+    pub flow_type: Typ,
     pub semi_token: Token![;],
 }
 
 #[derive(Clone)]
 pub enum FlowStatement {
     Declaration(FlowDeclaration),
-    Instanciation(FlowInstanciation),
+    Instantiation(FlowInstantiation),
     Import(FlowImport),
     Export(FlowExport),
 }

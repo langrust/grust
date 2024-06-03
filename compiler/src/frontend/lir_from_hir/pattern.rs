@@ -1,28 +1,25 @@
 use itertools::Itertools;
 
-use crate::{
-    common::r#type::Type,
-    hir::pattern::{Pattern, PatternKind},
-    lir::{item::import::Import, pattern::Pattern as LIRPattern},
-    symbol_table::SymbolTable,
-};
+prelude! {
+    hir::{Pattern, pattern}, lir::item::Import,
+}
 
 use super::LIRFromHIR;
 
 impl LIRFromHIR for Pattern {
-    type LIR = LIRPattern;
+    type LIR = lir::Pattern;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         match self.kind {
-            PatternKind::Identifier { id } => LIRPattern::Identifier {
+            pattern::Kind::Identifier { id } => lir::Pattern::Identifier {
                 name: symbol_table.get_name(id).clone(),
             },
-            PatternKind::Constant { constant } => LIRPattern::Literal { literal: constant },
-            PatternKind::Typed { pattern, typing } => LIRPattern::Typed {
+            pattern::Kind::Constant { constant } => lir::Pattern::Literal { literal: constant },
+            pattern::Kind::Typed { pattern, typing } => lir::Pattern::Typed {
                 pattern: Box::new(pattern.lir_from_hir(symbol_table)),
                 typing,
             },
-            PatternKind::Structure { id, fields } => LIRPattern::Structure {
+            pattern::Kind::Structure { id, fields } => lir::Pattern::Structure {
                 name: symbol_table.get_name(id).clone(),
                 fields: fields
                     .into_iter()
@@ -30,7 +27,7 @@ impl LIRFromHIR for Pattern {
                         (
                             symbol_table.get_name(id).clone(),
                             optional_pattern.map_or(
-                                LIRPattern::Identifier {
+                                lir::Pattern::Identifier {
                                     name: symbol_table.get_name(id).clone(),
                                 },
                                 |pattern| pattern.lir_from_hir(symbol_table),
@@ -39,60 +36,60 @@ impl LIRFromHIR for Pattern {
                     })
                     .collect(),
             },
-            PatternKind::Enumeration { enum_id, elem_id } => LIRPattern::Enumeration {
+            pattern::Kind::Enumeration { enum_id, elem_id } => lir::Pattern::Enumeration {
                 enum_name: symbol_table.get_name(enum_id).clone(),
                 elem_name: symbol_table.get_name(elem_id).clone(),
                 element: None,
             },
-            PatternKind::Tuple { elements } => LIRPattern::Tuple {
+            pattern::Kind::Tuple { elements } => lir::Pattern::Tuple {
                 elements: elements
                     .into_iter()
                     .map(|element| element.lir_from_hir(symbol_table))
                     .collect(),
             },
-            PatternKind::Some { pattern } => LIRPattern::Some {
+            pattern::Kind::Some { pattern } => lir::Pattern::Some {
                 pattern: Box::new(pattern.lir_from_hir(symbol_table)),
             },
-            PatternKind::None => LIRPattern::None,
-            PatternKind::Default => LIRPattern::Default,
-            PatternKind::Event {
+            pattern::Kind::None => lir::Pattern::None,
+            pattern::Kind::Default => lir::Pattern::Default,
+            pattern::Kind::Event {
                 event_enum_id,
                 event_element_id,
                 pattern,
             } => match symbol_table.get_type(event_element_id) {
-                Type::SMEvent(_) => LIRPattern::enumeration(
+                Typ::SMEvent(_) => lir::Pattern::enumeration(
                     symbol_table.get_name(event_enum_id).clone(),
                     symbol_table.get_name(event_element_id).clone(),
                     Some(pattern.lir_from_hir(symbol_table)),
                 ),
-                Type::SMTimeout(_) => LIRPattern::enumeration(
+                Typ::SMTimeout(_) => lir::Pattern::enumeration(
                     symbol_table.get_name(event_enum_id).clone(),
                     symbol_table.get_name(event_element_id).clone(),
-                    Some(LIRPattern::ok(pattern.lir_from_hir(symbol_table))),
+                    Some(lir::Pattern::ok(pattern.lir_from_hir(symbol_table))),
                 ),
                 _ => unreachable!(),
             },
-            PatternKind::TimeoutEvent {
+            pattern::Kind::TimeoutEvent {
                 event_enum_id,
                 event_element_id,
-            } => LIRPattern::enumeration(
+            } => lir::Pattern::enumeration(
                 symbol_table.get_name(event_enum_id).clone(),
                 symbol_table.get_name(event_element_id).clone(),
-                Some(LIRPattern::err()),
+                Some(lir::Pattern::err()),
             ),
-            PatternKind::NoEvent { .. } => LIRPattern::Default,
+            pattern::Kind::NoEvent { .. } => lir::Pattern::Default,
         }
     }
 
     fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
         match &self.kind {
-            PatternKind::Identifier { .. }
-            | PatternKind::Constant { .. }
-            | PatternKind::NoEvent { .. }
-            | PatternKind::TimeoutEvent { .. }
-            | PatternKind::None
-            | PatternKind::Default => vec![],
-            PatternKind::Structure { id, fields } => {
+            pattern::Kind::Identifier { .. }
+            | pattern::Kind::Constant { .. }
+            | pattern::Kind::NoEvent { .. }
+            | pattern::Kind::TimeoutEvent { .. }
+            | pattern::Kind::None
+            | pattern::Kind::Default => vec![],
+            pattern::Kind::Structure { id, fields } => {
                 let mut imports = fields
                     .iter()
                     .flat_map(|(_, optional_pattern)| {
@@ -106,17 +103,17 @@ impl LIRFromHIR for Pattern {
 
                 imports
             }
-            PatternKind::Enumeration { enum_id, .. } => {
+            pattern::Kind::Enumeration { enum_id, .. } => {
                 vec![Import::Enumeration(symbol_table.get_name(*enum_id).clone())]
             }
-            PatternKind::Tuple { elements } => elements
+            pattern::Kind::Tuple { elements } => elements
                 .iter()
                 .flat_map(|pattern| pattern.get_imports(symbol_table))
                 .unique()
                 .collect(),
-            PatternKind::Some { pattern }
-            | PatternKind::Typed { pattern, .. }
-            | PatternKind::Event { pattern, .. } => pattern.get_imports(symbol_table),
+            pattern::Kind::Some { pattern }
+            | pattern::Kind::Typed { pattern, .. }
+            | pattern::Kind::Event { pattern, .. } => pattern.get_imports(symbol_table),
         }
     }
 }

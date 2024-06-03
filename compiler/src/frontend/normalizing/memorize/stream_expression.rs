@@ -1,28 +1,21 @@
-use crate::common::label::Label;
-use crate::common::scope::Scope;
-use crate::hir::contract::Contract;
-use crate::hir::expression::ExpressionKind;
-use crate::hir::{
-    dependencies::Dependencies,
-    identifier_creator::IdentifierCreator,
-    memory::Memory,
-    stream_expression::{StreamExpression, StreamExpressionKind},
-};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    graph::Label,
+    hir::{ Contract, Dependencies, IdentifierCreator, Memory, stream },
+}
 
-impl StreamExpression {
+impl stream::Expr {
     /// Increment memory with expression.
     ///
-    /// Store buffer for followed by expressions and unitary node applications.
-    /// Transform followed by expressions in signal call.
+    /// Store buffer for followed by expressions and unitary node applications. Transform followed
+    /// by expressions in signal call.
     ///
     /// # Example
     ///
-    /// An expression `0 fby v` increments memory with the buffer
-    /// `mem: int = 0 fby v;` and becomes a call to `mem`.
+    /// An expression `0 fby v` increments memory with the buffer `mem: int = 0 fby v;` and becomes
+    /// a call to `mem`.
     ///
-    /// An expression `my_node(s, x_1).o;` increments memory with the
-    /// node call `memmy_node_o_: (my_node, o);` and is unchanged.
+    /// An expression `my_node(s, x_1).o;` increments memory with the node call `memmy_node_o_:
+    /// (my_node, o);` and is unchanged.
     ///
     /// Examples are tested in source.
     pub fn memorize(
@@ -33,20 +26,16 @@ impl StreamExpression {
         symbol_table: &mut SymbolTable,
     ) {
         match &mut self.kind {
-            StreamExpressionKind::Event { .. } => (),
-            StreamExpressionKind::Expression { expression } => {
+            stream::Kind::Event { .. } => (),
+            stream::Kind::Expression { expression } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            StreamExpressionKind::FollowedBy {
+            stream::Kind::FollowedBy {
                 constant,
                 expression,
             } => {
                 // create fresh identifier for the new memory buffer
-                let memory_name = identifier_creator.new_identifier(
-                    String::from(""),
-                    String::from("mem"),
-                    String::from(""),
-                );
+                let memory_name = identifier_creator.new_identifier("mem");
                 let typing = self.typing.clone();
                 let memory_id =
                     symbol_table.insert_fresh_signal(memory_name, Scope::Memory, typing);
@@ -59,23 +48,19 @@ impl StreamExpression {
                 // contract.substitution(signal_id, memory_id); // TODO: followed by as root expression
 
                 // replace fby expression by a call to buffer
-                self.kind = StreamExpressionKind::Expression {
-                    expression: ExpressionKind::Identifier { id: memory_id },
+                self.kind = stream::Kind::Expression {
+                    expression: hir::expr::Kind::Identifier { id: memory_id },
                 };
                 self.dependencies = Dependencies::from(vec![(memory_id, Label::Weight(0))]);
             }
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
                 ..
             } => {
                 // create fresh identifier for the new memory buffer
                 let node_name = symbol_table.get_name(*called_node_id);
-                let memory_name = identifier_creator.new_identifier(
-                    String::from(""),
-                    node_name.clone(),
-                    String::from(""),
-                );
+                let memory_name = identifier_creator.new_identifier(&node_name);
                 let memory_id = symbol_table.insert_fresh_signal(memory_name, Scope::Memory, None);
 
                 let inputs_map = inputs

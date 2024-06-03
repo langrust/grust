@@ -1,72 +1,55 @@
-use itertools::Itertools;
-use strum::IntoEnumIterator;
-
-use crate::{
-    common::{
-        operator::{BinaryOperator, OtherOperator, UnaryOperator},
-        r#type::Type,
-        scope::Scope,
-    },
-    hir::expression::{Expression, ExpressionKind},
-    lir::{
-        block::Block,
-        expression::{Expression as LIRExpression, FieldIdentifier},
-        item::import::Import,
-        pattern::Pattern,
-        statement::Statement,
-    },
-    symbol_table::SymbolTable,
-};
+prelude! {
+    itertools::Itertools,
+    strum::IntoEnumIterator,
+    operator::{BinaryOperator, OtherOperator, UnaryOperator},
+    lir::{ Block, FieldIdentifier, item::Import, Pattern, Stmt },
+}
 
 use super::LIRFromHIR;
 
-impl<E> LIRFromHIR for ExpressionKind<E>
+impl<E> LIRFromHIR for hir::expr::Kind<E>
 where
-    E: LIRFromHIR<LIR = LIRExpression>,
+    E: LIRFromHIR<LIR = lir::Expr>,
 {
-    type LIR = LIRExpression;
+    type LIR = lir::Expr;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         match self {
-            ExpressionKind::Constant { constant, .. } => {
-                LIRExpression::Literal { literal: constant }
-            }
-            ExpressionKind::Identifier { id, .. } => {
+            Self::Constant { constant, .. } => lir::Expr::Literal { literal: constant },
+            Self::Identifier { id, .. } => {
                 let name = symbol_table.get_name(id).clone();
                 if symbol_table.is_function(id) {
-                    LIRExpression::Identifier { identifier: name }
+                    lir::Expr::Identifier { identifier: name }
                 } else {
                     let scope = symbol_table.get_scope(id);
                     match scope {
-                        Scope::Input => LIRExpression::InputAccess { identifier: name },
-                        Scope::Memory => LIRExpression::MemoryAccess { identifier: name },
-                        Scope::Output | Scope::Local => {
-                            LIRExpression::Identifier { identifier: name }
-                        }
+                        Scope::Input => lir::Expr::InputAccess { identifier: name },
+                        Scope::Memory => lir::Expr::MemoryAccess { identifier: name },
+                        Scope::Output | Scope::Local => lir::Expr::Identifier { identifier: name },
                     }
                 }
             }
-            ExpressionKind::Unop { op, expression } => {
+            Self::Unop { op, expression } => {
                 let expression = expression.lir_from_hir(symbol_table);
-                LIRExpression::Unop {
+                lir::Expr::Unop {
                     op,
                     expression: Box::new(expression),
                 }
             }
-            ExpressionKind::Binop {
+            Self::Binop {
                 op,
                 left_expression,
                 right_expression,
             } => {
                 let left_expression = left_expression.lir_from_hir(symbol_table);
                 let right_expression = right_expression.lir_from_hir(symbol_table);
-                LIRExpression::Binop {
+                lir::Expr::Binop {
                     op,
                     left_expression: Box::new(left_expression),
                     right_expression: Box::new(right_expression),
                 }
             }
-            ExpressionKind::IfThenElse {
+            Self::IfThenElse {
                 expression,
                 true_expression,
                 false_expression,
@@ -74,21 +57,21 @@ where
                 let condition = expression.lir_from_hir(symbol_table);
                 let then_branch = true_expression.lir_from_hir(symbol_table);
                 let else_branch = false_expression.lir_from_hir(symbol_table);
-                LIRExpression::IfThenElse {
+                lir::Expr::IfThenElse {
                     condition: Box::new(condition),
                     then_branch: Block {
-                        statements: vec![Statement::ExpressionLast {
+                        statements: vec![Stmt::ExprLast {
                             expression: then_branch,
                         }],
                     },
                     else_branch: Block {
-                        statements: vec![Statement::ExpressionLast {
+                        statements: vec![Stmt::ExprLast {
                             expression: else_branch,
                         }],
                     },
                 }
             }
-            ExpressionKind::Application {
+            Self::Application {
                 function_expression,
                 inputs,
                 ..
@@ -97,12 +80,12 @@ where
                     .into_iter()
                     .map(|input| input.lir_from_hir(symbol_table))
                     .collect();
-                LIRExpression::FunctionCall {
+                lir::Expr::FunctionCall {
                     function: Box::new(function_expression.lir_from_hir(symbol_table)),
                     arguments,
                 }
             }
-            ExpressionKind::Abstraction {
+            Self::Abstraction {
                 inputs, expression, ..
             } => {
                 let inputs = inputs
@@ -115,19 +98,19 @@ where
                     })
                     .collect();
                 let output = expression.get_type().expect("it should be typed").clone();
-                LIRExpression::Lambda {
+                lir::Expr::Lambda {
                     inputs,
                     output,
-                    body: Box::new(LIRExpression::Block {
+                    body: Box::new(lir::Expr::Block {
                         block: Block {
-                            statements: vec![Statement::ExpressionLast {
+                            statements: vec![Stmt::ExprLast {
                                 expression: expression.lir_from_hir(symbol_table),
                             }],
                         },
                     }),
                 }
             }
-            ExpressionKind::Structure { id, fields, .. } => LIRExpression::Structure {
+            Self::Structure { id, fields, .. } => lir::Expr::Structure {
                 name: symbol_table.get_name(id).clone(),
                 fields: fields
                     .into_iter()
@@ -139,25 +122,25 @@ where
                     })
                     .collect(),
             },
-            ExpressionKind::Enumeration { enum_id, elem_id } => LIRExpression::Enumeration {
+            Self::Enumeration { enum_id, elem_id } => lir::Expr::Enumeration {
                 name: symbol_table.get_name(enum_id).clone(),
                 element: symbol_table.get_name(elem_id).clone(),
             },
-            ExpressionKind::Array { elements } => LIRExpression::Array {
+            Self::Array { elements } => lir::Expr::Array {
                 elements: elements
                     .into_iter()
                     .map(|element| element.lir_from_hir(symbol_table))
                     .collect(),
             },
-            ExpressionKind::Tuple { elements } => LIRExpression::Tuple {
+            Self::Tuple { elements } => lir::Expr::Tuple {
                 elements: elements
                     .into_iter()
                     .map(|element| element.lir_from_hir(symbol_table))
                     .collect(),
             },
-            ExpressionKind::Match {
+            Self::Match {
                 expression, arms, ..
-            } => LIRExpression::Match {
+            } => lir::Expr::Match {
                 matched: Box::new(expression.lir_from_hir(symbol_table)),
                 arms: arms
                     .into_iter()
@@ -172,10 +155,10 @@ where
                                     .into_iter()
                                     .map(|statement| statement.lir_from_hir(symbol_table))
                                     .collect::<Vec<_>>();
-                                statements.push(Statement::ExpressionLast {
+                                statements.push(Stmt::ExprLast {
                                     expression: expression.lir_from_hir(symbol_table),
                                 });
-                                LIRExpression::Block {
+                                lir::Expr::Block {
                                     block: Block { statements },
                                 }
                             },
@@ -183,13 +166,13 @@ where
                     })
                     .collect(),
             },
-            ExpressionKind::When {
+            Self::When {
                 id,
                 option,
                 present,
                 default,
                 ..
-            } => LIRExpression::Match {
+            } => lir::Expr::Match {
                 matched: Box::new(option.lir_from_hir(symbol_table)),
                 arms: vec![
                     (
@@ -204,47 +187,47 @@ where
                     (Pattern::None, None, default.lir_from_hir(symbol_table)),
                 ],
             },
-            ExpressionKind::FieldAccess {
+            Self::FieldAccess {
                 expression, field, ..
-            } => LIRExpression::FieldAccess {
+            } => lir::Expr::FieldAccess {
                 expression: Box::new(expression.lir_from_hir(symbol_table)),
                 field: FieldIdentifier::Named(field),
             },
-            ExpressionKind::TupleElementAccess {
+            Self::TupleElementAccess {
                 expression,
                 element_number,
                 ..
-            } => LIRExpression::FieldAccess {
+            } => lir::Expr::FieldAccess {
                 expression: Box::new(expression.lir_from_hir(symbol_table)),
                 field: FieldIdentifier::Unamed(element_number),
             },
-            ExpressionKind::Map {
+            Self::Map {
                 expression,
                 function_expression,
                 ..
-            } => LIRExpression::Map {
+            } => lir::Expr::Map {
                 mapped: Box::new(expression.lir_from_hir(symbol_table)),
                 function: Box::new(function_expression.lir_from_hir(symbol_table)),
             },
-            ExpressionKind::Fold {
+            Self::Fold {
                 expression,
                 initialization_expression,
                 function_expression,
                 ..
-            } => LIRExpression::Fold {
+            } => lir::Expr::Fold {
                 folded: Box::new(expression.lir_from_hir(symbol_table)),
                 initialization: Box::new(initialization_expression.lir_from_hir(symbol_table)),
                 function: Box::new(function_expression.lir_from_hir(symbol_table)),
             },
-            ExpressionKind::Sort {
+            Self::Sort {
                 expression,
                 function_expression,
                 ..
-            } => LIRExpression::Sort {
+            } => lir::Expr::Sort {
                 sorted: Box::new(expression.lir_from_hir(symbol_table)),
                 function: Box::new(function_expression.lir_from_hir(symbol_table)),
             },
-            ExpressionKind::Zip { arrays, .. } => LIRExpression::Zip {
+            Self::Zip { arrays, .. } => lir::Expr::Zip {
                 arrays: arrays
                     .into_iter()
                     .map(|element| element.lir_from_hir(symbol_table))
@@ -255,7 +238,7 @@ where
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
         match self {
-            ExpressionKind::Identifier { id, .. } => OtherOperator::IfThenElse
+            Self::Identifier { id, .. } => OtherOperator::IfThenElse
                 .to_string()
                 .eq(symbol_table.get_name(*id)),
             _ => false,
@@ -264,8 +247,8 @@ where
 
     fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
         match self {
-            ExpressionKind::Constant { .. } => vec![],
-            ExpressionKind::Identifier { id } => {
+            Self::Constant { .. } => vec![],
+            Self::Identifier { id } => {
                 if symbol_table.is_function(*id) {
                     if let Some(_) = BinaryOperator::iter()
                         .find(|binary| binary.to_string().eq(symbol_table.get_name(*id)))
@@ -286,8 +269,8 @@ where
                     vec![]
                 }
             }
-            ExpressionKind::Unop { expression, .. } => expression.get_imports(symbol_table),
-            ExpressionKind::Binop {
+            Self::Unop { expression, .. } => expression.get_imports(symbol_table),
+            Self::Binop {
                 left_expression,
                 right_expression,
                 ..
@@ -297,7 +280,7 @@ where
                 imports.append(&mut right_imports);
                 imports
             }
-            ExpressionKind::IfThenElse {
+            Self::IfThenElse {
                 expression,
                 true_expression,
                 false_expression,
@@ -309,7 +292,7 @@ where
                 imports.append(&mut false_imports);
                 imports
             }
-            ExpressionKind::Application {
+            Self::Application {
                 function_expression,
                 inputs,
             } => {
@@ -322,8 +305,8 @@ where
                 imports.append(&mut inputs_imports);
                 imports
             }
-            ExpressionKind::Abstraction { expression, .. } => expression.get_imports(symbol_table),
-            ExpressionKind::Structure { id, fields } => {
+            Self::Abstraction { expression, .. } => expression.get_imports(symbol_table),
+            Self::Structure { id, fields } => {
                 let mut imports = fields
                     .iter()
                     .flat_map(|(_, expression)| expression.get_imports(symbol_table))
@@ -333,15 +316,15 @@ where
 
                 imports
             }
-            ExpressionKind::Enumeration { enum_id, .. } => {
+            Self::Enumeration { enum_id, .. } => {
                 vec![Import::Enumeration(symbol_table.get_name(*enum_id).clone())]
             }
-            ExpressionKind::Array { elements } | ExpressionKind::Tuple { elements } => elements
+            Self::Array { elements } | Self::Tuple { elements } => elements
                 .iter()
                 .flat_map(|expression| expression.get_imports(symbol_table))
                 .unique()
                 .collect(),
-            ExpressionKind::Match { expression, arms } => {
+            Self::Match { expression, arms } => {
                 let mut imports = expression.get_imports(symbol_table);
                 let mut arms_imports = arms
                     .iter()
@@ -366,7 +349,7 @@ where
                 imports.append(&mut arms_imports);
                 imports
             }
-            ExpressionKind::When {
+            Self::When {
                 option,
                 present,
                 present_body,
@@ -393,11 +376,9 @@ where
                 imports.append(&mut default_body_imports);
                 imports
             }
-            ExpressionKind::FieldAccess { expression, .. } => expression.get_imports(symbol_table),
-            ExpressionKind::TupleElementAccess { expression, .. } => {
-                expression.get_imports(symbol_table)
-            }
-            ExpressionKind::Map {
+            Self::FieldAccess { expression, .. } => expression.get_imports(symbol_table),
+            Self::TupleElementAccess { expression, .. } => expression.get_imports(symbol_table),
+            Self::Map {
                 expression,
                 function_expression,
             } => {
@@ -406,7 +387,7 @@ where
                 imports.append(&mut function_imports);
                 imports
             }
-            ExpressionKind::Fold {
+            Self::Fold {
                 expression,
                 initialization_expression,
                 function_expression,
@@ -419,7 +400,7 @@ where
                 imports.append(&mut function_imports);
                 imports
             }
-            ExpressionKind::Sort {
+            Self::Sort {
                 expression,
                 function_expression,
             } => {
@@ -428,7 +409,7 @@ where
                 imports.append(&mut function_imports);
                 imports
             }
-            ExpressionKind::Zip { arrays } => arrays
+            Self::Zip { arrays } => arrays
                 .iter()
                 .flat_map(|expression| expression.get_imports(symbol_table))
                 .unique()
@@ -437,13 +418,13 @@ where
     }
 }
 
-impl LIRFromHIR for Expression {
-    type LIR = LIRExpression;
+impl LIRFromHIR for hir::Expr {
+    type LIR = lir::Expr;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         self.kind.lir_from_hir(symbol_table)
     }
-    fn get_type(&self) -> Option<&Type> {
+    fn get_type(&self) -> Option<&Typ> {
         self.typing.as_ref()
     }
 

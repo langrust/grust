@@ -1,20 +1,16 @@
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::statement::Statement;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+    hir::Stmt,
+}
 
-impl<E> TypeAnalysis for Statement<E>
+impl<E> TypeAnalysis for Stmt<E>
 where
     E: TypeAnalysis,
 {
     // precondition: identifiers associated with statement is already typed
     // postcondition: expression associated with statement is typed and checked
-    fn typing(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
-        let Statement {
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+        let Stmt {
             pattern,
             expression,
             location,

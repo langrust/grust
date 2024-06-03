@@ -1,23 +1,13 @@
-use petgraph::graphmap::DiGraphMap;
-
 prelude! {
-    common::{
-        label::Label,
-        scope::Scope,
-    },
+    graph::*,
     hir::{
-        expression::ExpressionKind,
-        pattern::{Pattern, PatternKind},
-        stream_expression::StreamExpressionKind,
-        dependencies::Dependencies,
-        identifier_creator::IdentifierCreator,
-        statement::Statement,
-        stream_expression::StreamExpression,
+        Dependencies, IdentifierCreator, Stmt,
+        Pattern,
+        stream,
     },
-    symbol_table::SymbolTable,
 }
 
-impl StreamExpression {
+impl stream::Expr {
     /// Change HIR expression into a normal form.
     ///
     /// The normal form of an expression is as follows:
@@ -42,10 +32,10 @@ impl StreamExpression {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
-    ) -> Vec<Statement<StreamExpression>> {
+    ) -> Vec<Stmt<stream::Expr>> {
         match self.kind {
-            StreamExpressionKind::Event { .. } => vec![],
-            StreamExpressionKind::FollowedBy {
+            stream::Kind::Event { .. } => vec![],
+            stream::Kind::FollowedBy {
                 ref mut expression,
                 ref constant,
             } => {
@@ -65,7 +55,7 @@ impl StreamExpression {
 
                 new_statements
             }
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::NodeApplication {
                 called_node_id,
                 ref mut inputs,
                 ..
@@ -108,19 +98,15 @@ impl StreamExpression {
                 );
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator.new_identifier(
-                    String::from(""),
-                    String::from("x"),
-                    String::from(""),
-                );
+                let fresh_name = identifier_creator.fresh_identifier("node_application");
                 let typing = self.get_type().cloned();
                 let fresh_id =
                     symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.clone());
 
                 // create statement for node call
-                let node_application_statement = Statement {
+                let node_application_statement = Stmt {
                     pattern: Pattern {
-                        kind: PatternKind::Identifier { id: fresh_id },
+                        kind: hir::pattern::Kind::Identifier { id: fresh_id },
                         typing,
                         location: self.location.clone(),
                     },
@@ -130,15 +116,15 @@ impl StreamExpression {
                 new_statements.push(node_application_statement);
 
                 // change current expression be an identifier to the statement of the node call
-                self.kind = StreamExpressionKind::Expression {
-                    expression: ExpressionKind::Identifier { id: fresh_id },
+                self.kind = stream::Kind::Expression {
+                    expression: hir::expr::Kind::Identifier { id: fresh_id },
                 };
                 self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 
                 // return new additional statements
                 new_statements
             }
-            StreamExpressionKind::Expression { ref mut expression } => expression.normal_form(
+            stream::Kind::Expression { ref mut expression } => expression.normal_form(
                 &mut self.dependencies,
                 nodes_reduced_graphs,
                 identifier_creator,
@@ -167,29 +153,25 @@ impl StreamExpression {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
-    ) -> Vec<Statement<StreamExpression>> {
+    ) -> Vec<Stmt<stream::Expr>> {
         match self.kind {
-            StreamExpressionKind::Expression {
-                expression: ExpressionKind::Identifier { .. },
+            stream::Kind::Expression {
+                expression: hir::expr::Kind::Identifier { .. },
             } => vec![],
             _ => {
                 let mut statements =
                     self.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator.new_identifier(
-                    String::from(""),
-                    String::from("x"),
-                    String::from(""),
-                );
+                let fresh_name = identifier_creator.fresh_identifier("stream_expression");
                 let typing = self.get_type();
                 let fresh_id =
                     symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.cloned());
 
                 // create statement for the expression
-                let new_statement = Statement {
+                let new_statement = Stmt {
                     pattern: Pattern {
-                        kind: PatternKind::Identifier { id: fresh_id },
+                        kind: hir::pattern::Kind::Identifier { id: fresh_id },
                         typing: typing.cloned(),
                         location: self.location.clone(),
                     },
@@ -199,8 +181,8 @@ impl StreamExpression {
                 statements.push(new_statement);
 
                 // change current expression be an identifier to the statement of the expression
-                self.kind = StreamExpressionKind::Expression {
-                    expression: ExpressionKind::Identifier { id: fresh_id },
+                self.kind = stream::Kind::Expression {
+                    expression: hir::expr::Kind::Identifier { id: fresh_id },
                 };
                 self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 

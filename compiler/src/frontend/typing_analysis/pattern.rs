@@ -1,36 +1,35 @@
-use crate::common::r#type::Type;
-use crate::error::{Error, TerminationError};
-use crate::hir::pattern::{Pattern, PatternKind};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    hir::pattern::{Pattern, Kind},
+}
 
 impl Pattern {
     /// Tries to type the given construct.
     pub fn typing(
         &mut self,
-        expected_type: &Type,
+        expected_type: &Typ,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    ) -> TRes<()> {
         match self.kind {
-            PatternKind::Constant { ref constant } => {
+            Kind::Constant { ref constant } => {
                 let pattern_type = constant.get_type();
                 pattern_type.eq_check(&expected_type, self.location.clone(), errors)?;
                 self.typing = Some(pattern_type);
                 Ok(())
             }
-            PatternKind::Identifier { id } => {
+            Kind::Identifier { id } => {
                 symbol_table.set_type(id, expected_type.clone());
                 self.typing = Some(expected_type.clone());
                 Ok(())
             }
-            PatternKind::Typed {
+            Kind::Typed {
                 ref mut pattern,
                 ref typing,
             } => {
                 typing.eq_check(&expected_type, self.location.clone(), errors)?;
                 pattern.typing(expected_type, symbol_table, errors)
             }
-            PatternKind::Structure {
+            Kind::Structure {
                 ref id,
                 ref mut fields,
             } => {
@@ -47,24 +46,18 @@ impl Pattern {
                             Ok(())
                         }
                     })
-                    .collect::<Vec<Result<(), TerminationError>>>()
+                    .collect::<Vec<TRes<()>>>()
                     .into_iter()
-                    .collect::<Result<(), TerminationError>>()?;
-                self.typing = Some(Type::Structure {
-                    name: symbol_table.get_name(*id).clone(),
-                    id: *id,
-                });
+                    .collect::<TRes<()>>()?;
+                self.typing = Some(Typ::structure(symbol_table.get_name(*id), *id));
                 Ok(())
             }
-            PatternKind::Enumeration { ref enum_id, .. } => {
-                self.typing = Some(Type::Enumeration {
-                    name: symbol_table.get_name(*enum_id).clone(),
-                    id: *enum_id,
-                });
+            Kind::Enumeration { ref enum_id, .. } => {
+                self.typing = Some(Typ::enumeration(symbol_table.get_name(*enum_id), *enum_id));
                 Ok(())
             }
-            PatternKind::Tuple { ref mut elements } => match expected_type {
-                Type::Tuple(types) => {
+            Kind::Tuple { ref mut elements } => match expected_type {
+                Typ::Tuple(types) => {
                     if elements.len() != types.len() {
                         let error = Error::IncompatibleTuple {
                             location: self.location.clone(),
@@ -78,14 +71,14 @@ impl Pattern {
                         .map(|(pattern, expected_type)| {
                             pattern.typing(expected_type, symbol_table, errors)
                         })
-                        .collect::<Vec<Result<(), TerminationError>>>()
+                        .collect::<Vec<TRes<()>>>()
                         .into_iter()
-                        .collect::<Result<(), TerminationError>>()?;
+                        .collect::<TRes<()>>()?;
                     let types = elements
                         .iter()
                         .map(|pattern| pattern.get_type().unwrap().clone())
                         .collect();
-                    self.typing = Some(Type::Tuple(types));
+                    self.typing = Some(Typ::tuple(types));
                     Ok(())
                 }
                 _ => {
@@ -96,11 +89,11 @@ impl Pattern {
                     Err(TerminationError)
                 }
             },
-            PatternKind::Some { ref mut pattern } => match expected_type {
-                Type::SMEvent(expected_type) => {
+            Kind::Some { ref mut pattern } => match expected_type {
+                Typ::SMEvent(expected_type) => {
                     pattern.typing(expected_type, symbol_table, errors)?;
                     let pattern_type = pattern.get_type().unwrap().clone();
-                    self.typing = Some(Type::SMEvent(Box::new(pattern_type)));
+                    self.typing = Some(Typ::sm_event(pattern_type));
                     Ok(())
                 }
                 _ => {
@@ -111,27 +104,27 @@ impl Pattern {
                     Err(TerminationError)
                 }
             },
-            PatternKind::None => {
-                self.typing = Some(Type::SMEvent(Box::new(Type::Any)));
+            Kind::None => {
+                self.typing = Some(Typ::sm_event(Typ::Any));
                 Ok(())
             }
-            PatternKind::Default => {
-                self.typing = Some(Type::Any);
+            Kind::Default => {
+                self.typing = Some(Typ::any());
                 Ok(())
             }
-            PatternKind::Event {
+            Kind::Event {
                 event_element_id,
                 ref mut pattern,
                 ..
             } => {
-                let typing = Type::ComponentEvent;
+                let typing = Typ::component_event();
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
                 match symbol_table.get_type(event_element_id) {
-                    Type::SMEvent(expected_type) => {
+                    Typ::SMEvent(expected_type) => {
                         pattern.typing(&expected_type.clone(), symbol_table, errors)?
                     }
-                    Type::SMTimeout(expected_type) => {
+                    Typ::SMTimeout(expected_type) => {
                         pattern.typing(&expected_type.clone(), symbol_table, errors)?
                     }
                     _ => unreachable!(),
@@ -140,23 +133,23 @@ impl Pattern {
                 self.typing = Some(typing);
                 Ok(())
             }
-            PatternKind::TimeoutEvent {
+            Kind::TimeoutEvent {
                 event_element_id, ..
             } => {
-                let typing = Type::ComponentEvent;
+                let typing = Typ::ComponentEvent;
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
                 match symbol_table.get_type(event_element_id) {
-                    Type::SMEvent(_) => todo!("error, event should be timeout"),
-                    Type::SMTimeout(_) => (),
+                    Typ::SMEvent(_) => todo!("error, event should be timeout"),
+                    Typ::SMTimeout(_) => (),
                     _ => unreachable!(),
                 };
 
                 self.typing = Some(typing);
                 Ok(())
             }
-            PatternKind::NoEvent { .. } => {
-                self.typing = Some(Type::ComponentEvent);
+            Kind::NoEvent { .. } => {
+                self.typing = Some(Typ::component_event());
                 Ok(())
             }
         }
@@ -167,29 +160,29 @@ impl Pattern {
         &mut self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    ) -> TRes<()> {
         match self.kind {
-            PatternKind::Constant { .. }
-            | PatternKind::Structure { .. }
-            | PatternKind::Enumeration { .. }
-            | PatternKind::Some { .. }
-            | PatternKind::NoEvent { .. }
-            | PatternKind::Event { .. }
-            | PatternKind::TimeoutEvent { .. }
-            | PatternKind::None
-            | PatternKind::Default => {
+            Kind::Constant { .. }
+            | Kind::Structure { .. }
+            | Kind::Enumeration { .. }
+            | Kind::Some { .. }
+            | Kind::NoEvent { .. }
+            | Kind::Event { .. }
+            | Kind::TimeoutEvent { .. }
+            | Kind::None
+            | Kind::Default => {
                 let error = Error::NotStatementPattern {
                     location: self.location.clone(),
                 };
                 errors.push(error);
                 return Err(TerminationError);
             }
-            PatternKind::Identifier { id } => {
+            Kind::Identifier { id } => {
                 let typing = symbol_table.get_type(id);
                 self.typing = Some(typing.clone());
                 Ok(())
             }
-            PatternKind::Typed {
+            Kind::Typed {
                 ref mut pattern,
                 ref typing,
             } => {
@@ -197,18 +190,18 @@ impl Pattern {
                 self.typing = Some(typing.clone());
                 Ok(())
             }
-            PatternKind::Tuple { ref mut elements } => {
+            Kind::Tuple { ref mut elements } => {
                 let types = elements
                     .iter_mut()
                     .map(|pattern| {
                         pattern.construct_statement_type(symbol_table, errors)?;
                         Ok(pattern.typing.as_ref().unwrap().clone())
                     })
-                    .collect::<Vec<Result<_, TerminationError>>>()
+                    .collect::<Vec<TRes<_>>>()
                     .into_iter()
-                    .collect::<Result<Vec<_>, TerminationError>>()?;
+                    .collect::<TRes<Vec<_>>>()?;
 
-                self.typing = Some(Type::Tuple(types));
+                self.typing = Some(Typ::tuple(types));
                 Ok(())
             }
         }

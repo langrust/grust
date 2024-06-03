@@ -1,5 +1,8 @@
-use crate::common::location::Location;
-use crate::hir::{function::Function, interface::Interface, node::Node, typedef::Typedef};
+//! HIR [File](crate::hir::file::File) module.
+
+prelude! {
+    hir::{function::Function, interface::Interface, node::Node, typedef::Typedef},
+}
 
 /// A LanGRust [File] is composed of functions, nodes,
 /// types defined by the user, components and interface.

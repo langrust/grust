@@ -1,7 +1,10 @@
-use crate::{common::constant::Constant, lir::pattern::Pattern};
-use proc_macro2::Span;
-use quote::format_ident;
-use syn::*;
+prelude! {
+    macro2::Span,
+    quote::format_ident,
+    syn::*,
+    lir::Pattern,
+}
+
 /// Transform LIR pattern into RustAST pattern.
 pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
     match pattern {
@@ -86,10 +89,11 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::pattern::rust_ast_from_lir;
-    use crate::common::constant::Constant;
-    use crate::lir::pattern::Pattern;
-    use syn::*;
+    prelude! {
+        syn::*,
+        backend::rust_ast_from_lir::pattern::rust_ast_from_lir,
+        lir::Pattern,
+    }
 
     #[test]
     fn should_create_a_rust_ast_default_pattern_from_a_lir_default_pattern() {
@@ -128,9 +132,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_a_rust_ast_identifier_pattern_owned_and_immutable_from_a_lir_identifier_pattern(
     ) {
-        let pattern = Pattern::Identifier {
-            name: String::from("x"),
-        };
+        let pattern = Pattern::ident("x");
 
         let control = parse_quote! { x };
         assert_eq!(rust_ast_from_lir(pattern), control)
@@ -139,15 +141,10 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_a_rust_ast_structure_pattern_from_a_lir_structure_pattern() {
         let pattern = Pattern::Structure {
-            name: String::from("Point"),
+            name: "Point".into(),
             fields: vec![
-                (String::from("x"), Pattern::Default),
-                (
-                    String::from("y"),
-                    Pattern::Identifier {
-                        name: String::from("y"),
-                    },
-                ),
+                ("x".into(), Pattern::Default),
+                ("y".into(), Pattern::ident("y")),
             ],
         };
 

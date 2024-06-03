@@ -1,8 +1,6 @@
-use crate::{
-    hir::file::File,
-    lir::{item::Item, project::Project},
-    symbol_table::SymbolTable,
-};
+prelude! {
+    hir::File, lir::{Item, Project},
+}
 
 use super::LIRFromHIR;
 

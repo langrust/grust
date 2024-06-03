@@ -1,22 +1,20 @@
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the map expression.
+    /// Add a [Typ] to the map expression.
     pub fn typing_map(
         &mut self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
-            ExpressionKind::Map {
+            hir::expr::Kind::Map {
                 ref mut expression,
                 ref mut function_expression,
             } => {
@@ -25,7 +23,7 @@ where
 
                 // verify it is an array
                 match expression.get_type().unwrap() {
-                    Type::Array(element_type, size) => {
+                    Typ::Array(element_type, size) => {
                         // type the function expression
                         function_expression.typing(symbol_table, errors)?;
                         let function_type = function_expression.get_type_mut().unwrap();
@@ -37,7 +35,7 @@ where
                             errors,
                         )?;
 
-                        Ok(Type::Array(Box::new(new_element_type), *size))
+                        Ok(Typ::Array(Box::new(new_element_type), *size))
                     }
                     given_type => {
                         let error = Error::ExpectArray {

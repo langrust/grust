@@ -1,18 +1,16 @@
-use crate::common::r#type::Type;
-use crate::{
-    error::TerminationError, frontend::typing_analysis::TypeAnalysis,
-    hir::expression::ExpressionKind,
-};
+prelude! {
+    frontend::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the constant expression.
-    pub fn typing_constant(&mut self) -> Result<Type, TerminationError> {
+    /// Add a [Typ] to the constant expression.
+    pub fn typing_constant(&mut self) -> TRes<Typ> {
         match self {
             // typing a constant expression consist of getting the type of the constant
-            ExpressionKind::Constant { ref constant } => {
+            hir::expr::Kind::Constant { ref constant } => {
                 let constant_type = constant.get_type();
                 Ok(constant_type)
             }

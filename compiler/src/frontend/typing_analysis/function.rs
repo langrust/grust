@@ -1,14 +1,10 @@
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::function::Function;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::TypeAnalysis,
+    hir::Function,
+}
 
 impl TypeAnalysis for Function {
-    fn typing(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Result<(), TerminationError> {
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let Function {
             id,
             statements,
@@ -26,9 +22,7 @@ impl TypeAnalysis for Function {
                     .construct_statement_type(symbol_table, errors)?;
                 statement.typing(symbol_table, errors)
             })
-            .collect::<Vec<Result<(), TerminationError>>>()
-            .into_iter()
-            .collect::<Result<(), TerminationError>>()?;
+            .collect::<TRes<()>>()?;
 
         // type returned expression
         returned.typing(symbol_table, errors)?;

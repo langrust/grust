@@ -1,8 +1,9 @@
-use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::common::{convert_case::camel_case, r#type::Type as GRRustType};
-use crate::lir::item::state_machine::input::{Input, InputElement};
-use quote::format_ident;
-use syn::*;
+prelude! {
+    backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    lir::item::state_machine::input::{Input, InputElement},
+    quote::format_ident,
+    syn::*,
+}
 
 /// Transform LIR input into RustAST structure.
 pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
@@ -15,7 +16,7 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
 
     let mut generics: Vec<GenericParam> = vec![];
     for (generic_name, generic_type) in input.generics {
-        if let GRRustType::Abstract(arguments, output) = generic_type {
+        if let Typ::Abstract(arguments, output) = generic_type {
             let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
             let output = type_rust_ast_from_lir(*output);
             let identifier = format_ident!("{generic_name}");
@@ -25,7 +26,7 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
         }
     }
 
-    let name = format_ident!("{}", camel_case(&format!("{}Input", input.node_name)));
+    let name = format_ident!("{}", to_camel_case(&format!("{}Input", input.node_name)));
     if generics.is_empty() {
         parse_quote! {
             pub struct #name {
@@ -45,7 +46,6 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
 mod rust_ast_from_lir {
     prelude! {
         backend::rust_ast_from_lir::item::state_machine::input::rust_ast_from_lir,
-        common::r#type::Type,
         lir::item::state_machine::input::{Input, InputElement},
     }
     use syn::*;
@@ -56,7 +56,7 @@ mod rust_ast_from_lir {
             node_name: format!("Node"),
             elements: vec![InputElement {
                 identifier: format!("i"),
-                r#type: Type::Integer,
+                r#type: Typ::Integer,
             }],
             generics: vec![],
         };

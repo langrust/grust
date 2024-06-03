@@ -1,0 +1,67 @@
+use std::sync::RwLock;
+
+prelude! {}
+
+/// Stores all possible compiler's configurations.
+pub struct Conf {
+    pub_components: bool,
+    dump_code: Option<String>,
+}
+impl Default for Conf {
+    fn default() -> Self {
+        Self {
+            pub_components: false,
+            dump_code: None,
+        }
+    }
+}
+
+lazy_static! {
+    /// Configuration.
+    static ref CONF : RwLock<Conf> = RwLock::new(Conf::default());
+}
+
+fn read<T>(f: impl FnOnce(&Conf) -> T) -> T {
+    let conf = CONF.read().expect("configuration lock is poisoned");
+    f(&*conf)
+}
+fn write<T>(f: impl FnOnce(&mut Conf) -> T) -> T {
+    let mut conf = CONF.write().expect("configuration lock is poisoned");
+    f(&mut *conf)
+}
+
+macro_rules! def {
+    { $(
+        $typ:ty { $(
+            $(#[$read_meta:meta])*
+            $read_field:ident
+            $(#[$write_meta:meta])*
+            $write_field:ident
+        )+ }
+    )+ } => { $($(
+        $(#[$read_meta])*
+        pub fn $read_field() -> $typ {
+            read(|conf| conf.$read_field.clone())
+        }
+        $(#[$write_meta])*
+        pub fn $write_field(val : $typ) {
+            write(|conf| conf.$read_field = val)
+        }
+    )* )+ };
+}
+
+def! {
+    bool {
+        #[doc = "Tells if the components are public."]
+        pub_components
+        #[doc = "Set in configuration if the components are public."]
+        set_pub_components
+    }
+    Option<String> {
+        #[doc = "Returns `Some(path)` if the code should be written at `path`, \
+        returns `None` if code should not be written."]
+        dump_code
+        #[doc = "Set in configuration if the components are public."]
+        set_dump_code
+    }
+}

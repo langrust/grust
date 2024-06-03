@@ -1,8 +1,9 @@
-use crate::common::{
-    constant::Constant,
-    location::Location,
+//! HIR [Contract](crate::hir::contract::Contract) module.
+
+prelude! {
     operator::{BinaryOperator, UnaryOperator},
-};
+    graph::*,
+}
 
 #[derive(Debug, PartialEq, Clone)]
 /// Term's kind.
@@ -44,6 +45,37 @@ pub struct Term {
     pub location: Location,
 }
 
+impl Term {
+    /// Compute dependencies of a term.
+    pub fn compute_dependencies(&self) -> Vec<usize> {
+        match &self.kind {
+            TermKind::Unary { term, .. } => term.compute_dependencies(),
+            TermKind::Binary { left, right, .. } => {
+                let mut dependencies_left = left.compute_dependencies();
+                let mut dependencies = right.compute_dependencies();
+                dependencies.append(&mut dependencies_left);
+                dependencies
+            }
+            TermKind::Constant { .. } => vec![],
+            TermKind::Identifier { id } => vec![*id],
+        }
+    }
+
+    /// Add dependencies of a term to the graph.
+    pub fn add_term_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>) {
+        let dependencies = self.compute_dependencies();
+        // signals used in the term depend on each other
+        dependencies.iter().for_each(|id1| {
+            dependencies.iter().for_each(|id2| {
+                if id1 != id2 {
+                    add_edge(node_graph, *id1, *id2, Label::Contract);
+                    add_edge(node_graph, *id2, *id1, Label::Contract);
+                }
+            })
+        })
+    }
+}
+
 #[derive(Debug, Default, PartialEq, Clone)]
 /// Contract to prove using Creusot.
 pub struct Contract {
@@ -56,7 +88,7 @@ pub struct Contract {
 }
 
 impl Contract {
-    /// Substitude an identifier from another.
+    /// Substitutes an identifier from another.
     pub fn substitution(&mut self, old_id: usize, new_id: usize) {
         self.requires
             .iter_mut()
@@ -67,6 +99,25 @@ impl Contract {
         self.invariant
             .iter_mut()
             .for_each(|term| term.substitution(old_id, new_id));
+    }
+
+    /// Add dependencies of a contract to the graph.
+    pub fn add_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>) {
+        let Contract {
+            requires,
+            ensures,
+            invariant,
+        } = self;
+
+        requires
+            .iter()
+            .for_each(|term| term.add_term_dependencies(node_graph));
+        ensures
+            .iter()
+            .for_each(|term| term.add_term_dependencies(node_graph));
+        invariant
+            .iter()
+            .for_each(|term| term.add_term_dependencies(node_graph));
     }
 }
 

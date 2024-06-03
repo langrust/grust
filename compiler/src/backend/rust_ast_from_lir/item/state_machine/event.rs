@@ -1,8 +1,9 @@
-use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::common::{convert_case::camel_case, r#type::Type as GRRustType};
-use crate::lir::item::state_machine::event::{Event, EventElement, IntoOtherEvent};
-use quote::format_ident;
-use syn::*;
+prelude! {
+    quote::format_ident,
+    syn::*,
+    backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    lir::item::state_machine::event::{Event, EventElement, IntoOtherEvent},
+}
 
 /// Transform LIR event into RustAST structure.
 pub fn rust_ast_from_lir(event: Event) -> Vec<Item> {
@@ -26,7 +27,7 @@ pub fn rust_ast_from_lir(event: Event) -> Vec<Item> {
     // maybe generics
     let mut generics: Vec<GenericParam> = vec![];
     for (generic_name, generic_type) in event.generics {
-        if let GRRustType::Abstract(arguments, output) = generic_type {
+        if let Typ::Abstract(arguments, output) = generic_type {
             let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
             let output = type_rust_ast_from_lir(*output);
             let identifier = format_ident!("{generic_name}");
@@ -37,7 +38,7 @@ pub fn rust_ast_from_lir(event: Event) -> Vec<Item> {
     }
 
     // create enumeration
-    let event_name = format_ident!("{}", camel_case(&format!("{}Event", event.node_name)));
+    let event_name = format_ident!("{}", to_camel_case(&format!("{}Event", event.node_name)));
     let enum_item: ItemEnum = if generics.is_empty() {
         parse_quote! {
             pub enum #event_name {
@@ -52,20 +53,20 @@ pub fn rust_ast_from_lir(event: Event) -> Vec<Item> {
         }
     };
 
-    // create the event convertions
+    // create the event conversions
     let mut items = event
         .intos
         .into_iter()
         .map(
             |IntoOtherEvent {
                  other_node_name,
-                 convertions,
+                 conversions,
              }| {
                 let other_event_name =
-                    format_ident!("{}", camel_case(&format!("{}Event", other_node_name)));
+                    format_ident!("{}", to_camel_case(&format!("{}Event", other_node_name)));
 
                 // convert every event element
-                let mut arms: Vec<Arm> = convertions
+                let mut arms: Vec<Arm> = conversions
                     .into_iter()
                     .map(|(from, into)| {
                         let from_name = format_ident!("{from}");
@@ -107,7 +108,6 @@ pub fn rust_ast_from_lir(event: Event) -> Vec<Item> {
 mod rust_ast_from_lir {
     prelude! {
         backend::rust_ast_from_lir::item::state_machine::event::rust_ast_from_lir,
-        common::r#type::Type,
         lir::item::state_machine::event::{Event, EventElement, IntoOtherEvent},
     }
     use syn::*;
@@ -119,17 +119,17 @@ mod rust_ast_from_lir {
             elements: vec![
                 EventElement::InputEvent {
                     identifier: format!("E1"),
-                    r#type: Type::Integer,
+                    r#type: Typ::Integer,
                 },
                 EventElement::InputEvent {
                     identifier: format!("E2"),
-                    r#type: Type::Float,
+                    r#type: Typ::Float,
                 },
                 EventElement::NoEvent,
             ],
             intos: vec![IntoOtherEvent {
                 other_node_name: format!("OtherNode"),
-                convertions: vec![(format!("E1"), format!("E"))],
+                conversions: vec![(format!("E1"), format!("E"))],
             }],
             generics: vec![],
         };

@@ -384,7 +384,7 @@ pub struct TotoService {
     context: Context,
     process_set_speed: ProcessSetSpeedState,
     speed_limiter: SpeedLimiterState,
-    period: tokio::time::Interval,
+    period_fresh_ident: tokio::time::Interval,
     activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
     set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
     speed_channel: tokio::sync::mpsc::Receiver<f64>,
@@ -407,13 +407,13 @@ impl TotoService {
     ) -> TotoService {
         let process_set_speed = ProcessSetSpeedState::init();
         let speed_limiter = SpeedLimiterState::init();
-        let period = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
+        let period_fresh_ident = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
         let context = Context::init();
         TotoService {
             context,
             process_set_speed,
             speed_limiter,
-            period,
+            period_fresh_ident,
             activation_channel,
             set_speed_channel,
             speed_channel,
@@ -445,7 +445,7 @@ impl TotoService {
             v_set_channel,
         );
         loop {
-            tokio::select! { activation = service . activation_channel . recv () => service . handle_activation (activation . unwrap ()) . await , set_speed = service . set_speed_channel . recv () => service . handle_set_speed (set_speed . unwrap ()) . await , speed = service . speed_channel . recv () => service . handle_speed (speed . unwrap ()) . await , vacuum_brake = service . vacuum_brake_channel . recv () => service . handle_vacuum_brake (vacuum_brake . unwrap ()) . await , kickdown = service . kickdown_channel . recv () => service . handle_kickdown (kickdown . unwrap ()) . await , vdc = service . vdc_channel . recv () => service . handle_vdc (vdc . unwrap ()) . await , _ = service . period . tick () => service . handle_period () . await , }
+            tokio::select! { activation = service . activation_channel . recv () => service . handle_activation (activation . unwrap ()) . await , set_speed = service . set_speed_channel . recv () => service . handle_set_speed (set_speed . unwrap ()) . await , speed = service . speed_channel . recv () => service . handle_speed (speed . unwrap ()) . await , vacuum_brake = service . vacuum_brake_channel . recv () => service . handle_vacuum_brake (vacuum_brake . unwrap ()) . await , kickdown = service . kickdown_channel . recv () => service . handle_kickdown (kickdown . unwrap ()) . await , vdc = service . vdc_channel . recv () => service . handle_vdc (vdc . unwrap ()) . await , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , }
         }
     }
     async fn handle_activation(&mut self, activation: ActivationResquest) {
@@ -466,7 +466,7 @@ impl TotoService {
     async fn handle_vdc(&mut self, vdc: VdcState) {
         self.context.vdc = vdc;
     }
-    async fn handle_period(&mut self) {
+    async fn handle_period_fresh_ident(&mut self) {
         let (state, on_state, in_regulation_aux, state_update) = self
             .speed_limiter
             .step(self.context.get_speed_limiter_inputs());

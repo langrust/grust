@@ -1,24 +1,22 @@
-use crate::common::{location::Location, r#type::Type};
-use crate::error::{Error, TerminationError};
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the binop expression.
+    /// Add a [Typ] to the binop expression.
     pub fn typing_binop(
         &mut self,
         location: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Type, TerminationError> {
+    ) -> TRes<Typ> {
         match self {
             // an binop expression type is the result of the binop
             // of the inputs types to the abstraction/function type
-            ExpressionKind::Binop {
+            hir::expr::Kind::Binop {
                 op,
                 left_expression,
                 right_expression,

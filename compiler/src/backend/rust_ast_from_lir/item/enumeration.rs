@@ -1,6 +1,8 @@
-use crate::lir::item::enumeration::Enumeration;
-use proc_macro2::Span;
-use syn::*;
+prelude! { just
+    macro2::Span,
+    syn::*,
+    lir::item::enumeration::Enumeration,
+}
 
 /// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
@@ -35,20 +37,16 @@ pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
 
 #[cfg(test)]
 mod rust_ast_from_lir {
-    use crate::backend::rust_ast_from_lir::item::enumeration::rust_ast_from_lir;
-    use crate::lir::item::enumeration::Enumeration;
-    use syn::*;
+    prelude! { just
+        syn::*,
+        backend::rust_ast_from_lir::item::enumeration::rust_ast_from_lir,
+        lir::item::enumeration::Enumeration,
+    }
 
     #[test]
     fn should_create_rust_ast_enumeration_from_lir_enumeration() {
-        let enumeration = Enumeration {
-            name: String::from("Color"),
-            elements: vec![
-                String::from("Blue"),
-                String::from("Red"),
-                String::from("Green"),
-            ],
-        };
+        let enumeration =
+            Enumeration::new("Color", vec!["Blue".into(), "Red".into(), "Green".into()]);
 
         let control = parse_quote! {
         #[derive(Clone, Copy, Debug, PartialEq, Default)]

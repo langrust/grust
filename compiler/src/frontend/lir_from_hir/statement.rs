@@ -1,27 +1,23 @@
-use crate::{
-    hir::statement::Statement,
-    lir::{
-        expression::Expression as LIRExpression, item::import::Import,
-        statement::Statement as LIRStatement,
-    },
-    symbol_table::SymbolTable,
-};
+prelude! {
+    hir::Stmt,
+    lir::item::Import,
+}
 
 use super::LIRFromHIR;
 
-impl<E> LIRFromHIR for Statement<E>
+impl<E> LIRFromHIR for Stmt<E>
 where
-    E: LIRFromHIR<LIR = LIRExpression>,
+    E: LIRFromHIR<LIR = lir::Expr>,
 {
-    type LIR = LIRStatement;
+    type LIR = lir::Stmt;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
-        let Statement {
+        let Stmt {
             pattern,
             expression,
             ..
         } = self;
-        LIRStatement::Let {
+        lir::Stmt::Let {
             pattern: pattern.lir_from_hir(symbol_table),
             expression: expression.lir_from_hir(symbol_table),
         }

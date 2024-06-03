@@ -1,21 +1,16 @@
-use crate::common::r#type::Type;
-use crate::error::TerminationError;
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the call expression.
-    pub fn typing_identifier(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-    ) -> Result<Type, TerminationError> {
+    /// Add a [Typ] to the call expression.
+    pub fn typing_identifier(&mut self, symbol_table: &mut SymbolTable) -> TRes<Typ> {
         match self {
             // the type of a call expression in the type of the called element in the context
-            ExpressionKind::Identifier { ref id } => {
+            hir::expr::Kind::Identifier { ref id } => {
                 let typing = symbol_table.get_type(*id);
                 Ok(typing.clone())
             }

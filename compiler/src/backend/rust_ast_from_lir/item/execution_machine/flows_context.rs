@@ -1,9 +1,13 @@
-use crate::backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir;
-use crate::common::convert_case::camel_case;
-use crate::lir::item::execution_machine::flows_context::FlowsContext;
-use proc_macro2::Span;
-use quote::format_ident;
-use syn::*;
+prelude! {
+    macro2::Span,
+    quote::format_ident,
+    syn::*,
+}
+
+prelude! { just
+    backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    lir::item::execution_machine::flows_context::FlowsContext,
+}
 
 /// Transform LIR flows context into a 'Context' structure
 /// that implements some useful functions.
@@ -51,9 +55,9 @@ pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
             let input_getter =
                 Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
             let component_input_name =
-                format_ident!("{}", camel_case(&format!("{component_name}Input")));
+                format_ident!("{}", to_camel_case(&format!("{component_name}Input")));
             let component_event_name =
-                format_ident!("{}", camel_case(&format!("{component_name}Event")));
+                format_ident!("{}", to_camel_case(&format!("{component_name}Event")));
 
             let mut input_fields: Vec<FieldValue> = input_fields
                 .into_iter()
@@ -83,7 +87,7 @@ pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
             let input_getter =
                 Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
             let component_input_name =
-                format_ident!("{}", camel_case(&format!("{component_name}Input")));
+                format_ident!("{}", to_camel_case(&format!("{component_name}Input")));
 
             let input_fields: Vec<FieldValue> = input_fields
                 .into_iter()

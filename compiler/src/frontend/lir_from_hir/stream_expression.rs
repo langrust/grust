@@ -1,24 +1,22 @@
 use itertools::Itertools;
 
-use crate::{
-    common::{convert_case::camel_case, r#type::Type},
-    hir::stream_expression::{StreamExpression, StreamExpressionKind},
-    lir::{expression::Expression as LIRExpression, item::import::Import},
-    symbol_table::SymbolTable,
-};
+prelude! {
+    hir::stream,
+    lir::item::Import,
+}
 
 use super::LIRFromHIR;
 
-impl LIRFromHIR for StreamExpression {
-    type LIR = LIRExpression;
+impl LIRFromHIR for stream::Expr {
+    type LIR = lir::Expr;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         match self.kind {
-            StreamExpressionKind::Event { event_id } => {
+            stream::Kind::Event { event_id } => {
                 let name = symbol_table.get_name(event_id).clone();
-                LIRExpression::InputAccess { identifier: name }
+                lir::Expr::InputAccess { identifier: name }
             }
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::NodeApplication {
                 calling_node_id,
                 called_node_id,
                 inputs,
@@ -38,8 +36,8 @@ impl LIRFromHIR for StreamExpression {
                 if let Some(event_id) = symbol_table.get_node_event(called_node_id) {
                     input_fields.push((
                         symbol_table.get_name(event_id).clone(),
-                        LIRExpression::IntoMethod {
-                            expression: Box::new(LIRExpression::InputAccess {
+                        lir::Expr::IntoMethod {
+                            expression: Box::new(lir::Expr::InputAccess {
                                 identifier: symbol_table
                                     .get_name(
                                         symbol_table
@@ -51,39 +49,35 @@ impl LIRFromHIR for StreamExpression {
                         },
                     ))
                 }
-                LIRExpression::NodeCall {
+                lir::Expr::NodeCall {
                     node_identifier: name.clone(),
-                    input_name: camel_case(&format!("{name}Input")),
+                    input_name: to_camel_case(&format!("{name}Input")),
                     input_fields,
                 }
             }
-            StreamExpressionKind::Expression { expression } => {
-                expression.lir_from_hir(symbol_table)
-            }
-            StreamExpressionKind::FollowedBy { .. } => {
+            stream::Kind::Expression { expression } => expression.lir_from_hir(symbol_table),
+            stream::Kind::FollowedBy { .. } => {
                 unreachable!()
             }
         }
     }
 
-    fn get_type(&self) -> Option<&Type> {
+    fn get_type(&self) -> Option<&Typ> {
         self.typing.as_ref()
     }
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
         match &self.kind {
-            StreamExpressionKind::Expression { expression } => {
-                expression.is_if_then_else(symbol_table)
-            }
+            stream::Kind::Expression { expression } => expression.is_if_then_else(symbol_table),
             _ => false,
         }
     }
 
     fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
         match &self.kind {
-            StreamExpressionKind::Event { .. } => vec![],
-            StreamExpressionKind::Expression { expression } => expression.get_imports(symbol_table),
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::Event { .. } => vec![],
+            stream::Kind::Expression { expression } => expression.get_imports(symbol_table),
+            stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
                 ..
@@ -98,7 +92,7 @@ impl LIRFromHIR for StreamExpression {
                 ));
                 imports
             }
-            StreamExpressionKind::FollowedBy { .. } => unreachable!(),
+            stream::Kind::FollowedBy { .. } => unreachable!(),
         }
     }
 }

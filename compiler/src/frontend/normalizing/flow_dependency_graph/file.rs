@@ -1,4 +1,6 @@
-use crate::hir::file::File;
+prelude! { just
+    hir::File,
+}
 
 impl File {
     /// Generate dependency graph for every nodes/component.

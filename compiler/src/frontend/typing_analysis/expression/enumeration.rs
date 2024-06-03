@@ -1,23 +1,18 @@
-use crate::common::r#type::Type;
-use crate::error::TerminationError;
-use crate::frontend::typing_analysis::TypeAnalysis;
-use crate::hir::expression::ExpressionKind;
-use crate::symbol_table::SymbolTable;
+prelude! {
+    frontend::typing_analysis::TypeAnalysis,
+}
 
-impl<E> ExpressionKind<E>
+impl<E> hir::expr::Kind<E>
 where
     E: TypeAnalysis,
 {
-    /// Add a [Type] to the enumeration expression.
-    pub fn typing_enumeration(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-    ) -> Result<Type, TerminationError> {
+    /// Add a [Typ] to the enumeration expression.
+    pub fn typing_enumeration(&mut self, symbol_table: &mut SymbolTable) -> TRes<Typ> {
         match self {
             // the type of the enumeration is the corresponding enumeration type
-            ExpressionKind::Enumeration { ref enum_id, .. } => {
+            hir::expr::Kind::Enumeration { ref enum_id, .. } => {
                 // type each field and check their type
-                Ok(Type::Enumeration {
+                Ok(Typ::Enumeration {
                     name: symbol_table.get_name(*enum_id).clone(),
                     id: *enum_id,
                 })

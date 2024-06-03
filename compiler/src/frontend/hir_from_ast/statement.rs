@@ -1,14 +1,11 @@
-use crate::ast::expression::Expression;
-use crate::ast::statement::LetDeclaration;
-use crate::common::location::Location;
-use crate::error::{Error, TerminationError};
-use crate::hir::{expression::Expression as HIRExpression, statement::Statement as HIRStatement};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::stmt::LetDecl,
+}
 
 use super::HIRFromAST;
 
-impl HIRFromAST for LetDeclaration<Expression> {
-    type HIR = HIRStatement<HIRExpression>;
+impl HIRFromAST for LetDecl<ast::Expr> {
+    type HIR = hir::Stmt<hir::Expr>;
 
     // precondition: NOTHING is in symbol table
     // postcondition: construct HIR statement and check identifiers good use
@@ -16,8 +13,8 @@ impl HIRFromAST for LetDeclaration<Expression> {
         self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> Result<Self::HIR, TerminationError> {
-        let LetDeclaration {
+    ) -> TRes<Self::HIR> {
+        let LetDecl {
             typed_pattern,
             expression,
             ..
@@ -26,7 +23,7 @@ impl HIRFromAST for LetDeclaration<Expression> {
         typed_pattern.store(true, symbol_table, errors)?;
         let pattern = typed_pattern.hir_from_ast(symbol_table, errors)?;
 
-        Ok(HIRStatement {
+        Ok(hir::Stmt {
             pattern,
             expression: expression.hir_from_ast(symbol_table, errors)?,
             location,

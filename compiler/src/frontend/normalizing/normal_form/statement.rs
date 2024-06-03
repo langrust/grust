@@ -1,18 +1,9 @@
-use petgraph::graphmap::DiGraphMap;
-
 prelude! {
-    common::label::Label,
-    hir::{
-        dependencies::Dependencies,
-        expression::ExpressionKind,
-        identifier_creator::IdentifierCreator,
-        statement::Statement,
-        stream_expression::{StreamExpression, StreamExpressionKind},
-    },
-    symbol_table::SymbolTable,
+    graph::*,
+    hir::{ Dependencies, IdentifierCreator, Stmt, stream },
 }
 
-impl Statement<StreamExpression> {
+impl Stmt<stream::Expr> {
     /// Change HIR statement into a normal form.
     ///
     /// The normal form of an statement is as follows:
@@ -37,8 +28,8 @@ impl Statement<StreamExpression> {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
-    ) -> Vec<Statement<StreamExpression>> {
-        let Statement {
+    ) -> Vec<Stmt<stream::Expr>> {
+        let Stmt {
             pattern,
             mut expression,
             location,
@@ -46,7 +37,7 @@ impl Statement<StreamExpression> {
 
         // change expression into normal form and get additional statements
         let mut statements = match expression.kind {
-            StreamExpressionKind::NodeApplication {
+            stream::Kind::NodeApplication {
                 called_node_id,
                 ref mut inputs,
                 ..
@@ -95,7 +86,7 @@ impl Statement<StreamExpression> {
 
         // recreate the new statement with modified expression
         // todo: isn't it equal to self?
-        let normal_formed_statement = Statement {
+        let normal_formed_statement = Stmt {
             pattern,
             expression,
             location,
@@ -109,7 +100,7 @@ impl Statement<StreamExpression> {
     }
 
     pub fn add_to_graph(&self, graph: &mut DiGraphMap<usize, Label>) {
-        let Statement {
+        let Stmt {
             pattern,
             expression,
             ..
@@ -121,8 +112,8 @@ impl Statement<StreamExpression> {
             }
         }
         match &self.expression.kind {
-            StreamExpressionKind::Expression { expression } => match expression {
-                ExpressionKind::Match { arms, .. } => {
+            stream::Kind::Expression { expression } => match expression {
+                hir::expr::Kind::Match { arms, .. } => {
                     arms.iter().for_each(|(_, _, statements, _)| {
                         statements
                             .iter()

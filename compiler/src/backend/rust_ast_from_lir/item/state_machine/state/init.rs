@@ -1,15 +1,16 @@
 use std::collections::BTreeSet;
 
-use crate::backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir;
-use crate::common::convert_case::camel_case;
-use crate::lir::item::state_machine::state::init::{Init, StateElementInit};
-use proc_macro2::Span;
-use syn::*;
+prelude! {
+    backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir,
+    lir::item::state_machine::state::init::{Init, StateElementInit},
+    macro2::Span,
+    syn::*,
+}
 
 /// Transform LIR init into RustAST implementation method.
 pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemFn {
     let state_ty = Ident::new(
-        &camel_case(&format!("{}State", init.node_name)),
+        &to_camel_case(&format!("{}State", init.node_name)),
         Span::call_site(),
     );
     let signature = syn::Signature {
@@ -51,7 +52,7 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
                 let ident = Ident::new(&identifier, Span::call_site());
 
                 let called_state_ty = Ident::new(
-                    &camel_case(&format!("{}State", node_name)),
+                    &to_camel_case(&format!("{}State", node_name)),
                     Span::call_site(),
                 );
                 let expr = parse_quote! {#called_state_ty::init ()};
@@ -92,14 +93,12 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! {
+        syn::*,
         backend::rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir,
-        common::constant::Constant,
         lir::{
-            expression::Expression,
             item::state_machine::state::init::{Init, StateElementInit},
         },
     }
-    use syn::*;
 
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
@@ -109,9 +108,7 @@ mod rust_ast_from_lir {
             state_elements_init: vec![
                 StateElementInit::BufferInit {
                     identifier: format!("mem_i"),
-                    initial_expression: Expression::Literal {
-                        literal: Constant::Integer(parse_quote!(0i64)),
-                    },
+                    initial_expression: lir::Expr::lit(Constant::int(parse_quote!(0i64))),
                 },
                 StateElementInit::CalledNodeInit {
                     identifier: format!("called_node_state"),

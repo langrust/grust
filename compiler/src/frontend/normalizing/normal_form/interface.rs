@@ -1,10 +1,10 @@
-use crate::ast::interface::FlowKind;
-use crate::common::r#type::Type;
-use crate::hir::flow_expression::{FlowExpression, FlowExpressionKind};
-use crate::hir::identifier_creator::IdentifierCreator;
-use crate::hir::interface::{FlowDeclaration, FlowInstanciation, FlowStatement, Interface};
-use crate::hir::pattern::{Pattern, PatternKind};
-use crate::symbol_table::SymbolTable;
+prelude! {
+    ast::interface::FlowKind,
+    hir::{
+        flow, IdentifierCreator, Pattern,
+        interface::{FlowDeclaration, FlowInstantiation, FlowStatement, Interface},
+    },
+}
 
 impl Interface {
     pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
@@ -53,7 +53,7 @@ impl FlowStatement {
                 ref mut flow_expression,
                 ..
             })
-            | FlowStatement::Instanciation(FlowInstanciation {
+            | FlowStatement::Instantiation(FlowInstantiation {
                 ref mut flow_expression,
                 ..
             }) => flow_expression.normal_form(identifier_creator, symbol_table),
@@ -64,7 +64,7 @@ impl FlowStatement {
     }
 }
 
-impl FlowExpression {
+impl flow::Expr {
     /// Change HIR flow expression into a normal form.
     ///
     /// The normal form of an expression is as follows:
@@ -94,23 +94,23 @@ impl FlowExpression {
         symbol_table: &mut SymbolTable,
     ) -> Vec<FlowStatement> {
         match &mut self.kind {
-            FlowExpressionKind::Ident { .. } => vec![],
-            FlowExpressionKind::Sample {
+            flow::Kind::Ident { .. } => vec![],
+            flow::Kind::Sample {
                 flow_expression, ..
             } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            FlowExpressionKind::Scan {
+            flow::Kind::Scan {
                 flow_expression, ..
             } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            FlowExpressionKind::Timeout {
+            flow::Kind::Timeout {
                 flow_expression, ..
             } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            FlowExpressionKind::Throtle {
+            flow::Kind::Throtle {
                 flow_expression, ..
             } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            FlowExpressionKind::OnChange { flow_expression } => {
+            flow::Kind::OnChange { flow_expression } => {
                 flow_expression.into_flow_call(identifier_creator, symbol_table)
             }
-            FlowExpressionKind::ComponentCall { inputs, .. } => inputs
+            flow::Kind::ComponentCall { inputs, .. } => inputs
                 .iter_mut()
                 .flat_map(|(_, flow_expression)| {
                     flow_expression.into_flow_call(identifier_creator, symbol_table)
@@ -125,21 +125,17 @@ impl FlowExpression {
         symbol_table: &mut SymbolTable,
     ) -> Vec<FlowStatement> {
         match self.kind {
-            FlowExpressionKind::Ident { .. } => vec![],
+            flow::Kind::Ident { .. } => vec![],
             _ => {
                 let mut statements = self.normal_form(identifier_creator, symbol_table);
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator.new_identifier(
-                    String::from(""),
-                    String::from("x"),
-                    String::from(""),
-                );
+                let fresh_name = identifier_creator.fresh_identifier("flow_expression");
                 let typing = self.get_type().unwrap();
                 let kind = match typing {
-                    Type::Signal(_) => FlowKind::Signal(Default::default()),
-                    Type::Event(_) => FlowKind::Event(Default::default()),
-                    Type::Tuple(_) => panic!("tuple of flows can not be converted into flow"),
+                    Typ::Signal(_) => FlowKind::Signal(Default::default()),
+                    Typ::Event(_) => FlowKind::Event(Default::default()),
+                    Typ::Tuple(_) => panic!("tuple of flows can not be converted into flow"),
                     _ => unreachable!(),
                 };
                 let fresh_id = symbol_table.insert_fresh_flow(fresh_name, kind, typing.clone());
@@ -148,7 +144,7 @@ impl FlowExpression {
                 let new_statement = FlowStatement::Declaration(FlowDeclaration {
                     let_token: Default::default(),
                     pattern: Pattern {
-                        kind: PatternKind::Identifier { id: fresh_id },
+                        kind: hir::pattern::Kind::Identifier { id: fresh_id },
                         typing: Some(typing.clone()),
                         location: self.location.clone(),
                     },
@@ -159,7 +155,7 @@ impl FlowExpression {
                 statements.push(new_statement);
 
                 // change current expression be an identifier to the statement of the expression
-                self.kind = FlowExpressionKind::Ident { id: fresh_id };
+                self.kind = flow::Kind::Ident { id: fresh_id };
                 // self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 
                 // return new additional statements
