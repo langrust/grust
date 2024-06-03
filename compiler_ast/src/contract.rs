@@ -13,21 +13,119 @@ pub struct Implication {
     pub arrow: Token![=>],
     pub right: Box<Term>,
 }
-impl Implication {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
-        let forked = input.fork();
-        if forked.call(Term::parse).is_err() {
-            return false;
-        }
-        forked.peek(Token![=>])
+
+mk_new! { impl Implication =>
+    new {
+        left: Term = left.into(),
+        arrow: Token![=>],
+        right: Term = right.into(),
     }
 }
-impl Parse for Implication {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let left: Box<Term> = Box::new(input.parse()?);
+
+impl Implication {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![=>])
+    }
+    fn parse(input: syn::parse::ParseStream, left: Term) -> syn::Result<Self> {
         let arrow: Token![=>] = input.parse()?;
-        let right: Box<Term> = Box::new(input.parse()?);
-        Ok(Implication { left, arrow, right })
+        let right: Term = input.parse()?;
+        Ok(Implication::new(left, arrow, right))
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// Event presence implication term.
+pub struct EventImplication {
+    /// The pattern receiving the value of the event.
+    pub pattern: Pattern,
+    pub eq_token: Token![=],
+    /// The event to match.
+    pub event: String,
+    pub question_token: Token![?],
+    pub arrow: Token![=>],
+    pub term: Box<Term>,
+}
+
+mk_new! { impl EventImplication =>
+    new {
+        pattern: Pattern,
+        eq_token: Token![=],
+        event: impl Into<String> = event.into(),
+        question_token: Token![?],
+        arrow: Token![=>],
+        term: Term = term.into(),
+    }
+}
+
+impl EventImplication {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input
+            .fork()
+            .call(|forked| {
+                let _: Pattern = forked.parse()?;
+                let _: token::Eq = forked.parse()?;
+                let _: syn::Ident = forked.parse()?;
+                Ok(())
+            })
+            .is_ok()
+    }
+}
+impl Parse for EventImplication {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let pattern: Pattern = input.parse()?;
+        let eq_token: token::Eq = input.parse()?;
+        let event: syn::Ident = input.parse()?;
+        let question_token: token::Question = input.parse()?;
+        let arrow: Token![=>] = input.parse()?;
+        let term: Term = Term::parse_prec4(input)?;
+        Ok(EventImplication::new(
+            pattern,
+            eq_token,
+            event.to_string(),
+            question_token,
+            arrow,
+            term,
+        ))
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// Event timeout implication term.
+pub struct TimeoutImplication {
+    /// The timeout.
+    pub timeout_token: keyword::timeout,
+    /// The event to match.
+    pub event: String,
+    pub arrow: Token![=>],
+    pub term: Box<Term>,
+}
+
+mk_new! { impl TimeoutImplication =>
+    new {
+        timeout_token: keyword::timeout,
+        event: impl Into<String> = event.into(),
+        arrow: Token![=>],
+        term: Term = term.into(),
+    }
+}
+
+impl TimeoutImplication {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::timeout)
+    }
+}
+impl Parse for TimeoutImplication {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let timeout_token: keyword::timeout = input.parse()?;
+        let event: syn::Ident = input.parse()?;
+        let arrow: Token![=>] = input.parse()?;
+        let term: Term = Term::parse_prec4(input)?;
+        Ok(TimeoutImplication::new(
+            timeout_token,
+            event.to_string(),
+            arrow,
+            term,
+        ))
     }
 }
 
@@ -37,6 +135,14 @@ pub struct Unary {
     pub op: UnaryOperator,
     pub term: Box<Term>,
 }
+
+mk_new! { impl Unary =>
+    new {
+        op: UnaryOperator,
+        term: Term = term.into(),
+    }
+}
+
 impl Unary {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         UnaryOperator::peek(input)
@@ -45,8 +151,8 @@ impl Unary {
 impl Parse for Unary {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let op: UnaryOperator = input.parse()?;
-        let term: Box<Term> = Box::new(input.parse()?);
-        Ok(Unary { op, term })
+        let term: Term = Term::parse_term(input)?;
+        Ok(Unary::new(op, term))
     }
 }
 
@@ -57,6 +163,15 @@ pub struct Binary {
     pub op: BinaryOperator,
     pub right: Box<Term>,
 }
+
+mk_new! { impl Binary =>
+    new {
+        left: Term = left.into(),
+        op: BinaryOperator,
+        right: Term = right.into(),
+    }
+}
+
 impl Binary {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         BinaryOperator::peek(input)
@@ -99,20 +214,34 @@ impl Parse for Binary {
 #[derive(Debug, PartialEq, Clone)]
 /// GRust clause's term.
 pub enum Term {
-    Implication(Implication),
+    Constant(Constant),
+    Identifier(String),
     Unary(Unary),
     Binary(Binary),
-    Constant(Constant),
-    Identifier(syn::Ident),
+    Implication(Implication),
+    EventImplication(EventImplication),
+    TimeoutImplication(TimeoutImplication),
 }
+
+mk_new! { impl Term =>
+    Constant: constant (val: Constant = val)
+    Identifier: ident (val: impl Into<String> = val.into())
+    Unary: unary (val: Unary = val)
+    Binary: binary (val: Binary = val)
+    Implication: implication (val: Implication = val)
+    EventImplication: event (val: EventImplication = val)
+    TimeoutImplication: timeout (val: TimeoutImplication = val)
+}
+
 impl ParsePrec for Term {
     fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let term = if input.fork().call(Constant::parse).is_ok() {
-            Term::Constant(input.parse()?)
+            Term::constant(input.parse()?)
         } else if Unary::peek(input) {
-            Term::Unary(input.parse()?)
+            Term::unary(input.parse()?)
         } else if input.fork().call(syn::Ident::parse).is_ok() {
-            Term::Identifier(input.parse()?)
+            let ident: syn::Ident = input.parse()?;
+            Term::ident(ident.to_string())
         } else {
             return Err(input.error("expected expression"));
         };
@@ -125,7 +254,7 @@ impl ParsePrec for Term {
 
         loop {
             if BinaryOperator::peek_prec1(input) {
-                term = Term::Binary(Binary::parse_term(Box::new(term), input)?);
+                term = Term::binary(Binary::parse_term(Box::new(term), input)?);
             } else {
                 break;
             }
@@ -138,7 +267,7 @@ impl ParsePrec for Term {
 
         loop {
             if BinaryOperator::peek_prec2(input) {
-                term = Term::Binary(Binary::parse_prec1(Box::new(term), input)?);
+                term = Term::binary(Binary::parse_prec1(Box::new(term), input)?);
             } else {
                 break;
             }
@@ -151,7 +280,7 @@ impl ParsePrec for Term {
 
         loop {
             if BinaryOperator::peek_prec3(input) {
-                term = Term::Binary(Binary::parse_prec2(Box::new(term), input)?);
+                term = Term::binary(Binary::parse_prec2(Box::new(term), input)?);
             } else {
                 break;
             }
@@ -164,25 +293,131 @@ impl ParsePrec for Term {
 
         loop {
             if BinaryOperator::peek_prec4(input) {
-                term = Term::Binary(Binary::parse_prec3(Box::new(term), input)?);
+                term = Term::binary(Binary::parse_prec3(Box::new(term), input)?);
             } else {
                 break;
             }
         }
 
-        loop {
-            if input.peek(Token![=>]) {
-                term = Term::Implication(Implication::parse(input)?);
-            } else {
-                break;
-            }
-        }
         Ok(term)
     }
 }
 impl Parse for Term {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        Term::parse_prec4(input)
+        let mut term = if TimeoutImplication::peek(input) {
+            Self::timeout(input.parse()?)
+        } else if EventImplication::peek(input) {
+            Self::event(input.parse()?)
+        } else {
+            Self::parse_prec4(input)?
+        };
+
+        loop {
+            if Implication::peek(input) {
+                term = Term::implication(Implication::parse(input, term)?);
+            } else {
+                break;
+            }
+        }
+
+        Ok(term)
+    }
+}
+
+#[cfg(test)]
+mod parse_term {
+    prelude! {
+        contract::*,
+        operator::BinaryOperator,
+    }
+
+    #[test]
+    fn should_parse_constant() {
+        let term: Term = syn::parse_quote! {1};
+        let control = Term::constant(Constant::int(syn::parse_quote! {1}));
+        assert_eq!(term, control)
+    }
+
+    #[test]
+    fn should_parse_identifier() {
+        let term: Term = syn::parse_quote! {x};
+        let control = Term::ident("x");
+        assert_eq!(term, control)
+    }
+
+    #[test]
+    fn should_parse_unary_operation() {
+        let term: Term = syn::parse_quote! {!x};
+        let control = Term::unary(Unary::new(UnaryOperator::Not, Term::ident("x")));
+        assert_eq!(term, control)
+    }
+
+    #[test]
+    fn should_parse_binary_operation() {
+        let term: Term = syn::parse_quote! {-x + 1};
+        let control = Term::binary(Binary::new(
+            Term::unary(Unary::new(UnaryOperator::Neg, Term::ident("x"))),
+            BinaryOperator::Add,
+            Term::constant(Constant::int(syn::parse_quote! {1})),
+        ));
+        assert_eq!(term, control)
+    }
+
+    #[test]
+    fn should_parse_implication() {
+        let term: Term = syn::parse_quote! { !x && y => z};
+        let control = Term::implication(Implication::new(
+            Term::binary(Binary::new(
+                Term::unary(Unary::new(UnaryOperator::Not, Term::ident("x"))),
+                BinaryOperator::And,
+                Term::ident("y"),
+            )),
+            Default::default(),
+            Term::ident("z"),
+        ));
+        assert_eq!(term, control)
+    }
+
+    #[test]
+    fn should_parse_event_implication() {
+        let term: Term = syn::parse_quote! { d = p? => d > x+y};
+        let control = Term::event(EventImplication::new(
+            Pattern::ident("d"),
+            Default::default(),
+            "p",
+            Default::default(),
+            Default::default(),
+            Term::binary(Binary::new(
+                Term::ident("d"),
+                BinaryOperator::Grt,
+                Term::binary(Binary::new(
+                    Term::ident("x"),
+                    BinaryOperator::Add,
+                    Term::ident("y"),
+                )),
+            )),
+        ));
+        assert_eq!(term, control)
+    }
+
+    #[test]
+    fn should_parse_timeout_implication() {
+        let term: Term = syn::parse_quote! { timeout p => s == x+y};
+        let control = Term::timeout(TimeoutImplication::new(
+            Default::default(),
+            "p",
+            Default::default(),
+            Term::binary(Binary::new(
+                Term::ident("s"),
+                BinaryOperator::Eq,
+                Term::binary(Binary::new(
+                    Term::ident("x"),
+                    BinaryOperator::Add,
+                    Term::ident("y"),
+                )),
+            )),
+        ));
+        assert_eq!(term, control)
     }
 }
 
