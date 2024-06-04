@@ -5,7 +5,11 @@ prelude! {
 
 impl TypeAnalysis for Node {
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let Node { statements, .. } = self;
+        let Node {
+            statements,
+            contract,
+            ..
+        } = self;
 
         // set types for every pattern
         statements
@@ -21,6 +25,9 @@ impl TypeAnalysis for Node {
         statements
             .iter_mut()
             .map(|statement| statement.typing(symbol_table, errors))
-            .collect::<TRes<()>>()
+            .collect::<TRes<()>>()?;
+
+        // type contract
+        contract.typing(symbol_table, errors)
     }
 }
