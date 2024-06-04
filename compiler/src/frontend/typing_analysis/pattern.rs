@@ -121,10 +121,7 @@ impl Pattern {
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
                 match symbol_table.get_type(event_element_id) {
-                    Typ::SMEvent(expected_type) => {
-                        pattern.typing(&expected_type.clone(), symbol_table, errors)?
-                    }
-                    Typ::SMTimeout(expected_type) => {
+                    Typ::SMEvent(expected_type) | Typ::SMTimeout(expected_type) => {
                         pattern.typing(&expected_type.clone(), symbol_table, errors)?
                     }
                     _ => unreachable!(),
@@ -136,7 +133,7 @@ impl Pattern {
             Kind::TimeoutEvent {
                 event_element_id, ..
             } => {
-                let typing = Typ::ComponentEvent;
+                let typing = Typ::component_event();
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
                 match symbol_table.get_type(event_element_id) {
