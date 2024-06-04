@@ -11,11 +11,11 @@ pub struct CounterState {
 }
 impl CounterState {
     pub fn init() -> CounterState {
-        CounterState { mem: 0 }
+        CounterState { mem: 0i64 }
     }
     pub fn step(&mut self, input: CounterInput) -> i64 {
-        let inc = if input.tick { 1 } else { 0 };
-        let o = if input.res { 0 } else { add(self.mem, inc) };
+        let inc = if input.tick { 1i64 } else { 0i64 };
+        let o = if input.res { 0i64 } else { add(self.mem, inc) };
         self.mem = o;
         o
     }
@@ -41,7 +41,7 @@ impl TestState {
             res: stream_expression_fresh_ident,
             tick: half,
         });
-        self.mem = y > 35;
+        self.mem = y > 35i64;
         self.mem_1 = !half;
         y
     }
