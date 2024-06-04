@@ -2,11 +2,16 @@ prelude! { just
     macro2::Span,
     syn::*,
     lir::item::enumeration::Enumeration,
+    conf
 }
 
 /// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
-    let attribute = parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)]);
+    let attribute: Attribute = if conf::greusot() {
+        parse_quote!(#[derive(Clone, Copy, Debug,)])
+    } else {
+        parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)])
+    };
     ItemEnum {
         attrs: vec![attribute],
         vis: Visibility::Public(Default::default()),
@@ -19,7 +24,7 @@ pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
             .iter()
             .enumerate()
             .map(|(index, element)| {
-                let attrs: Vec<Attribute> = if index == 0 {
+                let attrs: Vec<Attribute> = if index == 0 && (!conf::greusot()) {
                     vec![parse_quote!(#[default])]
                 } else {
                     vec![]

@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use itertools::Itertools;
+use syn::parse_quote;
 
 prelude! {
     backend::rust_ast_from_lir::item::{
@@ -18,6 +19,10 @@ prelude! {
 pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
     let mut crates = BTreeSet::new();
     let mut rust_items = vec![];
+
+    if conf::greusot() {
+        rust_items.push(syn::Item::Use(parse_quote!(use creusot_contracts::{requires, ensures};)))
+    }
 
     project.items.into_iter().for_each(|item| match item {
         Item::ExecutionMachine(execution_machine) => {
