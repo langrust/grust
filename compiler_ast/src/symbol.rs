@@ -1221,28 +1221,6 @@ impl SymbolTable {
         }
     }
 
-    /// Get signal symbol identifier.
-    pub fn get_signal_id(
-        &self,
-        name: &String,
-        local: bool,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
-        let symbol_hash = SymbolKey::Identifier { name: name.clone() };
-        match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownSignal {
-                    name: name.to_string(),
-                    location,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
-        }
-    }
-
     /// Get event enumeration symbol identifier.
     pub fn get_event_enumeration_id(
         &self,

@@ -105,11 +105,6 @@ where
         let rhs = E::parse_prec3(input)?;
         Ok(Binop::new(op, lhs, rhs))
     }
-    pub fn parse_prec4(lhs: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let op = input.parse()?;
-        let rhs = E::parse_prec4(input)?;
-        Ok(Binop::new(op, lhs, rhs))
-    }
 }
 
 /// IfThenElse expression.
