@@ -19,39 +19,67 @@ prelude! {
 
 fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
     match term {
-        Term::Unary { op, term } => {
+        Term::Unop { op, term } => {
             let ts_term = term_to_token_stream(*term, prophecy);
             let ts_op = unary_to_syn(op);
             quote!(#ts_op #ts_term)
         }
-        Term::Binary { op, left, right } => {
+        Term::Binop { op, left, right } => {
             let ts_left = term_to_token_stream(*left, prophecy);
             let ts_right = term_to_token_stream(*right, prophecy);
             let ts_op = binary_to_syn(op);
             quote!(#ts_left #ts_op #ts_right)
         }
-        Term::Constant { constant } => {
-            let expr = constant_to_syn(constant);
+        Term::Literal { literal } => {
+            let expr = constant_to_syn(literal);
             quote!(#expr)
         }
-        Term::Identifier { name, scope } => {
-            let id = Ident::new(&name, Span::call_site());
-            match scope {
-                Scope::Input => {
-                    quote!(input.#id)
-                }
-                Scope::Memory => {
-                    // there is prophecy only here
-                    if prophecy {
-                        quote!((^self).#id)
-                    } else {
-                        quote!(self.#id)
-                    }
-                }
-                Scope::Output => quote!(result),
-                Scope::Local => quote!(#id),
+        Term::Identifier { identifier } => {
+            let id = Ident::new(&identifier, Span::call_site());
+            quote!(#id)
+        }
+        Term::MemoryAccess { identifier } => {
+            let id = Ident::new(&identifier, Span::call_site());
+            if prophecy {
+                quote!((^self).#id)
+            } else {
+                quote!(self.#id)
             }
         }
+        Term::InputAccess { identifier } => {
+            let id = Ident::new(&identifier, Span::call_site());
+            quote!(input.#id)
+        }
+        Term::Implication { left, right } => {
+            let ts_left = term_to_token_stream(*left, prophecy);
+            let ts_right = term_to_token_stream(*right, prophecy);
+            quote!(#ts_left => #ts_right)
+        }
+        Term::Forall { name, ty, term } => {
+            let id = Ident::new(&name, Span::call_site());
+            let ts_term = term_to_token_stream(*term, prophecy);
+            let ts_ty = type_rust_ast_from_lir(ty);
+            quote!(forall<#id:#ts_ty> #ts_term)
+        }
+        Term::Enumeration {
+            enum_name,
+            elem_name,
+            element,
+        } => {
+            let ty = Ident::new(&enum_name, Span::call_site());
+            let cons = Ident::new(&elem_name, Span::call_site());
+            if let Some(term) = element {
+                let inner = term_to_token_stream(*term, prophecy);
+                parse_quote! { #ty::#cons(#inner) }
+            } else {
+                parse_quote! { #ty::#cons }
+            }
+        }
+        Term::Ok { term } => {
+            let ts_term = term_to_token_stream(*term, prophecy);
+            parse_quote! { Ok(#ts_term) }
+        }
+        Term::Err => parse_quote! { Err(()) },
     }
 }
 
