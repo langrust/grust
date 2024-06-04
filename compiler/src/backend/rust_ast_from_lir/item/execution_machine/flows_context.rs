@@ -12,6 +12,10 @@ prelude! { just
 /// Transform LIR flows context into a 'Context' structure
 /// that implements some useful functions.
 pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
+    if conf::greusot() {
+        return vec![]
+    }
+
     let FlowsContext {
         elements,
         event_components,
@@ -33,8 +37,9 @@ pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
             }
         });
         let name = Ident::new("Context", Span::call_site());
+        let attribute: Attribute = parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)]);
         parse_quote! {
-            #[derive(Clone, Copy, Debug, PartialEq, Default)]
+            #attribute
             pub struct #name {
                 #(#fields),*
             }

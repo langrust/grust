@@ -23,6 +23,10 @@ impl Parse for ConfigItem {
                 let val: syn::LitBool = input.parse()?;
                 conf::set_pub_components(val.value)
             }
+            "greusot" => {
+                let val: syn::LitBool = input.parse()?;
+                conf::set_greusot(val.value)
+            }
             _ => {
                 return Err(syn::Error::new_spanned(
                     ident,

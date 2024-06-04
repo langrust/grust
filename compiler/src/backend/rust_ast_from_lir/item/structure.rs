@@ -3,6 +3,7 @@ prelude! { just
     syn::*,
     backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
     lir::item::structure::Structure,
+    conf
 }
 
 /// Transform LIR structure into RustAST structure.
@@ -20,7 +21,17 @@ pub fn rust_ast_from_lir(structure: Structure) -> ItemStruct {
         }
     });
     let name = Ident::new(&structure.name, Span::call_site());
-    parse_quote! { #[derive(Clone, Copy, Debug, PartialEq, Default)] pub struct #name { #(#fields),* } }
+    let attribute: Attribute = if conf::greusot() {
+        parse_quote!(#[derive(Clone, Copy, Debug)])
+    } else {
+        parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)])
+    };
+    parse_quote! {
+        #attribute
+        pub struct #name {
+            #(#fields),*
+        }
+    }
 }
 
 #[cfg(test)]
