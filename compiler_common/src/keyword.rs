@@ -10,6 +10,7 @@ syn::custom_keyword!(requires);
 syn::custom_keyword!(ensures);
 syn::custom_keyword!(invariant);
 syn::custom_keyword!(assert);
+syn::custom_keyword!(forall);
 
 // Typedefs keywords.
 syn::custom_keyword!(array);
