@@ -6,12 +6,14 @@ prelude! {}
 pub struct Conf {
     pub_components: bool,
     dump_code: Option<String>,
+    greusot: bool,
 }
 impl Default for Conf {
     fn default() -> Self {
         Self {
             pub_components: false,
             dump_code: None,
+            greusot: false,
         }
     }
 }
@@ -61,7 +63,13 @@ def! {
         #[doc = "Returns `Some(path)` if the code should be written at `path`, \
         returns `None` if code should not be written."]
         dump_code
-        #[doc = "Set in configuration if the components are public."]
+        #[doc = "Set in configuration where the code should be written."]
         set_dump_code
+    }
+    bool {
+        #[doc = "Tells if greusot is used."]
+        greusot
+        #[doc = "Set in configuration if greusot is used."]
+        set_greusot
     }
 }
