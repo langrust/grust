@@ -45,7 +45,7 @@ pub fn constant_to_syn(literal: Constant) -> Expr {
     match literal {
         Constant::Integer(i) => Expr::Lit(ExprLit {
             attrs: vec![],
-            lit: syn::Lit::Int(i),
+            lit: syn::Lit::Int(LitInt::new(&(i.base10_digits().to_owned() + "i64"), i.span())),
         }),
         Constant::Float(f) => Expr::Lit(ExprLit {
             attrs: vec![],
