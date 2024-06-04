@@ -26,6 +26,8 @@ pub mod flow_expression;
 
 pub mod flow_statement;
 
+pub mod contract;
+
 /// Performs type analysis.
 pub trait TypeAnalysis {
     /// Tries to type the given construct.
