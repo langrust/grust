@@ -9,21 +9,4 @@ edition = "2021"
 grust = { path = "../../grust" }
 priority_stream = { path = "../../priority_stream" }
 tokio = { version = "1.38.0", features = ["time"] }
-futures = "0.3.30"
-prost = "0.12"
-prost-types = "0.12"
-tonic = "0.11.0"
-serde = { version = "1.0.139", features = ["derive"] }
-serde_json = "1.0.82"
-lazy_static = "1.4.0"
-
-[build-dependencies]
-tonic-build = "0.11.0"
-
-[[bin]]
-name = "aeb-server"
-path = "src/server.rs"
-
-[[bin]]
-name = "aeb-client"
-path = "src/client.rs"
+creusot-contracts = { path = "../../creusot/creusot-contracts" }
