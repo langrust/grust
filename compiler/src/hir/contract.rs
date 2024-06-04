@@ -199,7 +199,7 @@ pub mod term {
 }
 
 prelude! {
-    graph::*,
+    just graph::*,
 }
 
 pub use term::Term;
