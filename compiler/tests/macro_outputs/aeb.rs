@@ -35,6 +35,7 @@ impl BrakingStateState {
         }
     }
     # [requires (0. <= input . speed && input . speed < 50.)]
+    # [ensures (forall < p : f64 > BrakingStateEvent :: pedest (Ok (p)) == input . braking_state_event == > result != Braking :: NoBrake)]
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
         let state = match input.braking_state_event {
             BrakingStateEvent::pedest(Ok(d)) => {
