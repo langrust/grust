@@ -65,6 +65,7 @@ mod term {
 
                     Ok(hir::contract::Term::new(
                         hir::contract::term::Kind::implication(left, right),
+                        None,
                         location,
                     ))
                 }
@@ -84,11 +85,13 @@ mod term {
                     // TODO check elem is in enum
                     Ok(hir::contract::Term::new(
                         hir::contract::term::Kind::enumeration(enum_id, element_id),
+                        None,
                         location,
                     ))
                 }
                 Term::Unary(Unary { op, term }) => Ok(hir::contract::Term::new(
                     hir::contract::term::Kind::unary(op, term.hir_from_ast(symbol_table, errors)?),
+                    None,
                     location,
                 )),
                 Term::Binary(Binary { op, left, right }) => Ok(hir::contract::Term::new(
@@ -97,10 +100,12 @@ mod term {
                         left.hir_from_ast(symbol_table, errors)?,
                         right.hir_from_ast(symbol_table, errors)?,
                     ),
+                    None,
                     location,
                 )),
                 Term::Constant(constant) => Ok(hir::contract::Term::new(
                     hir::contract::term::Kind::constant(constant),
+                    None,
                     location,
                 )),
                 Term::Identifier(ident) => {
@@ -112,6 +117,7 @@ mod term {
                     )?;
                     Ok(hir::contract::Term::new(
                         hir::contract::term::Kind::ident(id),
+                        None,
                         location,
                     ))
                 }
@@ -131,6 +137,7 @@ mod term {
                     symbol_table.global();
                     Ok(hir::contract::Term::new(
                         hir::contract::term::Kind::forall(id, term),
+                        None,
                         location,
                     ))
                 }
@@ -173,26 +180,31 @@ mod term {
                                     event_element_id,
                                     pattern_id,
                                 ),
+                                None,
                                 location.clone(),
                             ),
                             hir::contract::Term::new(
                                 hir::contract::term::Kind::ident(event_id),
+                                None,
                                 location.clone(),
                             ),
                         ),
+                        None,
                         location.clone(),
                     );
                     // construct result term: `when pat = e? => t` becomes `forall pat.idents, EventE(pat) == event => t`
-                    let term = hir::contract::Term {
-                        kind: hir::contract::term::Kind::forall(
+                    let term = hir::contract::Term::new(
+                        hir::contract::term::Kind::forall(
                             pattern_id,
                             hir::contract::Term::new(
                                 hir::contract::term::Kind::implication(left, right),
+                                None,
                                 location.clone(),
                             ),
                         ),
+                        None,
                         location,
-                    };
+                    );
                     Ok(term)
                 }
                 Term::TimeoutImplication(TimeoutImplication { event, term, .. }) => {
@@ -215,18 +227,22 @@ mod term {
                             BinaryOperator::Eq,
                             hir::contract::Term::new(
                                 hir::contract::term::Kind::timeout(event_enum_id, event_element_id),
+                                None,
                                 location.clone(),
                             ),
                             hir::contract::Term::new(
                                 hir::contract::term::Kind::ident(event_id),
+                                None,
                                 location.clone(),
                             ),
                         ),
+                        None,
                         location.clone(),
                     );
                     // construct result term: `timeout e? => t` becomes `Event::ETimeout == event => t`
                     let term = hir::contract::Term::new(
                         hir::contract::term::Kind::implication(left, right),
+                        None,
                         location,
                     );
                     Ok(term)
