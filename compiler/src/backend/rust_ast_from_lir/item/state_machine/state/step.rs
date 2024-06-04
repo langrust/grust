@@ -53,7 +53,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
         Term::Implication { left, right } => {
             let ts_left = term_to_token_stream(*left, prophecy);
             let ts_right = term_to_token_stream(*right, prophecy);
-            quote!(#ts_left => #ts_right)
+            quote!(#ts_left ==> #ts_right)
         }
         Term::Forall { name, ty, term } => {
             let id = Ident::new(&name, Span::call_site());

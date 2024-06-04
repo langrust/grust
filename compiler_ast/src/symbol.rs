@@ -774,6 +774,7 @@ impl SymbolTable {
             SymbolKind::Function { typing, .. } => typing
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
+            SymbolKind::Event => &Typ::ComponentEvent,
             _ => unreachable!(),
         }
     }
@@ -955,6 +956,7 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier { scope, .. } => scope,
+            SymbolKind::Event => &Scope::Input,
             _ => unreachable!(),
         }
     }
