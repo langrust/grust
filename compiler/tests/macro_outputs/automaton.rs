@@ -17,11 +17,11 @@ pub struct SumState {
 }
 impl SumState {
     pub fn init() -> SumState {
-        SumState { mem: 0 }
+        SumState { mem: 0i64 }
     }
     pub fn step(&mut self, input: SumInput) -> i64 {
         let x = add(self.mem, input.i);
-        let o = if input.reset { 0 } else { x };
+        let o = if input.reset { 0i64 } else { x };
         self.mem = o;
         o
     }
@@ -39,7 +39,7 @@ impl AutomatonState {
     pub fn init() -> AutomatonState {
         AutomatonState {
             mem: State::Off,
-            mem_1: 0,
+            mem_1: 0i64,
             sum: SumState::init(),
         }
     }
@@ -49,7 +49,7 @@ impl AutomatonState {
             State::Off => {
                 let next_state = if input.switch { State::On } else { state };
                 let x = self.mem_1;
-                let o = 0;
+                let o = 0i64;
                 (next_state, x, o)
             }
             State::On => {
@@ -58,7 +58,7 @@ impl AutomatonState {
                     reset: input.switch,
                     i: input.i,
                 });
-                let o = 10 * x;
+                let o = 10i64 * x;
                 (next_state, x, o)
             }
         };
