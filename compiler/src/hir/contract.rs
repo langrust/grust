@@ -105,6 +105,8 @@ pub mod term {
     pub struct Term {
         /// The kind of the term
         pub kind: Kind,
+        /// The type of the term
+        pub typing: Option<Typ>,
         /// The location in source code
         pub location: Location,
     }
@@ -112,6 +114,7 @@ pub mod term {
     mk_new! { impl Term =>
         new {
             kind: Kind,
+            typing: Option<Typ>,
             location: Location,
         }
     }
