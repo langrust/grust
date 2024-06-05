@@ -284,6 +284,7 @@ impl Parse for Binary {
 /// GRust clause's term.
 pub enum Term {
     Constant(Constant),
+    Result(keyword::result),
     Identifier(String),
     Enumeration(Enumeration),
     Unary(Unary),
@@ -296,6 +297,7 @@ pub enum Term {
 
 mk_new! { impl Term =>
     Constant: constant (val: Constant = val)
+    Result: result (val: keyword::result = val)
     Identifier: ident (val: impl Into<String> = val.into())
     Enumeration: enumeration (val: Enumeration = val)
     Unary: unary (val: Unary = val)
@@ -308,7 +310,9 @@ mk_new! { impl Term =>
 
 impl ParsePrec for Term {
     fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let term = if input.fork().call(Constant::parse).is_ok() {
+        let term = if input.peek(keyword::result) {
+            Term::result(input.parse()?)
+        } else if input.fork().call(Constant::parse).is_ok() {
             Term::constant(input.parse()?)
         } else if Enumeration::peek(input) {
             Term::enumeration(input.parse()?)
