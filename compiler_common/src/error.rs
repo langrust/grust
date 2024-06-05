@@ -691,7 +691,7 @@ impl std::fmt::Display for Error {
             Error::UnknownField { .. } => write!(f, "Unknown Field"),
             Error::MissingField { .. } => write!(f, "Missing Field"),
             Error::IndexOutOfBounds { .. } => write!(f, "Index Out Of Bounds"),
-            Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Type"),
+            Error::AlreadyDefinedElement { .. } => write!(f, "Already Defined Element"),
             Error::IncompatibleType { .. } => write!(f, "Incompatible Type"),
             Error::IncompatibleTuple { .. } => write!(f, "Incompatible Tuple"),
             Error::IncompatibleMatchStatements { .. } => write!(f, "Incompatible Match Statements"),
