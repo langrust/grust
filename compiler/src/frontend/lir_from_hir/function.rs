@@ -13,6 +13,7 @@ impl LIRFromHIR for Function {
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         let Function {
             id,
+            contract,
             statements,
             returned,
             ..
@@ -49,11 +50,13 @@ impl LIRFromHIR for Function {
             .collect::<Vec<_>>();
         let mut output_type_imports = output.get_imports(symbol_table);
         let mut expression_imports = returned.get_imports(symbol_table);
+        let mut contract_imports = contract.get_imports(symbol_table);
 
         // combining all imports, eliminate duplicates and filter function imports
         imports.append(&mut inputs_type_imports);
         imports.append(&mut output_type_imports);
         imports.append(&mut expression_imports);
+        imports.append(&mut contract_imports);
         let imports = imports
             .into_iter()
             .unique()
@@ -85,6 +88,9 @@ impl LIRFromHIR for Function {
             expression: returned.lir_from_hir(symbol_table),
         });
 
+        // transform contract
+        let contract = contract.lir_from_hir(symbol_table);
+
         LIRFunction {
             name,
             generics,
@@ -92,6 +98,7 @@ impl LIRFromHIR for Function {
             output,
             body: Block { statements },
             imports,
+            contract,
         }
     }
 }
