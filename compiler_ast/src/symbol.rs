@@ -1228,7 +1228,9 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol_hash = SymbolKey::Identifier { name: String::from("result") };
+        let symbol_hash = SymbolKey::Identifier {
+            name: String::from("result"),
+        };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => {
