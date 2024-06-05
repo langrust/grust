@@ -1,5 +1,5 @@
 use creusot_contracts::{ensures, requires};
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub enum Braking {
     UrgentBrake,
     SoftBrake,
@@ -7,9 +7,11 @@ pub enum Braking {
     SoftBrake,
     UrgentBrake,
 }
+#[requires(0i64 <= speed && speed < 50i64)]
 pub fn compute_soft_braking_distance(speed: i64) -> i64 {
     speed * speed / 100i64
 }
+#[requires(0i64 <= speed && speed < 50i64)]
 pub fn brakes(distance: i64, speed: i64) -> Braking {
     let braking_distance = compute_soft_braking_distance(speed);
     let response = if braking_distance < distance {

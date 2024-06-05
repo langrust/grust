@@ -19,12 +19,16 @@ grust! {
     // s = speed in km/h.
     // 250 = fixed figure which is always used.
     // f = coefficient of friction, approx. 0.8 on dry asphalt.
-    function compute_soft_braking_distance(speed: int) -> int {
+    function compute_soft_braking_distance(speed: int) -> int
+        requires { 0 <= speed && speed < 50 } // urban limit
+    {
         return speed * speed / 100;
     }
 
     // determine braking strategy
-    function brakes(distance: int, speed: int) -> Braking {
+    function brakes(distance: int, speed: int) -> Braking
+        requires { 0 <= speed && speed < 50 } // urban limit
+    {
         let braking_distance: int = compute_soft_braking_distance(speed);
         let response: Braking = if braking_distance < distance
                                 then Braking::SoftBrake
