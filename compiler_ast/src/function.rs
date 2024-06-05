@@ -4,6 +4,7 @@ prelude! {
         punctuated::Punctuated,
         {braced, parenthesized, token, Token},
     },
+    contract::Contract,
     Stmt,
 }
 
@@ -16,10 +17,12 @@ pub struct Function {
     /// Function identifier.
     pub ident: syn::Ident,
     pub args_paren: token::Paren,
-    /// Component's inputs identifiers and their types.
+    /// Function's inputs identifiers and their types.
     pub args: Punctuated<Colon<syn::Ident, Typ>, Token![,]>,
     pub arrow_token: Token![->],
     pub output_type: Typ,
+    /// Function's contract.
+    pub contract: Contract,
     pub brace: token::Brace,
     /// Function's statements.
     pub statements: Vec<Stmt>,
@@ -39,6 +42,7 @@ impl Parse for Function {
             Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
         let output_type: Typ = input.parse()?;
+        let contract: Contract = input.parse()?;
         let content;
         let brace: token::Brace = braced!(content in input);
         let statements: Vec<Stmt> = {
@@ -55,6 +59,7 @@ impl Parse for Function {
             args,
             arrow_token,
             output_type,
+            contract,
             brace,
             statements,
         })
