@@ -8,7 +8,7 @@ prelude! { just
 /// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
     let attribute: Attribute = if conf::greusot() {
-        parse_quote!(#[derive(Clone, Copy, Debug,)])
+        parse_quote!(#[derive(Clone, Copy)])
     } else {
         parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)])
     };
