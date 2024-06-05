@@ -4,12 +4,12 @@ prelude! {
     macro2::{Span, TokenStream},
     quote::{format_ident, quote},
     syn::*,
-    backend::{
-        rust_ast_from_lir::expression::{
+    backend::rust_ast_from_lir::{
+        expression::{
             binary_to_syn, constant_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
         },
-        rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
-        rust_ast_from_lir::statement::rust_ast_from_lir as statement_rust_ast_from_lir,
+        r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+        statement::rust_ast_from_lir as statement_rust_ast_from_lir,
     },
     lir::{
         contract::{Contract, Term},
@@ -85,6 +85,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
 
 /// Transform LIR step into RustAST implementation method.
 pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemFn {
+    // create attributes from contract
     let Contract {
         requires,
         ensures,

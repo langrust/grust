@@ -2,17 +2,111 @@ use std::collections::BTreeSet;
 
 prelude! {
     backend::rust_ast_from_lir::{
+        expression::{
+            binary_to_syn, constant_to_syn, unary_to_syn,
+        },
         block::rust_ast_from_lir as block_rust_ast_from_lir,
         r#type::rust_ast_from_lir as type_rust_ast_from_lir,
     },
-    lir::item::function::Function,
-    macro2::Span,
-    quote::format_ident,
+    lir::{
+        contract::{Contract, Term},
+        item::function::Function},
+    macro2::{Span, TokenStream},
+    quote::{format_ident, quote},
     syn::*,
+}
+
+fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
+    match term {
+        Term::Unop { op, term } => {
+            let ts_term = term_to_token_stream(*term, prophecy);
+            let ts_op = unary_to_syn(op);
+            quote!(#ts_op #ts_term)
+        }
+        Term::Binop { op, left, right } => {
+            let ts_left = term_to_token_stream(*left, prophecy);
+            let ts_right = term_to_token_stream(*right, prophecy);
+            let ts_op = binary_to_syn(op);
+            quote!(#ts_left #ts_op #ts_right)
+        }
+        Term::Literal { literal } => {
+            let expr = constant_to_syn(literal);
+            quote!(#expr)
+        }
+        Term::Identifier { identifier } | Term::InputAccess { identifier } => {
+            let id = Ident::new(&identifier, Span::call_site());
+            quote!(#id)
+        }
+        Term::Implication { left, right } => {
+            let ts_left = term_to_token_stream(*left, prophecy);
+            let ts_right = term_to_token_stream(*right, prophecy);
+            quote!(#ts_left ==> #ts_right)
+        }
+        Term::Forall { name, ty, term } => {
+            let id = Ident::new(&name, Span::call_site());
+            let ts_term = term_to_token_stream(*term, prophecy);
+            let ts_ty = type_rust_ast_from_lir(ty);
+            quote!(forall<#id:#ts_ty> #ts_term)
+        }
+        Term::Enumeration {
+            enum_name,
+            elem_name,
+            element,
+        } => {
+            let ty = Ident::new(&enum_name, Span::call_site());
+            let cons = Ident::new(&elem_name, Span::call_site());
+            if let Some(term) = element {
+                let inner = term_to_token_stream(*term, prophecy);
+                parse_quote! { #ty::#cons(#inner) }
+            } else {
+                parse_quote! { #ty::#cons }
+            }
+        }
+        Term::Ok { term } => {
+            let ts_term = term_to_token_stream(*term, prophecy);
+            parse_quote! { Ok(#ts_term) }
+        }
+        Term::Err => parse_quote! { Err(()) },
+        Term::MemoryAccess { .. } => unreachable!(),
+    }
 }
 
 /// Transform LIR function into RustAST function.
 pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> Item {
+    // create attributes from contract
+    let Contract {
+        requires,
+        ensures,
+        invariant,
+    } = function.contract;
+    let mut attributes = requires
+        .into_iter()
+        .map(|term| {
+            let ts = term_to_token_stream(term, false);
+            parse_quote!(#[requires(#ts)])
+        })
+        .collect::<Vec<_>>();
+    let mut ensures_attributes = ensures
+        .into_iter()
+        .map(|term| {
+            let ts = term_to_token_stream(term, false);
+            parse_quote!(#[ensures(#ts)])
+        })
+        .collect::<Vec<_>>();
+    let mut invariant_attributes = invariant
+        .into_iter()
+        .flat_map(|term| {
+            let ts_pre = term_to_token_stream(term.clone(), false);
+            let ts_post = term_to_token_stream(term, true); // state post-condition
+            vec![
+                parse_quote!(#[requires(#ts_pre)]),
+                parse_quote!(#[ensures(#ts_post)]),
+            ]
+        })
+        .collect::<Vec<_>>();
+    attributes.append(&mut ensures_attributes);
+    attributes.append(&mut invariant_attributes);
+
     // create generics
     let mut generic_params: Vec<GenericParam> = vec![];
     for (generic_name, generic_type) in function.generics {
@@ -63,7 +157,7 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> I
     };
 
     let item_function = Item::Fn(ItemFn {
-        attrs: Default::default(),
+        attrs: attributes,
         vis: Visibility::Public(Default::default()),
         sig,
         block: Box::new(block_rust_ast_from_lir(function.body, crates)),
@@ -97,6 +191,7 @@ mod rust_ast_from_lir {
                 }],
             },
             imports: vec![],
+            contract: Default::default(),
         };
 
         let control = parse_quote! {
