@@ -1,3 +1,8 @@
+use std::default;
+
+use futures::StreamExt;
+use priority_stream::{prio_stream, PrioStream};
+
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum Braking {
     #[default]
@@ -69,58 +74,51 @@ impl Context {
         }
     }
 }
+pub enum ToToServiceInputs {
+    speed_km_h(f64),
+    pedestrian_l(f64),
+    pedestrian_r(f64),
+    timeout_fresh_ident,
+}
 pub struct TotoService {
     context: Context,
     braking_state: BrakingStateState,
-    speed_km_h_channel: tokio::sync::mpsc::Receiver<f64>,
-    pedestrian_l_channel: tokio::sync::mpsc::Receiver<f64>,
-    pedestrian_r_channel: tokio::sync::mpsc::Receiver<f64>,
     brakes_channel: tokio::sync::mpsc::Sender<Braking>,
 }
 impl TotoService {
-    fn new(
-        speed_km_h_channel: tokio::sync::mpsc::Receiver<f64>,
-        pedestrian_l_channel: tokio::sync::mpsc::Receiver<f64>,
-        pedestrian_r_channel: tokio::sync::mpsc::Receiver<f64>,
-        brakes_channel: tokio::sync::mpsc::Sender<Braking>,
-    ) -> TotoService {
+    fn new(brakes_channel: tokio::sync::mpsc::Sender<Braking>) -> TotoService {
         let braking_state = BrakingStateState::init();
         let context = Context::init();
         TotoService {
             context,
             braking_state,
-            speed_km_h_channel,
-            pedestrian_l_channel,
-            pedestrian_r_channel,
             brakes_channel,
         }
     }
-    pub async fn run_loop(
-        speed_km_h_channel: tokio::sync::mpsc::Receiver<f64>,
-        pedestrian_l_channel: tokio::sync::mpsc::Receiver<f64>,
-        pedestrian_r_channel: tokio::sync::mpsc::Receiver<f64>,
+    pub async fn run_loop<S: futures::Stream<Item = ToToServiceInputs>>(
+        interface_stream: S,
         brakes_channel: tokio::sync::mpsc::Sender<Braking>,
     ) {
-        let mut service = TotoService::new(
-            speed_km_h_channel,
-            pedestrian_l_channel,
-            pedestrian_r_channel,
-            brakes_channel,
-        );
+        tokio::pin!(interface_stream);
+        let mut service = TotoService::new(brakes_channel);
         let timeout_fresh_ident = tokio::time::sleep_until(
             tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
         );
         tokio::pin!(timeout_fresh_ident);
         loop {
             tokio::select! {
-                speed_km_h = service.speed_km_h_channel.recv() =>
-                service.handle_speed_km_h(speed_km_h.unwrap()).await,
-                pedestrian_l = service.pedestrian_l_channel.recv() =>
-                service.handle_pedestrian_l(pedestrian_l.unwrap(),
-                timeout_fresh_ident.as_mut()).await, pedestrian_r =
-                service.pedestrian_r_channel.recv() =>
-                service.handle_pedestrian_r(pedestrian_r.unwrap()).await, _ =
-                timeout_fresh_ident.as_mut() =>
+                input = interface_stream.next() => match input.unwrap() {
+                    (ToToServiceInputs::speed_km_h(speed_km_h)) => {
+                        service.handle_speed_km_h(speed_km_h).await
+                    }
+                    (ToToServiceInputs::pedestrian_l(pedestrian_l)) => {
+                        service
+                            .handle_pedestrian_l(pedestrian_l, timeout_fresh_ident.as_mut())
+                            .await
+                    }
+                    (ToToServiceInputs::pedestrian_r(pedestrian_r)) => service.handle_pedestrian_r(pedestrian_r).await,
+                },
+                _ = timeout_fresh_ident.as_mut() =>
                 service.handle_timeout_fresh_ident(timeout_fresh_ident.as_mut()).await,
             }
         }
@@ -155,5 +153,61 @@ impl TotoService {
                 .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
         );
         self.context.brakes = brakes;
+    }
+}
+
+#[derive(Default)]
+pub enum Interface {
+    #[default]
+    none,
+    speed_km_h(f64),
+    pedestrian_l(f64),
+    pedestrian_r(f64),
+}
+impl Interface {
+    fn order(i1: &Interface, i2: &Interface) -> std::cmp::Ordering {
+        match (i1, i2) {
+            (Interface::speed_km_h(_), Interface::speed_km_h(_)) => todo!(),
+            (Interface::speed_km_h(_), Interface::pedestrian_l(_)) => todo!(),
+            (Interface::speed_km_h(_), Interface::pedestrian_r(_)) => todo!(),
+            (Interface::pedestrian_l(_), Interface::speed_km_h(_)) => todo!(),
+            (Interface::pedestrian_l(_), Interface::pedestrian_l(_)) => todo!(),
+            (Interface::pedestrian_l(_), Interface::pedestrian_r(_)) => todo!(),
+            (Interface::pedestrian_r(_), Interface::speed_km_h(_)) => todo!(),
+            (Interface::pedestrian_r(_), Interface::pedestrian_l(_)) => todo!(),
+            (Interface::pedestrian_r(_), Interface::pedestrian_r(_)) => todo!(),
+            (Interface::none, Interface::none) => todo!(),
+            (Interface::none, Interface::speed_km_h(_)) => todo!(),
+            (Interface::none, Interface::pedestrian_l(_)) => todo!(),
+            (Interface::none, Interface::pedestrian_r(_)) => todo!(),
+            (Interface::speed_km_h(_), Interface::none) => todo!(),
+            (Interface::pedestrian_l(_), Interface::none) => todo!(),
+            (Interface::pedestrian_r(_), Interface::none) => todo!(),
+        }
+    }
+}
+pub struct Runtime<S>
+where
+    S: futures::Stream<Item = Interface>,
+{
+    toto_service: TotoService,
+    prio_stream: PrioStream<S, fn(i1: &Interface, i2: &Interface) -> std::cmp::Ordering, 3>,
+    timeout_fresh_ident: tokio::time::Sleep,
+}
+impl<S> Runtime<S>
+where
+    S: futures::Stream<Item = Interface>,
+{
+    fn from_io_stream(stream: S, brakes_channel: tokio::sync::mpsc::Sender<Braking>) -> Self {
+        let toto_service = TotoService::new(brakes_channel);
+        let prio_stream: PrioStream<S, fn(&Interface, &Interface) -> std::cmp::Ordering, 3> = prio_stream(stream, Interface::order);
+        let timeout_fresh_ident = tokio::time::sleep_until(
+            tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
+        );
+        Runtime {
+            toto_service,
+            prio_stream,
+            timeout_fresh_ident,
+        }
     }
 }
