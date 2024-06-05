@@ -17,6 +17,7 @@ impl HIRFromAST for Function {
         let Function {
             ident,
             output_type,
+            contract,
             statements,
             ..
         } = self;
@@ -48,11 +49,13 @@ impl HIRFromAST for Function {
                 }
             },
         );
+        let contract = contract.hir_from_ast(symbol_table, errors)?;
 
         symbol_table.global();
 
         Ok(hir::Function {
             id,
+            contract,
             statements: statements.into_iter().collect::<TRes<Vec<_>>>()?,
             returned: returned.unwrap()?,
             location,
