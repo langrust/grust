@@ -28,6 +28,7 @@ grust! {
     // determine braking strategy
     function brakes(distance: int, speed: int) -> Braking
         requires { 0 <= speed && speed < 50 } // urban limit
+        ensures { result != Braking::NoBrake } // safety
     {
         let braking_distance: int = compute_soft_braking_distance(speed);
         let response: Braking = if braking_distance < distance
