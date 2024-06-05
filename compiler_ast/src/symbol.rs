@@ -488,6 +488,26 @@ impl SymbolTable {
         self.insert_symbol(symbol, local, location, errors)
     }
 
+    /// Insert functionn result in symbol table.
+    pub fn insert_function_result(
+        &mut self,
+        typing: Typ,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        println!("yo");
+        let symbol = Symbol {
+            kind: SymbolKind::Identifier {
+                scope: Scope::Output,
+                typing: Some(typing),
+            },
+            name: String::from("result"),
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
     /// Insert flow in symbol table.
     pub fn insert_flow(
         &mut self,
@@ -1193,6 +1213,27 @@ impl SymbolTable {
             None => {
                 let error = Error::UnknownElement {
                     name: name.to_string(),
+                    location,
+                };
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
+
+    /// Get function result symbol identifier.
+    pub fn get_function_result_id(
+        &self,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        let symbol_hash = SymbolKey::Identifier { name: String::from("result") };
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(id),
+            None => {
+                let error = Error::UnknownElement {
+                    name: String::from("result"),
                     location,
                 };
                 errors.push(error);

@@ -25,13 +25,21 @@ impl HIRFromAST for Function {
         let location = Location::default();
         let id = symbol_table.get_function_id(&name, false, location.clone(), errors)?;
 
-        // insert function output type in symbol table
-        let output_typing = output_type.hir_from_ast(&location, symbol_table, errors)?;
-        symbol_table.set_function_output_type(id, output_typing);
-
         // create local context with all signals
         symbol_table.local();
         symbol_table.restore_context(id);
+
+        // insert function output type in symbol table
+        let output_typing = output_type.hir_from_ast(&location, symbol_table, errors)?;
+        if !contract.clauses.is_empty() {
+            let _ = symbol_table.insert_function_result(
+                output_typing.clone(),
+                true,
+                location.clone(),
+                errors,
+            )?;
+        }
+        symbol_table.set_function_output_type(id, output_typing);
 
         let (statements, returned) = statements.into_iter().fold(
             (vec![], None),
