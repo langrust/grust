@@ -15,4 +15,6 @@ pub struct Function {
     pub body: Block,
     /// The imports (used typedefs).
     pub imports: Vec<Import>,
+    /// The contract to prove.
+    pub contract: Contract,
 }
