@@ -21,7 +21,9 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
     let mut rust_items = vec![];
 
     if conf::greusot() {
-        rust_items.push(syn::Item::Use(parse_quote!(use creusot_contracts::{requires, ensures};)))
+        rust_items.push(syn::Item::Use(parse_quote!(
+            use creusot_contracts::{requires, ensures};
+        )))
     }
 
     project.items.into_iter().for_each(|item| match item {

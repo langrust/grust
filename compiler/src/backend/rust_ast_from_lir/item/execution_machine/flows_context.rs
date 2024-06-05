@@ -13,7 +13,7 @@ prelude! { just
 /// that implements some useful functions.
 pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
     if conf::greusot() {
-        return vec![]
+        return vec![];
     }
 
     let FlowsContext {
