@@ -12,6 +12,7 @@ pub fn compute_soft_braking_distance(speed: i64) -> i64 {
     speed * speed / 100i64
 }
 #[requires(0i64 <= speed && speed < 50i64)]
+#[ensures(result != Braking :: NoBrake)]
 pub fn brakes(distance: i64, speed: i64) -> Braking {
     let braking_distance = compute_soft_braking_distance(speed);
     let response = if braking_distance < distance {
