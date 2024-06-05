@@ -66,7 +66,7 @@ mod term {
                     match symbol_table.get_scope(id) {
                         Scope::Input => lir::contract::Term::input(name),
                         Scope::Memory => lir::contract::Term::mem(name),
-                        Scope::Output => lir::contract::Term::ident("result"),
+                        Scope::Output => lir::contract::Term::ident("result"), // todo: this will broke for components with multiple outputs
                         Scope::Local => lir::contract::Term::ident(name),
                     }
                 }

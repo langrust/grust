@@ -59,6 +59,15 @@ mod term {
         ) -> TRes<Self::HIR> {
             let location = Location::default();
             match self {
+                Term::Result(_) => {
+                    let id =
+                        symbol_table.get_function_result_id(false, location.clone(), errors)?;
+                    Ok(hir::contract::Term::new(
+                        hir::contract::term::Kind::ident(id),
+                        None,
+                        location,
+                    ))
+                }
                 Term::Implication(Implication { left, right, .. }) => {
                     let left = left.hir_from_ast(symbol_table, errors)?;
                     let right = right.hir_from_ast(symbol_table, errors)?;
@@ -109,12 +118,8 @@ mod term {
                     location,
                 )),
                 Term::Identifier(ident) => {
-                    let id = symbol_table.get_identifier_id(
-                        &ident,
-                        false,
-                        Location::default(),
-                        errors,
-                    )?;
+                    let id =
+                        symbol_table.get_identifier_id(&ident, false, location.clone(), errors)?;
                     Ok(hir::contract::Term::new(
                         hir::contract::term::Kind::ident(id),
                         None,
