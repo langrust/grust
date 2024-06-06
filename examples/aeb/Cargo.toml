@@ -9,3 +9,8 @@ edition = "2021"
 grust = { path = "../../grust" }
 tokio = { version = "1.38.0", features = ["full"] }
 futures = "0.3.30"
+prost = "0.12"
+prost-types = "0.12"
+
+[build-dependencies]
+prost-build = "0.5"
