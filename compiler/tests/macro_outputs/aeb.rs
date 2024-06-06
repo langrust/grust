@@ -70,70 +70,83 @@ impl Context {
         }
     }
 }
-pub enum TotoServiceInput {
-    speed_km_h(f64),
-    pedestrian_l(f64),
-    pedestrian_r(f64),
-}
-pub enum TotoServiceOutput {
-    brakes(Braking),
-}
-pub struct TotoService {
-    context: Context,
-    braking_state: BrakingStateState,
-    output: tokio::sync::mpsc::Sender<TotoServiceOutput>,
-}
-impl TotoService {
-    fn new(output: tokio::sync::mpsc::Sender<TotoServiceOutput>) -> TotoService {
-        let context = Context::init();
-        let braking_state = BrakingStateState::init();
-        TotoService {
-            context,
-            braking_state,
-            output,
+mod toto_service {
+    use super::*;
+    use TotoServiceInput as I;
+    use TotoServiceOutput as O;
+    pub enum TotoServiceInput {
+        speed_km_h(f64),
+        pedestrian_l(f64),
+        pedestrian_r(f64),
+    }
+    pub enum TotoServiceOutput {
+        brakes(Braking),
+    }
+    pub struct TotoService {
+        context: Context,
+        braking_state: BrakingStateState,
+        output: tokio::sync::mpsc::Sender<O>,
+    }
+    impl TotoService {
+        fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
+            let context = Context::init();
+            let braking_state = BrakingStateState::init();
+            TotoService {
+                context,
+                braking_state,
+                output,
+            }
         }
-    }
-    pub async fn run_loop(self, input: impl futures::Stream<Item = TotoServiceInput>) {
-        use futures::StreamExt;
-        tokio::pin!(input);
-        let mut service = self;
-        let timeout_fresh_ident = tokio::time::sleep_until(
-            tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
-        );
-        tokio::pin!(timeout_fresh_ident);
-        loop {
-            tokio::select! { input = input . next () => match input . unwrap () { TotoServiceInput :: speed_km_h (speed_km_h) => service . handle_speed_km_h (speed_km_h) . await , TotoServiceInput :: pedestrian_l (pedestrian_l) => service . handle_pedestrian_l (pedestrian_l , timeout_fresh_ident . as_mut ()) . await , TotoServiceInput :: pedestrian_r (pedestrian_r) => service . handle_pedestrian_r (pedestrian_r) . await } , _ = timeout_fresh_ident . as_mut () => service . handle_timeout_fresh_ident (timeout_fresh_ident . as_mut ()) . await , }
+        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+            use futures::StreamExt;
+            tokio::pin!(input);
+            let mut service = self;
+            let timeout_fresh_ident = tokio::time::sleep_until(
+                tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
+            );
+            tokio::pin!(timeout_fresh_ident);
+            loop {
+                tokio::select! { input = input . next () => match input . unwrap () { I :: speed_km_h (speed_km_h) => service . handle_speed_km_h (speed_km_h) . await , I :: pedestrian_l (pedestrian_l) => service . handle_pedestrian_l (pedestrian_l , timeout_fresh_ident . as_mut ()) . await , I :: pedestrian_r (pedestrian_r) => service . handle_pedestrian_r (pedestrian_r) . await } , _ = timeout_fresh_ident . as_mut () => service . handle_timeout_fresh_ident (timeout_fresh_ident . as_mut ()) . await , }
+            }
         }
-    }
-    async fn handle_speed_km_h(&mut self, speed_km_h: f64) {
-        self.context.speed_km_h = speed_km_h;
-    }
-    async fn handle_pedestrian_l(
-        &mut self,
-        pedestrian_l: f64,
-        timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
-    ) {
-        let pedestrian = Ok(pedestrian_l);
-        timeout_fresh_ident
-            .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
-        let brakes = self.braking_state.step(
-            self.context
-                .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
-        );
-        self.context.brakes = brakes;
-    }
-    async fn handle_pedestrian_r(&mut self, pedestrian_r: f64) {}
-    async fn handle_timeout_fresh_ident(
-        &mut self,
-        timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
-    ) {
-        let pedestrian = Err(());
-        timeout_fresh_ident
-            .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
-        let brakes = self.braking_state.step(
-            self.context
-                .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
-        );
-        self.context.brakes = brakes;
+        async fn handle_speed_km_h(&mut self, speed_km_h: f64) {
+            self.context.speed_km_h = speed_km_h;
+        }
+        async fn handle_pedestrian_l(
+            &mut self,
+            pedestrian_l: f64,
+            timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
+        ) {
+            let pedestrian = Ok(pedestrian_l);
+            timeout_fresh_ident
+                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
+            let brakes = self.braking_state.step(
+                self.context
+                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
+            );
+            self.context.brakes = brakes;
+            self.output
+                .send(O::brakes(self.context.brakes.clone()))
+                .await
+                .unwrap();
+        }
+        async fn handle_pedestrian_r(&mut self, pedestrian_r: f64) {}
+        async fn handle_timeout_fresh_ident(
+            &mut self,
+            timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
+        ) {
+            let pedestrian = Err(());
+            timeout_fresh_ident
+                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
+            let brakes = self.braking_state.step(
+                self.context
+                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
+            );
+            self.context.brakes = brakes;
+            self.output
+                .send(O::brakes(self.context.brakes.clone()))
+                .await
+                .unwrap();
+        }
     }
 }

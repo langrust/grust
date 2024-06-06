@@ -280,12 +280,12 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
 
     let module_name = format_ident!("{service}_service");
     Item::Mod(parse_quote! {
-        mod #module_name {
-            use super::*;
-            use #service_input_name as I;
-            use #service_output_name as O;
+       mod #module_name {
+           use super::*;
+           use #service_input_name as I;
+           use #service_output_name as O;
 
-            #(#items)*
-        }
-     })
+           #(#items)*
+       }
+    })
 }
