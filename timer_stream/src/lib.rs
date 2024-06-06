@@ -6,14 +6,14 @@ pub trait GetMillis {
 
 #[derive(Default, Debug, PartialEq)]
 pub struct Timer<T> {
-    remaning: Duration,
+    deadline: Duration,
     kind: T,
 }
 impl<T: GetMillis> Timer<T> {
     /// Initiate a new timer.
     pub fn init(kind: T) -> Timer<T> {
         Timer {
-            remaning: kind.get_millis(),
+            deadline: kind.get_millis(),
             kind,
         }
     }
@@ -65,18 +65,18 @@ where
 
         // puts the value at the right place
         for index in (0..self.len).rev() {
-            let t_insert = value.remaning;
-            let t_index = self.queue[index].remaning;
-            match t_insert.cmp(&t_index) {
+            let d_insert = value.deadline;
+            let d_index = self.queue[index].deadline;
+            match d_insert.cmp(&d_index) {
                 Ordering::Less => {
-                    self.queue[index].remaning = t_index - t_insert;
+                    self.queue[index].deadline = d_index - d_insert;
                     self.queue[(index + 1)..=self.len].rotate_right(1);
                     self.queue[index + 1] = value;
                     self.len += 1;
                     return;
                 }
-                Ordering::Equal => value.remaning = Duration::from_millis(0),
-                Ordering::Greater => value.remaning = t_insert - t_index,
+                Ordering::Equal => value.deadline = Duration::from_millis(0),
+                Ordering::Greater => value.deadline = d_insert - d_index,
             }
         }
         // if not inserted, then put it at the begining
@@ -152,7 +152,7 @@ mod timer_queue {
     /// Create a timer.
     fn timer_from_millis(millis: u64, kind: ServiceTimers) -> Timer<ServiceTimers> {
         Timer {
-            remaning: std::time::Duration::from_millis(millis),
+            deadline: std::time::Duration::from_millis(millis),
             kind,
         }
     }
