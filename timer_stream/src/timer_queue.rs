@@ -9,7 +9,10 @@ pub struct Timer<T> {
     deadline: Duration,
     kind: T,
 }
-impl<T: GetMillis> Timer<T> {
+impl<T> Timer<T>
+where
+    T: GetMillis,
+{
     /// Initiate a new timer.
     pub fn init(kind: T) -> Timer<T> {
         Timer {
@@ -19,9 +22,25 @@ impl<T: GetMillis> Timer<T> {
     }
 }
 impl<T> Timer<T> {
-    /// Consume the timer and returns its kind.
-    pub fn get_kind(self) -> T {
-        self.kind
+    /// Get timer's kind.
+    pub fn get_kind(&self) -> &T {
+        &self.kind
+    }
+    /// Get timer's deadline.
+    pub fn get_deadline(&self) -> &Duration {
+        &self.deadline
+    }
+    /// Get timer's kind and deadline.
+    pub fn get_kind_and_deadline(self) -> (T, Duration) {
+        (self.kind, self.deadline)
+    }
+    /// Create a timer.
+    #[cfg(test)]
+    pub fn from_millis(millis: u64, kind: T) -> Self {
+        Timer {
+            deadline: std::time::Duration::from_millis(millis),
+            kind,
+        }
     }
 }
 
@@ -31,7 +50,7 @@ pub struct TimerQueue<T, const N: usize> {
 }
 impl<T, const N: usize> TimerQueue<T, N>
 where
-    T: Default + Debug,
+    T: Default,
 {
     /// Create empty queue.
     pub fn new() -> Self {
@@ -40,6 +59,18 @@ where
             len: 0,
         }
     }
+    /// Pop the most urgent timer from the queue.
+    pub fn pop(&mut self) -> Option<Timer<T>> {
+        if self.is_empty() {
+            None
+        } else {
+            let res = std::mem::take(&mut self.queue[self.len - 1]);
+            self.len -= 1;
+            Some(res)
+        }
+    }
+}
+impl<T, const N: usize> TimerQueue<T, N> {
     /// Give the length of the queue.
     pub fn len(&self) -> usize {
         self.len
@@ -84,16 +115,11 @@ where
         self.queue[0] = value;
         self.len += 1;
     }
-    /// Pop the most urgent timer from the queue.
-    pub fn pop(&mut self) -> Option<Timer<T>> {
-        if self.is_empty() {
-            None
-        } else {
-            let res = std::mem::take(&mut self.queue[self.len - 1]);
-            self.len -= 1;
-            Some(res)
-        }
-    }
+}
+impl<T, const N: usize> TimerQueue<T, N>
+where
+    T: Debug,
+{
     pub fn println(&self) {
         if self.is_empty() {
             println!("[]")
@@ -168,14 +194,6 @@ mod timer_queue {
         }
     }
 
-    /// Create a timer.
-    fn timer_from_millis(millis: u64, kind: ServiceTimers) -> Timer<ServiceTimers> {
-        Timer {
-            deadline: std::time::Duration::from_millis(millis),
-            kind,
-        }
-    }
-
     #[test]
     fn new_should_create_empty_queue() {
         let timer_queue = TimerQueue::<ServiceTimers, 10>::new();
@@ -207,23 +225,23 @@ mod timer_queue {
         assert!(timer_queue.len() == 4);
         assert_eq!(
             timer_queue.pop(),
-            Some(timer_from_millis(10, Period10ms(0)))
+            Some(Timer::from_millis(10, Period10ms(0)))
         );
         assert!(timer_queue.len() == 3);
         timer_queue.push(Timer::init(Period10ms(1)));
         assert!(timer_queue.len() == 4);
-        assert_eq!(timer_queue.pop(), Some(timer_from_millis(5, Period15ms(0))));
+        assert_eq!(timer_queue.pop(), Some(Timer::from_millis(5, Period15ms(0))));
         assert!(timer_queue.len() == 3);
         assert_eq!(
             timer_queue.pop(),
-            Some(timer_from_millis(5, Timeout20ms(0)))
+            Some(Timer::from_millis(5, Timeout20ms(0)))
         );
         assert!(timer_queue.len() == 2);
-        assert_eq!(timer_queue.pop(), Some(timer_from_millis(0, Period10ms(1))));
+        assert_eq!(timer_queue.pop(), Some(Timer::from_millis(0, Period10ms(1))));
         assert!(timer_queue.len() == 1);
         assert_eq!(
             timer_queue.pop(),
-            Some(timer_from_millis(10, Timeout30ms(0)))
+            Some(Timer::from_millis(10, Timeout30ms(0)))
         );
         assert!(timer_queue.len() == 0);
         assert_eq!(timer_queue.pop(), None);

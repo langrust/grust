@@ -194,13 +194,13 @@ where
             loop {
                 // collect arriving values
                 match project.stream.as_mut().poll_next(cx) {
-                    // the first stream have a value
+                    // the stream have a value
                     Poll::Ready(Some(value)) => {
                         queue.push(value);
                     }
-                    // the first stream is waiting
+                    // the stream is waiting
                     Poll::Pending => break,
-                    // the first stream ended
+                    // the stream ended
                     Poll::Ready(None) => {
                         *project.end = true;
                         break;
@@ -234,7 +234,7 @@ where
 }
 
 #[cfg(test)]
-mod test {
+mod prio_stream {
     use std::{cmp::Ordering, time::Duration};
     use tokio::time::sleep;
     use tokio_stream::StreamExt;
