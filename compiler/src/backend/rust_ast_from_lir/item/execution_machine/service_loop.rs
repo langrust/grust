@@ -121,7 +121,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         }});
     // `new` function
     impl_items.push(parse_quote! {
-        fn new(output: tokio::sync::mpsc::Sender<O>) -> #service_name {
+        pub fn new(output: tokio::sync::mpsc::Sender<O>) -> #service_name {
             let context = Context::init();
             #(#components_states)*
             #(#periods)*
@@ -280,7 +280,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
 
     let module_name = format_ident!("{service}_service");
     Item::Mod(parse_quote! {
-       mod #module_name {
+       pub mod #module_name {
            use super::*;
            use #service_input_name as I;
            use #service_output_name as O;

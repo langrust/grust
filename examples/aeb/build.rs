@@ -1,6 +1,6 @@
-extern crate prost_build;
+extern crate tonic_build;
 
-fn main() {
-    prost_build::compile_protos(&["src/interface.proto"],
-                                &["src/"]).unwrap();
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    tonic_build::compile_protos("src/interface.proto")?;
+    Ok(())
 }
