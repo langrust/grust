@@ -86,58 +86,49 @@ pub async fn run_toto_loop(
         }
     }
 }
+pub enum TotoServiceInput {
+    speed_km_h(f64),
+    pedestrian_l(f64),
+    pedestrian_r(f64),
+}
+pub enum TotoServiceOutput {
+    brakes(Braking),
+}
 pub struct TotoService {
     context: Context,
     braking_state: BrakingStateState,
-    speed_km_h_channel: tokio::sync::mpsc::Receiver<f64>,
-    pedestrian_l_channel: tokio::sync::mpsc::Receiver<f64>,
-    pedestrian_r_channel: tokio::sync::mpsc::Receiver<f64>,
-    brakes_channel: tokio::sync::mpsc::Sender<Braking>,
+    output: tokio::sync::mpsc::Sender<TotoServiceOutput>,
 }
 impl TotoService {
-    fn new(
-        speed_km_h_channel: tokio::sync::mpsc::Receiver<f64>,
-        pedestrian_l_channel: tokio::sync::mpsc::Receiver<f64>,
-        pedestrian_r_channel: tokio::sync::mpsc::Receiver<f64>,
-        brakes_channel: tokio::sync::mpsc::Sender<Braking>,
-    ) -> TotoService {
-        let braking_state = BrakingStateState::init();
+    fn new(output: tokio::sync::mpsc::Sender<TotoServiceOutput>) -> TotoService {
         let context = Context::init();
+        let braking_state = BrakingStateState::init();
         TotoService {
             context,
             braking_state,
-            speed_km_h_channel,
-            pedestrian_l_channel,
-            pedestrian_r_channel,
-            brakes_channel,
+            output,
         }
     }
-    pub async fn run_loop(
-        speed_km_h_channel: tokio::sync::mpsc::Receiver<f64>,
-        pedestrian_l_channel: tokio::sync::mpsc::Receiver<f64>,
-        pedestrian_r_channel: tokio::sync::mpsc::Receiver<f64>,
-        brakes_channel: tokio::sync::mpsc::Sender<Braking>,
-    ) {
-        let mut service = TotoService::new(
-            speed_km_h_channel,
-            pedestrian_l_channel,
-            pedestrian_r_channel,
-            brakes_channel,
-        );
+    pub async fn run_loop(self, input: impl futures::Stream<Item = TotoServiceInput>) {
+        use futures::StreamExt;
+        tokio::pin!(input);
+        let mut service = self;
         let timeout_fresh_ident = tokio::time::sleep_until(
             tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
         );
         tokio::pin!(timeout_fresh_ident);
         loop {
             tokio::select! {
-                speed_km_h = service.speed_km_h_channel.recv() =>
-                service.handle_speed_km_h(speed_km_h.unwrap()).await,
-                pedestrian_l = service.pedestrian_l_channel.recv() =>
-                service.handle_pedestrian_l(pedestrian_l.unwrap(),
-                timeout_fresh_ident.as_mut()).await, pedestrian_r =
-                service.pedestrian_r_channel.recv() =>
-                service.handle_pedestrian_r(pedestrian_r.unwrap()).await, _ =
-                timeout_fresh_ident.as_mut() =>
+                input = input.next() => match input.unwrap()
+                {
+                    TotoServiceInput :: speed_km_h(speed_km_h) =>
+                    service.handle_speed_km_h(speed_km_h).await,
+                    TotoServiceInput :: pedestrian_l(pedestrian_l) =>
+                    service.handle_pedestrian_l(pedestrian_l,
+                    timeout_fresh_ident.as_mut()).await, TotoServiceInput ::
+                    pedestrian_r(pedestrian_r) =>
+                    service.handle_pedestrian_r(pedestrian_r).await
+                }, _ = timeout_fresh_ident.as_mut() =>
                 service.handle_timeout_fresh_ident(timeout_fresh_ident.as_mut()).await,
             }
         }

@@ -327,80 +327,49 @@ impl Context {
         }
     }
 }
+pub enum TotoServiceInput {
+    activation(ActivationResquest),
+    set_speed(f64),
+    speed(f64),
+    vacuum_brake(VacuumBrakeState),
+    kickdown(Kickdown),
+    failure(Failure),
+    vdc(VdcState),
+}
+pub enum TotoServiceOutput {
+    in_regulation(bool),
+    v_set(f64),
+}
 pub struct TotoService {
     context: Context,
     process_set_speed: ProcessSetSpeedState,
     speed_limiter: SpeedLimiterState,
     period_fresh_ident: tokio::time::Interval,
     period_fresh_ident_1: tokio::time::Interval,
-    activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
-    set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
-    speed_channel: tokio::sync::mpsc::Receiver<f64>,
-    vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
-    kickdown_channel: tokio::sync::mpsc::Receiver<Kickdown>,
-    failure_channel: tokio::sync::mpsc::Receiver<Failure>,
-    vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
-    in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
-    v_set_channel: tokio::sync::mpsc::Sender<f64>,
+    output: tokio::sync::mpsc::Sender<TotoServiceOutput>,
 }
 impl TotoService {
-    fn new(
-        activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
-        set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
-        speed_channel: tokio::sync::mpsc::Receiver<f64>,
-        vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
-        kickdown_channel: tokio::sync::mpsc::Receiver<Kickdown>,
-        failure_channel: tokio::sync::mpsc::Receiver<Failure>,
-        vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
-        in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
-        v_set_channel: tokio::sync::mpsc::Sender<f64>,
-    ) -> TotoService {
+    fn new(output: tokio::sync::mpsc::Sender<TotoServiceOutput>) -> TotoService {
+        let context = Context::init();
         let process_set_speed = ProcessSetSpeedState::init();
         let speed_limiter = SpeedLimiterState::init();
         let period_fresh_ident = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
         let period_fresh_ident_1 = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
-        let context = Context::init();
         TotoService {
             context,
             process_set_speed,
             speed_limiter,
             period_fresh_ident,
             period_fresh_ident_1,
-            activation_channel,
-            set_speed_channel,
-            speed_channel,
-            vacuum_brake_channel,
-            kickdown_channel,
-            failure_channel,
-            vdc_channel,
-            in_regulation_channel,
-            v_set_channel,
+            output,
         }
     }
-    pub async fn run_loop(
-        activation_channel: tokio::sync::mpsc::Receiver<ActivationResquest>,
-        set_speed_channel: tokio::sync::mpsc::Receiver<f64>,
-        speed_channel: tokio::sync::mpsc::Receiver<f64>,
-        vacuum_brake_channel: tokio::sync::mpsc::Receiver<VacuumBrakeState>,
-        kickdown_channel: tokio::sync::mpsc::Receiver<Kickdown>,
-        failure_channel: tokio::sync::mpsc::Receiver<Failure>,
-        vdc_channel: tokio::sync::mpsc::Receiver<VdcState>,
-        in_regulation_channel: tokio::sync::mpsc::Sender<bool>,
-        v_set_channel: tokio::sync::mpsc::Sender<f64>,
-    ) {
-        let mut service = TotoService::new(
-            activation_channel,
-            set_speed_channel,
-            speed_channel,
-            vacuum_brake_channel,
-            kickdown_channel,
-            failure_channel,
-            vdc_channel,
-            in_regulation_channel,
-            v_set_channel,
-        );
+    pub async fn run_loop(self, input: impl futures::Stream<Item = TotoServiceInput>) {
+        use futures::StreamExt;
+        tokio::pin!(input);
+        let mut service = self;
         loop {
-            tokio::select! { activation = service . activation_channel . recv () => service . handle_activation (activation . unwrap ()) . await , set_speed = service . set_speed_channel . recv () => service . handle_set_speed (set_speed . unwrap ()) . await , speed = service . speed_channel . recv () => service . handle_speed (speed . unwrap ()) . await , vacuum_brake = service . vacuum_brake_channel . recv () => service . handle_vacuum_brake (vacuum_brake . unwrap ()) . await , kickdown = service . kickdown_channel . recv () => service . handle_kickdown (kickdown . unwrap ()) . await , failure = service . failure_channel . recv () => service . handle_failure (failure . unwrap ()) . await , vdc = service . vdc_channel . recv () => service . handle_vdc (vdc . unwrap ()) . await , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , _ = service . period_fresh_ident_1 . tick () => service . handle_period_fresh_ident_1 () . await , }
+            tokio::select! { input = input . next () => match input . unwrap () { TotoServiceInput :: activation (activation) => service . handle_activation (activation) . await , TotoServiceInput :: set_speed (set_speed) => service . handle_set_speed (set_speed) . await , TotoServiceInput :: speed (speed) => service . handle_speed (speed) . await , TotoServiceInput :: vacuum_brake (vacuum_brake) => service . handle_vacuum_brake (vacuum_brake) . await , TotoServiceInput :: kickdown (kickdown) => service . handle_kickdown (kickdown) . await , TotoServiceInput :: failure (failure) => service . handle_failure (failure) . await , TotoServiceInput :: vdc (vdc) => service . handle_vdc (vdc) . await } , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , _ = service . period_fresh_ident_1 . tick () => service . handle_period_fresh_ident_1 () . await , }
         }
     }
     async fn handle_activation(&mut self, activation: ActivationResquest) {
@@ -429,7 +398,10 @@ impl TotoService {
             self.context.v_set_aux = v_set_aux;
             self.context.v_update = v_update;
             let v_set = self.context.v_set_aux.clone();
-            self.v_set_channel.send(v_set).await.unwrap();
+            self.output
+                .send(TotoServiceOutput::v_set(v_set))
+                .await
+                .unwrap();
         } else {
         }
     }
@@ -474,8 +446,8 @@ impl TotoService {
     }
     async fn handle_period_fresh_ident_1(&mut self) {
         let in_regulation = self.context.in_regulation_aux.clone();
-        self.in_regulation_channel
-            .send(in_regulation)
+        self.output
+            .send(TotoServiceOutput::in_regulation(in_regulation))
             .await
             .unwrap();
     }
