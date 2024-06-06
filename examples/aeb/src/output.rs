@@ -35,61 +35,43 @@ impl BrakingStateState {
         }
     }
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
-        let previous_state = self.mem;
         let state = match input.braking_state_event {
-            BrakingStateEvent::pedest(Ok(d)) => brakes(d, input.speed),
-            BrakingStateEvent::pedest(Err(())) => Braking::NoBrake,
-            _ => previous_state,
+            BrakingStateEvent::pedest(Ok(d)) => {
+                let state = brakes(d, input.speed);
+                state
+            }
+            BrakingStateEvent::pedest(Err(())) => {
+                let state = Braking::NoBrake;
+                state
+            }
+            _ => {
+                let state = self.mem;
+                state
+            }
         };
         self.mem = state;
         state
     }
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
-pub struct Context {
-    pub brakes: Braking,
-    pub speed_km_h: f64,
-}
-impl Context {
-    fn init() -> Context {
-        Default::default()
-    }
-}
-pub async fn run_toto_loop(
-    mut collision_collection_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut maneuver_acknoledgement_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut vehicle_data_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut nvm_inp_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut cam_obj_info_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut fused_context_data_channel: tokio::sync::mpsc::Receiver<i64>,
-    mut common_variant_mngt_channel: tokio::sync::mpsc::Receiver<i64>,
-) {
-    let mut context = Context::init();
-    loop {
-        tokio::select! {
-            collision_collection = collision_collection_channel.recv() =>
-            { let collision_collection = collision_collection.unwrap() ; }
-            maneuver_acknoledgement = maneuver_acknoledgement_channel.recv()
-            =>
-            {
-                let maneuver_acknoledgement = maneuver_acknoledgement.unwrap()
-                ;
-            } vehicle_data = vehicle_data_channel.recv() =>
-            { let vehicle_data = vehicle_data.unwrap() ; } nvm_inp =
-            nvm_inp_channel.recv() => { let nvm_inp = nvm_inp.unwrap() ; }
-            cam_obj_info = cam_obj_info_channel.recv() =>
-            { let cam_obj_info = cam_obj_info.unwrap() ; } fused_context_data
-            = fused_context_data_channel.recv() =>
-            { let fused_context_data = fused_context_data.unwrap() ; }
-            common_variant_mngt = common_variant_mngt_channel.recv() =>
-            { let common_variant_mngt = common_variant_mngt.unwrap() ; }
-        }
-    }
-}
 mod toto_service {
     use super::*;
     use TotoServiceInput as I;
-    use TotoServiceOutput as O;
+    #[derive(Clone, Copy, Debug, PartialEq, Default)]
+    pub struct Context {
+        pub brakes: Braking,
+        pub speed_km_h: f64,
+    }
+    impl Context {
+        fn init() -> Context {
+            Default::default()
+        }
+        fn get_braking_state_inputs(&self, event: BrakingStateEvent) -> BrakingStateInput {
+            BrakingStateInput {
+                speed: self.speed_km_h,
+                braking_state_event: event,
+            }
+        }
+    }
     pub enum TotoServiceInput {
         speed_km_h(f64),
         pedestrian_l(f64),
@@ -101,10 +83,10 @@ mod toto_service {
     pub struct TotoService {
         context: Context,
         braking_state: BrakingStateState,
-        output: tokio::sync::mpsc::Sender<O>,
+        output: tokio::sync::mpsc::Sender<TotoServiceOutput>,
     }
     impl TotoService {
-        fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
+        fn new(output: tokio::sync::mpsc::Sender<TotoServiceOutput>) -> TotoService {
             let context = Context::init();
             let braking_state = BrakingStateState::init();
             TotoService {
@@ -113,7 +95,7 @@ mod toto_service {
                 output,
             }
         }
-        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+        pub async fn run_loop(self, input: impl futures::Stream<Item = TotoServiceInput>) {
             use futures::StreamExt;
             tokio::pin!(input);
             let mut service = self;
@@ -125,11 +107,11 @@ mod toto_service {
                 tokio::select! {
                     input = input.next() => match input.unwrap()
                     {
-                        I :: speed_km_h(speed_km_h) =>
-                        service.handle_speed_km_h(speed_km_h).await, I ::
-                        pedestrian_l(pedestrian_l) =>
+                        TotoServiceInput :: speed_km_h(speed_km_h) =>
+                        service.handle_speed_km_h(speed_km_h).await,
+                        TotoServiceInput :: pedestrian_l(pedestrian_l) =>
                         service.handle_pedestrian_l(pedestrian_l,
-                        timeout_fresh_ident.as_mut()).await, I ::
+                        timeout_fresh_ident.as_mut()).await, TotoServiceInput ::
                         pedestrian_r(pedestrian_r) =>
                         service.handle_pedestrian_r(pedestrian_r).await
                     }, _ = timeout_fresh_ident.as_mut() =>
@@ -154,7 +136,7 @@ mod toto_service {
             );
             self.context.brakes = brakes;
             self.output
-                .send(O::brakes(self.context.brakes.clone()))
+                .send(TotoServiceOutput::brakes(self.context.brakes.clone()))
                 .await
                 .unwrap();
         }
@@ -172,7 +154,7 @@ mod toto_service {
             );
             self.context.brakes = brakes;
             self.output
-                .send(O::brakes(self.context.brakes.clone()))
+                .send(TotoServiceOutput::brakes(self.context.brakes.clone()))
                 .await
                 .unwrap();
         }
