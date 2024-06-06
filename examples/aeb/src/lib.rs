@@ -13,3 +13,4 @@ pub mod aeb;
 
 #[cfg(test)]
 mod macro_output;
+use interface::*;
