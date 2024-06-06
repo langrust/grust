@@ -380,77 +380,83 @@ impl Context {
         }
     }
 }
-pub enum TotoServiceInput {
-    activation(ActivationResquest),
-    set_speed(f64),
-    speed(f64),
-    vacuum_brake(VacuumBrakeState),
-    kickdown(KickdownState),
-    vdc(VdcState),
-}
-pub enum TotoServiceOutput {
-    in_regulation(bool),
-    v_set(f64),
-}
-pub struct TotoService {
-    context: Context,
-    process_set_speed: ProcessSetSpeedState,
-    speed_limiter: SpeedLimiterState,
-    period_fresh_ident: tokio::time::Interval,
-    output: tokio::sync::mpsc::Sender<TotoServiceOutput>,
-}
-impl TotoService {
-    fn new(output: tokio::sync::mpsc::Sender<TotoServiceOutput>) -> TotoService {
-        let context = Context::init();
-        let process_set_speed = ProcessSetSpeedState::init();
-        let speed_limiter = SpeedLimiterState::init();
-        let period_fresh_ident = tokio::time::interval(tokio::time::Duration::from_millis(10u64));
-        TotoService {
-            context,
-            process_set_speed,
-            speed_limiter,
-            period_fresh_ident,
-            output,
+mod toto_service {
+    use super::*;
+    use TotoServiceInput as I;
+    use TotoServiceOutput as O;
+    pub enum TotoServiceInput {
+        activation(ActivationResquest),
+        set_speed(f64),
+        speed(f64),
+        vacuum_brake(VacuumBrakeState),
+        kickdown(KickdownState),
+        vdc(VdcState),
+    }
+    pub enum TotoServiceOutput {
+        in_regulation(bool),
+        v_set(f64),
+    }
+    pub struct TotoService {
+        context: Context,
+        process_set_speed: ProcessSetSpeedState,
+        speed_limiter: SpeedLimiterState,
+        period_fresh_ident: tokio::time::Interval,
+        output: tokio::sync::mpsc::Sender<O>,
+    }
+    impl TotoService {
+        fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
+            let context = Context::init();
+            let process_set_speed = ProcessSetSpeedState::init();
+            let speed_limiter = SpeedLimiterState::init();
+            let period_fresh_ident =
+                tokio::time::interval(tokio::time::Duration::from_millis(10u64));
+            TotoService {
+                context,
+                process_set_speed,
+                speed_limiter,
+                period_fresh_ident,
+                output,
+            }
         }
-    }
-    pub async fn run_loop(self, input: impl futures::Stream<Item = TotoServiceInput>) {
-        use futures::StreamExt;
-        tokio::pin!(input);
-        let mut service = self;
-        loop {
-            tokio::select! { input = input . next () => match input . unwrap () { TotoServiceInput :: activation (activation) => service . handle_activation (activation) . await , TotoServiceInput :: set_speed (set_speed) => service . handle_set_speed (set_speed) . await , TotoServiceInput :: speed (speed) => service . handle_speed (speed) . await , TotoServiceInput :: vacuum_brake (vacuum_brake) => service . handle_vacuum_brake (vacuum_brake) . await , TotoServiceInput :: kickdown (kickdown) => service . handle_kickdown (kickdown) . await , TotoServiceInput :: vdc (vdc) => service . handle_vdc (vdc) . await } , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , }
+        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+            use futures::StreamExt;
+            tokio::pin!(input);
+            let mut service = self;
+            loop {
+                tokio::select! { input = input . next () => match input . unwrap () { I :: activation (activation) => service . handle_activation (activation) . await , I :: set_speed (set_speed) => service . handle_set_speed (set_speed) . await , I :: speed (speed) => service . handle_speed (speed) . await , I :: vacuum_brake (vacuum_brake) => service . handle_vacuum_brake (vacuum_brake) . await , I :: kickdown (kickdown) => service . handle_kickdown (kickdown) . await , I :: vdc (vdc) => service . handle_vdc (vdc) . await } , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , }
+            }
         }
-    }
-    async fn handle_activation(&mut self, activation: ActivationResquest) {
-        self.context.activation = activation;
-    }
-    async fn handle_set_speed(&mut self, set_speed: f64) {
-        self.context.set_speed = set_speed;
-    }
-    async fn handle_speed(&mut self, speed: f64) {
-        self.context.speed = speed;
-    }
-    async fn handle_vacuum_brake(&mut self, vacuum_brake: VacuumBrakeState) {
-        self.context.vacuum_brake = vacuum_brake;
-    }
-    async fn handle_kickdown(&mut self, kickdown: KickdownState) {
-        self.context.kickdown = kickdown;
-    }
-    async fn handle_vdc(&mut self, vdc: VdcState) {
-        self.context.vdc = vdc;
-    }
-    async fn handle_period_fresh_ident(&mut self) {
-        let (state, on_state, in_regulation_aux, state_update) = self
-            .speed_limiter
-            .step(self.context.get_speed_limiter_inputs());
-        self.context.state = state;
-        self.context.on_state = on_state;
-        self.context.in_regulation_aux = in_regulation_aux;
-        self.context.state_update = state_update;
-        let in_regulation = self.context.in_regulation_aux.clone();
-        self.output
-            .send(TotoServiceOutput::in_regulation(in_regulation))
-            .await
-            .unwrap();
+        async fn handle_activation(&mut self, activation: ActivationResquest) {
+            self.context.activation = activation;
+        }
+        async fn handle_set_speed(&mut self, set_speed: f64) {
+            self.context.set_speed = set_speed;
+        }
+        async fn handle_speed(&mut self, speed: f64) {
+            self.context.speed = speed;
+        }
+        async fn handle_vacuum_brake(&mut self, vacuum_brake: VacuumBrakeState) {
+            self.context.vacuum_brake = vacuum_brake;
+        }
+        async fn handle_kickdown(&mut self, kickdown: KickdownState) {
+            self.context.kickdown = kickdown;
+        }
+        async fn handle_vdc(&mut self, vdc: VdcState) {
+            self.context.vdc = vdc;
+        }
+        async fn handle_period_fresh_ident(&mut self) {
+            let (state, on_state, in_regulation_aux, state_update) = self
+                .speed_limiter
+                .step(self.context.get_speed_limiter_inputs());
+            self.context.state = state;
+            self.context.on_state = on_state;
+            self.context.in_regulation_aux = in_regulation_aux;
+            self.context.state_update = state_update;
+            let in_regulation = self.context.in_regulation_aux.clone();
+            self.output
+                .send(O::in_regulation(in_regulation))
+                .await
+                .unwrap();
+        }
     }
 }
