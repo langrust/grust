@@ -12,7 +12,7 @@ prelude! {
 }
 
 /// Transform LIR run-loop into an async function performing a loop over events.
-pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
+pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
     let ServiceLoop {
         service,
         components,
@@ -80,7 +80,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
             #(#output_variants),*
         }
     }));
-    service_fields.push(parse_quote! { output: tokio::sync::mpsc::Sender<#service_output_name> });
+    service_fields.push(parse_quote! { output: tokio::sync::mpsc::Sender<O> });
     field_values.push(parse_quote! { output });
     let service_name = format_ident!("{}", to_camel_case(&format!("{service}Service")));
     items.push(Item::Struct(parse_quote! {
@@ -121,7 +121,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
         }});
     // `new` function
     impl_items.push(parse_quote! {
-        fn new(output: tokio::sync::mpsc::Sender<#service_output_name>) -> #service_name {
+        fn new(output: tokio::sync::mpsc::Sender<O>) -> #service_name {
             let context = Context::init();
             #(#components_states)*
             #(#periods)*
@@ -171,7 +171,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
                             )
                         });
                         input_arms.push(parse_quote! {
-                            #service_input_name::#ident(#ident) => service.#function_name(#(#fn_args),*).await
+                            I::#ident(#ident) => service.#function_name(#(#fn_args),*).await
                         })
                     }
                     ArrivingFlow::Period(time_flow_name) => {
@@ -212,7 +212,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
     };
     // `run_loop` function
     impl_items.push(parse_quote! {
-        pub async fn run_loop(self, input: impl futures::Stream<Item = #service_input_name>) {
+        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
             use futures::StreamExt;
             tokio::pin!(input);
             let mut service = self;
@@ -278,5 +278,14 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Vec<Item> {
         }
     });
 
-    items
+    let module_name = format_ident!("{service}_service");
+    Item::Mod(parse_quote! {
+        mod #module_name {
+            use super::*;
+            use #service_input_name as I;
+            use #service_output_name as O;
+
+            #(#items)*
+        }
+     })
 }
