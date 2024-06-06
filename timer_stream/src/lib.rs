@@ -125,7 +125,10 @@ where
 
 #[cfg(test)]
 mod timer_queue {
+    use std::{collections::HashMap, time::Duration};
+
     use crate::{GetMillis, Timer, TimerQueue};
+    use rand::distributions::{Distribution, Uniform};
     use ServiceTimers::*;
 
     #[derive(Default, Debug, PartialEq)]
@@ -145,6 +148,22 @@ mod timer_queue {
                 Period15ms(_) => std::time::Duration::from_millis(15),
                 Timeout20ms(_) => std::time::Duration::from_millis(20),
                 Timeout30ms(_) => std::time::Duration::from_millis(30),
+            }
+        }
+    }
+    impl ServiceTimers {
+        fn set_id(&mut self, id: usize) {
+            match self {
+                NoTimer => panic!("no timer"),
+                Period10ms(old_id) | Period15ms(old_id) | Timeout20ms(old_id)
+                | Timeout30ms(old_id) => *old_id = id,
+            }
+        }
+        fn get_id(&self) -> usize {
+            match self {
+                NoTimer => panic!("no timer"),
+                Period10ms(old_id) | Period15ms(old_id) | Timeout20ms(old_id)
+                | Timeout30ms(old_id) => *old_id,
             }
         }
     }
@@ -209,5 +228,85 @@ mod timer_queue {
         assert!(timer_queue.len() == 0);
         assert_eq!(timer_queue.pop(), None);
         assert!(timer_queue.len() == 0);
+    }
+
+    struct TimerInfos {
+        duration: Duration,
+        pushed_time: Duration,
+    }
+    impl TimerInfos {
+        fn new(duration: Duration, pushed_time: Duration) -> Self {
+            TimerInfos {
+                duration,
+                pushed_time,
+            }
+        }
+    }
+    struct TimersManager {
+        timer_queue: TimerQueue<ServiceTimers, 10>,
+        timers: HashMap<usize, TimerInfos>,
+        fresh_id: usize,
+        global_time: Duration,
+    }
+    impl TimersManager {
+        fn new() -> Self {
+            let timer_queue = TimerQueue::<ServiceTimers, 10>::new();
+            TimersManager {
+                timer_queue,
+                timers: Default::default(),
+                fresh_id: 0,
+                global_time: Duration::from_millis(0),
+            }
+        }
+        fn insert_timer(&mut self, mut timer: ServiceTimers) {
+            // if queue is full, do nothing (not the purpose of the test)
+            if self.timer_queue.is_full() {
+                return;
+            }
+
+            timer.set_id(self.fresh_id);
+            let timer_infos = TimerInfos::new(timer.get_millis(), self.global_time);
+
+            self.timer_queue.push(Timer::init(timer));
+            self.timers.insert(self.fresh_id, timer_infos);
+
+            self.fresh_id += 1;
+        }
+        fn pop_timer(&mut self) {
+            // if queue is empty, do nothing (not the purpose of the test)
+            if self.timer_queue.is_empty() {
+                return;
+            }
+            let timer = self.timer_queue.pop().unwrap();
+            let timer_id = timer.kind.get_id();
+            let timer_infos = self.timers.get(&timer_id).unwrap();
+
+            // asserting that deadlines are respected
+            let global_time = self.global_time;
+            let timer_popped_deadline = timer.deadline;
+            let timer_pushed_time = timer_infos.pushed_time;
+            let timer_duration = timer_infos.duration;
+            assert!(global_time + timer_popped_deadline == timer_pushed_time + timer_duration);
+
+            // update global time
+            self.global_time = global_time + timer_popped_deadline;
+        }
+    }
+
+    #[test]
+    fn timers_deadlines_should_be_respected() {
+        let mut timer_manager = TimersManager::new();
+        let mut rng = rand::thread_rng();
+        let distrib = Uniform::from(1..=6);
+
+        for _ in 0..100 {
+            match distrib.sample(&mut rng) {
+                0 => timer_manager.insert_timer(Period10ms(0)),
+                1 => timer_manager.insert_timer(Period15ms(0)),
+                2 => timer_manager.insert_timer(Timeout20ms(0)),
+                3 => timer_manager.insert_timer(Timeout30ms(0)),
+                _ => timer_manager.pop_timer(),
+            }
+        }
     }
 }
