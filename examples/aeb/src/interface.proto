@@ -1,26 +1,39 @@
 syntax = "proto3";
 package interface;
 
-message Person {
-  string name = 1;
-  int32 id = 2;  // Unique ID number for this person.
-  string email = 3;
-
-  enum PhoneType {
-    MOBILE = 0;
-    HOME = 1;
-    WORK = 2;
-  }
-
-  message PhoneNumber {
-    string number = 1;
-    PhoneType type = 2;
-  }
-
-  repeated PhoneNumber phones = 4;
+// speed type
+message Speed {
+    float value = 1;
 }
 
-// Our address book file is just one of these.
-message AddressBook {
-  repeated Person people = 1;
+// pedestrian type
+message Pedestrian {
+    float distance = 1;
+}
+
+enum Braking {
+    URGENT_BRAKE = 0;
+    SOFT_BRAKE = 1;
+    NO_BRAKE = 2;
+}
+
+// the input part of the interface
+message Input {
+    double timestamp = 1;
+
+    oneof message {
+        Speed speed = 2;
+        Pedestrian pedestrian_l = 3;
+        Pedestrian pedestrian_r = 4;
+    }
+}
+
+// the output part of the interface
+message Output {
+    Braking brakes = 1;
+}
+
+// the service interface
+service AEB {
+    rpc run(stream Input) returns (stream Output);
 }
