@@ -1,10 +1,10 @@
-use std::{fmt::Debug, time::Duration};
+use std::{cmp::Ordering, fmt::Debug, time::Duration};
 
 pub trait GetMillis {
     fn get_millis(&self) -> Duration;
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub struct Timer<T> {
     remaning: Duration,
     kind: T,
@@ -57,7 +57,7 @@ where
     /// # Panics
     ///
     /// This function will panic if the queue is full.
-    pub fn push(&mut self, value: Timer<T>) {
+    pub fn push(&mut self, mut value: Timer<T>) {
         // safety: panics if pushed out of bound
         if self.is_full() {
             panic!("out of bound")
@@ -65,17 +65,23 @@ where
 
         // puts the value at the right place
         for index in (0..self.len).rev() {
-            if &value.remaning < &self.queue[index].remaning {
-                self.queue[index..=self.len].rotate_right(1);
-                self.queue[index] = value;
-                self.len += 1;
-                return;
-            } else {
-
+            let t_insert = value.remaning;
+            let t_index = self.queue[index].remaning;
+            match t_insert.cmp(&t_index) {
+                Ordering::Less => {
+                    self.queue[index].remaning = t_index - t_insert;
+                    self.queue[(index + 1)..=self.len].rotate_right(1);
+                    self.queue[index + 1] = value;
+                    self.len += 1;
+                    return;
+                }
+                Ordering::Equal => value.remaning = Duration::from_millis(0),
+                Ordering::Greater => value.remaning = t_insert - t_index,
             }
         }
-        // if not inserted, then put it at the end
-        self.queue[self.len] = value;
+        // if not inserted, then put it at the begining
+        self.queue[0..=self.len].rotate_right(1);
+        self.queue[0] = value;
         self.len += 1;
     }
     /// Pop the most urgent timer from the queue.
@@ -99,5 +105,109 @@ where
                 .for_each(|t| print!("{t:?}, "));
             println!("{:?}]", self.queue[self.len - 1])
         }
+    }
+}
+impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N>
+where
+    T: Default,
+{
+    fn into(self) -> Vec<T> {
+        let v = self
+            .queue
+            .into_iter()
+            .take(self.len)
+            .map(|timer| timer.kind)
+            .collect::<Vec<_>>();
+        debug_assert!(v.len() == self.len);
+        v
+    }
+}
+
+#[cfg(test)]
+mod timer_queue {
+    use crate::{GetMillis, Timer, TimerQueue};
+    use ServiceTimers::*;
+
+    #[derive(Default, Debug, PartialEq)]
+    enum ServiceTimers {
+        #[default]
+        NoTimer,
+        Period10ms(usize),
+        Period15ms(usize),
+        Timeout20ms(usize),
+        Timeout30ms(usize),
+    }
+    impl GetMillis for ServiceTimers {
+        fn get_millis(&self) -> std::time::Duration {
+            match self {
+                NoTimer => panic!("no timer"),
+                Period10ms(_) => std::time::Duration::from_millis(10),
+                Period15ms(_) => std::time::Duration::from_millis(15),
+                Timeout20ms(_) => std::time::Duration::from_millis(20),
+                Timeout30ms(_) => std::time::Duration::from_millis(30),
+            }
+        }
+    }
+
+    /// Create a timer.
+    fn timer_from_millis(millis: u64, kind: ServiceTimers) -> Timer<ServiceTimers> {
+        Timer {
+            remaning: std::time::Duration::from_millis(millis),
+            kind,
+        }
+    }
+
+    #[test]
+    fn new_should_create_empty_queue() {
+        let timer_queue = TimerQueue::<ServiceTimers, 10>::new();
+        assert!(timer_queue.is_empty())
+    }
+
+    #[test]
+    fn push_should_insert_timer_according_to_deadline() {
+        let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
+        timer_queue.push(Timer::init(Period15ms(0)));
+        timer_queue.push(Timer::init(Timeout30ms(0)));
+        timer_queue.push(Timer::init(Timeout20ms(0)));
+        timer_queue.push(Timer::init(Period10ms(0)));
+        let v: Vec<_> = timer_queue.into();
+        assert_eq!(
+            v,
+            vec![Timeout30ms(0), Timeout20ms(0), Period15ms(0), Period10ms(0)]
+        )
+    }
+
+    #[test]
+    fn pop_should_remove_the_earliest_timer() {
+        let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
+        timer_queue.push(Timer::init(Period15ms(0)));
+        timer_queue.push(Timer::init(Timeout30ms(0)));
+        timer_queue.push(Timer::init(Timeout20ms(0)));
+        timer_queue.push(Timer::init(Period10ms(0)));
+        timer_queue.println();
+        assert!(timer_queue.len() == 4);
+        assert_eq!(
+            timer_queue.pop(),
+            Some(timer_from_millis(10, Period10ms(0)))
+        );
+        assert!(timer_queue.len() == 3);
+        timer_queue.push(Timer::init(Period10ms(1)));
+        assert!(timer_queue.len() == 4);
+        assert_eq!(timer_queue.pop(), Some(timer_from_millis(5, Period15ms(0))));
+        assert!(timer_queue.len() == 3);
+        assert_eq!(
+            timer_queue.pop(),
+            Some(timer_from_millis(5, Timeout20ms(0)))
+        );
+        assert!(timer_queue.len() == 2);
+        assert_eq!(timer_queue.pop(), Some(timer_from_millis(0, Period10ms(1))));
+        assert!(timer_queue.len() == 1);
+        assert_eq!(
+            timer_queue.pop(),
+            Some(timer_from_millis(10, Timeout30ms(0)))
+        );
+        assert!(timer_queue.len() == 0);
+        assert_eq!(timer_queue.pop(), None);
+        assert!(timer_queue.len() == 0);
     }
 }
