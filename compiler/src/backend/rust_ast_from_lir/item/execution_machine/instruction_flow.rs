@@ -31,9 +31,10 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             parse_quote! { self.context.#ident = #expression; }
         }
         FlowInstruction::Send(ident, flow_expression) => {
-            let channel: Ident = Ident::new((ident + "_channel").as_str(), Span::call_site());
+            let ident: Ident = Ident::new(&ident, Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
-            parse_quote!(self.#channel.send(#expression).await.unwrap();)
+            parse_quote!(self.output.send(TotoServiceOutput::#ident(#expression)).await.unwrap();)
+            // todo: this is hard coded, please (future me) fix it
         }
         FlowInstruction::IfThrotle(receiver_name, source_name, delta, instruction) => {
             let receiver_ident = Ident::new(&receiver_name, Span::call_site());
