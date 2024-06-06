@@ -149,6 +149,10 @@ impl TotoService {
                 .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
         );
         self.context.brakes = brakes;
+        self.output
+            .send(TotoServiceOutput::brakes(self.context.brakes.clone()))
+            .await
+            .unwrap();
     }
     async fn handle_pedestrian_r(&mut self, pedestrian_r: f64) {}
     async fn handle_timeout_fresh_ident(
@@ -163,5 +167,9 @@ impl TotoService {
                 .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
         );
         self.context.brakes = brakes;
+        self.output
+            .send(TotoServiceOutput::brakes(self.context.brakes.clone()))
+            .await
+            .unwrap();
     }
 }
