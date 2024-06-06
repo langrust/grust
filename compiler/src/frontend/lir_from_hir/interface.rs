@@ -797,6 +797,14 @@ fn compute_flow_instructions(
                             identifier: source_name.clone(),
                         },
                     ));
+                } else if let FlowKind::Signal(_) = symbol_table.get_flow_kind(*id) {
+                    // add send instruction
+                    instructions.push(FlowInstruction::Send(
+                        source_name.clone(),
+                        Expression::InContext {
+                            flow: source_name.clone(),
+                        },
+                    ));
                 }
             }
             FlowStatement::Import(FlowImport { id, .. }) => {
