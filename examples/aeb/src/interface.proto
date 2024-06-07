@@ -3,12 +3,12 @@ package interface;
 
 // speed type
 message Speed {
-    float value = 1;
+    double value = 1;
 }
 
 // pedestrian type
 message Pedestrian {
-    float distance = 1;
+    double distance = 1;
 }
 
 enum Braking {

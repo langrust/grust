@@ -1,6 +1,6 @@
-use interface::aeb_client::AebClient;
-use interface::{Input, Output};
-use prost::Message;
+use crate::json::{append_json, begin_json, end_json, read_json};
+use interface::Pedestrian;
+use interface::{aeb_client::AebClient, input::Message, Input, Output};
 use std::env;
 use std::sync::Arc;
 use std::time::Duration;
@@ -14,28 +14,27 @@ pub mod interface {
     tonic::include_proto!("interface");
 }
 
-async fn bidirectional_streaming_echo_throttle(client: &mut AebClient<Channel>, dur: Duration) {
-    let in_stream = todo!();
-
-    let response = client.run(in_stream).await.unwrap();
-
-    let mut resp_stream = response.into_inner();
-
-    while let Some(received) = resp_stream.next().await {
-        let received = received.unwrap();
-        println!("\treceived message: `{}`", received.brakes);
-    }
-}
+const INPATH: &str = "examples/aeb/data/inputs.json";
+const OUTPATH: &str = "examples/aeb/data/outputs.json";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // connect to server
     let mut client = AebClient::connect("http://[::1]:50051").await.unwrap();
-
-    // Echo stream that sends up to `usize::MAX` requests. One request each 2s.
-    // Exiting client with CTRL+C demonstrate how to distinguish broken pipe from
-    // graceful client disconnection (above example) on the server side.
-    println!("\r\nBidirectional stream echo (kill client with CTLR+C):");
-    bidirectional_streaming_echo_throttle(&mut client, Duration::from_secs(2)).await;
-
+    println!("\r\nBidirectional stream (kill client with CTLR+C):");
+    // read inputs
+    let in_stream = tokio_stream::iter(read_json(INPATH)).map(Result::unwrap);
+    // ask for AEB service
+    let response = client.run(in_stream).await.unwrap();
+    // initiate outputs file
+    begin_json(OUTPATH);
+    // collect all outputs
+    let mut resp_stream = response.into_inner();
+    while let Some(received) = resp_stream.next().await {
+        let received = received.unwrap();
+        println!("\treceived message: `{}`", received.brakes);
+        append_json(OUTPATH, received);
+    }
+    end_json(OUTPATH);
     Ok(())
 }
