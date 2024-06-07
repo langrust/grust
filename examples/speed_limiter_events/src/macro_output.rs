@@ -332,6 +332,7 @@ impl Context {
 }
 pub mod toto_service {
     use super::*;
+    use futures::{sink::SinkExt, stream::StreamExt};
     use TotoServiceInput as I;
     use TotoServiceOutput as O;
     pub enum TotoServiceInput {
@@ -352,10 +353,10 @@ pub mod toto_service {
         process_set_speed: ProcessSetSpeedState,
         speed_limiter: SpeedLimiterState,
         period_fresh_ident: tokio::time::Interval,
-        output: tokio::sync::mpsc::Sender<O>,
+        output: futures::channel::mpsc::Sender<O>,
     }
     impl TotoService {
-        pub fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
+        pub fn new(output: futures::channel::mpsc::Sender<O>) -> TotoService {
             let context = Context::init();
             let process_set_speed = ProcessSetSpeedState::init();
             let speed_limiter = SpeedLimiterState::init();
@@ -370,7 +371,6 @@ pub mod toto_service {
             }
         }
         pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
-            use futures::StreamExt;
             tokio::pin!(input);
             let mut service = self;
             loop {

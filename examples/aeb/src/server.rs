@@ -57,14 +57,12 @@ mod aeb {
 }
 
 use aeb::toto_service::{TotoService, TotoServiceInput, TotoServiceOutput};
+use futures::StreamExt;
 use interface::{
     aeb_server::{Aeb, AebServer},
     input::Message,
     Braking, Input, Output, Pedestrian, Speed,
 };
-use tokio::sync::mpsc::channel;
-use tokio_stream::wrappers::ReceiverStream;
-use tokio_stream::StreamExt;
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
 // include the `interface` module, which is generated from interface.proto.
@@ -92,24 +90,25 @@ fn into_toto_service_input(input: Input) -> Option<TotoServiceInput> {
     }
 }
 
-fn from_toto_service_output(output: TotoServiceOutput) -> Output {
+fn from_toto_service_output(output: TotoServiceOutput) -> Result<Output, Status> {
     match output {
-        TotoServiceOutput::brakes(aeb::Braking::UrgentBrake) => Output {
+        TotoServiceOutput::brakes(aeb::Braking::UrgentBrake) => Ok(Output {
             brakes: Braking::UrgentBrake.into(),
-        },
-        TotoServiceOutput::brakes(aeb::Braking::SoftBrake) => Output {
+        }),
+        TotoServiceOutput::brakes(aeb::Braking::SoftBrake) => Ok(Output {
             brakes: Braking::SoftBrake.into(),
-        },
-        TotoServiceOutput::brakes(aeb::Braking::NoBrake) => Output {
+        }),
+        TotoServiceOutput::brakes(aeb::Braking::NoBrake) => Ok(Output {
             brakes: Braking::NoBrake.into(),
-        },
+        }),
     }
 }
 
 #[tonic::async_trait]
 impl Aeb for AebRuntime {
-    type runStream = std::pin::Pin<
-        Box<dyn tokio_stream::Stream<Item = Result<Output, Status>> + Send + 'static>,
+    type runStream = futures::stream::Map<
+        futures::channel::mpsc::Receiver<TotoServiceOutput>,
+        fn(TotoServiceOutput) -> Result<Output, Status>,
     >;
 
     async fn run(
@@ -118,15 +117,15 @@ impl Aeb for AebRuntime {
     ) -> Result<Response<Self::runStream>, Status> {
         let input_stream = request
             .into_inner()
-            .filter_map(|input| input.map(into_toto_service_input).ok().flatten());
+            .filter_map(|input| async { input.map(into_toto_service_input).ok().flatten() });
 
-        let (output_sender, output_receiver) = channel(4);
+        let (output_sender, output_receiver) = futures::channel::mpsc::channel(4);
         let toto_service = TotoService::new(output_sender);
 
         tokio::spawn(toto_service.run_loop(input_stream));
-        let out_stream =
-            ReceiverStream::new(output_receiver).map(|output| Ok(from_toto_service_output(output)));
-        Ok(Response::new(Box::pin(out_stream)))
+        let out_stream = output_receiver
+            .map(from_toto_service_output as fn(TotoServiceOutput) -> Result<Output, Status>);
+        Ok(Response::new(out_stream))
     }
 }
 

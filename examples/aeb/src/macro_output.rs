@@ -88,6 +88,7 @@ pub async fn run_toto_loop(
 }
 pub mod toto_service {
     use super::*;
+    use futures::{sink::SinkExt, stream::StreamExt};
     use TotoServiceInput as I;
     use TotoServiceOutput as O;
     pub enum TotoServiceInput {
@@ -101,10 +102,10 @@ pub mod toto_service {
     pub struct TotoService {
         context: Context,
         braking_state: BrakingStateState,
-        output: tokio::sync::mpsc::Sender<O>,
+        output: futures::channel::mpsc::Sender<O>,
     }
     impl TotoService {
-        pub fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
+        pub fn new(output: futures::channel::mpsc::Sender<O>) -> TotoService {
             let context = Context::init();
             let braking_state = BrakingStateState::init();
             TotoService {
@@ -114,7 +115,6 @@ pub mod toto_service {
             }
         }
         pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
-            use futures::StreamExt;
             tokio::pin!(input);
             let mut service = self;
             let timeout_fresh_ident = tokio::time::sleep_until(

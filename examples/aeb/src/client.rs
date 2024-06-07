@@ -149,9 +149,9 @@ mod json {
     }
 }
 
+use futures::StreamExt;
 use interface::aeb_client::AebClient;
 use json::*;
-use tokio_stream::StreamExt;
 
 // include the `interface` module, which is generated from interface.proto.
 pub mod interface {
@@ -167,7 +167,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = AebClient::connect("http://[::1]:50051").await.unwrap();
     println!("\r\nBidirectional stream (kill client with CTLR+C):");
     // read inputs
-    let in_stream = tokio_stream::iter(read_json(INPATH)).map(Result::unwrap);
+    let in_stream = futures::stream::iter(read_json(INPATH)).map(Result::unwrap);
     // ask for AEB service
     let response = client.run(in_stream).await.unwrap();
     // initiate outputs file
