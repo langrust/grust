@@ -80,7 +80,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
             #(#output_variants),*
         }
     }));
-    service_fields.push(parse_quote! { output: tokio::sync::mpsc::Sender<O> });
+    service_fields.push(parse_quote! { output: futures::channel::mpsc::Sender<O> });
     field_values.push(parse_quote! { output });
     let service_name = format_ident!("{}", to_camel_case(&format!("{service}Service")));
     items.push(Item::Struct(parse_quote! {
@@ -121,7 +121,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         }});
     // `new` function
     impl_items.push(parse_quote! {
-        pub fn new(output: tokio::sync::mpsc::Sender<O>) -> #service_name {
+        pub fn new(output: futures::channel::mpsc::Sender<O>) -> #service_name {
             let context = Context::init();
             #(#components_states)*
             #(#periods)*
@@ -217,7 +217,6 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
     // `run_loop` function
     impl_items.push(parse_quote! {
         pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
-            use futures::StreamExt;
             tokio::pin!(input);
             let mut service = self;
             #(#deadlines)*
@@ -285,6 +284,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
     let module_name = format_ident!("{service}_service");
     Item::Mod(parse_quote! {
        pub mod #module_name {
+            use futures::{stream::StreamExt, sink::SinkExt};
            use super::*;
            use #service_input_name as I;
            use #service_output_name as O;
