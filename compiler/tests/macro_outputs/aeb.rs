@@ -70,7 +70,7 @@ impl Context {
         }
     }
 }
-mod toto_service {
+pub mod toto_service {
     use super::*;
     use TotoServiceInput as I;
     use TotoServiceOutput as O;
@@ -88,7 +88,7 @@ mod toto_service {
         output: tokio::sync::mpsc::Sender<O>,
     }
     impl TotoService {
-        fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
+        pub fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
             let context = Context::init();
             let braking_state = BrakingStateState::init();
             TotoService {
