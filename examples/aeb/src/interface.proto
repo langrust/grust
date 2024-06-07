@@ -35,5 +35,5 @@ message Output {
 
 // the service interface
 service AEB {
-    rpc run(stream Input) returns (stream Output);
+    rpc RunAEB(stream Input) returns (stream Output);
 }
