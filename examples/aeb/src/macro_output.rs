@@ -123,16 +123,19 @@ pub mod toto_service {
             tokio::pin!(timeout_fresh_ident);
             loop {
                 tokio::select! {
-                    input = input.next() => match input.unwrap()
+                    input = input.next() => if let Some(input) = input
                     {
-                        I :: speed_km_h(speed_km_h) =>
-                        service.handle_speed_km_h(speed_km_h).await, I ::
-                        pedestrian_l(pedestrian_l) =>
-                        service.handle_pedestrian_l(pedestrian_l,
-                        timeout_fresh_ident.as_mut()).await, I ::
-                        pedestrian_r(pedestrian_r) =>
-                        service.handle_pedestrian_r(pedestrian_r).await
-                    }, _ = timeout_fresh_ident.as_mut() =>
+                        match input
+                        {
+                            I :: speed_km_h(speed_km_h) =>
+                            service.handle_speed_km_h(speed_km_h).await, I ::
+                            pedestrian_l(pedestrian_l) =>
+                            service.handle_pedestrian_l(pedestrian_l,
+                            timeout_fresh_ident.as_mut()).await, I ::
+                            pedestrian_r(pedestrian_r) =>
+                            service.handle_pedestrian_r(pedestrian_r).await
+                        }
+                    } else { break ; }, _ = timeout_fresh_ident.as_mut() =>
                     service.handle_timeout_fresh_ident(timeout_fresh_ident.as_mut()).await,
                 }
             }

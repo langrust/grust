@@ -202,8 +202,12 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         parse_quote! {
             loop{
                 tokio::select! {
-                    input = input.next() => match input.unwrap() {
-                        #(#input_arms),*
+                    input = input.next() => if let Some(input) = input {
+                        match input {
+                            #(#input_arms),*
+                        }
+                    } else {
+                        break;
                     },
                     #(#timers_arms)*
                 }
