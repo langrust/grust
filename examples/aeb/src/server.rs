@@ -157,11 +157,11 @@ impl Aeb for AebRuntime {
                     match output_receiver.lock().await.recv().await {
                         Some(output) => match tx.send(Ok(from_toto_service_output(output))).await {
                             Ok(_) => (),
-                            Err(_err) => break, // response was droped
+                            Err(_err) => break, // response was dropped
                         },
                         None => match tx.send(Err(Status::aborted("service ended"))).await {
                             Ok(_) => (),
-                            Err(_err) => break, // response was droped
+                            Err(_err) => break, // response was dropped
                         },
                     }
                 }
