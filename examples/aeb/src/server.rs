@@ -30,8 +30,8 @@ mod aeb {
         }
 
         component braking_state(pedest: float!, speed: float) -> (state: Braking)
-            // requires { 0. <= speed && speed < 50. } // urban limit
-            //ensures { pedest? => state != NoBrake } // safety
+            // requires { 0. <= speed && speed < 55. } // urban limit
+            // ensures { pedest? => state != NoBrake } // safety
         {
             when {
                 d = pedest => {
@@ -51,7 +51,7 @@ mod aeb {
         import event  car::detect::right::pedestrian_r  : float;
         export signal car::urban::braking::brakes       : Braking;
 
-        let event pedestrian: timeout(float) = timeout(pedestrian_l, 500);
+        let event pedestrian: timeout(float) = timeout(pedestrian_l, 2000);
         brakes = braking_state(pedestrian, speed_km_h);
     }
 }
@@ -85,7 +85,9 @@ impl AebRuntime {
 
         tokio::spawn(async move {
             let toto_service = TotoService::new(output_sender);
-            toto_service.run_loop(ReceiverStream::new(input_receiver))
+            toto_service
+                .run_loop(ReceiverStream::new(input_receiver))
+                .await
         });
 
         AebRuntime {
@@ -136,22 +138,14 @@ impl Aeb for AebRuntime {
             let input_sender = self.input_sender.clone();
             let tx = tx.clone();
             async move {
-                for result in input_stream.next().await {
+                while let Some(result) = input_stream.next().await {
                     match result {
                         Ok(input) => {
                             if let Some(input) = into_toto_service_input(input) {
-                                match input_sender.send(input).await {
-                                    Ok(_) => (),
-                                    Err(_err) => break, // response was droped
-                                }
+                                input_sender.send(input).await.expect("receiver dropped")
                             }
                         }
-                        Err(err) => {
-                            match tx.send(Err(err)).await {
-                                Ok(_) => (),
-                                Err(_err) => break, // response was droped
-                            }
-                        }
+                        Err(err) => tx.send(Err(err)).await.expect("receiver dropped"),
                     }
                 }
             }
