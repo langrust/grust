@@ -375,20 +375,23 @@ pub mod toto_service {
             let mut service = self;
             loop {
                 tokio::select! {
-                    input = input.next() => match input.unwrap()
+                    input = input.next() => if let Some(input) = input
                     {
-                        I :: activation(activation) =>
-                        service.handle_activation(activation).await, I ::
-                        set_speed(set_speed) =>
-                        service.handle_set_speed(set_speed).await, I :: speed(speed)
-                        => service.handle_speed(speed).await, I ::
-                        vacuum_brake(vacuum_brake) =>
-                        service.handle_vacuum_brake(vacuum_brake).await, I ::
-                        kickdown(kickdown) =>
-                        service.handle_kickdown(kickdown).await, I ::
-                        failure(failure) => service.handle_failure(failure).await, I
-                        :: vdc(vdc) => service.handle_vdc(vdc).await
-                    }, _ = service.period_fresh_ident.tick() =>
+                        match input
+                        {
+                            I :: activation(activation) =>
+                            service.handle_activation(activation).await, I ::
+                            set_speed(set_speed) =>
+                            service.handle_set_speed(set_speed).await, I :: speed(speed)
+                            => service.handle_speed(speed).await, I ::
+                            vacuum_brake(vacuum_brake) =>
+                            service.handle_vacuum_brake(vacuum_brake).await, I ::
+                            kickdown(kickdown) =>
+                            service.handle_kickdown(kickdown).await, I ::
+                            failure(failure) => service.handle_failure(failure).await, I
+                            :: vdc(vdc) => service.handle_vdc(vdc).await
+                        }
+                    } else { break ; }, _ = service.period_fresh_ident.tick() =>
                     service.handle_period_fresh_ident().await,
                 }
             }

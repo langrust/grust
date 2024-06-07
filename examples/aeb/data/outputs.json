@@ -1,7 +1,4 @@
 [{
-  "brakes": 2
-}
-,{
   "brakes": 0
 }
 ,{
@@ -10,15 +7,4 @@
 ,{
   "brakes": 1
 }
-,{
-  "brakes": 2
-}
-,{
-  "brakes": 2
-}
-,{
-  "brakes": 2
-}
-,{
-  "brakes": 2
-}
+]
