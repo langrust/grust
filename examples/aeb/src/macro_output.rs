@@ -118,7 +118,7 @@ pub mod toto_service {
             tokio::pin!(input);
             let mut service = self;
             let timeout_fresh_ident = tokio::time::sleep_until(
-                tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
+                tokio::time::Instant::now() + tokio::time::Duration::from_millis(2000u64),
             );
             tokio::pin!(timeout_fresh_ident);
             loop {
@@ -147,7 +147,7 @@ pub mod toto_service {
         ) {
             let pedestrian = Ok(pedestrian_l);
             timeout_fresh_ident
-                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
+                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(2000u64));
             let brakes = self.braking_state.step(
                 self.context
                     .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
@@ -165,7 +165,7 @@ pub mod toto_service {
         ) {
             let pedestrian = Err(());
             timeout_fresh_ident
-                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
+                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(2000u64));
             let brakes = self.braking_state.step(
                 self.context
                     .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),

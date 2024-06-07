@@ -1,0 +1,82 @@
+[
+    {
+        "timestamp": 0.0,
+        "message": {
+            "Speed": {
+                "value": 50.0
+            }
+        }
+    },
+    {
+        "timestamp": 0.8,
+        "message": {
+            "PedestrianL": {
+                "distance": 3.0
+            }
+        }
+    },
+    {
+        "timestamp": 0.9,
+        "message": {
+            "Speed": {
+                "value": 45.0
+            }
+        }
+    },
+    {
+        "timestamp": 1.0,
+        "message": {
+            "PedestrianL": {
+                "distance": 2.0
+            }
+        }
+    },
+    {
+        "timestamp": 1.4,
+        "message": {
+            "Speed": {
+                "value": 30.0
+            }
+        }
+    },
+    {
+        "timestamp": 2.0,
+        "message": {
+            "Speed": {
+                "value": 10.0
+            }
+        }
+    },
+    {
+        "timestamp": 2.5,
+        "message": {
+            "PedestrianL": {
+                "distance": 2.2
+            }
+        }
+    },
+    {
+        "timestamp": 3.0,
+        "message": {
+            "Speed": {
+                "value": 15.0
+            }
+        }
+    },
+    {
+        "timestamp": 4.0,
+        "message": {
+            "Speed": {
+                "value": 35.0
+            }
+        }
+    },
+    {
+        "timestamp": 5.0,
+        "message": {
+            "Speed": {
+                "value": 50.0
+            }
+        }
+    }
+]
