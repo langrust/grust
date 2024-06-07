@@ -1,6 +1,39 @@
 extern crate tonic_build;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("src/interface.proto")?;
+    let proto = "src/interface.proto";
+    let proto_path: &std::path::Path = proto.as_ref();
+
+    // directory the main .proto file resides in
+    let proto_dir = proto_path
+        .parent()
+        .expect("proto file should reside in a directory");
+
+    tonic_build::configure()
+        .type_attribute(
+            "interface.Input",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "interface.Output",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "interface.Speed",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "interface.Pedestrian",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "interface.Braking",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "interface.Input.message",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .compile(&[proto_path], &[proto_dir])?;
     Ok(())
 }
