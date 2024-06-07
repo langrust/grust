@@ -3,6 +3,10 @@ mod aeb {
 
     grust! {
         #![dump = "examples/aeb/src/macro_output.rs"]
+        import signal car::speed_km_h                   : float;
+        import event  car::detect::left::pedestrian_l   : float;
+        import event  car::detect::right::pedestrian_r  : float;
+        export signal car::urban::braking::brakes       : Braking;
 
         // Branking type
         enum Braking {
@@ -46,11 +50,7 @@ mod aeb {
             }
         }
 
-        import signal car::speed_km_h                   : float;
-        import event  car::detect::left::pedestrian_l   : float;
-        import event  car::detect::right::pedestrian_r  : float;
-        export signal car::urban::braking::brakes       : Braking;
-
+        // AEB service
         let event pedestrian: timeout(float) = timeout(pedestrian_l, 2000);
         brakes = braking_state(pedestrian, speed_km_h);
     }
