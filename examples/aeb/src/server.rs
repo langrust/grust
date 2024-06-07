@@ -70,13 +70,6 @@ pub mod interface {
     tonic::include_proto!("interface");
 }
 
-pub struct AebRuntime {}
-impl AebRuntime {
-    pub fn init() -> Self {
-        AebRuntime {}
-    }
-}
-
 fn into_toto_service_input(input: Input) -> Option<TotoServiceInput> {
     match input.message {
         Some(Message::PedestrianL(Pedestrian { distance })) => {
@@ -104,40 +97,40 @@ fn from_toto_service_output(output: TotoServiceOutput) -> Result<Output, Status>
     }
 }
 
+pub struct AebRuntime;
+
 #[tonic::async_trait]
 impl Aeb for AebRuntime {
-    type runStream = futures::stream::Map<
+    type RunAEBStream = futures::stream::Map<
         futures::channel::mpsc::Receiver<TotoServiceOutput>,
         fn(TotoServiceOutput) -> Result<Output, Status>,
     >;
 
-    async fn run(
+    async fn run_aeb(
         &self,
         request: Request<Streaming<Input>>,
-    ) -> Result<Response<Self::runStream>, Status> {
+    ) -> Result<Response<Self::RunAEBStream>, Status> {
         let input_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_toto_service_input).ok().flatten() });
 
-        let (output_sender, output_receiver) = futures::channel::mpsc::channel(4);
-        let toto_service = TotoService::new(output_sender);
-
+        let (sink, output_stream) = futures::channel::mpsc::channel(4);
+        let toto_service = TotoService::new(sink);
         tokio::spawn(toto_service.run_loop(input_stream));
-        let out_stream = output_receiver
-            .map(from_toto_service_output as fn(TotoServiceOutput) -> Result<Output, Status>);
-        Ok(Response::new(out_stream))
+
+        Ok(Response::new(output_stream.map(
+            from_toto_service_output as fn(TotoServiceOutput) -> Result<Output, Status>,
+        )))
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse().unwrap();
-    let aeb_runtime = AebRuntime::init();
-
     println!("AebServer listening on {}", addr);
 
     Server::builder()
-        .add_service(AebServer::new(aeb_runtime))
+        .add_service(AebServer::new(AebRuntime))
         .serve(addr)
         .await?;
 

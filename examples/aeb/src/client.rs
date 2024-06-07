@@ -169,7 +169,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // read inputs
     let in_stream = futures::stream::iter(read_json(INPATH)).map(Result::unwrap);
     // ask for AEB service
-    let response = client.run(in_stream).await.unwrap();
+    let response = client.run_aeb(in_stream).await.unwrap();
     // initiate outputs file
     begin_json(OUTPATH);
     // collect all outputs
