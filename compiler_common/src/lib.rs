@@ -6,6 +6,7 @@ pub extern crate petgraph;
 pub extern crate proc_macro2 as macro2;
 pub extern crate quote;
 pub extern crate rustc_hash;
+pub extern crate safe_index;
 pub extern crate serde;
 pub extern crate strum;
 pub extern crate syn;
@@ -29,6 +30,7 @@ mod r#type;
 pub use syn::parse_quote;
 
 pub mod conf;
+pub mod equiv;
 pub mod keyword;
 pub mod operator;
 pub mod serialize;
