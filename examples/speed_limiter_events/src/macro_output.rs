@@ -458,7 +458,8 @@ pub mod toto_service {
                             I :: timer(T :: period_fresh_ident, instant) =>
                             service.handle_period_fresh_ident(instant).await,
                         }
-                    } else { break; }
+                    } else { break; }, _ = service.period_fresh_ident.tick() =>
+                    service.handle_period_fresh_ident().await,
                 }
             }
         }
