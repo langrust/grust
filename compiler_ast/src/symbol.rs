@@ -98,6 +98,25 @@ impl PartialEq for SymbolKind {
         }
     }
 }
+impl SymbolKind {
+    /// True if the kind indicates an event.
+    pub fn is_event(&self) -> bool {
+        use SymbolKind::*;
+        match self {
+            Event => true,
+            EventEnumeration { .. }
+            | EventElement { .. }
+            | Identifier { .. }
+            | Flow { .. }
+            | Function { .. }
+            | Node { .. }
+            | Structure { .. }
+            | Enumeration { .. }
+            | EnumerationElement { .. }
+            | Array { .. } => false,
+        }
+    }
+}
 
 /// Symbol from the symbol table.
 #[derive(Clone)]
@@ -310,6 +329,17 @@ impl SymbolTable {
             self.insert_symbol(symbol, false, Location::default(), &mut vec![])
                 .expect("you should not fail");
         });
+    }
+
+    /// Yields all the events in the table.
+    pub fn all_events<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {
+        self.table.iter().filter_map(|(idx, sym)| {
+            if sym.kind.is_event() {
+                Some(*idx)
+            } else {
+                None
+            }
+        })
     }
 
     /// Create local context in symbol table.

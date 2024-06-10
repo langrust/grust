@@ -257,6 +257,18 @@ impl FlowKind {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         input.peek(keyword::signal) || input.peek(keyword::event)
     }
+
+    #[inline]
+    pub fn is_signal(&self) -> bool {
+        match self {
+            Self::Signal(_) => true,
+            Self::Event(_) => false,
+        }
+    }
+    #[inline]
+    pub fn is_event(&self) -> bool {
+        !self.is_signal()
+    }
 }
 impl Parse for FlowKind {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {

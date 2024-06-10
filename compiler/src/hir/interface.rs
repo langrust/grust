@@ -96,3 +96,36 @@ pub enum FlowStatement {
     Import(FlowImport),
     Export(FlowExport),
 }
+impl FlowStatement {
+    /// Retrieves the component index and its inputs if the statement contains an invocation.
+    pub fn try_get_call(&self) -> Option<(usize, &Vec<(usize, flow::Expr)>)> {
+        use FlowStatement::*;
+        match self {
+            Declaration(FlowDeclaration {
+                flow_expression:
+                    flow::Expr {
+                        kind:
+                            flow::Kind::ComponentCall {
+                                component_id,
+                                inputs,
+                            },
+                        ..
+                    },
+                ..
+            })
+            | Instantiation(FlowInstantiation {
+                flow_expression:
+                    flow::Expr {
+                        kind:
+                            flow::Kind::ComponentCall {
+                                component_id,
+                                inputs,
+                            },
+                        ..
+                    },
+                ..
+            }) => Some((*component_id, inputs)),
+            Import(_) | Export(_) | Declaration(_) | Instantiation(_) => None,
+        }
+    }
+}
