@@ -329,6 +329,7 @@ impl Context {
 }
 pub mod toto_service {
     use super::*;
+    use futures::{sink::SinkExt, stream::StreamExt};
     use TotoServiceInput as I;
     use TotoServiceOutput as O;
     pub enum TotoServiceInput {
@@ -350,10 +351,10 @@ pub mod toto_service {
         speed_limiter: SpeedLimiterState,
         period_fresh_ident: tokio::time::Interval,
         period_fresh_ident_1: tokio::time::Interval,
-        output: tokio::sync::mpsc::Sender<O>,
+        output: futures::channel::mpsc::Sender<O>,
     }
     impl TotoService {
-        pub fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
+        pub fn new(output: futures::channel::mpsc::Sender<O>) -> TotoService {
             let context = Context::init();
             let process_set_speed = ProcessSetSpeedState::init();
             let speed_limiter = SpeedLimiterState::init();
@@ -371,11 +372,10 @@ pub mod toto_service {
             }
         }
         pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
-            use futures::StreamExt;
             tokio::pin!(input);
             let mut service = self;
             loop {
-                tokio::select! { input = input . next () => match input . unwrap () { I :: activation (activation) => service . handle_activation (activation) . await , I :: set_speed (set_speed) => service . handle_set_speed (set_speed) . await , I :: speed (speed) => service . handle_speed (speed) . await , I :: vacuum_brake (vacuum_brake) => service . handle_vacuum_brake (vacuum_brake) . await , I :: kickdown (kickdown) => service . handle_kickdown (kickdown) . await , I :: failure (failure) => service . handle_failure (failure) . await , I :: vdc (vdc) => service . handle_vdc (vdc) . await } , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , _ = service . period_fresh_ident_1 . tick () => service . handle_period_fresh_ident_1 () . await , }
+                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: activation (activation) => service . handle_activation (activation) . await , I :: set_speed (set_speed) => service . handle_set_speed (set_speed) . await , I :: speed (speed) => service . handle_speed (speed) . await , I :: vacuum_brake (vacuum_brake) => service . handle_vacuum_brake (vacuum_brake) . await , I :: kickdown (kickdown) => service . handle_kickdown (kickdown) . await , I :: failure (failure) => service . handle_failure (failure) . await , I :: vdc (vdc) => service . handle_vdc (vdc) . await } } else { break ; } , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , _ = service . period_fresh_ident_1 . tick () => service . handle_period_fresh_ident_1 () . await , }
             }
         }
         async fn handle_activation(&mut self, activation: ActivationResquest) {

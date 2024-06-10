@@ -72,6 +72,7 @@ impl Context {
 }
 pub mod toto_service {
     use super::*;
+    use futures::{sink::SinkExt, stream::StreamExt};
     use TotoServiceInput as I;
     use TotoServiceOutput as O;
     pub enum TotoServiceInput {
@@ -85,10 +86,10 @@ pub mod toto_service {
     pub struct TotoService {
         context: Context,
         braking_state: BrakingStateState,
-        output: tokio::sync::mpsc::Sender<O>,
+        output: futures::channel::mpsc::Sender<O>,
     }
     impl TotoService {
-        pub fn new(output: tokio::sync::mpsc::Sender<O>) -> TotoService {
+        pub fn new(output: futures::channel::mpsc::Sender<O>) -> TotoService {
             let context = Context::init();
             let braking_state = BrakingStateState::init();
             TotoService {
@@ -98,7 +99,6 @@ pub mod toto_service {
             }
         }
         pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
-            use futures::StreamExt;
             tokio::pin!(input);
             let mut service = self;
             let timeout_fresh_ident = tokio::time::sleep_until(
@@ -106,7 +106,7 @@ pub mod toto_service {
             );
             tokio::pin!(timeout_fresh_ident);
             loop {
-                tokio::select! { input = input . next () => match input . unwrap () { I :: speed_km_h (speed_km_h) => service . handle_speed_km_h (speed_km_h) . await , I :: pedestrian_l (pedestrian_l) => service . handle_pedestrian_l (pedestrian_l , timeout_fresh_ident . as_mut ()) . await , I :: pedestrian_r (pedestrian_r) => service . handle_pedestrian_r (pedestrian_r) . await } , _ = timeout_fresh_ident . as_mut () => service . handle_timeout_fresh_ident (timeout_fresh_ident . as_mut ()) . await , }
+                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: speed_km_h (speed_km_h) => service . handle_speed_km_h (speed_km_h) . await , I :: pedestrian_l (pedestrian_l) => service . handle_pedestrian_l (pedestrian_l , timeout_fresh_ident . as_mut ()) . await , I :: pedestrian_r (pedestrian_r) => service . handle_pedestrian_r (pedestrian_r) . await } } else { break ; } , _ = timeout_fresh_ident . as_mut () => service . handle_timeout_fresh_ident (timeout_fresh_ident . as_mut ()) . await , }
             }
         }
         async fn handle_speed_km_h(&mut self, speed_km_h: f64) {
