@@ -55,6 +55,7 @@ use interface::{
     input::Message,
     Braking, Input, Output, Pedestrian, Speed,
 };
+use priority_stream::prio_stream;
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
 // include the `interface` module, which is generated from interface.proto.
@@ -89,6 +90,12 @@ fn from_toto_service_output(output: TotoServiceOutput) -> Result<Output, Status>
     }
 }
 
+impl Input {
+    pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
+        v1.timestamp.total_cmp(&v2.timestamp)
+    }
+}
+
 pub struct AebRuntime;
 
 #[tonic::async_trait]
@@ -102,9 +109,13 @@ impl Aeb for AebRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunAEBStream>, Status> {
-        let input_stream = request
-            .into_inner()
-            .filter_map(|input| async { input.map(into_toto_service_input).ok().flatten() });
+        let input_stream = prio_stream::<_, _, 100>(
+            request
+                .into_inner()
+                .filter_map(|input| async { input.ok() }),
+            Input::order,
+        )
+        .filter_map(|input| async { into_toto_service_input(input) });
 
         let (sink, output_stream) = futures::channel::mpsc::channel(4);
         let toto_service = TotoService::new(sink);
