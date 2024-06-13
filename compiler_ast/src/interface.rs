@@ -182,6 +182,48 @@ impl Parse for OnChange {
     }
 }
 
+/// GReact `merge` operator.
+pub struct Merge {
+    pub merge_token: keyword::merge,
+    pub paren_token: token::Paren,
+    /// Input expressions.
+    pub flow_expression_1: Box<FlowExpression>,
+    pub flow_expression_2: Box<FlowExpression>,
+}
+impl Merge {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::merge)
+    }
+}
+impl Parse for Merge {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let merge_token: keyword::merge = input.parse()?;
+        let content;
+        let paren_token: token::Paren = parenthesized!(content in input);
+        let flow_expression_1: FlowExpression = content.parse()?;
+        let flow_expression_2: FlowExpression = content.parse()?;
+        if content.is_empty() {
+            Ok(Merge::new(
+                merge_token,
+                paren_token,
+                flow_expression_1,
+                flow_expression_2,
+            ))
+        } else {
+            Err(content.error("expected two input expressions"))
+        }
+    }
+}
+mk_new! { impl Merge =>
+    new {
+        merge_token: keyword::merge,
+        paren_token: token::Paren,
+        flow_expression_1: FlowExpression = flow_expression_1.into(),
+        flow_expression_2: FlowExpression = flow_expression_2.into(),
+    }
+
+}
+
 /// Component call.
 pub struct ComponentCall {
     /// Identifier to the component to call.
@@ -223,6 +265,8 @@ pub enum FlowExpression {
     Throttle(Throttle),
     /// GReact `on_change` operator.
     OnChange(OnChange),
+    /// GReact `merge` operator.
+    Merge(Merge),
     /// Component call.
     ComponentCall(ComponentCall),
     /// Identifier to flow.
@@ -240,6 +284,8 @@ impl Parse for FlowExpression {
             Ok(FlowExpression::Throttle(input.parse()?))
         } else if OnChange::peek(input) {
             Ok(FlowExpression::OnChange(input.parse()?))
+        } else if Merge::peek(input) {
+            Ok(FlowExpression::Merge(input.parse()?))
         } else if input.fork().call(ComponentCall::parse).is_ok() {
             Ok(FlowExpression::ComponentCall(input.parse()?))
         } else {
