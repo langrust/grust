@@ -24,20 +24,29 @@ impl Parse for Sample {
         let sample_token: keyword::sample = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
+        let flow_expression: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
         let period_ms: syn::LitInt = content.parse()?;
         if content.is_empty() {
-            Ok(Sample {
+            Ok(Sample::new(
                 sample_token,
                 paren_token,
                 flow_expression,
                 comma_token,
                 period_ms,
-            })
+            ))
         } else {
             Err(content.error("expected two input expressions"))
         }
+    }
+}
+mk_new! { impl Sample =>
+    new {
+        sample_token: keyword::sample,
+        paren_token: token::Paren,
+        flow_expression: FlowExpression = flow_expression.into(),
+        comma_token: Token![,],
+        period_ms: syn::LitInt,
     }
 }
 
@@ -61,20 +70,29 @@ impl Parse for Scan {
         let scan_token: keyword::scan = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
+        let flow_expression: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
         let period_ms: syn::LitInt = content.parse()?;
         if content.is_empty() {
-            Ok(Scan {
+            Ok(Scan::new(
                 scan_token,
                 paren_token,
                 flow_expression,
                 comma_token,
                 period_ms,
-            })
+            ))
         } else {
             Err(content.error("expected two input expressions"))
         }
+    }
+}
+mk_new! { impl Scan =>
+    new {
+        scan_token: keyword::scan,
+        paren_token: token::Paren,
+        flow_expression: FlowExpression = flow_expression.into(),
+        comma_token: Token![,],
+        period_ms: syn::LitInt,
     }
 }
 
@@ -98,20 +116,29 @@ impl Parse for Timeout {
         let timeout_token: keyword::timeout = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
+        let flow_expression: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
         let deadline: syn::LitInt = content.parse()?;
         if content.is_empty() {
-            Ok(Timeout {
+            Ok(Timeout::new(
                 timeout_token,
                 paren_token,
                 flow_expression,
                 comma_token,
                 deadline,
-            })
+            ))
         } else {
             Err(content.error("expected two input expressions"))
         }
+    }
+}
+mk_new! { impl Timeout =>
+    new {
+        timeout_token: keyword::timeout,
+        paren_token: token::Paren,
+        flow_expression: FlowExpression = flow_expression.into(),
+        comma_token: Token![,],
+        deadline: syn::LitInt,
     }
 }
 
@@ -135,21 +162,31 @@ impl Parse for Throttle {
         let throttle_token: keyword::throttle = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
+        let flow_expression: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
         let delta: Constant = content.parse()?;
         if content.is_empty() {
-            Ok(Throttle {
+            Ok(Throttle::new(
                 throttle_token,
                 paren_token,
                 flow_expression,
                 comma_token,
                 delta,
-            })
+            ))
         } else {
             Err(content.error("expected two input expressions"))
         }
     }
+}
+mk_new! { impl Throttle =>
+    new {
+        throttle_token: keyword::throttle,
+        paren_token: token::Paren,
+        flow_expression: FlowExpression = flow_expression.into(),
+        comma_token: Token![,],
+        delta: Constant,
+    }
+
 }
 
 /// GReact `on_change` operator.
@@ -169,17 +206,21 @@ impl Parse for OnChange {
         let on_change_token: keyword::on_change = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
+        let flow_expression: FlowExpression = content.parse()?;
         if content.is_empty() {
-            Ok(OnChange {
-                on_change_token,
-                paren_token,
-                flow_expression,
-            })
+            Ok(OnChange::new(on_change_token, paren_token, flow_expression))
         } else {
-            Err(content.error("expected two input expressions"))
+            Err(content.error("expected one input expression"))
         }
     }
+}
+mk_new! { impl OnChange =>
+    new {
+        on_change_token: keyword::on_change,
+        paren_token: token::Paren,
+        flow_expression: FlowExpression = flow_expression.into(),
+    }
+
 }
 
 /// GReact `merge` operator.
@@ -188,6 +229,7 @@ pub struct Merge {
     pub paren_token: token::Paren,
     /// Input expressions.
     pub flow_expression_1: Box<FlowExpression>,
+    pub comma_token: Token![,],
     pub flow_expression_2: Box<FlowExpression>,
 }
 impl Merge {
@@ -201,12 +243,14 @@ impl Parse for Merge {
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression_1: FlowExpression = content.parse()?;
+        let comma_token = content.parse()?;
         let flow_expression_2: FlowExpression = content.parse()?;
         if content.is_empty() {
             Ok(Merge::new(
                 merge_token,
                 paren_token,
                 flow_expression_1,
+                comma_token,
                 flow_expression_2,
             ))
         } else {
@@ -219,6 +263,7 @@ mk_new! { impl Merge =>
         merge_token: keyword::merge,
         paren_token: token::Paren,
         flow_expression_1: FlowExpression = flow_expression_1.into(),
+        comma_token: Token![,],
         flow_expression_2: FlowExpression = flow_expression_2.into(),
     }
 
@@ -270,28 +315,40 @@ pub enum FlowExpression {
     /// Component call.
     ComponentCall(ComponentCall),
     /// Identifier to flow.
-    Ident(syn::Ident),
+    Ident(String),
 }
 impl Parse for FlowExpression {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if Sample::peek(input) {
-            Ok(FlowExpression::Sample(input.parse()?))
+            Ok(Self::sample(input.parse()?))
         } else if Scan::peek(input) {
-            Ok(FlowExpression::Scan(input.parse()?))
+            Ok(Self::scan(input.parse()?))
         } else if Timeout::peek(input) {
-            Ok(FlowExpression::Timeout(input.parse()?))
+            Ok(Self::timeout(input.parse()?))
         } else if Throttle::peek(input) {
-            Ok(FlowExpression::Throttle(input.parse()?))
+            Ok(Self::throttle(input.parse()?))
         } else if OnChange::peek(input) {
-            Ok(FlowExpression::OnChange(input.parse()?))
+            Ok(Self::on_change(input.parse()?))
         } else if Merge::peek(input) {
-            Ok(FlowExpression::Merge(input.parse()?))
+            Ok(Self::merge(input.parse()?))
         } else if input.fork().call(ComponentCall::parse).is_ok() {
-            Ok(FlowExpression::ComponentCall(input.parse()?))
+            Ok(Self::comp_call(input.parse()?))
         } else {
-            Ok(FlowExpression::Ident(input.parse()?))
+            let ident: syn::Ident = input.parse()?;
+            Ok(Self::ident(ident.to_string()))
         }
     }
+}
+
+mk_new! { impl FlowExpression =>
+    Ident: ident (val: impl Into<String> = val.into())
+    Sample: sample (val: Sample = val)
+    Scan: scan (val: Scan = val)
+    Timeout: timeout (val: Timeout = val)
+    Throttle: throttle (val: Throttle = val)
+    OnChange: on_change (val: OnChange = val)
+    Merge: merge (val: Merge = val)
+    ComponentCall: comp_call (val: ComponentCall = val)
 }
 
 #[derive(Clone)]
