@@ -125,6 +125,14 @@ impl flow::Expr {
                 flow_expression, ..
             }
             | flow::Kind::OnChange { flow_expression } => flow_expression.get_dependencies(),
+            flow::Kind::Merge {
+                flow_expression_1,
+                flow_expression_2,
+            } => {
+                let mut dependencies = flow_expression_1.get_dependencies();
+                dependencies.extend(flow_expression_2.get_dependencies());
+                dependencies
+            }
             flow::Kind::ComponentCall { inputs, .. } => inputs
                 .iter()
                 .flat_map(|(_, flow_expression)| flow_expression.get_dependencies())
