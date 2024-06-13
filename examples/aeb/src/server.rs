@@ -48,7 +48,7 @@ mod aeb {
     }
 }
 
-use aeb::toto_service::{TotoService, TotoServiceInput, TotoServiceOutput};
+use aeb::toto_service::{TotoService, TotoServiceInput, TotoServiceOutput, TotoServiceTimer};
 use futures::StreamExt;
 use interface::{
     aeb_server::{Aeb, AebServer},
@@ -66,12 +66,14 @@ pub mod interface {
 fn into_toto_service_input(input: Input) -> Option<TotoServiceInput> {
     match input.message {
         Some(Message::PedestrianL(Pedestrian { distance })) => {
-            Some(TotoServiceInput::pedestrian_l(distance))
+            Some(TotoServiceInput::pedestrian_l(distance, input.timestamp))
         }
         Some(Message::PedestrianR(Pedestrian { distance })) => {
-            Some(TotoServiceInput::pedestrian_r(distance))
+            Some(TotoServiceInput::pedestrian_r(distance, input.timestamp))
         }
-        Some(Message::Speed(Speed { value })) => Some(TotoServiceInput::speed_km_h(value)),
+        Some(Message::Speed(Speed { value })) => {
+            Some(TotoServiceInput::speed_km_h(value, input.timestamp))
+        }
         None => None,
     }
 }
@@ -90,9 +92,17 @@ fn from_toto_service_output(output: TotoServiceOutput) -> Result<Output, Status>
     }
 }
 
-impl Input {
+impl TotoServiceInput {
+    pub fn get_timestamp(&self) -> i64 {
+        match self {
+            TotoServiceInput::speed_km_h(_, timestamp)
+            | TotoServiceInput::pedestrian_l(_, timestamp)
+            | TotoServiceInput::pedestrian_r(_, timestamp)
+            | TotoServiceInput::timer(_, timestamp) => *timestamp,
+        }
+    }
     pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
-        v1.timestamp.total_cmp(&v2.timestamp)
+        v1.get_timestamp().cmp(&v2.get_timestamp())
     }
 }
 
@@ -109,16 +119,22 @@ impl Aeb for AebRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunAEBStream>, Status> {
-        let input_stream = prio_stream::<_, _, 100>(
-            request
-                .into_inner()
-                .filter_map(|input| async { input.ok() }),
-            Input::order,
-        )
-        .filter_map(|input| async { into_toto_service_input(input) });
+        let (timer_sink, timer_stream) = futures::channel::mpsc::channel(4);
+        let (output_sink, output_stream) = futures::channel::mpsc::channel(4);
 
-        let (sink, output_stream) = futures::channel::mpsc::channel(4);
-        let toto_service = TotoService::new(sink);
+        let request_stream = request
+            .into_inner()
+            .filter_map(|input| async { input.map(into_toto_service_input).ok().flatten() });
+        let timer_stream = timer_stream.map(|(timer, timestamp): (TotoServiceTimer, i64)| {
+            let next_time = timer.get_timer() + timestamp;
+            TotoServiceInput::timer(timer, next_time)
+        }); // TODO: this needs to be changed to a proper timer stream
+        let input_stream = prio_stream::<_, _, 100>(
+            futures::stream::select(request_stream, timer_stream),
+            TotoServiceInput::order,
+        );
+
+        let toto_service = TotoService::new(output_sink, timer_sink);
         tokio::spawn(toto_service.run_loop(input_stream));
 
         Ok(Response::new(output_stream.map(
