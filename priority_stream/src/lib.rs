@@ -11,19 +11,18 @@ pub struct PrioQueue<T, F, const N: usize>
 where
     F: FnMut(&T, &T) -> Ordering,
 {
-    queue: [T; N],
+    queue: [Option<T>; N],
     order: F,
     len: usize,
 }
 impl<T, F, const N: usize> PrioQueue<T, F, N>
 where
-    T: Default,
     F: FnMut(&T, &T) -> Ordering,
 {
     /// Create empty queue.
     pub fn new(order: F) -> Self {
         PrioQueue {
-            queue: array_init::array_init(|_| Default::default()),
+            queue: array_init::array_init(|_| None),
             order,
             len: 0,
         }
@@ -53,10 +52,10 @@ where
 
         // puts the value at the right place
         for index in 0..self.len {
-            match (self.order)(&value, &self.queue[index]) {
+            match (self.order)(&value, self.queue[index].as_ref().unwrap()) {
                 Ordering::Greater | Ordering::Equal => {
                     self.queue[index..=self.len].rotate_right(1);
-                    self.queue[index] = value;
+                    self.queue[index] = Some(value);
                     self.len += 1;
                     return;
                 }
@@ -64,7 +63,7 @@ where
             }
         }
         // if not inserted, then put it at the end
-        self.queue[self.len] = value;
+        self.queue[self.len] = Some(value);
         self.len += 1;
     }
     /// Pop the smallest element of the queue.
@@ -74,7 +73,7 @@ where
         } else {
             let res = std::mem::take(&mut self.queue[self.len - 1]);
             self.len -= 1;
-            Some(res)
+            res
         }
     }
     pub fn println(&self)
@@ -95,11 +94,15 @@ where
 }
 impl<T, F, const N: usize> Into<Vec<T>> for PrioQueue<T, F, N>
 where
-    T: Default,
     F: FnMut(&T, &T) -> Ordering,
 {
     fn into(self) -> Vec<T> {
-        let v = self.queue.into_iter().take(self.len).collect::<Vec<_>>();
+        let v = self
+            .queue
+            .into_iter()
+            .take(self.len)
+            .map(|opt| opt.unwrap())
+            .collect::<Vec<_>>();
         debug_assert!(v.len() == self.len);
         v
     }
@@ -179,7 +182,7 @@ where
 impl<S, F, const N: usize> Stream for PrioStream<S, F, N>
 where
     S: Stream,
-    S::Item: Default + Debug,
+    S::Item: Debug,
     F: FnMut(&S::Item, &S::Item) -> Ordering,
 {
     type Item = S::Item;
@@ -222,7 +225,6 @@ where
 pub fn prio_stream<S, F, const N: usize>(stream: S, order: F) -> PrioStream<S, F, N>
 where
     S: Stream,
-    S::Item: Default,
     F: FnMut(&S::Item, &S::Item) -> Ordering,
 {
     PrioStream {
@@ -240,9 +242,8 @@ mod test {
 
     use crate::prio_stream;
 
-    #[derive(Debug, Default, PartialEq)]
+    #[derive(Debug, PartialEq)]
     pub enum Union<T1, T2> {
-        #[default]
         E0,
         E1(T1),
         E2(T2),
