@@ -117,7 +117,9 @@ impl Interface {
                         ..
                     }) => {
                         match &flow_expression.kind {
-                            flow::Kind::Ident { .. } | flow::Kind::Throttle { .. } => (),
+                            flow::Kind::Ident { .. }
+                            | flow::Kind::Throttle { .. }
+                            | flow::Kind::Merge { .. } => (),
                             flow::Kind::OnChange { .. } => {
                                 // get the identifier of the created event
                                 let mut ids = pattern.identifiers();
@@ -492,17 +494,16 @@ fn compute_flow_instructions(
                     let mut ids = pattern.identifiers();
                     debug_assert!(ids.len() == 1);
                     let id_pattern = ids.pop().unwrap();
-
-                    // get the id of flow_expression, debug-check there is only one flow
-                    let mut ids = flow_expression.get_dependencies();
-                    debug_assert!(ids.len() == 1);
-                    let id_source = ids.pop().unwrap();
-
                     let flow_name = symbol_table.get_name(id_pattern);
-                    let source_name = symbol_table.get_name(id_source);
 
                     match &flow_expression.kind {
                         flow::Kind::Ident { .. } => {
+                            // get the id of flow_expression, debug-check there is only one flow
+                            let mut ids = flow_expression.get_dependencies();
+                            debug_assert!(ids.len() == 1);
+                            let id_source = ids.pop().unwrap();
+                            let source_name = symbol_table.get_name(id_source);
+
                             // only set identifier if source is a signal or an activated event
                             match symbol_table.get_flow_kind(id_source) {
                                 FlowKind::Signal(_) =>
@@ -554,6 +555,12 @@ fn compute_flow_instructions(
                             }
                         }
                         flow::Kind::Sample { .. } => {
+                            // get the id of flow_expression, debug-check there is only one flow
+                            let mut ids = flow_expression.get_dependencies();
+                            debug_assert!(ids.len() == 1);
+                            let id_source = ids.pop().unwrap();
+                            let source_name = symbol_table.get_name(id_source);
+
                             let (timer_id, _) = timing_events
                                 .get(&statement_id)
                                 .expect("there should be a timing event");
@@ -586,6 +593,12 @@ fn compute_flow_instructions(
                             }
                         }
                         flow::Kind::Throttle { delta, .. } => {
+                            // get the id of flow_expression, debug-check there is only one flow
+                            let mut ids = flow_expression.get_dependencies();
+                            debug_assert!(ids.len() == 1);
+                            let id_source = ids.pop().unwrap();
+                            let source_name = symbol_table.get_name(id_source);
+
                             // source is a signal, if it is not defined, then define it
                             if !defined_signals.contains(&id_source) {
                                 instructions.push(FlowInstruction::Let(
@@ -616,6 +629,12 @@ fn compute_flow_instructions(
                             add_dependent_statements = true;
                         }
                         flow::Kind::OnChange { .. } => {
+                            // get the id of flow_expression, debug-check there is only one flow
+                            let mut ids = flow_expression.get_dependencies();
+                            debug_assert!(ids.len() == 1);
+                            let id_source = ids.pop().unwrap();
+                            let source_name = symbol_table.get_name(id_source);
+
                             // source is a signal, if it is not defined, then define it
                             if !defined_signals.contains(&id_source) {
                                 instructions.push(FlowInstruction::Let(
@@ -700,6 +719,12 @@ fn compute_flow_instructions(
                             break;
                         }
                         flow::Kind::Timeout { deadline, .. } => {
+                            // get the id of flow_expression, debug-check there is only one flow
+                            let mut ids = flow_expression.get_dependencies();
+                            debug_assert!(ids.len() == 1);
+                            let id_source = ids.pop().unwrap();
+                            let source_name = symbol_table.get_name(id_source);
+
                             let (timer_id, timer) = timing_events
                                 .get(&statement_id)
                                 .expect("there should be a timing event");
@@ -750,6 +775,12 @@ fn compute_flow_instructions(
                             }
                         }
                         flow::Kind::Scan { .. } => {
+                            // get the id of flow_expression, debug-check there is only one flow
+                            let mut ids = flow_expression.get_dependencies();
+                            debug_assert!(ids.len() == 1);
+                            let id_source = ids.pop().unwrap();
+                            let source_name = symbol_table.get_name(id_source);
+
                             let (timer_id, _) = timing_events
                                 .get(&statement_id)
                                 .expect("there should be a timing event");
@@ -777,6 +808,36 @@ fn compute_flow_instructions(
                                         },
                                     ))
                                 }
+
+                                // propagate computations
+                                add_dependent_statements = true;
+                            }
+                        }
+                        flow::Kind::Merge { .. } => {
+                            // get the potential activated event
+                            let dependencies: HashSet<usize> =
+                                flow_expression.get_dependencies().into_iter().collect();
+                            let mut overlapping_events =
+                                dependencies.intersection(&encountered_events);
+                            debug_assert!(
+                                overlapping_events.clone().collect::<Vec<_>>().len() <= 1
+                            );
+
+                            // if one event is activated, create event
+                            if let Some(flow_event_id) = overlapping_events.next() {
+                                // get event's name
+                                let event_name = symbol_table.get_name(*flow_event_id);
+
+                                // if activated, create event
+                                encountered_events.insert(id_pattern);
+
+                                // add event creation in instruction
+                                instructions.push(FlowInstruction::Let(
+                                    flow_name.clone(),
+                                    Expression::Identifier {
+                                        identifier: event_name.clone(),
+                                    },
+                                ));
 
                                 // propagate computations
                                 add_dependent_statements = true;
@@ -956,7 +1017,8 @@ impl FlowStatement {
                 }
                 flow::Kind::Ident { .. }
                 | flow::Kind::OnChange { .. }
-                | flow::Kind::Timeout { .. } => (),
+                | flow::Kind::Timeout { .. }
+                | flow::Kind::Merge { .. } => (),
             },
             _ => (),
         }
