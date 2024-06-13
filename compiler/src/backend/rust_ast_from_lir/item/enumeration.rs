@@ -8,9 +8,9 @@ prelude! { just
 /// Transform LIR enumeration into RustAST enumeration.
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
     let attribute: Attribute = if conf::greusot() {
-        parse_quote!(#[derive(Clone, Copy)])
+        parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)])
     } else {
-        parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)])
+        parse_quote!(#[derive(Clone, Copy, PartialEq, Default)])
     };
     ItemEnum {
         attrs: vec![attribute],
@@ -24,7 +24,7 @@ pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
             .iter()
             .enumerate()
             .map(|(index, element)| {
-                let attrs: Vec<Attribute> = if index == 0 && (!conf::greusot()) {
+                let attrs: Vec<Attribute> = if index == 0 {
                     vec![parse_quote!(#[default])]
                 } else {
                     vec![]

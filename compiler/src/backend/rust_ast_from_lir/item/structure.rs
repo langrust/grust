@@ -22,9 +22,9 @@ pub fn rust_ast_from_lir(structure: Structure) -> ItemStruct {
     });
     let name = Ident::new(&structure.name, Span::call_site());
     let attribute: Attribute = if conf::greusot() {
-        parse_quote!(#[derive(Clone, Copy)])
+        parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)])
     } else {
-        parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)])
+        parse_quote!(#[derive(Clone, Copy, PartialEq, Default)])
     };
     parse_quote! {
         #attribute

@@ -22,7 +22,7 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
 
     if conf::greusot() {
         rust_items.push(syn::Item::Use(parse_quote!(
-            use creusot_contracts::{requires, ensures};
+            use creusot_contracts::{ensures, logic, open, prelude, requires, DeepModel};
         )))
     }
 

@@ -37,7 +37,7 @@ pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
             }
         });
         let name = Ident::new("Context", Span::call_site());
-        let attribute: Attribute = parse_quote!(#[derive(Clone, Copy, Debug, PartialEq, Default)]);
+        let attribute: Attribute = parse_quote!(#[derive(Clone, Copy, PartialEq, Default)]);
         parse_quote! {
             #attribute
             pub struct #name {
