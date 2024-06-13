@@ -385,13 +385,25 @@ pub mod toto_service {
     use futures::{sink::SinkExt, stream::StreamExt};
     use TotoServiceInput as I;
     use TotoServiceOutput as O;
+    use TotoServiceTimer as T;
+    pub enum TotoServiceTimer {
+        period_fresh_ident,
+    }
+    impl TotoServiceTimer {
+        pub fn get_timer(&self) -> i64 {
+            match self {
+                T::period_fresh_ident => 10u64 as i64,
+            }
+        }
+    }
     pub enum TotoServiceInput {
-        activation(ActivationResquest),
-        set_speed(f64),
-        speed(f64),
-        vacuum_brake(VacuumBrakeState),
-        kickdown(KickdownState),
-        vdc(VdcState),
+        activation(ActivationResquest, i64),
+        set_speed(f64, i64),
+        speed(f64, i64),
+        vacuum_brake(VacuumBrakeState, i64),
+        kickdown(KickdownState, i64),
+        vdc(VdcState, i64),
+        timer(T, i64),
     }
     pub enum TotoServiceOutput {
         in_regulation(bool),
@@ -401,11 +413,14 @@ pub mod toto_service {
         context: Context,
         process_set_speed: ProcessSetSpeedState,
         speed_limiter: SpeedLimiterState,
-        period_fresh_ident: tokio::time::Interval,
         output: futures::channel::mpsc::Sender<O>,
+        timer: futures::channel::mpsc::Sender<(T, i64)>,
     }
     impl TotoService {
-        pub fn new(output: futures::channel::mpsc::Sender<O>) -> TotoService {
+        pub fn new(
+            output: futures::channel::mpsc::Sender<O>,
+            timer: futures::channel::mpsc::Sender<(T, i64)>,
+        ) -> TotoService {
             let context = Context::init();
             let process_set_speed = ProcessSetSpeedState::init();
             let speed_limiter = SpeedLimiterState::init();
@@ -415,36 +430,36 @@ pub mod toto_service {
                 context,
                 process_set_speed,
                 speed_limiter,
-                period_fresh_ident,
                 output,
+                timer,
             }
         }
         pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
             tokio::pin!(input);
             let mut service = self;
             loop {
-                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: activation (activation) => service . handle_activation (activation) . await , I :: set_speed (set_speed) => service . handle_set_speed (set_speed) . await , I :: speed (speed) => service . handle_speed (speed) . await , I :: vacuum_brake (vacuum_brake) => service . handle_vacuum_brake (vacuum_brake) . await , I :: kickdown (kickdown) => service . handle_kickdown (kickdown) . await , I :: vdc (vdc) => service . handle_vdc (vdc) . await } } else { break ; } , _ = service . period_fresh_ident . tick () => service . handle_period_fresh_ident () . await , }
+                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: activation (activation , timestamp) => service . handle_activation (timestamp , activation) . await , I :: set_speed (set_speed , timestamp) => service . handle_set_speed (timestamp , set_speed) . await , I :: speed (speed , timestamp) => service . handle_speed (timestamp , speed) . await , I :: vacuum_brake (vacuum_brake , timestamp) => service . handle_vacuum_brake (timestamp , vacuum_brake) . await , I :: kickdown (kickdown , timestamp) => service . handle_kickdown (timestamp , kickdown) . await , I :: vdc (vdc , timestamp) => service . handle_vdc (timestamp , vdc) . await , I :: timer (T :: period_fresh_ident , timestamp) => service . handle_period_fresh_ident (timestamp) . await , } } else { break ; } }
             }
         }
-        async fn handle_activation(&mut self, activation: ActivationResquest) {
+        async fn handle_activation(&mut self, timestamp: i64, activation: ActivationResquest) {
             self.context.activation = activation;
         }
-        async fn handle_set_speed(&mut self, set_speed: f64) {
+        async fn handle_set_speed(&mut self, timestamp: i64, set_speed: f64) {
             self.context.set_speed = set_speed;
         }
-        async fn handle_speed(&mut self, speed: f64) {
+        async fn handle_speed(&mut self, timestamp: i64, speed: f64) {
             self.context.speed = speed;
         }
-        async fn handle_vacuum_brake(&mut self, vacuum_brake: VacuumBrakeState) {
+        async fn handle_vacuum_brake(&mut self, timestamp: i64, vacuum_brake: VacuumBrakeState) {
             self.context.vacuum_brake = vacuum_brake;
         }
-        async fn handle_kickdown(&mut self, kickdown: KickdownState) {
+        async fn handle_kickdown(&mut self, timestamp: i64, kickdown: KickdownState) {
             self.context.kickdown = kickdown;
         }
-        async fn handle_vdc(&mut self, vdc: VdcState) {
+        async fn handle_vdc(&mut self, timestamp: i64, vdc: VdcState) {
             self.context.vdc = vdc;
         }
-        async fn handle_period_fresh_ident(&mut self) {
+        async fn handle_period_fresh_ident(&mut self, timestamp: i64) {
             let (state, on_state, in_regulation_aux, state_update) = self
                 .speed_limiter
                 .step(self.context.get_speed_limiter_inputs());

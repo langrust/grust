@@ -75,10 +75,22 @@ pub mod toto_service {
     use futures::{sink::SinkExt, stream::StreamExt};
     use TotoServiceInput as I;
     use TotoServiceOutput as O;
+    use TotoServiceTimer as T;
+    pub enum TotoServiceTimer {
+        timeout_fresh_ident,
+    }
+    impl TotoServiceTimer {
+        pub fn get_timer(&self) -> i64 {
+            match self {
+                T::timeout_fresh_ident => 500u64 as i64,
+            }
+        }
+    }
     pub enum TotoServiceInput {
-        speed_km_h(f64),
-        pedestrian_l(f64),
-        pedestrian_r(f64),
+        speed_km_h(f64, i64),
+        pedestrian_l(f64, i64),
+        pedestrian_r(f64, i64),
+        timer(T, i64),
     }
     pub enum TotoServiceOutput {
         brakes(Braking),
@@ -87,39 +99,38 @@ pub mod toto_service {
         context: Context,
         braking_state: BrakingStateState,
         output: futures::channel::mpsc::Sender<O>,
+        timer: futures::channel::mpsc::Sender<(T, i64)>,
     }
     impl TotoService {
-        pub fn new(output: futures::channel::mpsc::Sender<O>) -> TotoService {
+        pub fn new(
+            output: futures::channel::mpsc::Sender<O>,
+            timer: futures::channel::mpsc::Sender<(T, i64)>,
+        ) -> TotoService {
             let context = Context::init();
             let braking_state = BrakingStateState::init();
             TotoService {
                 context,
                 braking_state,
                 output,
+                timer,
             }
         }
         pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
             tokio::pin!(input);
             let mut service = self;
-            let timeout_fresh_ident = tokio::time::sleep_until(
-                tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64),
-            );
-            tokio::pin!(timeout_fresh_ident);
             loop {
-                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: speed_km_h (speed_km_h) => service . handle_speed_km_h (speed_km_h) . await , I :: pedestrian_l (pedestrian_l) => service . handle_pedestrian_l (pedestrian_l , timeout_fresh_ident . as_mut ()) . await , I :: pedestrian_r (pedestrian_r) => service . handle_pedestrian_r (pedestrian_r) . await } } else { break ; } , _ = timeout_fresh_ident . as_mut () => service . handle_timeout_fresh_ident (timeout_fresh_ident . as_mut ()) . await , }
+                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: speed_km_h (speed_km_h , timestamp) => service . handle_speed_km_h (timestamp , speed_km_h) . await , I :: pedestrian_l (pedestrian_l , timestamp) => service . handle_pedestrian_l (timestamp , pedestrian_l) . await , I :: pedestrian_r (pedestrian_r , timestamp) => service . handle_pedestrian_r (timestamp , pedestrian_r) . await , I :: timer (T :: timeout_fresh_ident , timestamp) => service . handle_timeout_fresh_ident (timestamp) . await , } } else { break ; } }
             }
         }
-        async fn handle_speed_km_h(&mut self, speed_km_h: f64) {
+        async fn handle_speed_km_h(&mut self, timestamp: i64, speed_km_h: f64) {
             self.context.speed_km_h = speed_km_h;
         }
-        async fn handle_pedestrian_l(
-            &mut self,
-            pedestrian_l: f64,
-            timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
-        ) {
+        async fn handle_pedestrian_l(&mut self, timestamp: i64, pedestrian_l: f64) {
             let pedestrian = Ok(pedestrian_l);
-            timeout_fresh_ident
-                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
+            self.timer
+                .send((T::timeout_fresh_ident, timestamp))
+                .await
+                .unwrap();
             let brakes = self.braking_state.step(
                 self.context
                     .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
@@ -130,14 +141,13 @@ pub mod toto_service {
                 .await
                 .unwrap();
         }
-        async fn handle_pedestrian_r(&mut self, pedestrian_r: f64) {}
-        async fn handle_timeout_fresh_ident(
-            &mut self,
-            timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
-        ) {
+        async fn handle_pedestrian_r(&mut self, timestamp: i64, pedestrian_r: f64) {}
+        async fn handle_timeout_fresh_ident(&mut self, timestamp: i64) {
             let pedestrian = Err(());
-            timeout_fresh_ident
-                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(500u64));
+            self.timer
+                .send((T::timeout_fresh_ident, timestamp))
+                .await
+                .unwrap();
             let brakes = self.braking_state.step(
                 self.context
                     .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
