@@ -43,6 +43,12 @@ pub enum Kind {
         /// Input expression.
         flow_expression: Box<Expr>,
     },
+    /// GReact `merge` operator.
+    Merge {
+        /// Input expressions.
+        flow_expression_1: Box<Expr>,
+        flow_expression_2: Box<Expr>,
+    },
     /// Component call.
     ComponentCall {
         /// Identifier to the component to call.

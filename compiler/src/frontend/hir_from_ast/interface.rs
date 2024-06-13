@@ -230,8 +230,7 @@ impl HIRFromAST for FlowExpression {
         let loc = &location;
         let kind = match self {
             FlowExpression::Ident(ident) => {
-                let name = ident.to_string();
-                let id = symbol_table.get_flow_id(&name, false, location.clone(), errors)?;
+                let id = symbol_table.get_flow_id(&ident, false, location.clone(), errors)?;
                 flow::Kind::Ident { id }
             }
             FlowExpression::ComponentCall(flow_expression) => {
@@ -250,6 +249,9 @@ impl HIRFromAST for FlowExpression {
                 flow_expression.hir_from_ast(loc, symbol_table, errors)?
             }
             FlowExpression::OnChange(flow_expression) => {
+                flow_expression.hir_from_ast(loc, symbol_table, errors)?
+            }
+            FlowExpression::Merge(flow_expression) => {
                 flow_expression.hir_from_ast(loc, symbol_table, errors)?
             }
         };

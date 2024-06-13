@@ -1,3 +1,5 @@
+use ast::interface::Merge;
+
 prelude! {
     ast::{
         expr::{
@@ -584,6 +586,26 @@ impl SimpleHirExt<hir::flow::Kind> for OnChange {
         } = self;
         Ok(hir::flow::Kind::OnChange {
             flow_expression: Box::new(flow_expression.hir_from_ast(symbol_table, errors)?),
+        })
+    }
+}
+
+impl SimpleHirExt<hir::flow::Kind> for Merge {
+    /// Transforms AST into HIR and check identifiers good use.
+    fn hir_from_ast(
+        self,
+        _location: &Location,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<hir::flow::Kind> {
+        let Merge {
+            flow_expression_1,
+            flow_expression_2,
+            ..
+        } = self;
+        Ok(hir::flow::Kind::Merge {
+            flow_expression_1: Box::new(flow_expression_1.hir_from_ast(symbol_table, errors)?),
+            flow_expression_2: Box::new(flow_expression_2.hir_from_ast(symbol_table, errors)?),
         })
     }
 }
