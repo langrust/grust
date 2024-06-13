@@ -117,7 +117,7 @@ impl Interface {
                         ..
                     }) => {
                         match &flow_expression.kind {
-                            flow::Kind::Ident { .. } | flow::Kind::Throtle { .. } => (),
+                            flow::Kind::Ident { .. } | flow::Kind::Throttle { .. } => (),
                             flow::Kind::OnChange { .. } => {
                                 // get the identifier of the created event
                                 let mut ids = pattern.identifiers();
@@ -585,7 +585,7 @@ fn compute_flow_instructions(
                                 add_dependent_statements = true;
                             }
                         }
-                        flow::Kind::Throtle { delta, .. } => {
+                        flow::Kind::Throttle { delta, .. } => {
                             // source is a signal, if it is not defined, then define it
                             if !defined_signals.contains(&id_source) {
                                 instructions.push(FlowInstruction::Let(
@@ -600,7 +600,7 @@ fn compute_flow_instructions(
                             }
 
                             // update created signal
-                            instructions.push(FlowInstruction::IfThrotle(
+                            instructions.push(FlowInstruction::IfThrottle(
                                 flow_name.clone(),
                                 source_name.clone(),
                                 delta.clone(),
@@ -852,7 +852,7 @@ impl FlowStatement {
                 flow_expression,
                 ..
             }) => match &flow_expression.kind {
-                flow::Kind::Throtle { .. } => {
+                flow::Kind::Throttle { .. } => {
                     // get the id of pattern's flow (and check their is only one flow)
                     let mut ids = pattern.identifiers();
                     debug_assert!(ids.len() == 1);

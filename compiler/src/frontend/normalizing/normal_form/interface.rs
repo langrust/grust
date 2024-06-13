@@ -104,7 +104,7 @@ impl flow::Expr {
             flow::Kind::Timeout {
                 flow_expression, ..
             } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            flow::Kind::Throtle {
+            flow::Kind::Throttle {
                 flow_expression, ..
             } => flow_expression.into_flow_call(identifier_creator, symbol_table),
             flow::Kind::OnChange { flow_expression } => {

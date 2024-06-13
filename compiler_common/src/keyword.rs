@@ -24,7 +24,7 @@ syn::custom_keyword!(export);
 syn::custom_keyword!(sample);
 syn::custom_keyword!(scan);
 syn::custom_keyword!(timeout);
-syn::custom_keyword!(throtle);
+syn::custom_keyword!(throttle);
 syn::custom_keyword!(on_change);
 
 // Types

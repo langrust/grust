@@ -246,7 +246,7 @@ impl HIRFromAST for FlowExpression {
             FlowExpression::Timeout(flow_expression) => {
                 flow_expression.hir_from_ast(loc, symbol_table, errors)?
             }
-            FlowExpression::Throtle(flow_expression) => {
+            FlowExpression::Throttle(flow_expression) => {
                 flow_expression.hir_from_ast(loc, symbol_table, errors)?
             }
             FlowExpression::OnChange(flow_expression) => {

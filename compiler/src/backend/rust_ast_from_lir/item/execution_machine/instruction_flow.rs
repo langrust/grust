@@ -36,7 +36,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             parse_quote!(self.output.send(O::#ident(#expression)).await.unwrap();)
             // todo: this is hard coded, please (future me) fix it
         }
-        FlowInstruction::IfThrotle(receiver_name, source_name, delta, instruction) => {
+        FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
             let receiver_ident = Ident::new(&receiver_name, Span::call_site());
             let source_ident = Ident::new(&source_name, Span::call_site());
             let delta = constant_to_syn(delta);

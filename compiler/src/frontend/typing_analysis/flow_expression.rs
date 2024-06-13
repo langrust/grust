@@ -78,7 +78,7 @@ impl TypeAnalysis for flow::Expr {
                     }
                 }
             }
-            flow::Kind::Throtle {
+            flow::Kind::Throttle {
                 flow_expression,
                 delta,
             } => {

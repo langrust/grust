@@ -31,8 +31,8 @@ pub enum Kind {
         /// Dealine in milliseconds.
         deadline: u64,
     },
-    /// GReact `throtle` operator.
-    Throtle {
+    /// GReact `throttle` operator.
+    Throttle {
         /// Input expression.
         flow_expression: Box<Expr>,
         /// Variation that will update the signal.
