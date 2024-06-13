@@ -1,45 +1,45 @@
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub struct Hysterisis {
     pub value: f64,
     pub flag: bool,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum ActivationResquest {
     #[default]
     Off,
     On,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum VdcState {
     #[default]
     On,
     Off,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum VacuumBrakeState {
     #[default]
     BelowMinLevel,
     AboveMinLevel,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum Kickdown {
     #[default]
     Activated,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum Failure {
     #[default]
     Entering,
     Recovered,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum SpeedLimiter {
     #[default]
     Off,
     On,
     Fail,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum SpeedLimiterOn {
     #[default]
     StandBy,
@@ -296,7 +296,7 @@ impl SpeedLimiterState {
         (state, on_state, in_regulation, state_update)
     }
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub struct Context {
     pub state_update: bool,
     pub state: SpeedLimiter,
