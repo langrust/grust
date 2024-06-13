@@ -496,7 +496,6 @@ impl SymbolTable {
         location: Location,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        println!("yo");
         let symbol = Symbol {
             kind: SymbolKind::Identifier {
                 scope: Scope::Output,
