@@ -43,7 +43,7 @@ impl Parse for Sample {
 
 /// GReact `scan` operator.
 pub struct Scan {
-    pub sample_token: keyword::scan,
+    pub scan_token: keyword::scan,
     pub paren_token: token::Paren,
     /// Input expression.
     pub flow_expression: Box<FlowExpression>,
@@ -58,7 +58,7 @@ impl Scan {
 }
 impl Parse for Scan {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let sample_token: keyword::scan = input.parse()?;
+        let scan_token: keyword::scan = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
@@ -66,7 +66,7 @@ impl Parse for Scan {
         let period_ms: syn::LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Scan {
-                sample_token,
+                scan_token,
                 paren_token,
                 flow_expression,
                 comma_token,
@@ -80,7 +80,7 @@ impl Parse for Scan {
 
 /// GReact `timeout` operator.
 pub struct Timeout {
-    pub sample_token: keyword::timeout,
+    pub timeout_token: keyword::timeout,
     pub paren_token: token::Paren,
     /// Input expression.
     pub flow_expression: Box<FlowExpression>,
@@ -95,7 +95,7 @@ impl Timeout {
 }
 impl Parse for Timeout {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let sample_token: keyword::timeout = input.parse()?;
+        let timeout_token: keyword::timeout = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
@@ -103,7 +103,7 @@ impl Parse for Timeout {
         let deadline: syn::LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Timeout {
-                sample_token,
+                timeout_token,
                 paren_token,
                 flow_expression,
                 comma_token,
@@ -115,9 +115,9 @@ impl Parse for Timeout {
     }
 }
 
-/// GReact `throtle` operator.
-pub struct Throtle {
-    pub sample_token: keyword::throtle,
+/// GReact `throttle` operator.
+pub struct Throttle {
+    pub throttle_token: keyword::throttle,
     pub paren_token: token::Paren,
     /// Input expression.
     pub flow_expression: Box<FlowExpression>,
@@ -125,22 +125,22 @@ pub struct Throtle {
     /// Variation that will update the signal.
     pub delta: Constant,
 }
-impl Throtle {
+impl Throttle {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        input.peek(keyword::throtle)
+        input.peek(keyword::throttle)
     }
 }
-impl Parse for Throtle {
+impl Parse for Throttle {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let sample_token: keyword::throtle = input.parse()?;
+        let throttle_token: keyword::throttle = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
         let comma_token: Token![,] = content.parse()?;
         let delta: Constant = content.parse()?;
         if content.is_empty() {
-            Ok(Throtle {
-                sample_token,
+            Ok(Throttle {
+                throttle_token,
                 paren_token,
                 flow_expression,
                 comma_token,
@@ -154,7 +154,7 @@ impl Parse for Throtle {
 
 /// GReact `on_change` operator.
 pub struct OnChange {
-    pub sample_token: keyword::on_change,
+    pub on_change_token: keyword::on_change,
     pub paren_token: token::Paren,
     /// Input expression.
     pub flow_expression: Box<FlowExpression>,
@@ -166,13 +166,13 @@ impl OnChange {
 }
 impl Parse for OnChange {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let sample_token: keyword::on_change = input.parse()?;
+        let on_change_token: keyword::on_change = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: Box<FlowExpression> = Box::new(content.parse()?);
         if content.is_empty() {
             Ok(OnChange {
-                sample_token,
+                on_change_token,
                 paren_token,
                 flow_expression,
             })
@@ -219,8 +219,8 @@ pub enum FlowExpression {
     Scan(Scan),
     /// GReact `timeout` operator.
     Timeout(Timeout),
-    /// GReact `throtle` operator.
-    Throtle(Throtle),
+    /// GReact `throttle` operator.
+    Throttle(Throttle),
     /// GReact `on_change` operator.
     OnChange(OnChange),
     /// Component call.
@@ -236,8 +236,8 @@ impl Parse for FlowExpression {
             Ok(FlowExpression::Scan(input.parse()?))
         } else if Timeout::peek(input) {
             Ok(FlowExpression::Timeout(input.parse()?))
-        } else if Throtle::peek(input) {
-            Ok(FlowExpression::Throtle(input.parse()?))
+        } else if Throttle::peek(input) {
+            Ok(FlowExpression::Throttle(input.parse()?))
         } else if OnChange::peek(input) {
             Ok(FlowExpression::OnChange(input.parse()?))
         } else if input.fork().call(ComponentCall::parse).is_ok() {

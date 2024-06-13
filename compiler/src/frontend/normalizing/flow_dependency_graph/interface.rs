@@ -121,7 +121,7 @@ impl flow::Expr {
             | flow::Kind::Timeout {
                 flow_expression, ..
             }
-            | flow::Kind::Throtle {
+            | flow::Kind::Throttle {
                 flow_expression, ..
             }
             | flow::Kind::OnChange { flow_expression } => flow_expression.get_dependencies(),

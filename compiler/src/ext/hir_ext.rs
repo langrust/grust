@@ -4,7 +4,7 @@ prelude! {
             Unop, Binop, IfThenElse, Application, Structure, Enumeration, Array, Tuple, Match,
             FieldAccess, TupleElementAccess, Map, Fold, Sort, Zip, TypedAbstraction, Arm,
         },
-        interface::{ ComponentCall, OnChange, Sample, Scan, Throtle, Timeout },
+        interface::{ ComponentCall, OnChange, Sample, Scan, Throttle, Timeout },
     },
     hir::expr,
 }
@@ -551,7 +551,7 @@ impl SimpleHirExt<hir::flow::Kind> for Timeout {
     }
 }
 
-impl SimpleHirExt<hir::flow::Kind> for Throtle {
+impl SimpleHirExt<hir::flow::Kind> for Throttle {
     /// Transforms AST into HIR and check identifiers good use.
     fn hir_from_ast(
         self,
@@ -559,12 +559,12 @@ impl SimpleHirExt<hir::flow::Kind> for Throtle {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<hir::flow::Kind> {
-        let Throtle {
+        let Throttle {
             flow_expression,
             delta,
             ..
         } = self;
-        Ok(hir::flow::Kind::Throtle {
+        Ok(hir::flow::Kind::Throttle {
             flow_expression: Box::new(flow_expression.hir_from_ast(symbol_table, errors)?),
             delta,
         })
