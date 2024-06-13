@@ -182,7 +182,6 @@ where
 impl<S, F, const N: usize> Stream for PrioStream<S, F, N>
 where
     S: Stream,
-    S::Item: Debug,
     F: FnMut(&S::Item, &S::Item) -> Ordering,
 {
     type Item = S::Item;
@@ -244,18 +243,15 @@ mod test {
 
     #[derive(Debug, PartialEq)]
     pub enum Union<T1, T2> {
-        E0,
         E1(T1),
         E2(T2),
     }
     impl<T1, T2> Union<T1, T2> {
         pub fn order(v1: &Self, v2: &Self) -> Ordering {
             match (v1, v2) {
-                (Union::E0, Union::E0)
-                | (Union::E1(_), Union::E1(_))
-                | (Union::E2(_), Union::E2(_)) => Ordering::Equal,
-                (Union::E0, _) | (Union::E1(_), Union::E2(_)) => Ordering::Less,
-                (_, Union::E0) | (Union::E2(_), Union::E1(_)) => Ordering::Greater,
+                (Union::E1(_), Union::E1(_)) | (Union::E2(_), Union::E2(_)) => Ordering::Equal,
+                (Union::E1(_), Union::E2(_)) => Ordering::Less,
+                (Union::E2(_), Union::E1(_)) => Ordering::Greater,
             }
         }
     }
