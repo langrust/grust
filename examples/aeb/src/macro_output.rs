@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum Braking {
     #[default]
     UrgentBrake,
@@ -45,7 +45,7 @@ impl BrakingStateState {
         state
     }
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub struct Context {
     pub brakes: Braking,
     pub speed_km_h: f64,

@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub enum State {
     #[default]
     On,
@@ -67,7 +67,7 @@ impl AutomatonState {
         o
     }
 }
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 pub struct Context {}
 impl Context {
     fn init() -> Context {
