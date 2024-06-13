@@ -10,9 +10,9 @@ mod aeb {
 
         // Branking type
         enum Braking {
-            UrgentBrake,
-            SoftBrake,
             NoBrake,
+            SoftBrake,
+            UrgentBrake,
         }
 
         // Formula: d = 2 * s^2 / (250 * f)
@@ -43,7 +43,7 @@ mod aeb {
         }
 
         // AEB service
-        let event pedestrian: timeout(float) = timeout(pedestrian_l, 2000);
+        let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
         brakes = braking_state(pedestrian, speed_km_h);
     }
 }

@@ -11,7 +11,7 @@
         "timestamp": 0.8,
         "message": {
             "PedestrianL": {
-                "distance": 3.0
+                "distance": 10.0
             }
         }
     },
@@ -27,7 +27,7 @@
         "timestamp": 1.0,
         "message": {
             "PedestrianL": {
-                "distance": 2.0
+                "distance": 8.8
             }
         }
     },
@@ -51,7 +51,15 @@
         "timestamp": 2.5,
         "message": {
             "PedestrianL": {
-                "distance": 2.2
+                "distance": 4.2
+            }
+        }
+    },
+    {
+        "timestamp": 2.8,
+        "message": {
+            "PedestrianR": {
+                "distance": 0.8
             }
         }
     },
