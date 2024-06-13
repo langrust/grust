@@ -1,6 +1,6 @@
 [
     {
-        "timestamp": 0.0,
+        "timestamp": 0,
         "message": {
             "Speed": {
                 "value": 50.0
@@ -8,7 +8,7 @@
         }
     },
     {
-        "timestamp": 0.8,
+        "timestamp": 800,
         "message": {
             "PedestrianL": {
                 "distance": 10.0
@@ -16,7 +16,7 @@
         }
     },
     {
-        "timestamp": 0.9,
+        "timestamp": 900,
         "message": {
             "Speed": {
                 "value": 45.0
@@ -24,7 +24,7 @@
         }
     },
     {
-        "timestamp": 1.0,
+        "timestamp": 1000,
         "message": {
             "PedestrianL": {
                 "distance": 8.8
@@ -32,7 +32,7 @@
         }
     },
     {
-        "timestamp": 1.4,
+        "timestamp": 1400,
         "message": {
             "Speed": {
                 "value": 30.0
@@ -40,7 +40,7 @@
         }
     },
     {
-        "timestamp": 2.0,
+        "timestamp": 2000,
         "message": {
             "Speed": {
                 "value": 10.0
@@ -48,7 +48,7 @@
         }
     },
     {
-        "timestamp": 2.5,
+        "timestamp": 2500,
         "message": {
             "PedestrianL": {
                 "distance": 4.2
@@ -56,7 +56,7 @@
         }
     },
     {
-        "timestamp": 2.8,
+        "timestamp": 2800,
         "message": {
             "PedestrianR": {
                 "distance": 0.8
@@ -64,7 +64,7 @@
         }
     },
     {
-        "timestamp": 3.0,
+        "timestamp": 3000,
         "message": {
             "Speed": {
                 "value": 15.0
@@ -72,7 +72,7 @@
         }
     },
     {
-        "timestamp": 4.0,
+        "timestamp": 4000,
         "message": {
             "Speed": {
                 "value": 35.0
@@ -80,10 +80,18 @@
         }
     },
     {
-        "timestamp": 5.0,
+        "timestamp": 5000,
         "message": {
             "Speed": {
                 "value": 50.0
+            }
+        }
+    },
+    {
+        "timestamp": 5100,
+        "message": {
+            "PedestrianR": {
+                "distance": 30.0
             }
         }
     }
