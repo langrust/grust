@@ -1,9 +1,9 @@
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum Braking {
     #[default]
-    UrgentBrake,
-    SoftBrake,
     NoBrake,
+    SoftBrake,
+    UrgentBrake,
 }
 pub fn compute_soft_braking_distance(speed: f64) -> f64 {
     speed * speed / 100.0
@@ -133,7 +133,8 @@ pub mod toto_service {
                             service.handle_pedestrian_l(pedestrian_l,
                             timeout_fresh_ident.as_mut()).await, I ::
                             pedestrian_r(pedestrian_r) =>
-                            service.handle_pedestrian_r(pedestrian_r).await
+                            service.handle_pedestrian_r(pedestrian_r,
+                            timeout_fresh_ident.as_mut()).await
                         }
                     } else { break ; }, _ = timeout_fresh_ident.as_mut() =>
                     service.handle_timeout_fresh_ident(timeout_fresh_ident.as_mut()).await,
@@ -148,7 +149,8 @@ pub mod toto_service {
             pedestrian_l: f64,
             timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
         ) {
-            let pedestrian = Ok(pedestrian_l);
+            let flow_expression_fresh_ident = pedestrian_l;
+            let pedestrian = Ok(flow_expression_fresh_ident);
             timeout_fresh_ident
                 .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(2000u64));
             let brakes = self.braking_state.step(
@@ -161,7 +163,25 @@ pub mod toto_service {
                 .await
                 .unwrap();
         }
-        async fn handle_pedestrian_r(&mut self, pedestrian_r: f64) {}
+        async fn handle_pedestrian_r(
+            &mut self,
+            pedestrian_r: f64,
+            timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
+        ) {
+            let flow_expression_fresh_ident = pedestrian_r;
+            let pedestrian = Ok(flow_expression_fresh_ident);
+            timeout_fresh_ident
+                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(2000u64));
+            let brakes = self.braking_state.step(
+                self.context
+                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
+            );
+            self.context.brakes = brakes;
+            self.output
+                .send(O::brakes(self.context.brakes.clone()))
+                .await
+                .unwrap();
+        }
         async fn handle_timeout_fresh_ident(
             &mut self,
             timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,

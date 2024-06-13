@@ -12,9 +12,9 @@ message Pedestrian {
 }
 
 enum Braking {
-    URGENT_BRAKE = 0;
+    NO_BRAKE = 0;
     SOFT_BRAKE = 1;
-    NO_BRAKE = 2;
+    URGENT_BRAKE = 2;
 }
 
 // the input part of the interface
