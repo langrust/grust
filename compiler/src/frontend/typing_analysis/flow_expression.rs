@@ -123,6 +123,43 @@ impl TypeAnalysis for flow::Expr {
                     }
                 }
             }
+            flow::Kind::Merge {
+                flow_expression_1,
+                flow_expression_2,
+                ..
+            } => {
+                flow_expression_1.typing(symbol_table, errors)?;
+                flow_expression_2.typing(symbol_table, errors)?;
+                // get expression type
+                match flow_expression_1.get_type().unwrap() {
+                    Typ::Event(typing_1) => {
+                        match flow_expression_2.get_type().unwrap() {
+                            Typ::Event(typing_2) => {
+                                typing_2.eq_check(typing_1.as_ref(), location, errors)?;
+                                // set typing
+                                self.typing = Some(Typ::event((**typing_1).clone()));
+                                Ok(())
+                            }
+                            given_type => {
+                                let error = Error::ExpectEvent {
+                                    given_type: given_type.clone(),
+                                    location: location,
+                                };
+                                errors.push(error);
+                                Err(TerminationError)
+                            }
+                        }
+                    }
+                    given_type => {
+                        let error = Error::ExpectEvent {
+                            given_type: given_type.clone(),
+                            location: location,
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
+            }
             flow::Kind::ComponentCall {
                 ref component_id,
                 ref mut inputs,
