@@ -1,5 +1,5 @@
 prelude! {
-    macro2::{Span, TokenStream},
+    macro2::Span,
     syn::*,
     quote::format_ident,
     backend::rust_ast_from_lir::{
@@ -26,6 +26,8 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
     let mut items = vec![];
 
     // create service structure
+    let mut timer_variants: Vec<Variant> = vec![];
+    let mut timer_arms: Vec<Arm> = vec![];
     let mut input_variants: Vec<Variant> = vec![];
     let mut output_variants: Vec<Variant> = vec![];
     let mut service_fields: Vec<Field> = vec![parse_quote! { context: Context }];
@@ -41,12 +43,11 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         .iter()
         .for_each(|TimingEvent { identifier, kind }| {
             let ident = format_ident!("{}", identifier);
+            timer_variants.push(parse_quote! { #ident });
             match kind {
-                TimingEventKind::Period(_) => {
-                    service_fields.push(parse_quote! { #ident: tokio::time::Interval });
-                    field_values.push(parse_quote! { #ident });
+                TimingEventKind::Period(duration) | TimingEventKind::Timeout(duration) => {
+                    timer_arms.push(parse_quote! { T::#ident =>  #duration as i64});
                 }
-                TimingEventKind::Timeout(_) => (),
             }
         });
     input_flows.into_iter().for_each(
@@ -55,7 +56,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
          }| {
             let name = Ident::new(&identifier, Span::call_site());
             let ty = type_rust_ast_from_lir(r#type);
-            input_variants.push(parse_quote! { #name(#ty) });
+            input_variants.push(parse_quote! { #name(#ty, i64) });
         },
     );
     output_flows.into_iter().for_each(
@@ -67,6 +68,24 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
             output_variants.push(parse_quote! { #name(#ty) });
         },
     );
+    if !timer_variants.is_empty() {
+        input_variants.push(parse_quote! { timer(T, i64) });
+    }
+    let service_timer_name = format_ident!("{}", to_camel_case(&format!("{service}ServiceTimer")));
+    items.push(Item::Enum(parse_quote! {
+        pub enum #service_timer_name {
+            #(#timer_variants),*
+        }
+    }));
+    items.push(Item::Impl(parse_quote! {
+        impl #service_timer_name {
+            pub fn get_timer(&self) -> i64 {
+                match self {
+                    #(#timer_arms),*
+                }
+            }
+        }
+    }));
     let service_input_name = format_ident!("{}", to_camel_case(&format!("{service}ServiceInput")));
     items.push(Item::Enum(parse_quote! {
         pub enum #service_input_name {
@@ -81,7 +100,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         }
     }));
     service_fields.push(parse_quote! { output: futures::channel::mpsc::Sender<O> });
+    service_fields.push(parse_quote! { timer: futures::channel::mpsc::Sender<(T, i64)> });
     field_values.push(parse_quote! { output });
+    field_values.push(parse_quote! { timer });
     let service_name = format_ident!("{}", to_camel_case(&format!("{service}Service")));
     items.push(Item::Struct(parse_quote! {
         pub struct #service_name {
@@ -121,7 +142,10 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         }});
     // `new` function
     impl_items.push(parse_quote! {
-        pub fn new(output: futures::channel::mpsc::Sender<O>) -> #service_name {
+        pub fn new(
+            output: futures::channel::mpsc::Sender<O>,
+            timer: futures::channel::mpsc::Sender<(T, i64)>
+        ) -> #service_name {
             let context = Context::init();
             #(#components_states)*
             #(#periods)*
@@ -131,74 +155,27 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         }
     });
 
-    // create deadline time flows
-    let deadlines = timing_events
-    .iter()
-    .filter_map(|TimingEvent { identifier, kind }| {
-        let ident = format_ident!("{}", identifier);match kind {
-        TimingEventKind::Period(_) => None,
-        TimingEventKind::Timeout(deadline) =>{
-            let deadline = Expr::Lit(ExprLit {
-                attrs: vec![],
-                lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
-            });
-            let set_timeout: Stmt =  parse_quote! {
-                let #ident = tokio::time::sleep_until(tokio::time::Instant::now() + tokio::time::Duration::from_millis(#deadline));
-            };
-            let pin_timeout = parse_quote! { tokio::pin!(#ident); };
-            Some(vec![set_timeout, pin_timeout])
-        }
-    }}).flatten();
     // loop on the [tokio::select!] macro
     let loop_select: Stmt = {
-        let mut timers_arms: Vec<TokenStream> = vec![];
         let mut input_arms: Vec<Arm> = vec![];
-        flows_handling.iter().for_each(
-            |FlowHandler {
-                 arriving_flow,
-                 deadline_args,
-                 ..
-             }| {
-                match arriving_flow {
-                    ArrivingFlow::Channel(flow_name, _) => {
-                        let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
-                        let function_name: Ident = format_ident!("handle_{flow_name}");
-                        let mut fn_args: Vec<Expr> = vec![parse_quote!(#ident)];
-                        deadline_args.into_iter().for_each(|deadline_name| {
-                            let deadline_ident: Ident = format_ident!("{deadline_name}");
-                            fn_args.push(
-                                parse_quote!(#deadline_ident.as_mut()),
-                            )
-                        });
-                        input_arms.push(parse_quote! {
-                            I::#ident(#ident) => service.#function_name(#(#fn_args),*).await
-                        })
-                    }
-                    ArrivingFlow::Period(time_flow_name) => {
-                        let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
-                        let function_name: Ident = format_ident!("handle_{time_flow_name}");
-                        let fn_args = deadline_args.into_iter().map(|deadline_name| -> Expr {
-                            let deadline_ident: Ident = format_ident!("{deadline_name}");
-                            parse_quote!(#deadline_ident.as_mut())
-                        });
-                        timers_arms.push(parse_quote! {
-                            _ = service.#ident.tick() => service.#function_name(#(#fn_args),*).await,
-                        })
-                    }
-                    ArrivingFlow::Deadline(time_flow_name) => {
-                        let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
-                        let function_name: Ident = format_ident!("handle_{time_flow_name}");
-                        let fn_args = deadline_args.into_iter().map(|deadline_name| -> Expr{
-                            let deadline_ident: Ident = format_ident!("{deadline_name}");
-                            parse_quote!(#deadline_ident.as_mut())
-                        });
-                        timers_arms.push(parse_quote! {
-                            _ = #ident.as_mut() => service.#function_name(#(#fn_args),*).await,
-                        })
-                    }
+        flows_handling
+            .iter()
+            .for_each(|FlowHandler { arriving_flow, .. }| match arriving_flow {
+                ArrivingFlow::Channel(flow_name, _) => {
+                    let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
+                    let function_name: Ident = format_ident!("handle_{flow_name}");
+                    input_arms.push(parse_quote! {
+                        I::#ident(#ident, timestamp) => service.#function_name(timestamp, #ident).await
+                    })
                 }
-            },
-        );
+                ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
+                    let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
+                    let function_name: Ident = format_ident!("handle_{time_flow_name}");
+                    input_arms.push(parse_quote! {
+                        I::timer(T::#ident, timestamp) => service.#function_name(timestamp).await,
+                    })
+                }
+            });
         parse_quote! {
             loop{
                 tokio::select! {
@@ -208,8 +185,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
                         }
                     } else {
                         break;
-                    },
-                    #(#timers_arms)*
+                    }
                 }
             }
         }
@@ -219,7 +195,6 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
             tokio::pin!(input);
             let mut service = self;
-            #(#deadlines)*
             #loop_select
         }
     });
@@ -228,45 +203,30 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
     flows_handling.into_iter().for_each(
         |FlowHandler {
              arriving_flow,
-             deadline_args,
              instructions,
+             ..
          }| {
             match arriving_flow {
                 ArrivingFlow::Channel(flow_name, flow_type) => {
                     let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
                     let function_name: Ident = format_ident!("handle_{flow_name}");
                     let ty = type_rust_ast_from_lir(flow_type);
-                    let mut fn_args: Vec<FnArg> =
-                        vec![parse_quote!(&mut self), parse_quote!(#ident: #ty)];
-                    deadline_args.into_iter().for_each(|deadline_name| {
-                        let deadline_ident: Ident = format_ident!("{deadline_name}");
-                        fn_args.push(
-                            parse_quote!(#deadline_ident: std::pin::Pin<&mut tokio::time::Sleep>),
-                        )
-                    });
                     let instructions = instructions
                         .into_iter()
                         .map(instruction_flow_rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        async fn #function_name(#(#fn_args),*) {
+                        async fn #function_name(&mut self, timestamp: i64, #ident: #ty) {
                             #(#instructions)*
                         }
                     })
                 }
                 ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
                     let function_name: Ident = format_ident!("handle_{time_flow_name}");
-                    let mut fn_args: Vec<FnArg> = vec![parse_quote!(&mut self)];
-                    deadline_args.into_iter().for_each(|deadline_name| {
-                        let deadline_ident: Ident = format_ident!("{deadline_name}");
-                        fn_args.push(
-                            parse_quote!(#deadline_ident: std::pin::Pin<&mut tokio::time::Sleep>),
-                        )
-                    });
                     let instructions = instructions
                         .into_iter()
                         .map(instruction_flow_rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        async fn #function_name(#(#fn_args),*) {
+                        async fn #function_name(&mut self, timestamp: i64) {
                             #(#instructions)*
                         }
                     })
@@ -286,6 +246,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
        pub mod #module_name {
             use futures::{stream::StreamExt, sink::SinkExt};
            use super::*;
+           use #service_timer_name as T;
            use #service_input_name as I;
            use #service_output_name as O;
 

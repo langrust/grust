@@ -34,7 +34,6 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let ident: Ident = Ident::new(&ident, Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
             parse_quote!(self.output.send(O::#ident(#expression)).await.unwrap();)
-            // todo: this is hard coded, please (future me) fix it
         }
         FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
             let receiver_ident = Ident::new(&receiver_name, Span::call_site());
@@ -69,15 +68,9 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 }
             }
         }
-        FlowInstruction::ResetTimer(timer_name, deadline) => {
+        FlowInstruction::ResetTimer(timer_name, ..) => {
             let timer_ident = Ident::new(&timer_name, Span::call_site());
-            let deadline = Expr::Lit(ExprLit {
-                attrs: vec![],
-                lit: syn::Lit::Int(LitInt::new(&format!("{deadline}u64"), Span::call_site())),
-            });
-            parse_quote! {
-                #timer_ident.reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(#deadline));
-            }
+            parse_quote!(self.timer.send((T::#timer_ident, timestamp)).await.unwrap();)
         }
         FlowInstruction::EventComponentCall(pattern, component_name, optional_event) => {
             let outputs = pattern_rust_ast_from_lir(pattern);
