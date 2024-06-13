@@ -110,6 +110,14 @@ impl flow::Expr {
             flow::Kind::OnChange { flow_expression } => {
                 flow_expression.into_flow_call(identifier_creator, symbol_table)
             }
+            flow::Kind::Merge {
+                flow_expression_1,
+                flow_expression_2,
+            } => {
+                let mut stmts = flow_expression_1.into_flow_call(identifier_creator, symbol_table);
+                stmts.extend(flow_expression_2.into_flow_call(identifier_creator, symbol_table));
+                stmts
+            }
             flow::Kind::ComponentCall { inputs, .. } => inputs
                 .iter_mut()
                 .flat_map(|(_, flow_expression)| {
