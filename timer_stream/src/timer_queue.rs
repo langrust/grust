@@ -58,8 +58,7 @@ pub struct TimerQueue<T, const N: usize> {
     queue: [Option<Timer<T>>; N],
     len: usize,
 }
-impl<T, const N: usize> TimerQueue<T, N>
-{
+impl<T, const N: usize> TimerQueue<T, N> {
     /// Create empty queue.
     pub fn new() -> Self {
         TimerQueue {
@@ -67,18 +66,6 @@ impl<T, const N: usize> TimerQueue<T, N>
             len: 0,
         }
     }
-    /// Pop the most urgent timer from the queue.
-    pub fn pop(&mut self) -> Option<Timer<T>> {
-        if self.is_empty() {
-            None
-        } else {
-            let res = std::mem::take(&mut self.queue[self.len - 1]);
-            self.len -= 1;
-            res
-        }
-    }
-}
-impl<T, const N: usize> TimerQueue<T, N> {
     /// Give the length of the queue.
     pub fn len(&self) -> usize {
         self.len
@@ -90,6 +77,16 @@ impl<T, const N: usize> TimerQueue<T, N> {
     /// Tell if the queue is full.
     pub fn is_full(&self) -> bool {
         self.len == N
+    }
+    /// Pop the most urgent timer from the queue.
+    pub fn pop(&mut self) -> Option<Timer<T>> {
+        if self.is_empty() {
+            None
+        } else {
+            let res = std::mem::take(&mut self.queue[self.len - 1]);
+            self.len -= 1;
+            res
+        }
     }
     /// Push a value in timer queue.
     ///
@@ -105,24 +102,55 @@ impl<T, const N: usize> TimerQueue<T, N> {
         // puts the value at the right place
         for index in (0..self.len).rev() {
             let curr = self.queue[index].as_mut().unwrap();
-            let d_insert = value.deadline;
-            let d_index = curr.deadline;
-            match d_insert.cmp(&d_index) {
+            match value.deadline.cmp(&curr.deadline) {
                 Ordering::Less => {
-                    curr.deadline = d_index - d_insert;
+                    curr.deadline -= value.deadline;
                     self.queue[(index + 1)..=self.len].rotate_right(1);
                     self.queue[index + 1] = Some(value);
                     self.len += 1;
                     return;
                 }
                 Ordering::Equal => value.deadline = Duration::from_millis(0),
-                Ordering::Greater => value.deadline = d_insert - d_index,
+                Ordering::Greater => value.deadline -= curr.deadline,
             }
         }
         // if not inserted, then put it at the begining
         self.queue[0..=self.len].rotate_right(1);
         self.queue[0] = Some(value);
         self.len += 1;
+    }
+}
+impl<T, const N: usize> TimerQueue<T, N>
+where
+    T: PartialEq,
+{
+    /// Reset a timer in the queue.
+    ///
+    /// This will remove the previous version of the timer and add the new one.
+    /// This will push the timer if not in the queue.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the queue is full.
+    pub fn reset(&mut self, value: Timer<T>) {
+        // removes resetted timers
+        for index in (0..self.len).rev() {
+            let curr = self.queue[index].as_mut().unwrap();
+
+            // if curr should be resetted then remove it
+            // and add its dealine to the next timer (if it exists)
+            if &curr.kind == &value.kind {
+                let old_timer = std::mem::take(&mut self.queue[index]).unwrap();
+                self.queue[index..=self.len].rotate_left(1);
+                self.len -= 1;
+                if index > 0 {
+                    let next_timer = self.queue[index - 1].as_mut().unwrap();
+                    next_timer.deadline += old_timer.deadline;
+                }
+            }
+        }
+        // pushes the value at the right place
+        self.push(value)
     }
 }
 impl<T, const N: usize> TimerQueue<T, N>
@@ -142,7 +170,7 @@ where
         }
     }
 }
-impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N>{
+impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N> {
     fn into(self) -> Vec<T> {
         let v = self
             .queue
