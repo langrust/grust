@@ -49,6 +49,11 @@ impl<T> Timer<T> {
     }
 }
 
+/// Timer queue.
+///
+/// It store timers in deadline order.
+/// Forall timer in the queue, the initial deadline is equal to the sum
+/// of deadlines of the previous timers in the queue.
 pub struct TimerQueue<T, const N: usize> {
     queue: [Option<Timer<T>>; N],
     len: usize,
