@@ -19,6 +19,8 @@ where
     end: bool,
     #[pin]
     sleep: Sleep,
+    sleep_until: Instant,
+    sleeping_timer: Option<S::Item>,
     queue: TimerQueue<S::Item, N>,
 }
 impl<S, const N: usize> Stream for TimerStream<S, N>
@@ -34,11 +36,18 @@ where
 
         if !*project.end {
             loop {
+                println!("take timers");
                 // collect arriving timers
                 match project.stream.as_mut().poll_next(cx) {
                     // the stream have a value
                     Poll::Ready(Some(kind)) => {
-                        queue.push(Timer::init(kind));
+                        let remaining = project.sleep_until.duration_since(Instant::now());
+                        let deadline = kind.get_millis() - remaining;
+                        println!(
+                            "put timer of deadline {:?}, but remaining {deadline:?}",
+                            kind.get_millis()
+                        );
+                        queue.push(Timer::from_duration(deadline, kind));
                     }
                     // the stream is waiting
                     Poll::Pending => break,
@@ -54,23 +63,28 @@ where
         match project.sleep.as_mut().poll(cx) {
             Poll::Ready(_) => match queue.pop() {
                 Some(timer) => {
-                    println!("sleep ready and next one");
                     let (timer_kind, timer_deadline) = timer.get_kind_and_deadline();
                     let deadline = Instant::now() + timer_deadline;
+                    println!("sleep for {timer_deadline:?}, i.e. until {deadline:?}");
+                    *project.sleep_until = deadline;
                     project.sleep.reset(deadline);
-                    Poll::Ready(Some(Some(timer_kind)))
+                    let timer_kind = std::mem::replace(project.sleeping_timer, Some(timer_kind));
+                    Poll::Ready(Some(timer_kind))
                 }
                 None => {
-                    println!("sleep ready but no one");
+                    println!("do not sleep");
                     // queue is empty
                     if *project.end {
                         Poll::Ready(None)
                     } else {
-                        Poll::Ready(Some(None))
+                        Poll::Pending
                     }
                 }
             },
-            Poll::Pending => Poll::Pending,
+            Poll::Pending => {
+                println!("sleeping...");
+                Poll::Pending
+            }
         }
     }
 }
@@ -84,17 +98,23 @@ where
         end: false,
         queue: TimerQueue::new(),
         sleep: sleep_until(Instant::now()),
+        sleep_until: Instant::now(),
+        sleeping_timer: None,
     }
 }
 
 #[cfg(test)]
 mod timer_stream {
-    use std::{collections::HashMap, time::Duration};
+    use std::{collections::HashMap, sync::Arc, time::Duration};
 
     use crate::{timer_stream::timer_stream, GetMillis};
     use futures::{SinkExt, StreamExt};
     use rand::distributions::{Distribution, Uniform};
-    use tokio::time::{sleep, Instant};
+    use tokio::{
+        join,
+        sync::RwLock,
+        time::{sleep, Instant},
+    };
     use ServiceTimers::*;
 
     #[derive(Default, Debug, PartialEq)]
@@ -202,14 +222,17 @@ mod timer_stream {
     }
     struct TimersManager {
         timer_sink: futures::channel::mpsc::Sender<ServiceTimers>,
-        timers: HashMap<usize, TimerInfos>,
+        timers: Arc<RwLock<HashMap<usize, TimerInfos>>>,
         fresh_id: usize,
     }
     impl TimersManager {
-        fn new(timer_sink: futures::channel::mpsc::Sender<ServiceTimers>) -> Self {
+        fn new(
+            timer_sink: futures::channel::mpsc::Sender<ServiceTimers>,
+            timers: Arc<RwLock<HashMap<usize, TimerInfos>>>,
+        ) -> Self {
             TimersManager {
                 timer_sink,
-                timers: Default::default(),
+                timers,
                 fresh_id: 0,
             }
         }
@@ -218,7 +241,7 @@ mod timer_stream {
             let timer_infos = TimerInfos::new(timer.get_millis(), Instant::now());
 
             self.timer_sink.send(timer).await.unwrap();
-            self.timers.insert(self.fresh_id, timer_infos);
+            self.timers.write().await.insert(self.fresh_id, timer_infos);
 
             self.fresh_id += 1;
         }
@@ -226,33 +249,52 @@ mod timer_stream {
 
     #[tokio::test]
     async fn timers_deadlines_should_be_respected() {
-        let (timer_sink, stream) = futures::channel::mpsc::channel(100);
+        let (timer_sink, stream) = futures::channel::mpsc::channel::<ServiceTimers>(100);
+        let timers: Arc<RwLock<HashMap<usize, TimerInfos>>> =
+            Arc::new(RwLock::new(Default::default()));
 
-        let mut timer_manager = TimersManager::new(timer_sink);
-        let mut rng = rand::thread_rng();
-        let distrib = Uniform::from(1..=6);
-
-        let timer_stream = timer_stream::<_, 100>(stream);
-        tokio::pin!(timer_stream);
-
-        for _ in 0..100 {
-            match distrib.sample(&mut rng) {
-                0 => timer_manager.send_timer(Period10ms(0)).await,
-                1 => timer_manager.send_timer(Period15ms(0)).await,
-                2 => timer_manager.send_timer(Timeout20ms(0)).await,
-                3 => timer_manager.send_timer(Timeout30ms(0)).await,
-                _ => {
-                    if let Some(timer) = timer_stream.next().await.unwrap() {
+        let handler_2 = tokio::spawn({
+            let timers = timers.clone();
+            async move {
+                let timer_stream = timer_stream::<_, 100>(stream);
+                tokio::pin!(timer_stream);
+                while let Some(timer) = timer_stream.next().await {
+                    if let Some(timer) = timer {
                         let timer_id = timer.get_id();
-                        let timer_infos = timer_manager.timers.get(&timer_id).unwrap();
+                        let pushed_instant =
+                            timers.read().await.get(&timer_id).unwrap().pushed_instant;
 
                         // asserting that deadlines are respected
                         let timer_duration = timer.get_millis();
-                        let elapsed = Instant::now().duration_since(timer_infos.pushed_instant);
-                        println!("elapsed: {:?} ; timer: {:?}", elapsed , timer_duration);
+                        let elapsed = Instant::now().duration_since(pushed_instant);
+                        println!(
+                            "elapsed: {:?} ; timer: {:?}, pushed_instant : {:?}",
+                            elapsed, timer_duration, pushed_instant
+                        );
                     }
                 }
             }
-        }
+        });
+
+        let handler_1 = tokio::spawn({
+            let rng = rand::thread_rng();
+            let distrib = Uniform::from(1..=6);
+            let samples = distrib.sample_iter(rng).take(100).collect::<Vec<_>>();
+            let mut sample_stream = futures::stream::iter(samples);
+            async move {
+                let mut timer_manager = TimersManager::new(timer_sink, timers);
+                while let Some(sample) = sample_stream.next().await {
+                    match sample {
+                        0 => timer_manager.send_timer(Period10ms(0)).await,
+                        1 => timer_manager.send_timer(Period15ms(0)).await,
+                        2 => timer_manager.send_timer(Timeout20ms(0)).await,
+                        3 => timer_manager.send_timer(Timeout30ms(0)).await,
+                        _ => tokio::time::sleep(Duration::from_millis(10)).await,
+                    }
+                }
+            }
+        });
+
+        let (_, _) = join!(handler_1, handler_2);
     }
 }
