@@ -191,12 +191,23 @@ mod timer_queue {
     use rand::distributions::{Distribution, Uniform};
     use ServiceTimers::*;
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug)]
     enum ServiceTimers {
         Period10ms(usize),
         Period15ms(usize),
         Timeout20ms(usize),
         Timeout30ms(usize),
+    }
+    impl PartialEq for ServiceTimers {
+        fn eq(&self, other: &Self) -> bool {
+            match (self, other) {
+                (Self::Period10ms(_), Self::Period10ms(_)) => true,
+                (Self::Period15ms(_), Self::Period15ms(_)) => true,
+                (Self::Timeout20ms(_), Self::Timeout20ms(_)) => true,
+                (Self::Timeout30ms(_), Self::Timeout30ms(_)) => true,
+                _ => false,
+            }
+        }
     }
     impl GetMillis for ServiceTimers {
         fn get_millis(&self) -> std::time::Duration {
