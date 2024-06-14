@@ -5,7 +5,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use tokio_stream::Stream;
+use futures::Stream;
 
 pub struct PrioQueue<T, F, const N: usize>
 where
@@ -237,7 +237,7 @@ where
 mod prio_stream {
     use std::{cmp::Ordering, time::Duration};
     use tokio::time::sleep;
-    use tokio_stream::StreamExt;
+    use futures::StreamExt;
 
     use crate::prio_stream;
 
@@ -258,7 +258,7 @@ mod prio_stream {
 
     #[tokio::test]
     async fn should_give_elements_in_order() {
-        let stream = tokio_stream::iter(vec![
+        let stream = futures::stream::iter(vec![
             Union::E1(0),
             Union::E2("a"),
             Union::E1(0),
@@ -286,7 +286,7 @@ mod prio_stream {
 
     #[tokio::test]
     async fn should_give_elements_in_order_with_delay() {
-        let stream = tokio_stream::iter(vec![
+        let stream = futures::stream::iter(vec![
             Union::E1(0),
             Union::E2("a"),
             Union::E1(0),
@@ -295,7 +295,7 @@ mod prio_stream {
             Union::E2("a"),
         ])
         .chain(
-            tokio_stream::iter(vec![
+            futures::stream::iter(vec![
                 Union::E1(0),
                 Union::E2("a"),
                 Union::E1(0),
