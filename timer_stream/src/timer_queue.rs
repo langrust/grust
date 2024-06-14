@@ -1,10 +1,14 @@
 use std::{cmp::Ordering, fmt::Debug, time::Duration};
 
+/// A trait that gives duration from something (a timer kind, for example).
 pub trait GetMillis {
     fn get_millis(&self) -> Duration;
 }
 
-#[derive(Default, Debug, PartialEq)]
+/// Timer.
+///
+/// A timer has a `kind`, which is its identifier (period_component_c, timeout_event_e, etc).
+/// It also has a deadline, to which it should tick.
 pub struct Timer<T> {
     deadline: Duration,
     kind: T,
