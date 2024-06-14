@@ -9,6 +9,7 @@ pub trait GetMillis {
 ///
 /// A timer has a `kind`, which is its identifier (period_component_c, timeout_event_e, etc).
 /// It also has a deadline, to which it should tick.
+#[derive(Debug, PartialEq)]
 pub struct Timer<T> {
     deadline: Duration,
     kind: T,
@@ -49,17 +50,15 @@ impl<T> Timer<T> {
 }
 
 pub struct TimerQueue<T, const N: usize> {
-    queue: [Timer<T>; N],
+    queue: [Option<Timer<T>>; N],
     len: usize,
 }
 impl<T, const N: usize> TimerQueue<T, N>
-where
-    T: Default,
 {
     /// Create empty queue.
     pub fn new() -> Self {
         TimerQueue {
-            queue: array_init::array_init(|_| Default::default()),
+            queue: array_init::array_init(|_| None),
             len: 0,
         }
     }
@@ -70,7 +69,7 @@ where
         } else {
             let res = std::mem::take(&mut self.queue[self.len - 1]);
             self.len -= 1;
-            Some(res)
+            res
         }
     }
 }
@@ -100,13 +99,14 @@ impl<T, const N: usize> TimerQueue<T, N> {
 
         // puts the value at the right place
         for index in (0..self.len).rev() {
+            let curr = self.queue[index].as_mut().unwrap();
             let d_insert = value.deadline;
-            let d_index = self.queue[index].deadline;
+            let d_index = curr.deadline;
             match d_insert.cmp(&d_index) {
                 Ordering::Less => {
-                    self.queue[index].deadline = d_index - d_insert;
+                    curr.deadline = d_index - d_insert;
                     self.queue[(index + 1)..=self.len].rotate_right(1);
-                    self.queue[index + 1] = value;
+                    self.queue[index + 1] = Some(value);
                     self.len += 1;
                     return;
                 }
@@ -116,7 +116,7 @@ impl<T, const N: usize> TimerQueue<T, N> {
         }
         // if not inserted, then put it at the begining
         self.queue[0..=self.len].rotate_right(1);
-        self.queue[0] = value;
+        self.queue[0] = Some(value);
         self.len += 1;
     }
 }
@@ -137,16 +137,13 @@ where
         }
     }
 }
-impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N>
-where
-    T: Default,
-{
+impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N>{
     fn into(self) -> Vec<T> {
         let v = self
             .queue
             .into_iter()
             .take(self.len)
-            .map(|timer| timer.kind)
+            .map(|timer| timer.unwrap().kind)
             .collect::<Vec<_>>();
         debug_assert!(v.len() == self.len);
         v
@@ -161,10 +158,8 @@ mod timer_queue {
     use rand::distributions::{Distribution, Uniform};
     use ServiceTimers::*;
 
-    #[derive(Default, Debug, PartialEq)]
+    #[derive(Debug, PartialEq)]
     enum ServiceTimers {
-        #[default]
-        NoTimer,
         Period10ms(usize),
         Period15ms(usize),
         Timeout20ms(usize),
@@ -173,7 +168,6 @@ mod timer_queue {
     impl GetMillis for ServiceTimers {
         fn get_millis(&self) -> std::time::Duration {
             match self {
-                NoTimer => panic!("no timer"),
                 Period10ms(_) => std::time::Duration::from_millis(10),
                 Period15ms(_) => std::time::Duration::from_millis(15),
                 Timeout20ms(_) => std::time::Duration::from_millis(20),
@@ -184,14 +178,12 @@ mod timer_queue {
     impl ServiceTimers {
         fn set_id(&mut self, id: usize) {
             match self {
-                NoTimer => panic!("no timer"),
                 Period10ms(old_id) | Period15ms(old_id) | Timeout20ms(old_id)
                 | Timeout30ms(old_id) => *old_id = id,
             }
         }
         fn get_id(&self) -> usize {
             match self {
-                NoTimer => panic!("no timer"),
                 Period10ms(old_id) | Period15ms(old_id) | Timeout20ms(old_id)
                 | Timeout30ms(old_id) => *old_id,
             }
