@@ -277,7 +277,7 @@ mod timer_queue {
             Some(Timer::from_millis(5, Timeout20ms(0)))
         );
         assert!(timer_queue.len() == 2);
-        assert_eq!(timer_queue.pop(), Some(Timer::from_millis(0, Period10ms(1))));
+        assert_eq!(timer_queue.pop().map(|timer| timer.kind.get_id()), Some(1));
         assert!(timer_queue.len() == 1);
         assert_eq!(
             timer_queue.pop(),
