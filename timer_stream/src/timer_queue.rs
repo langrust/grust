@@ -330,6 +330,20 @@ mod timer_queue {
 
             self.fresh_id += 1;
         }
+        fn reset_timer(&mut self, mut timer: ServiceTimers) {
+            // if queue is full, do nothing (not the purpose of the test)
+            if self.timer_queue.is_full() {
+                return;
+            }
+
+            timer.set_id(self.fresh_id);
+            let timer_infos = TimerInfos::new(timer.get_millis(), self.global_time);
+
+            self.timer_queue.reset(Timer::init(timer));
+            self.timers.insert(self.fresh_id, timer_infos);
+
+            self.fresh_id += 1;
+        }
         fn pop_timer(&mut self) {
             // if queue is empty, do nothing (not the purpose of the test)
             if self.timer_queue.is_empty() {
@@ -363,6 +377,48 @@ mod timer_queue {
                 1 => timer_manager.insert_timer(Period15ms(0)),
                 2 => timer_manager.insert_timer(Timeout20ms(0)),
                 3 => timer_manager.insert_timer(Timeout30ms(0)),
+                _ => timer_manager.pop_timer(),
+            }
+        }
+    }
+
+    #[test]
+    fn reset_should_insert_timer_according_to_deadline() {
+        let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
+        timer_queue.reset(Timer::init(Period15ms(0)));
+        timer_queue.reset(Timer::init(Timeout30ms(0)));
+        timer_queue.reset(Timer::init(Timeout20ms(0)));
+        timer_queue.reset(Timer::init(Period10ms(0)));
+        let v: Vec<_> = timer_queue.into();
+        assert_eq!(
+            v,
+            vec![Timeout30ms(0), Timeout20ms(0), Period15ms(0), Period10ms(0)]
+        )
+    }
+
+    #[test]
+    fn reset_should_insert_unique_timer() {
+        let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
+        timer_queue.push(Timer::init(Period15ms(0)));
+        timer_queue.push(Timer::init(Timeout30ms(0)));
+        timer_queue.push(Timer::init(Timeout20ms(0)));
+        timer_queue.reset(Timer::init(Timeout30ms(0)));
+        let v: Vec<_> = timer_queue.into();
+        assert_eq!(v, vec![Timeout30ms(0), Timeout20ms(0), Period15ms(0)])
+    }
+
+    #[test]
+    fn timers_deadlines_should_be_respected_with_reset() {
+        let mut timer_manager = TimersManager::new();
+        let mut rng = rand::thread_rng();
+        let distrib = Uniform::from(1..=6);
+
+        for _ in 0..100 {
+            match distrib.sample(&mut rng) {
+                0 => timer_manager.insert_timer(Period10ms(0)),
+                1 => timer_manager.insert_timer(Period15ms(0)),
+                2 => timer_manager.reset_timer(Timeout20ms(0)),
+                3 => timer_manager.reset_timer(Timeout30ms(0)),
                 _ => timer_manager.pop_timer(),
             }
         }
