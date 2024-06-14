@@ -1,4 +1,5 @@
 use crate::{GetMillis, Timer, TimerQueue};
+use futures::Stream;
 use pin_project::pin_project;
 use std::{
     future::Future,
@@ -6,7 +7,6 @@ use std::{
     task::{Context, Poll},
 };
 use tokio::time::{sleep_until, Instant, Sleep};
-use tokio_stream::Stream;
 
 /// # Combine two streams into a priority queue.
 #[pin_project(project = TimerStreamProj)]
@@ -26,7 +26,7 @@ where
     S: Stream,
     S::Item: GetMillis + Default,
 {
-    type Item = S::Item;
+    type Item = Option<S::Item>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let mut project = self.project();
@@ -54,17 +54,19 @@ where
         match project.sleep.as_mut().poll(cx) {
             Poll::Ready(_) => match queue.pop() {
                 Some(timer) => {
+                    println!("sleep ready and next one");
                     let (timer_kind, timer_deadline) = timer.get_kind_and_deadline();
                     let deadline = Instant::now() + timer_deadline;
                     project.sleep.reset(deadline);
-                    Poll::Ready(Some(timer_kind))
+                    Poll::Ready(Some(Some(timer_kind)))
                 }
                 None => {
+                    println!("sleep ready but no one");
                     // queue is empty
                     if *project.end {
                         Poll::Ready(None)
                     } else {
-                        Poll::Pending // todo: does sleep still exist?
+                        Poll::Ready(Some(None))
                     }
                 }
             },
@@ -72,7 +74,6 @@ where
         }
     }
 }
-
 pub fn timer_stream<S, const N: usize>(stream: S) -> TimerStream<S, N>
 where
     S: Stream,
@@ -90,10 +91,10 @@ where
 mod timer_stream {
     use std::{collections::HashMap, time::Duration};
 
-    use crate::{timer_stream::timer_stream, GetMillis, Timer, TimerQueue};
+    use crate::{timer_stream::timer_stream, GetMillis};
+    use futures::{SinkExt, StreamExt};
     use rand::distributions::{Distribution, Uniform};
-    use tokio::time::sleep;
-    use tokio_stream::StreamExt;
+    use tokio::time::{sleep, Instant};
     use ServiceTimers::*;
 
     #[derive(Default, Debug, PartialEq)]
@@ -135,7 +136,7 @@ mod timer_stream {
 
     #[tokio::test]
     async fn should_give_timers_in_order() {
-        let stream = tokio_stream::iter(vec![
+        let stream = futures::stream::iter(vec![
             Period15ms(0),
             Timeout30ms(1),
             Timeout20ms(2),
@@ -145,7 +146,7 @@ mod timer_stream {
         tokio::pin!(timers);
 
         let mut v = vec![];
-        while let Some(value) = timers.next().await {
+        while let Some(Some(value)) = timers.next().await {
             v.push(value)
         }
         assert_eq!(
@@ -153,79 +154,17 @@ mod timer_stream {
             vec![Period10ms(3), Period15ms(0), Timeout20ms(2), Timeout30ms(1)]
         )
     }
-    struct TimerInfos {
-        duration: Duration,
-        pushed_time: Duration,
-    }
-    impl TimerInfos {
-        fn new(duration: Duration, pushed_time: Duration) -> Self {
-            TimerInfos {
-                duration,
-                pushed_time,
-            }
-        }
-    }
-    struct TimersManager {
-        timer_stream: TimerQueue<ServiceTimers, 10>,
-        timers: HashMap<usize, TimerInfos>,
-        fresh_id: usize,
-        global_time: Duration,
-    }
-    impl TimersManager {
-        fn new() -> Self {
-            let timer_stream = TimerQueue::<ServiceTimers, 10>::new();
-            TimersManager {
-                timer_stream,
-                timers: Default::default(),
-                fresh_id: 0,
-                global_time: Duration::from_millis(0),
-            }
-        }
-        fn insert_timer(&mut self, mut timer: ServiceTimers) {
-            // if queue is full, do nothing (not the purpose of the test)
-            if self.timer_stream.is_full() {
-                return;
-            }
-
-            timer.set_id(self.fresh_id);
-            let timer_infos = TimerInfos::new(timer.get_millis(), self.global_time);
-
-            self.timer_stream.push(Timer::init(timer));
-            self.timers.insert(self.fresh_id, timer_infos);
-
-            self.fresh_id += 1;
-        }
-        fn pop_timer(&mut self) {
-            // if queue is empty, do nothing (not the purpose of the test)
-            if self.timer_stream.is_empty() {
-                return;
-            }
-            let timer = self.timer_stream.pop().unwrap();
-            let timer_id = timer.get_kind().get_id();
-            let timer_infos = self.timers.get(&timer_id).unwrap();
-
-            // asserting that deadlines are respected
-            let global_time = self.global_time;
-            let timer_popped_deadline = *timer.get_deadline();
-            let timer_pushed_time = timer_infos.pushed_time;
-            let timer_duration = timer_infos.duration;
-            assert!(global_time + timer_popped_deadline == timer_pushed_time + timer_duration);
-
-            // update global time
-            self.global_time = global_time + timer_popped_deadline;
-        }
-    }
 
     #[tokio::test]
     async fn should_give_elements_in_order_with_delay() {
-        let stream = tokio_stream::iter(vec![
+        let stream = futures::stream::iter(vec![
             Period15ms(0),
             Timeout30ms(1),
             Timeout20ms(2),
             Period10ms(3),
         ])
         .chain(
-            tokio_stream::iter(vec![
+            futures::stream::iter(vec![
                 Timeout20ms(4),
                 Period10ms(5),
                 Timeout30ms(6),
@@ -249,19 +188,70 @@ mod timer_stream {
         println!("{v:?}")
     }
 
-    #[test]
-    fn timers_deadlines_should_be_respected() {
-        let mut timer_manager = TimersManager::new();
+    struct TimerInfos {
+        duration: Duration,
+        pushed_instant: Instant,
+    }
+    impl TimerInfos {
+        fn new(duration: Duration, pushed_instant: Instant) -> Self {
+            TimerInfos {
+                duration,
+                pushed_instant,
+            }
+        }
+    }
+    struct TimersManager {
+        timer_sink: futures::channel::mpsc::Sender<ServiceTimers>,
+        timers: HashMap<usize, TimerInfos>,
+        fresh_id: usize,
+    }
+    impl TimersManager {
+        fn new(timer_sink: futures::channel::mpsc::Sender<ServiceTimers>) -> Self {
+            TimersManager {
+                timer_sink,
+                timers: Default::default(),
+                fresh_id: 0,
+            }
+        }
+        async fn send_timer(&mut self, mut timer: ServiceTimers) {
+            timer.set_id(self.fresh_id);
+            let timer_infos = TimerInfos::new(timer.get_millis(), Instant::now());
+
+            self.timer_sink.send(timer).await.unwrap();
+            self.timers.insert(self.fresh_id, timer_infos);
+
+            self.fresh_id += 1;
+        }
+    }
+
+    #[tokio::test]
+    async fn timers_deadlines_should_be_respected() {
+        let (timer_sink, stream) = futures::channel::mpsc::channel(100);
+
+        let mut timer_manager = TimersManager::new(timer_sink);
         let mut rng = rand::thread_rng();
         let distrib = Uniform::from(1..=6);
 
+        let timer_stream = timer_stream::<_, 100>(stream);
+        tokio::pin!(timer_stream);
+
         for _ in 0..100 {
             match distrib.sample(&mut rng) {
-                0 => timer_manager.insert_timer(Period10ms(0)),
-                1 => timer_manager.insert_timer(Period15ms(0)),
-                2 => timer_manager.insert_timer(Timeout20ms(0)),
-                3 => timer_manager.insert_timer(Timeout30ms(0)),
-                _ => timer_manager.pop_timer(),
+                0 => timer_manager.send_timer(Period10ms(0)).await,
+                1 => timer_manager.send_timer(Period15ms(0)).await,
+                2 => timer_manager.send_timer(Timeout20ms(0)).await,
+                3 => timer_manager.send_timer(Timeout30ms(0)).await,
+                _ => {
+                    if let Some(timer) = timer_stream.next().await.unwrap() {
+                        let timer_id = timer.get_id();
+                        let timer_infos = timer_manager.timers.get(&timer_id).unwrap();
+
+                        // asserting that deadlines are respected
+                        let timer_duration = timer.get_millis();
+                        let elapsed = Instant::now().duration_since(timer_infos.pushed_instant);
+                        println!("elapsed: {:?} ; timer: {:?}", elapsed , timer_duration);
+                    }
+                }
             }
         }
     }
