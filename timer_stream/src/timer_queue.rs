@@ -39,7 +39,11 @@ impl<T> Timer<T> {
     pub fn get_kind_and_deadline(self) -> (T, Duration) {
         (self.kind, self.deadline)
     }
-    /// Create a timer.
+    /// Create a timer from duration.
+    pub fn from_duration(deadline: Duration, kind: T) -> Self {
+        Timer { deadline, kind }
+    }
+    /// Create a timer from millis.
     #[cfg(test)]
     pub fn from_millis(millis: u64, kind: T) -> Self {
         Timer {
