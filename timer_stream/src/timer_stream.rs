@@ -16,7 +16,6 @@ where
     #[pin]
     stream: S,
     end: bool,
-    sleep_until: Instant,
     queue: TimerQueue<T, N>,
 }
 impl<S, T, const N: usize> Stream for TimerStream<S, T, N>
@@ -37,13 +36,12 @@ where
                 match project.stream.as_mut().poll_next(cx) {
                     // the stream have a value
                     Poll::Ready(Some((kind, pushed_instant))) => {
-                        let remaining = project.sleep_until.duration_since(pushed_instant);
-                        let deadline = kind.get_millis() - remaining;
+                        let deadline = pushed_instant + kind.get_millis();
                         // println!(
                         //     "put timer of deadline {:?}, but remaining {deadline:?}",
                         //     kind.get_millis()
                         // );
-                        queue.push(Timer::from_duration(deadline, kind));
+                        queue.push(Timer::from_deadline(deadline.into(), kind));
                     }
                     // the stream is waiting
                     Poll::Pending => break,
@@ -59,10 +57,8 @@ where
         match queue.pop() {
             Some(timer) => {
                 let (timer_kind, timer_deadline) = timer.get_kind_and_deadline();
-                let deadline = Instant::now() + timer_deadline;
                 // println!("sleep for {timer_deadline:?}, i.e. until {deadline:?}");
-                *project.sleep_until = deadline;
-                Poll::Ready(Some((timer_kind, deadline)))
+                Poll::Ready(Some((timer_kind, timer_deadline.into())))
             }
             None => {
                 // println!("do not sleep");
@@ -85,7 +81,6 @@ where
         stream,
         end: false,
         queue: TimerQueue::new(),
-        sleep_until: Instant::now(),
     }
 }
 
