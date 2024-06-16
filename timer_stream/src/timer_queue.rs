@@ -1,4 +1,8 @@
-use std::{cmp::Ordering, fmt::Debug, time::Duration};
+use std::{
+    cmp::Ordering,
+    fmt::Debug,
+    time::{Duration, Instant},
+};
 
 /// A trait that gives duration from something (a timer kind, for example).
 pub trait GetMillis {
@@ -11,7 +15,7 @@ pub trait GetMillis {
 /// It also has a deadline, to which it should tick.
 #[derive(Debug, PartialEq)]
 pub struct Timer<T> {
-    deadline: Duration,
+    deadline: Instant,
     kind: T,
 }
 impl<T> Timer<T>
@@ -19,9 +23,9 @@ where
     T: GetMillis,
 {
     /// Initiate a new timer.
-    pub fn init(kind: T) -> Timer<T> {
+    pub fn init(kind: T, now: Instant) -> Timer<T> {
         Timer {
-            deadline: kind.get_millis(),
+            deadline: now + kind.get_millis(),
             kind,
         }
     }
@@ -32,22 +36,22 @@ impl<T> Timer<T> {
         &self.kind
     }
     /// Get timer's deadline.
-    pub fn get_deadline(&self) -> &Duration {
+    pub fn get_deadline(&self) -> &Instant {
         &self.deadline
     }
     /// Get timer's kind and deadline.
-    pub fn get_kind_and_deadline(self) -> (T, Duration) {
+    pub fn get_kind_and_deadline(self) -> (T, Instant) {
         (self.kind, self.deadline)
     }
-    /// Create a timer from duration.
-    pub fn from_duration(deadline: Duration, kind: T) -> Self {
+    /// Create a timer from deadline.
+    pub fn from_deadline(deadline: Instant, kind: T) -> Self {
         Timer { deadline, kind }
     }
     /// Create a timer from millis.
     #[cfg(test)]
-    pub fn from_millis(millis: u64, kind: T) -> Self {
+    pub fn from_millis(millis: u64, kind: T, now: Instant) -> Self {
         Timer {
-            deadline: std::time::Duration::from_millis(millis),
+            deadline: now + Duration::from_millis(millis),
             kind,
         }
     }
@@ -97,30 +101,27 @@ impl<T, const N: usize> TimerQueue<T, N> {
     /// # Panics
     ///
     /// This function will panic if the queue is full.
-    pub fn push(&mut self, mut value: Timer<T>) {
+    pub fn push(&mut self, value: Timer<T>) {
         // safety: panics if pushed out of bound
         if self.is_full() {
             panic!("out of bound")
         }
 
         // puts the value at the right place
-        for index in (0..self.len).rev() {
+        for index in 0..self.len {
             let curr = self.queue[index].as_mut().unwrap();
             match value.deadline.cmp(&curr.deadline) {
-                Ordering::Less => {
-                    curr.deadline -= value.deadline;
-                    self.queue[(index + 1)..=self.len].rotate_right(1);
-                    self.queue[index + 1] = Some(value);
+                Ordering::Greater | Ordering::Equal => {
+                    self.queue[index..=self.len].rotate_right(1);
+                    self.queue[index] = Some(value);
                     self.len += 1;
                     return;
                 }
-                Ordering::Equal => value.deadline = Duration::from_millis(0),
-                Ordering::Greater => value.deadline -= curr.deadline,
+                Ordering::Less => (),
             }
         }
-        // if not inserted, then put it at the begining
-        self.queue[0..=self.len].rotate_right(1);
-        self.queue[0] = Some(value);
+        // if not inserted, then put it at the end
+        self.queue[self.len] = Some(value);
         self.len += 1;
     }
 }
@@ -144,13 +145,9 @@ where
             // if curr should be resetted then remove it
             // and add its dealine to the next timer (if it exists)
             if &curr.kind == &value.kind {
-                let old_timer = std::mem::take(&mut self.queue[index]).unwrap();
+                self.queue[index] = None;
                 self.queue[index..=self.len].rotate_left(1);
                 self.len -= 1;
-                if index > 0 {
-                    let next_timer = self.queue[index - 1].as_mut().unwrap();
-                    next_timer.deadline += old_timer.deadline;
-                }
             }
         }
         // pushes the value at the right place
@@ -189,7 +186,10 @@ impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N> {
 
 #[cfg(test)]
 mod timer_queue {
-    use std::{collections::HashMap, time::Duration};
+    use std::{
+        collections::HashMap,
+        time::{Duration, Instant},
+    };
 
     use crate::{GetMillis, Timer, TimerQueue};
     use rand::distributions::{Distribution, Uniform};
@@ -247,10 +247,10 @@ mod timer_queue {
     #[test]
     fn push_should_insert_timer_according_to_deadline() {
         let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
-        timer_queue.push(Timer::init(Period15ms(0)));
-        timer_queue.push(Timer::init(Timeout30ms(0)));
-        timer_queue.push(Timer::init(Timeout20ms(0)));
-        timer_queue.push(Timer::init(Period10ms(0)));
+        timer_queue.push(Timer::init(Period15ms(0), Instant::now()));
+        timer_queue.push(Timer::init(Timeout30ms(0), Instant::now()));
+        timer_queue.push(Timer::init(Timeout20ms(0), Instant::now()));
+        timer_queue.push(Timer::init(Period10ms(0), Instant::now()));
         let v: Vec<_> = timer_queue.into();
         assert_eq!(
             v,
@@ -260,33 +260,45 @@ mod timer_queue {
 
     #[test]
     fn pop_should_remove_the_earliest_timer() {
+        let mut now = Instant::now();
         let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
-        timer_queue.push(Timer::init(Period15ms(0)));
-        timer_queue.push(Timer::init(Timeout30ms(0)));
-        timer_queue.push(Timer::init(Timeout20ms(0)));
-        timer_queue.push(Timer::init(Period10ms(0)));
+        timer_queue.push(Timer::init(Period15ms(0), now));
+        timer_queue.push(Timer::init(Timeout30ms(0), now));
+        timer_queue.push(Timer::init(Timeout20ms(0), now));
+        timer_queue.push(Timer::init(Period10ms(0), now));
         timer_queue.println();
         assert!(timer_queue.len() == 4);
         assert_eq!(
             timer_queue.pop(),
-            Some(Timer::from_millis(10, Period10ms(0)))
+            Some(Timer::from_millis(10, Period10ms(0), now))
         );
+        now = now + Duration::from_millis(10);
         assert!(timer_queue.len() == 3);
-        timer_queue.push(Timer::init(Period10ms(1)));
+        timer_queue.push(Timer::init(Period10ms(1), now));
         assert!(timer_queue.len() == 4);
-        assert_eq!(timer_queue.pop(), Some(Timer::from_millis(5, Period15ms(0))));
+
+        assert_eq!(
+            timer_queue.pop(),
+            Some(Timer::from_millis(5, Period15ms(0), now))
+        );
+        now = now + Duration::from_millis(5);
         assert!(timer_queue.len() == 3);
         assert_eq!(
             timer_queue.pop(),
-            Some(Timer::from_millis(5, Timeout20ms(0)))
+            Some(Timer::from_millis(5, Timeout20ms(0), now))
         );
+        now = now + Duration::from_millis(5);
         assert!(timer_queue.len() == 2);
-        assert_eq!(timer_queue.pop().map(|timer| timer.kind.get_id()), Some(1));
+        assert_eq!(
+            timer_queue.pop(),
+            Some(Timer::from_millis(0, Period10ms(1), now))
+        );
         assert!(timer_queue.len() == 1);
         assert_eq!(
             timer_queue.pop(),
-            Some(Timer::from_millis(10, Timeout30ms(0)))
+            Some(Timer::from_millis(10, Timeout30ms(0), now))
         );
+        now = now + Duration::from_millis(10);
         assert!(timer_queue.len() == 0);
         assert_eq!(timer_queue.pop(), None);
         assert!(timer_queue.len() == 0);
@@ -294,13 +306,13 @@ mod timer_queue {
 
     struct TimerInfos {
         duration: Duration,
-        pushed_time: Duration,
+        pushed_instant: Instant,
     }
     impl TimerInfos {
-        fn new(duration: Duration, pushed_time: Duration) -> Self {
+        fn new(duration: Duration, pushed_instant: Instant) -> Self {
             TimerInfos {
                 duration,
-                pushed_time,
+                pushed_instant,
             }
         }
     }
@@ -308,7 +320,7 @@ mod timer_queue {
         timer_queue: TimerQueue<ServiceTimers, 10>,
         timers: HashMap<usize, TimerInfos>,
         fresh_id: usize,
-        global_time: Duration,
+        global_time: Instant,
     }
     impl TimersManager {
         fn new() -> Self {
@@ -317,7 +329,7 @@ mod timer_queue {
                 timer_queue,
                 timers: Default::default(),
                 fresh_id: 0,
-                global_time: Duration::from_millis(0),
+                global_time: Instant::now(),
             }
         }
         fn insert_timer(&mut self, mut timer: ServiceTimers) {
@@ -329,7 +341,7 @@ mod timer_queue {
             timer.set_id(self.fresh_id);
             let timer_infos = TimerInfos::new(timer.get_millis(), self.global_time);
 
-            self.timer_queue.push(Timer::init(timer));
+            self.timer_queue.push(Timer::init(timer, self.global_time));
             self.timers.insert(self.fresh_id, timer_infos);
 
             self.fresh_id += 1;
@@ -343,7 +355,7 @@ mod timer_queue {
             timer.set_id(self.fresh_id);
             let timer_infos = TimerInfos::new(timer.get_millis(), self.global_time);
 
-            self.timer_queue.reset(Timer::init(timer));
+            self.timer_queue.reset(Timer::init(timer, self.global_time));
             self.timers.insert(self.fresh_id, timer_infos);
 
             self.fresh_id += 1;
@@ -358,14 +370,13 @@ mod timer_queue {
             let timer_infos = self.timers.get(&timer_id).unwrap();
 
             // asserting that deadlines are respected
-            let global_time = self.global_time;
             let timer_popped_deadline = timer.deadline;
-            let timer_pushed_time = timer_infos.pushed_time;
+            let timer_pushed_instant = timer_infos.pushed_instant;
             let timer_duration = timer_infos.duration;
-            assert!(global_time + timer_popped_deadline == timer_pushed_time + timer_duration);
+            assert!(timer_popped_deadline == timer_pushed_instant + timer_duration);
 
             // update global time
-            self.global_time = global_time + timer_popped_deadline;
+            self.global_time = timer_popped_deadline;
         }
     }
 
@@ -389,10 +400,10 @@ mod timer_queue {
     #[test]
     fn reset_should_insert_timer_according_to_deadline() {
         let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
-        timer_queue.reset(Timer::init(Period15ms(0)));
-        timer_queue.reset(Timer::init(Timeout30ms(0)));
-        timer_queue.reset(Timer::init(Timeout20ms(0)));
-        timer_queue.reset(Timer::init(Period10ms(0)));
+        timer_queue.reset(Timer::init(Period15ms(0), Instant::now()));
+        timer_queue.reset(Timer::init(Timeout30ms(0), Instant::now()));
+        timer_queue.reset(Timer::init(Timeout20ms(0), Instant::now()));
+        timer_queue.reset(Timer::init(Period10ms(0), Instant::now()));
         let v: Vec<_> = timer_queue.into();
         assert_eq!(
             v,
@@ -403,10 +414,10 @@ mod timer_queue {
     #[test]
     fn reset_should_insert_unique_timer() {
         let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
-        timer_queue.push(Timer::init(Period15ms(0)));
-        timer_queue.push(Timer::init(Timeout30ms(0)));
-        timer_queue.push(Timer::init(Timeout20ms(0)));
-        timer_queue.reset(Timer::init(Timeout30ms(0)));
+        timer_queue.push(Timer::init(Period15ms(0), Instant::now()));
+        timer_queue.push(Timer::init(Timeout30ms(0), Instant::now()));
+        timer_queue.push(Timer::init(Timeout20ms(0), Instant::now()));
+        timer_queue.reset(Timer::init(Timeout30ms(0), Instant::now()));
         let v: Vec<_> = timer_queue.into();
         assert_eq!(v, vec![Timeout30ms(0), Timeout20ms(0), Period15ms(0)])
     }
