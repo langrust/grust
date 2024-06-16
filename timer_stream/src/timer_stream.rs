@@ -1,11 +1,11 @@
 use crate::{Timer, TimerQueue, Timing};
-use futures::Stream;
+use futures::{Future, Stream};
 use pin_project::pin_project;
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use tokio::time::Instant;
+use tokio::time::{sleep_until, Instant, Sleep};
 
 /// # Combine two streams into a priority queue.
 #[pin_project(project = TimerStreamProj)]
@@ -17,18 +17,22 @@ where
     stream: S,
     end: bool,
     queue: TimerQueue<T, N>,
+    #[pin]
+    sleep: Sleep,
+    sleeping_timer: Option<(T, Instant)>,
 }
 impl<S, T, const N: usize> Stream for TimerStream<S, T, N>
 where
     S: Stream<Item = (T, Instant)>,
-    T: Timing,
+    T: Timing + PartialEq,
 {
-    type Item = S::Item;
+    type Item = Option<S::Item>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let mut project = self.project();
         let queue = project.queue;
 
+        let mut abort = false;
         if !*project.end {
             loop {
                 // println!("take timers");
@@ -36,11 +40,13 @@ where
                 match project.stream.as_mut().poll_next(cx) {
                     // the stream have a value
                     Poll::Ready(Some((kind, pushed_instant))) => {
+                        // if it is sleeping timer's kind then abort sleep
+                        if let Some((sleeping_timer, _)) = project.sleeping_timer.as_ref() {
+                            if kind.reset() && kind.eq(sleeping_timer) {
+                                abort = true;
+                            }
+                        }
                         let deadline = pushed_instant + kind.get_duration();
-                        // println!(
-                        //     "put timer of deadline {:?}, but remaining {deadline:?}",
-                        //     kind.get_duration()
-                        // );
                         queue.push(Timer::from_deadline(deadline.into(), kind));
                     }
                     // the stream is waiting
@@ -54,21 +60,32 @@ where
             }
         }
 
-        match queue.pop() {
-            Some(timer) => {
-                let (timer_kind, timer_deadline) = timer.get_kind_and_deadline();
-                // println!("sleep for {timer_deadline:?}, i.e. until {deadline:?}");
-                Poll::Ready(Some((timer_kind, timer_deadline.into())))
-            }
-            None => {
-                // println!("do not sleep");
-                // queue is empty
-                if *project.end {
-                    Poll::Ready(None)
-                } else {
-                    Poll::Pending
+        if abort || project.sleep.as_mut().poll(cx).is_ready() {
+            match queue.pop() {
+                Some(timer) => {
+                    let (timer_kind, timer_deadline) = timer.get_kind_and_deadline();
+                    project.sleep.reset(timer_deadline.into());
+                    let output = std::mem::replace(
+                        project.sleeping_timer,
+                        Some((timer_kind, timer_deadline.into())),
+                    );
+                    Poll::Ready(Some(output))
+                }
+                None => {
+                    if project.sleeping_timer.is_some() {
+                        let output = std::mem::take(project.sleeping_timer);
+                        Poll::Ready(Some(output))
+                    } else {
+                        if *project.end {
+                            Poll::Ready(None)
+                        } else {
+                            Poll::Pending
+                        }
+                    }
                 }
             }
+        } else {
+            Poll::Pending
         }
     }
 }
@@ -81,6 +98,8 @@ where
         stream,
         end: false,
         queue: TimerQueue::new(),
+        sleep: sleep_until(Instant::now()),
+        sleeping_timer: None,
     }
 }
 
@@ -94,7 +113,7 @@ mod timer_stream {
     use tokio::{
         join,
         sync::RwLock,
-        time::{sleep, sleep_until, Instant},
+        time::{sleep, Instant},
     };
     use ServiceTimers::*;
 
@@ -149,8 +168,10 @@ mod timer_stream {
         tokio::pin!(timers);
 
         let mut v = vec![];
-        while let Some((value, _)) = timers.next().await {
-            v.push(value)
+        while let Some(value) = timers.next().await {
+            if let Some((value, _)) = value {
+                v.push(value)
+            }
         }
         assert_eq!(
             v,
@@ -238,15 +259,17 @@ mod timer_stream {
             async move {
                 let timer_stream = timer_stream::<_, _, 100>(stream);
                 tokio::pin!(timer_stream);
-                while let Some((kind, deadline)) = timer_stream.next().await {
-                    let timer_id = kind.get_id();
-                    let pushed_instant = timers.read().await.get(&timer_id).unwrap().pushed_instant;
-                    sleep_until(deadline).await;
+                while let Some(value) = timer_stream.next().await {
+                    if let Some((kind, deadline)) = value {
+                        let timer_id = kind.get_id();
+                        let pushed_instant =
+                            timers.read().await.get(&timer_id).unwrap().pushed_instant;
 
-                    // asserting that deadlines are respected
-                    let timer_duration = kind.get_duration();
-                    let elapsed = Instant::now().duration_since(pushed_instant);
-                    println!("elapsed: {:?} deadline: {:?}", elapsed, timer_duration);
+                        // asserting that deadlines are respected
+                        let timer_duration = deadline.duration_since(pushed_instant);
+                        let elapsed = Instant::now().duration_since(pushed_instant);
+                        println!("elapsed: {:?} deadline: {:?}", elapsed, timer_duration);
+                    }
                 }
             }
         });
