@@ -1,4 +1,4 @@
-use crate::{GetMillis, Timer, TimerQueue};
+use crate::{Timer, TimerQueue, Timing};
 use futures::Stream;
 use pin_project::pin_project;
 use std::{
@@ -21,7 +21,7 @@ where
 impl<S, T, const N: usize> Stream for TimerStream<S, T, N>
 where
     S: Stream<Item = (T, Instant)>,
-    T: GetMillis + Default,
+    T: Timing,
 {
     type Item = S::Item;
 
@@ -36,10 +36,10 @@ where
                 match project.stream.as_mut().poll_next(cx) {
                     // the stream have a value
                     Poll::Ready(Some((kind, pushed_instant))) => {
-                        let deadline = pushed_instant + kind.get_millis();
+                        let deadline = pushed_instant + kind.get_duration();
                         // println!(
                         //     "put timer of deadline {:?}, but remaining {deadline:?}",
-                        //     kind.get_millis()
+                        //     kind.get_duration()
                         // );
                         queue.push(Timer::from_deadline(deadline.into(), kind));
                     }
@@ -75,7 +75,7 @@ where
 pub fn timer_stream<S, T, const N: usize>(stream: S) -> TimerStream<S, T, N>
 where
     S: Stream<Item = (T, Instant)>,
-    T: GetMillis + Default,
+    T: Timing,
 {
     TimerStream {
         stream,
@@ -88,7 +88,7 @@ where
 mod timer_stream {
     use std::{collections::HashMap, sync::Arc, time::Duration};
 
-    use crate::{timer_stream::timer_stream, GetMillis};
+    use crate::{timer_stream::timer_stream, Timing};
     use futures::{SinkExt, StreamExt};
     use rand::distributions::{Distribution, Uniform};
     use tokio::{
@@ -98,37 +98,39 @@ mod timer_stream {
     };
     use ServiceTimers::*;
 
-    #[derive(Default, Debug, PartialEq)]
+    #[derive(Debug, PartialEq)]
     enum ServiceTimers {
-        #[default]
-        NoTimer,
         Period10ms(usize),
         Period15ms(usize),
         Timeout20ms(usize),
         Timeout30ms(usize),
     }
-    impl GetMillis for ServiceTimers {
-        fn get_millis(&self) -> std::time::Duration {
+    impl Timing for ServiceTimers {
+        fn get_duration(&self) -> std::time::Duration {
             match self {
-                NoTimer => panic!("no timer"),
                 Period10ms(_) => std::time::Duration::from_millis(100),
                 Period15ms(_) => std::time::Duration::from_millis(150),
                 Timeout20ms(_) => std::time::Duration::from_millis(200),
                 Timeout30ms(_) => std::time::Duration::from_millis(300),
             }
         }
+
+        fn reset(&self) -> bool {
+            match self {
+                Period10ms(_) | Period15ms(_) => false,
+                Timeout20ms(_) | Timeout30ms(_) => true,
+            }
+        }
     }
     impl ServiceTimers {
         fn set_id(&mut self, id: usize) {
             match self {
-                NoTimer => panic!("no timer"),
                 Period10ms(old_id) | Period15ms(old_id) | Timeout20ms(old_id)
                 | Timeout30ms(old_id) => *old_id = id,
             }
         }
         fn get_id(&self) -> usize {
             match self {
-                NoTimer => panic!("no timer"),
                 Period10ms(old_id) | Period15ms(old_id) | Timeout20ms(old_id)
                 | Timeout30ms(old_id) => *old_id,
             }
@@ -242,7 +244,7 @@ mod timer_stream {
                     sleep_until(deadline).await;
 
                     // asserting that deadlines are respected
-                    let timer_duration = kind.get_millis();
+                    let timer_duration = kind.get_duration();
                     let elapsed = Instant::now().duration_since(pushed_instant);
                     println!("elapsed: {:?} deadline: {:?}", elapsed, timer_duration);
                 }

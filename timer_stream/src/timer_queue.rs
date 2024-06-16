@@ -4,9 +4,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-/// A trait that gives duration from something (a timer kind, for example).
-pub trait GetMillis {
-    fn get_millis(&self) -> Duration;
+/// Timing trait.
+pub trait Timing {
+    fn get_duration(&self) -> Duration;
+    fn reset(&self) -> bool;
 }
 
 /// Timer.
@@ -20,12 +21,12 @@ pub struct Timer<T> {
 }
 impl<T> Timer<T>
 where
-    T: GetMillis,
+    T: Timing,
 {
     /// Initiate a new timer.
     pub fn init(kind: T, now: Instant) -> Timer<T> {
         Timer {
-            deadline: now + kind.get_millis(),
+            deadline: now + kind.get_duration(),
             kind,
         }
     }
@@ -191,7 +192,7 @@ mod timer_queue {
         time::{Duration, Instant},
     };
 
-    use crate::{GetMillis, Timer, TimerQueue};
+    use crate::{Timer, TimerQueue, Timing};
     use rand::distributions::{Distribution, Uniform};
     use ServiceTimers::*;
 
@@ -213,13 +214,20 @@ mod timer_queue {
             }
         }
     }
-    impl GetMillis for ServiceTimers {
-        fn get_millis(&self) -> std::time::Duration {
+    impl Timing for ServiceTimers {
+        fn get_duration(&self) -> std::time::Duration {
             match self {
                 Period10ms(_) => std::time::Duration::from_millis(10),
                 Period15ms(_) => std::time::Duration::from_millis(15),
                 Timeout20ms(_) => std::time::Duration::from_millis(20),
                 Timeout30ms(_) => std::time::Duration::from_millis(30),
+            }
+        }
+
+        fn reset(&self) -> bool {
+            match self {
+                Period10ms(_) | Period15ms(_) => false,
+                Timeout20ms(_) | Timeout30ms(_) => true,
             }
         }
     }
@@ -268,11 +276,13 @@ mod timer_queue {
         timer_queue.push(Timer::init(Period10ms(0), now));
         timer_queue.println();
         assert!(timer_queue.len() == 4);
+
         assert_eq!(
             timer_queue.pop(),
             Some(Timer::from_millis(10, Period10ms(0), now))
         );
         now = now + Duration::from_millis(10);
+
         assert!(timer_queue.len() == 3);
         timer_queue.push(Timer::init(Period10ms(1), now));
         assert!(timer_queue.len() == 4);
@@ -282,23 +292,28 @@ mod timer_queue {
             Some(Timer::from_millis(5, Period15ms(0), now))
         );
         now = now + Duration::from_millis(5);
+
         assert!(timer_queue.len() == 3);
         assert_eq!(
             timer_queue.pop(),
             Some(Timer::from_millis(5, Timeout20ms(0), now))
         );
         now = now + Duration::from_millis(5);
+
         assert!(timer_queue.len() == 2);
         assert_eq!(
             timer_queue.pop(),
             Some(Timer::from_millis(0, Period10ms(1), now))
         );
+        now = now + Duration::from_millis(0);
+
         assert!(timer_queue.len() == 1);
         assert_eq!(
             timer_queue.pop(),
             Some(Timer::from_millis(10, Timeout30ms(0), now))
         );
-        now = now + Duration::from_millis(10);
+        // now = now + Duration::from_millis(10);
+
         assert!(timer_queue.len() == 0);
         assert_eq!(timer_queue.pop(), None);
         assert!(timer_queue.len() == 0);
@@ -339,7 +354,7 @@ mod timer_queue {
             }
 
             timer.set_id(self.fresh_id);
-            let timer_infos = TimerInfos::new(timer.get_millis(), self.global_time);
+            let timer_infos = TimerInfos::new(timer.get_duration(), self.global_time);
 
             self.timer_queue.push(Timer::init(timer, self.global_time));
             self.timers.insert(self.fresh_id, timer_infos);
@@ -353,7 +368,7 @@ mod timer_queue {
             }
 
             timer.set_id(self.fresh_id);
-            let timer_infos = TimerInfos::new(timer.get_millis(), self.global_time);
+            let timer_infos = TimerInfos::new(timer.get_duration(), self.global_time);
 
             self.timer_queue.reset(Timer::init(timer, self.global_time));
             self.timers.insert(self.fresh_id, timer_infos);
