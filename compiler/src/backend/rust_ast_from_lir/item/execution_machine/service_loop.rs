@@ -27,8 +27,11 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
 
     // create service structure
     let mut timer_variants: Vec<Variant> = vec![];
-    let mut timer_arms: Vec<Arm> = vec![];
+    let mut timer_duration_arms: Vec<Arm> = vec![];
+    let mut timer_reset_arms: Vec<Arm> = vec![];
     let mut input_variants: Vec<Variant> = vec![];
+    let mut input_eq_arms: Vec<Arm> = vec![];
+    let mut input_get_instant_arms: Vec<Arm> = vec![];
     let mut output_variants: Vec<Variant> = vec![];
     let mut service_fields: Vec<Field> = vec![parse_quote! { context: Context }];
     let mut field_values: Vec<FieldValue> = vec![parse_quote! { context }];
@@ -45,8 +48,17 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
             let ident = format_ident!("{}", identifier);
             timer_variants.push(parse_quote! { #ident });
             match kind {
-                TimingEventKind::Period(duration) | TimingEventKind::Timeout(duration) => {
-                    timer_arms.push(parse_quote! { T::#ident =>  #duration as i64});
+                TimingEventKind::Period(duration) => {
+                    timer_duration_arms.push(parse_quote! { T::#ident => {
+                        std::time::Duration::from_millis(#duration)
+                    } });
+                    timer_reset_arms.push(parse_quote! { T::#ident => false });
+                }
+                TimingEventKind::Timeout(duration) => {
+                    timer_duration_arms.push(parse_quote! { T::#ident => {
+                        std::time::Duration::from_millis(#duration)
+                    } });
+                    timer_reset_arms.push(parse_quote! { T::#ident => true });
                 }
             }
         });
@@ -56,7 +68,10 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
          }| {
             let name = Ident::new(&identifier, Span::call_site());
             let ty = type_rust_ast_from_lir(r#type);
-            input_variants.push(parse_quote! { #name(#ty, i64) });
+            input_variants.push(parse_quote! { #name(#ty, std::time::Instant) });
+            input_eq_arms
+                .push(parse_quote! { (I::#name(this, _), I::#name(other, _)) => this.eq(other) });
+            input_get_instant_arms.push(parse_quote! { I::#name(_, instant) => *instant });
         },
     );
     output_flows.into_iter().for_each(
@@ -65,23 +80,37 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
          }| {
             let name = Ident::new(&identifier, Span::call_site());
             let ty = type_rust_ast_from_lir(r#type);
-            output_variants.push(parse_quote! { #name(#ty) });
+            output_variants.push(parse_quote! { #name(#ty, std::time::Instant) });
         },
     );
     if !timer_variants.is_empty() {
-        input_variants.push(parse_quote! { timer(T, i64) });
+        input_variants.push(parse_quote! { timer(T, std::time::Instant) });
+        input_eq_arms
+            .push(parse_quote! { (I::timer(this, _), I::timer(other, _)) => this.eq(other) });
+        input_get_instant_arms.push(parse_quote! { I::timer(_, instant) => *instant });
     }
+    input_eq_arms.push(parse_quote! { _ => false });
     let service_timer_name = format_ident!("{}", to_camel_case(&format!("{service}ServiceTimer")));
     items.push(Item::Enum(parse_quote! {
+        #[derive(PartialEq)]
         pub enum #service_timer_name {
             #(#timer_variants),*
         }
     }));
     items.push(Item::Impl(parse_quote! {
         impl #service_timer_name {
-            pub fn get_timer(&self) -> i64 {
+            pub fn get_duration(&self) -> std::time::Duration {
                 match self {
-                    #(#timer_arms),*
+                    #(#timer_duration_arms),*
+                }
+            }
+        }
+    }));
+    items.push(Item::Impl(parse_quote! {
+        impl priority_stream::Reset for #service_timer_name {
+            fn do_reset(&self) -> bool {
+                match self {
+                    #(#timer_reset_arms),*
                 }
             }
         }
@@ -92,6 +121,39 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
             #(#input_variants),*
         }
     }));
+    if !timer_variants.is_empty() {
+        items.push(parse_quote! {
+            impl priority_stream::Reset for #service_input_name {
+                fn do_reset(&self) -> bool {
+                    match self {
+                            #service_input_name::timer(timer, _) => timer.do_reset(),
+                            _ => false,
+                    }
+                }
+            }
+        });
+    }
+    items.push(parse_quote! {
+        impl PartialEq for #service_input_name {
+            fn eq(&self, other: &Self) -> bool {
+                match (self, other) {
+                    #(#input_eq_arms),*
+                }
+            }
+        }
+    });
+    items.push(parse_quote! {
+        impl #service_input_name {
+            pub fn get_instant(&self) -> std::time::Instant {
+                match self {
+                    #(#input_get_instant_arms),*
+                }
+            }
+            pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
+                v1.get_instant().cmp(&v2.get_instant())
+            }
+        }
+    });
     let service_output_name =
         format_ident!("{}", to_camel_case(&format!("{service}ServiceOutput")));
     items.push(Item::Enum(parse_quote! {
@@ -100,7 +162,8 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         }
     }));
     service_fields.push(parse_quote! { output: futures::channel::mpsc::Sender<O> });
-    service_fields.push(parse_quote! { timer: futures::channel::mpsc::Sender<(T, i64)> });
+    service_fields
+        .push(parse_quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> });
     field_values.push(parse_quote! { output });
     field_values.push(parse_quote! { timer });
     let service_name = format_ident!("{}", to_camel_case(&format!("{service}Service")));
@@ -144,7 +207,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
     impl_items.push(parse_quote! {
         pub fn new(
             output: futures::channel::mpsc::Sender<O>,
-            timer: futures::channel::mpsc::Sender<(T, i64)>
+            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>
         ) -> #service_name {
             let context = Context::init();
             #(#components_states)*
@@ -165,14 +228,14 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
                     let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
                     let function_name: Ident = format_ident!("handle_{flow_name}");
                     input_arms.push(parse_quote! {
-                        I::#ident(#ident, timestamp) => service.#function_name(timestamp, #ident).await
+                        I::#ident(#ident, instant) => service.#function_name(instant, #ident).await
                     })
                 }
                 ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
                     let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
                     let function_name: Ident = format_ident!("handle_{time_flow_name}");
                     input_arms.push(parse_quote! {
-                        I::timer(T::#ident, timestamp) => service.#function_name(timestamp).await,
+                        I::timer(T::#ident, instant) => service.#function_name(instant).await,
                     })
                 }
             });
@@ -215,7 +278,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
                         .into_iter()
                         .map(instruction_flow_rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        async fn #function_name(&mut self, timestamp: i64, #ident: #ty) {
+                        async fn #function_name(&mut self, instant: std::time::Instant, #ident: #ty) {
                             #(#instructions)*
                         }
                     })
@@ -226,7 +289,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
                         .into_iter()
                         .map(instruction_flow_rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        async fn #function_name(&mut self, timestamp: i64) {
+                        async fn #function_name(&mut self, instant: std::time::Instant) {
                             #(#instructions)*
                         }
                     })
