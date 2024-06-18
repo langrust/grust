@@ -30,7 +30,8 @@ message Input {
 
 // the output part of the interface
 message Output {
-    Braking brakes = 1;
+    int64 timestamp = 1;
+    Braking brakes = 2;
 }
 
 // the service interface

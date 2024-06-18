@@ -55,7 +55,9 @@ use interface::{
     input::Message,
     Braking, Input, Output, Pedestrian, Speed,
 };
+use lazy_static::lazy_static;
 use priority_stream::prio_stream;
+use std::time::{Duration, Instant};
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
 // include the `interface` module, which is generated from interface.proto.
@@ -63,46 +65,47 @@ pub mod interface {
     tonic::include_proto!("interface");
 }
 
+lazy_static! {
+    /// Initial instant.
+    static ref INIT : Instant = Instant::now();
+}
+
 fn into_toto_service_input(input: Input) -> Option<TotoServiceInput> {
     match input.message {
         Some(Message::PedestrianL(Pedestrian { distance })) => {
-            Some(TotoServiceInput::pedestrian_l(distance, input.timestamp))
+            Some(TotoServiceInput::pedestrian_l(
+                distance,
+                INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            ))
         }
         Some(Message::PedestrianR(Pedestrian { distance })) => {
-            Some(TotoServiceInput::pedestrian_r(distance, input.timestamp))
+            Some(TotoServiceInput::pedestrian_r(
+                distance,
+                INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            ))
         }
-        Some(Message::Speed(Speed { value })) => {
-            Some(TotoServiceInput::speed_km_h(value, input.timestamp))
-        }
+        Some(Message::Speed(Speed { value })) => Some(TotoServiceInput::speed_km_h(
+            value,
+            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+        )),
         None => None,
     }
 }
 
 fn from_toto_service_output(output: TotoServiceOutput) -> Result<Output, Status> {
     match output {
-        TotoServiceOutput::brakes(aeb::Braking::UrgentBrake) => Ok(Output {
+        TotoServiceOutput::brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
             brakes: Braking::UrgentBrake.into(),
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-        TotoServiceOutput::brakes(aeb::Braking::SoftBrake) => Ok(Output {
+        TotoServiceOutput::brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
             brakes: Braking::SoftBrake.into(),
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-        TotoServiceOutput::brakes(aeb::Braking::NoBrake) => Ok(Output {
+        TotoServiceOutput::brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
             brakes: Braking::NoBrake.into(),
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-    }
-}
-
-impl TotoServiceInput {
-    pub fn get_timestamp(&self) -> i64 {
-        match self {
-            TotoServiceInput::speed_km_h(_, timestamp)
-            | TotoServiceInput::pedestrian_l(_, timestamp)
-            | TotoServiceInput::pedestrian_r(_, timestamp)
-            | TotoServiceInput::timer(_, timestamp) => *timestamp,
-        }
-    }
-    pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
-        v1.get_timestamp().cmp(&v2.get_timestamp())
     }
 }
 
@@ -119,22 +122,22 @@ impl Aeb for AebRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunAEBStream>, Status> {
-        let (timer_sink, timer_stream) = futures::channel::mpsc::channel(4);
+        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(4);
         let (output_sink, output_stream) = futures::channel::mpsc::channel(4);
 
         let request_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_toto_service_input).ok().flatten() });
-        let timer_stream = timer_stream.map(|(timer, timestamp): (TotoServiceTimer, i64)| {
-            let next_time = timer.get_timer() + timestamp;
-            TotoServiceInput::timer(timer, next_time)
-        }); // TODO: this needs to be changed to a proper timer stream
+        let timers_stream = timers_stream.map(|(timer, instant): (TotoServiceTimer, Instant)| {
+            let deadline = instant + timer.get_duration();
+            TotoServiceInput::timer(timer, deadline)
+        });
         let input_stream = prio_stream::<_, _, 100>(
-            futures::stream::select(request_stream, timer_stream),
+            futures::stream::select(request_stream, timers_stream),
             TotoServiceInput::order,
         );
 
-        let toto_service = TotoService::new(output_sink, timer_sink);
+        let toto_service = TotoService::new(output_sink, timers_sink);
         tokio::spawn(toto_service.run_loop(input_stream));
 
         Ok(Response::new(output_stream.map(
