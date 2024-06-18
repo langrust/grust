@@ -4,10 +4,11 @@ use pin_project::pin_project;
 use std::{
     pin::Pin,
     task::{Context, Poll},
+    time::Instant,
 };
-use tokio::time::{sleep_until, Instant, Sleep};
+use tokio::time::{sleep_until, Sleep};
 
-/// # Combine two streams into a priority queue.
+/// # Timer stream.
 #[pin_project(project = TimerStreamProj)]
 pub struct TimerStream<S, T, const N: usize>
 where
@@ -98,23 +99,23 @@ where
         stream,
         end: false,
         queue: TimerQueue::new(),
-        sleep: sleep_until(Instant::now()),
+        sleep: sleep_until(tokio::time::Instant::now()),
         sleeping_timer: None,
     }
 }
 
 #[cfg(test)]
 mod timer_stream {
-    use std::{collections::HashMap, sync::Arc, time::Duration};
+    use std::{
+        collections::HashMap,
+        sync::Arc,
+        time::{Duration, Instant},
+    };
 
     use crate::{timer_stream::timer_stream, Timing};
     use futures::{SinkExt, StreamExt};
     use rand::distributions::{Distribution, Uniform};
-    use tokio::{
-        join,
-        sync::RwLock,
-        time::{sleep, Instant},
-    };
+    use tokio::{join, sync::RwLock, time::sleep};
     use ServiceTimers::*;
 
     #[derive(Debug, PartialEq)]

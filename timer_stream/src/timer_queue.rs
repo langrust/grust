@@ -1,68 +1,9 @@
-use std::{
-    cmp::Ordering,
-    fmt::Debug,
-    time::{Duration, Instant},
-};
-
-/// Timing trait.
-pub trait Timing {
-    fn get_duration(&self) -> Duration;
-    fn reset(&self) -> bool;
-}
-
-/// Timer.
-///
-/// A timer has a `kind`, which is its identifier (period_component_c, timeout_event_e, etc).
-/// It also has a deadline, to which it should tick.
-#[derive(Debug, PartialEq)]
-pub struct Timer<T> {
-    deadline: Instant,
-    kind: T,
-}
-impl<T> Timer<T>
-where
-    T: Timing,
-{
-    /// Initiate a new timer.
-    pub fn init(kind: T, now: Instant) -> Timer<T> {
-        Timer {
-            deadline: now + kind.get_duration(),
-            kind,
-        }
-    }
-}
-impl<T> Timer<T> {
-    /// Get timer's kind.
-    pub fn get_kind(&self) -> &T {
-        &self.kind
-    }
-    /// Get timer's deadline.
-    pub fn get_deadline(&self) -> &Instant {
-        &self.deadline
-    }
-    /// Get timer's kind and deadline.
-    pub fn get_kind_and_deadline(self) -> (T, Instant) {
-        (self.kind, self.deadline)
-    }
-    /// Create a timer from deadline.
-    pub fn from_deadline(deadline: Instant, kind: T) -> Self {
-        Timer { deadline, kind }
-    }
-    /// Create a timer from millis.
-    #[cfg(test)]
-    pub fn from_millis(millis: u64, kind: T, now: Instant) -> Self {
-        Timer {
-            deadline: now + Duration::from_millis(millis),
-            kind,
-        }
-    }
-}
+use crate::Timer;
+use std::{cmp::Ordering, fmt::Debug};
 
 /// Timer queue.
 ///
 /// It store timers in deadline order.
-/// Forall timer in the queue, the initial deadline is equal to the sum
-/// of deadlines of the previous timers in the queue.
 pub struct TimerQueue<T, const N: usize> {
     queue: [Option<Timer<T>>; N],
     len: usize,
@@ -111,7 +52,7 @@ impl<T, const N: usize> TimerQueue<T, N> {
         // puts the value at the right place
         for index in 0..self.len {
             let curr = self.queue[index].as_mut().unwrap();
-            match value.deadline.cmp(&curr.deadline) {
+            match value.get_deadline().cmp(&curr.get_deadline()) {
                 Ordering::Greater | Ordering::Equal => {
                     self.queue[index..=self.len].rotate_right(1);
                     self.queue[index] = Some(value);
@@ -145,7 +86,7 @@ where
 
             // if curr should be resetted then remove it
             // and add its dealine to the next timer (if it exists)
-            if &curr.kind == &value.kind {
+            if &curr.get_kind() == &value.get_kind() {
                 self.queue[index] = None;
                 self.queue[index..=self.len].rotate_left(1);
                 self.len -= 1;
@@ -178,7 +119,7 @@ impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N> {
             .queue
             .into_iter()
             .take(self.len)
-            .map(|timer| timer.unwrap().kind)
+            .map(|timer| timer.unwrap().get_kind_and_deadline().0)
             .collect::<Vec<_>>();
         debug_assert!(v.len() == self.len);
         v
@@ -381,17 +322,17 @@ mod timer_queue {
                 return;
             }
             let timer = self.timer_queue.pop().unwrap();
-            let timer_id = timer.kind.get_id();
+            let (kind, deadline) = timer.get_kind_and_deadline();
+            let timer_id = kind.get_id();
             let timer_infos = self.timers.get(&timer_id).unwrap();
 
             // asserting that deadlines are respected
-            let timer_popped_deadline = timer.deadline;
             let timer_pushed_instant = timer_infos.pushed_instant;
             let timer_duration = timer_infos.duration;
-            assert!(timer_popped_deadline == timer_pushed_instant + timer_duration);
+            assert!(deadline == timer_pushed_instant + timer_duration);
 
             // update global time
-            self.global_time = timer_popped_deadline;
+            self.global_time = deadline;
         }
     }
 
