@@ -33,7 +33,10 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
         FlowInstruction::Send(ident, flow_expression) => {
             let ident: Ident = Ident::new(&ident, Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
-            parse_quote!(self.output.send(O::#ident(#expression, instant)).await.unwrap();)
+            parse_quote!({
+                let res = self.output.send(O::#ident(#expression, instant)).await;
+                if res.is_err() {return}
+            })
         }
         FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
             let receiver_ident = Ident::new(&receiver_name, Span::call_site());
@@ -70,7 +73,10 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
         }
         FlowInstruction::ResetTimer(timer_name, ..) => {
             let timer_ident = Ident::new(&timer_name, Span::call_site());
-            parse_quote!(self.timer.send((T::#timer_ident, instant)).await.unwrap();)
+            parse_quote!({
+                let res = self.timer.send((T::#timer_ident, instant)).await;
+                if res.is_err() {return}
+            })
         }
         FlowInstruction::EventComponentCall(pattern, component_name, optional_event) => {
             let outputs = pattern_rust_ast_from_lir(pattern);

@@ -118,41 +118,76 @@ pub mod toto_service {
         async fn handle_speed_km_h(&mut self, speed_km_h: f64) {
             self.context.speed_km_h = speed_km_h;
         }
-        async fn handle_pedestrian_l(
-            &mut self,
-            pedestrian_l: f64,
-            timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
-        ) {
-            let pedestrian = Ok(pedestrian_l);
-            timeout_fresh_ident
-                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(2000u64));
+        async fn handle_pedestrian_l(&mut self, instant: std::time::Instant, pedestrian_l: f64) {
+            let flow_expression_fresh_ident = pedestrian_l;
+            let pedestrian = Ok(flow_expression_fresh_ident);
+            {
+                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
             let brakes = self.braking_state.step(
                 self.context
                     .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
             );
             self.context.brakes = brakes;
-            self.output
-                .send(O::brakes(self.context.brakes.clone()))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::brakes(self.context.brakes.clone(), instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
-        async fn handle_pedestrian_r(&mut self, pedestrian_r: f64) {}
-        async fn handle_timeout_fresh_ident(
-            &mut self,
-            timeout_fresh_ident: std::pin::Pin<&mut tokio::time::Sleep>,
-        ) {
-            let pedestrian = Err(());
-            timeout_fresh_ident
-                .reset(tokio::time::Instant::now() + tokio::time::Duration::from_millis(2000u64));
+        async fn handle_pedestrian_r(&mut self, instant: std::time::Instant, pedestrian_r: f64) {
+            let flow_expression_fresh_ident = pedestrian_r;
+            let pedestrian = Ok(flow_expression_fresh_ident);
+            {
+                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
             let brakes = self.braking_state.step(
                 self.context
                     .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
             );
             self.context.brakes = brakes;
-            self.output
-                .send(O::brakes(self.context.brakes.clone()))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::brakes(self.context.brakes.clone(), instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+        }
+        async fn handle_timeout_fresh_ident(&mut self, instant: std::time::Instant) {
+            let pedestrian = Err(());
+            {
+                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            let brakes = self.braking_state.step(
+                self.context
+                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
+            );
+            self.context.brakes = brakes;
+            {
+                let res = self
+                    .output
+                    .send(O::brakes(self.context.brakes.clone(), instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
     }
 }
