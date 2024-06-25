@@ -66,10 +66,60 @@ pub mod toto_service {
     use futures::{sink::SinkExt, stream::StreamExt};
     use TotoServiceInput as I;
     use TotoServiceOutput as O;
+    use TotoServiceTimer as T;
+    #[derive(PartialEq)]
+    pub enum TotoServiceTimer {
+        timeout_fresh_ident,
+    }
+    impl timer_stream::Timing for TotoServiceTimer {
+        fn get_duration(&self) -> std::time::Duration {
+            match self {
+                T::timeout_fresh_ident => std::time::Duration::from_millis(2000u64),
+            }
+        }
+        fn do_reset(&self) -> bool {
+            match self {
+                T::timeout_fresh_ident => true,
+            }
+        }
+    }
     pub enum TotoServiceInput {
-        speed_km_h(f64),
-        pedestrian_l(f64),
-        pedestrian_r(f64),
+        speed_km_h(f64, std::time::Instant),
+        pedestrian_l(f64, std::time::Instant),
+        pedestrian_r(f64, std::time::Instant),
+        timer(T, std::time::Instant),
+    }
+    impl priority_stream::Reset for TotoServiceInput {
+        fn do_reset(&self) -> bool {
+            match self {
+                TotoServiceInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
+                _ => false,
+            }
+        }
+    }
+    impl PartialEq for TotoServiceInput {
+        fn eq(&self, other: &Self) -> bool {
+            match (self, other) {
+                (I::speed_km_h(this, _), I::speed_km_h(other, _)) => this.eq(other),
+                (I::pedestrian_l(this, _), I::pedestrian_l(other, _)) => this.eq(other),
+                (I::pedestrian_r(this, _), I::pedestrian_r(other, _)) => this.eq(other),
+                (I::timer(this, _), I::timer(other, _)) => this.eq(other),
+                _ => false,
+            }
+        }
+    }
+    impl TotoServiceInput {
+        pub fn get_instant(&self) -> std::time::Instant {
+            match self {
+                I::speed_km_h(_, instant) => *instant,
+                I::pedestrian_l(_, instant) => *instant,
+                I::pedestrian_r(_, instant) => *instant,
+                I::timer(_, instant) => *instant,
+            }
+        }
+        pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
+            v1.get_instant().cmp(&v2.get_instant())
+        }
     }
     pub enum TotoServiceOutput {
         brakes(Braking),
