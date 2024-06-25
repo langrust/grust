@@ -1,7 +1,6 @@
 use creusot_contracts::{ensures, logic, open, prelude, requires, DeepModel};
-#[derive(prelude :: Clone, Copy, prelude :: PartialEq, prelude :: Default, DeepModel)]
+#[derive(prelude :: Clone, Copy, prelude :: PartialEq, DeepModel)]
 pub enum Braking {
-    #[default]
     UrgentBrake,
     SoftBrake,
     NoBrake,
