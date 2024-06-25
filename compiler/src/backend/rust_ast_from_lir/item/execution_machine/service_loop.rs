@@ -98,16 +98,12 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         }
     }));
     items.push(Item::Impl(parse_quote! {
-        impl #service_timer_name {
-            pub fn get_duration(&self) -> std::time::Duration {
+        impl timer_stream::Timing for #service_timer_name {
+            fn get_duration(&self) -> std::time::Duration {
                 match self {
                     #(#timer_duration_arms),*
                 }
             }
-        }
-    }));
-    items.push(Item::Impl(parse_quote! {
-        impl priority_stream::Reset for #service_timer_name {
             fn do_reset(&self) -> bool {
                 match self {
                     #(#timer_reset_arms),*
@@ -126,7 +122,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
             impl priority_stream::Reset for #service_input_name {
                 fn do_reset(&self) -> bool {
                     match self {
-                            #service_input_name::timer(timer, _) => timer.do_reset(),
+                            #service_input_name::timer(timer, _) => timer_stream::Timing::do_reset(timer),
                             _ => false,
                     }
                 }
