@@ -1,0 +1,30 @@
+[{
+  "timestamp": 0,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 600,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
+  "timestamp": 1450,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
+  "timestamp": 1700,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
+  "timestamp": 1920,
+  "message": {
+    "InRegulation": false
+  }
+}
