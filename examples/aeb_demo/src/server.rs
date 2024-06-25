@@ -130,8 +130,7 @@ impl Aeb for AebRuntime {
             .into_inner()
             .filter_map(|input| async { input.map(into_toto_service_input).ok().flatten() });
         let timers_stream = timer_stream::<_, _, 10>(timers_stream).map(
-            |(timer, instant): (TotoServiceTimer, Instant)| {
-                let deadline = instant + timer_stream::Timing::get_duration(&timer);
+            |(timer, deadline): (TotoServiceTimer, Instant)| {
                 TotoServiceInput::timer(timer, deadline)
             },
         );
