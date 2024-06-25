@@ -522,10 +522,15 @@ pub mod toto_service {
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
             let in_regulation = self.context.in_regulation_aux.clone();
-            self.output
-                .send(O::in_regulation(in_regulation, instant))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
     }
 }
