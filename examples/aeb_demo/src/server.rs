@@ -58,6 +58,7 @@ use interface::{
 use lazy_static::lazy_static;
 use priority_stream::prio_stream;
 use std::time::{Duration, Instant};
+use timer_stream::timer_stream;
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
 // include the `interface` module, which is generated from interface.proto.
@@ -128,10 +129,12 @@ impl Aeb for AebRuntime {
         let request_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_toto_service_input).ok().flatten() });
-        let timers_stream = timers_stream.map(|(timer, instant): (TotoServiceTimer, Instant)| {
-            let deadline = instant + timer.get_duration();
-            TotoServiceInput::timer(timer, deadline)
-        });
+        let timers_stream = timer_stream::<_, _, 10>(timers_stream).map(
+            |(timer, instant): (TotoServiceTimer, Instant)| {
+                let deadline = instant + timer_stream::Timing::get_duration(&timer);
+                TotoServiceInput::timer(timer, deadline)
+            },
+        );
         let input_stream = prio_stream::<_, _, 100>(
             futures::stream::select(request_stream, timers_stream),
             TotoServiceInput::order,
