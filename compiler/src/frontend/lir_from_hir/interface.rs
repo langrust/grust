@@ -149,7 +149,8 @@ impl Interface {
                                 // add new timing event into the identifier creator
                                 let fresh_name = identifier_creator.fresh_identifier("period");
                                 let typing = Typ::Event(Box::new(Typ::Time));
-                                let fresh_id = symbol_table.insert_fresh_period(fresh_name.clone());
+                                let fresh_id = symbol_table
+                                    .insert_fresh_period(fresh_name.clone(), *period_ms);
 
                                 // add timing_event in new_statements
                                 new_statements.push(FlowStatement::Import(FlowImport {
@@ -180,8 +181,8 @@ impl Interface {
                                 // add new timing event into the identifier creator
                                 let fresh_name = identifier_creator.fresh_identifier("timeout");
                                 let typing = Typ::Event(Box::new(Typ::Time));
-                                let fresh_id =
-                                    symbol_table.insert_fresh_deadline(fresh_name.clone());
+                                let fresh_id = symbol_table
+                                    .insert_fresh_deadline(fresh_name.clone(), *deadline);
 
                                 // add timing_event in new_statements
                                 new_statements.push(FlowStatement::Import(FlowImport {
@@ -214,8 +215,8 @@ impl Interface {
                                     // add new timing event into the identifier creator
                                     let fresh_name = identifier_creator.fresh_identifier("period");
                                     let typing = Typ::Event(Box::new(Typ::Time));
-                                    let fresh_id =
-                                        symbol_table.insert_fresh_period(fresh_name.clone());
+                                    let fresh_id = symbol_table
+                                        .insert_fresh_period(fresh_name.clone(), period);
 
                                     // add timing_event in new_statements
                                     new_statements.push(FlowStatement::Import(FlowImport {
@@ -275,7 +276,7 @@ impl Interface {
                     }
                 };
                 // compute instructions that depend on this incoming flow
-                let instructions = compute_flow_instructions(
+                let mut instructions = compute_flow_instructions(
                     vec![index],
                     &statements,
                     &subgraph,
@@ -289,8 +290,10 @@ impl Interface {
                 );
                 // determine weither this arriving flow is a timing event
                 let flow_name = symbol_table.get_name(flow_id).clone();
-                let arriving_flow = if symbol_table.is_period(flow_id) {
-                    ArrivingFlow::Period(flow_name)
+                let arriving_flow = if let Some(period) = symbol_table.get_period(flow_id) {
+                    // add reset periodic timer
+                    instructions.push(FlowInstruction::ResetTimer(flow_name.clone(), *period));
+                    ArrivingFlow::Period(flow_name) // todo: add reset for timer
                 } else if symbol_table.is_deadline(flow_id) {
                     ArrivingFlow::Deadline(flow_name)
                 } else {

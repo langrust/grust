@@ -182,23 +182,6 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         };
         state
     });
-    // create periods time flows
-    let periods = timing_events
-        .iter()
-        .filter_map(|TimingEvent { identifier, kind }| {
-            let ident = format_ident!("{}", identifier);match kind {
-            TimingEventKind::Period(period) => {
-                let period = Expr::Lit(ExprLit {
-                    attrs: vec![],
-                    lit: syn::Lit::Int(LitInt::new(&format!("{period}u64"), Span::call_site())),
-                });
-                let set_period: Stmt =  parse_quote! {
-                    let #ident = tokio::time::interval(tokio::time::Duration::from_millis(#period));
-                };
-                Some(set_period)
-            }
-            TimingEventKind::Timeout(_) => None
-        }});
     // `new` function
     impl_items.push(parse_quote! {
         pub fn new(
@@ -207,13 +190,22 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         ) -> #service_name {
             let context = Context::init();
             #(#components_states)*
-            #(#periods)*
             #service_name {
                 #(#field_values),*
             }
         }
     });
 
+    // init timers
+    let init_timers = timing_events
+        .iter()
+        .map(|TimingEvent { identifier, .. }| -> Stmt {
+            let timer_ident = format_ident!("{}", identifier);
+            parse_quote!({
+                let res = service.timer.send((T::#timer_ident, init_instant)).await;
+                if res.is_err() {return}
+            })
+        });
     // loop on the [tokio::select!] macro
     let loop_select: Stmt = {
         let mut input_arms: Vec<Arm> = vec![];
@@ -251,9 +243,10 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
     };
     // `run_loop` function
     impl_items.push(parse_quote! {
-        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+        pub async fn run_loop(self, init_instant: std::time::Instant, input: impl futures::Stream<Item = I>) {
             tokio::pin!(input);
             let mut service = self;
+            #(#init_timers)*
             #loop_select
         }
     });
