@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 grust = { path = "../../grust" }
 priority_stream = { path = "../../priority_stream" }
+timer_stream = { path = "../../timer_stream" }
 tokio = { version = "1.38.0", features = ["full"] }
 futures = "0.3.30"
 prost = "0.12"

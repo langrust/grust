@@ -379,14 +379,12 @@ pub mod toto_service {
     pub enum TotoServiceTimer {
         period_fresh_ident,
     }
-    impl TotoServiceTimer {
-        pub fn get_duration(&self) -> std::time::Duration {
+    impl timer_stream::Timing for TotoServiceTimer {
+        fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::period_fresh_ident => std::time::Duration::from_millis(10u64),
             }
         }
-    }
-    impl priority_stream::Reset for TotoServiceTimer {
         fn do_reset(&self) -> bool {
             match self {
                 T::period_fresh_ident => false,
@@ -405,7 +403,7 @@ pub mod toto_service {
     impl priority_stream::Reset for TotoServiceInput {
         fn do_reset(&self) -> bool {
             match self {
-                TotoServiceInput::timer(timer, _) => timer.do_reset(),
+                TotoServiceInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
                 _ => false,
             }
         }
