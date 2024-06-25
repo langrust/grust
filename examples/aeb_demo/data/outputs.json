@@ -3,43 +3,43 @@
   "brakes": 2
 }
 ,{
+  "timestamp": 1000,
+  "brakes": 2
+}
+,{
+  "timestamp": 2500,
+  "brakes": 1
+}
+,{
   "timestamp": 2800,
-  "brakes": 0
+  "brakes": 2
 }
 ,{
   "timestamp": 4800,
   "brakes": 0
 }
 ,{
-  "timestamp": 6800,
+  "timestamp": 5100,
+  "brakes": 1
+}
+,{
+  "timestamp": 7100,
   "brakes": 0
 }
 ,{
-  "timestamp": 8800,
+  "timestamp": 9100,
   "brakes": 0
 }
 ,{
-  "timestamp": 10800,
+  "timestamp": 11100,
   "brakes": 0
 }
 ,{
-  "timestamp": 12800,
+  "timestamp": 13100,
   "brakes": 0
 }
 ,{
-  "timestamp": 14800,
-  "brakes": 0
-}
-,{
-  "timestamp": 16800,
-  "brakes": 0
-}
-,{
-  "timestamp": 1000,
-  "brakes": 2
-}
-,{
-  "timestamp": 3000,
+  "timestamp": 15100,
   "brakes": 0
 }
 ]
