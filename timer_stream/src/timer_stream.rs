@@ -73,7 +73,7 @@ where
                         project.sleeping_timer,
                         Some((timer_kind, timer_deadline.into())),
                     );
-                    if output.is_some() {
+                    if !abort && output.is_some() {
                         Poll::Ready(output)
                     } else {
                         Poll::Pending
