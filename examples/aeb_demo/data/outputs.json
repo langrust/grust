@@ -3,15 +3,15 @@
   "brakes": 2
 }
 ,{
-  "timestamp": 1000,
-  "brakes": 2
+  "timestamp": 2800,
+  "brakes": 0
 }
 ,{
   "timestamp": 4800,
   "brakes": 0
 }
 ,{
-  "timestamp": 5000,
+  "timestamp": 6800,
   "brakes": 0
 }
 ,{
@@ -19,7 +19,7 @@
   "brakes": 0
 }
 ,{
-  "timestamp": 9000,
+  "timestamp": 10800,
   "brakes": 0
 }
 ,{
@@ -27,7 +27,7 @@
   "brakes": 0
 }
 ,{
-  "timestamp": 13000,
+  "timestamp": 14800,
   "brakes": 0
 }
 ,{
@@ -35,11 +35,11 @@
   "brakes": 0
 }
 ,{
-  "timestamp": 17000,
-  "brakes": 0
+  "timestamp": 1000,
+  "brakes": 2
 }
 ,{
-  "timestamp": 20800,
+  "timestamp": 3000,
   "brakes": 0
 }
 ]
