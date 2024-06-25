@@ -114,9 +114,8 @@ impl Aeb for AebRuntime {
             TotoServiceInput::order,
         );
 
-        let (sink, output_stream) = futures::channel::mpsc::channel(4);
-        let toto_service = TotoService::new(sink);
-        tokio::spawn(toto_service.run_loop(input_stream));
+        let toto_service = TotoService::new(output_sink, timers_sink);
+        tokio::spawn(toto_service.run_loop(INIT.clone(), input_stream));
 
         Ok(Response::new(output_stream.map(
             from_toto_service_output as fn(TotoServiceOutput) -> Result<Output, Status>,

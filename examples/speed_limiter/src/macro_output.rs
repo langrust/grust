@@ -457,8 +457,6 @@ pub mod toto_service {
             let context = Context::init();
             let process_set_speed = ProcessSetSpeedState::init();
             let speed_limiter = SpeedLimiterState::init();
-            let period_fresh_ident =
-                tokio::time::interval(tokio::time::Duration::from_millis(10u64));
             TotoService {
                 context,
                 process_set_speed,
@@ -467,9 +465,22 @@ pub mod toto_service {
                 timer,
             }
         }
-        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+        pub async fn run_loop(
+            self,
+            init_instant: std::time::Instant,
+            input: impl futures::Stream<Item = I>,
+        ) {
             tokio::pin!(input);
             let mut service = self;
+            {
+                let res = service
+                    .timer
+                    .send((T::period_fresh_ident, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
             loop {
                 tokio::select! {
                     input = input.next() => if let Some(input) = input
@@ -535,6 +546,12 @@ pub mod toto_service {
                     .output
                     .send(O::in_regulation(in_regulation, instant))
                     .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            {
+                let res = self.timer.send((T::period_fresh_ident, instant)).await;
                 if res.is_err() {
                     return;
                 }

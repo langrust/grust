@@ -139,13 +139,22 @@ pub mod toto_service {
                 output,
             }
         }
-        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+        pub async fn run_loop(
+            self,
+            init_instant: std::time::Instant,
+            input: impl futures::Stream<Item = I>,
+        ) {
             tokio::pin!(input);
             let mut service = self;
-            let timeout_fresh_ident = tokio::time::sleep_until(
-                tokio::time::Instant::now() + tokio::time::Duration::from_millis(2000u64),
-            );
-            tokio::pin!(timeout_fresh_ident);
+            {
+                let res = service
+                    .timer
+                    .send((T::timeout_fresh_ident, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
             loop {
                 tokio::select! {
                     input = input.next() => if let Some(input) = input

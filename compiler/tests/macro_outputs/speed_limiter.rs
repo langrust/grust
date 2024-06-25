@@ -468,8 +468,6 @@ pub mod toto_service {
             let context = Context::init();
             let process_set_speed = ProcessSetSpeedState::init();
             let speed_limiter = SpeedLimiterState::init();
-            let period_fresh_ident =
-                tokio::time::interval(tokio::time::Duration::from_millis(10u64));
             TotoService {
                 context,
                 process_set_speed,
@@ -478,9 +476,22 @@ pub mod toto_service {
                 timer,
             }
         }
-        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+        pub async fn run_loop(
+            self,
+            init_instant: std::time::Instant,
+            input: impl futures::Stream<Item = I>,
+        ) {
             tokio::pin!(input);
             let mut service = self;
+            {
+                let res = service
+                    .timer
+                    .send((T::period_fresh_ident, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
             loop {
                 tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: activation (activation , instant) => service . handle_activation (instant , activation) . await , I :: set_speed (set_speed , instant) => service . handle_set_speed (instant , set_speed) . await , I :: speed (speed , instant) => service . handle_speed (instant , speed) . await , I :: vacuum_brake (vacuum_brake , instant) => service . handle_vacuum_brake (instant , vacuum_brake) . await , I :: kickdown (kickdown , instant) => service . handle_kickdown (instant , kickdown) . await , I :: vdc (vdc , instant) => service . handle_vdc (instant , vdc) . await , I :: timer (T :: period_fresh_ident , instant) => service . handle_period_fresh_ident (instant) . await , } } else { break ; } }
             }
@@ -525,6 +536,12 @@ pub mod toto_service {
                     .output
                     .send(O::in_regulation(in_regulation, instant))
                     .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            {
+                let res = self.timer.send((T::period_fresh_ident, instant)).await;
                 if res.is_err() {
                     return;
                 }

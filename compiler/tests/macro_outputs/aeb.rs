@@ -154,9 +154,22 @@ pub mod toto_service {
                 timer,
             }
         }
-        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+        pub async fn run_loop(
+            self,
+            init_instant: std::time::Instant,
+            input: impl futures::Stream<Item = I>,
+        ) {
             tokio::pin!(input);
             let mut service = self;
+            {
+                let res = service
+                    .timer
+                    .send((T::timeout_fresh_ident, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
             loop {
                 tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: speed_km_h (speed_km_h , instant) => service . handle_speed_km_h (instant , speed_km_h) . await , I :: pedestrian_l (pedestrian_l , instant) => service . handle_pedestrian_l (instant , pedestrian_l) . await , I :: pedestrian_r (pedestrian_r , instant) => service . handle_pedestrian_r (instant , pedestrian_r) . await , I :: timer (T :: timeout_fresh_ident , instant) => service . handle_timeout_fresh_ident (instant) . await , } } else { break ; } }
             }
