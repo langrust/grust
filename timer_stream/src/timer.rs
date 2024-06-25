@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 /// Timing trait.
 pub trait Timing {
     fn get_duration(&self) -> Duration;
-    fn reset(&self) -> bool;
+    fn do_reset(&self) -> bool;
 }
 
 /// Timer.

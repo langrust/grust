@@ -41,7 +41,7 @@ where
                 match project.timer.as_mut().poll_next(cx) {
                     // the stream have a timer
                     Poll::Ready(Some(timer)) => {
-                        if timer.get_kind().reset() {
+                        if timer.get_kind().do_reset() {
                             queue.reset(timer)
                         } else {
                             queue.push_timer(timer)

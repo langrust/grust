@@ -165,7 +165,7 @@ mod timer_queue {
             }
         }
 
-        fn reset(&self) -> bool {
+        fn do_reset(&self) -> bool {
             match self {
                 Period10ms(_) | Period15ms(_) => false,
                 Timeout20ms(_) | Timeout30ms(_) => true,

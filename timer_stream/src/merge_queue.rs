@@ -107,7 +107,7 @@ where
     /// This function will panic if the queue is full.
     /// This function will panic if the timer is not resettable.
     pub fn reset(&mut self, timer: Timer<U::TimerTy>) {
-        if !timer.get_kind().reset() {
+        if !timer.get_kind().do_reset() {
             panic!("not resettable")
         }
 
@@ -189,7 +189,7 @@ mod merge_queue {
             }
         }
 
-        fn reset(&self) -> bool {
+        fn do_reset(&self) -> bool {
             match self {
                 Period10ms | Period15ms => false,
                 Timeout20ms | Timeout30ms => true,
