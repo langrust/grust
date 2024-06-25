@@ -472,7 +472,12 @@ pub mod toto_service {
                 self.context.v_set_aux = v_set_aux;
                 self.context.v_update = v_update;
                 let v_set = self.context.v_set_aux.clone();
-                self.output.send(O::v_set(v_set, instant)).await.unwrap();
+                {
+                    let res = self.output.send(O::v_set(v_set, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
             } else {
             }
         }
@@ -521,10 +526,15 @@ pub mod toto_service {
         }
         async fn handle_period_fresh_ident_1(&mut self, instant: std::time::Instant) {
             let in_regulation = self.context.in_regulation_aux.clone();
-            self.output
-                .send(O::in_regulation(in_regulation, instant))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
     }
 }

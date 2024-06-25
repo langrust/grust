@@ -168,36 +168,50 @@ pub mod toto_service {
         }
         async fn handle_pedestrian_l(&mut self, instant: std::time::Instant, pedestrian_l: f64) {
             let pedestrian = Ok(pedestrian_l);
-            self.timer
-                .send((T::timeout_fresh_ident, instant))
-                .await
-                .unwrap();
+            {
+                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
             let brakes = self.braking_state.step(
                 self.context
                     .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
             );
             self.context.brakes = brakes;
-            self.output
-                .send(O::brakes(self.context.brakes.clone(), instant))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::brakes(self.context.brakes.clone(), instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_pedestrian_r(&mut self, instant: std::time::Instant, pedestrian_r: f64) {}
         async fn handle_timeout_fresh_ident(&mut self, instant: std::time::Instant) {
             let pedestrian = Err(());
-            self.timer
-                .send((T::timeout_fresh_ident, instant))
-                .await
-                .unwrap();
+            {
+                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
             let brakes = self.braking_state.step(
                 self.context
                     .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
             );
             self.context.brakes = brakes;
-            self.output
-                .send(O::brakes(self.context.brakes.clone(), instant))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::brakes(self.context.brakes.clone(), instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
     }
 }
