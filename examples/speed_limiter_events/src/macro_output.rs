@@ -477,10 +477,15 @@ pub mod toto_service {
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
             let in_regulation = self.context.in_regulation_aux.clone();
-            self.output
-                .send(O::in_regulation(in_regulation, instant))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
             if (self.context.flow_expression_fresh_ident - set_speed) >= 1.0 {
@@ -498,7 +503,12 @@ pub mod toto_service {
                 self.context.v_set_aux = v_set_aux;
                 self.context.v_update = v_update;
                 let v_set = self.context.v_set_aux.clone();
-                self.output.send(O::v_set(v_set, instant)).await.unwrap();
+                {
+                    let res = self.output.send(O::v_set(v_set, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
             } else {
             }
         }
@@ -522,10 +532,15 @@ pub mod toto_service {
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
             let in_regulation = self.context.in_regulation_aux.clone();
-            self.output
-                .send(O::in_regulation(in_regulation, instant))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {
             let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
@@ -537,10 +552,15 @@ pub mod toto_service {
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
             let in_regulation = self.context.in_regulation_aux.clone();
-            self.output
-                .send(O::in_regulation(in_regulation, instant))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_vdc(&mut self, instant: std::time::Instant, vdc: VdcState) {
             self.context.vdc = vdc;
@@ -555,10 +575,15 @@ pub mod toto_service {
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
             let in_regulation = self.context.in_regulation_aux.clone();
-            self.output
-                .send(O::in_regulation(in_regulation, instant))
-                .await
-                .unwrap();
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
     }
 }
