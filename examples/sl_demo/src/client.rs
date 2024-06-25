@@ -199,7 +199,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let received = received.unwrap();
         println!("\treceived message: `{:?}`", received.message);
         append_json(OUTPATH, received);
-        if counter > 10 {
+        if counter > 10000 {
             break;
         }
     }

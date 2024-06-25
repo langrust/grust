@@ -38,9 +38,9 @@ pub enum SymbolKind {
         /// FLow kind.
         kind: FlowKind,
         /// Is periodic timer.
-        period: bool,
+        period: Option<u64>,
         /// Is deadline timer.
-        deadline: bool,
+        deadline: Option<u64>,
         /// Flow type.
         typing: Typ,
     },
@@ -522,8 +522,8 @@ impl SymbolTable {
             kind: SymbolKind::Flow {
                 path,
                 kind,
-                period: false,
-                deadline: false,
+                period: None,
+                deadline: None,
                 typing,
             },
             name,
@@ -672,8 +672,8 @@ impl SymbolTable {
             kind: SymbolKind::Flow {
                 path: None,
                 kind,
-                period: false,
-                deadline: false,
+                period: None,
+                deadline: None,
                 typing,
             },
             name: fresh_name,
@@ -684,13 +684,13 @@ impl SymbolTable {
     }
 
     /// Insert fresh period timer in symbol table.
-    pub fn insert_fresh_period(&mut self, fresh_name: String) -> usize {
+    pub fn insert_fresh_period(&mut self, fresh_name: String, period: u64) -> usize {
         let symbol = Symbol {
             kind: SymbolKind::Flow {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
-                period: true,
-                deadline: false,
+                period: Some(period),
+                deadline: None,
                 typing: Typ::Event(Box::new(Typ::Time)),
             },
             name: fresh_name,
@@ -701,13 +701,13 @@ impl SymbolTable {
     }
 
     /// Insert fresh deadline timer in symbol table.
-    pub fn insert_fresh_deadline(&mut self, fresh_name: String) -> usize {
+    pub fn insert_fresh_deadline(&mut self, fresh_name: String, deadline: u64) -> usize {
         let symbol = Symbol {
             kind: SymbolKind::Flow {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
-                period: false,
-                deadline: true,
+                period: None,
+                deadline: Some(deadline),
                 typing: Typ::Event(Box::new(Typ::Time)),
             },
             name: fresh_name,
@@ -1097,7 +1097,7 @@ impl SymbolTable {
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { deadline, .. } => *deadline,
+            SymbolKind::Flow { deadline, .. } => deadline.is_some(),
             _ => unreachable!(),
         }
     }
@@ -1108,7 +1108,18 @@ impl SymbolTable {
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { period, .. } => *period,
+            SymbolKind::Flow { period, .. } => period.is_some(),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Tell get optional period of timer.
+    pub fn get_period(&self, id: usize) -> Option<&u64> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { period, .. } => period.as_ref(),
             _ => unreachable!(),
         }
     }

@@ -421,10 +421,6 @@ pub mod toto_service {
             let context = Context::init();
             let process_set_speed = ProcessSetSpeedState::init();
             let speed_limiter = SpeedLimiterState::init();
-            let period_fresh_ident =
-                tokio::time::interval(tokio::time::Duration::from_millis(10u64));
-            let period_fresh_ident_1 =
-                tokio::time::interval(tokio::time::Duration::from_millis(10u64));
             TotoService {
                 context,
                 process_set_speed,
@@ -433,9 +429,31 @@ pub mod toto_service {
                 timer,
             }
         }
-        pub async fn run_loop(self, input: impl futures::Stream<Item = I>) {
+        pub async fn run_loop(
+            self,
+            init_instant: std::time::Instant,
+            input: impl futures::Stream<Item = I>,
+        ) {
             tokio::pin!(input);
             let mut service = self;
+            {
+                let res = service
+                    .timer
+                    .send((T::period_fresh_ident, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            {
+                let res = service
+                    .timer
+                    .send((T::period_fresh_ident_1, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
             loop {
                 tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: activation (activation , instant) => service . handle_activation (instant , activation) . await , I :: set_speed (set_speed , instant) => service . handle_set_speed (instant , set_speed) . await , I :: speed (speed , instant) => service . handle_speed (instant , speed) . await , I :: vacuum_brake (vacuum_brake , instant) => service . handle_vacuum_brake (instant , vacuum_brake) . await , I :: kickdown (kickdown , instant) => service . handle_kickdown (instant , kickdown) . await , I :: failure (failure , instant) => service . handle_failure (instant , failure) . await , I :: vdc (vdc , instant) => service . handle_vdc (instant , vdc) . await , I :: timer (T :: period_fresh_ident , instant) => service . handle_period_fresh_ident (instant) . await , , I :: timer (T :: period_fresh_ident_1 , instant) => service . handle_period_fresh_ident_1 (instant) . await , } } else { break ; } }
             }
@@ -521,6 +539,12 @@ pub mod toto_service {
             self.context.on_state = on_state;
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
+            {
+                let res = self.timer.send((T::period_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_period_fresh_ident_1(&mut self, instant: std::time::Instant) {
             let in_regulation = self.context.in_regulation_aux.clone();
@@ -529,6 +553,12 @@ pub mod toto_service {
                     .output
                     .send(O::in_regulation(in_regulation, instant))
                     .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            {
+                let res = self.timer.send((T::period_fresh_ident_1, instant)).await;
                 if res.is_err() {
                     return;
                 }
