@@ -6,7 +6,7 @@ use grust::grust;
 mod macro_output;
 
 grust! {
-    #![dump = "examples/aeb_greusot/src/macro_output.rs", greusot = true]
+    #![dump = "examples/aeb_greusot/src/macro_output.rs", greusot]
 
     // Braking type
     enum Braking {

@@ -13,26 +13,34 @@ pub struct ConfigItem;
 impl Parse for ConfigItem {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident: syn::Ident = input.parse()?;
-        let _: Token![=] = input.parse()?;
         match ident.to_string().as_str() {
             "dump" => {
+                let _: Token![=] = input.parse()?;
                 let val: syn::LitStr = input.parse()?;
                 conf::set_dump_code(Some(val.value()))
             }
-            "pub" => {
-                let val: syn::LitBool = input.parse()?;
-                conf::set_pub_components(val.value)
-            }
-            "greusot" => {
-                let val: syn::LitBool = input.parse()?;
-                conf::set_greusot(val.value)
-            }
+            "pub" => conf::set_pub_components(true),
+            "greusot" => conf::set_greusot(true),
+            "test" => conf::set_test(true),
+            "demo" => conf::set_demo(true),
             _ => {
                 return Err(syn::Error::new_spanned(
                     ident,
                     "unexpected configuration key",
                 ))
             }
+        }
+        if conf::greusot() && (conf::test() || conf::demo()) {
+            return Err(syn::Error::new_spanned(
+                ident,
+                "greusot can not be used with test/demo modes",
+            ));
+        }
+        if conf::test() && conf::demo() {
+            return Err(syn::Error::new_spanned(
+                ident,
+                "test and demo modes are incompatible",
+            ));
         }
         Ok(ConfigItem)
     }

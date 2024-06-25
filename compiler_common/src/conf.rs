@@ -7,6 +7,8 @@ pub struct Conf {
     pub_components: bool,
     dump_code: Option<String>,
     greusot: bool,
+    test: bool,
+    demo: bool,
 }
 impl Default for Conf {
     fn default() -> Self {
@@ -14,6 +16,8 @@ impl Default for Conf {
             pub_components: false,
             dump_code: None,
             greusot: false,
+            test: false,
+            demo: false,
         }
     }
 }
@@ -71,5 +75,17 @@ def! {
         greusot
         #[doc = "Set in configuration if greusot is used."]
         set_greusot
+    }
+    bool {
+        #[doc = "Tells if we are in test mode."]
+        test
+        #[doc = "Set test mode."]
+        set_test
+    }
+    bool {
+        #[doc = "Tells if we are in demo mode."]
+        demo
+        #[doc = "Set demo mode."]
+        set_demo
     }
 }
