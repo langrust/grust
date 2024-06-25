@@ -195,15 +195,41 @@ mod timer_queue {
 
     #[test]
     fn push_should_insert_timer_according_to_deadline() {
+        let now = Instant::now();
         let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
-        timer_queue.push(Timer::init(Period15ms(0), Instant::now()));
-        timer_queue.push(Timer::init(Timeout30ms(0), Instant::now()));
-        timer_queue.push(Timer::init(Timeout20ms(0), Instant::now()));
-        timer_queue.push(Timer::init(Period10ms(0), Instant::now()));
+        timer_queue.push(Timer::init(Period15ms(0), now));
+        timer_queue.push(Timer::init(Timeout30ms(0), now));
+        timer_queue.push(Timer::init(Timeout20ms(0), now));
+        timer_queue.push(Timer::init(Period10ms(0), now));
         let v: Vec<_> = timer_queue.into();
         assert_eq!(
             v,
             vec![Timeout30ms(0), Timeout20ms(0), Period15ms(0), Period10ms(0)]
+        )
+    }
+
+    #[test]
+    fn push_should_insert_after_in_case_of_equality() {
+        let now = Instant::now();
+        let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
+        timer_queue.push(Timer::init(Period15ms(0), now));
+        timer_queue.push(Timer::init(Timeout30ms(0), now));
+        timer_queue.push(Timer::init(Timeout20ms(0), now));
+        timer_queue.push(Timer::init(Period10ms(0), now));
+        timer_queue.push(Timer::init(
+            Period10ms(1),
+            now + std::time::Duration::from_millis(10),
+        ));
+        let v: Vec<_> = timer_queue.into();
+        assert_eq!(
+            v,
+            vec![
+                Timeout30ms(0),
+                Period10ms(1),
+                Timeout20ms(0),
+                Period15ms(0),
+                Period10ms(0)
+            ]
         )
     }
 
@@ -355,11 +381,12 @@ mod timer_queue {
 
     #[test]
     fn reset_should_insert_timer_according_to_deadline() {
+        let now = Instant::now();
         let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
-        timer_queue.reset(Timer::init(Period15ms(0), Instant::now()));
-        timer_queue.reset(Timer::init(Timeout30ms(0), Instant::now()));
-        timer_queue.reset(Timer::init(Timeout20ms(0), Instant::now()));
-        timer_queue.reset(Timer::init(Period10ms(0), Instant::now()));
+        timer_queue.reset(Timer::init(Period15ms(0), now));
+        timer_queue.reset(Timer::init(Timeout30ms(0), now));
+        timer_queue.reset(Timer::init(Timeout20ms(0), now));
+        timer_queue.reset(Timer::init(Period10ms(0), now));
         let v: Vec<_> = timer_queue.into();
         assert_eq!(
             v,
@@ -369,13 +396,14 @@ mod timer_queue {
 
     #[test]
     fn reset_should_insert_unique_timer() {
+        let now = Instant::now();
         let mut timer_queue = TimerQueue::<ServiceTimers, 10>::new();
-        timer_queue.push(Timer::init(Period15ms(0), Instant::now()));
-        timer_queue.push(Timer::init(Timeout30ms(0), Instant::now()));
-        timer_queue.push(Timer::init(Timeout20ms(0), Instant::now()));
-        timer_queue.reset(Timer::init(Timeout30ms(0), Instant::now()));
+        timer_queue.push(Timer::init(Period15ms(0), now));
+        timer_queue.push(Timer::init(Timeout30ms(0), now));
+        timer_queue.push(Timer::init(Timeout20ms(0), now));
+        timer_queue.reset(Timer::init(Timeout30ms(1), now + Duration::from_millis(5)));
         let v: Vec<_> = timer_queue.into();
-        assert_eq!(v, vec![Timeout30ms(0), Timeout20ms(0), Period15ms(0)])
+        assert_eq!(v, vec![Timeout30ms(1), Timeout20ms(0), Period15ms(0)])
     }
 
     #[test]
