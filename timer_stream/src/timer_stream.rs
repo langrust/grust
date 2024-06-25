@@ -27,7 +27,7 @@ where
     S: Stream<Item = (T, Instant)>,
     T: Timing + PartialEq,
 {
-    type Item = Option<S::Item>;
+    type Item = S::Item;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let mut project = self.project();
@@ -43,12 +43,15 @@ where
                     Poll::Ready(Some((kind, pushed_instant))) => {
                         // if it is sleeping timer's kind then abort sleep
                         if let Some((sleeping_timer, _)) = project.sleeping_timer.as_ref() {
-                            if kind.reset() && kind.eq(sleeping_timer) {
+                            if kind.do_reset() && kind.eq(sleeping_timer) {
                                 abort = true;
                             }
                         }
-                        let deadline = pushed_instant + kind.get_duration();
-                        queue.push(Timer::from_deadline(deadline.into(), kind));
+                        if kind.do_reset() {
+                            queue.reset(Timer::init(kind, pushed_instant));
+                        } else {
+                            queue.push(Timer::init(kind, pushed_instant));
+                        }
                     }
                     // the stream is waiting
                     Poll::Pending => break,
@@ -70,12 +73,16 @@ where
                         project.sleeping_timer,
                         Some((timer_kind, timer_deadline.into())),
                     );
-                    Poll::Ready(Some(output))
+                    if output.is_some() {
+                        Poll::Ready(output)
+                    } else {
+                        Poll::Pending
+                    }
                 }
                 None => {
                     if project.sleeping_timer.is_some() {
                         let output = std::mem::take(project.sleeping_timer);
-                        Poll::Ready(Some(output))
+                        Poll::Ready(output)
                     } else {
                         if *project.end {
                             Poll::Ready(None)
@@ -115,27 +122,42 @@ mod timer_stream {
     use crate::{timer_stream::timer_stream, Timing};
     use futures::{SinkExt, StreamExt};
     use rand::distributions::{Distribution, Uniform};
-    use tokio::{join, sync::RwLock, time::sleep};
+    use tokio::{
+        join,
+        sync::RwLock,
+        time::{sleep, sleep_until},
+    };
     use ServiceTimers::*;
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug)]
     enum ServiceTimers {
         Period10ms(usize),
         Period15ms(usize),
         Timeout20ms(usize),
         Timeout30ms(usize),
     }
+    impl PartialEq for ServiceTimers {
+        fn eq(&self, other: &Self) -> bool {
+            match (self, other) {
+                (Self::Period10ms(_), Self::Period10ms(_))
+                | (Self::Period15ms(_), Self::Period15ms(_))
+                | (Self::Timeout20ms(_), Self::Timeout20ms(_))
+                | (Self::Timeout30ms(_), Self::Timeout30ms(_)) => true,
+                _ => false,
+            }
+        }
+    }
     impl Timing for ServiceTimers {
         fn get_duration(&self) -> std::time::Duration {
             match self {
-                Period10ms(_) => std::time::Duration::from_millis(100),
-                Period15ms(_) => std::time::Duration::from_millis(150),
-                Timeout20ms(_) => std::time::Duration::from_millis(200),
-                Timeout30ms(_) => std::time::Duration::from_millis(300),
+                Period10ms(_) => std::time::Duration::from_millis(10),
+                Period15ms(_) => std::time::Duration::from_millis(15),
+                Timeout20ms(_) => std::time::Duration::from_millis(20),
+                Timeout30ms(_) => std::time::Duration::from_millis(30),
             }
         }
 
-        fn reset(&self) -> bool {
+        fn do_reset(&self) -> bool {
             match self {
                 Period10ms(_) | Period15ms(_) => false,
                 Timeout20ms(_) | Timeout30ms(_) => true,
@@ -159,20 +181,19 @@ mod timer_stream {
 
     #[tokio::test]
     async fn should_give_timers_in_order() {
+        let now = Instant::now();
         let stream = futures::stream::iter(vec![
-            (Period15ms(0), Instant::now()),
-            (Timeout30ms(1), Instant::now()),
-            (Timeout20ms(2), Instant::now()),
-            (Period10ms(3), Instant::now()),
+            (Period15ms(0), now),
+            (Timeout30ms(1), now),
+            (Timeout20ms(2), now),
+            (Period10ms(3), now),
         ]);
         let timers = timer_stream::<_, _, 10>(stream);
         tokio::pin!(timers);
 
         let mut v = vec![];
-        while let Some(value) = timers.next().await {
-            if let Some((value, _)) = value {
-                v.push(value)
-            }
+        while let Some((value, _)) = timers.next().await {
+            v.push(value)
         }
         assert_eq!(
             v,
@@ -182,21 +203,23 @@ mod timer_stream {
 
     #[tokio::test]
     async fn should_give_elements_in_order_with_delay() {
+        let now = Instant::now();
+        let next = now + Duration::from_millis(5);
         let stream = futures::stream::iter(vec![
-            (Period15ms(0), Instant::now()),
-            (Timeout30ms(1), Instant::now()),
-            (Timeout20ms(2), Instant::now()),
-            (Period10ms(3), Instant::now()),
+            (Period15ms(0), now),
+            (Timeout30ms(1), now),
+            (Timeout20ms(2), now),
+            (Period10ms(3), now),
         ])
         .chain(
             futures::stream::iter(vec![
-                (Timeout20ms(4), Instant::now()),
-                (Period10ms(5), Instant::now()),
-                (Timeout30ms(6), Instant::now()),
-                (Period15ms(7), Instant::now()),
+                (Timeout20ms(4), next),
+                (Period10ms(5), next),
+                (Timeout30ms(6), next),
+                (Period15ms(7), next),
             ])
             .then(|e| async move {
-                sleep(Duration::from_millis(5)).await;
+                sleep_until(next.into()).await;
                 e
             }),
         );
@@ -210,7 +233,33 @@ mod timer_stream {
             v.push(value);
             sleep(Duration::from_millis(1)).await;
         }
-        // println!("{v:?}")
+        let control = vec![
+            (
+                ServiceTimers::Period10ms(3),
+                now + ServiceTimers::Period10ms(3).get_duration(),
+            ),
+            (
+                ServiceTimers::Period15ms(0),
+                now + ServiceTimers::Period15ms(0).get_duration(),
+            ),
+            (
+                ServiceTimers::Period10ms(5),
+                next + ServiceTimers::Period10ms(5).get_duration(),
+            ),
+            (
+                ServiceTimers::Period15ms(7),
+                next + ServiceTimers::Period15ms(7).get_duration(),
+            ),
+            (
+                ServiceTimers::Timeout20ms(4),
+                next + ServiceTimers::Timeout20ms(4).get_duration(),
+            ),
+            (
+                ServiceTimers::Timeout30ms(6),
+                next + ServiceTimers::Timeout30ms(6).get_duration(),
+            ),
+        ];
+        assert_eq!(v, control);
     }
 
     struct TimerInfos {
@@ -260,17 +309,14 @@ mod timer_stream {
             async move {
                 let timer_stream = timer_stream::<_, _, 100>(stream);
                 tokio::pin!(timer_stream);
-                while let Some(value) = timer_stream.next().await {
-                    if let Some((kind, deadline)) = value {
-                        let timer_id = kind.get_id();
-                        let pushed_instant =
-                            timers.read().await.get(&timer_id).unwrap().pushed_instant;
+                while let Some((kind, deadline)) = timer_stream.next().await {
+                    let timer_id = kind.get_id();
+                    let pushed_instant = timers.read().await.get(&timer_id).unwrap().pushed_instant;
 
-                        // asserting that deadlines are respected
-                        let timer_duration = deadline.duration_since(pushed_instant);
-                        let elapsed = Instant::now().duration_since(pushed_instant);
-                        println!("elapsed: {:?} deadline: {:?}", elapsed, timer_duration);
-                    }
+                    // asserting that deadlines are respected
+                    let timer_duration = deadline.duration_since(pushed_instant);
+                    let elapsed = Instant::now().duration_since(pushed_instant);
+                    println!("elapsed: {:?} deadline: {:?}", elapsed, timer_duration);
                 }
             }
         });
