@@ -54,16 +54,11 @@ impl Interface {
         flows_context
     }
     fn get_services_loops(
-        self,
+        mut self,
         symbol_table: &mut SymbolTable,
         flows_context: &mut FlowsContext,
     ) -> Vec<ServiceLoop> {
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
-
-        let Interface {
-            mut statements,
-            mut graph,
-        } = self;
 
         // collects components, input flows, output flows, timing events that are present in the service
         let mut components = vec![];
@@ -72,8 +67,8 @@ impl Interface {
         let mut timing_events = HashMap::new();
         let mut on_change_events = HashMap::new();
         let mut new_statements = vec![];
-        let mut fresh_statement_id = statements.len();
-        statements
+        let mut fresh_statement_id = self.statements.len();
+        self.statements
             .iter()
             .enumerate()
             .for_each(|(index, statement)| {
@@ -162,7 +157,7 @@ impl Interface {
                                     semi_token: Default::default(),
                                 }));
                                 // add timing_event in graph
-                                graph.add_edge(fresh_statement_id, index, ());
+                                self.graph.add_edge(fresh_statement_id, index, ());
                                 fresh_statement_id += 1;
 
                                 // push timing_event
@@ -194,7 +189,7 @@ impl Interface {
                                     semi_token: Default::default(),
                                 }));
                                 // add timing_event in graph
-                                graph.add_edge(fresh_statement_id, index, ());
+                                self.graph.add_edge(fresh_statement_id, index, ());
                                 fresh_statement_id += 1;
 
                                 // push timing_event
@@ -228,7 +223,7 @@ impl Interface {
                                         semi_token: Default::default(),
                                     }));
                                     // add timing_event in graph
-                                    graph.add_edge(fresh_statement_id, index, ());
+                                    self.graph.add_edge(fresh_statement_id, index, ());
                                     fresh_statement_id += 1;
 
                                     // push timing_event
@@ -251,10 +246,11 @@ impl Interface {
             });
 
         // push new_statements into statements
-        statements.append(&mut new_statements);
+        self.statements.append(&mut new_statements);
 
         // for every incoming flows, compute their handlers
-        let flows_handling: Vec<_> = statements
+        let flows_handling: Vec<_> = self
+            .statements
             .iter()
             .enumerate()
             .filter_map(|(index, statement)| match statement {
@@ -263,7 +259,7 @@ impl Interface {
             })
             .map(|(index, flow_id)| {
                 // construct subgraph starting from the input flow
-                let subgraph = construct_subgraph_from_source(index, &graph);
+                let subgraph = construct_subgraph_from_source(index, &self.graph);
                 // sort statement in dependency order
                 let mut ordered_statements = toposort(&subgraph, None).expect("should succeed");
                 ordered_statements.reverse();
@@ -278,7 +274,7 @@ impl Interface {
                 // compute instructions that depend on this incoming flow
                 let mut instructions = compute_flow_instructions(
                     vec![index],
-                    &statements,
+                    &self.statements,
                     &subgraph,
                     &ordered_statements,
                     encountered_events,
