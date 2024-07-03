@@ -336,11 +336,7 @@ fn construct_subgraph_from_source(
         use DfsEvent::*;
         match event {
             CrossForwardEdge(parent, child) | BackEdge(parent, child) | TreeEdge(parent, child) => {
-                let weight = graph
-                    .edge_weight(parent, child)
-                    .expect("there must be an edge")
-                    .clone();
-                subgraph.add_edge(parent, child, weight);
+                subgraph.add_edge(parent, child, ());
             }
             Discover(_, _) | Finish(_, _) => {}
         }
