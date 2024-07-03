@@ -15,11 +15,21 @@ impl Parse for ConfigItem {
         let ident: syn::Ident = input.parse()?;
         match ident.to_string().as_str() {
             "dump" => {
+                if conf::dump_code().is_some() {
+                    return Err(syn::Error::new_spanned(
+                        ident,
+                        "dump code only once",
+                    ));
+                }
                 let _: Token![=] = input.parse()?;
                 let val: syn::LitStr = input.parse()?;
-                conf::set_dump_code(Some(val.value()))
+                conf::set_dump_code(Some(val.value()));
+                return Ok(ConfigItem);
             }
-            "pub" => conf::set_pub_components(true),
+            "pub" => {
+                conf::set_pub_components(true);
+                return Ok(ConfigItem);
+            }
             "greusot" => conf::set_greusot(true),
             "test" => conf::set_test(true),
             "demo" => conf::set_demo(true),
