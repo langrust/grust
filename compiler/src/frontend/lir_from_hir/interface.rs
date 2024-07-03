@@ -1,9 +1,11 @@
+use itertools::Itertools;
 use petgraph::{
     algo::toposort,
     graphmap::DiGraphMap,
     visit::{depth_first_search, DfsEvent},
     Direction,
 };
+use std::collections::HashSet;
 
 prelude! {
     quote::format_ident,
@@ -1258,5 +1260,48 @@ impl<'a> IsleBuilder<'a> {
         for event in events {
             self.trace_event(event)
         }
+    }
+
+    /// Returns the set of all statements triggered by the input flow.
+    pub fn stmt_to_compute(&self, flow: usize) -> HashSet<usize> {
+        let mut stmts = HashSet::new();
+        let mut stack = vec![flow];
+        while let Some(parent) = stack.pop() {
+            // add stmt to the set of statements to compute
+            let unique = stmts.insert(parent);
+            assert!(unique);
+
+            // get the flows defined by parent statement
+            let parent_flows = self.interface.statements[parent].get_identifiers();
+
+            let dependencies = self.interface.graph.neighbors(parent).filter_map(|child| {
+                // if child is a component call and parent is a signal definition
+                // then child is not inserted
+                if let Some((_, inputs)) = self.interface.statements[child].try_get_call() {
+                    let mut parent_flows = inputs.iter().filter_map(|(input_flow, _)| {
+                        if parent_flows.contains(input_flow) {
+                            Some(*input_flow)
+                        } else {
+                            None
+                        }
+                    });
+                    // if parent flows are signals then child statement is not inserted
+                    if parent_flows.all(|flow| self.syms.get_flow_kind(flow).is_signal()) {
+                        return None;
+                    }
+                }
+                Some(child)
+            });
+
+            // extend stack with union of event isle and dependencies
+            if let Some(isle) = self.isles.get_isle_for(parent) {
+                let to_compute = isle.iter().map(|stmt| *stmt).chain(dependencies).unique();
+                stack.extend(to_compute);
+            } else {
+                stack.extend(dependencies);
+            }
+        }
+
+        stmts
     }
 }
