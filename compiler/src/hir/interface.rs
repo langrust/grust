@@ -128,4 +128,28 @@ impl FlowStatement {
             Import(_) | Export(_) | Declaration(_) | Instantiation(_) => None,
         }
     }
+
+    /// Retrieves the identifiers the statement defines.
+    pub fn get_identifiers(&self) -> Vec<usize> {
+        use FlowStatement::*;
+        match self {
+            Declaration(FlowDeclaration { pattern, .. })
+            | Instantiation(FlowInstantiation { pattern, .. }) => pattern.identifiers(),
+            Import(FlowImport { id, .. }) | Export(FlowExport { id, .. }) => vec![*id],
+        }
+    }
+
+    /// Retrieves the statement's dependencies.
+    pub fn get_dependencies(&self) -> Vec<usize> {
+        match self {
+            FlowStatement::Declaration(FlowDeclaration {
+                flow_expression, ..
+            })
+            | FlowStatement::Instantiation(FlowInstantiation {
+                flow_expression, ..
+            }) => flow_expression.get_dependencies(),
+            FlowStatement::Import(_) => vec![],
+            FlowStatement::Export(FlowExport { id, .. }) => vec![*id],
+        }
+    }
 }
