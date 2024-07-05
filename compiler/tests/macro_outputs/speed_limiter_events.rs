@@ -455,7 +455,7 @@ pub mod toto_service {
                 }
             }
             loop {
-                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: activation (activation , instant) => service . handle_activation (instant , activation) . await , I :: set_speed (set_speed , instant) => service . handle_set_speed (instant , set_speed) . await , I :: speed (speed , instant) => service . handle_speed (instant , speed) . await , I :: vacuum_brake (vacuum_brake , instant) => service . handle_vacuum_brake (instant , vacuum_brake) . await , I :: kickdown (kickdown , instant) => service . handle_kickdown (instant , kickdown) . await , I :: failure (failure , instant) => service . handle_failure (instant , failure) . await , I :: vdc (vdc , instant) => service . handle_vdc (instant , vdc) . await , I :: timer (T :: period_fresh_ident , instant) => service . handle_period_fresh_ident (instant) . await , , I :: timer (T :: period_fresh_ident_1 , instant) => service . handle_period_fresh_ident_1 (instant) . await , } } else { break ; } }
+                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: activation (activation , instant) => service . handle_activation (instant , activation) . await , I :: kickdown (kickdown , instant) => service . handle_kickdown (instant , kickdown) . await , I :: set_speed (set_speed , instant) => service . handle_set_speed (instant , set_speed) . await , I :: timer (T :: period_fresh_ident , instant) => service . handle_period_fresh_ident (instant) . await , I :: failure (failure , instant) => service . handle_failure (instant , failure) . await , I :: speed (speed , instant) => service . handle_speed (instant , speed) . await , I :: timer (T :: period_fresh_ident_1 , instant) => service . handle_period_fresh_ident_1 (instant) . await , I :: vdc (vdc , instant) => service . handle_vdc (instant , vdc) . await , I :: vacuum_brake (vacuum_brake , instant) => service . handle_vacuum_brake (instant , vacuum_brake) . await } } else { break ; } }
             }
         }
         async fn handle_activation(
@@ -472,41 +472,6 @@ pub mod toto_service {
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
         }
-        async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
-            if (self.context.flow_expression_fresh_ident - set_speed) >= 1.0 {
-                self.context.flow_expression_fresh_ident = set_speed;
-            }
-            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident.clone();
-            if self.context.changed_set_speed_old != flow_expression_fresh_ident {
-                let changed_set_speed = flow_expression_fresh_ident;
-                self.context.changed_set_speed_old = flow_expression_fresh_ident;
-                let (v_set_aux, v_update) =
-                    self.process_set_speed
-                        .step(self.context.get_process_set_speed_inputs(
-                            ProcessSetSpeedEvent::set_speed(changed_set_speed),
-                        ));
-                self.context.v_set_aux = v_set_aux;
-                self.context.v_update = v_update;
-                let v_set = self.context.v_set_aux.clone();
-                {
-                    let res = self.output.send(O::v_set(v_set, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
-            } else {
-            }
-        }
-        async fn handle_speed(&mut self, instant: std::time::Instant, speed: f64) {
-            self.context.speed = speed;
-        }
-        async fn handle_vacuum_brake(
-            &mut self,
-            instant: std::time::Instant,
-            vacuum_brake: VacuumBrakeState,
-        ) {
-            self.context.vacuum_brake = vacuum_brake;
-        }
         async fn handle_kickdown(&mut self, instant: std::time::Instant, kickdown: Kickdown) {
             let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
                 self.context
@@ -516,6 +481,33 @@ pub mod toto_service {
             self.context.on_state = on_state;
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
+        }
+        async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
+            if (self.context.flow_expression_fresh_ident - set_speed) >= 1.0 {
+                self.context.flow_expression_fresh_ident = set_speed;
+            }
+            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident.clone();
+            if self.context.changed_set_speed_old != flow_expression_fresh_ident {
+                self.context.changed_set_speed_old = flow_expression_fresh_ident;
+                let changed_set_speed = flow_expression_fresh_ident;
+            } else {
+                let v_set_aux = self.context.v_set_aux.clone();
+                let v_set = v_set_aux;
+                {
+                    let res = self.output.send(O::v_set(v_set, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+            }
+        }
+        async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
+            {
+                let res = self.timer.send((T::period_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {
             let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
@@ -527,24 +519,8 @@ pub mod toto_service {
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
         }
-        async fn handle_vdc(&mut self, instant: std::time::Instant, vdc: VdcState) {
-            self.context.vdc = vdc;
-        }
-        async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
-            let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
-                self.context
-                    .get_speed_limiter_inputs(SpeedLimiterEvent::NoEvent),
-            );
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            {
-                let res = self.timer.send((T::period_fresh_ident, instant)).await;
-                if res.is_err() {
-                    return;
-                }
-            }
+        async fn handle_speed(&mut self, instant: std::time::Instant, speed: f64) {
+            self.context.speed = speed;
         }
         async fn handle_period_fresh_ident_1(&mut self, instant: std::time::Instant) {
             let in_regulation = self.context.in_regulation_aux.clone();
@@ -563,6 +539,16 @@ pub mod toto_service {
                     return;
                 }
             }
+        }
+        async fn handle_vdc(&mut self, instant: std::time::Instant, vdc: VdcState) {
+            self.context.vdc = vdc;
+        }
+        async fn handle_vacuum_brake(
+            &mut self,
+            instant: std::time::Instant,
+            vacuum_brake: VacuumBrakeState,
+        ) {
+            self.context.vacuum_brake = vacuum_brake;
         }
     }
 }
