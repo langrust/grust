@@ -16,10 +16,7 @@ impl Parse for ConfigItem {
         match ident.to_string().as_str() {
             "dump" => {
                 if conf::dump_code().is_some() {
-                    return Err(syn::Error::new_spanned(
-                        ident,
-                        "dump code only once",
-                    ));
+                    return Err(syn::Error::new_spanned(ident, "dump code only once"));
                 }
                 let _: Token![=] = input.parse()?;
                 let val: syn::LitStr = input.parse()?;
