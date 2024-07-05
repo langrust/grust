@@ -168,12 +168,12 @@ pub mod toto_service {
                         {
                             I :: speed_km_h(speed_km_h, instant) =>
                             service.handle_speed_km_h(instant, speed_km_h).await, I ::
-                            pedestrian_l(pedestrian_l, instant) =>
-                            service.handle_pedestrian_l(instant, pedestrian_l).await, I
-                            :: pedestrian_r(pedestrian_r, instant) =>
+                            pedestrian_r(pedestrian_r, instant) =>
                             service.handle_pedestrian_r(instant, pedestrian_r).await, I
                             :: timer(T :: timeout_fresh_ident, instant) =>
-                            service.handle_timeout_fresh_ident(instant).await,
+                            service.handle_timeout_fresh_ident(instant).await, I ::
+                            pedestrian_l(pedestrian_l, instant) =>
+                            service.handle_pedestrian_l(instant, pedestrian_l).await
                         }
                     } else { break; }
                 }
@@ -181,30 +181,6 @@ pub mod toto_service {
         }
         async fn handle_speed_km_h(&mut self, instant: std::time::Instant, speed_km_h: f64) {
             self.context.speed_km_h = speed_km_h;
-        }
-        async fn handle_pedestrian_l(&mut self, instant: std::time::Instant, pedestrian_l: f64) {
-            let flow_expression_fresh_ident = pedestrian_l;
-            let pedestrian = Ok(flow_expression_fresh_ident);
-            {
-                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            let brakes = self.braking_state.step(
-                self.context
-                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
-            );
-            self.context.brakes = brakes;
-            {
-                let res = self
-                    .output
-                    .send(O::brakes(self.context.brakes.clone(), instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
         }
         async fn handle_pedestrian_r(&mut self, instant: std::time::Instant, pedestrian_r: f64) {
             let flow_expression_fresh_ident = pedestrian_r;
@@ -221,10 +197,7 @@ pub mod toto_service {
             );
             self.context.brakes = brakes;
             {
-                let res = self
-                    .output
-                    .send(O::brakes(self.context.brakes.clone(), instant))
-                    .await;
+                let res = self.output.send(O::brakes(brakes, instant)).await;
                 if res.is_err() {
                     return;
                 }
@@ -244,10 +217,28 @@ pub mod toto_service {
             );
             self.context.brakes = brakes;
             {
-                let res = self
-                    .output
-                    .send(O::brakes(self.context.brakes.clone(), instant))
-                    .await;
+                let res = self.output.send(O::brakes(brakes, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
+        }
+        async fn handle_pedestrian_l(&mut self, instant: std::time::Instant, pedestrian_l: f64) {
+            let flow_expression_fresh_ident = pedestrian_l;
+            let pedestrian = Ok(flow_expression_fresh_ident);
+            {
+                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            let brakes = self.braking_state.step(
+                self.context
+                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
+            );
+            self.context.brakes = brakes;
+            {
+                let res = self.output.send(O::brakes(brakes, instant)).await;
                 if res.is_err() {
                     return;
                 }

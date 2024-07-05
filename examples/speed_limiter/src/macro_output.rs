@@ -487,37 +487,45 @@ pub mod toto_service {
                     {
                         match input
                         {
-                            I :: activation(activation, instant) =>
-                            service.handle_activation(instant, activation).await, I ::
-                            set_speed(set_speed, instant) =>
-                            service.handle_set_speed(instant, set_speed).await, I ::
+                            I :: vdc(vdc, instant) =>
+                            service.handle_vdc(instant, vdc).await, I ::
                             speed(speed, instant) =>
                             service.handle_speed(instant, speed).await, I ::
+                            kickdown(kickdown, instant) =>
+                            service.handle_kickdown(instant, kickdown).await, I ::
+                            set_speed(set_speed, instant) =>
+                            service.handle_set_speed(instant, set_speed).await, I ::
+                            timer(T :: period_fresh_ident, instant) =>
+                            service.handle_period_fresh_ident(instant).await, I ::
                             vacuum_brake(vacuum_brake, instant) =>
                             service.handle_vacuum_brake(instant, vacuum_brake).await, I
-                            :: kickdown(kickdown, instant) =>
-                            service.handle_kickdown(instant, kickdown).await, I ::
-                            vdc(vdc, instant) => service.handle_vdc(instant, vdc).await,
-                            I :: timer(T :: period_fresh_ident, instant) =>
-                            service.handle_period_fresh_ident(instant).await,
+                            :: activation(activation, instant) =>
+                            service.handle_activation(instant, activation).await
                         }
                     } else { break; }, _ = service.period_fresh_ident.tick() =>
                     service.handle_period_fresh_ident().await,
                 }
             }
         }
-        async fn handle_activation(
-            &mut self,
-            instant: std::time::Instant,
-            activation: ActivationResquest,
-        ) {
-            self.context.activation = activation;
+        async fn handle_vdc(&mut self, instant: std::time::Instant, vdc: VdcState) {
+            self.context.vdc = vdc;
+        }
+        async fn handle_speed(&mut self, instant: std::time::Instant, speed: f64) {
+            self.context.speed = speed;
+        }
+        async fn handle_kickdown(&mut self, instant: std::time::Instant, kickdown: KickdownState) {
+            self.context.kickdown = kickdown;
         }
         async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
             self.context.set_speed = set_speed;
         }
-        async fn handle_speed(&mut self, instant: std::time::Instant, speed: f64) {
-            self.context.speed = speed;
+        async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
+            {
+                let res = self.timer.send((T::period_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_vacuum_brake(
             &mut self,
@@ -526,36 +534,12 @@ pub mod toto_service {
         ) {
             self.context.vacuum_brake = vacuum_brake;
         }
-        async fn handle_kickdown(&mut self, instant: std::time::Instant, kickdown: KickdownState) {
-            self.context.kickdown = kickdown;
-        }
-        async fn handle_vdc(&mut self, instant: std::time::Instant, vdc: VdcState) {
-            self.context.vdc = vdc;
-        }
-        async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
-            let (state, on_state, in_regulation_aux, state_update) = self
-                .speed_limiter
-                .step(self.context.get_speed_limiter_inputs());
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            let in_regulation = self.context.in_regulation_aux.clone();
-            {
-                let res = self
-                    .output
-                    .send(O::in_regulation(in_regulation, instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            {
-                let res = self.timer.send((T::period_fresh_ident, instant)).await;
-                if res.is_err() {
-                    return;
-                }
-            }
+        async fn handle_activation(
+            &mut self,
+            instant: std::time::Instant,
+            activation: ActivationResquest,
+        ) {
+            self.context.activation = activation;
         }
     }
 }

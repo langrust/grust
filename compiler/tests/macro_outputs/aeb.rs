@@ -171,12 +171,10 @@ pub mod toto_service {
                 }
             }
             loop {
-                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: speed_km_h (speed_km_h , instant) => service . handle_speed_km_h (instant , speed_km_h) . await , I :: pedestrian_l (pedestrian_l , instant) => service . handle_pedestrian_l (instant , pedestrian_l) . await , I :: pedestrian_r (pedestrian_r , instant) => service . handle_pedestrian_r (instant , pedestrian_r) . await , I :: timer (T :: timeout_fresh_ident , instant) => service . handle_timeout_fresh_ident (instant) . await , } } else { break ; } }
+                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: pedestrian_r (pedestrian_r , instant) => service . handle_pedestrian_r (instant , pedestrian_r) . await , I :: pedestrian_l (pedestrian_l , instant) => service . handle_pedestrian_l (instant , pedestrian_l) . await , I :: timer (T :: timeout_fresh_ident , instant) => service . handle_timeout_fresh_ident (instant) . await , I :: speed_km_h (speed_km_h , instant) => service . handle_speed_km_h (instant , speed_km_h) . await } } else { break ; } }
             }
         }
-        async fn handle_speed_km_h(&mut self, instant: std::time::Instant, speed_km_h: f64) {
-            self.context.speed_km_h = speed_km_h;
-        }
+        async fn handle_pedestrian_r(&mut self, instant: std::time::Instant, pedestrian_r: f64) {}
         async fn handle_pedestrian_l(&mut self, instant: std::time::Instant, pedestrian_l: f64) {
             let pedestrian = Ok(pedestrian_l);
             {
@@ -191,16 +189,12 @@ pub mod toto_service {
             );
             self.context.brakes = brakes;
             {
-                let res = self
-                    .output
-                    .send(O::brakes(self.context.brakes.clone(), instant))
-                    .await;
+                let res = self.output.send(O::brakes(brakes, instant)).await;
                 if res.is_err() {
                     return;
                 }
             }
         }
-        async fn handle_pedestrian_r(&mut self, instant: std::time::Instant, pedestrian_r: f64) {}
         async fn handle_timeout_fresh_ident(&mut self, instant: std::time::Instant) {
             let pedestrian = Err(());
             {
@@ -215,14 +209,14 @@ pub mod toto_service {
             );
             self.context.brakes = brakes;
             {
-                let res = self
-                    .output
-                    .send(O::brakes(self.context.brakes.clone(), instant))
-                    .await;
+                let res = self.output.send(O::brakes(brakes, instant)).await;
                 if res.is_err() {
                     return;
                 }
             }
+        }
+        async fn handle_speed_km_h(&mut self, instant: std::time::Instant, speed_km_h: f64) {
+            self.context.speed_km_h = speed_km_h;
         }
     }
 }
