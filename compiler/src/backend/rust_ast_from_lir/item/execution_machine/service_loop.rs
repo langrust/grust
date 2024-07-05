@@ -223,7 +223,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
                     let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
                     let function_name: Ident = format_ident!("handle_{time_flow_name}");
                     input_arms.push(parse_quote! {
-                        I::timer(T::#ident, instant) => service.#function_name(instant).await,
+                        I::timer(T::#ident, instant) => service.#function_name(instant).await
                     })
                 }
             });
