@@ -1,10 +1,5 @@
 use itertools::Itertools;
-use petgraph::{
-    algo::toposort,
-    graphmap::DiGraphMap,
-    visit::{depth_first_search, DfsEvent},
-    Direction,
-};
+use petgraph::{algo::toposort, Direction};
 use std::collections::HashSet;
 
 prelude! {
@@ -66,6 +61,7 @@ impl Interface {
         let mut components = vec![];
         let mut input_flows = vec![];
         let mut output_flows = vec![];
+        let mut timers = vec![];
         let mut timing_events = HashMap::new();
         let mut on_change_events = HashMap::new();
         let mut new_statements = vec![];
@@ -163,16 +159,11 @@ impl Interface {
                                 fresh_statement_id += 1;
 
                                 // push timing_event
-                                timing_events.insert(
-                                    index,
-                                    (
-                                        fresh_id,
-                                        TimingEvent {
-                                            identifier: fresh_name,
-                                            kind: TimingEventKind::Period(period_ms.clone()),
-                                        },
-                                    ),
-                                );
+                                timing_events.insert(index, fresh_id);
+                                timers.push(TimingEvent {
+                                    identifier: fresh_name,
+                                    kind: TimingEventKind::Period(period_ms.clone()),
+                                });
                             }
                             flow::Kind::Timeout { deadline, .. } => {
                                 // add new timing event into the identifier creator
@@ -195,16 +186,11 @@ impl Interface {
                                 fresh_statement_id += 1;
 
                                 // push timing_event
-                                timing_events.insert(
-                                    index,
-                                    (
-                                        fresh_id,
-                                        TimingEvent {
-                                            identifier: fresh_name,
-                                            kind: TimingEventKind::Timeout(deadline.clone()),
-                                        },
-                                    ),
-                                );
+                                timing_events.insert(index, fresh_id);
+                                timers.push(TimingEvent {
+                                    identifier: fresh_name,
+                                    kind: TimingEventKind::Timeout(deadline.clone()),
+                                })
                             }
                             flow::Kind::ComponentCall { component_id, .. } => {
                                 // add potential period constrains
@@ -229,16 +215,11 @@ impl Interface {
                                     fresh_statement_id += 1;
 
                                     // push timing_event
-                                    timing_events.insert(
-                                        index,
-                                        (
-                                            fresh_id,
-                                            TimingEvent {
-                                                identifier: fresh_name,
-                                                kind: TimingEventKind::Period(period.clone()),
-                                            },
-                                        ),
-                                    );
+                                    timing_events.insert(index, fresh_id);
+                                    timers.push(TimingEvent {
+                                        identifier: fresh_name,
+                                        kind: TimingEventKind::Period(period.clone()),
+                                    })
                                 }
                                 components.push(symbol_table.get_name(*component_id).clone())
                             }
@@ -250,42 +231,21 @@ impl Interface {
         // push new_statements into statements
         self.statements.append(&mut new_statements);
 
-        // for every incoming flows, compute their handlers
-        let flows_handling: Vec<_> = self
-            .statements
-            .iter()
-            .enumerate()
-            .filter_map(|(index, statement)| match statement {
-                FlowStatement::Import(FlowImport { id, .. }) => Some((index, *id)),
-                _ => None,
-            })
-            .map(|(index, flow_id)| {
-                // construct subgraph starting from the input flow
-                let subgraph = construct_subgraph_from_source(index, &self.graph);
-                // sort statement in dependency order
-                let mut ordered_statements = toposort(&subgraph, None).expect("should succeed");
-                ordered_statements.reverse();
-                // if input flow is an event then store its identifier
-                let (encountered_events, defined_signals) = {
-                    let flow_id_set = [flow_id].into_iter().collect();
-                    match symbol_table.get_flow_kind(flow_id) {
-                        FlowKind::Signal(_) => (HashSet::new(), flow_id_set),
-                        FlowKind::Event(_) => (flow_id_set, HashSet::new()),
-                    }
-                };
-                // compute instructions that depend on this incoming flow
-                let mut instructions = compute_flow_instructions(
-                    vec![index],
-                    &self.statements,
-                    &subgraph,
-                    &ordered_statements,
-                    encountered_events,
-                    defined_signals,
-                    &on_change_events,
-                    &timing_events,
-                    flows_context,
-                    symbol_table,
-                );
+        // create flow propagations
+        let mut propag_builder = PropagationBuilder::new(
+            &self,
+            symbol_table,
+            flows_context,
+            on_change_events,
+            timing_events,
+        );
+        propag_builder.propagate();
+        let propagations = propag_builder.into_propagations();
+
+        // for every propagation of incoming flows, create their handlers
+        let flows_handling: Vec<_> = propagations
+            .into_iter()
+            .map(|(flow_id, mut instructions)| {
                 // determine weither this arriving flow is a timing event
                 let flow_name = symbol_table.get_name(flow_id).clone();
                 let arriving_flow = if let Some(period) = symbol_table.get_period(flow_id) {
@@ -299,7 +259,7 @@ impl Interface {
                     ArrivingFlow::Channel(flow_name, flow_type.clone())
                 };
                 // get the name of timeout events from reset instructions
-                let deadline_args = instructions
+                let timers_to_reset = instructions
                     .iter()
                     .filter_map(|instruction| match instruction {
                         FlowInstruction::ResetTimer(deadline_name, _) => {
@@ -310,7 +270,7 @@ impl Interface {
                     .collect();
                 FlowHandler {
                     arriving_flow,
-                    deadline_args,
+                    deadline_args: timers_to_reset,
                     instructions,
                 }
             })
@@ -320,581 +280,13 @@ impl Interface {
             service: "toto".into(),
             components,
             input_flows: input_flows.into_iter().unzip::<_, _, Vec<_>, _>().1,
-            timing_events: timing_events.into_values().unzip::<_, _, Vec<_>, _>().1,
+            timing_events: timers,
             output_flows: output_flows.into_iter().unzip::<_, _, Vec<_>, _>().1,
             flows_handling,
         };
 
         vec![service_loop]
     }
-}
-
-fn construct_subgraph_from_source(
-    source_id: usize,
-    graph: &DiGraphMap<usize, ()>,
-) -> DiGraphMap<usize, ()> {
-    let mut subgraph = DiGraphMap::new();
-    depth_first_search(&graph, Some(source_id), |event| {
-        use DfsEvent::*;
-        match event {
-            CrossForwardEdge(parent, child) | BackEdge(parent, child) | TreeEdge(parent, child) => {
-                subgraph.add_edge(parent, child, ());
-            }
-            Discover(_, _) | Finish(_, _) => {}
-        }
-    });
-    subgraph
-}
-
-fn compute_flow_instructions(
-    mut working_stack: Vec<usize>,
-    statements: &Vec<FlowStatement>,
-    graph: &DiGraphMap<usize, ()>,
-    ordered_statements: &Vec<usize>,
-    mut encountered_events: HashSet<usize>,
-    mut defined_signals: HashSet<usize>,
-    on_change_events: &HashMap<usize, usize>,
-    timing_events: &HashMap<usize, (usize, TimingEvent)>,
-    flows_context: &FlowsContext,
-    symbol_table: &SymbolTable,
-) -> Vec<FlowInstruction> {
-    let mut instructions = vec![];
-    let statements_order = ordered_statements
-        .into_iter()
-        .enumerate()
-        .map(|(order, statement_id)| (statement_id, order))
-        .collect::<HashMap<_, _>>();
-    let compare_statements = |statement_id: &usize| *statements_order.get(statement_id).unwrap();
-
-    // push instructions in right order
-    while !working_stack.is_empty() {
-        // get the next flow statement to transform
-        let statement_id = working_stack.pop().unwrap();
-        // get flow statement related to id
-        let flow_statement = statements.get(statement_id).expect("should be there");
-
-        // remember next statements should be stacked into working_stack
-        let mut add_dependent_statements = false;
-
-        // add instructions related to the nature of the statement (see the draft)
-        match flow_statement {
-            FlowStatement::Declaration(FlowDeclaration {
-                pattern,
-                flow_expression,
-                ..
-            })
-            | FlowStatement::Instantiation(FlowInstantiation {
-                pattern,
-                flow_expression,
-                ..
-            }) => {
-                if let flow::Kind::ComponentCall {
-                    component_id,
-                    inputs,
-                } = &flow_expression.kind
-                {
-                    let component_name = symbol_table.get_name(*component_id);
-
-                    // get outputs' ids
-                    let outputs_ids = pattern.identifiers();
-
-                    // get timing event identifier if it exists
-                    if let Some((timer_id, _)) = timing_events.get(&statement_id) {
-                        // if timing event is activated
-                        if encountered_events.contains(timer_id) {
-                            // if component computes on event
-                            if symbol_table.has_events(*component_id) {
-                                // call component with 'no event'
-                                instructions.push(FlowInstruction::EventComponentCall(
-                                    pattern.clone().lir_from_hir(symbol_table),
-                                    component_name.clone(),
-                                    None,
-                                ));
-                            } else {
-                                // call component without
-                                instructions.push(FlowInstruction::ComponentCall(
-                                    pattern.clone().lir_from_hir(symbol_table),
-                                    component_name.clone(),
-                                ));
-                            }
-
-                            // propagate computations
-                            add_dependent_statements = true;
-
-                            // update output signals
-                            for output_id in outputs_ids.iter() {
-                                let output_name = symbol_table.get_name(*output_id);
-                                instructions.push(FlowInstruction::UpdateContext(
-                                    output_name.clone(),
-                                    Expression::Identifier {
-                                        identifier: output_name.clone(),
-                                    },
-                                ));
-                            }
-                        }
-                    }
-
-                    // get the potential event that will call the component
-                    let dependencies: HashSet<usize> =
-                        flow_expression.get_dependencies().into_iter().collect();
-                    let mut overlapping_events = dependencies.intersection(&encountered_events);
-                    debug_assert!(overlapping_events.clone().collect::<Vec<_>>().len() <= 1);
-
-                    // if one of its dependencies is the encountered event
-                    // then call component with the event and update output signals
-                    if let Some(flow_event_id) = overlapping_events.next() {
-                        // get event id in the component
-                        let mut component_event_element_ids = inputs
-                            .iter()
-                            .filter_map(|(component_event_element_id, flow_expression)| {
-                                match flow_expression.kind {
-                                    flow::Kind::Ident { id } => {
-                                        if id.eq(flow_event_id) {
-                                            Some(*component_event_element_id)
-                                        } else {
-                                            None
-                                        }
-                                    }
-                                    _ => unreachable!(), // normalized
-                                }
-                            })
-                            .collect::<Vec<_>>();
-                        debug_assert!(component_event_element_ids.len() == 1);
-                        let component_event_element_id = component_event_element_ids.pop().unwrap();
-
-                        // call component with the event
-                        instructions.push(FlowInstruction::EventComponentCall(
-                            pattern.clone().lir_from_hir(symbol_table),
-                            component_name.clone(),
-                            Some((
-                                symbol_table.get_name(component_event_element_id).clone(),
-                                symbol_table.get_name(*flow_event_id).clone(),
-                            )),
-                        ));
-
-                        // propagate computations
-                        add_dependent_statements = true;
-
-                        // update output signals
-                        for output_id in outputs_ids.iter() {
-                            let output_name = symbol_table.get_name(*output_id);
-                            instructions.push(FlowInstruction::UpdateContext(
-                                output_name.clone(),
-                                Expression::Identifier {
-                                    identifier: output_name.clone(),
-                                },
-                            ));
-                        }
-                    }
-                } else {
-                    // get the id of pattern's flow, debug-check there is only one flow
-                    let mut ids = pattern.identifiers();
-                    debug_assert!(ids.len() == 1);
-                    let id_pattern = ids.pop().unwrap();
-                    let flow_name = symbol_table.get_name(id_pattern);
-
-                    match &flow_expression.kind {
-                        flow::Kind::Ident { .. } => {
-                            // get the id of flow_expression, debug-check there is only one flow
-                            let mut ids = flow_expression.get_dependencies();
-                            debug_assert!(ids.len() == 1);
-                            let id_source = ids.pop().unwrap();
-                            let source_name = symbol_table.get_name(id_source);
-
-                            // only set identifier if source is a signal or an activated event
-                            match symbol_table.get_flow_kind(id_source) {
-                                FlowKind::Signal(_) =>
-                                // set the signal's statement
-                                {
-                                    // if source is a signal, look if it is defined
-                                    if defined_signals.contains(&id_source) {
-                                        instructions.push(FlowInstruction::Let(
-                                            flow_name.clone(),
-                                            Expression::Identifier {
-                                                identifier: source_name.clone(),
-                                            },
-                                        ))
-                                    } else {
-                                        // if not defined, then get it from the context
-                                        instructions.push(FlowInstruction::Let(
-                                            flow_name.clone(),
-                                            Expression::InContext {
-                                                flow: source_name.clone(),
-                                            },
-                                        ))
-                                    }
-                                    // add the flow to the set of defined signals
-                                    defined_signals.insert(id_pattern);
-
-                                    // propagate computations
-                                    add_dependent_statements = true;
-                                }
-                                FlowKind::Event(_) => {
-                                    // if source is an event, look if it is activated
-                                    if encountered_events.contains(&id_source) {
-                                        // if activated, then rename the encountered_event
-                                        // and add the 'let' instruction
-                                        encountered_events.insert(id_pattern);
-                                        instructions.push(FlowInstruction::Let(
-                                            flow_name.clone(),
-                                            Expression::Identifier {
-                                                identifier: source_name.clone(),
-                                            },
-                                        ));
-
-                                        // add the flow to the set of encountered events
-                                        encountered_events.insert(id_pattern);
-
-                                        // propagate computations
-                                        add_dependent_statements = true;
-                                    }
-                                }
-                            }
-                        }
-                        flow::Kind::Sample { .. } => {
-                            // get the id of flow_expression, debug-check there is only one flow
-                            let mut ids = flow_expression.get_dependencies();
-                            debug_assert!(ids.len() == 1);
-                            let id_source = ids.pop().unwrap();
-                            let source_name = symbol_table.get_name(id_source);
-
-                            let (timer_id, _) = timing_events
-                                .get(&statement_id)
-                                .expect("there should be a timing event");
-
-                            // source is an event, look if it is activated
-                            if encountered_events.contains(&id_source) {
-                                // if activated, store event value
-                                instructions.push(FlowInstruction::UpdateContext(
-                                    source_name.clone(),
-                                    Expression::Some {
-                                        expression: Box::new(Expression::Identifier {
-                                            identifier: source_name.clone(),
-                                        }),
-                                    },
-                                ))
-                            }
-
-                            // if timing event is activated
-                            if encountered_events.contains(timer_id) {
-                                // if activated, update signal by taking from stored event value
-                                instructions.push(FlowInstruction::UpdateContext(
-                                    flow_name.clone(),
-                                    Expression::TakeFromContext {
-                                        flow: source_name.clone(),
-                                    },
-                                ));
-
-                                // propagate computations
-                                add_dependent_statements = true;
-                            }
-                        }
-                        flow::Kind::Throttle { delta, .. } => {
-                            // get the id of flow_expression, debug-check there is only one flow
-                            let mut ids = flow_expression.get_dependencies();
-                            debug_assert!(ids.len() == 1);
-                            let id_source = ids.pop().unwrap();
-                            let source_name = symbol_table.get_name(id_source);
-
-                            // source is a signal, if it is not defined, then define it
-                            if !defined_signals.contains(&id_source) {
-                                instructions.push(FlowInstruction::Let(
-                                    source_name.clone(),
-                                    Expression::InContext {
-                                        flow: source_name.clone(),
-                                    },
-                                ));
-
-                                // add the flow to the set of defined signals
-                                defined_signals.insert(id_source);
-                            }
-
-                            // update created signal
-                            instructions.push(FlowInstruction::IfThrottle(
-                                flow_name.clone(),
-                                source_name.clone(),
-                                delta.clone(),
-                                Box::new(FlowInstruction::UpdateContext(
-                                    flow_name.clone(),
-                                    Expression::Identifier {
-                                        identifier: source_name.clone(),
-                                    },
-                                )),
-                            ));
-
-                            // propagate computations
-                            add_dependent_statements = true;
-                        }
-                        flow::Kind::OnChange { .. } => {
-                            // get the id of flow_expression, debug-check there is only one flow
-                            let mut ids = flow_expression.get_dependencies();
-                            debug_assert!(ids.len() == 1);
-                            let id_source = ids.pop().unwrap();
-                            let source_name = symbol_table.get_name(id_source);
-
-                            // source is a signal, if it is not defined, then define it
-                            if !defined_signals.contains(&id_source) {
-                                instructions.push(FlowInstruction::Let(
-                                    source_name.clone(),
-                                    Expression::InContext {
-                                        flow: source_name.clone(),
-                                    },
-                                ));
-
-                                // add the flow to the set of defined signals
-                                defined_signals.insert(id_source);
-                            }
-
-                            // get the id of the pervious event
-                            let id_old_event =
-                                on_change_events.get(&id_pattern).expect("should be there");
-
-                            let old_event_name = symbol_table.get_name(*id_old_event);
-
-                            // if on_change event is NOT activated
-                            let not_onchange_instructions = compute_flow_instructions(
-                                working_stack.clone(),
-                                statements,
-                                graph,
-                                ordered_statements,
-                                encountered_events.clone(),
-                                defined_signals.clone(),
-                                on_change_events,
-                                timing_events,
-                                flows_context,
-                                symbol_table,
-                            );
-
-                            // if on_change event is activated
-                            encountered_events.insert(id_pattern);
-                            let mut onchange_instructions = vec![
-                                FlowInstruction::Let(
-                                    flow_name.clone(),
-                                    Expression::Identifier {
-                                        identifier: source_name.clone(),
-                                    },
-                                ),
-                                FlowInstruction::UpdateContext(
-                                    old_event_name.clone(),
-                                    Expression::Identifier {
-                                        identifier: source_name.clone(),
-                                    },
-                                ),
-                            ];
-                            // insert statements that are dependent from on_change event
-                            graph.neighbors(statement_id).for_each(|next_statement_id| {
-                                // insert statements into the sorted vector 'working_stack'
-                                match working_stack
-                                    .binary_search_by_key(&next_statement_id, compare_statements)
-                                {
-                                    Err(pos) => working_stack.insert(pos, next_statement_id),
-                                    Ok(_) => unreachable!(), // loop in the graph, impossible
-                                }
-                            });
-                            let mut next_onchange_instructions = compute_flow_instructions(
-                                working_stack, // takes ownership
-                                statements,
-                                graph,
-                                ordered_statements,
-                                encountered_events, // takes ownership
-                                defined_signals,    // takes ownership
-                                on_change_events,
-                                timing_events,
-                                flows_context,
-                                symbol_table,
-                            );
-                            onchange_instructions.append(&mut next_onchange_instructions);
-
-                            instructions.push(FlowInstruction::IfChange(
-                                old_event_name.clone(),
-                                source_name.clone(),
-                                onchange_instructions,
-                                not_onchange_instructions,
-                            ));
-
-                            // ends the loop
-                            break;
-                        }
-                        flow::Kind::Timeout { deadline, .. } => {
-                            // get the id of flow_expression, debug-check there is only one flow
-                            let mut ids = flow_expression.get_dependencies();
-                            debug_assert!(ids.len() == 1);
-                            let id_source = ids.pop().unwrap();
-                            let source_name = symbol_table.get_name(id_source);
-
-                            let (timer_id, timer) = timing_events
-                                .get(&statement_id)
-                                .expect("there should be a timing event");
-                            let timer_name = &timer.identifier;
-
-                            // source is an event, look if it is activated
-                            if encountered_events.contains(&id_source) {
-                                // if activated, create event
-                                encountered_events.insert(id_pattern);
-
-                                // add event creation in instruction
-                                instructions.push(FlowInstruction::Let(
-                                    flow_name.clone(),
-                                    Expression::Ok {
-                                        expression: Box::new(Expression::Identifier {
-                                            identifier: source_name.clone(),
-                                        }),
-                                    },
-                                ));
-
-                                // add reset timer
-                                instructions.push(FlowInstruction::ResetTimer(
-                                    timer_name.clone(),
-                                    *deadline,
-                                ));
-
-                                // propagate computations
-                                add_dependent_statements = true;
-                            }
-
-                            // timer is an event, look if it is activated
-                            if encountered_events.contains(timer_id) {
-                                // if activated, create event
-                                encountered_events.insert(id_pattern);
-
-                                // add event creation in instruction
-                                instructions
-                                    .push(FlowInstruction::Let(flow_name.clone(), Expression::Err));
-
-                                // add reset timer
-                                instructions.push(FlowInstruction::ResetTimer(
-                                    timer_name.clone(),
-                                    *deadline,
-                                ));
-
-                                // propagate computations
-                                add_dependent_statements = true;
-                            }
-                        }
-                        flow::Kind::Scan { .. } => {
-                            // get the id of flow_expression, debug-check there is only one flow
-                            let mut ids = flow_expression.get_dependencies();
-                            debug_assert!(ids.len() == 1);
-                            let id_source = ids.pop().unwrap();
-                            let source_name = symbol_table.get_name(id_source);
-
-                            let (timer_id, _) = timing_events
-                                .get(&statement_id)
-                                .expect("there should be a timing event");
-
-                            // timer is an event, look if it is activated
-                            if encountered_events.contains(timer_id) {
-                                // if activated, create event
-                                encountered_events.insert(id_pattern);
-
-                                // add event creation in instructions
-                                // source is a signal, look if it is defined
-                                if defined_signals.contains(&id_source) {
-                                    instructions.push(FlowInstruction::Let(
-                                        flow_name.clone(),
-                                        Expression::Identifier {
-                                            identifier: source_name.clone(),
-                                        },
-                                    ))
-                                } else {
-                                    // if not defined, then get it from the context
-                                    instructions.push(FlowInstruction::Let(
-                                        flow_name.clone(),
-                                        Expression::InContext {
-                                            flow: source_name.clone(),
-                                        },
-                                    ))
-                                }
-
-                                // propagate computations
-                                add_dependent_statements = true;
-                            }
-                        }
-                        flow::Kind::Merge { .. } => {
-                            // get the potential activated event
-                            let dependencies: HashSet<usize> =
-                                flow_expression.get_dependencies().into_iter().collect();
-                            let mut overlapping_events =
-                                dependencies.intersection(&encountered_events);
-                            debug_assert!(
-                                overlapping_events.clone().collect::<Vec<_>>().len() <= 1
-                            );
-
-                            // if one event is activated, create event
-                            if let Some(flow_event_id) = overlapping_events.next() {
-                                // get event's name
-                                let event_name = symbol_table.get_name(*flow_event_id);
-
-                                // if activated, create event
-                                encountered_events.insert(id_pattern);
-
-                                // add event creation in instruction
-                                instructions.push(FlowInstruction::Let(
-                                    flow_name.clone(),
-                                    Expression::Identifier {
-                                        identifier: event_name.clone(),
-                                    },
-                                ));
-
-                                // propagate computations
-                                add_dependent_statements = true;
-                            }
-                        }
-                        flow::Kind::ComponentCall { .. } => unreachable!(),
-                    }
-                }
-            }
-            FlowStatement::Export(FlowExport { id, .. }) => {
-                let source_name = symbol_table.get_name(*id);
-                // if source flow is an encountered event or a defined signal
-                if encountered_events.contains(id) || defined_signals.contains(id) {
-                    // add send instruction
-                    instructions.push(FlowInstruction::Send(
-                        source_name.clone(),
-                        Expression::Identifier {
-                            identifier: source_name.clone(),
-                        },
-                    ));
-                } else if let FlowKind::Signal(_) = symbol_table.get_flow_kind(*id) {
-                    // add send instruction
-                    instructions.push(FlowInstruction::Send(
-                        source_name.clone(),
-                        Expression::InContext {
-                            flow: source_name.clone(),
-                        },
-                    ));
-                }
-            }
-            FlowStatement::Import(FlowImport { id, .. }) => {
-                // if flow is in context, add context_update instruction
-                if flows_context.contains_element(symbol_table.get_name(*id)) {
-                    let flow_name = symbol_table.get_name(*id);
-                    instructions.push(FlowInstruction::UpdateContext(
-                        flow_name.clone(),
-                        Expression::Identifier {
-                            identifier: flow_name.clone(),
-                        },
-                    ))
-                }
-
-                // propagate computations
-                add_dependent_statements = true;
-            }
-        }
-
-        // insert dependent statements if needed
-        if add_dependent_statements {
-            graph.neighbors(statement_id).for_each(|next_statement_id| {
-                // insert statements into the sorted vector 'working_stack'
-                match working_stack.binary_search_by_key(&next_statement_id, compare_statements) {
-                    Err(pos) => working_stack.insert(pos, next_statement_id),
-                    Ok(_) => unreachable!(), // loop in the graph, impossible
-                }
-            });
-        }
-    }
-
-    instructions
 }
 
 impl FlowStatement {
@@ -1261,47 +653,888 @@ impl<'a> IsleBuilder<'a> {
             self.trace_event(event)
         }
     }
+}
 
-    /// Returns the set of all statements triggered by the input flow.
-    pub fn stmt_to_compute(&self, flow: usize) -> HashSet<usize> {
-        let mut stmts = HashSet::new();
-        let mut stack = vec![flow];
-        while let Some(parent) = stack.pop() {
-            // add stmt to the set of statements to compute
-            let unique = stmts.insert(parent);
-            assert!(unique);
+/// Accumulator of instructions that can handle notchanged_onchange branches.
+#[derive(Default)]
+pub struct Accumulator {
+    /// Current instructions block.
+    current: Vec<FlowInstruction>,
+    /// Informations kept when in 'notchanged' branch.
+    notchanged_block: Option<(usize, String, String, String, Box<Accumulator>)>,
+    /// Informations kept when in 'onchange' branch.
+    onchange_block: Option<(String, String, Vec<FlowInstruction>, Box<Accumulator>)>,
+}
+impl Accumulator {
+    /// New empty accumulator.
+    pub fn new() -> Self {
+        Self {
+            current: Vec::new(),
+            notchanged_block: None,
+            onchange_block: None,
+        }
+    }
+    /// New empty accumulator with capacity.
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            current: Vec::with_capacity(capacity),
+            notchanged_block: None,
+            onchange_block: None,
+        }
+    }
+    /// Tells if in 'notchanged' branch.
+    pub fn is_notchanged_block(&self) -> bool {
+        self.notchanged_block.is_some()
+    }
+    /// Tells if in 'onchange' branch.
+    pub fn is_onchange_block(&self) -> bool {
+        self.onchange_block.is_some()
+    }
+    /// Appends an instruction to the end of the current block.
+    pub fn push(&mut self, instr: FlowInstruction) {
+        self.current.push(instr)
+    }
+    /// Switch to a notchanged branch.
+    pub fn notchanged(
+        self,
+        id_event: usize,
+        event_name: impl Into<String>,
+        old_event_name: impl Into<String>,
+        source_name: impl Into<String>,
+    ) -> Self {
+        Self {
+            current: Vec::new(),
+            notchanged_block: Some((
+                id_event,
+                event_name.into(),
+                old_event_name.into(),
+                source_name.into(),
+                self.into(),
+            )),
+            onchange_block: None,
+        }
+    }
+    /// Switch to a onchange branch.
+    pub fn onchange(self) -> (Self, usize) {
+        debug_assert!(self.notchanged_block.is_some());
+        debug_assert!(self.onchange_block.is_none());
+        let (id_event, event_name, old_event_name, source_name, original_acc) =
+            self.notchanged_block.unwrap();
+        (
+            Self {
+                current: vec![
+                    FlowInstruction::update_ctx(
+                        old_event_name.clone(),
+                        Expression::ident(source_name.clone()),
+                    ),
+                    FlowInstruction::def_let(event_name, Expression::ident(source_name.clone())),
+                ],
+                notchanged_block: None,
+                onchange_block: Some((old_event_name, source_name, self.current, original_acc)),
+            },
+            id_event,
+        )
+    }
+    /// Combine notchanged and onchange branches to an onchange instruction.
+    pub fn combine(self) -> Self {
+        debug_assert!(self.notchanged_block.is_none());
+        debug_assert!(self.onchange_block.is_some());
+        let then = self.current;
+        let (old_event_name, source_name, els, original_acc) = self.onchange_block.unwrap();
+        let instruction = FlowInstruction::if_change(old_event_name, source_name, then, els);
+        let mut accumulator = *original_acc;
+        accumulator.push(instruction);
+        accumulator
+    }
+}
 
-            // get the flows defined by parent statement
-            let parent_flows = self.interface.statements[parent].get_identifiers();
+/// The *"propagation"* of a flow is all (and only) the instructions to run when receiving it.
+#[derive(Default)]
+pub struct Propagations {
+    /// Maps flow indices to propagation instructions.
+    input_flows_propagation: HashMap<usize, Accumulator>,
+}
+impl Propagations {
+    /// Inserts an instruction for a flow.
+    pub fn insert(&mut self, flow: usize, instruction: FlowInstruction) {
+        self.input_flows_propagation
+            .get_mut(&flow)
+            .unwrap()
+            .push(instruction)
+    }
+    pub fn init_propagation(&mut self, flow: usize) {
+        let _unique = self
+            .input_flows_propagation
+            .insert(flow, Accumulator::with_capacity(10));
+        debug_assert!(_unique.is_none())
+    }
+    /// Makes t possible to iter on propagations.
+    pub fn into_iter(self) -> impl Iterator<Item = (usize, Vec<FlowInstruction>)> {
+        self.input_flows_propagation
+            .into_iter()
+            .map(|(flow, accumulator)| {
+                debug_assert!(accumulator.notchanged_block.is_none());
+                debug_assert!(accumulator.onchange_block.is_none());
+                (flow, accumulator.current)
+            })
+    }
+    /// Tells if in 'notchanged' branch.
+    pub fn is_notchanged_block(&self, flow: usize) -> bool {
+        let accumulator = self.input_flows_propagation.get(&flow).unwrap();
+        accumulator.notchanged_block.is_some()
+    }
+    /// Tells if in 'onchange' branch.
+    pub fn is_onchange_block(&self, flow: usize) -> bool {
+        let accumulator = self.input_flows_propagation.get(&flow).unwrap();
+        accumulator.onchange_block.is_some()
+    }
+    /// Switch to a notchanged branch.
+    pub fn notchanged(
+        &mut self,
+        flow: usize,
+        id_event: usize,
+        event_name: impl Into<String>,
+        old_event_name: impl Into<String>,
+        source_name: impl Into<String>,
+    ) {
+        let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
+        *accumulator = std::mem::take(accumulator).notchanged(
+            id_event,
+            event_name,
+            old_event_name,
+            source_name,
+        );
+    }
+    /// Switch to an onchange branch.
+    pub fn onchange(&mut self, flow: usize) -> usize {
+        let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
+        let (new_acc, id_event) = std::mem::take(accumulator).onchange();
+        *accumulator = new_acc;
+        id_event
+    }
+    /// Combine an onchange branch and a default branch to an onchange instruction.
+    pub fn combine(&mut self, flow: usize) {
+        let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
+        *accumulator = std::mem::take(accumulator).combine();
+    }
+}
 
-            let dependencies = self.interface.graph.neighbors(parent).filter_map(|child| {
-                // if child is a component call and parent is a signal definition
-                // then child is not inserted
-                if let Some((_, inputs)) = self.interface.statements[child].try_get_call() {
-                    let mut parent_flows = inputs.iter().filter_map(|(input_flow, _)| {
-                        if parent_flows.contains(input_flow) {
-                            Some(*input_flow)
-                        } else {
-                            None
-                        }
-                    });
-                    // if parent flows are signals then child statement is not inserted
-                    if parent_flows.all(|flow| self.syms.get_flow_kind(flow).is_signal()) {
-                        return None;
+/// Stack of statements indices that can handle forks.
+#[derive(Default)]
+pub struct Stack {
+    /// Current statements stack.
+    current: Vec<usize>,
+    /// Next statements stack.
+    next: Option<Box<Stack>>,
+}
+impl Stack {
+    /// New empty stack.
+    pub fn new() -> Self {
+        Self {
+            current: Vec::new(),
+            next: None,
+        }
+    }
+    /// New empty stack with capacity.
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            current: Vec::with_capacity(capacity),
+            next: None,
+        }
+    }
+    /// Tells if the stack is empty.
+    pub fn is_empty(&self) -> bool {
+        self.current.is_empty() && self.next.as_ref().map_or(true, |stack| stack.is_empty())
+    }
+    /// Appends a statement index to the end of the current stack.
+    pub fn push(&mut self, stmt_idx: usize) {
+        self.current.push(stmt_idx)
+    }
+    /// Pop the next statement index from the current stack.
+    pub fn pop(&mut self) -> Option<usize> {
+        self.current.pop()
+    }
+    /// Fork the stack.
+    pub fn fork(&mut self) {
+        let old = std::mem::take(self);
+        *self = Self {
+            current: old.current.clone(),
+            next: Some(old.into()),
+        }
+    }
+    /// Switch to the next stack.
+    pub fn next(&mut self) {
+        debug_assert!(self.current.is_empty());
+        debug_assert!(self.next.is_some());
+        *self = *std::mem::take(self).next.unwrap()
+    }
+    /// Insert in the stack in dependencies order.
+    pub fn insert_ordered<F: Fn(usize) -> usize>(&mut self, value: usize, f: F) {
+        match self
+            .current
+            .binary_search_by_key(&value, |stmt_idx| f(*stmt_idx))
+        {
+            Err(pos) => self.current.insert(pos, value),
+            Ok(_) => unreachable!(), // loop in the graph, impossible
+        }
+    }
+}
+
+/// A context to build [Propagations] of input flows.
+pub struct PropagationBuilder<'a> {
+    /// Result propagations, populated during traversals.
+    propagations: Propagations,
+    /// Context of the service.
+    flows_context: &'a FlowsContext,
+    /// Events' isles.
+    isles: Isles,
+    /// Symbol table.
+    symbol_table: &'a SymbolTable,
+    /// Interface to build isles for.
+    interface: &'a Interface,
+    /// Cached indice of incoming flow.
+    incoming_flow: usize,
+    /// Cached stack of statements to visit.
+    stack: Stack,
+    /// Events currently triggered during a traversal.
+    events: HashSet<usize>,
+    /// Signals currently defined during a traversal.
+    signals: HashSet<usize>,
+    /// The dependency order the statements should follow.
+    statements_order: HashMap<usize, usize>,
+    /// Maps on_change event indices to the indices of signals containing their previous values.
+    on_change_events: HashMap<usize, usize>,
+    /// Maps statement indices to the indices and kinds of their timers.
+    timing_events: HashMap<usize, usize>,
+}
+
+impl<'a> PropagationBuilder<'a> {
+    /// Create a PropagationBuilder.
+    ///
+    /// After creating the builder, you only need to [propagate](Self::propagate) the input flows.
+    /// This will create the instructions to run when the input flow arrives.
+    pub fn new(
+        interface: &'a Interface,
+        symbol_table: &'a SymbolTable,
+        flows_context: &'a FlowsContext,
+        on_change_events: HashMap<usize, usize>,
+        timing_events: HashMap<usize, usize>,
+    ) -> PropagationBuilder<'a> {
+        // create events isles
+        let mut isle_builder = IsleBuilder::new(symbol_table, interface);
+        isle_builder.trace_events(interface.get_flows_ids());
+        let isles = isle_builder.into_isles();
+
+        // sort statement in dependency order
+        let mut ordered_statements = toposort(&interface.graph, None).expect("should succeed");
+        ordered_statements.reverse();
+        let statements_order = ordered_statements
+            .into_iter()
+            .enumerate()
+            .map(|(order, statement_id)| (statement_id, order))
+            .collect::<HashMap<_, _>>();
+
+        PropagationBuilder {
+            propagations: Default::default(),
+            flows_context,
+            isles,
+            symbol_table,
+            interface,
+            stack: Stack::new(),
+            incoming_flow: 0,
+            events: Default::default(),
+            signals: Default::default(),
+            statements_order,
+            on_change_events,
+            timing_events,
+        }
+    }
+
+    /// Destroy PropagationsBuilder into Propagations.
+    pub fn into_propagations(self) -> Propagations {
+        self.propagations
+    }
+
+    /// Extend the stack in dependencies order.
+    fn extend_ordered(&mut self, iter: impl Iterator<Item = usize>) {
+        // gives the order of statements indices
+        let compare = |statement_id| self.statements_order[&statement_id];
+        iter.for_each(|next_statement_id| {
+            // insert statements into the sorted stack
+            self.stack.insert_ordered(next_statement_id, compare)
+        })
+    }
+
+    /// Extend the stack with the next statements to compute.
+    fn extend_with_next(&mut self, parent: usize) {
+        println!("extend parent: {parent}");
+
+        // get the flows defined by parent statement
+        let parent_flows = self.interface.statements[parent].get_identifiers();
+
+        let dependencies = self.interface.graph.neighbors(parent).filter_map(|child| {
+            println!("child: {child}");
+            // if child is a component call and parent is a signal definition
+            // then child is not inserted
+            if let Some((_, inputs)) = self.interface.statements[child].try_get_call() {
+                let mut parent_flows = inputs.iter().filter_map(|(_, input_expr)| {
+                    let input_flow = input_expr.get_dependencies()[0];
+                    if parent_flows.contains(&input_flow) {
+                        Some(input_flow)
+                    } else {
+                        None
                     }
+                });
+                // if parent flows are signals then child statement is not inserted
+                if parent_flows.all(|flow| self.symbol_table.get_flow_kind(flow).is_signal()) {
+                    return None;
                 }
-                Some(child)
-            });
+            }
+            Some(child)
+        });
 
-            // extend stack with union of event isle and dependencies
-            if let Some(isle) = self.isles.get_isle_for(parent) {
-                let to_compute = isle.iter().map(|stmt| *stmt).chain(dependencies).unique();
-                stack.extend(to_compute);
+        // extend stack with union of event isle and dependencies
+        if let Some(isle) = self.isles.get_isle_for(parent) {
+            println!("isle");
+            let to_compute = isle
+                .clone()
+                .into_iter()
+                .chain(dependencies)
+                .map(|inserted| {
+                    println!("inserted: {inserted}");
+                    inserted
+                })
+                .unique();
+            self.extend_ordered(to_compute);
+        } else {
+            self.extend_ordered(dependencies.map(|inserted| {
+                println!("inserted: {inserted}");
+                inserted
+            }));
+        }
+    }
+
+    /// Switch to a notchanged branch.
+    fn notchanged(&mut self, id_event: usize, id_source: usize) {
+        let event_name = self.symbol_table.get_name(id_event);
+        let source_name = self.get_signal_name(id_source);
+        let id_old_event = self.on_change_events[&id_event];
+        let old_event_name = self.symbol_table.get_name(id_old_event);
+        self.propagations.notchanged(
+            self.incoming_flow,
+            id_event,
+            event_name,
+            old_event_name,
+            source_name,
+        );
+        self.stack.fork();
+    }
+    /// Switch to an onchange branch.
+    fn onchange(&mut self) -> usize {
+        let id_event = self.propagations.onchange(self.incoming_flow);
+        self.stack.next();
+        id_event
+    }
+    /// Combine an onchange branch and a default branch to an onchange instruction.
+    fn combine(&mut self) {
+        self.propagations.combine(self.incoming_flow);
+    }
+
+    /// Get the next statement index to analyse.
+    fn pop_stack(&mut self) -> Option<usize> {
+        if let Some(value) = self.stack.pop() {
+            return Some(value);
+        }
+        if self.propagations.is_notchanged_block(self.incoming_flow) {
+            let id_event = self.onchange();
+            self.events.insert(id_event);
+            return self.pop_stack();
+        }
+        if self.propagations.is_onchange_block(self.incoming_flow) {
+            self.combine();
+            return self.pop_stack();
+        }
+        if self.stack.is_empty() {
+            return None;
+        }
+        unreachable!()
+    }
+
+    /// Compute the instructions propagating the changes of all incoming flows.
+    pub fn propagate(&mut self) {
+        // for every incoming flows, compute their handlers
+        self.interface
+            .statements
+            .iter()
+            .enumerate()
+            .filter_map(|(index, statement)| match statement {
+                FlowStatement::Import(FlowImport { id, .. }) => Some((index, *id)),
+                _ => None,
+            })
+            .for_each(|(import_idx, incoming_flow)| {
+                self.incoming_flow = incoming_flow;
+                self.propagations.init_propagation(incoming_flow);
+                self.events.clear();
+                self.signals.clear();
+                self.propagate_import(import_idx)
+            });
+    }
+
+    /// Compute the instructions propagating the changes of one incoming flow.
+    fn propagate_import(&mut self, import_idx: usize) {
+        debug_assert!(self.stack.is_empty());
+        self.stack.push(import_idx);
+
+        while let Some(stmt_idx) = self.pop_stack() {
+            // get flow statement related to stmt_idx
+            let flow_statement = &self.interface.statements[stmt_idx];
+
+            match flow_statement {
+                FlowStatement::Declaration(FlowDeclaration {
+                    pattern,
+                    flow_expression,
+                    ..
+                })
+                | FlowStatement::Instantiation(FlowInstantiation {
+                    pattern,
+                    flow_expression,
+                    ..
+                }) => self.handle_expr(stmt_idx, pattern, flow_expression),
+                FlowStatement::Export(FlowExport { id, .. }) => self.send(*id),
+                FlowStatement::Import(FlowImport { id, .. }) => {
+                    if self.symbol_table.get_flow_kind(*id).is_event() {
+                        self.events.insert(*id);
+                    } else {
+                        self.signals.insert(*id);
+                    }
+                    self.update_ctx(*id);
+                }
+            }
+
+            self.extend_with_next(stmt_idx);
+        }
+    }
+
+    /// Compute the instructions from an expression flow.
+    #[inline]
+    fn handle_expr(
+        &mut self,
+        stmt_idx: usize,
+        pattern: &hir::Pattern,
+        flow_expression: &flow::Expr,
+    ) {
+        let dependencies = flow_expression.get_dependencies();
+        match &flow_expression.kind {
+            flow::Kind::Ident { id } => self.handle_ident(pattern, *id),
+            flow::Kind::Sample { .. } => self.handle_sample(stmt_idx, pattern, dependencies),
+            flow::Kind::Scan { .. } => self.handle_scan(stmt_idx, pattern, dependencies),
+            flow::Kind::Timeout { deadline, .. } => {
+                self.handle_timeout(stmt_idx, pattern, dependencies, *deadline)
+            }
+            flow::Kind::Throttle { delta, .. } => {
+                self.handle_throttle(pattern, dependencies, delta.clone())
+            }
+            flow::Kind::OnChange { .. } => self.handle_onchange(pattern, dependencies),
+            flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
+            flow::Kind::ComponentCall {
+                component_id,
+                inputs,
+            } => self.handle_component_call(stmt_idx, pattern, *component_id, inputs, dependencies),
+        }
+    }
+
+    /// Compute the instructions from an identifier expression.
+    fn handle_ident(&mut self, pattern: &hir::Pattern, id_source: usize) {
+        // get the id of pattern's flow, debug-check there is only one flow
+        let mut ids = pattern.identifiers();
+        debug_assert!(ids.len() == 1);
+        let id_pattern = ids.pop().unwrap();
+
+        // insert instruction only if source is a signal or an activated event
+        if self.symbol_table.get_flow_kind(id_source).is_signal() {
+            let expr = self.get_signal(id_source);
+            self.define_signal(id_pattern, expr);
+        } else {
+            let expr = self.get_event(id_source);
+            self.define_event(id_pattern, expr);
+        }
+    }
+
+    /// Compute the instructions from a sample expression.
+    fn handle_sample(
+        &mut self,
+        stmt_idx: usize,
+        pattern: &hir::Pattern,
+        mut dependencies: Vec<usize>,
+    ) {
+        // get the id of pattern's flow, debug-check there is only one flow
+        let mut ids = pattern.identifiers();
+        debug_assert!(ids.len() == 1);
+        let id_pattern = ids.pop().unwrap();
+        let flow_name = self.symbol_table.get_name(id_pattern);
+
+        // get the source id, debug-check there is only one flow
+        debug_assert!(dependencies.len() == 1);
+        let id_source = dependencies.pop().unwrap();
+        let source_name = self.symbol_table.get_name(id_source);
+
+        let timer_id = self.timing_events[&stmt_idx];
+
+        // source is an event, look if it is activated
+        if self.events.contains(&id_source) {
+            // if activated, store event value
+            self.push_instr(FlowInstruction::update_ctx(
+                source_name,
+                Expression::some(Expression::ident(source_name)),
+            ))
+        }
+
+        // if timing event is activated
+        if self.events.contains(&timer_id) {
+            // if activated, update signal by taking from stored event value
+            self.push_instr(FlowInstruction::update_ctx(
+                flow_name,
+                Expression::take_from_ctx(source_name),
+            ));
+        }
+    }
+
+    /// Compute the instructions from a scan expression.
+    fn handle_scan(
+        &mut self,
+        stmt_idx: usize,
+        pattern: &hir::Pattern,
+        mut dependencies: Vec<usize>,
+    ) {
+        // get the id of pattern's flow, debug-check there is only one flow
+        let mut ids = pattern.identifiers();
+        debug_assert!(ids.len() == 1);
+        let id_pattern = ids.pop().unwrap();
+        let flow_name = self.symbol_table.get_name(id_pattern);
+
+        // get the source id, debug-check there is only one flow
+        debug_assert!(dependencies.len() == 1);
+        let id_source = dependencies.pop().unwrap();
+        let source_name = self.symbol_table.get_name(id_source);
+
+        let timer_id = self.timing_events[&stmt_idx];
+
+        // timer is an event, look if it is activated
+        if self.events.contains(&timer_id) {
+            // if activated, create event
+            self.events.insert(id_pattern);
+
+            // add event creation in instructions
+            // source is a signal, look if it is defined
+            if self.signals.contains(&id_source) {
+                self.push_instr(FlowInstruction::def_let(
+                    flow_name,
+                    Expression::ident(source_name),
+                ))
             } else {
-                stack.extend(dependencies);
+                // if not defined, then get it from the context
+                self.push_instr(FlowInstruction::def_let(
+                    flow_name,
+                    Expression::in_ctx(source_name),
+                ))
+            }
+        }
+    }
+
+    /// Compute the instructions from a timeout expression.
+    fn handle_timeout(
+        &mut self,
+        stmt_idx: usize,
+        pattern: &hir::Pattern,
+        mut dependencies: Vec<usize>,
+        deadline: u64,
+    ) {
+        // get the id of pattern's flow, debug-check there is only one flow
+        let mut ids = pattern.identifiers();
+        debug_assert!(ids.len() == 1);
+        let id_pattern = ids.pop().unwrap();
+
+        // get the source id, debug-check there is only one flow
+        debug_assert!(dependencies.len() == 1);
+        let id_source = dependencies.pop().unwrap();
+
+        let timer_id = self.timing_events[&stmt_idx].clone();
+
+        let expr = self.get_event(id_source).map(Expression::ok);
+        let mut to_reset = expr.is_some();
+        self.define_event(id_pattern, expr);
+
+        let expr = self.get_event(timer_id).map(|_| Expression::err());
+        to_reset = to_reset || expr.is_some();
+        self.define_event(id_pattern, expr);
+
+        self.reset_timer(to_reset, timer_id, deadline)
+    }
+
+    /// Compute the instructions from a throttle expression.
+    fn handle_throttle(
+        &mut self,
+        pattern: &hir::Pattern,
+        mut dependencies: Vec<usize>,
+        delta: Constant,
+    ) {
+        // get the id of pattern's flow, debug-check there is only one flow
+        let mut ids = pattern.identifiers();
+        debug_assert!(ids.len() == 1);
+        let id_pattern = ids.pop().unwrap();
+        let flow_name = self.symbol_table.get_name(id_pattern);
+
+        // get the source id, debug-check there is only one flow
+        debug_assert!(dependencies.len() == 1);
+        let id_source = dependencies.pop().unwrap();
+        let source_name = self.symbol_table.get_name(id_source);
+
+        // update created signal
+        let expr = self.get_signal(id_source);
+        self.push_instr(FlowInstruction::if_throttle(
+            flow_name,
+            source_name,
+            delta,
+            FlowInstruction::update_ctx(flow_name, expr),
+        ));
+    }
+
+    /// Compute the instructions from an onchange expression.
+    fn handle_onchange(&mut self, pattern: &hir::Pattern, mut dependencies: Vec<usize>) {
+        // get the id of pattern's flow, debug-check there is only one flow
+        let mut ids = pattern.identifiers();
+        debug_assert!(ids.len() == 1);
+        let id_pattern = ids.pop().unwrap();
+
+        // get the source id, debug-check there is only one flow
+        debug_assert!(dependencies.len() == 1);
+        let id_source = dependencies.pop().unwrap();
+
+        // initiate the notchanged branch (propagation will branch later on the onchange)
+        self.notchanged(id_pattern, id_source);
+    }
+
+    /// Compute the instructions from a merge expression.
+    fn handle_merge(&mut self, pattern: &hir::Pattern, dependencies: Vec<usize>) {
+        // get the id of pattern's flow, debug-check there is only one flow
+        let mut ids = pattern.identifiers();
+        debug_assert!(ids.len() == 1);
+        let id_pattern = ids.pop().unwrap();
+        let flow_name = self.symbol_table.get_name(id_pattern);
+
+        // get the potential activated event
+        let dependencies: HashSet<usize> = dependencies.into_iter().collect();
+        let mut overlapping_events = dependencies.intersection(&self.events);
+        debug_assert!(overlapping_events.clone().collect::<Vec<_>>().len() <= 1);
+
+        // if one event is activated, create event
+        if let Some(flow_event_id) = overlapping_events.next() {
+            // get event's name
+            let event_name = self.symbol_table.get_name(*flow_event_id);
+
+            // if activated, create event
+            self.events.insert(id_pattern);
+
+            // add event creation in instruction
+            self.push_instr(FlowInstruction::def_let(
+                flow_name,
+                Expression::ident(event_name),
+            ));
+        }
+    }
+
+    /// Compute the instructions from a component call.
+    fn handle_component_call(
+        &mut self,
+        stmt_idx: usize,
+        pattern: &hir::Pattern,
+        component_id: usize,
+        inputs: &Vec<(usize, flow::Expr)>,
+        dependencies: Vec<usize>,
+    ) {
+        // get timing event identifier if it exists
+        if let Some(timer_id) = self.timing_events.get(&stmt_idx) {
+            // if timing event is activated
+            if self.events.contains(timer_id) {
+                // if component computes on user defined events
+                let input_event = if self.symbol_table.has_events(component_id) {
+                    Some(None)
+                } else {
+                    None
+                };
+                // call component with the event and update output signals
+                self.call_component(component_id, pattern.clone(), input_event);
             }
         }
 
-        stmts
+        // get the potential event that will call the component
+        let dependencies: HashSet<usize> = dependencies.into_iter().collect();
+        let mut overlapping_events = dependencies.intersection(&self.events);
+        debug_assert!(overlapping_events.clone().collect::<Vec<_>>().len() <= 1);
+
+        // if one of its dependencies is the encountered event
+        if let Some(event_id) = overlapping_events.next() {
+            // get event id in the component
+            let (element_id, _) = inputs
+                .iter()
+                .find(|(_, flow_expr)| {
+                    match flow_expr.kind {
+                        flow::Kind::Ident { id } => id == *event_id,
+                        _ => unreachable!(), // normalized
+                    }
+                })
+                .unwrap();
+            let (elem_name, event_name) = (
+                self.symbol_table.get_name(*element_id),
+                self.symbol_table.get_name(*event_id),
+            );
+            let input_event = Some(Some((elem_name.clone(), event_name.clone())));
+            // call component with the event and update output signals
+            self.call_component(component_id, pattern.clone(), input_event);
+        }
+    }
+
+    /// Push an instruction in the current propagation branch.
+    fn push_instr(&mut self, instruction: FlowInstruction) {
+        self.propagations.insert(self.incoming_flow, instruction);
+    }
+
+    /// Add signal definition in current propagation branch.
+    fn define_signal(&mut self, signal_id: usize, expr: Expression) {
+        let signal_name = self.symbol_table.get_name(signal_id);
+        self.push_instr(FlowInstruction::def_let(signal_name, expr));
+        self.signals.insert(signal_id);
+    }
+
+    /// Get signal call expression.
+    fn get_signal(&mut self, signal_id: usize) -> Expression {
+        let signal_name = self.symbol_table.get_name(signal_id);
+        // if signal not already defined, define local identifier from context value
+        if !self.signals.contains(&signal_id) {
+            self.push_instr(FlowInstruction::def_let(
+                signal_name,
+                Expression::in_ctx(signal_name),
+            ));
+            self.signals.insert(signal_id);
+        }
+        Expression::ident(signal_name)
+    }
+
+    /// Get signal name and get signal from context if needed.
+    fn get_signal_name(&mut self, signal_id: usize) -> &'a String {
+        let signal_name = self.symbol_table.get_name(signal_id);
+        // if signal not already defined, define local identifier from context value
+        if !self.signals.contains(&signal_id) {
+            self.push_instr(FlowInstruction::def_let(
+                signal_name,
+                Expression::in_ctx(signal_name),
+            ));
+            self.signals.insert(signal_id);
+        }
+        signal_name
+    }
+
+    /// Add event definition in current propagation branch.
+    fn define_event(&mut self, event_id: usize, opt_expr: Option<Expression>) {
+        if let Some(expr) = opt_expr {
+            let event_name = self.symbol_table.get_name(event_id);
+            self.push_instr(FlowInstruction::def_let(event_name, expr));
+            self.events.insert(event_id);
+        }
+    }
+
+    /// Add reset timer in current propagation branch.
+    fn reset_timer(&mut self, to_reset: bool, timer_id: usize, deadline: u64) {
+        if to_reset {
+            let timer_name = self.symbol_table.get_name(timer_id);
+            self.push_instr(FlowInstruction::reset(timer_name, deadline));
+        }
+    }
+
+    /// Get event call expression.
+    fn get_event(&mut self, event_id: usize) -> Option<Expression> {
+        // return expression only if event is defined
+        if self.events.contains(&event_id) {
+            let event_name = self.symbol_table.get_name(event_id);
+            Some(Expression::ident(event_name))
+        } else {
+            None
+        }
+    }
+
+    /// Add component call in current propagation branch with outputs update.
+    fn call_component(
+        &mut self,
+        component_id: usize,
+        output_pattern: hir::Pattern,
+        opt_event: Option<Option<(String, String)>>,
+    ) {
+        let component_name = self.symbol_table.get_name(component_id);
+        let outputs_ids = output_pattern.identifiers();
+        if let Some(maybe_event) = opt_event {
+            // call component with the optional event occurance
+            self.push_instr(FlowInstruction::event_comp_call(
+                output_pattern.lir_from_hir(self.symbol_table),
+                component_name,
+                maybe_event,
+            ));
+        } else {
+            // call component without event
+            self.push_instr(FlowInstruction::comp_call(
+                output_pattern.lir_from_hir(self.symbol_table),
+                component_name,
+            ));
+        }
+        // update outputs
+        for output_id in outputs_ids.iter() {
+            let output_name = self.symbol_table.get_name(*output_id);
+            self.signals.insert(*output_id);
+            self.push_instr(FlowInstruction::update_ctx(
+                output_name,
+                Expression::ident(output_name),
+            ));
+        }
+    }
+
+    /// Add signal send in current propagation branch.
+    fn send_signal(&mut self, signal_id: usize, expr: Expression) {
+        let signal_name = self.symbol_table.get_name(signal_id);
+        self.push_instr(FlowInstruction::send(signal_name, expr));
+    }
+
+    /// Add event send in current propagation branch.
+    fn send_event(&mut self, event_id: usize, opt_expr: Option<Expression>) {
+        if let Some(expr) = opt_expr {
+            let event_name = self.symbol_table.get_name(event_id);
+            self.push_instr(FlowInstruction::send(event_name, expr));
+        }
+    }
+
+    /// Add flow send in current propagation branch.
+    fn send(&mut self, flow_id: usize) {
+        // insert instruction only if source is a signal or an activated event
+        if self.symbol_table.get_flow_kind(flow_id).is_signal() {
+            let expr = self.get_signal(flow_id);
+            self.send_signal(flow_id, expr);
+        } else {
+            let expr = self.get_event(flow_id);
+            self.send_event(flow_id, expr);
+        }
+    }
+
+    /// Add context update in current propagation branch.
+    fn update_ctx(&mut self, flow_id: usize) {
+        // if flow is in context, add context_update instruction
+        if self
+            .flows_context
+            .contains_element(self.symbol_table.get_name(flow_id))
+        {
+            println!("update context");
+            let flow_name = self.symbol_table.get_name(flow_id);
+            self.push_instr(FlowInstruction::update_ctx(
+                flow_name,
+                Expression::ident(flow_name),
+            ))
+        }
     }
 }
