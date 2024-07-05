@@ -28,7 +28,7 @@ impl Interface {
             })
             .collect()
     }
-    pub fn get_flows_ids(&self) -> Vec<usize> {
+    pub fn get_flows_ids<'a>(&'a self) -> impl IntoIterator<Item = usize> + 'a {
         self.statements
             .iter()
             .flat_map(|statement| match statement {
@@ -41,7 +41,6 @@ impl Interface {
                     vec![*id]
                 }
             })
-            .collect()
     }
 }
 
