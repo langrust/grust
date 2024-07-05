@@ -65,6 +65,33 @@ pub enum FlowInstruction {
     EventComponentCall(Pattern, String, Option<(String, String)>),
     ComponentCall(Pattern, String),
 }
+mk_new! { impl FlowInstruction =>
+    Let: def_let (name: impl Into<String> = name.into(), expr: Expression = expr.into())
+    UpdateContext: update_ctx (name: impl Into<String> = name.into(), expr: Expression = expr.into())
+    Send: send (name: impl Into<String> = name.into(), expr: Expression = expr.into())
+    IfThrottle: if_throttle (
+        flow_name: impl Into<String> = flow_name.into(),
+        source_name: impl Into<String> = source_name.into(),
+        delta: Constant = delta,
+        instr: FlowInstruction = instr.into(),
+    )
+    IfChange: if_change (
+        old_event_name: impl Into<String> = old_event_name.into(),
+        source_name: impl Into<String> = source_name.into(),
+        then: Vec<FlowInstruction> = then,
+        els: Vec<FlowInstruction> = els,
+    )
+    ResetTimer: reset (name: impl Into<String> = name.into(), val: u64 = val)
+    ComponentCall: comp_call (
+        pat: Pattern = pat,
+        name: impl Into<String> = name.into(),
+    )
+    EventComponentCall: event_comp_call (
+        pat: Pattern = pat,
+        name: impl Into<String> = name.into(),
+        event: Option<(String, String)> = event,
+    )
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
@@ -102,4 +129,27 @@ pub enum Expression {
     None,
     /// Err expression: `Err`.
     Err,
+}
+
+mk_new! { impl Expression =>
+    Literal: lit {
+        literal: Constant = literal
+    }
+    Identifier: ident {
+        identifier: impl Into<String> = identifier.into()
+    }
+    InContext: in_ctx {
+        flow: impl Into<String> = flow.into()
+    }
+    TakeFromContext: take_from_ctx {
+        flow: impl Into<String> = flow.into()
+    }
+    Some: some {
+        expression: Expression = expression.into()
+    }
+    Ok: ok {
+        expression: Expression = expression.into()
+    }
+    None: none {}
+    Err: err {}
 }
