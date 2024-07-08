@@ -602,6 +602,21 @@ impl<'a> IsleBuilder<'a> {
             .unwrap_or(false)
     }
 
+    /// True if `stmt` corresponds to an import.
+    ///
+    /// Used to stop the exploration of a dependency branch on imports.
+    fn is_import(&self, stmt: usize) -> bool {
+        match self.interface.statements[stmt] {
+            FlowStatement::Import(_) => true,
+            _ => false,
+        }
+    }
+
+    /// True if `stmt` corresponds to a component call.
+    fn is_call(&self, stmt: usize) -> bool {
+        self.interface.statements[stmt].try_get_call().is_some()
+    }
+
     /// Isles accessor.
     pub fn isles(&self) -> &Isles {
         &self.isles
@@ -631,12 +646,14 @@ impl<'a> IsleBuilder<'a> {
 
         'stmts: while let Some((stmt, is_top)) = self.stack.pop() {
             let is_new = self.memory.insert(stmt);
-            // continue if not new or we have reached an eventful call that's not at the top
-            if !is_new || !is_top && self.is_eventful_call(stmt) {
+            // continue if not new or import or we have reached an eventful call that's not at the top
+            if !is_new || (!is_top && self.is_eventful_call(stmt)) || self.is_import(stmt) {
                 continue 'stmts;
             }
 
-            self.isles.insert(event, stmt);
+            if self.is_call(stmt) {
+                self.isles.insert(event, stmt);
+            }
 
             for stmt in self
                 .interface
@@ -972,53 +989,59 @@ impl<'a> PropagationBuilder<'a> {
         // get the flows defined by parent statement
         let parent_flows = self.interface.statements[parent].get_identifiers();
 
-        let dependencies = self.interface.graph.neighbors(parent).filter_map(|child| {
-            // if child is a component call and parent is a signal definition
-            // then child is not inserted
-            if let Some((_, inputs)) = self.interface.statements[child].try_get_call() {
-                // if parent flow is timer then child statement is inserted
-                if let Some(timing_flow) = self.timing_events.get(&child) {
-                    if parent_flows.contains(timing_flow) {
-                        return Some(child);
+        let dependencies = self
+            .interface
+            .graph
+            .neighbors(parent)
+            .filter_map(|child| {
+                // if child is a component call and parent is a signal definition
+                // then child is not inserted
+                if let Some((_, inputs)) = self.interface.statements[child].try_get_call() {
+                    // if parent flow is timer then child statement is inserted
+                    if let Some(timing_flow) = self.timing_events.get(&child) {
+                        if parent_flows.contains(timing_flow) {
+                            return Some(child);
+                        }
+                    }
+                    // if parent flows are signals then child statement is not inserted
+                    let mut input_flows = inputs.iter().filter_map(|(_, input_expr)| {
+                        let input_flow = input_expr.get_dependencies()[0];
+                        if parent_flows.contains(&input_flow) {
+                            Some(input_flow)
+                        } else {
+                            None
+                        }
+                    });
+                    if input_flows.all(|flow| self.symbol_table.get_flow_kind(flow).is_signal()) {
+                        return None;
                     }
                 }
-                // if parent flows are signals then child statement is not inserted
-                let mut input_flows = inputs.iter().filter_map(|(_, input_expr)| {
-                    let input_flow = input_expr.get_dependencies()[0];
-                    if parent_flows.contains(&input_flow) {
-                        Some(input_flow)
-                    } else {
-                        None
-                    }
-                });
-                if input_flows.all(|flow| self.symbol_table.get_flow_kind(flow).is_signal()) {
+                Some(child)
+            })
+            .filter_map(|to_insert| {
+                // remove already visited
+                if self.memory.contains(&to_insert) {
+                    println!("filter dependencies");
                     return None;
                 }
-            }
-            Some(child)
-        });
+                Some(to_insert)
+            });
 
         let isles = parent_flows
             .iter()
             .filter_map(|parent_flow| self.isles.get_isle_for(*parent_flow))
             .flatten()
-            .map(|id| *id);
+            .filter_map(|to_insert| {
+                // remove already visited
+                if self.memory.contains(to_insert) {
+                    println!("filter isles");
+                    return None;
+                }
+                Some(*to_insert)
+            });
 
         // extend stack with union of event isle and dependencies
-        let to_insert = isles
-            .chain(dependencies)
-            .filter_map(|to_insert| {
-                // remove imports
-                if let FlowStatement::Import(_) = self.interface.statements[to_insert] {
-                    return None;
-                }
-                // remove already visited
-                if self.memory.contains(&to_insert) {
-                    return None;
-                }
-                Some(to_insert)
-            })
-            .unique();
+        let to_insert = isles.chain(dependencies).unique();
 
         // gives the order of statements indices
         let compare = |statement_id| self.statements_order[&statement_id];
