@@ -45,7 +45,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let instruction = rust_ast_from_lir(*instruction);
 
             parse_quote! {
-                if (self.context.#receiver_ident - #source_ident) >= #delta {
+                if (self.context.#receiver_ident - #source_ident).abs() >= #delta {
                     #instruction
                 }
             }

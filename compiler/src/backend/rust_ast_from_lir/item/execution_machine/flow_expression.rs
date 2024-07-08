@@ -14,7 +14,7 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
         }
         Expression::InContext { flow } => {
             let flow = Ident::new(&flow, Span::call_site());
-            parse_quote! { self.context.#flow.clone() }
+            parse_quote! { self.context.#flow }
         }
         Expression::TakeFromContext { flow } => {
             let flow = Ident::new(&flow, Span::call_site());
