@@ -490,8 +490,13 @@ pub mod toto_service {
             if self.context.changed_set_speed_old != flow_expression_fresh_ident {
                 self.context.changed_set_speed_old = flow_expression_fresh_ident;
                 let changed_set_speed = flow_expression_fresh_ident;
-            } else {
-                let v_set_aux = self.context.v_set_aux.clone();
+                let (v_set_aux, v_update) =
+                    self.process_set_speed
+                        .step(self.context.get_process_set_speed_inputs(
+                            ProcessSetSpeedEvent::set_speed(changed_set_speed),
+                        ));
+                self.context.v_set_aux = v_set_aux;
+                self.context.v_update = v_update;
                 let v_set = v_set_aux;
                 {
                     let res = self.output.send(O::v_set(v_set, instant)).await;
@@ -499,6 +504,7 @@ pub mod toto_service {
                         return;
                     }
                 }
+            } else {
             }
         }
         async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
