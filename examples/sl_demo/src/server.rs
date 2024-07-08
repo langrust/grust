@@ -15,6 +15,7 @@ mod sl {
 
         export signal   car::adas::speed_limiter::in_regulation : bool;
         export signal   car::adas::speed_limiter::v_set         : float;
+        export signal   car::adas::speed_limiter::sl_state      : SpeedLimiterOn;
 
         // # Types
 
@@ -254,6 +255,7 @@ mod sl {
         );
         v_set = v_set_aux;
         in_regulation = in_regulation_aux;
+        sl_state = on_state;
     }
 }
 
@@ -261,7 +263,7 @@ use futures::StreamExt;
 use interface::{
     input, output,
     sl_server::{Sl, SlServer},
-    Input, Output, *,
+    Input, Output,
 };
 use lazy_static::lazy_static;
 use priority_stream::prio_stream;
@@ -343,6 +345,18 @@ fn from_toto_service_output(output: TotoServiceOutput) -> Result<Output, Status>
         }),
         TotoServiceOutput::v_set(v_set, instant) => Ok(Output {
             message: Some(output::Message::VSet(v_set)),
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+        }),
+        TotoServiceOutput::sl_state(sl::SpeedLimiterOn::StandBy, instant) => Ok(Output {
+            message: Some(output::Message::SlState(2)),
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+        }),
+        TotoServiceOutput::sl_state(sl::SpeedLimiterOn::Actif, instant) => Ok(Output {
+            message: Some(output::Message::SlState(3)),
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+        }),
+        TotoServiceOutput::sl_state(sl::SpeedLimiterOn::OverrideVoluntary, instant) => Ok(Output {
+            message: Some(output::Message::SlState(4)),
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
     }
