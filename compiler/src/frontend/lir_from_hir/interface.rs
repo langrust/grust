@@ -655,92 +655,87 @@ impl<'a> IsleBuilder<'a> {
     }
 }
 
-/// Accumulator of instructions that can handle notchanged_onchange branches.
+/// Accumulator of instructions that can handle onchange_default branches.
 #[derive(Default)]
 pub struct Accumulator {
     /// Current instructions block.
     current: Vec<FlowInstruction>,
-    /// Informations kept when in 'notchanged' branch.
-    notchanged_block: Option<(usize, String, String, String, Box<Accumulator>)>,
     /// Informations kept when in 'onchange' branch.
-    onchange_block: Option<(String, String, Vec<FlowInstruction>, Box<Accumulator>)>,
+    onchange_block: Option<(usize, String, String, Box<Accumulator>)>,
+    /// Informations kept when in 'default' branch.
+    default_block: Option<(String, String, Vec<FlowInstruction>, Box<Accumulator>)>,
 }
 impl Accumulator {
     /// New empty accumulator.
     pub fn new() -> Self {
         Self {
             current: Vec::new(),
-            notchanged_block: None,
             onchange_block: None,
+            default_block: None,
         }
     }
     /// New empty accumulator with capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             current: Vec::with_capacity(capacity),
-            notchanged_block: None,
             onchange_block: None,
+            default_block: None,
         }
-    }
-    /// Tells if in 'notchanged' branch.
-    pub fn is_notchanged_block(&self) -> bool {
-        self.notchanged_block.is_some()
     }
     /// Tells if in 'onchange' branch.
     pub fn is_onchange_block(&self) -> bool {
         self.onchange_block.is_some()
     }
+    /// Tells if in 'default' branch.
+    pub fn is_default_block(&self) -> bool {
+        self.default_block.is_some()
+    }
     /// Appends an instruction to the end of the current block.
     pub fn push(&mut self, instr: FlowInstruction) {
         self.current.push(instr)
     }
-    /// Switch to a notchanged branch.
-    pub fn notchanged(
+    /// Switch to a onchange branch.
+    pub fn onchange(
         self,
         id_event: usize,
         event_name: impl Into<String>,
         old_event_name: impl Into<String>,
         source_name: impl Into<String>,
     ) -> Self {
+        let old_event_name = old_event_name.into();
+        let source_name = source_name.into();
         Self {
-            current: Vec::new(),
-            notchanged_block: Some((
-                id_event,
-                event_name.into(),
-                old_event_name.into(),
-                source_name.into(),
-                self.into(),
-            )),
-            onchange_block: None,
+            current: vec![
+                FlowInstruction::update_ctx(
+                    old_event_name.clone(),
+                    Expression::ident(source_name.clone()),
+                ),
+                FlowInstruction::def_let(event_name, Expression::ident(source_name.clone())),
+            ],
+            onchange_block: Some((id_event, old_event_name, source_name, self.into())),
+            default_block: None,
         }
     }
-    /// Switch to a onchange branch.
-    pub fn onchange(self) -> (Self, usize) {
-        debug_assert!(self.notchanged_block.is_some());
-        debug_assert!(self.onchange_block.is_none());
-        let (id_event, event_name, old_event_name, source_name, original_acc) =
-            self.notchanged_block.unwrap();
+    /// Switch to a default branch.
+    pub fn default(self) -> (Self, usize) {
+        debug_assert!(self.onchange_block.is_some());
+        debug_assert!(self.default_block.is_none());
+        let (id_event, old_event_name, source_name, original_acc) = self.onchange_block.unwrap();
         (
             Self {
-                current: vec![
-                    FlowInstruction::update_ctx(
-                        old_event_name.clone(),
-                        Expression::ident(source_name.clone()),
-                    ),
-                    FlowInstruction::def_let(event_name, Expression::ident(source_name.clone())),
-                ],
-                notchanged_block: None,
-                onchange_block: Some((old_event_name, source_name, self.current, original_acc)),
+                current: vec![],
+                onchange_block: None,
+                default_block: Some((old_event_name, source_name, self.current, original_acc)),
             },
             id_event,
         )
     }
-    /// Combine notchanged and onchange branches to an onchange instruction.
+    /// Combine an onchange branch and a default branch to an if_change instruction.
     pub fn combine(self) -> Self {
-        debug_assert!(self.notchanged_block.is_none());
-        debug_assert!(self.onchange_block.is_some());
-        let then = self.current;
-        let (old_event_name, source_name, els, original_acc) = self.onchange_block.unwrap();
+        debug_assert!(self.onchange_block.is_none());
+        debug_assert!(self.default_block.is_some());
+        let els = self.current;
+        let (old_event_name, source_name, then, original_acc) = self.default_block.unwrap();
         let instruction = FlowInstruction::if_change(old_event_name, source_name, then, els);
         let mut accumulator = *original_acc;
         accumulator.push(instruction);
@@ -773,23 +768,23 @@ impl Propagations {
         self.input_flows_propagation
             .into_iter()
             .map(|(flow, accumulator)| {
-                debug_assert!(accumulator.notchanged_block.is_none());
                 debug_assert!(accumulator.onchange_block.is_none());
+                debug_assert!(accumulator.default_block.is_none());
                 (flow, accumulator.current)
             })
-    }
-    /// Tells if in 'notchanged' branch.
-    pub fn is_notchanged_block(&self, flow: usize) -> bool {
-        let accumulator = self.input_flows_propagation.get(&flow).unwrap();
-        accumulator.notchanged_block.is_some()
     }
     /// Tells if in 'onchange' branch.
     pub fn is_onchange_block(&self, flow: usize) -> bool {
         let accumulator = self.input_flows_propagation.get(&flow).unwrap();
         accumulator.onchange_block.is_some()
     }
-    /// Switch to a notchanged branch.
-    pub fn notchanged(
+    /// Tells if in 'default' branch.
+    pub fn is_default_block(&self, flow: usize) -> bool {
+        let accumulator = self.input_flows_propagation.get(&flow).unwrap();
+        accumulator.default_block.is_some()
+    }
+    /// Switch to a onchange branch.
+    pub fn onchange(
         &mut self,
         flow: usize,
         id_event: usize,
@@ -798,21 +793,17 @@ impl Propagations {
         source_name: impl Into<String>,
     ) {
         let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
-        *accumulator = std::mem::take(accumulator).notchanged(
-            id_event,
-            event_name,
-            old_event_name,
-            source_name,
-        );
+        *accumulator =
+            std::mem::take(accumulator).onchange(id_event, event_name, old_event_name, source_name);
     }
-    /// Switch to an onchange branch.
-    pub fn onchange(&mut self, flow: usize) -> usize {
+    /// Switch to an default branch.
+    pub fn default(&mut self, flow: usize) -> usize {
         let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
-        let (new_acc, id_event) = std::mem::take(accumulator).onchange();
+        let (new_acc, id_event) = std::mem::take(accumulator).default();
         *accumulator = new_acc;
         id_event
     }
-    /// Combine an onchange branch and a default branch to an onchange instruction.
+    /// Combine an onchange branch and a default branch to an if_change instruction.
     pub fn combine(&mut self, flow: usize) {
         let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
         *accumulator = std::mem::take(accumulator).combine();
@@ -1014,13 +1005,13 @@ impl<'a> PropagationBuilder<'a> {
         }
     }
 
-    /// Switch to a notchanged branch.
-    fn notchanged(&mut self, id_event: usize, id_source: usize) {
+    /// Switch to a onchange branch.
+    fn onchange(&mut self, id_event: usize, id_source: usize) {
         let event_name = self.symbol_table.get_name(id_event);
         let source_name = self.get_signal_name(id_source);
         let id_old_event = self.on_change_events[&id_event];
         let old_event_name = self.symbol_table.get_name(id_old_event);
-        self.propagations.notchanged(
+        self.propagations.onchange(
             self.incoming_flow,
             id_event,
             event_name,
@@ -1028,14 +1019,15 @@ impl<'a> PropagationBuilder<'a> {
             source_name,
         );
         self.stack.fork();
+        self.events.insert(id_event);
     }
-    /// Switch to an onchange branch.
-    fn onchange(&mut self) -> usize {
-        let id_event = self.propagations.onchange(self.incoming_flow);
+    /// Switch to an default branch.
+    fn default(&mut self) -> usize {
+        let id_event = self.propagations.default(self.incoming_flow);
         self.stack.next();
         id_event
     }
-    /// Combine an onchange branch and a default branch to an onchange instruction.
+    /// Combine an default branch and a default branch to an default instruction.
     fn combine(&mut self) {
         self.propagations.combine(self.incoming_flow);
     }
@@ -1045,12 +1037,12 @@ impl<'a> PropagationBuilder<'a> {
         if let Some(value) = self.stack.pop() {
             return Some(value);
         }
-        if self.propagations.is_notchanged_block(self.incoming_flow) {
-            let id_event = self.onchange();
-            self.events.insert(id_event);
+        if self.propagations.is_onchange_block(self.incoming_flow) {
+            let id_event = self.default();
+            self.events.remove(&id_event);
             return self.pop_stack();
         }
-        if self.propagations.is_onchange_block(self.incoming_flow) {
+        if self.propagations.is_default_block(self.incoming_flow) {
             self.combine();
             return self.pop_stack();
         }
@@ -1134,7 +1126,7 @@ impl<'a> PropagationBuilder<'a> {
             flow::Kind::Throttle { delta, .. } => {
                 self.handle_throttle(pattern, dependencies, delta.clone())
             }
-            flow::Kind::OnChange { .. } => self.handle_onchange(pattern, dependencies),
+            flow::Kind::OnChange { .. } => self.handle_on_change(pattern, dependencies),
             flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
             flow::Kind::ComponentCall {
                 component_id,
@@ -1299,8 +1291,8 @@ impl<'a> PropagationBuilder<'a> {
         ));
     }
 
-    /// Compute the instructions from an onchange expression.
-    fn handle_onchange(&mut self, pattern: &hir::Pattern, mut dependencies: Vec<usize>) {
+    /// Compute the instructions from an on_change expression.
+    fn handle_on_change(&mut self, pattern: &hir::Pattern, mut dependencies: Vec<usize>) {
         // get the id of pattern's flow, debug-check there is only one flow
         let mut ids = pattern.identifiers();
         debug_assert!(ids.len() == 1);
@@ -1310,8 +1302,8 @@ impl<'a> PropagationBuilder<'a> {
         debug_assert!(dependencies.len() == 1);
         let id_source = dependencies.pop().unwrap();
 
-        // initiate the notchanged branch (propagation will branch later on the onchange)
-        self.notchanged(id_pattern, id_source);
+        // initiate the onchange branch (propagation will branch later on the default)
+        self.onchange(id_pattern, id_source);
     }
 
     /// Compute the instructions from a merge expression.
