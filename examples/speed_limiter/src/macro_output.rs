@@ -520,8 +520,13 @@ pub mod toto_service {
             self.context.set_speed = set_speed;
         }
         async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
-            let v_set_aux = self.context.v_set_aux.clone();
+            let (v_set_aux, v_update) = self
+                .process_set_speed
+                .step(self.context.get_process_set_speed_inputs());
+            self.context.v_set_aux = v_set_aux;
+            self.context.v_update = v_update;
             let v_set = v_set_aux;
+            self.context.v_set = v_set;
             {
                 let res = self.output.send(O::v_set(v_set, instant)).await;
                 if res.is_err() {

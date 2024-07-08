@@ -602,16 +602,6 @@ impl<'a> IsleBuilder<'a> {
             .unwrap_or(false)
     }
 
-    /// True if `stmt` corresponds to an import.
-    ///
-    /// Used to stop the exploration of a dependency branch on imports.
-    fn is_import(&self, stmt: usize) -> bool {
-        match self.interface.statements[stmt] {
-            FlowStatement::Import(_) => true,
-            _ => false,
-        }
-    }
-
     /// True if `stmt` corresponds to a component call.
     fn is_call(&self, stmt: usize) -> bool {
         self.interface.statements[stmt].try_get_call().is_some()
@@ -646,8 +636,8 @@ impl<'a> IsleBuilder<'a> {
 
         'stmts: while let Some((stmt, is_top)) = self.stack.pop() {
             let is_new = self.memory.insert(stmt);
-            // continue if not new or import or we have reached an eventful call that's not at the top
-            if !is_new || (!is_top && self.is_eventful_call(stmt)) || self.is_import(stmt) {
+            // continue if not new or we have reached an eventful call that's not at the top
+            if !is_new || !is_top && self.is_eventful_call(stmt) {
                 continue 'stmts;
             }
 
@@ -994,27 +984,9 @@ impl<'a> PropagationBuilder<'a> {
             .graph
             .neighbors(parent)
             .filter_map(|child| {
-                // if child is a component call and parent is a signal definition
-                // then child is not inserted
-                if let Some((_, inputs)) = self.interface.statements[child].try_get_call() {
-                    // if parent flow is timer then child statement is inserted
-                    if let Some(timing_flow) = self.timing_events.get(&child) {
-                        if parent_flows.contains(timing_flow) {
-                            return Some(child);
-                        }
-                    }
-                    // if parent flows are signals then child statement is not inserted
-                    let mut input_flows = inputs.iter().filter_map(|(_, input_expr)| {
-                        let input_flow = input_expr.get_dependencies()[0];
-                        if parent_flows.contains(&input_flow) {
-                            Some(input_flow)
-                        } else {
-                            None
-                        }
-                    });
-                    if input_flows.all(|flow| self.symbol_table.get_flow_kind(flow).is_signal()) {
-                        return None;
-                    }
+                // filter component call because they will appear in isles
+                if self.interface.statements[child].try_get_call().is_some() {
+                    return None;
                 }
                 Some(child)
             })
@@ -1392,21 +1364,6 @@ impl<'a> PropagationBuilder<'a> {
         inputs: &Vec<(usize, flow::Expr)>,
         dependencies: Vec<usize>,
     ) {
-        // get timing event identifier if it exists
-        if let Some(timer_id) = self.timing_events.get(&stmt_idx) {
-            // if timing event is activated
-            if self.events.contains(timer_id) {
-                // if component computes on user defined events
-                let input_event = if self.symbol_table.has_events(component_id) {
-                    Some(None)
-                } else {
-                    None
-                };
-                // call component with the event and update output signals
-                self.call_component(component_id, pattern.clone(), input_event);
-            }
-        }
-
         // get the potential event that will call the component
         let dependencies: HashSet<usize> = dependencies.into_iter().collect();
         let mut overlapping_events = dependencies.intersection(&self.events);
@@ -1429,6 +1386,15 @@ impl<'a> PropagationBuilder<'a> {
                 self.symbol_table.get_name(*event_id),
             );
             let input_event = Some(Some((elem_name.clone(), event_name.clone())));
+            // call component with the event and update output signals
+            self.call_component(component_id, pattern.clone(), input_event);
+        } else {
+            // if component computes on user defined events
+            let input_event = if self.symbol_table.has_events(component_id) {
+                Some(None)
+            } else {
+                None
+            };
             // call component with the event and update output signals
             self.call_component(component_id, pattern.clone(), input_event);
         }
