@@ -517,10 +517,10 @@ pub mod toto_service {
             }
         }
         async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
-            if (self.context.flow_expression_fresh_ident - set_speed) >= 1.0 {
+            if (self.context.flow_expression_fresh_ident - set_speed).abs() >= 1.0 {
                 self.context.flow_expression_fresh_ident = set_speed;
             }
-            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident.clone();
+            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident;
             if self.context.changed_set_speed_old != flow_expression_fresh_ident {
                 self.context.changed_set_speed_old = flow_expression_fresh_ident;
                 let changed_set_speed = flow_expression_fresh_ident;
@@ -532,6 +532,7 @@ pub mod toto_service {
                 self.context.v_set_aux = v_set_aux;
                 self.context.v_update = v_update;
                 let v_set = v_set_aux;
+                self.context.v_set = v_set;
                 {
                     let res = self.output.send(O::v_set(v_set, instant)).await;
                     if res.is_err() {
