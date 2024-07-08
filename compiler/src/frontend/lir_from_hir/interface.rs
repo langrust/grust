@@ -1196,6 +1196,8 @@ impl<'a> PropagationBuilder<'a> {
             let expr = self.get_event(id_source);
             self.define_event(id_pattern, expr);
         }
+
+        self.update_ctx(id_pattern);
     }
 
     /// Compute the instructions from a sample expression.
