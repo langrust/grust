@@ -876,6 +876,17 @@ impl Stack {
             Ok(_) => (), // already in the stack
         }
     }
+    /// Extend the stack in dependencies order.
+    pub fn extend_ordered(
+        &mut self,
+        iter: impl Iterator<Item = usize>,
+        compare: impl Fn(usize) -> usize + Clone,
+    ) {
+        iter.for_each(|next_statement_id| {
+            // insert statements into the sorted stack
+            self.insert_ordered(next_statement_id, compare.clone())
+        })
+    }
 }
 
 /// A context to build [Propagations] of input flows.
@@ -956,25 +967,12 @@ impl<'a> PropagationBuilder<'a> {
         self.propagations
     }
 
-    /// Extend the stack in dependencies order.
-    fn extend_ordered(&mut self, iter: impl Iterator<Item = usize>) {
-        // gives the order of statements indices
-        let compare = |statement_id| self.statements_order[&statement_id];
-        iter.for_each(|next_statement_id| {
-            // insert statements into the sorted stack
-            self.stack.insert_ordered(next_statement_id, compare)
-        })
-    }
-
     /// Extend the stack with the next statements to compute.
     fn extend_with_next(&mut self, parent: usize) {
-        println!("extend parent: {parent}");
-
         // get the flows defined by parent statement
         let parent_flows = self.interface.statements[parent].get_identifiers();
 
         let dependencies = self.interface.graph.neighbors(parent).filter_map(|child| {
-            println!("child: {child}");
             // if child is a component call and parent is a signal definition
             // then child is not inserted
             if let Some((_, inputs)) = self.interface.statements[child].try_get_call() {
@@ -1004,13 +1002,10 @@ impl<'a> PropagationBuilder<'a> {
             .iter()
             .filter_map(|parent_flow| self.isles.get_isle_for(*parent_flow))
             .flatten()
-            .map(|id| {
-                println!("isle");
-                *id
-            });
+            .map(|id| *id);
 
         // extend stack with union of event isle and dependencies
-        let to_compute = isles
+        let to_insert = isles
             .chain(dependencies)
             .filter_map(|to_insert| {
                 // remove imports
@@ -1021,16 +1016,13 @@ impl<'a> PropagationBuilder<'a> {
                 if self.memory.contains(&to_insert) {
                     return None;
                 }
-                println!("insert: {to_insert}");
                 Some(to_insert)
             })
             .unique();
+
         // gives the order of statements indices
         let compare = |statement_id| self.statements_order[&statement_id];
-        to_compute.for_each(|next_statement_id| {
-            // insert statements into the sorted stack
-            self.stack.insert_ordered(next_statement_id, compare)
-        });
+        self.stack.extend_ordered(to_insert, compare)
     }
 
     /// Switch to a onchange branch.
