@@ -47,6 +47,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(
+            "interface.SlState",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
             "interface.Input.message",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )

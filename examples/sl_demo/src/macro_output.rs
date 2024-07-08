@@ -405,6 +405,7 @@ pub mod toto_service {
     pub enum TotoServiceOutput {
         in_regulation(bool, std::time::Instant),
         v_set(f64, std::time::Instant),
+        sl_state(SpeedLimiterOn, std::time::Instant),
     }
     pub struct TotoService {
         context: Context,
@@ -461,12 +462,12 @@ pub mod toto_service {
                             service.handle_kickdown(instant, kickdown).await, I ::
                             set_speed(set_speed, instant) =>
                             service.handle_set_speed(instant, set_speed).await, I ::
-                            timer(T :: period_fresh_ident, instant) =>
-                            service.handle_period_fresh_ident(instant).await, I ::
                             failure(failure, instant) =>
                             service.handle_failure(instant, failure).await, I ::
                             speed(speed, instant) =>
-                            service.handle_speed(instant, speed).await
+                            service.handle_speed(instant, speed).await, I ::
+                            timer(T :: period_fresh_ident, instant) =>
+                            service.handle_period_fresh_ident(instant).await
                         }
                     } else { break; }
                 }
@@ -505,6 +506,13 @@ pub mod toto_service {
                     return;
                 }
             }
+            let sl_state = on_state;
+            {
+                let res = self.output.send(O::sl_state(sl_state, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_kickdown(&mut self, instant: std::time::Instant, kickdown: Kickdown) {
             let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
@@ -525,12 +533,19 @@ pub mod toto_service {
                     return;
                 }
             }
+            let sl_state = on_state;
+            {
+                let res = self.output.send(O::sl_state(sl_state, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
-            if (self.context.flow_expression_fresh_ident - set_speed) >= 1.0 {
+            if (self.context.flow_expression_fresh_ident - set_speed).abs() >= 1.0 {
                 self.context.flow_expression_fresh_ident = set_speed;
             }
-            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident.clone();
+            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident;
             if self.context.changed_set_speed_old != flow_expression_fresh_ident {
                 self.context.changed_set_speed_old = flow_expression_fresh_ident;
                 let changed_set_speed = flow_expression_fresh_ident;
@@ -542,6 +557,7 @@ pub mod toto_service {
                 self.context.v_set_aux = v_set_aux;
                 self.context.v_update = v_update;
                 let v_set = v_set_aux;
+                self.context.v_set = v_set;
                 {
                     let res = self.output.send(O::v_set(v_set, instant)).await;
                     if res.is_err() {
@@ -549,32 +565,6 @@ pub mod toto_service {
                     }
                 }
             } else {
-            }
-        }
-        async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
-            let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
-                self.context
-                    .get_speed_limiter_inputs(SpeedLimiterEvent::NoEvent),
-            );
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            let in_regulation = in_regulation_aux;
-            {
-                let res = self
-                    .output
-                    .send(O::in_regulation(in_regulation, instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            {
-                let res = self.timer.send((T::period_fresh_ident, instant)).await;
-                if res.is_err() {
-                    return;
-                }
             }
         }
         async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {
@@ -596,9 +586,49 @@ pub mod toto_service {
                     return;
                 }
             }
+            let sl_state = on_state;
+            {
+                let res = self.output.send(O::sl_state(sl_state, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
         async fn handle_speed(&mut self, instant: std::time::Instant, speed: f64) {
             self.context.speed = speed;
+        }
+        async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
+            let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
+                self.context
+                    .get_speed_limiter_inputs(SpeedLimiterEvent::NoEvent),
+            );
+            self.context.state = state;
+            self.context.on_state = on_state;
+            self.context.in_regulation_aux = in_regulation_aux;
+            self.context.state_update = state_update;
+            let in_regulation = in_regulation_aux;
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            let sl_state = on_state;
+            {
+                let res = self.output.send(O::sl_state(sl_state, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            {
+                let res = self.timer.send((T::period_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
         }
     }
 }

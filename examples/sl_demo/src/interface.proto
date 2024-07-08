@@ -25,6 +25,14 @@ enum Failure {
     Entering = 1;
 }
 
+enum SlState {
+    Off = 0;
+    Fail = 1;
+    StandBy = 2;
+    Actif = 3;
+    OverrideVoluntary = 4;
+}
+
 // the input part of the interface
 message Input {
     int64 timestamp = 1;
@@ -47,6 +55,7 @@ message Output {
     oneof message {
         bool in_regulation = 2;
         double v_set = 3;
+        SlState sl_state = 4;
     }
 }
 
