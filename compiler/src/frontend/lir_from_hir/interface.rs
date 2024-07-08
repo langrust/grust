@@ -1149,7 +1149,7 @@ impl<'a> PropagationBuilder<'a> {
             flow::Kind::ComponentCall {
                 component_id,
                 inputs,
-            } => self.handle_component_call(stmt_idx, pattern, *component_id, inputs, dependencies),
+            } => self.handle_component_call(pattern, *component_id, inputs, dependencies),
         }
     }
 
@@ -1358,7 +1358,6 @@ impl<'a> PropagationBuilder<'a> {
     /// Compute the instructions from a component call.
     fn handle_component_call(
         &mut self,
-        stmt_idx: usize,
         pattern: &hir::Pattern,
         component_id: usize,
         inputs: &Vec<(usize, flow::Expr)>,
