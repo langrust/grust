@@ -200,6 +200,7 @@ impl Interface {
                                     let typing = Typ::Event(Box::new(Typ::Time));
                                     let fresh_id = symbol_table
                                         .insert_fresh_period(fresh_name.clone(), period);
+                                    symbol_table.set_node_period_id(*component_id, fresh_id);
 
                                     // add timing_event in new_statements
                                     new_statements.push(FlowStatement::Import(FlowImport {
@@ -251,7 +252,7 @@ impl Interface {
                 let arriving_flow = if let Some(period) = symbol_table.get_period(flow_id) {
                     // add reset periodic timer
                     instructions.push(FlowInstruction::ResetTimer(flow_name.clone(), *period));
-                    ArrivingFlow::Period(flow_name) // todo: add reset for timer
+                    ArrivingFlow::Period(flow_name)
                 } else if symbol_table.is_deadline(flow_id) {
                     ArrivingFlow::Deadline(flow_name)
                 } else {
@@ -563,7 +564,11 @@ impl<'a> IsleBuilder<'a> {
                 vec.push(stmt_idx);
             };
 
-            if let Some((_, inputs)) = stmt.try_get_call() {
+            if let Some((comp, inputs)) = stmt.try_get_call() {
+                if let Some(timer) = syms.get_node_period_id(comp) {
+                    // register `stmt_idx` as triggered by `timer`
+                    triggered_by(timer);
+                }
                 // scan inputs for events
                 for input in inputs {
                     if let flow::Kind::Ident { id: input } = input.1.kind {
@@ -591,7 +596,9 @@ impl<'a> IsleBuilder<'a> {
     fn is_eventful_call(&self, stmt: usize) -> bool {
         self.interface.statements[stmt]
             .try_get_call()
-            .map(|(idx, _)| self.syms.has_events(idx))
+            .map(|(idx, _)| {
+                self.syms.has_events(idx) || self.syms.get_node_period_id(idx).is_some()
+            })
             .unwrap_or(false)
     }
 
@@ -968,7 +975,14 @@ impl<'a> PropagationBuilder<'a> {
             // if child is a component call and parent is a signal definition
             // then child is not inserted
             if let Some((_, inputs)) = self.interface.statements[child].try_get_call() {
-                let mut parent_flows = inputs.iter().filter_map(|(_, input_expr)| {
+                // if parent flow is timer then child statement is inserted
+                if let Some(timing_flow) = self.timing_events.get(&child) {
+                    if parent_flows.contains(timing_flow) {
+                        return Some(child);
+                    }
+                }
+                // if parent flows are signals then child statement is not inserted
+                let mut input_flows = inputs.iter().filter_map(|(_, input_expr)| {
                     let input_flow = input_expr.get_dependencies()[0];
                     if parent_flows.contains(&input_flow) {
                         Some(input_flow)
@@ -976,8 +990,7 @@ impl<'a> PropagationBuilder<'a> {
                         None
                     }
                 });
-                // if parent flows are signals then child statement is not inserted
-                if parent_flows.all(|flow| self.symbol_table.get_flow_kind(flow).is_signal()) {
+                if input_flows.all(|flow| self.symbol_table.get_flow_kind(flow).is_signal()) {
                     return None;
                 }
             }
