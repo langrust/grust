@@ -870,10 +870,10 @@ impl Stack {
     pub fn insert_ordered<F: Fn(usize) -> usize>(&mut self, value: usize, f: F) {
         match self
             .current
-            .binary_search_by_key(&value, |stmt_idx| f(*stmt_idx))
+            .binary_search_by_key(&f(value), |stmt_idx| f(*stmt_idx))
         {
             Err(pos) => self.current.insert(pos, value),
-            Ok(_) => unreachable!(), // loop in the graph, impossible
+            Ok(_) => (), // already in the stack
         }
     }
 }
@@ -894,6 +894,8 @@ pub struct PropagationBuilder<'a> {
     incoming_flow: usize,
     /// Cached stack of statements to visit.
     stack: Stack,
+    /// Cached memory of the statements visited.
+    memory: HashSet<usize>,
     /// Events currently triggered during a traversal.
     events: HashSet<usize>,
     /// Signals currently defined during a traversal.
@@ -939,6 +941,7 @@ impl<'a> PropagationBuilder<'a> {
             symbol_table,
             interface,
             stack: Stack::new(),
+            memory: Default::default(),
             incoming_flow: 0,
             events: Default::default(),
             signals: Default::default(),
@@ -997,25 +1000,37 @@ impl<'a> PropagationBuilder<'a> {
             Some(child)
         });
 
+        let isles = parent_flows
+            .iter()
+            .filter_map(|parent_flow| self.isles.get_isle_for(*parent_flow))
+            .flatten()
+            .map(|id| {
+                println!("isle");
+                *id
+            });
+
         // extend stack with union of event isle and dependencies
-        if let Some(isle) = self.isles.get_isle_for(parent) {
-            println!("isle");
-            let to_compute = isle
-                .clone()
-                .into_iter()
-                .chain(dependencies)
-                .map(|inserted| {
-                    println!("inserted: {inserted}");
-                    inserted
-                })
-                .unique();
-            self.extend_ordered(to_compute);
-        } else {
-            self.extend_ordered(dependencies.map(|inserted| {
-                println!("inserted: {inserted}");
-                inserted
-            }));
-        }
+        let to_compute = isles
+            .chain(dependencies)
+            .filter_map(|to_insert| {
+                // remove imports
+                if let FlowStatement::Import(_) = self.interface.statements[to_insert] {
+                    return None;
+                }
+                // remove already visited
+                if self.memory.contains(&to_insert) {
+                    return None;
+                }
+                println!("insert: {to_insert}");
+                Some(to_insert)
+            })
+            .unique();
+        // gives the order of statements indices
+        let compare = |statement_id| self.statements_order[&statement_id];
+        to_compute.for_each(|next_statement_id| {
+            // insert statements into the sorted stack
+            self.stack.insert_ordered(next_statement_id, compare)
+        });
     }
 
     /// Switch to a onchange branch.
@@ -1048,6 +1063,8 @@ impl<'a> PropagationBuilder<'a> {
     /// Get the next statement index to analyse.
     fn pop_stack(&mut self) -> Option<usize> {
         if let Some(value) = self.stack.pop() {
+            let _unique = self.memory.insert(value);
+            debug_assert!(_unique);
             return Some(value);
         }
         if self.propagations.is_onchange_block(self.incoming_flow) {
@@ -1079,6 +1096,7 @@ impl<'a> PropagationBuilder<'a> {
             .for_each(|(import_idx, incoming_flow)| {
                 self.incoming_flow = incoming_flow;
                 self.propagations.init_propagation(incoming_flow);
+                self.memory.clear();
                 self.events.clear();
                 self.signals.clear();
                 self.propagate_import(import_idx)
@@ -1534,7 +1552,6 @@ impl<'a> PropagationBuilder<'a> {
             .flows_context
             .contains_element(self.symbol_table.get_name(flow_id))
         {
-            println!("update context");
             let flow_name = self.symbol_table.get_name(flow_id);
             self.push_instr(FlowInstruction::update_ctx(
                 flow_name,

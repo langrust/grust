@@ -65,6 +65,8 @@ pub enum SymbolKind {
         locals: HashMap<String, usize>,
         /// Node's period of execution.
         period: Option<u64>,
+        /// Node's periodic timer identifier.
+        period_id: Option<usize>,
     },
     /// Structure kind.
     Structure {
@@ -574,6 +576,7 @@ impl SymbolTable {
                 outputs,
                 locals,
                 period,
+                period_id: None,
             },
             name,
         };
@@ -1065,6 +1068,28 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { period, .. } => *period,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Set the identifier of periodic timer of component.
+    pub fn set_node_period_id(&mut self, node_id: usize, timer_id: usize) {
+        let symbol = self
+            .get_symbol_mut(node_id)
+            .expect(&format!("expect symbol for {node_id}"));
+        match symbol.kind_mut() {
+            SymbolKind::Node { period_id, .. } => *period_id = Some(timer_id),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Get the identifier of periodic timer from node identifier.
+    pub fn get_node_period_id(&self, id: usize) -> Option<usize> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Node { period_id, .. } => *period_id,
             _ => unreachable!(),
         }
     }

@@ -487,6 +487,14 @@ pub mod toto_service {
             instant: std::time::Instant,
             activation: ActivationRequest,
         ) {
+            let v_set_aux = self.context.v_set_aux.clone();
+            let v_set = v_set_aux;
+            {
+                let res = self.output.send(O::v_set(v_set, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
             let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
                 self.context
                     .get_speed_limiter_inputs(SpeedLimiterEvent::activation_req(activation)),
@@ -507,6 +515,14 @@ pub mod toto_service {
             }
         }
         async fn handle_kickdown(&mut self, instant: std::time::Instant, kickdown: Kickdown) {
+            let v_set_aux = self.context.v_set_aux.clone();
+            let v_set = v_set_aux;
+            {
+                let res = self.output.send(O::v_set(v_set, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
             let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
                 self.context
                     .get_speed_limiter_inputs(SpeedLimiterEvent::kickdown(kickdown)),
@@ -552,6 +568,32 @@ pub mod toto_service {
             }
         }
         async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
+            let v_set_aux = self.context.v_set_aux.clone();
+            let v_set = v_set_aux;
+            {
+                let res = self.output.send(O::v_set(v_set, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
+                self.context
+                    .get_speed_limiter_inputs(SpeedLimiterEvent::NoEvent),
+            );
+            self.context.state = state;
+            self.context.on_state = on_state;
+            self.context.in_regulation_aux = in_regulation_aux;
+            self.context.state_update = state_update;
+            let in_regulation = in_regulation_aux;
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
             {
                 let res = self.timer.send((T::period_fresh_ident, instant)).await;
                 if res.is_err() {
@@ -560,6 +602,14 @@ pub mod toto_service {
             }
         }
         async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {
+            let v_set_aux = self.context.v_set_aux.clone();
+            let v_set = v_set_aux;
+            {
+                let res = self.output.send(O::v_set(v_set, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
             let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
                 self.context
                     .get_speed_limiter_inputs(SpeedLimiterEvent::failure(failure)),
