@@ -525,6 +525,7 @@ pub mod toto_service {
                 .step(self.context.get_process_set_speed_inputs());
             self.context.v_set_aux = v_set_aux;
             self.context.v_update = v_update;
+            let v_set_aux = self.context.v_set_aux;
             let v_set = v_set_aux;
             self.context.v_set = v_set;
             {
@@ -540,6 +541,7 @@ pub mod toto_service {
             self.context.on_state = on_state;
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
+            let in_regulation_aux = self.context.in_regulation_aux;
             let in_regulation = in_regulation_aux;
             {
                 let res = self

@@ -52,32 +52,23 @@ impl LIRFromHIR for Pattern {
             },
             pattern::Kind::None => lir::Pattern::None,
             pattern::Kind::Default => lir::Pattern::Default,
-            pattern::Kind::Event {
-                event_enum_id,
-                event_element_id,
-                pattern,
-            } => match symbol_table.get_type(event_element_id) {
-                Typ::SMEvent(_) => lir::Pattern::enumeration(
-                    symbol_table.get_name(event_enum_id).clone(),
-                    symbol_table.get_name(event_element_id).clone(),
-                    Some(pattern.lir_from_hir(symbol_table)),
-                ),
-                Typ::SMTimeout(_) => lir::Pattern::enumeration(
-                    symbol_table.get_name(event_enum_id).clone(),
-                    symbol_table.get_name(event_element_id).clone(),
-                    Some(lir::Pattern::ok(pattern.lir_from_hir(symbol_table))),
-                ),
+            pattern::Kind::PresentEvent { event_id, pattern } => {
+                match symbol_table.get_type(event_id) {
+                    Typ::SMEvent(_) => lir::Pattern::some(pattern.lir_from_hir(symbol_table)),
+                    Typ::SMTimeout(_) => {
+                        lir::Pattern::some(lir::Pattern::ok(pattern.lir_from_hir(symbol_table)))
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            pattern::Kind::TimeoutEvent { event_id } => match symbol_table.get_type(event_id) {
+                Typ::SMTimeout(_) => lir::Pattern::some(lir::Pattern::err()),
                 _ => unreachable!(),
             },
-            pattern::Kind::TimeoutEvent {
-                event_enum_id,
-                event_element_id,
-            } => lir::Pattern::enumeration(
-                symbol_table.get_name(event_enum_id).clone(),
-                symbol_table.get_name(event_element_id).clone(),
-                Some(lir::Pattern::err()),
-            ),
-            pattern::Kind::NoEvent { .. } => lir::Pattern::Default,
+            pattern::Kind::NoEvent { event_id } => match symbol_table.get_type(event_id) {
+                Typ::SMEvent(_) | Typ::SMTimeout(_) => lir::Pattern::none(),
+                _ => unreachable!(),
+            },
         }
     }
 
@@ -113,7 +104,7 @@ impl LIRFromHIR for Pattern {
                 .collect(),
             pattern::Kind::Some { pattern }
             | pattern::Kind::Typed { pattern, .. }
-            | pattern::Kind::Event { pattern, .. } => pattern.get_imports(symbol_table),
+            | pattern::Kind::PresentEvent { pattern, .. } => pattern.get_imports(symbol_table),
         }
     }
 }

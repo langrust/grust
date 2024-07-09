@@ -51,11 +51,6 @@ impl Node {
                 hash.insert(*input, Color::White);
             });
 
-        // if component has events, add 'event' with white color (unprocessed)
-        if let Some(event) = symbol_table.get_node_event(self.id) {
-            hash.insert(event, Color::White);
-        }
-
         // add other signals with white color (unprocessed)
         for statement in &self.statements {
             let signals = statement.get_identifiers();

@@ -1,16 +1,15 @@
 prelude! {
     ast::{
         equation::{
-            Arm, ArmWhen, DefaultArmWhen, Equation, EventArmWhen, Instantiation, Match, MatchWhen,
-            TimeoutArmWhen,
+            Arm, ArmWhen, DefaultArmWhen, Equation, EventArmWhen,
+            Instantiation, Match, MatchWhen, TimeoutArmWhen,
         },
         stmt::LetDecl,
     },
-    hir::{
-        Dependencies, Pattern, pattern,
-        stream,
-    },
+    hir::{ pattern, stream },
 }
+
+use std::collections::{hash_map::Entry, HashMap};
 
 use super::HIRFromAST;
 
@@ -112,14 +111,9 @@ impl HIRFromAST for Equation {
                                     });
                                 if let Some(index) = position {
                                     let (_, id) = defined_signals.get(index).unwrap();
-                                    Ok(stream::Expr {
-                                        kind: stream::Kind::Expression {
-                                            expression: hir::expr::Kind::Identifier { id: *id },
-                                        },
-                                        typing: None,
-                                        location: location.clone(),
-                                        dependencies: Dependencies::new(),
-                                    })
+                                    Ok(stream::expr(stream::Kind::expr(hir::expr::Kind::ident(
+                                        *id,
+                                    ))))
                                 } else {
                                     let error = Error::MissingMatchStatement {
                                         identifier: signal_name.clone(),
@@ -134,31 +128,17 @@ impl HIRFromAST for Equation {
                         let expression = if elements.len() == 1 {
                             elements.pop().unwrap()
                         } else {
-                            stream::Expr {
-                                kind: stream::Kind::Expression {
-                                    expression: hir::expr::Kind::Tuple { elements },
-                                },
-                                typing: None,
-                                location: location.clone(),
-                                dependencies: Dependencies::new(),
-                            }
+                            stream::expr(stream::Kind::expr(hir::expr::Kind::tuple(elements)))
                         };
                         Ok((pattern, guard, statements, expression))
                     })
                     .collect::<TRes<Vec<_>>>()?;
 
                 // construct the match expression
-                let expression = stream::Expr {
-                    kind: stream::Kind::Expression {
-                        expression: hir::expr::Kind::Match {
-                            expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
-                            arms,
-                        },
-                    },
-                    typing: None,
-                    location: location.clone(),
-                    dependencies: Dependencies::new(),
-                };
+                let expression = stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
+                    expression.hir_from_ast(symbol_table, errors)?,
+                    arms,
+                )));
 
                 Ok(hir::Stmt {
                     pattern,
@@ -167,9 +147,60 @@ impl HIRFromAST for Equation {
                 })
             }
             Equation::MatchWhen(MatchWhen { arms, .. }) => {
-                // get the event enumeration identifier
-                let event_enum_id: usize =
-                    symbol_table.get_event_enumeration_id(false, location.clone(), errors)?;
+                // create map from event_id to index in tuple pattern
+                let mut map = HashMap::with_capacity(arms.len());
+                let mut idx = 0;
+                let mut get_idx = || {
+                    let v = Some(idx);
+                    idx += 1;
+                    v
+                };
+                let mut insert_in_map = |event: &syn::Ident, is_timeout: bool| {
+                    let event_id = symbol_table.get_identifier_id(
+                        &event.to_string(),
+                        false,
+                        location.clone(),
+                        errors,
+                    )?;
+                    match map.entry(event_id) {
+                        Entry::Occupied(mut o) => {
+                            let v = if is_timeout {
+                                let (_, v): &mut (Option<usize>, Option<usize>) = o.get_mut();
+                                v
+                            } else {
+                                let (v, _): &mut (Option<usize>, Option<usize>) = o.get_mut();
+                                v
+                            };
+                            if v.is_none() {
+                                *v = get_idx()
+                            }
+                        }
+                        Entry::Vacant(v) => {
+                            if is_timeout {
+                                v.insert((None, get_idx()));
+                            } else {
+                                v.insert((get_idx(), None));
+                            }
+                        }
+                    };
+                    Ok(())
+                };
+                arms.iter()
+                    .map(|arm| match arm {
+                        ArmWhen::EventArmWhen(EventArmWhen { event, .. }) => {
+                            insert_in_map(event, false)
+                        }
+                        ArmWhen::TimeoutArmWhen(TimeoutArmWhen { event, .. }) => {
+                            insert_in_map(event, true)
+                        }
+                        ArmWhen::Default(_) => Ok(()),
+                    })
+                    .collect::<TRes<_>>()?;
+
+                // default tuple
+                let tuple: Vec<_> = std::iter::repeat(pattern::init(pattern::Kind::default()))
+                    .take(idx)
+                    .collect();
 
                 // for each arm construct hir pattern, guard and statements
                 let new_arms = arms
@@ -198,25 +229,25 @@ impl HIRFromAST for Equation {
                                 })
                                 .collect::<TRes<()>>()?;
 
-                            // get the event element identifier
-                            let event_element_id: usize = symbol_table.get_event_element_id(
+                            // get the event identifier
+                            let event_id = symbol_table.get_identifier_id(
                                 &event.to_string(),
                                 false,
                                 location.clone(),
                                 errors,
                             )?;
 
-                            // transform into HIR
+                            // transform inner_pattern into HIR
                             let inner_pattern = pattern.hir_from_ast(symbol_table, errors)?;
-                            let pattern = Pattern {
-                                kind: pattern::Kind::Event {
-                                    event_enum_id,
-                                    event_element_id,
-                                    pattern: Box::new(inner_pattern),
-                                },
-                                typing: None,
-                                location: location.clone(),
-                            };
+                            let event_pattern =
+                                pattern::init(pattern::Kind::present(event_id, inner_pattern));
+
+                            // create tuple pattern
+                            let mut elements = tuple.clone();
+                            let (idx, _) = map[&event_id];
+                            *elements.get_mut(idx.unwrap()).unwrap() = event_pattern;
+                            let pattern = pattern::init(pattern::Kind::tuple(elements));
+
                             let guard = guard
                                 .map(|(_, expression)| {
                                     expression.hir_from_ast(symbol_table, errors)
@@ -249,23 +280,23 @@ impl HIRFromAST for Equation {
                                 })
                                 .collect::<TRes<()>>()?;
 
-                            // get the event element identifier
-                            let event_element_id: usize = symbol_table.get_event_element_id(
+                            // get the event identifier
+                            let event_id = symbol_table.get_identifier_id(
                                 &event.to_string(),
                                 false,
                                 location.clone(),
                                 errors,
                             )?;
 
-                            // transform into HIR
-                            let pattern = Pattern {
-                                kind: pattern::Kind::TimeoutEvent {
-                                    event_enum_id,
-                                    event_element_id,
-                                },
-                                typing: None,
-                                location: location.clone(),
-                            };
+                            // transform inner_pattern into HIR
+                            let event_pattern = pattern::init(pattern::Kind::timeout(event_id));
+
+                            // create tuple pattern
+                            let mut elements = tuple.clone();
+                            let (_, idx) = map[&event_id];
+                            *elements.get_mut(idx.unwrap()).unwrap() = event_pattern;
+                            let pattern = pattern::init(pattern::Kind::tuple(elements));
+
                             let guard = None;
                             let statements = equations
                                 .into_iter()
@@ -292,12 +323,21 @@ impl HIRFromAST for Equation {
                                 })
                                 .collect::<TRes<()>>()?;
 
-                            // transform into HIR
-                            let pattern = Pattern {
-                                kind: pattern::Kind::NoEvent { event_enum_id },
-                                typing: None,
-                                location: location.clone(),
-                            };
+                            // create tuple pattern
+                            let pattern = pattern::init(pattern::Kind::tuple(tuple.clone()));
+                            // // defensive option
+                            // let mut elements = tuple.clone();
+                            // map.iter().for_each(|(event_id, (present, timeout))| {
+                            //     let no_event_pattern =
+                            //         pattern::init(pattern::Kind::absent(*event_id));
+                            //     if let Some(idx) = present {
+                            //         *elements.get_mut(*idx).unwrap() = no_event_pattern.clone();
+                            //     }
+                            //     if let Some(idx) = timeout {
+                            //         *elements.get_mut(*idx).unwrap() = no_event_pattern;
+                            //     }
+                            // });
+
                             let guard = None;
                             let statements = equations
                                 .into_iter()
@@ -338,14 +378,9 @@ impl HIRFromAST for Equation {
                                     });
                                 if let Some(index) = position {
                                     let (_, id) = defined_signals.get(index).unwrap();
-                                    Ok(stream::Expr {
-                                        kind: stream::Kind::Expression {
-                                            expression: hir::expr::Kind::Identifier { id: *id },
-                                        },
-                                        typing: None,
-                                        location: location.clone(),
-                                        dependencies: Dependencies::new(),
-                                    })
+                                    Ok(stream::expr(stream::Kind::expr(hir::expr::Kind::ident(
+                                        *id,
+                                    ))))
                                 } else {
                                     let error = Error::MissingMatchStatement {
                                         identifier: signal_name.clone(),
@@ -360,44 +395,36 @@ impl HIRFromAST for Equation {
                         let expression = if elements.len() == 1 {
                             elements.pop().unwrap()
                         } else {
-                            stream::Expr {
-                                kind: stream::Kind::Expression {
-                                    expression: hir::expr::Kind::Tuple { elements },
-                                },
-                                typing: None,
-                                location: location.clone(),
-                                dependencies: Dependencies::new(),
-                            }
+                            stream::expr(stream::Kind::expr(hir::expr::Kind::tuple(elements)))
                         };
                         Ok((pattern, guard, statements, expression))
                     })
                     .collect::<TRes<Vec<_>>>()?;
 
-                // expression to match is the event enumeration
-                let event_id = symbol_table.get_event_id(false, location.clone(), errors)?;
-                let event_enum_expression = stream::Expr {
-                    kind: stream::Kind::Event { event_id },
-                    typing: None,
-                    location: location.clone(),
-                    dependencies: Dependencies::new(),
-                };
+                // create tuple expression to match
+                let mut elements =
+                    std::iter::repeat(stream::expr(stream::Kind::expr(hir::expr::Kind::ident(0))))
+                        .take(idx)
+                        .collect::<Vec<_>>();
+                map.iter().for_each(|(event_id, (present, timeout))| {
+                    let event_expr =
+                        stream::expr(stream::Kind::expr(hir::expr::Kind::ident(*event_id)));
+                    if let Some(idx) = present {
+                        *elements.get_mut(*idx).unwrap() = event_expr.clone();
+                    }
+                    if let Some(idx) = timeout {
+                        *elements.get_mut(*idx).unwrap() = event_expr;
+                    }
+                });
+                let expr = stream::expr(stream::Kind::expr(hir::expr::Kind::tuple(elements)));
 
                 // construct the match expression
-                let expression = stream::Expr {
-                    kind: stream::Kind::Expression {
-                        expression: hir::expr::Kind::Match {
-                            expression: Box::new(event_enum_expression),
-                            arms,
-                        },
-                    },
-                    typing: None,
-                    location: location.clone(),
-                    dependencies: Dependencies::new(),
-                };
+                let match_expr =
+                    stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(expr, arms)));
 
                 Ok(hir::Stmt {
                     pattern,
-                    expression,
+                    expression: match_expr,
                     location,
                 })
             }

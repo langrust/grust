@@ -4,7 +4,6 @@ use std::collections::HashSet;
 
 prelude! {
     quote::format_ident,
-    ast::interface::FlowKind,
     hir::{
         flow, IdentifierCreator, interface::{
             FlowDeclaration, FlowExport, FlowImport, FlowInstantiation, FlowStatement, Interface,
@@ -42,7 +41,6 @@ impl Interface {
     fn get_flows_context(&self, symbol_table: &SymbolTable) -> FlowsContext {
         let mut flows_context = FlowsContext {
             elements: Default::default(),
-            event_components: Default::default(),
             components: Default::default(),
         };
         self.statements
@@ -362,48 +360,34 @@ impl FlowStatement {
                         flows_context.add_element(output_name.clone(), output_type)
                     }
 
-                    let mut input_fields = vec![];
-
-                    inputs
-                        .iter()
-                        .filter(|(input_id, _)| !symbol_table.get_type(*input_id).is_event())
-                        .filter_map(|(input_id, flow_expression)| {
-                            match &flow_expression.kind {
-                                // get the id of flow_expression (and check it is an idnetifier, from normalization)
-                                flow::Kind::Ident { id: flow_id } => {
-                                    // push input_field_name and flow_name in input_fields
-                                    let input_field_name = symbol_table.get_name(*input_id).clone();
-                                    let flow_name = symbol_table.get_name(*flow_id).clone();
-                                    input_fields.push((input_field_name, flow_name));
-
-                                    // only retain signals' ids
-                                    match symbol_table.get_flow_kind(*flow_id) {
-                                        FlowKind::Signal(_) => Some(*flow_id),
-                                        FlowKind::Event(_) => None,
-                                    }
+                    let mut events_fields = vec![];
+                    let mut signals_fields = vec![];
+                    inputs.iter().for_each(|(input_id, flow_expression)| {
+                        match &flow_expression.kind {
+                            // get the id of flow_expression (and check it is an idnetifier, from normalization)
+                            flow::Kind::Ident { id: flow_id } => {
+                                let input_field_name = symbol_table.get_name(*input_id).clone();
+                                let flow_name = symbol_table.get_name(*flow_id).clone();
+                                let ty = symbol_table.get_type(*flow_id);
+                                if ty.is_event() {
+                                    // push in events_fields if event
+                                    events_fields.push((input_field_name, flow_name, ty.clone()));
+                                } else {
+                                    // push in signals_fields if signal
+                                    signals_fields.push((input_field_name, flow_name.clone()));
+                                    // push in context
+                                    flows_context.add_element(flow_name, ty);
                                 }
-                                _ => unreachable!(),
                             }
-                        })
-                        .for_each(|id| {
-                            // push in signals context
-                            let source_name = symbol_table.get_name(id).clone();
-                            let ty = symbol_table.get_type(id);
-                            flows_context.add_element(source_name, ty);
-                        });
+                            _ => unreachable!(),
+                        }
+                    });
 
-                    if let Some(event_id) = symbol_table.get_node_event(*component_id) {
-                        flows_context.add_event_component(
-                            symbol_table.get_name(*component_id).clone(),
-                            input_fields,
-                            symbol_table.get_name(event_id).clone(),
-                        )
-                    } else {
-                        flows_context.add_component(
-                            symbol_table.get_name(*component_id).clone(),
-                            input_fields,
-                        )
-                    }
+                    flows_context.add_component(
+                        symbol_table.get_name(*component_id).clone(),
+                        events_fields,
+                        signals_fields,
+                    )
                 }
                 flow::Kind::Ident { .. }
                 | flow::Kind::OnChange { .. }
@@ -1149,7 +1133,7 @@ impl<'a> PropagationBuilder<'a> {
             flow::Kind::ComponentCall {
                 component_id,
                 inputs,
-            } => self.handle_component_call(pattern, *component_id, inputs, dependencies),
+            } => self.handle_component_call(pattern, *component_id, inputs),
         }
     }
 
@@ -1361,42 +1345,26 @@ impl<'a> PropagationBuilder<'a> {
         pattern: &hir::Pattern,
         component_id: usize,
         inputs: &Vec<(usize, flow::Expr)>,
-        dependencies: Vec<usize>,
     ) {
-        // get the potential event that will call the component
-        let dependencies: HashSet<usize> = dependencies.into_iter().collect();
-        let mut overlapping_events = dependencies.intersection(&self.events);
-        debug_assert!(overlapping_events.clone().collect::<Vec<_>>().len() <= 1);
-
-        // if one of its dependencies is the encountered event
-        if let Some(event_id) = overlapping_events.next() {
-            // get event id in the component
-            let (element_id, _) = inputs
-                .iter()
-                .find(|(_, flow_expr)| {
-                    match flow_expr.kind {
-                        flow::Kind::Ident { id } => id == *event_id,
-                        _ => unreachable!(), // normalized
+        // get events that call the component
+        let events = inputs.iter().filter_map(|(_, flow_expr)| {
+            match flow_expr.kind {
+                flow::Kind::Ident { id } => {
+                    if self.events.contains(&id) {
+                        let event_name = self.symbol_table.get_name(id).clone();
+                        Some(Some(event_name))
+                    } else if self.symbol_table.get_flow_kind(id).is_event() {
+                        Some(None)
+                    } else {
+                        None
                     }
-                })
-                .unwrap();
-            let (elem_name, event_name) = (
-                self.symbol_table.get_name(*element_id),
-                self.symbol_table.get_name(*event_id),
-            );
-            let input_event = Some(Some((elem_name.clone(), event_name.clone())));
-            // call component with the event and update output signals
-            self.call_component(component_id, pattern.clone(), input_event);
-        } else {
-            // if component computes on user defined events
-            let input_event = if self.symbol_table.has_events(component_id) {
-                Some(None)
-            } else {
-                None
-            };
-            // call component with the event and update output signals
-            self.call_component(component_id, pattern.clone(), input_event);
-        }
+                }
+                _ => unreachable!(), // normalized
+            }
+        });
+
+        // call component with the events and update output signals
+        self.call_component(component_id, pattern.clone(), events.collect());
     }
 
     /// Push an instruction in the current propagation branch.
@@ -1472,33 +1440,20 @@ impl<'a> PropagationBuilder<'a> {
         &mut self,
         component_id: usize,
         output_pattern: hir::Pattern,
-        opt_event: Option<Option<(String, String)>>,
+        events: Vec<Option<String>>,
     ) {
         let component_name = self.symbol_table.get_name(component_id);
         let outputs_ids = output_pattern.identifiers();
-        if let Some(maybe_event) = opt_event {
-            // call component with the optional event occurance
-            self.push_instr(FlowInstruction::event_comp_call(
-                output_pattern.lir_from_hir(self.symbol_table),
-                component_name,
-                maybe_event,
-            ));
-        } else {
-            // call component without event
-            self.push_instr(FlowInstruction::comp_call(
-                output_pattern.lir_from_hir(self.symbol_table),
-                component_name,
-            ));
-        }
+        // call component
+        self.push_instr(FlowInstruction::comp_call(
+            output_pattern.lir_from_hir(self.symbol_table),
+            component_name,
+            events,
+        ));
         // update outputs
-        for output_id in outputs_ids.iter() {
-            let output_name = self.symbol_table.get_name(*output_id);
-            self.signals.insert(*output_id);
-            self.push_instr(FlowInstruction::update_ctx(
-                output_name,
-                Expression::ident(output_name),
-            ));
-        }
+        outputs_ids
+            .into_iter()
+            .for_each(|output_id| self.update_ctx(output_id))
     }
 
     /// Add signal send in current propagation branch.

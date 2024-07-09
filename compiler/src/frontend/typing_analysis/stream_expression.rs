@@ -62,10 +62,6 @@ impl TypeAnalysis for stream::Expr {
                 self.typing = Some(expression.typing(&self.location, symbol_table, errors)?);
                 Ok(())
             }
-            stream::Kind::Event { .. } => {
-                self.typing = Some(Typ::ComponentEvent);
-                Ok(())
-            }
         }
     }
 

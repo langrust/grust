@@ -45,8 +45,6 @@ pub enum Typ {
     SMEvent(Box<Typ>),
     /// SMTimeout type, noted `n: int!`
     SMTimeout(Box<Typ>),
-    /// Component event
-    ComponentEvent,
     /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
     Enumeration {
         /// Enumeration's name.
@@ -93,7 +91,6 @@ impl Display for Typ {
             Typ::Array(t, n) => write!(f, "[{}; {n}]", *t),
             Typ::SMEvent(t) => write!(f, "SMEvent<{}>", *t),
             Typ::SMTimeout(t) => write!(f, "SMTimeout<{}>", *t),
-            Typ::ComponentEvent => write!(f, "ComponentEvent"),
             Typ::Enumeration { name, .. } => write!(f, "{name}"),
             Typ::Structure { name, .. } => write!(f, "{name}"),
             Typ::Abstract(t1, t2) => write!(
@@ -200,7 +197,6 @@ mk_new! { impl Typ =>
     )
     SMEvent: sm_event(ty: Self = Box::new(ty))
     SMTimeout: sm_timeout(ty: Self = Box::new(ty))
-    ComponentEvent: component_event()
     Enumeration: enumeration {
         name: impl Into<String> = name.into(),
         id: usize,
@@ -434,7 +430,6 @@ impl Typ {
                 | Float
                 | Boolean
                 | Unit
-                | ComponentEvent
                 | Enumeration { .. }
                 | Structure { .. }
                 | Time

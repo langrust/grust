@@ -73,6 +73,13 @@ pub enum Term {
     },
     /// Err term.
     Err,
+    /// Some term.
+    Some {
+        /// The pattern matching the value.
+        term: Box<Term>,
+    },
+    /// None term.
+    None,
 }
 
 mk_new! { impl Term =>
@@ -113,6 +120,8 @@ mk_new! { impl Term =>
     }
     Ok: ok { term: Term = term.into() }
     Err: err {}
+    Some: some { term: Term = term.into() }
+    None: none {}
 }
 
 #[derive(Debug, Default, PartialEq, Clone)]

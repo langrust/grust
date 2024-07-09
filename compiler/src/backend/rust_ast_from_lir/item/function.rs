@@ -67,6 +67,11 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
             parse_quote! { Ok(#ts_term) }
         }
         Term::Err => parse_quote! { Err(()) },
+        Term::Some { term } => {
+            let ts_term = term_to_token_stream(*term, prophecy);
+            parse_quote! { Some(#ts_term) }
+        }
+        Term::None => parse_quote! { None },
         Term::MemoryAccess { .. } => unreachable!(),
     }
 }

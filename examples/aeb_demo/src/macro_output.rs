@@ -17,13 +17,9 @@ pub fn brakes(distance: f64, speed: f64) -> Braking {
     };
     response
 }
-pub enum BrakingStateEvent {
-    pedest(Result<f64, ()>),
-    NoEvent,
-}
 pub struct BrakingStateInput {
+    pub pedest: Option<Result<f64, ()>>,
     pub speed: f64,
-    pub braking_state_event: BrakingStateEvent,
 }
 pub struct BrakingStateState {
     mem: Braking,
@@ -36,10 +32,10 @@ impl BrakingStateState {
     }
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
         let previous_state = self.mem;
-        let state = match input.braking_state_event {
-            BrakingStateEvent::pedest(Ok(d)) => brakes(d, input.speed),
-            BrakingStateEvent::pedest(Err(())) => Braking::NoBrake,
-            _ => previous_state,
+        let state = match input.pedest {
+            Some(Ok(d)) => brakes(d, input.speed),
+            Some(Err(())) => Braking::NoBrake,
+            None => previous_state,
         };
         self.mem = state;
         state
@@ -54,10 +50,10 @@ impl Context {
     fn init() -> Context {
         Default::default()
     }
-    fn get_braking_state_inputs(&self, event: BrakingStateEvent) -> BrakingStateInput {
+    fn get_braking_state_inputs(&self, pedestrian: Option<Result<f64, ()>>) -> BrakingStateInput {
         BrakingStateInput {
             speed: self.speed_km_h,
-            braking_state_event: event,
+            pedest: pedestrian,
         }
     }
 }
@@ -191,11 +187,11 @@ pub mod toto_service {
                     return;
                 }
             }
-            let brakes = self.braking_state.step(
-                self.context
-                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
-            );
+            let brakes = self
+                .braking_state
+                .step(self.context.get_braking_state_inputs(Some(pedestrian)));
             self.context.brakes = brakes;
+            let brakes = self.context.brakes;
             {
                 let res = self.output.send(O::brakes(brakes, instant)).await;
                 if res.is_err() {
@@ -211,11 +207,11 @@ pub mod toto_service {
                     return;
                 }
             }
-            let brakes = self.braking_state.step(
-                self.context
-                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
-            );
+            let brakes = self
+                .braking_state
+                .step(self.context.get_braking_state_inputs(Some(pedestrian)));
             self.context.brakes = brakes;
+            let brakes = self.context.brakes;
             {
                 let res = self.output.send(O::brakes(brakes, instant)).await;
                 if res.is_err() {
@@ -232,11 +228,11 @@ pub mod toto_service {
                     return;
                 }
             }
-            let brakes = self.braking_state.step(
-                self.context
-                    .get_braking_state_inputs(BrakingStateEvent::pedest(pedestrian)),
-            );
+            let brakes = self
+                .braking_state
+                .step(self.context.get_braking_state_inputs(Some(pedestrian)));
             self.context.brakes = brakes;
+            let brakes = self.context.brakes;
             {
                 let res = self.output.send(O::brakes(brakes, instant)).await;
                 if res.is_err() {

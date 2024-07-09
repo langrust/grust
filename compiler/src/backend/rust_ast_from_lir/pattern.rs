@@ -76,14 +76,12 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
                 parse_quote! { #ty::#cons }
             }
         }
-        Pattern::Tuple { elements } => Pat::Tuple(PatTuple {
-            attrs: vec![],
-            paren_token: Default::default(),
-            elems: elements
+        Pattern::Tuple { elements } => {
+            let elements = elements
                 .into_iter()
-                .map(|element| rust_ast_from_lir(element))
-                .collect(),
-        }),
+                .map(|element| -> Pat { rust_ast_from_lir(element) });
+            parse_quote! { (#(#elements),*) }
+        }
     }
 }
 

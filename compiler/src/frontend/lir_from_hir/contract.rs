@@ -96,33 +96,21 @@ mod term {
                     left.lir_from_hir(symbol_table),
                     right.lir_from_hir(symbol_table),
                 ),
-                term::Kind::Event {
-                    event_enum_id,
-                    event_element_id,
-                    pattern,
-                } => match symbol_table.get_type(event_element_id) {
-                    Typ::SMEvent(_) => lir::contract::Term::enumeration(
-                        symbol_table.get_name(event_enum_id).clone(),
-                        symbol_table.get_name(event_element_id).clone(),
-                        Some(lir::contract::Term::ident(symbol_table.get_name(pattern))),
-                    ),
-                    Typ::SMTimeout(_) => lir::contract::Term::enumeration(
-                        symbol_table.get_name(event_enum_id).clone(),
-                        symbol_table.get_name(event_element_id).clone(),
-                        Some(lir::contract::Term::ok(lir::contract::Term::ident(
+                term::Kind::PresentEvent { event_id, pattern } => {
+                    match symbol_table.get_type(event_id) {
+                        Typ::SMEvent(_) => lir::contract::Term::some(lir::contract::Term::ident(
                             symbol_table.get_name(pattern),
-                        ))),
-                    ),
+                        )),
+                        Typ::SMTimeout(_) => lir::contract::Term::some(lir::contract::Term::ok(
+                            lir::contract::Term::ident(symbol_table.get_name(pattern)),
+                        )),
+                        _ => unreachable!(),
+                    }
+                }
+                term::Kind::TimeoutEvent { event_id } => match symbol_table.get_type(event_id) {
+                    Typ::SMTimeout(_) => lir::contract::Term::some(lir::contract::Term::err()),
                     _ => unreachable!(),
                 },
-                term::Kind::TimeoutEvent {
-                    event_enum_id,
-                    event_element_id,
-                } => lir::contract::Term::enumeration(
-                    symbol_table.get_name(event_enum_id).clone(),
-                    symbol_table.get_name(event_element_id).clone(),
-                    Some(lir::contract::Term::err()),
-                ),
             }
         }
     }

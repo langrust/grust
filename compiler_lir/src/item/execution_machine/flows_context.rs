@@ -4,8 +4,7 @@ prelude! {}
 #[derive(Debug, PartialEq, Default)]
 pub struct FlowsContext {
     pub elements: HashMap<String, Typ>,
-    pub event_components: HashMap<String, (Vec<(String, String)>, String)>,
-    pub components: HashMap<String, Vec<(String, String)>>,
+    pub components: HashMap<String, (Vec<(String, String, Typ)>, Vec<(String, String)>)>,
 }
 impl FlowsContext {
     pub fn add_element(&mut self, element_name: String, element_type: &Typ) {
@@ -17,19 +16,15 @@ impl FlowsContext {
     pub fn contains_element(&self, element_name: &String) -> bool {
         self.elements.contains_key(element_name)
     }
-    pub fn add_component(&mut self, component_name: String, input_fields: Vec<(String, String)>) {
-        let already_inserted = self.components.insert(component_name, input_fields);
-        debug_assert!(already_inserted.is_none())
-    }
-    pub fn add_event_component(
+    pub fn add_component(
         &mut self,
         component_name: String,
-        input_fields: Vec<(String, String)>,
-        event: String,
+        events_fields: Vec<(String, String, Typ)>,
+        signals_fields: Vec<(String, String)>,
     ) {
         let already_inserted = self
-            .event_components
-            .insert(component_name, (input_fields, event));
+            .components
+            .insert(component_name, (events_fields, signals_fields));
         debug_assert!(already_inserted.is_none())
     }
 }

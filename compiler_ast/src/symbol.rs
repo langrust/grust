@@ -8,22 +8,6 @@ prelude! {
 /// Symbol kinds.
 #[derive(Clone)]
 pub enum SymbolKind {
-    /// Event kind.
-    Event,
-    /// EventEnumeration kind.
-    EventEnumeration {
-        /// The event of this type.
-        event_id: usize,
-        /// The enumeration's elements.
-        elements: Vec<usize>,
-    },
-    /// EventElement kind.
-    EventElement {
-        /// Enumeration name.
-        enum_name: String,
-        /// Event type.
-        typing: Typ,
-    },
     /// Identifier kind.
     Identifier {
         /// Identifier scope.
@@ -57,8 +41,8 @@ pub enum SymbolKind {
     Node {
         /// Node's input identifiers.
         inputs: Vec<usize>,
-        /// Node's event identifiers.
-        event_enum: Option<usize>,
+        /// Eventful node.
+        eventful: bool,
         /// Node's output identifiers.
         outputs: Vec<(String, usize)>,
         /// Node's local identifiers.
@@ -100,25 +84,6 @@ impl PartialEq for SymbolKind {
         }
     }
 }
-impl SymbolKind {
-    /// True if the kind indicates an event.
-    pub fn is_event(&self) -> bool {
-        use SymbolKind::*;
-        match self {
-            Event => true,
-            EventEnumeration { .. }
-            | EventElement { .. }
-            | Identifier { .. }
-            | Flow { .. }
-            | Function { .. }
-            | Node { .. }
-            | Structure { .. }
-            | Enumeration { .. }
-            | EnumerationElement { .. }
-            | Array { .. } => false,
-        }
-    }
-}
 
 /// Symbol from the symbol table.
 #[derive(Clone)]
@@ -146,11 +111,6 @@ impl Symbol {
 
     fn hash(&self) -> SymbolKey {
         match &self.kind {
-            SymbolKind::Event => SymbolKey::Event,
-            SymbolKind::EventEnumeration { .. } => SymbolKey::EventEnumeration,
-            SymbolKind::EventElement { .. } => SymbolKey::EventElement {
-                name: self.name.clone(),
-            },
             SymbolKind::Identifier { .. } => SymbolKey::Identifier {
                 name: self.name.clone(),
             },
@@ -185,9 +145,6 @@ impl Symbol {
 pub enum SymbolKey {
     Period,
     Deadline,
-    Event,            // only one event per component
-    EventEnumeration, // only one event enumeration per component
-    EventElement { name: String },
     Identifier { name: String },
     Flow { name: String },
     Function { name: String },
@@ -333,17 +290,6 @@ impl SymbolTable {
         });
     }
 
-    /// Yields all the events in the table.
-    pub fn all_events<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {
-        self.table.iter().filter_map(|(idx, sym)| {
-            if sym.kind.is_event() {
-                Some(*idx)
-            } else {
-                None
-            }
-        })
-    }
-
     /// Create local context in symbol table.
     pub fn local(&mut self) {
         let prev = std::mem::take(&mut self.known_symbols);
@@ -412,58 +358,6 @@ impl SymbolTable {
     ) -> TRes<usize> {
         let symbol = Symbol {
             kind: SymbolKind::Identifier { scope, typing },
-            name,
-        };
-
-        self.insert_symbol(symbol, local, location, errors)
-    }
-
-    /// Insert event enumeration in symbol table.
-    pub fn insert_event_enum(
-        &mut self,
-        name: String,
-        event_id: usize,
-        elements: Vec<usize>,
-        local: bool,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::EventEnumeration { event_id, elements },
-            name,
-        };
-
-        self.insert_symbol(symbol, local, location, errors)
-    }
-
-    /// Insert event in symbol table.
-    pub fn insert_event(
-        &mut self,
-        name: String,
-        local: bool,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Event,
-            name,
-        };
-
-        self.insert_symbol(symbol, local, location, errors)
-    }
-
-    /// Insert event element in symbol table.
-    pub fn insert_event_element(
-        &mut self,
-        name: String,
-        enum_name: String,
-        typing: Typ,
-        local: bool,
-        location: Location,
-        errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::EventElement { enum_name, typing },
             name,
         };
 
@@ -562,7 +456,7 @@ impl SymbolTable {
         name: String,
         local: bool,
         inputs: Vec<usize>,
-        event_enum: Option<usize>,
+        eventful: bool,
         outputs: Vec<(String, usize)>,
         locals: HashMap<String, usize>,
         period: Option<u64>,
@@ -572,7 +466,7 @@ impl SymbolTable {
         let symbol = Symbol {
             kind: SymbolKind::Node {
                 inputs,
-                event_enum,
+                eventful,
                 outputs,
                 locals,
                 period,
@@ -744,7 +638,6 @@ impl SymbolTable {
             }
             SymbolKind::Node {
                 inputs,
-                event_enum,
                 outputs,
                 locals,
                 ..
@@ -752,21 +645,6 @@ impl SymbolTable {
                 self.restore_context_from(inputs.iter());
                 self.restore_context_from(outputs.iter().map(|(_, id)| id));
                 self.restore_context_from(locals.values());
-                // restore event enumeration and elements (if they exist)
-                if let Some(event_enum_id) = event_enum {
-                    let symbol = self
-                        .get_symbol(*event_enum_id)
-                        .expect(&format!("expect symbol for {event_enum_id}"))
-                        .clone();
-                    match symbol.kind() {
-                        SymbolKind::EventEnumeration { event_id, elements } => {
-                            self.restore_context_from_id(*event_id);
-                            self.restore_context_from(elements.iter());
-                        }
-                        _ => unreachable!(),
-                    }
-                    self.known_symbols.add_symbol(symbol.hash(), *event_enum_id);
-                }
             }
             _ => unreachable!(),
         }
@@ -792,11 +670,9 @@ impl SymbolTable {
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
             SymbolKind::Flow { typing, .. } => typing,
-            SymbolKind::EventElement { typing, .. } => typing,
             SymbolKind::Function { typing, .. } => typing
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
-            SymbolKind::Event => &Typ::ComponentEvent,
             _ => unreachable!(),
         }
     }
@@ -978,7 +854,6 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier { scope, .. } => scope,
-            SymbolKind::Event => &Scope::Input,
             _ => unreachable!(),
         }
     }
@@ -1016,47 +891,13 @@ impl SymbolTable {
         }
     }
 
-    /// Get node event_enum from identifier.
-    pub fn get_node_event_enum(&self, id: usize) -> Option<usize> {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::Node { event_enum, .. } => *event_enum,
-            _ => unreachable!(),
-        }
-    }
-
     /// Tell if the node has events.
     pub fn has_events(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Node { event_enum, .. } => event_enum.is_some(),
-            _ => unreachable!(),
-        }
-    }
-
-    /// Get node event from identifier.
-    pub fn get_node_event(&self, id: usize) -> Option<usize> {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::Node { event_enum, .. } => {
-                if let Some(event_enum) = event_enum {
-                    let symbol = self
-                        .get_symbol(*event_enum)
-                        .expect(&format!("expect symbol for {id}"));
-                    match symbol.kind() {
-                        SymbolKind::EventEnumeration { event_id, .. } => Some(*event_id),
-                        _ => unreachable!(),
-                    }
-                } else {
-                    None
-                }
-            }
+            SymbolKind::Node { eventful, .. } => *eventful,
             _ => unreachable!(),
         }
     }
@@ -1090,17 +931,6 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { period_id, .. } => *period_id,
-            _ => unreachable!(),
-        }
-    }
-
-    /// Get event_enum's elements from identifier.
-    pub fn get_event_enum_elements(&self, id: usize) -> &Vec<usize> {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::EventEnumeration { elements, .. } => elements,
             _ => unreachable!(),
         }
     }
@@ -1297,65 +1127,6 @@ impl SymbolTable {
                 };
                 errors.push(error);
                 Err(TerminationError)
-            }
-        }
-    }
-
-    /// Get event enumeration symbol identifier.
-    pub fn get_event_enumeration_id(
-        &self,
-        local: bool,
-        _location: Location,
-        _errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
-        let symbol_hash = SymbolKey::EventEnumeration;
-        match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(id),
-            None => {
-                todo!("no events")
-                // let error = <#TODO>;
-                // errors.push(error);
-                // Err(TerminationError)
-            }
-        }
-    }
-
-    /// Get event element symbol identifier.
-    pub fn get_event_element_id(
-        &self,
-        name: &String,
-        local: bool,
-        _location: Location,
-        _errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
-        let symbol_hash = SymbolKey::EventElement { name: name.clone() };
-        match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(id),
-            None => {
-                println!("{name}");
-                todo!("unknown event")
-                // let error = <#TODO>;
-                // errors.push(error);
-                // Err(TerminationError)
-            }
-        }
-    }
-
-    /// Get event symbol identifier.
-    pub fn get_event_id(
-        &self,
-        local: bool,
-        _location: Location,
-        _errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
-        let symbol_hash = SymbolKey::Event;
-        match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(id),
-            None => {
-                todo!("no events")
-                // let error = <#TODO>;
-                // errors.push(error);
-                // Err(TerminationError)
             }
         }
     }

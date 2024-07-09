@@ -23,11 +23,8 @@ impl HIRFromAST for stream::When {
         // precondition: identifiers are stored in symbol table
         // postcondition: construct HIR expression kind and check identifiers good use
 
-        // get the event enumeration identifier
-        let event_enum_id =
-            symbol_table.get_event_enumeration_id(false, location.clone(), errors)?;
-        // get the event element identifier
-        let event_element_id: usize = symbol_table.get_event_element_id(
+        // get the event identifier
+        let event_id: usize = symbol_table.get_identifier_id(
             &presence.event.to_string(),
             false,
             location.clone(),
@@ -41,9 +38,8 @@ impl HIRFromAST for stream::When {
             // transform into HIR
             let inner_pattern = presence.pattern.hir_from_ast(symbol_table, errors)?;
             let pattern = hir::Pattern {
-                kind: hir::pattern::Kind::Event {
-                    event_enum_id,
-                    event_element_id,
+                kind: hir::pattern::Kind::PresentEvent {
+                    event_id,
                     pattern: Box::new(inner_pattern),
                 },
                 typing: None,
@@ -56,10 +52,7 @@ impl HIRFromAST for stream::When {
         // create timeout arm if present
         if let Some(timeout) = timeout {
             let pattern = hir::Pattern {
-                kind: hir::pattern::Kind::TimeoutEvent {
-                    event_enum_id,
-                    event_element_id,
-                },
+                kind: hir::pattern::Kind::TimeoutEvent { event_id },
                 typing: None,
                 location: location.clone(),
             };
@@ -69,7 +62,7 @@ impl HIRFromAST for stream::When {
         // create absence arm
         {
             let pattern = hir::Pattern {
-                kind: hir::pattern::Kind::NoEvent { event_enum_id },
+                kind: hir::pattern::Kind::NoEvent { event_id },
                 typing: None,
                 location: location.clone(),
             };
@@ -78,9 +71,10 @@ impl HIRFromAST for stream::When {
         }
 
         // expression to match is the event enumeration
-        let event_id = symbol_table.get_event_id(false, location.clone(), errors)?;
-        let event_enum_expression = hir::stream::Expr {
-            kind: hir::stream::Kind::Event { event_id },
+        let event_expression = hir::stream::Expr {
+            kind: hir::stream::Kind::Expression {
+                expression: hir::expr::Kind::Identifier { id: event_id },
+            },
             typing: None,
             location: location.clone(),
             dependencies: hir::Dependencies::new(),
@@ -88,7 +82,7 @@ impl HIRFromAST for stream::When {
 
         Ok(hir::stream::Kind::Expression {
             expression: hir::expr::Kind::Match {
-                expression: Box::new(event_enum_expression),
+                expression: Box::new(event_expression),
                 arms,
             },
         })
