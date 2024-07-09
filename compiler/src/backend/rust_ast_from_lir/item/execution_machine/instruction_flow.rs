@@ -1,6 +1,6 @@
 prelude! {
     macro2::Span,
-    quote::{format_ident, TokenStreamExt},
+    quote::TokenStreamExt,
     syn::*,
 }
 
@@ -78,33 +78,21 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 if res.is_err() {return}
             })
         }
-        FlowInstruction::EventComponentCall(pattern, component_name, optional_event) => {
+        FlowInstruction::ComponentCall(pattern, component_name, events) => {
             let outputs = pattern_rust_ast_from_lir(pattern);
             let component_ident = Ident::new(&component_name, Span::call_site());
             let input_getter =
                 Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
-            let component_event_enum =
-                format_ident!("{}", to_camel_case(&format!("{}Event", component_name)));
-            if let Some((component_event_elem, flow_event_name)) = optional_event {
-                let component_event_elem_ident =
-                    Ident::new(&component_event_elem, Span::call_site());
-                let flow_event_ident = Ident::new(&flow_event_name, Span::call_site());
-                parse_quote! {
-                    let #outputs = self.#component_ident.step(self.context.#input_getter(#component_event_enum::#component_event_elem_ident(#flow_event_ident)));
+            let args = events.into_iter().map(|opt_event| -> syn::Expr {
+                if let Some(event_name) = opt_event {
+                    let event_ident = Ident::new(&event_name, Span::call_site());
+                    parse_quote! { Some(#event_ident) }
+                } else {
+                    parse_quote! { None }
                 }
-            } else {
-                parse_quote! {
-                    let #outputs = self.#component_ident.step(self.context.#input_getter(#component_event_enum::NoEvent));
-                }
-            }
-        }
-        FlowInstruction::ComponentCall(pattern, component_name) => {
-            let outputs = pattern_rust_ast_from_lir(pattern);
-            let component_ident = Ident::new(&component_name, Span::call_site());
-            let input_getter =
-                Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
+            });
             parse_quote! {
-                let #outputs = self.#component_ident.step(self.context.#input_getter());
+                let #outputs = self.#component_ident.step(self.context.#input_getter(#(#args),*));
             }
         }
     }

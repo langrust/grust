@@ -152,16 +152,9 @@ mod term {
                     term,
                     ..
                 }) => {
-                    // get the event enumeration identifier
-                    let event_enum_id =
-                        symbol_table.get_event_enumeration_id(false, location.clone(), errors)?;
-                    // get the event element identifier
-                    let event_element_id: usize = symbol_table.get_event_element_id(
-                        &event,
-                        false,
-                        location.clone(),
-                        errors,
-                    )?;
+                    // get the event identifier
+                    let event_id =
+                        symbol_table.get_identifier_id(&event, false, location.clone(), errors)?;
                     symbol_table.local();
                     // set pattern signal in local context
                     let pattern_id = symbol_table.insert_identifier(
@@ -174,17 +167,12 @@ mod term {
                     // transform term into HIR
                     let right = term.hir_from_ast(symbol_table, errors)?;
                     symbol_table.global();
-                    // construct right side of implication: `Event::E(pat) == event`
-                    let event_id = symbol_table.get_event_id(false, location.clone(), errors)?;
+                    // construct right side of implication: `PresentEvent(pat) == event`
                     let left = hir::contract::Term::new(
                         hir::contract::term::Kind::binary(
                             BinaryOperator::Eq,
                             hir::contract::Term::new(
-                                hir::contract::term::Kind::event(
-                                    event_enum_id,
-                                    event_element_id,
-                                    pattern_id,
-                                ),
+                                hir::contract::term::Kind::present(event_id, pattern_id),
                                 None,
                                 location.clone(),
                             ),
@@ -197,7 +185,7 @@ mod term {
                         None,
                         location.clone(),
                     );
-                    // construct result term: `when pat = e? => t` becomes `forall pat.idents, EventE(pat) == event => t`
+                    // construct result term: `when pat = e? => t` becomes `forall pat, PresentEvent(pat) == event => t`
                     let term = hir::contract::Term::new(
                         hir::contract::term::Kind::forall(
                             pattern_id,
@@ -213,25 +201,17 @@ mod term {
                     Ok(term)
                 }
                 Term::TimeoutImplication(TimeoutImplication { event, term, .. }) => {
-                    // get the event enumeration identifier
-                    let event_enum_id =
-                        symbol_table.get_event_enumeration_id(false, location.clone(), errors)?;
-                    // get the event element identifier
-                    let event_element_id: usize = symbol_table.get_event_element_id(
-                        &event,
-                        false,
-                        location.clone(),
-                        errors,
-                    )?;
+                    // get the event identifier
+                    let event_id: usize =
+                        symbol_table.get_identifier_id(&event, false, location.clone(), errors)?;
                     // transform term into HIR
                     let right = term.hir_from_ast(symbol_table, errors)?;
                     // construct right side of implication: `Event::ETimeout == event`
-                    let event_id = symbol_table.get_event_id(false, location.clone(), errors)?;
                     let left = hir::contract::Term::new(
                         hir::contract::term::Kind::binary(
                             BinaryOperator::Eq,
                             hir::contract::Term::new(
-                                hir::contract::term::Kind::timeout(event_enum_id, event_element_id),
+                                hir::contract::term::Kind::timeout(event_id),
                                 None,
                                 location.clone(),
                             ),

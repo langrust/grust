@@ -19,7 +19,6 @@ impl stream::Expr {
     /// With a context `[x -> a, y -> b/2]`, the expression `x + y` will become `a + b/2`.
     pub fn replace_by_context(&mut self, context_map: &HashMap<usize, Union<usize, stream::Expr>>) {
         match self.kind {
-            stream::Kind::Event { .. } => (),
             stream::Kind::Expression { ref mut expression } => {
                 let option_new_expression =
                     expression.replace_by_context(&mut self.dependencies, context_map);

@@ -87,12 +87,8 @@ pub fn activation_condition(vacuum_brake_state: VacuumBrakeState, v_set: f64) ->
 pub fn standby_condition(vacuum_brake_state: VacuumBrakeState, v_set: f64) -> bool {
     vacuum_brake_state == VacuumBrakeState::BelowMinLevel || v_set <= 0.0
 }
-pub enum ProcessSetSpeedEvent {
-    set_speed(f64),
-    NoEvent,
-}
 pub struct ProcessSetSpeedInput {
-    pub process_set_speed_event: ProcessSetSpeedEvent,
+    pub set_speed: Option<f64>,
 }
 pub struct ProcessSetSpeedState {
     mem: f64,
@@ -103,13 +99,13 @@ impl ProcessSetSpeedState {
     }
     pub fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
         let prev_v_set = self.mem;
-        let (v_set, v_update) = match input.process_set_speed_event {
-            ProcessSetSpeedEvent::set_speed(v) => {
+        let (v_set, v_update) = match (input.set_speed) {
+            (Some(v)) => {
                 let v_set = threshold_set_speed(v);
                 let v_update = prev_v_set != v_set;
                 (v_set, v_update)
             }
-            _ => {
+            (_) => {
                 let v_set = prev_v_set;
                 let v_update = false;
                 (v_set, v_update)
@@ -119,16 +115,12 @@ impl ProcessSetSpeedState {
         (v_set, v_update)
     }
 }
-pub enum SpeedLimiterOnEvent {
-    kickdown(Kickdown),
-    NoEvent,
-}
 pub struct SpeedLimiterOnInput {
     pub prev_on_state: SpeedLimiterOn,
     pub vacuum_brake_state: VacuumBrakeState,
+    pub kickdown: Option<Kickdown>,
     pub speed: f64,
     pub v_set: f64,
-    pub speed_limiter_on_event: SpeedLimiterOnEvent,
 }
 pub struct SpeedLimiterOnState {
     mem: Hysterisis,
@@ -141,14 +133,14 @@ impl SpeedLimiterOnState {
     }
     pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool, bool) {
         let prev_hysterisis = self.mem;
-        let (on_state, hysterisis, state_update) = match input.speed_limiter_on_event {
-            SpeedLimiterOnEvent::kickdown(_) if input.prev_on_state == SpeedLimiterOn::Actif => {
+        let (on_state, hysterisis, state_update) = match (input.kickdown) {
+            (Some(_)) if input.prev_on_state == SpeedLimiterOn::Actif => {
                 let state_update = true;
                 let hysterisis = prev_hysterisis;
                 let on_state = SpeedLimiterOn::OverrideVoluntary;
                 (on_state, hysterisis, state_update)
             }
-            _ => {
+            (_) => {
                 let (on_state, hysterisis, state_update) = match input.prev_on_state {
                     SpeedLimiterOn::StandBy
                         if activation_condition(input.vacuum_brake_state, input.v_set) =>
@@ -194,26 +186,14 @@ impl SpeedLimiterOnState {
         (on_state, in_reg, state_update)
     }
 }
-pub enum SpeedLimiterEvent {
-    activation_req(ActivationResquest),
-    kickdown(Kickdown),
-    failure(Failure),
-    NoEvent,
-}
-impl Into<SpeedLimiterOnEvent> for SpeedLimiterEvent {
-    fn into(self) -> SpeedLimiterOnEvent {
-        match self {
-            SpeedLimiterEvent::kickdown(v) => SpeedLimiterOnEvent::kickdown(v),
-            _ => SpeedLimiterOnEvent::NoEvent,
-        }
-    }
-}
 pub struct SpeedLimiterInput {
+    pub activation_req: Option<ActivationResquest>,
     pub vacuum_brake_state: VacuumBrakeState,
+    pub kickdown: Option<Kickdown>,
+    pub failure: Option<Failure>,
     pub vdc_disabled: VdcState,
     pub speed: f64,
     pub v_set: f64,
-    pub speed_limiter_event: SpeedLimiterEvent,
 }
 pub struct SpeedLimiterState {
     mem: SpeedLimiter,
@@ -234,62 +214,61 @@ impl SpeedLimiterState {
         let prev_state = self.mem;
         let prev_on_state = self.mem_1;
         let prev_in_regulation = self.mem_2;
-        let (state, on_state, in_regulation, state_update) = match input.speed_limiter_event {
-            SpeedLimiterEvent::activation_req(ActivationResquest::Off) => {
-                let state = SpeedLimiter::Off;
-                let on_state = SpeedLimiterOn::StandBy;
-                let in_regulation = false;
-                let state_update = prev_state != SpeedLimiter::Off;
-                (state, on_state, in_regulation, state_update)
-            }
-            SpeedLimiterEvent::activation_req(ActivationResquest::On)
-                if prev_state == SpeedLimiter::Off =>
-            {
-                let state = SpeedLimiter::On;
-                let on_state = SpeedLimiterOn::StandBy;
-                let in_regulation = true;
-                let state_update = true;
-                (state, on_state, in_regulation, state_update)
-            }
-            SpeedLimiterEvent::failure(Failure::Entering) => {
-                let state = SpeedLimiter::Fail;
-                let on_state = SpeedLimiterOn::StandBy;
-                let in_regulation = false;
-                let state_update = prev_state != SpeedLimiter::Fail;
-                (state, on_state, in_regulation, state_update)
-            }
-            SpeedLimiterEvent::failure(Failure::Recovered) if prev_state == SpeedLimiter::Fail => {
-                let state = SpeedLimiter::On;
-                let on_state = SpeedLimiterOn::StandBy;
-                let in_regulation = true;
-                let state_update = true;
-                (state, on_state, in_regulation, state_update)
-            }
-            _ => {
-                let (state, on_state, in_regulation, state_update) = match prev_state {
-                    SpeedLimiter::On => {
-                        let state = prev_state;
-                        let (on_state, in_regulation, state_update) =
-                            self.speed_limiter_on.step(SpeedLimiterOnInput {
-                                prev_on_state: prev_on_state,
-                                vacuum_brake_state: input.vacuum_brake_state,
-                                speed: input.speed,
-                                v_set: input.v_set,
-                                speed_limiter_on_event: input.speed_limiter_event.into(),
-                            });
-                        (state, on_state, in_regulation, state_update)
-                    }
-                    _ => {
-                        let state = prev_state;
-                        let on_state = prev_on_state;
-                        let in_regulation = prev_in_regulation;
-                        let state_update = false;
-                        (state, on_state, in_regulation, state_update)
-                    }
-                };
-                (state, on_state, in_regulation, state_update)
-            }
-        };
+        let (state, on_state, in_regulation, state_update) =
+            match (input.activation_req, input.failure) {
+                (Some(ActivationResquest::Off), _) => {
+                    let state = SpeedLimiter::Off;
+                    let on_state = SpeedLimiterOn::StandBy;
+                    let in_regulation = false;
+                    let state_update = prev_state != SpeedLimiter::Off;
+                    (state, on_state, in_regulation, state_update)
+                }
+                (Some(ActivationResquest::On), _) if prev_state == SpeedLimiter::Off => {
+                    let state = SpeedLimiter::On;
+                    let on_state = SpeedLimiterOn::StandBy;
+                    let in_regulation = true;
+                    let state_update = true;
+                    (state, on_state, in_regulation, state_update)
+                }
+                (_, Some(Failure::Entering)) => {
+                    let state = SpeedLimiter::Fail;
+                    let on_state = SpeedLimiterOn::StandBy;
+                    let in_regulation = false;
+                    let state_update = prev_state != SpeedLimiter::Fail;
+                    (state, on_state, in_regulation, state_update)
+                }
+                (_, Some(Failure::Recovered)) if prev_state == SpeedLimiter::Fail => {
+                    let state = SpeedLimiter::On;
+                    let on_state = SpeedLimiterOn::StandBy;
+                    let in_regulation = true;
+                    let state_update = true;
+                    (state, on_state, in_regulation, state_update)
+                }
+                (_, _) => {
+                    let (state, on_state, in_regulation, state_update) = match prev_state {
+                        SpeedLimiter::On => {
+                            let state = prev_state;
+                            let (on_state, in_regulation, state_update) =
+                                self.speed_limiter_on.step(SpeedLimiterOnInput {
+                                    prev_on_state: prev_on_state,
+                                    vacuum_brake_state: input.vacuum_brake_state,
+                                    kickdown: input.kickdown,
+                                    speed: input.speed,
+                                    v_set: input.v_set,
+                                });
+                            (state, on_state, in_regulation, state_update)
+                        }
+                        _ => {
+                            let state = prev_state;
+                            let on_state = prev_on_state;
+                            let in_regulation = prev_in_regulation;
+                            let state_update = false;
+                            (state, on_state, in_regulation, state_update)
+                        }
+                    };
+                    (state, on_state, in_regulation, state_update)
+                }
+            };
         self.mem = state;
         self.mem_1 = on_state;
         self.mem_2 = in_regulation;
@@ -315,18 +294,25 @@ impl Context {
     fn init() -> Context {
         Default::default()
     }
-    fn get_process_set_speed_inputs(&self, event: ProcessSetSpeedEvent) -> ProcessSetSpeedInput {
+    fn get_process_set_speed_inputs(&self, changed_set_speed: Option<f64>) -> ProcessSetSpeedInput {
         ProcessSetSpeedInput {
-            process_set_speed_event: event,
+            set_speed: changed_set_speed,
         }
     }
-    fn get_speed_limiter_inputs(&self, event: SpeedLimiterEvent) -> SpeedLimiterInput {
+    fn get_speed_limiter_inputs(
+        &self,
+        activation: Option<ActivationResquest>,
+        kickdown: Option<Kickdown>,
+        failure: Option<Failure>,
+    ) -> SpeedLimiterInput {
         SpeedLimiterInput {
             vacuum_brake_state: self.vacuum_brake,
             vdc_disabled: self.vdc,
             speed: self.speed,
             v_set: self.v_set,
-            speed_limiter_event: event,
+            activation_req: activation,
+            kickdown: kickdown,
+            failure: failure,
         }
     }
 }
@@ -451,13 +437,7 @@ pub mod toto_service {
                     {
                         match input
                         {
-                            I :: activation(activation, instant) =>
-                            service.handle_activation(instant, activation).await, I ::
-                            kickdown(kickdown, instant) =>
-                            service.handle_kickdown(instant, kickdown).await, I ::
-                            set_speed(set_speed, instant) =>
-                            service.handle_set_speed(instant, set_speed).await, I ::
-                            timer(T :: period_fresh_ident, instant) =>
+                            I :: timer(T :: period_fresh_ident, instant) =>
                             service.handle_period_fresh_ident(instant).await, I ::
                             failure(failure, instant) =>
                             service.handle_failure(instant, failure).await, I ::
@@ -465,92 +445,28 @@ pub mod toto_service {
                             service.handle_speed(instant, speed).await, I ::
                             vdc(vdc, instant) => service.handle_vdc(instant, vdc).await,
                             I :: vacuum_brake(vacuum_brake, instant) =>
-                            service.handle_vacuum_brake(instant, vacuum_brake).await
+                            service.handle_vacuum_brake(instant, vacuum_brake).await, I
+                            :: activation(activation, instant) =>
+                            service.handle_activation(instant, activation).await, I ::
+                            kickdown(kickdown, instant) =>
+                            service.handle_kickdown(instant, kickdown).await, I ::
+                            set_speed(set_speed, instant) =>
+                            service.handle_set_speed(instant, set_speed).await
                         }
                     } else { break; }, _ = service.period_fresh_ident.tick() =>
                     service.handle_period_fresh_ident().await,
                 }
             }
         }
-        async fn handle_activation(
-            &mut self,
-            instant: std::time::Instant,
-            activation: ActivationResquest,
-        ) {
-            let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
-                self.context
-                    .get_speed_limiter_inputs(SpeedLimiterEvent::activation_req(activation)),
-            );
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            let in_regulation = in_regulation_aux;
-            {
-                let res = self
-                    .output
-                    .send(O::in_regulation(in_regulation, instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-        }
-        async fn handle_kickdown(&mut self, instant: std::time::Instant, kickdown: Kickdown) {
-            let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
-                self.context
-                    .get_speed_limiter_inputs(SpeedLimiterEvent::kickdown(kickdown)),
-            );
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            let in_regulation = in_regulation_aux;
-            {
-                let res = self
-                    .output
-                    .send(O::in_regulation(in_regulation, instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-        }
-        async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
-            if (self.context.flow_expression_fresh_ident - set_speed).abs() >= 1.0 {
-                self.context.flow_expression_fresh_ident = set_speed;
-            }
-            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident;
-            if self.context.changed_set_speed_old != flow_expression_fresh_ident {
-                self.context.changed_set_speed_old = flow_expression_fresh_ident;
-                let changed_set_speed = flow_expression_fresh_ident;
-                let (v_set_aux, v_update) =
-                    self.process_set_speed
-                        .step(self.context.get_process_set_speed_inputs(
-                            ProcessSetSpeedEvent::set_speed(changed_set_speed),
-                        ));
-                self.context.v_set_aux = v_set_aux;
-                self.context.v_update = v_update;
-                let v_set = v_set_aux;
-                self.context.v_set = v_set;
-                {
-                    let res = self.output.send(O::v_set(v_set, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
-            } else {
-            }
-        }
         async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
-            let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
-                self.context
-                    .get_speed_limiter_inputs(SpeedLimiterEvent::NoEvent),
-            );
+            let (state, on_state, in_regulation_aux, state_update) = self
+                .speed_limiter
+                .step(self.context.get_speed_limiter_inputs(None, None, None));
             self.context.state = state;
             self.context.on_state = on_state;
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
+            let in_regulation_aux = self.context.in_regulation_aux;
             let in_regulation = in_regulation_aux;
             {
                 let res = self
@@ -569,14 +485,17 @@ pub mod toto_service {
             }
         }
         async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {
-            let (state, on_state, in_regulation_aux, state_update) = self.speed_limiter.step(
-                self.context
-                    .get_speed_limiter_inputs(SpeedLimiterEvent::failure(failure)),
-            );
+            let (state, on_state, in_regulation_aux, state_update) =
+                self.speed_limiter
+                    .step(
+                        self.context
+                            .get_speed_limiter_inputs(None, None, Some(failure)),
+                    );
             self.context.state = state;
             self.context.on_state = on_state;
             self.context.in_regulation_aux = in_regulation_aux;
             self.context.state_update = state_update;
+            let in_regulation_aux = self.context.in_regulation_aux;
             let in_regulation = in_regulation_aux;
             {
                 let res = self
@@ -600,6 +519,82 @@ pub mod toto_service {
             vacuum_brake: VacuumBrakeState,
         ) {
             self.context.vacuum_brake = vacuum_brake;
+        }
+        async fn handle_activation(
+            &mut self,
+            instant: std::time::Instant,
+            activation: ActivationResquest,
+        ) {
+            let (state, on_state, in_regulation_aux, state_update) =
+                self.speed_limiter
+                    .step(
+                        self.context
+                            .get_speed_limiter_inputs(Some(activation), None, None),
+                    );
+            self.context.state = state;
+            self.context.on_state = on_state;
+            self.context.in_regulation_aux = in_regulation_aux;
+            self.context.state_update = state_update;
+            let in_regulation_aux = self.context.in_regulation_aux;
+            let in_regulation = in_regulation_aux;
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+        }
+        async fn handle_kickdown(&mut self, instant: std::time::Instant, kickdown: Kickdown) {
+            let (state, on_state, in_regulation_aux, state_update) =
+                self.speed_limiter
+                    .step(
+                        self.context
+                            .get_speed_limiter_inputs(None, Some(kickdown), None),
+                    );
+            self.context.state = state;
+            self.context.on_state = on_state;
+            self.context.in_regulation_aux = in_regulation_aux;
+            self.context.state_update = state_update;
+            let in_regulation_aux = self.context.in_regulation_aux;
+            let in_regulation = in_regulation_aux;
+            {
+                let res = self
+                    .output
+                    .send(O::in_regulation(in_regulation, instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+        }
+        async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
+            if (self.context.flow_expression_fresh_ident - set_speed).abs() >= 1.0 {
+                self.context.flow_expression_fresh_ident = set_speed;
+            }
+            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident;
+            if self.context.changed_set_speed_old != flow_expression_fresh_ident {
+                self.context.changed_set_speed_old = flow_expression_fresh_ident;
+                let changed_set_speed = flow_expression_fresh_ident;
+                let (v_set_aux, v_update) = self.process_set_speed.step(
+                    self.context
+                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                );
+                self.context.v_set_aux = v_set_aux;
+                self.context.v_update = v_update;
+                let v_set_aux = self.context.v_set_aux;
+                let v_set = v_set_aux;
+                self.context.v_set = v_set;
+                {
+                    let res = self.output.send(O::v_set(v_set, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+            } else {
+            }
         }
     }
 }

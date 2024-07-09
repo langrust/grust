@@ -62,8 +62,7 @@ pub enum FlowInstruction {
     IfThrottle(String, String, Constant, Box<FlowInstruction>),
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, u64),
-    EventComponentCall(Pattern, String, Option<(String, String)>),
-    ComponentCall(Pattern, String),
+    ComponentCall(Pattern, String, Vec<Option<String>>),
 }
 mk_new! { impl FlowInstruction =>
     Let: def_let (name: impl Into<String> = name.into(), expr: Expression = expr.into())
@@ -85,11 +84,7 @@ mk_new! { impl FlowInstruction =>
     ComponentCall: comp_call (
         pat: Pattern = pat,
         name: impl Into<String> = name.into(),
-    )
-    EventComponentCall: event_comp_call (
-        pat: Pattern = pat,
-        name: impl Into<String> = name.into(),
-        event: Option<(String, String)> = event,
+        events: impl Into<Vec<Option<String>>> = events.into(),
     )
 }
 

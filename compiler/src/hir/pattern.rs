@@ -36,26 +36,22 @@ pub enum Kind {
         /// The element id.
         elem_id: usize,
     },
-    /// Event enumeration pattern.
-    Event {
+    /// Event pattern.
+    PresentEvent {
         /// The event id.
-        event_enum_id: usize,
-        /// The event element id.
-        event_element_id: usize,
+        event_id: usize,
         /// The pattern matching the event.
         pattern: Box<Pattern>,
     },
-    /// TimeoutEvent enumeration pattern.
+    /// TimeoutEvent pattern.
     TimeoutEvent {
         /// The event id.
-        event_enum_id: usize,
-        /// The event element id.
-        event_element_id: usize,
+        event_id: usize,
     },
-    /// NoEvent enumeration pattern.
+    /// NoEvent pattern.
     NoEvent {
         /// The event id.
-        event_enum_id: usize,
+        event_id: usize,
     },
     /// Tuple pattern that matches tuples.
     Tuple {
@@ -73,6 +69,33 @@ pub enum Kind {
     Default,
 }
 
+mk_new! { impl Kind =>
+    Constant: constant { constant: Constant }
+    Identifier: ident { id: usize }
+    Typed: typed {
+        pattern: Pattern = pattern.into(),
+        typing: Typ,
+    }
+    Structure: structure {
+        id: usize,
+        fields: Vec<(usize, Option<Pattern>)>,
+    }
+    Enumeration: enumeration {
+        enum_id: usize,
+        elem_id: usize,
+    }
+    PresentEvent: present {
+        event_id: usize,
+        pattern: Pattern = pattern.into(),
+    }
+    TimeoutEvent: timeout { event_id: usize }
+    NoEvent: absent { event_id: usize }
+    Tuple: tuple { elements: Vec<Pattern> }
+    Some: some { pattern: Pattern = pattern.into() }
+    None: none {}
+    Default: default {}
+}
+
 /// HIR pattern.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Pattern {
@@ -83,6 +106,18 @@ pub struct Pattern {
     /// Pattern location.
     pub location: Location,
 }
+
+/// Constructs pattern.
+///
+/// Typing and location are empty.
+pub fn init(kind: Kind) -> Pattern {
+    Pattern {
+        kind,
+        typing: None,
+        location: Location::default(),
+    }
+}
+
 impl Pattern {
     /// Get pattern's type.
     pub fn get_type(&self) -> Option<&Typ> {
@@ -116,9 +151,9 @@ impl Pattern {
                 .iter()
                 .flat_map(|pattern| pattern.identifiers())
                 .collect(),
-            Kind::Some { pattern } | Kind::Typed { pattern, .. } | Kind::Event { pattern, .. } => {
-                pattern.identifiers()
-            }
+            Kind::Some { pattern }
+            | Kind::Typed { pattern, .. }
+            | Kind::PresentEvent { pattern, .. } => pattern.identifiers(),
         }
     }
     /// Get mutable references to pattern's identifiers.
@@ -145,9 +180,9 @@ impl Pattern {
                 .iter_mut()
                 .flat_map(|pattern| pattern.identifiers_mut())
                 .collect(),
-            Kind::Some { pattern } | Kind::Typed { pattern, .. } | Kind::Event { pattern, .. } => {
-                pattern.identifiers_mut()
-            }
+            Kind::Some { pattern }
+            | Kind::Typed { pattern, .. }
+            | Kind::PresentEvent { pattern, .. } => pattern.identifiers_mut(),
         }
     }
 }

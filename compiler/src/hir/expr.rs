@@ -148,6 +148,77 @@ pub enum Kind<E> {
     },
 }
 
+mk_new! { impl{E} Kind<E> =>
+    Constant: constant { constant: Constant }
+    Identifier: ident { id : usize }
+    Unop: unop {
+        op: UnaryOperator,
+        expression: E = expression.into(),
+    }
+    Binop: binop {
+        op: BinaryOperator,
+        left_expression: E = left_expression.into(),
+        right_expression: E = right_expression.into(),
+    }
+    IfThenElse: ifthenelse {
+        expression: E = expression.into(),
+        true_expression: E = true_expression.into(),
+        false_expression: E = false_expression.into(),
+    }
+    Application: app {
+        function_expression: E = function_expression.into(),
+        inputs: Vec<E>,
+    }
+    Abstraction: lambda {
+        inputs: Vec<usize>,
+        expression: E = expression.into(),
+    }
+    Structure: structure {
+        id: usize,
+        fields: Vec<(usize, E)>,
+    }
+    Enumeration: enumeration {
+        enum_id: usize,
+        elem_id: usize,
+    }
+    Array: array { elements: Vec<E> }
+    Tuple: tuple { elements: Vec<E> }
+    Match: match_expr {
+        expression: E = expression.into(),
+        arms: Vec<(Pattern, Option<E>, Vec<Stmt<E>>, E)>,
+    }
+    When: when {
+        id: usize,
+        option: E = option.into(),
+        present: E = present.into(),
+        present_body: Vec<Stmt<E>>,
+        default: E = default.into(),
+        default_body: Vec<Stmt<E>>,
+    }
+    FieldAccess: field {
+        expression: E = expression.into(),
+        field: String,
+    }
+    TupleElementAccess: access {
+        expression: E = expression.into(),
+        element_number: usize,
+    }
+    Map: map {
+        expression: E = expression.into(),
+        function_expression: E = function_expression.into(),
+    }
+    Fold: fold {
+        expression: E = expression.into(),
+        initialization_expression: E = initialization_expression.into(),
+        function_expression: E = function_expression.into(),
+    }
+    Sort: sort{
+        expression: E = expression.into(),
+        function_expression: E = function_expression.into(),
+    }
+    Zip: zip { arrays: Vec<E> }
+}
+
 /// HIR expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Expr {
@@ -175,6 +246,18 @@ impl Expr {
         self.dependencies
             .get()
             .expect("there should be dependencies")
+    }
+}
+
+/// Constructs expression.
+///
+/// Typing, location and dependencies are empty.
+pub fn init(kind: Kind<Expr>) -> Expr {
+    Expr {
+        kind,
+        typing: None,
+        location: Location::default(),
+        dependencies: Dependencies::new(),
     }
 }
 

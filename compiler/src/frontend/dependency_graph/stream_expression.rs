@@ -8,7 +8,6 @@ impl stream::Expr {
     /// Get nodes applications identifiers.
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self.kind {
-            stream::Kind::Event { .. } => vec![],
             stream::Kind::Expression { expression } => expression.get_called_nodes(),
             stream::Kind::FollowedBy { expression, .. } => expression.get_called_nodes(),
             stream::Kind::NodeApplication {
@@ -44,10 +43,6 @@ impl stream::Expr {
     /// of the memory of `x` (the signal is behind 2 fby operations).
     pub fn compute_dependencies(&self, ctx: &mut GraphProcCtx) -> TRes<()> {
         match &self.kind {
-            stream::Kind::Event { event_id } => {
-                self.dependencies.set(vec![(*event_id, Label::Weight(0))]);
-                Ok(())
-            }
             stream::Kind::FollowedBy {
                 ref constant,
                 ref expression,

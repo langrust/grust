@@ -26,7 +26,6 @@ impl stream::Expr {
         symbol_table: &mut SymbolTable,
     ) {
         match &mut self.kind {
-            stream::Kind::Event { .. } => (),
             stream::Kind::Expression { expression } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table)
             }

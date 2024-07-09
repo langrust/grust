@@ -8,10 +8,6 @@ prelude! {
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression kind AST.
 pub enum Kind {
-    Event {
-        /// The identifier to the event enumeration.
-        event_id: usize,
-    },
     /// Expression.
     Expression {
         /// The expression kind.
@@ -34,6 +30,20 @@ pub enum Kind {
         inputs: Vec<(usize, Expr)>,
     },
 }
+
+mk_new! { impl Kind =>
+    Expression: expr { expression: expr::Kind<Expr> }
+    FollowedBy: fby {
+        constant: Expr = constant.into(),
+        expression: Expr = expression.into(),
+    }
+    NodeApplication: call {
+        calling_node_id: usize,
+        called_node_id: usize,
+        inputs: Vec<(usize, Expr)>,
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression AST.
 pub struct Expr {
@@ -45,6 +55,18 @@ pub struct Expr {
     pub location: Location,
     /// Stream expression dependencies.
     pub dependencies: Dependencies,
+}
+
+/// Constructs stream expression.
+///
+/// Typing, location and dependencies are empty.
+pub fn expr(kind: Kind) -> Expr {
+    Expr {
+        kind,
+        typing: None,
+        location: Location::default(),
+        dependencies: Dependencies::new(),
+    }
 }
 
 impl Expr {
@@ -72,7 +94,6 @@ impl Expr {
             Kind::NodeApplication { inputs, .. } => {
                 inputs.iter().all(|(_, expression)| expression.no_fby())
             }
-            Kind::Event { .. } => true,
         }
     }
     /// Tell if it is in normal form.
@@ -86,7 +107,6 @@ impl Expr {
             Kind::NodeApplication { inputs, .. } => inputs
                 .iter()
                 .all(|(_, expression)| expression.no_node_application()),
-            Kind::Event { .. } => true,
         }
     }
     /// Tell if there is no node application.
@@ -98,7 +118,6 @@ impl Expr {
                 }),
             Kind::FollowedBy { expression, .. } => expression.no_node_application(),
             Kind::NodeApplication { .. } => false,
-            Kind::Event { .. } => true,
         }
     }
 }

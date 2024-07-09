@@ -107,7 +107,7 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
             let elements = elements
                 .into_iter()
                 .map(|expression| rust_ast_from_lir(expression, crates));
-            parse_quote! { (#(#elements),*)}
+            parse_quote! { (#(#elements),*) }
         }
         lir::Expr::Block { block } => Expr::Block(ExprBlock {
             attrs: vec![],

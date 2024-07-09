@@ -47,21 +47,17 @@ pub mod term {
         ForAll { id: usize, term: Box<Term> },
         /// Implication term: P => Q
         Implication { left: Box<Term>, right: Box<Term> },
-        /// Event enumeration
-        Event {
-            /// The event id.
-            event_enum_id: usize,
-            /// The event element id.
-            event_element_id: usize,
-            /// The pattern matching the event.
+        /// Present event pattern
+        PresentEvent {
+            /// The event identifier
+            event_id: usize,
+            /// The event pattern
             pattern: usize,
         },
-        /// Event timeout
+        /// Timeout event pattern
         TimeoutEvent {
-            /// The event id.
-            event_enum_id: usize,
-            /// The event element id.
-            event_element_id: usize,
+            /// The event identifier
+            event_id: usize,
         },
     }
 
@@ -89,14 +85,12 @@ pub mod term {
             left: Term = left.into(),
             right: Term = right.into(),
         }
-        Event: event {
-            event_enum_id: usize,
-            event_element_id: usize,
+        PresentEvent: present {
+            event_id: usize,
             pattern: usize,
         }
         TimeoutEvent: timeout {
-            event_enum_id: usize,
-            event_element_id: usize,
+            event_id: usize,
         }
     }
 
@@ -133,7 +127,7 @@ pub mod term {
                 Kind::Constant { .. } | Kind::Enumeration { .. } | Kind::TimeoutEvent { .. } => {
                     vec![]
                 }
-                Kind::Identifier { id } | Kind::Event { pattern: id, .. } => vec![*id],
+                Kind::Identifier { id } | Kind::PresentEvent { pattern: id, .. } => vec![*id],
                 Kind::ForAll { id, term, .. } => term
                     .compute_dependencies()
                     .into_iter()
@@ -163,7 +157,7 @@ pub mod term {
             match &mut self.kind {
                 Kind::Constant { .. } | Kind::Enumeration { .. } | Kind::TimeoutEvent { .. } => (),
                 Kind::Identifier { ref mut id }
-                | Kind::Event {
+                | Kind::PresentEvent {
                     pattern: ref mut id,
                     ..
                 } => {

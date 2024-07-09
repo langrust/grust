@@ -65,28 +65,23 @@ impl TypeAnalysis for contract::Term {
                 ty.eq_check(&Typ::Boolean, self.location.clone(), errors)?;
                 Typ::Boolean
             }
-            contract::term::Kind::Event {
-                event_element_id,
-                pattern,
-                ..
-            } => {
-                match symbol_table.get_type(*event_element_id) {
+            contract::term::Kind::PresentEvent { event_id, pattern } => {
+                let typing = symbol_table.get_type(*event_id).clone();
+                match &typing {
                     Typ::SMEvent(expected_type) | Typ::SMTimeout(expected_type) => {
                         symbol_table.set_type(*pattern, *expected_type.clone());
                     }
                     _ => unreachable!(),
                 };
-                Typ::component_event()
+                typing
             }
-            contract::term::Kind::TimeoutEvent {
-                event_element_id, ..
-            } => {
-                match symbol_table.get_type(*event_element_id) {
-                    Typ::SMEvent(_) => todo!("error, event should be timeout"),
+            contract::term::Kind::TimeoutEvent { event_id } => {
+                let typing = symbol_table.get_type(*event_id).clone();
+                match &typing {
                     Typ::SMTimeout(_) => (),
-                    _ => unreachable!(),
+                    _ => panic!("error, should be 'event timeout'"),
                 };
-                Typ::component_event()
+                typing
             }
         };
         self.typing = Some(ty);

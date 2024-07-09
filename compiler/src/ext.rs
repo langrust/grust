@@ -21,6 +21,11 @@ mod component {
                 .period
                 .as_ref()
                 .map(|(_, literal, _)| literal.base10_parse().unwrap());
+            let eventful = period.is_some()
+                || self
+                    .args
+                    .iter()
+                    .any(|Colon { right: typing, .. }| typing.is_event());
             let location = Location::default();
 
             // store input signals and get their ids
@@ -50,61 +55,6 @@ mod component {
                     },
                 )
                 .collect::<TRes<Vec<_>>>()?;
-
-            // store input events as element of an "event enumeration"
-            let enum_name = to_camel_case(&format!("{name}Event"));
-            let element_ids = self
-                .args
-                .iter()
-                .filter(|Colon { right: typing, .. }| typing.is_event())
-                .map(
-                    |Colon {
-                         left: ident,
-                         right: typing,
-                         ..
-                     }| {
-                        let name = ident.to_string();
-                        let typing =
-                            typing
-                                .clone()
-                                .hir_from_ast(&location, symbol_table, errors)?;
-                        let id = symbol_table.insert_event_element(
-                            name,
-                            enum_name.clone(),
-                            typing,
-                            true,
-                            location.clone(),
-                            errors,
-                        )?;
-                        Ok(id)
-                    },
-                )
-                .collect::<TRes<Vec<_>>>()?;
-
-            let event_enum = if !element_ids.is_empty() {
-                // create identifier for event
-                let event_name = format!("{name}_event");
-                let event_id = symbol_table.insert_event(
-                    event_name.clone(),
-                    true,
-                    location.clone(),
-                    errors,
-                )?;
-
-                // create enumeration of events
-                let event_enum_id = symbol_table.insert_event_enum(
-                    enum_name,
-                    event_id,
-                    element_ids,
-                    true,
-                    location.clone(),
-                    errors,
-                )?;
-
-                Some(event_enum_id)
-            } else {
-                None
-            };
 
             // store outputs and get their ids
             let outputs = self
@@ -154,7 +104,7 @@ mod component {
             symbol_table.global();
 
             let _ = symbol_table.insert_node(
-                name, false, inputs, event_enum, outputs, locals, period, location, errors,
+                name, false, inputs, eventful, outputs, locals, period, location, errors,
             )?;
 
             Ok(())
@@ -412,13 +362,7 @@ mod typ {
         fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
             use itertools::*;
             match self {
-                Typ::Any
-                | Typ::Integer
-                | Typ::Float
-                | Typ::Boolean
-                | Typ::Unit
-                | Typ::Time
-                | Typ::ComponentEvent => {
+                Typ::Any | Typ::Integer | Typ::Float | Typ::Boolean | Typ::Unit | Typ::Time => {
                     vec![]
                 }
                 Typ::Enumeration { name, .. } => vec![Import::Enumeration(name.clone())],
@@ -461,8 +405,7 @@ mod typ {
                 | Typ::Structure { .. }
                 | Typ::Any
                 | Typ::Unit
-                | Typ::Time
-                | Typ::ComponentEvent => vec![],
+                | Typ::Time => vec![],
                 Typ::Array(typing, _)
                 | Typ::SMEvent(typing)
                 | Typ::SMTimeout(typing)
@@ -563,7 +506,6 @@ mod typ {
                 Typ::Integer | Typ::Float | Typ::Boolean | Typ::Unit| Typ::Time => Ok(self),
                 Typ::Enumeration { .. }    // no enumeration at this time: they are `NotDefinedYet`
                 | Typ::Structure { .. }    // no structure at this time: they are `NotDefinedYet`
-                | Typ::ComponentEvent      // users can not write `ComponentEvent` type
                 | Typ::Any                 // users can not write `Any` type
                 | Typ::Polymorphism(_)     // users can not write `Polymorphism` type
                 | Typ::Generic(_)          // users can not write `Generic` type

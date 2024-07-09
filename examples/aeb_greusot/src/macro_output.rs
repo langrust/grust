@@ -21,13 +21,9 @@ pub fn brakes(distance: i64, speed: i64) -> Braking {
     };
     response
 }
-pub enum BrakingStateEvent {
-    pedest(Result<i64, ()>),
-    NoEvent,
-}
 pub struct BrakingStateInput {
+    pub pedest: Option<Result<i64, ()>>,
     pub speed: i64,
-    pub braking_state_event: BrakingStateEvent,
 }
 pub struct BrakingStateState {
     mem: Braking,
@@ -39,14 +35,14 @@ impl BrakingStateState {
         }
     }
     #[requires(0i64 <= input.speed && input.speed < 50i64)]
-    #[ensures(forall < p : i64 > BrakingStateEvent :: pedest(Ok(p)) ==
-    input.braking_state_event == > result != Braking :: NoBrake)]
+    #[ensures(forall < p : i64 > Some(Ok(p)) == input.pedest == > result !=
+    Braking :: NoBrake)]
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
         let previous_state = self.mem;
-        let state = match input.braking_state_event {
-            BrakingStateEvent::pedest(Ok(d)) => brakes(d, input.speed),
-            BrakingStateEvent::pedest(Err(())) => Braking::NoBrake,
-            _ => previous_state,
+        let state = match input.pedest {
+            Some(Ok(d)) => brakes(d, input.speed),
+            Some(Err(())) => Braking::NoBrake,
+            None => previous_state,
         };
         self.mem = state;
         state

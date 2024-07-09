@@ -112,15 +112,14 @@ impl Pattern {
                 self.typing = Some(Typ::any());
                 Ok(())
             }
-            Kind::Event {
-                event_element_id,
+            Kind::PresentEvent {
+                event_id,
                 ref mut pattern,
-                ..
             } => {
-                let typing = Typ::component_event();
+                let typing = symbol_table.get_type(event_id).clone();
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
-                match symbol_table.get_type(event_element_id) {
+                match &typing {
                     Typ::SMEvent(expected_type) | Typ::SMTimeout(expected_type) => {
                         pattern.typing(&expected_type.clone(), symbol_table, errors)?
                     }
@@ -130,23 +129,21 @@ impl Pattern {
                 self.typing = Some(typing);
                 Ok(())
             }
-            Kind::TimeoutEvent {
-                event_element_id, ..
-            } => {
-                let typing = Typ::component_event();
+            Kind::TimeoutEvent { event_id } => {
+                let typing = symbol_table.get_type(event_id).clone();
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
-                match symbol_table.get_type(event_element_id) {
-                    Typ::SMEvent(_) => todo!("error, event should be timeout"),
+                match &typing {
                     Typ::SMTimeout(_) => (),
-                    _ => unreachable!(),
+                    _ => panic!("error, should be 'event timeout'"),
                 };
 
                 self.typing = Some(typing);
                 Ok(())
             }
-            Kind::NoEvent { .. } => {
-                self.typing = Some(Typ::component_event());
+            Kind::NoEvent { event_id } => {
+                let typing = symbol_table.get_type(event_id).clone();
+                self.typing = Some(typing);
                 Ok(())
             }
         }
@@ -164,7 +161,7 @@ impl Pattern {
             | Kind::Enumeration { .. }
             | Kind::Some { .. }
             | Kind::NoEvent { .. }
-            | Kind::Event { .. }
+            | Kind::PresentEvent { .. }
             | Kind::TimeoutEvent { .. }
             | Kind::None
             | Kind::Default => {

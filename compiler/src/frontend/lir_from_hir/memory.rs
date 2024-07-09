@@ -4,10 +4,7 @@ prelude! {
     hir::memory::{Buffer, CalledNode, Memory},
     lir::item::{
         import::Import,
-        state_machine::{
-            event::IntoOtherEvent,
-            state::{init::StateElementInit, step::StateElementStep, StateElement},
-        },
+        state_machine::state::{init::StateElementInit, step::StateElementStep, StateElement},
     },
 }
 
@@ -102,37 +99,5 @@ impl Memory {
 
         imports.append(&mut called_node_imports);
         imports
-    }
-
-    /// Get event conversion.
-    pub fn get_event_conversions(&self, symbol_table: &SymbolTable) -> Vec<IntoOtherEvent> {
-        self.called_nodes
-            .values()
-            .filter_map(
-                |CalledNode {
-                     node_id,
-                     inputs_map,
-                 }| {
-                    if symbol_table.has_events(*node_id) {
-                        let intos = IntoOtherEvent {
-                            other_node_name: symbol_table.get_name(*node_id).clone(),
-                            conversions: inputs_map
-                                .iter()
-                                .filter(|(id, _)| symbol_table.get_type(*id).is_event())
-                                .map(|(other_event_id, given_event_id)| {
-                                    (
-                                        symbol_table.get_name(*given_event_id).clone(),
-                                        symbol_table.get_name(*other_event_id).clone(),
-                                    )
-                                })
-                                .collect(),
-                        };
-                        Some(intos)
-                    } else {
-                        None
-                    }
-                },
-            )
-            .collect()
     }
 }

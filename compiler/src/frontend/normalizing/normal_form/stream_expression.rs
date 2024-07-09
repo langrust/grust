@@ -34,7 +34,6 @@ impl stream::Expr {
         symbol_table: &mut SymbolTable,
     ) -> Vec<Stmt<stream::Expr>> {
         match self.kind {
-            stream::Kind::Event { .. } => vec![],
             stream::Kind::FollowedBy {
                 ref mut expression,
                 ref constant,
