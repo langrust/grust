@@ -407,7 +407,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Server::builder()
         .add_service(SlServer::new(SlRuntime))
-        .serve(addr)
+        .serve_with_shutdown(addr, async {
+            tokio::signal::ctrl_c()
+                .await
+                .expect("failed to listen for ctrl_c")
+        })
         .await?;
 
     Ok(())
