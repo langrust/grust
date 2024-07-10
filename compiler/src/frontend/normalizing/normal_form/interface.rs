@@ -18,6 +18,7 @@ impl Interface {
 
 impl Service {
     pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
+        symbol_table.local();
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
         let statements = std::mem::take(&mut self.statements);
         self.statements = statements
@@ -26,6 +27,7 @@ impl Service {
                 flow_statement.normal_form(&mut identifier_creator, symbol_table)
             })
             .collect();
+        symbol_table.global()
     }
 }
 
