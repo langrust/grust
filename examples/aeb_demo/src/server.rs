@@ -3,10 +3,6 @@ mod aeb {
 
     grust! {
         #![dump = "examples/aeb_demo/src/macro_output.rs", demo]
-        import signal car::speed_km_h                   : float;
-        import event  car::detect::left::pedestrian_l   : float;
-        import event  car::detect::right::pedestrian_r  : float;
-        export signal car::urban::braking::brakes       : Braking;
 
         // Branking type
         enum Braking {
@@ -42,13 +38,19 @@ mod aeb {
             let previous_state: Braking = Braking::NoBrake fby state;
         }
 
-        // AEB service
-        let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
-        brakes = braking_state(pedestrian, speed_km_h);
+        service aeb {
+            import signal car::speed_km_h                   : float;
+            import event  car::detect::left::pedestrian_l   : float;
+            import event  car::detect::right::pedestrian_r  : float;
+            export signal car::urban::braking::brakes       : Braking;
+
+            let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
+            brakes = braking_state(pedestrian, speed_km_h);
+        }
     }
 }
 
-use aeb::toto_service::{TotoService, TotoServiceInput, TotoServiceOutput, TotoServiceTimer};
+use aeb::aeb_service::{AebService, AebServiceInput, AebServiceOutput, AebServiceTimer};
 use futures::StreamExt;
 use interface::{
     aeb_server::{Aeb, AebServer},
@@ -71,21 +73,17 @@ lazy_static! {
     static ref INIT : Instant = Instant::now();
 }
 
-fn into_toto_service_input(input: Input) -> Option<TotoServiceInput> {
+fn into_aeb_service_input(input: Input) -> Option<AebServiceInput> {
     match input.message {
-        Some(Message::PedestrianL(Pedestrian { distance })) => {
-            Some(TotoServiceInput::pedestrian_l(
-                distance,
-                INIT.clone() + Duration::from_millis(input.timestamp as u64),
-            ))
-        }
-        Some(Message::PedestrianR(Pedestrian { distance })) => {
-            Some(TotoServiceInput::pedestrian_r(
-                distance,
-                INIT.clone() + Duration::from_millis(input.timestamp as u64),
-            ))
-        }
-        Some(Message::Speed(Speed { value })) => Some(TotoServiceInput::speed_km_h(
+        Some(Message::PedestrianL(Pedestrian { distance })) => Some(AebServiceInput::pedestrian_l(
+            distance,
+            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+        )),
+        Some(Message::PedestrianR(Pedestrian { distance })) => Some(AebServiceInput::pedestrian_r(
+            distance,
+            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+        )),
+        Some(Message::Speed(Speed { value })) => Some(AebServiceInput::speed_km_h(
             value,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
@@ -93,17 +91,17 @@ fn into_toto_service_input(input: Input) -> Option<TotoServiceInput> {
     }
 }
 
-fn from_toto_service_output(output: TotoServiceOutput) -> Result<Output, Status> {
+fn from_aeb_service_output(output: AebServiceOutput) -> Result<Output, Status> {
     match output {
-        TotoServiceOutput::brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
+        AebServiceOutput::brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
             brakes: Braking::UrgentBrake.into(),
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-        TotoServiceOutput::brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
+        AebServiceOutput::brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
             brakes: Braking::SoftBrake.into(),
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-        TotoServiceOutput::brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
+        AebServiceOutput::brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
             brakes: Braking::NoBrake.into(),
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
@@ -115,8 +113,8 @@ pub struct AebRuntime;
 #[tonic::async_trait]
 impl Aeb for AebRuntime {
     type RunAEBStream = futures::stream::Map<
-        futures::channel::mpsc::Receiver<TotoServiceOutput>,
-        fn(TotoServiceOutput) -> Result<Output, Status>,
+        futures::channel::mpsc::Receiver<AebServiceOutput>,
+        fn(AebServiceOutput) -> Result<Output, Status>,
     >;
 
     async fn run_aeb(
@@ -128,22 +126,20 @@ impl Aeb for AebRuntime {
 
         let request_stream = request
             .into_inner()
-            .filter_map(|input| async { input.map(into_toto_service_input).ok().flatten() });
+            .filter_map(|input| async { input.map(into_aeb_service_input).ok().flatten() });
         let timers_stream = timer_stream::<_, _, 10>(timers_stream).map(
-            |(timer, deadline): (TotoServiceTimer, Instant)| {
-                TotoServiceInput::timer(timer, deadline)
-            },
+            |(timer, deadline): (AebServiceTimer, Instant)| AebServiceInput::timer(timer, deadline),
         );
         let input_stream = prio_stream::<_, _, 100>(
             futures::stream::select(request_stream, timers_stream),
-            TotoServiceInput::order,
+            AebServiceInput::order,
         );
 
-        let toto_service = TotoService::new(output_sink, timers_sink);
-        tokio::spawn(toto_service.run_loop(INIT.clone(), input_stream));
+        let aeb_service = AebService::new(output_sink, timers_sink);
+        tokio::spawn(aeb_service.run_loop(INIT.clone(), input_stream));
 
         Ok(Response::new(output_stream.map(
-            from_toto_service_output as fn(TotoServiceOutput) -> Result<Output, Status>,
+            from_aeb_service_output as fn(AebServiceOutput) -> Result<Output, Status>,
         )))
     }
 }

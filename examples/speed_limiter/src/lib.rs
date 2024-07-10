@@ -241,31 +241,33 @@ grust! {
         }
     }
 
-    // # Imports
-    import signal  car::hmi::speed_limiter::activation : ActivationResquest;
-    import signal  car::hmi::speed_limiter::set_speed : float;
-    import signal  car::adas::speed : float;
-    import signal  car::adas::vacuum_brake : VacuumBrakeState;
-    import signal  car::adas::kickdown: KickdownState;
-    import signal  car::adas::vdc: VdcState;
+    service speed_limiter {
+        // # Imports
+        import signal  car::hmi::speed_limiter::activation : ActivationResquest;
+        import signal  car::hmi::speed_limiter::set_speed : float;
+        import signal  car::adas::speed : float;
+        import signal  car::adas::vacuum_brake : VacuumBrakeState;
+        import signal  car::adas::kickdown: KickdownState;
+        import signal  car::adas::vdc: VdcState;
 
-    export signal car::adas::speed_limiter::in_regulation : bool;
-    export signal car::adas::speed_limiter::v_set         : float;
+        export signal car::adas::speed_limiter::in_regulation : bool;
+        export signal car::adas::speed_limiter::v_set         : float;
 
-    let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(set_speed);
-    let (
-        signal state: SpeedLimiter,
-        signal on_state: SpeedLimiterOn,
-        signal in_regulation_aux: bool,
-        signal state_update: bool,
-    ) = speed_limiter(
-        activation,
-        vacuum_brake,
-        kickdown,
-        vdc,
-        speed,
-        v_set,
-    );
-    v_set = v_set_aux;
-    in_regulation = in_regulation_aux;
+        let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(set_speed);
+        let (
+            signal state: SpeedLimiter,
+            signal on_state: SpeedLimiterOn,
+            signal in_regulation_aux: bool,
+            signal state_update: bool,
+        ) = speed_limiter(
+            activation,
+            vacuum_brake,
+            kickdown,
+            vdc,
+            speed,
+            v_set,
+        );
+        v_set = v_set_aux;
+        in_regulation = in_regulation_aux;
+    }
 }

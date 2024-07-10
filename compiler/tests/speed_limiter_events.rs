@@ -224,37 +224,39 @@ fn should_compile_speed_limiter_events() {
             }
         }
 
-        // # Imports
-        import event    car::hmi::speed_limiter::activation : ActivationResquest;
-        import signal   car::hmi::speed_limiter::set_speed  : float;
-        import signal   car::adas::speed                    : float;
-        import signal   car::adas::vacuum_brake             : VacuumBrakeState;
-        import event    car::adas::kickdown                 : Kickdown;
-        import event    car::adas::failure                  : Failure;
-        import signal   car::adas::vdc                      : VdcState;
+        service speed_limiter {
+            // # Imports
+            import event    car::hmi::speed_limiter::activation : ActivationResquest;
+            import signal   car::hmi::speed_limiter::set_speed  : float;
+            import signal   car::adas::speed                    : float;
+            import signal   car::adas::vacuum_brake             : VacuumBrakeState;
+            import event    car::adas::kickdown                 : Kickdown;
+            import event    car::adas::failure                  : Failure;
+            import signal   car::adas::vdc                      : VdcState;
 
-        export event    car::adas::speed_limiter::in_regulation : bool;
-        export signal   car::adas::speed_limiter::v_set         : float;
+            export event    car::adas::speed_limiter::in_regulation : bool;
+            export signal   car::adas::speed_limiter::v_set         : float;
 
-        let event changed_set_speed: float = on_change(throttle(set_speed, 1.0));
+            let event changed_set_speed: float = on_change(throttle(set_speed, 1.0));
 
-        let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(changed_set_speed);
-        let (
-            signal state: SpeedLimiter,
-            signal on_state: SpeedLimiterOn,
-            signal in_regulation_aux: bool,
-            signal state_update: bool,
-        ) = speed_limiter(
-            activation,
-            vacuum_brake,
-            kickdown,
-            failure,
-            vdc,
-            speed,
-            v_set,
-        );
-        v_set = v_set_aux;
-        in_regulation = scan(in_regulation_aux, 10);
+            let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(changed_set_speed);
+            let (
+                signal state: SpeedLimiter,
+                signal on_state: SpeedLimiterOn,
+                signal in_regulation_aux: bool,
+                signal state_update: bool,
+            ) = speed_limiter(
+                activation,
+                vacuum_brake,
+                kickdown,
+                failure,
+                vdc,
+                speed,
+                v_set,
+            );
+            v_set = v_set_aux;
+            in_regulation = scan(in_regulation_aux, 10);
+        }
     };
     let tokens = compiler::into_token_stream(ast);
     if let Some(path) = conf::dump_code() {
