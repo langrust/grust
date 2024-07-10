@@ -1,6 +1,7 @@
 // Synchronous state machines keywords.
 syn::custom_keyword!(component);
 syn::custom_keyword!(function);
+syn::custom_keyword!(service);
 
 // Period keywords.
 syn::custom_keyword!(ms);

@@ -580,3 +580,59 @@ impl Parse for FlowStatement {
         }
     }
 }
+
+/// GRust service AST.
+pub struct Service {
+    pub service_token: keyword::service,
+    /// Service identifier.
+    pub ident: syn::Ident,
+    pub brace: token::Brace,
+    /// Service's flow statements.
+    pub flow_statements: Vec<FlowStatement>,
+}
+impl Service {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::service)
+    }
+}
+impl Parse for Service {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let service_token: keyword::service = input.parse()?;
+        let ident: syn::Ident = input.parse()?;
+        let content;
+        let brace: token::Brace = syn::braced!(content in input);
+        let flow_statements: Vec<FlowStatement> = {
+            let mut flow_statements = vec![];
+            while !content.is_empty() {
+                flow_statements.push(content.parse()?)
+            }
+            flow_statements
+        };
+        Ok(Service {
+            service_token,
+            ident,
+            brace,
+            flow_statements,
+        })
+    }
+}
+
+#[cfg(test)]
+mod parse_service {
+    use super::*;
+
+    #[test]
+    fn should_parse_service() {
+        let _: Service = syn::parse_quote! {
+            service aeb {
+                import signal car::speed_km_h                   : float;
+                import event  car::detect::left::pedestrian_l   : float;
+                import event  car::detect::right::pedestrian_r  : float;
+                export signal car::urban::braking::brakes       : Braking;
+
+                let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
+                brakes = braking_state(pedestrian, speed_km_h);
+            }
+        };
+    }
+}
