@@ -50,14 +50,15 @@ fn should_compile_aeb() {
             }
         }
 
-        import signal car::speed_km_h                   : float;
-        import event  car::detect::left::pedestrian_l   : float;
-        import event  car::detect::right::pedestrian_r  : float;
-        export signal car::urban::braking::brakes       : Braking;
+        service aeb {
+            import signal car::speed_km_h                   : float;
+            import event  car::detect::left::pedestrian_l   : float;
+            import event  car::detect::right::pedestrian_r  : float;
+            export signal car::urban::braking::brakes       : Braking;
 
-        let event pedestrian: timeout(float) = timeout(pedestrian_l, 500);
-        brakes = braking_state(pedestrian, speed_km_h);
-
+            let event pedestrian: timeout(float) = timeout(pedestrian_l, 500);
+            brakes = braking_state(pedestrian, speed_km_h);
+        }
     };
     let tokens = compiler::into_token_stream(ast);
     if let Some(path) = conf::dump_code() {

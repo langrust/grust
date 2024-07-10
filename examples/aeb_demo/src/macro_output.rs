@@ -57,17 +57,17 @@ impl Context {
         }
     }
 }
-pub mod toto_service {
+pub mod aeb_service {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    use TotoServiceInput as I;
-    use TotoServiceOutput as O;
-    use TotoServiceTimer as T;
+    use AebServiceInput as I;
+    use AebServiceOutput as O;
+    use AebServiceTimer as T;
     #[derive(PartialEq)]
-    pub enum TotoServiceTimer {
+    pub enum AebServiceTimer {
         timeout_fresh_ident,
     }
-    impl timer_stream::Timing for TotoServiceTimer {
+    impl timer_stream::Timing for AebServiceTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::timeout_fresh_ident => std::time::Duration::from_millis(2000u64),
@@ -79,21 +79,21 @@ pub mod toto_service {
             }
         }
     }
-    pub enum TotoServiceInput {
+    pub enum AebServiceInput {
         speed_km_h(f64, std::time::Instant),
         pedestrian_l(f64, std::time::Instant),
         pedestrian_r(f64, std::time::Instant),
         timer(T, std::time::Instant),
     }
-    impl priority_stream::Reset for TotoServiceInput {
+    impl priority_stream::Reset for AebServiceInput {
         fn do_reset(&self) -> bool {
             match self {
-                TotoServiceInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
+                AebServiceInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
                 _ => false,
             }
         }
     }
-    impl PartialEq for TotoServiceInput {
+    impl PartialEq for AebServiceInput {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
                 (I::speed_km_h(this, _), I::speed_km_h(other, _)) => this.eq(other),
@@ -104,7 +104,7 @@ pub mod toto_service {
             }
         }
     }
-    impl TotoServiceInput {
+    impl AebServiceInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
                 I::speed_km_h(_, instant) => *instant,
@@ -117,23 +117,23 @@ pub mod toto_service {
             v1.get_instant().cmp(&v2.get_instant())
         }
     }
-    pub enum TotoServiceOutput {
+    pub enum AebServiceOutput {
         brakes(Braking, std::time::Instant),
     }
-    pub struct TotoService {
+    pub struct AebService {
         context: Context,
         braking_state: BrakingStateState,
         output: futures::channel::mpsc::Sender<O>,
         timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
-    impl TotoService {
+    impl AebService {
         pub fn new(
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
-        ) -> TotoService {
+        ) -> AebService {
             let context = Context::init();
             let braking_state = BrakingStateState::init();
-            TotoService {
+            AebService {
                 context,
                 braking_state,
                 output,
@@ -162,40 +162,16 @@ pub mod toto_service {
                     {
                         match input
                         {
-                            I :: speed_km_h(speed_km_h, instant) =>
-                            service.handle_speed_km_h(instant, speed_km_h).await, I ::
-                            pedestrian_r(pedestrian_r, instant) =>
-                            service.handle_pedestrian_r(instant, pedestrian_r).await, I
-                            :: timer(T :: timeout_fresh_ident, instant) =>
+                            I :: timer(T :: timeout_fresh_ident, instant) =>
                             service.handle_timeout_fresh_ident(instant).await, I ::
                             pedestrian_l(pedestrian_l, instant) =>
-                            service.handle_pedestrian_l(instant, pedestrian_l).await
+                            service.handle_pedestrian_l(instant, pedestrian_l).await, I
+                            :: speed_km_h(speed_km_h, instant) =>
+                            service.handle_speed_km_h(instant, speed_km_h).await, I ::
+                            pedestrian_r(pedestrian_r, instant) =>
+                            service.handle_pedestrian_r(instant, pedestrian_r).await
                         }
                     } else { break; }
-                }
-            }
-        }
-        async fn handle_speed_km_h(&mut self, instant: std::time::Instant, speed_km_h: f64) {
-            self.context.speed_km_h = speed_km_h;
-        }
-        async fn handle_pedestrian_r(&mut self, instant: std::time::Instant, pedestrian_r: f64) {
-            let flow_expression_fresh_ident = pedestrian_r;
-            let pedestrian = Ok(flow_expression_fresh_ident);
-            {
-                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            let brakes = self
-                .braking_state
-                .step(self.context.get_braking_state_inputs(Some(pedestrian)));
-            self.context.brakes = brakes;
-            let brakes = self.context.brakes;
-            {
-                let res = self.output.send(O::brakes(brakes, instant)).await;
-                if res.is_err() {
-                    return;
                 }
             }
         }
@@ -221,6 +197,30 @@ pub mod toto_service {
         }
         async fn handle_pedestrian_l(&mut self, instant: std::time::Instant, pedestrian_l: f64) {
             let flow_expression_fresh_ident = pedestrian_l;
+            let pedestrian = Ok(flow_expression_fresh_ident);
+            {
+                let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            let brakes = self
+                .braking_state
+                .step(self.context.get_braking_state_inputs(Some(pedestrian)));
+            self.context.brakes = brakes;
+            let brakes = self.context.brakes;
+            {
+                let res = self.output.send(O::brakes(brakes, instant)).await;
+                if res.is_err() {
+                    return;
+                }
+            }
+        }
+        async fn handle_speed_km_h(&mut self, instant: std::time::Instant, speed_km_h: f64) {
+            self.context.speed_km_h = speed_km_h;
+        }
+        async fn handle_pedestrian_r(&mut self, instant: std::time::Instant, pedestrian_r: f64) {
+            let flow_expression_fresh_ident = pedestrian_r;
             let pedestrian = Ok(flow_expression_fresh_ident);
             {
                 let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
