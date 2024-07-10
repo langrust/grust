@@ -28,17 +28,19 @@ impl Interface {
             return Default::default();
         }
 
-        let mut flows_context = self.get_flows_context(symbol_table);
         let services_loops = self
             .services
             .into_iter()
-            .map(|service| service.lir_from_hir(&mut flows_context, symbol_table))
+            .map(|service| service.lir_from_hir(symbol_table))
             .collect();
 
-        ExecutionMachine {
-            flows_context,
-            services_loops,
-        }
+        ExecutionMachine { services_loops }
+    }
+}
+
+impl Service {
+    pub fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> ServiceLoop {
+        self.get_service_loop(symbol_table)
     }
 
     fn get_flows_context(&self, symbol_table: &SymbolTable) -> FlowsContext {
@@ -46,33 +48,15 @@ impl Interface {
             elements: Default::default(),
             components: Default::default(),
         };
-        self.services
-            .iter()
-            .for_each(|service| service.add_in_context(&mut flows_context, symbol_table));
-        flows_context
-    }
-}
-
-impl Service {
-    pub fn lir_from_hir(
-        self,
-        flows_context: &mut FlowsContext,
-        symbol_table: &mut SymbolTable,
-    ) -> ServiceLoop {
-        self.get_service_loop(symbol_table, flows_context)
-    }
-
-    fn add_in_context(&self, flows_context: &mut FlowsContext, symbol_table: &SymbolTable) {
         self.statements
             .iter()
-            .for_each(|statement| statement.add_flows_context(flows_context, symbol_table));
+            .for_each(|statement| statement.add_flows_context(&mut flows_context, symbol_table));
+        flows_context
     }
 
-    fn get_service_loop(
-        mut self,
-        symbol_table: &mut SymbolTable,
-        flows_context: &mut FlowsContext,
-    ) -> ServiceLoop {
+    fn get_service_loop(mut self, symbol_table: &mut SymbolTable) -> ServiceLoop {
+        symbol_table.local();
+        let mut flows_context = self.get_flows_context(symbol_table);
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
 
         // collects components, input flows, output flows, timing events that are present in the service
@@ -254,7 +238,7 @@ impl Service {
         let mut propag_builder = PropagationBuilder::new(
             &self,
             symbol_table,
-            flows_context,
+            &flows_context,
             on_change_events,
             timing_events,
         );
@@ -295,6 +279,8 @@ impl Service {
             })
             .collect();
 
+        symbol_table.global();
+
         ServiceLoop {
             service: symbol_table.get_name(self.id).to_string(),
             components,
@@ -302,6 +288,7 @@ impl Service {
             timing_events: timers,
             output_flows: output_flows.into_iter().unzip::<_, _, Vec<_>, _>().1,
             flows_handling,
+            flows_context,
         }
     }
 }

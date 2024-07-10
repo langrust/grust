@@ -3,7 +3,10 @@ prelude! {
     syn::*,
     quote::format_ident,
     backend::rust_ast_from_lir::{
-        item::execution_machine::instruction_flow::rust_ast_from_lir as instruction_flow_rust_ast_from_lir,
+        item::execution_machine::{
+            flows_context::rust_ast_from_lir as flows_context_rust_ast_from_lir,
+            instruction_flow::rust_ast_from_lir as instruction_flow_rust_ast_from_lir
+        },
         r#type::rust_ast_from_lir as type_rust_ast_from_lir,
     },
     lir::item::execution_machine::service_loop::{
@@ -20,10 +23,11 @@ pub fn rust_ast_from_lir(run_loop: ServiceLoop) -> Item {
         timing_events,
         output_flows,
         flows_handling,
+        flows_context,
     } = run_loop;
 
     // result
-    let mut items = vec![];
+    let mut items = flows_context_rust_ast_from_lir(flows_context);
 
     // create service structure
     let mut timer_variants: Vec<Variant> = vec![];

@@ -46,10 +46,3 @@ impl TestState {
         y
     }
 }
-#[derive(Clone, Copy, PartialEq, Default)]
-pub struct Context {}
-impl Context {
-    fn init() -> Context {
-        Default::default()
-    }
-}

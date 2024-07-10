@@ -1,4 +1,6 @@
-prelude! {}
+prelude! {
+    item::execution_machine::flows_context::FlowsContext
+}
 
 #[derive(Debug, PartialEq)]
 pub struct ServiceLoop {
@@ -14,6 +16,8 @@ pub struct ServiceLoop {
     pub output_flows: Vec<InterfaceFlow>,
     /// The flows handling.
     pub flows_handling: Vec<FlowHandler>,
+    /// The signals context from where components will get their inputs.
+    pub flows_context: FlowsContext,
 }
 
 /// A flow structure.

@@ -333,48 +333,48 @@ impl SpeedLimiterState {
         (state, on_state, in_regulation, state_update)
     }
 }
-#[derive(Clone, Copy, PartialEq, Default)]
-pub struct Context {
-    pub state_update: bool,
-    pub v_update: bool,
-    pub activation: ActivationResquest,
-    pub kickdown: KickdownState,
-    pub vdc: VdcState,
-    pub set_speed: f64,
-    pub v_set_aux: f64,
-    pub speed: f64,
-    pub v_set: f64,
-    pub in_regulation_aux: bool,
-    pub vacuum_brake: VacuumBrakeState,
-    pub on_state: SpeedLimiterOn,
-    pub state: SpeedLimiter,
-}
-impl Context {
-    fn init() -> Context {
-        Default::default()
-    }
-    fn get_process_set_speed_inputs(&self) -> ProcessSetSpeedInput {
-        ProcessSetSpeedInput {
-            set_speed: self.set_speed,
-        }
-    }
-    fn get_speed_limiter_inputs(&self) -> SpeedLimiterInput {
-        SpeedLimiterInput {
-            activation_req: self.activation,
-            vacuum_brake_state: self.vacuum_brake,
-            kickdown: self.kickdown,
-            vdc_disabled: self.vdc,
-            speed: self.speed,
-            v_set: self.v_set,
-        }
-    }
-}
 pub mod speed_limiter_service {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
     use SpeedLimiterServiceInput as I;
     use SpeedLimiterServiceOutput as O;
     use SpeedLimiterServiceTimer as T;
+    #[derive(Clone, Copy, PartialEq, Default)]
+    pub struct Context {
+        pub state_update: bool,
+        pub v_update: bool,
+        pub activation: ActivationResquest,
+        pub kickdown: KickdownState,
+        pub vdc: VdcState,
+        pub set_speed: f64,
+        pub v_set_aux: f64,
+        pub speed: f64,
+        pub v_set: f64,
+        pub in_regulation_aux: bool,
+        pub vacuum_brake: VacuumBrakeState,
+        pub on_state: SpeedLimiterOn,
+        pub state: SpeedLimiter,
+    }
+    impl Context {
+        fn init() -> Context {
+            Default::default()
+        }
+        fn get_process_set_speed_inputs(&self) -> ProcessSetSpeedInput {
+            ProcessSetSpeedInput {
+                set_speed: self.set_speed,
+            }
+        }
+        fn get_speed_limiter_inputs(&self) -> SpeedLimiterInput {
+            SpeedLimiterInput {
+                activation_req: self.activation,
+                vacuum_brake_state: self.vacuum_brake,
+                kickdown: self.kickdown,
+                vdc_disabled: self.vdc,
+                speed: self.speed,
+                v_set: self.v_set,
+            }
+        }
+    }
     #[derive(PartialEq)]
     pub enum SpeedLimiterServiceTimer {
         period_fresh_ident,
