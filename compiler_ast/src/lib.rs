@@ -30,8 +30,8 @@ pub enum Item {
     Function(Function),
     /// GRust typedef.
     Typedef(Typedef),
-    /// GRust FRP flow statement.
-    FlowStatement(interface::FlowStatement),
+    /// GRust service.
+    Service(Service),
 }
 impl Parse for Item {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -42,7 +42,7 @@ impl Parse for Item {
         } else if Typedef::peek(input) {
             Ok(Item::Typedef(input.parse()?))
         } else {
-            Ok(Item::FlowStatement(input.parse()?))
+            Ok(Item::Service(input.parse()?))
         }
     }
 }
