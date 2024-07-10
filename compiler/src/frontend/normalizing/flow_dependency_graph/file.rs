@@ -3,9 +3,9 @@ prelude! { just
 }
 
 impl File {
-    /// Generate dependency graph for every nodes/component.
+    /// Generate dependency graphs for the interface.
     #[inline]
     pub fn generate_flows_dependency_graphs(&mut self) {
-        self.interface.compute_dependencies()
+        self.interface.generate_flows_dependency_graphs()
     }
 }

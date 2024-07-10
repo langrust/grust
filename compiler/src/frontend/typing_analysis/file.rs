@@ -26,9 +26,15 @@ impl TypeAnalysis for File {
 
         // typing interface
         interface
-            .statements
+            .services
             .iter_mut()
-            .map(|statement| statement.typing(symbol_table, errors))
+            .map(|service| {
+                service
+                    .statements
+                    .iter_mut()
+                    .map(|statement| statement.typing(symbol_table, errors))
+                    .collect::<TRes<()>>()
+            })
             .collect::<TRes<()>>()
     }
 }

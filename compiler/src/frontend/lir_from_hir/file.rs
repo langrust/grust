@@ -14,27 +14,27 @@ impl File {
             ..
         } = self;
 
-        let mut typedefs = typedefs
+        let mut items = vec![];
+
+        let typedefs = typedefs
             .into_iter()
-            .map(|typedef| typedef.lir_from_hir(&symbol_table))
-            .collect();
-        let mut functions = functions
+            .map(|typedef| typedef.lir_from_hir(&symbol_table));
+        items.extend(typedefs);
+
+        let functions = functions
             .into_iter()
             .map(|function| function.lir_from_hir(&symbol_table))
-            .map(Item::Function)
-            .collect();
-        let mut state_machines = nodes
+            .map(Item::Function);
+        items.extend(functions);
+
+        let state_machines = nodes
             .into_iter()
             .map(|node| node.lir_from_hir(&symbol_table))
-            .map(Item::StateMachine)
-            .collect();
-        let execution_machine = interface.lir_from_hir(&mut symbol_table);
+            .map(Item::StateMachine);
+        items.extend(state_machines);
 
-        let mut items = vec![];
-        items.append(&mut typedefs);
-        items.append(&mut functions);
-        items.append(&mut state_machines);
-        items.push(Item::ExecutionMachine(execution_machine));
+        let execution_machines = interface.lir_from_hir(&mut symbol_table);
+        items.push(Item::ExecutionMachine(execution_machines));
 
         Project { items }
     }
