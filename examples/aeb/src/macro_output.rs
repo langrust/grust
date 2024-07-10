@@ -41,28 +41,31 @@ impl BrakingStateState {
         state
     }
 }
-#[derive(Clone, Copy, PartialEq, Default)]
-pub struct Context {
-    pub brakes: Braking,
-    pub speed_km_h: f64,
-}
-impl Context {
-    fn init() -> Context {
-        Default::default()
-    }
-    fn get_braking_state_inputs(&self, pedestrian: Option<Result<f64, ()>>) -> BrakingStateInput {
-        BrakingStateInput {
-            speed: self.speed_km_h,
-            pedest: pedestrian,
-        }
-    }
-}
 pub mod aeb_service {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
     use AebServiceInput as I;
     use AebServiceOutput as O;
     use AebServiceTimer as T;
+    #[derive(Clone, Copy, PartialEq, Default)]
+    pub struct Context {
+        pub brakes: Braking,
+        pub speed_km_h: f64,
+    }
+    impl Context {
+        fn init() -> Context {
+            Default::default()
+        }
+        fn get_braking_state_inputs(
+            &self,
+            pedestrian: Option<Result<f64, ()>>,
+        ) -> BrakingStateInput {
+            BrakingStateInput {
+                speed: self.speed_km_h,
+                pedest: pedestrian,
+            }
+        }
+    }
     #[derive(PartialEq)]
     pub enum AebServiceTimer {
         timeout_fresh_ident,

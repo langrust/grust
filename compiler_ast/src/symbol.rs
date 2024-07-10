@@ -125,7 +125,9 @@ impl Symbol {
             SymbolKind::Node { .. } => SymbolKey::Node {
                 name: self.name.clone(),
             },
-            SymbolKind::Service => SymbolKey::Service,
+            SymbolKind::Service => SymbolKey::Service {
+                name: self.name.clone(),
+            },
             SymbolKind::Structure { .. } => SymbolKey::Structure {
                 name: self.name.clone(),
             },
@@ -153,7 +155,7 @@ pub enum SymbolKey {
     Function { name: String },
     Node { name: String },
     Structure { name: String },
-    Service,
+    Service { name: String },
     Enumeration { name: String },
     EnumerationElement { name: String, enum_name: String },
     Array { name: String },
