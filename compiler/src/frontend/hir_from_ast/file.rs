@@ -21,31 +21,30 @@ impl HIRFromAST for Ast {
 
         let Ast { items } = self;
 
-        let (typedefs, functions, nodes, flow_statements) = items.into_iter().fold(
+        let (typedefs, functions, nodes, services) = items.into_iter().fold(
             (vec![], vec![], vec![], vec![]),
-            |(mut typedefs, mut functions, mut nodes, mut flow_statements), item| match item {
+            |(mut typedefs, mut functions, mut nodes, mut services), item| match item {
                 ast::Item::Component(component) => {
                     nodes.push(component.hir_from_ast(symbol_table, errors));
-                    (typedefs, functions, nodes, flow_statements)
+                    (typedefs, functions, nodes, services)
                 }
                 ast::Item::Function(function) => {
                     functions.push(function.hir_from_ast(symbol_table, errors));
-                    (typedefs, functions, nodes, flow_statements)
+                    (typedefs, functions, nodes, services)
                 }
                 ast::Item::Typedef(typedef) => {
                     typedefs.push(typedef.hir_from_ast(symbol_table, errors));
-                    (typedefs, functions, nodes, flow_statements)
+                    (typedefs, functions, nodes, services)
                 }
-                ast::Item::FlowStatement(flow_statement) => {
-                    flow_statements.push(flow_statement.hir_from_ast(symbol_table, errors));
-                    (typedefs, functions, nodes, flow_statements)
+                ast::Item::Service(service) => {
+                    services.push(service.hir_from_ast(symbol_table, errors));
+                    (typedefs, functions, nodes, services)
                 }
             },
         );
 
         let interface = Interface {
-            statements: flow_statements.into_iter().collect::<TRes<Vec<_>>>()?,
-            graph: Default::default(),
+            services: services.into_iter().collect::<TRes<Vec<_>>>()?,
         };
 
         Ok(hir::File {

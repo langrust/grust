@@ -52,6 +52,8 @@ pub enum SymbolKind {
         /// Node's periodic timer identifier.
         period_id: Option<usize>,
     },
+    /// Service kind.
+    Service,
     /// Structure kind.
     Structure {
         /// The structure's fields: a field has an identifier and a type.
@@ -123,6 +125,7 @@ impl Symbol {
             SymbolKind::Node { .. } => SymbolKey::Node {
                 name: self.name.clone(),
             },
+            SymbolKind::Service => SymbolKey::Service,
             SymbolKind::Structure { .. } => SymbolKey::Structure {
                 name: self.name.clone(),
             },
@@ -150,6 +153,7 @@ pub enum SymbolKey {
     Function { name: String },
     Node { name: String },
     Structure { name: String },
+    Service,
     Enumeration { name: String },
     EnumerationElement { name: String, enum_name: String },
     Array { name: String },
@@ -472,6 +476,22 @@ impl SymbolTable {
                 period,
                 period_id: None,
             },
+            name,
+        };
+
+        self.insert_symbol(symbol, local, location, errors)
+    }
+
+    /// Insert service in symbol table.
+    pub fn insert_service(
+        &mut self,
+        name: String,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        let symbol = Symbol {
+            kind: SymbolKind::Service,
             name,
         };
 
