@@ -127,10 +127,10 @@ impl Aeb for AebRuntime {
         let request_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_aeb_service_input).ok().flatten() });
-        let timers_stream = timer_stream::<_, _, 10>(timers_stream).map(
+        let timers_stream = timer_stream::<_, _, 1>(timers_stream).map(
             |(timer, deadline): (AebServiceTimer, Instant)| AebServiceInput::timer(timer, deadline),
         );
-        let input_stream = prio_stream::<_, _, 100>(
+        let input_stream = prio_stream::<_, _, 3>(
             futures::stream::select(request_stream, timers_stream),
             AebServiceInput::order,
         );

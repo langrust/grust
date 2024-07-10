@@ -386,12 +386,12 @@ impl Sl for SlRuntime {
         let request_stream = request.into_inner().filter_map(|input| async {
             input.map(into_speed_limiter_service_input).ok().flatten()
         });
-        let timers_stream = timer_stream::<_, _, 10>(timers_stream).map(
+        let timers_stream = timer_stream::<_, _, 1>(timers_stream).map(
             |(timer, deadline): (SpeedLimiterServiceTimer, Instant)| {
                 SpeedLimiterServiceInput::timer(timer, deadline)
             },
         );
-        let input_stream = prio_stream::<_, _, 100>(
+        let input_stream = prio_stream::<_, _, 7>(
             futures::stream::select(request_stream, timers_stream),
             SpeedLimiterServiceInput::order,
         );
