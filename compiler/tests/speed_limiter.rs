@@ -19,7 +19,7 @@ fn should_compile_speed_limiter() {
         }
 
         // Enumerates the kinds of activation resquests.
-        enum ActivationResquest { Off, On, Initialization, StandBy }
+        enum ActivationRequest { Off, On, Initialization, StandBy }
 
         // Vehicle dynamic control states.
         enum VdcState { On, Off }
@@ -81,40 +81,40 @@ fn should_compile_speed_limiter() {
         // # Transition tests functions
 
         // Speed limiter 'Off' condition.
-        function off_condition(activation_req: ActivationResquest, vdc_disabled: VdcState) -> bool {
-            return activation_req == ActivationResquest::Off || vdc_disabled == VdcState::Off;
+        function off_condition(activation_req: ActivationRequest, vdc_disabled: VdcState) -> bool {
+            return activation_req == ActivationRequest::Off || vdc_disabled == VdcState::Off;
         }
 
         // Speed limiter 'On' condition.
-        function on_condition(activation_req: ActivationResquest) -> bool {
-            return activation_req == ActivationResquest::On || activation_req == ActivationResquest::Initialization;
+        function on_condition(activation_req: ActivationRequest) -> bool {
+            return activation_req == ActivationRequest::On || activation_req == ActivationRequest::Initialization;
         }
 
         // Speed limiter 'Activation' condition.
-        function activation_condition(activation_req: ActivationResquest, vacuum_brake_state: VacuumBrakeState, v_set: float) -> bool {
-            return activation_req == ActivationResquest::On
+        function activation_condition(activation_req: ActivationRequest, vacuum_brake_state: VacuumBrakeState, v_set: float) -> bool {
+            return activation_req == ActivationRequest::On
                 && vacuum_brake_state != VacuumBrakeState::BelowMinLevel
                 && v_set > 0.0;
         }
 
         // Speed limiter 'Exit Override' condition.
-        function exit_override_condition(activation_req: ActivationResquest, kickdown: KickdownState, v_set: float, speed: float) -> bool {
+        function exit_override_condition(activation_req: ActivationRequest, kickdown: KickdownState, v_set: float, speed: float) -> bool {
             return on_condition(activation_req) && kickdown != KickdownState::Activated && speed <= v_set;
         }
 
         // Speed limiter 'Involuntary Override' condition.
-        function involuntary_override_condition(activation_req: ActivationResquest, kickdown: KickdownState, v_set: float, speed: float) -> bool {
+        function involuntary_override_condition(activation_req: ActivationRequest, kickdown: KickdownState, v_set: float, speed: float) -> bool {
             return on_condition(activation_req) && kickdown != KickdownState::Activated && speed > v_set;
         }
 
         // Speed limiter 'Voluntary Override' condition.
-        function voluntary_override_condition(activation_req: ActivationResquest, kickdown: KickdownState) -> bool {
+        function voluntary_override_condition(activation_req: ActivationRequest, kickdown: KickdownState) -> bool {
             return on_condition(activation_req) && kickdown == KickdownState::Activated;
         }
 
         // Speed limiter 'StandBy' condition.
-        function standby_condition(activation_req: ActivationResquest, vacuum_brake_state: VacuumBrakeState, v_set: float) -> bool {
-            return activation_req == ActivationResquest::StandBy
+        function standby_condition(activation_req: ActivationRequest, vacuum_brake_state: VacuumBrakeState, v_set: float) -> bool {
+            return activation_req == ActivationRequest::StandBy
                 || vacuum_brake_state == VacuumBrakeState::BelowMinLevel
                 || v_set <= 0.0;
         }
@@ -130,7 +130,7 @@ fn should_compile_speed_limiter() {
 
         // Speed limiter state machine.
         component speed_limiter(
-            activation_req: ActivationResquest,
+            activation_req: ActivationRequest,
             vacuum_brake_state: VacuumBrakeState,
             kickdown: KickdownState,
             vdc_disabled: VdcState,
@@ -195,7 +195,7 @@ fn should_compile_speed_limiter() {
         // Speed limiter 'On' state machine.
         component speed_limiter_on(
             prev_on_state: SpeedLimiterOn,
-            activation_req: ActivationResquest,
+            activation_req: ActivationRequest,
             vacuum_brake_state: VacuumBrakeState,
             kickdown: KickdownState,
             speed: float,
@@ -244,7 +244,7 @@ fn should_compile_speed_limiter() {
 
         service speed_limiter {
             // # Imports
-            import signal  car::hmi::speed_limiter::activation : ActivationResquest;
+            import signal  car::hmi::speed_limiter::activation : ActivationRequest;
             import signal  car::hmi::speed_limiter::set_speed : float;
             import signal  car::adas::speed : float;
             import signal  car::adas::vacuum_brake : VacuumBrakeState;

@@ -4,7 +4,7 @@ pub struct Hysterisis {
     pub flag: bool,
 }
 #[derive(Clone, Copy, PartialEq, Default)]
-pub enum ActivationResquest {
+pub enum ActivationRequest {
     #[default]
     Off,
     On,
@@ -79,23 +79,23 @@ pub fn threshold_set_speed(set_speed: f64) -> f64 {
     let grounded_speed = if set_speed < 10.0 { 10.0 } else { ceiled_speed };
     grounded_speed
 }
-pub fn off_condition(activation_req: ActivationResquest, vdc_disabled: VdcState) -> bool {
-    activation_req == ActivationResquest::Off || vdc_disabled == VdcState::Off
+pub fn off_condition(activation_req: ActivationRequest, vdc_disabled: VdcState) -> bool {
+    activation_req == ActivationRequest::Off || vdc_disabled == VdcState::Off
 }
-pub fn on_condition(activation_req: ActivationResquest) -> bool {
-    activation_req == ActivationResquest::On || activation_req == ActivationResquest::Initialization
+pub fn on_condition(activation_req: ActivationRequest) -> bool {
+    activation_req == ActivationRequest::On || activation_req == ActivationRequest::Initialization
 }
 pub fn activation_condition(
-    activation_req: ActivationResquest,
+    activation_req: ActivationRequest,
     vacuum_brake_state: VacuumBrakeState,
     v_set: f64,
 ) -> bool {
-    activation_req == ActivationResquest::On
+    activation_req == ActivationRequest::On
         && vacuum_brake_state != VacuumBrakeState::BelowMinLevel
         && v_set > 0.0
 }
 pub fn exit_override_condition(
-    activation_req: ActivationResquest,
+    activation_req: ActivationRequest,
     kickdown: KickdownState,
     v_set: f64,
     speed: f64,
@@ -103,7 +103,7 @@ pub fn exit_override_condition(
     on_condition(activation_req) && kickdown != KickdownState::Activated && speed <= v_set
 }
 pub fn involuntary_override_condition(
-    activation_req: ActivationResquest,
+    activation_req: ActivationRequest,
     kickdown: KickdownState,
     v_set: f64,
     speed: f64,
@@ -111,17 +111,17 @@ pub fn involuntary_override_condition(
     on_condition(activation_req) && kickdown != KickdownState::Activated && speed > v_set
 }
 pub fn voluntary_override_condition(
-    activation_req: ActivationResquest,
+    activation_req: ActivationRequest,
     kickdown: KickdownState,
 ) -> bool {
     on_condition(activation_req) && kickdown == KickdownState::Activated
 }
 pub fn standby_condition(
-    activation_req: ActivationResquest,
+    activation_req: ActivationRequest,
     vacuum_brake_state: VacuumBrakeState,
     v_set: f64,
 ) -> bool {
-    activation_req == ActivationResquest::StandBy
+    activation_req == ActivationRequest::StandBy
         || vacuum_brake_state == VacuumBrakeState::BelowMinLevel
         || v_set <= 0.0
 }
@@ -145,7 +145,7 @@ impl ProcessSetSpeedState {
 }
 pub struct SpeedLimiterOnInput {
     pub prev_on_state: SpeedLimiterOn,
-    pub activation_req: ActivationResquest,
+    pub activation_req: ActivationRequest,
     pub vacuum_brake_state: VacuumBrakeState,
     pub kickdown: KickdownState,
     pub speed: f64,
@@ -245,7 +245,7 @@ impl SpeedLimiterOnState {
     }
 }
 pub struct SpeedLimiterInput {
-    pub activation_req: ActivationResquest,
+    pub activation_req: ActivationRequest,
     pub vacuum_brake_state: VacuumBrakeState,
     pub kickdown: KickdownState,
     pub vdc_disabled: VdcState,
@@ -343,7 +343,7 @@ pub mod speed_limiter_service {
     pub struct Context {
         pub state_update: bool,
         pub v_update: bool,
-        pub activation: ActivationResquest,
+        pub activation: ActivationRequest,
         pub kickdown: KickdownState,
         pub vdc: VdcState,
         pub set_speed: f64,
@@ -392,7 +392,7 @@ pub mod speed_limiter_service {
         }
     }
     pub enum SpeedLimiterServiceInput {
-        activation(ActivationResquest, std::time::Instant),
+        activation(ActivationRequest, std::time::Instant),
         set_speed(f64, std::time::Instant),
         speed(f64, std::time::Instant),
         vacuum_brake(VacuumBrakeState, std::time::Instant),
@@ -521,7 +521,7 @@ pub mod speed_limiter_service {
         async fn handle_activation(
             &mut self,
             instant: std::time::Instant,
-            activation: ActivationResquest,
+            activation: ActivationRequest,
         ) {
             self.context.activation = activation;
         }
@@ -583,7 +583,7 @@ pub mod another_speed_limiter_service {
     pub struct Context {
         pub state_update: bool,
         pub v_update: bool,
-        pub activation: ActivationResquest,
+        pub activation: ActivationRequest,
         pub kickdown: KickdownState,
         pub vdc: VdcState,
         pub set_speed: f64,
@@ -632,7 +632,7 @@ pub mod another_speed_limiter_service {
         }
     }
     pub enum AnotherSpeedLimiterServiceInput {
-        activation(ActivationResquest, std::time::Instant),
+        activation(ActivationRequest, std::time::Instant),
         set_speed(f64, std::time::Instant),
         speed(f64, std::time::Instant),
         vacuum_brake(VacuumBrakeState, std::time::Instant),
@@ -810,7 +810,7 @@ pub mod another_speed_limiter_service {
         async fn handle_activation(
             &mut self,
             instant: std::time::Instant,
-            activation: ActivationResquest,
+            activation: ActivationRequest,
         ) {
             self.context.activation = activation;
         }
