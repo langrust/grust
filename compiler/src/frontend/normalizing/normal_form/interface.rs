@@ -2,11 +2,21 @@ prelude! {
     ast::interface::FlowKind,
     hir::{
         flow, IdentifierCreator, Pattern,
-        interface::{FlowDeclaration, FlowInstantiation, FlowStatement, Interface},
+        interface::{
+            FlowDeclaration, FlowInstantiation, FlowStatement, Interface, Service,
+        },
     },
 }
 
 impl Interface {
+    pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
+        self.services
+            .iter_mut()
+            .for_each(|service| service.normal_form(symbol_table))
+    }
+}
+
+impl Service {
     pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
         let statements = std::mem::take(&mut self.statements);

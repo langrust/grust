@@ -6,7 +6,8 @@ prelude! {
     quote::format_ident,
     hir::{
         flow, IdentifierCreator, interface::{
-            FlowDeclaration, FlowExport, FlowImport, FlowInstantiation, FlowStatement, Interface,
+            FlowDeclaration, FlowExport, FlowImport, FlowInstantiation,
+            FlowStatement, Interface, Service,
         },
     },
     lir::item::execution_machine::{
@@ -23,36 +24,55 @@ use super::LIRFromHIR;
 
 impl Interface {
     pub fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
-        if self.statements.is_empty() {
+        if self.services.is_empty() {
             return Default::default();
         }
 
         let mut flows_context = self.get_flows_context(symbol_table);
-        let services_loops = self.get_services_loops(symbol_table, &mut flows_context);
+        let services_loops = self
+            .services
+            .into_iter()
+            .map(|service| service.lir_from_hir(&mut flows_context, symbol_table))
+            .collect();
 
         ExecutionMachine {
             flows_context,
             services_loops,
         }
     }
-}
 
-impl Interface {
     fn get_flows_context(&self, symbol_table: &SymbolTable) -> FlowsContext {
         let mut flows_context = FlowsContext {
             elements: Default::default(),
             components: Default::default(),
         };
-        self.statements
+        self.services
             .iter()
-            .for_each(|statement| statement.add_flows_context(&mut flows_context, symbol_table));
+            .for_each(|service| service.add_in_context(&mut flows_context, symbol_table));
         flows_context
     }
-    fn get_services_loops(
+}
+
+impl Service {
+    pub fn lir_from_hir(
+        self,
+        flows_context: &mut FlowsContext,
+        symbol_table: &mut SymbolTable,
+    ) -> ServiceLoop {
+        self.get_service_loop(symbol_table, flows_context)
+    }
+
+    fn add_in_context(&self, flows_context: &mut FlowsContext, symbol_table: &SymbolTable) {
+        self.statements
+            .iter()
+            .for_each(|statement| statement.add_flows_context(flows_context, symbol_table));
+    }
+
+    fn get_service_loop(
         mut self,
         symbol_table: &mut SymbolTable,
         flows_context: &mut FlowsContext,
-    ) -> Vec<ServiceLoop> {
+    ) -> ServiceLoop {
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
 
         // collects components, input flows, output flows, timing events that are present in the service
@@ -275,16 +295,14 @@ impl Interface {
             })
             .collect();
 
-        let service_loop = ServiceLoop {
-            service: "toto".into(),
+        ServiceLoop {
+            service: symbol_table.get_name(self.id).to_string(),
             components,
             input_flows: input_flows.into_iter().unzip::<_, _, Vec<_>, _>().1,
             timing_events: timers,
             output_flows: output_flows.into_iter().unzip::<_, _, Vec<_>, _>().1,
             flows_handling,
-        };
-
-        vec![service_loop]
+        }
     }
 }
 
@@ -404,12 +422,12 @@ impl FlowStatement {
 /// This structure is only meant to be used immutably *after* it is created by [`IsleBuilder`], in
 /// fact all `&mut self` functions on [`Isles`] are private.
 ///
-/// Given an interface and some statements, each event triggers statements that feature call to
+/// Given a service and some statements, each event triggers statements that feature call to
 /// eventful component. To actually run them, we need to update their inputs, which means that we
 /// need to know the event-free statements (including event-free component calls) that produce the
 /// inputs for each eventful component call triggered.
 ///
-/// The *"isle"* for event `e` is the list of statements from the interface that need to run to
+/// The *"isle"* for event `e` is the list of statements from the service that need to run to
 /// fully compute the effect of receiving `e` (including top stateful calls). The isle is a sub-list
 /// of the original list of statements, in particular it is ordered the same way.
 pub struct Isles {
@@ -479,8 +497,8 @@ impl Isles {
 
 /// A context to build [`Isles`].
 ///
-/// The [constructor][Self::new] requires an [`Interface`] (and other things) and **will use its
-/// internal [graph][Interface::graph], make sure it is properly setup.
+/// The [constructor][Self::new] requires an [`Service`] (and other things) and **will use its
+/// internal [graph][Service::graph], make sure it is properly setup.
 pub struct IsleBuilder<'a> {
     /// Result isles, populated during event-based traversals.
     isles: Isles,
@@ -500,8 +518,8 @@ pub struct IsleBuilder<'a> {
     event_to_stmts: HashMap<usize, Vec<usize>>,
     /// Symbol table.
     syms: &'a SymbolTable,
-    /// Interface to build isles for.
-    interface: &'a Interface,
+    /// Service to build isles for.
+    service: &'a Service,
 }
 impl<'a> IsleBuilder<'a> {
     /// Factored [`Isles`] allocation.
@@ -512,36 +530,36 @@ impl<'a> IsleBuilder<'a> {
 
     /// Constructor.
     ///
-    /// The `interface`'s [graph][Interface::graph] must be properly setup for the builder to work.
+    /// The `service`'s [graph][Service::graph] must be properly setup for the builder to work.
     ///
-    /// During construction, the statements of the `interface` are scanned to populate a map from
+    /// During construction, the statements of the `service` are scanned to populate a map from
     /// events to the statements that react to it.
-    pub fn new(syms: &'a SymbolTable, interface: &'a Interface) -> Self {
-        let event_to_stmts = Self::build_event_to_stmts(syms, interface);
+    pub fn new(syms: &'a SymbolTable, service: &'a Service) -> Self {
+        let event_to_stmts = Self::build_event_to_stmts(syms, service);
         Self {
             isles: Self::new_isles(syms),
             events: HashSet::with_capacity(10),
-            stack: Vec::with_capacity(interface.statements.len() / 2),
-            memory: HashSet::with_capacity(interface.statements.len()),
+            stack: Vec::with_capacity(service.statements.len() / 2),
+            memory: HashSet::with_capacity(service.statements.len()),
             event_to_stmts,
             syms,
-            interface,
+            service,
         }
     }
 
-    /// Scans the statements in the `interface` and produces the map from events to statements.
+    /// Scans the statements in the `service` and produces the map from events to statements.
     ///
     /// Used by [`Self::new`].
     ///
     /// The vector of statement indices associated to any event index is **sorted**, *i.e.*
-    /// statement indices are in the order in which they appear in the interface. (It actually does
+    /// statement indices are in the order in which they appear in the service. (It actually does
     /// not matter for the actual isle building process atm.)
     fn build_event_to_stmts(
         syms: &SymbolTable,
-        interface: &'a Interface,
+        service: &'a Service,
     ) -> HashMap<usize, Vec<usize>> {
         let mut map = HashMap::with_capacity(10);
-        for (stmt_idx, stmt) in interface.statements.iter().enumerate() {
+        for (stmt_idx, stmt) in service.statements.iter().enumerate() {
             let mut triggered_by = |event: usize| {
                 let vec = map.entry(event).or_insert_with(Vec::new);
                 debug_assert!(!vec.contains(&stmt_idx));
@@ -578,7 +596,7 @@ impl<'a> IsleBuilder<'a> {
     /// Used to stop the exploration of a dependency branch on component calls that are eventful and
     /// not triggered by the event the isle is for.
     fn is_eventful_call(&self, stmt: usize) -> bool {
-        self.interface.statements[stmt]
+        self.service.statements[stmt]
             .try_get_call()
             .map(|(idx, _)| {
                 self.syms.has_events(idx) || self.syms.get_node_period_id(idx).is_some()
@@ -588,7 +606,7 @@ impl<'a> IsleBuilder<'a> {
 
     /// True if `stmt` corresponds to a component call.
     fn is_call(&self, stmt: usize) -> bool {
-        self.interface.statements[stmt].try_get_call().is_some()
+        self.service.statements[stmt].try_get_call().is_some()
     }
 
     /// Isles accessor.
@@ -630,7 +648,7 @@ impl<'a> IsleBuilder<'a> {
             }
 
             for stmt in self
-                .interface
+                .service
                 .graph
                 .neighbors_directed(stmt, Direction::Incoming)
             {
@@ -890,8 +908,8 @@ pub struct PropagationBuilder<'a> {
     isles: Isles,
     /// Symbol table.
     symbol_table: &'a SymbolTable,
-    /// Interface to build isles for.
-    interface: &'a Interface,
+    /// Service to build isles for.
+    service: &'a Service,
     /// Cached indice of incoming flow.
     incoming_flow: usize,
     /// Cached stack of statements to visit.
@@ -916,19 +934,19 @@ impl<'a> PropagationBuilder<'a> {
     /// After creating the builder, you only need to [propagate](Self::propagate) the input flows.
     /// This will create the instructions to run when the input flow arrives.
     pub fn new(
-        interface: &'a Interface,
+        service: &'a Service,
         symbol_table: &'a SymbolTable,
         flows_context: &'a FlowsContext,
         on_change_events: HashMap<usize, usize>,
         timing_events: HashMap<usize, usize>,
     ) -> PropagationBuilder<'a> {
         // create events isles
-        let mut isle_builder = IsleBuilder::new(symbol_table, interface);
-        isle_builder.trace_events(interface.get_flows_ids());
+        let mut isle_builder = IsleBuilder::new(symbol_table, service);
+        isle_builder.trace_events(service.get_flows_ids());
         let isles = isle_builder.into_isles();
 
         // sort statement in dependency order
-        let mut ordered_statements = toposort(&interface.graph, None).expect("should succeed");
+        let mut ordered_statements = toposort(&service.graph, None).expect("should succeed");
         ordered_statements.reverse();
         let statements_order = ordered_statements
             .into_iter()
@@ -941,7 +959,7 @@ impl<'a> PropagationBuilder<'a> {
             flows_context,
             isles,
             symbol_table,
-            interface,
+            service,
             stack: Stack::new(),
             memory: Default::default(),
             incoming_flow: 0,
@@ -961,15 +979,15 @@ impl<'a> PropagationBuilder<'a> {
     /// Extend the stack with the next statements to compute.
     fn extend_with_next(&mut self, parent: usize) {
         // get the flows defined by parent statement
-        let parent_flows = self.interface.statements[parent].get_identifiers();
+        let parent_flows = self.service.statements[parent].get_identifiers();
 
         let dependencies = self
-            .interface
+            .service
             .graph
             .neighbors(parent)
             .filter_map(|child| {
                 // filter component call because they will appear in isles
-                if self.interface.statements[child].try_get_call().is_some() {
+                if self.service.statements[child].try_get_call().is_some() {
                     return None;
                 }
                 Some(child)
@@ -1056,7 +1074,7 @@ impl<'a> PropagationBuilder<'a> {
     /// Compute the instructions propagating the changes of all incoming flows.
     pub fn propagate(&mut self) {
         // for every incoming flows, compute their handlers
-        self.interface
+        self.service
             .statements
             .iter()
             .enumerate()
@@ -1081,7 +1099,7 @@ impl<'a> PropagationBuilder<'a> {
 
         while let Some(stmt_idx) = self.pop_stack() {
             // get flow statement related to stmt_idx
-            let flow_statement = &self.interface.statements[stmt_idx];
+            let flow_statement = &self.service.statements[stmt_idx];
 
             match flow_statement {
                 FlowStatement::Declaration(FlowDeclaration {

@@ -2,13 +2,24 @@ prelude! {
     graph::DiGraphMap,
     hir::{
         flow, interface::{
-            FlowDeclaration, FlowExport, FlowImport, FlowInstantiation, FlowStatement, Interface,
-        },
+            FlowDeclaration, FlowExport, FlowImport,
+            FlowInstantiation, FlowStatement, Interface, Service,
+        }
     },
 }
 
 impl Interface {
-    /// Compute the dependency graph of the interface.
+    /// Generate dependency graphs for every services.
+    #[inline]
+    pub fn generate_flows_dependency_graphs(&mut self) {
+        self.services
+            .iter_mut()
+            .for_each(|service| service.compute_dependencies())
+    }
+}
+
+impl Service {
+    /// Compute the dependency graph of the service.
     ///
     /// # Example
     ///
@@ -35,7 +46,7 @@ impl Interface {
                 statement.add_dependencies(index, &flows_statements, &mut graph)
             });
 
-        // set interface's graph
+        // set service's graph
         self.graph = graph;
     }
 
@@ -61,7 +72,7 @@ impl Interface {
         flows_statements
     }
 
-    /// Create an initialized graph from an interface.
+    /// Create an initialized graph from a service.
     ///
     /// The created graph has every statements' indexes as vertices.
     /// But no edges are added.
