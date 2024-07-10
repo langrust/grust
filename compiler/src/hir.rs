@@ -19,6 +19,6 @@ pub mod interface;
 
 pub use self::{
     contract::Contract, dependencies::Dependencies, expr::Expr, file::File, function::Function,
-    identifier_creator::IdentifierCreator, memory::Memory, node::Node, once_cell::OnceCell,
-    pattern::Pattern, stmt::Stmt, typedef::Typedef,
+    identifier_creator::IdentifierCreator, interface::Service, memory::Memory, node::Node,
+    once_cell::OnceCell, pattern::Pattern, stmt::Stmt, typedef::Typedef,
 };

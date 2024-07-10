@@ -5,12 +5,15 @@ prelude! {
     hir::{flow, Pattern},
 }
 
-pub struct Interface {
+pub struct Service {
+    /// Service's identifier.
+    pub id: usize,
+    /// Service's statements.
     pub statements: Vec<FlowStatement>,
     /// Flows dependency graph.
     pub graph: DiGraphMap<usize, ()>,
 }
-impl Interface {
+impl Service {
     pub fn get_flows_names(&self, symbol_table: &SymbolTable) -> Vec<String> {
         self.statements
             .iter()
@@ -42,6 +45,11 @@ impl Interface {
                 }
             })
     }
+}
+
+pub struct Interface {
+    /// GRust interface's services.
+    pub services: Vec<Service>,
 }
 
 /// Flow statement HIR.

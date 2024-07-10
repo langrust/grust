@@ -275,7 +275,7 @@ impl AstExt for Ast {
                 crate::ast::Item::Component(component) => component.store(symbol_table, errors),
                 crate::ast::Item::Function(function) => function.store(symbol_table, errors),
                 crate::ast::Item::Typedef(typedef) => typedef.store(symbol_table, errors),
-                crate::ast::Item::FlowStatement(_) => Ok(()),
+                crate::ast::Item::Service(_) => Ok(()),
             })
             .collect::<TRes<Vec<_>>>()?;
         Ok(())

@@ -1,7 +1,7 @@
 prelude! {
     ast::interface::{
         FlowDeclaration, FlowExport, FlowExpression, FlowImport, FlowInstantiation,
-        FlowKind, FlowPattern, FlowStatement,
+        FlowKind, FlowPattern, FlowStatement, Service,
     },
     hir::{
         Pattern, flow,
@@ -14,6 +14,39 @@ prelude! {
 }
 
 use super::HIRFromAST;
+
+impl HIRFromAST for Service {
+    type HIR = hir::Service;
+
+    fn hir_from_ast(
+        self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<Self::HIR> {
+        let Service {
+            ident,
+            flow_statements,
+            ..
+        } = self;
+
+        let id =
+            symbol_table.insert_service(ident.to_string(), true, Location::default(), errors)?;
+
+        symbol_table.local();
+        let statements = flow_statements
+            .into_iter()
+            .map(|flow_statement| flow_statement.hir_from_ast(symbol_table, errors))
+            .collect::<TRes<Vec<_>>>()?;
+        let graph = Default::default();
+        symbol_table.global();
+
+        Ok(hir::Service {
+            id,
+            statements: statements,
+            graph,
+        })
+    }
+}
 
 impl HIRFromAST for FlowStatement {
     type HIR = HIRFlowStatement;
