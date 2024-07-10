@@ -1,0 +1,65 @@
+syntax = "proto3";
+package interface;
+
+enum VdcState {
+    VdcStateOn = 0;
+    VdcStateOff = 1;
+}
+
+enum ActivationRequest {
+    ActivationRequestOn = 0;
+    ActivationRequestOff = 1;
+}
+
+enum VacuumBrakeState {
+    BelowMinLevel = 0;
+    AboveMinLevel = 1;
+}
+
+enum Kickdown {
+    Activated = 0;
+}
+
+enum Failure {
+    Recovered = 0;
+    Entering = 1;
+}
+
+enum SlState {
+    Off = 0;
+    Fail = 1;
+    StandBy = 2;
+    Actif = 3;
+    OverrideVoluntary = 4;
+}
+
+// the input part of the interface
+message Input {
+    int64 timestamp = 1;
+
+    oneof message {
+        ActivationRequest activation = 2;
+        double set_speed = 3;
+        double speed = 4;
+        VacuumBrakeState vacuum_brake = 5;
+        Kickdown kickdown = 6;
+        Failure failure = 7;
+        VdcState vdc = 8;
+    }
+}
+
+// the output part of the interface
+message Output {
+    int64 timestamp = 1;
+
+    oneof message {
+        bool in_regulation = 2;
+        double v_set = 3;
+        SlState sl_state = 4;
+    }
+}
+
+// the service interface
+service SL {
+    rpc RunSL(stream Input) returns (stream Output);
+}
