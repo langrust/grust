@@ -19,7 +19,7 @@ fn should_compile_speed_limiter_events() {
         }
 
         // Enumerates the kinds of activation resquests.
-        enum ActivationResquest { Off, On }
+        enum ActivationRequest { Off, On }
 
         // Vehicle dynamic control states.
         enum VdcState { On, Off }
@@ -110,7 +110,7 @@ fn should_compile_speed_limiter_events() {
 
         // Speed limiter state machine.
         component speed_limiter(
-            activation_req: ActivationResquest?,
+            activation_req: ActivationRequest?,
             vacuum_brake_state: VacuumBrakeState,
             kickdown: Kickdown?,
             failure: Failure?,
@@ -127,13 +127,13 @@ fn should_compile_speed_limiter_events() {
             let prev_on_state: SpeedLimiterOn = SpeedLimiterOn::StandBy fby on_state;
             let prev_in_regulation: bool = false fby in_regulation;
             when {
-                ActivationResquest::Off = activation_req? => {
+                ActivationRequest::Off = activation_req? => {
                     state = SpeedLimiter::Off;
                     on_state = SpeedLimiterOn::StandBy;
                     in_regulation = false;
                     state_update = prev_state != SpeedLimiter::Off;
                 },
-                ActivationResquest::On = activation_req? if prev_state == SpeedLimiter::Off => {
+                ActivationRequest::On = activation_req? if prev_state == SpeedLimiter::Off => {
                     state = SpeedLimiter::On;
                     on_state = SpeedLimiterOn::StandBy;
                     in_regulation = true;
@@ -226,7 +226,7 @@ fn should_compile_speed_limiter_events() {
 
         service speed_limiter {
             // # Imports
-            import event    car::hmi::speed_limiter::activation : ActivationResquest;
+            import event    car::hmi::speed_limiter::activation : ActivationRequest;
             import signal   car::hmi::speed_limiter::set_speed  : float;
             import signal   car::adas::speed                    : float;
             import signal   car::adas::vacuum_brake             : VacuumBrakeState;

@@ -4,7 +4,7 @@ pub struct Hysterisis {
     pub flag: bool,
 }
 #[derive(Clone, Copy, PartialEq, Default)]
-pub enum ActivationResquest {
+pub enum ActivationRequest {
     #[default]
     Off,
     On,
@@ -187,7 +187,7 @@ impl SpeedLimiterOnState {
     }
 }
 pub struct SpeedLimiterInput {
-    pub activation_req: Option<ActivationResquest>,
+    pub activation_req: Option<ActivationRequest>,
     pub vacuum_brake_state: VacuumBrakeState,
     pub kickdown: Option<Kickdown>,
     pub failure: Option<Failure>,
@@ -216,14 +216,14 @@ impl SpeedLimiterState {
         let prev_in_regulation = self.mem_2;
         let (state, on_state, in_regulation, state_update) =
             match (input.activation_req, input.failure) {
-                (Some(ActivationResquest::Off), _) => {
+                (Some(ActivationRequest::Off), _) => {
                     let state = SpeedLimiter::Off;
                     let on_state = SpeedLimiterOn::StandBy;
                     let in_regulation = false;
                     let state_update = prev_state != SpeedLimiter::Off;
                     (state, on_state, in_regulation, state_update)
                 }
-                (Some(ActivationResquest::On), _) if prev_state == SpeedLimiter::Off => {
+                (Some(ActivationRequest::On), _) if prev_state == SpeedLimiter::Off => {
                     let state = SpeedLimiter::On;
                     let on_state = SpeedLimiterOn::StandBy;
                     let in_regulation = true;
@@ -310,7 +310,7 @@ pub mod speed_limiter_service {
         }
         fn get_speed_limiter_inputs(
             &self,
-            activation: Option<ActivationResquest>,
+            activation: Option<ActivationRequest>,
             kickdown: Option<Kickdown>,
             failure: Option<Failure>,
         ) -> SpeedLimiterInput {
@@ -342,7 +342,7 @@ pub mod speed_limiter_service {
         }
     }
     pub enum SpeedLimiterServiceInput {
-        activation(ActivationResquest, std::time::Instant),
+        activation(ActivationRequest, std::time::Instant),
         set_speed(f64, std::time::Instant),
         speed(f64, std::time::Instant),
         vacuum_brake(VacuumBrakeState, std::time::Instant),
@@ -575,7 +575,7 @@ pub mod speed_limiter_service {
         async fn handle_activation(
             &mut self,
             instant: std::time::Instant,
-            activation: ActivationResquest,
+            activation: ActivationRequest,
         ) {
             let (state, on_state, in_regulation_aux, state_update) =
                 self.speed_limiter
