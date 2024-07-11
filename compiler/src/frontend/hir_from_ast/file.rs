@@ -21,30 +21,42 @@ impl HIRFromAST for Ast {
 
         let Ast { items } = self;
 
-        let (typedefs, functions, nodes, services) = items.into_iter().fold(
-            (vec![], vec![], vec![], vec![]),
-            |(mut typedefs, mut functions, mut nodes, mut services), item| match item {
-                ast::Item::Component(component) => {
-                    nodes.push(component.hir_from_ast(symbol_table, errors));
-                    (typedefs, functions, nodes, services)
+        let (typedefs, functions, nodes, imports, exports, services) = items.into_iter().fold(
+            (vec![], vec![], vec![], vec![], vec![], vec![]),
+            |(mut typedefs, mut functions, mut nodes, mut imports, mut exports, mut services),
+             item| {
+                match item {
+                    ast::Item::Component(component) => {
+                        nodes.push(component.hir_from_ast(symbol_table, errors))
+                    }
+                    ast::Item::Function(function) => {
+                        functions.push(function.hir_from_ast(symbol_table, errors))
+                    }
+                    ast::Item::Typedef(typedef) => {
+                        typedefs.push(typedef.hir_from_ast(symbol_table, errors))
+                    }
+                    ast::Item::Service(service) => {
+                        services.push(service.hir_from_ast(symbol_table, errors))
+                    }
+                    ast::Item::Import(import) => imports.push(
+                        import
+                            .hir_from_ast(symbol_table, errors)
+                            .map(|res| (symbol_table.get_fresh_id(), res)),
+                    ),
+                    ast::Item::Export(export) => exports.push(
+                        export
+                            .hir_from_ast(symbol_table, errors)
+                            .map(|res| (symbol_table.get_fresh_id(), res)),
+                    ),
                 }
-                ast::Item::Function(function) => {
-                    functions.push(function.hir_from_ast(symbol_table, errors));
-                    (typedefs, functions, nodes, services)
-                }
-                ast::Item::Typedef(typedef) => {
-                    typedefs.push(typedef.hir_from_ast(symbol_table, errors));
-                    (typedefs, functions, nodes, services)
-                }
-                ast::Item::Service(service) => {
-                    services.push(service.hir_from_ast(symbol_table, errors));
-                    (typedefs, functions, nodes, services)
-                }
+                (typedefs, functions, nodes, imports, exports, services)
             },
         );
 
         let interface = Interface {
             services: services.into_iter().collect::<TRes<Vec<_>>>()?,
+            imports: imports.into_iter().collect::<TRes<_>>()?,
+            exports: exports.into_iter().collect::<TRes<_>>()?,
         };
 
         Ok(hir::File {

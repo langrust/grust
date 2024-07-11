@@ -1,48 +1,17 @@
 prelude! {
-    item::execution_machine::flows_context::FlowsContext
+    item::execution_machine::{flows_context::FlowsContext, ArrivingFlow}
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ServiceLoop {
+pub struct ServiceHandler {
     /// The service name.
     pub service: String,
     /// Its components.
     pub components: Vec<String>,
-    /// The input flows.
-    pub input_flows: Vec<InterfaceFlow>,
-    /// The timing events.
-    pub timing_events: Vec<TimingEvent>,
-    /// The output flows.
-    pub output_flows: Vec<InterfaceFlow>,
     /// The flows handling.
     pub flows_handling: Vec<FlowHandler>,
     /// The signals context from where components will get their inputs.
     pub flows_context: FlowsContext,
-}
-
-/// A flow structure.
-#[derive(Clone, Debug, PartialEq)]
-pub struct InterfaceFlow {
-    /// Path of the flow.
-    pub path: syn::Path,
-    /// The name of the flow.
-    pub identifier: String,
-    /// The type of the flow.
-    pub r#type: Typ,
-}
-
-/// A timing event structure.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TimingEvent {
-    /// The name of the timing event.
-    pub identifier: String,
-    /// Kind of timing event.
-    pub kind: TimingEventKind,
-}
-#[derive(Clone, Debug, PartialEq)]
-pub enum TimingEventKind {
-    Period(u64),
-    Timeout(u64),
 }
 
 #[derive(Debug, PartialEq)]
@@ -50,12 +19,6 @@ pub struct FlowHandler {
     pub arriving_flow: ArrivingFlow,
     pub deadline_args: Vec<String>,
     pub instructions: Vec<FlowInstruction>,
-}
-#[derive(Debug, PartialEq)]
-pub enum ArrivingFlow {
-    Channel(String, Typ),
-    Period(String),
-    Deadline(String),
 }
 
 #[derive(Debug, PartialEq)]

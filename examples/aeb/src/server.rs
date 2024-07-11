@@ -3,6 +3,11 @@ mod aeb {
 
     grust! {
         #![dump = "examples/aeb/src/macro_output.rs", test]
+        import signal car::speed_km_h                   : float;
+        import event  car::detect::left::pedestrian_l   : float;
+        import event  car::detect::right::pedestrian_r  : float;
+        export signal car::urban::braking::brakes       : Braking;
+
         // Branking type
         enum Braking {
             UrgentBrake,
@@ -38,18 +43,13 @@ mod aeb {
         }
 
         service aeb {
-            import signal car::speed_km_h                   : float;
-            import event  car::detect::left::pedestrian_l   : float;
-            import event  car::detect::right::pedestrian_r  : float;
-            export signal car::urban::braking::brakes       : Braking;
-
             let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
             brakes = braking_state(pedestrian, speed_km_h);
         }
     }
 }
 
-use aeb::aeb_service::{AebService, AebServiceInput, AebServiceOutput, AebServiceTimer};
+use aeb::runtime::{Runtime, RuntimeInput, RuntimeOutput, RuntimeTimer};
 use futures::StreamExt;
 use interface::{
     aeb_server::{Aeb, AebServer},
@@ -68,17 +68,17 @@ lazy_static! {
     static ref INIT : Instant = Instant::now();
 }
 
-fn into_aeb_service_input(input: Input) -> Option<AebServiceInput> {
+fn into_aeb_service_input(input: Input) -> Option<RuntimeInput> {
     match input.message {
-        Some(Message::PedestrianL(Pedestrian { distance })) => Some(AebServiceInput::pedestrian_l(
+        Some(Message::PedestrianL(Pedestrian { distance })) => Some(RuntimeInput::pedestrian_l(
             distance,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(Message::PedestrianR(Pedestrian { distance })) => Some(AebServiceInput::pedestrian_r(
+        Some(Message::PedestrianR(Pedestrian { distance })) => Some(RuntimeInput::pedestrian_r(
             distance,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(Message::Speed(Speed { value })) => Some(AebServiceInput::speed_km_h(
+        Some(Message::Speed(Speed { value })) => Some(RuntimeInput::speed_km_h(
             value,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
@@ -86,15 +86,15 @@ fn into_aeb_service_input(input: Input) -> Option<AebServiceInput> {
     }
 }
 
-fn from_aeb_service_output(output: AebServiceOutput) -> Result<Output, Status> {
+fn from_aeb_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     match output {
-        AebServiceOutput::brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
+        RuntimeOutput::brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
             brakes: Braking::UrgentBrake.into(),
         }),
-        AebServiceOutput::brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
+        RuntimeOutput::brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
             brakes: Braking::SoftBrake.into(),
         }),
-        AebServiceOutput::brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
+        RuntimeOutput::brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
             brakes: Braking::NoBrake.into(),
         }),
     }
@@ -105,8 +105,8 @@ pub struct AebRuntime;
 #[tonic::async_trait]
 impl Aeb for AebRuntime {
     type RunAEBStream = futures::stream::Map<
-        futures::channel::mpsc::Receiver<AebServiceOutput>,
-        fn(AebServiceOutput) -> Result<Output, Status>,
+        futures::channel::mpsc::Receiver<RuntimeOutput>,
+        fn(RuntimeOutput) -> Result<Output, Status>,
     >;
 
     async fn run_aeb(
@@ -116,20 +116,20 @@ impl Aeb for AebRuntime {
         let input_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_aeb_service_input).ok().flatten() });
-        let timers_stream = timers_stream.map(|(timer, instant): (AebServiceTimer, Instant)| {
+        let timers_stream = timers_stream.map(|(timer, instant): (RuntimeTimer, Instant)| {
             let deadline = instant + timer_stream::Timing::get_duration(&timer);
-            AebServiceInput::timer(timer, deadline)
+            RuntimeInput::timer(timer, deadline)
         });
         let input_stream = prio_stream::<_, _, 100>(
             futures::stream::select(request_stream, timers_stream),
-            AebServiceInput::order,
+            RuntimeInput::order,
         );
 
-        let aeb_service = AebService::new(output_sink, timers_sink);
+        let aeb_service = Runtime::new(output_sink, timers_sink);
         tokio::spawn(aeb_service.run_loop(INIT.clone(), input_stream));
 
         Ok(Response::new(output_stream.map(
-            from_aeb_service_output as fn(AebServiceOutput) -> Result<Output, Status>,
+            from_aeb_service_output as fn(RuntimeOutput) -> Result<Output, Status>,
         )))
     }
 }

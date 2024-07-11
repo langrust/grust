@@ -20,7 +20,7 @@ pub use crate::{
     equation::{self, Equation},
     expr::{self, Expr},
     function::Function,
-    interface::{self, Service},
+    interface::{self, FlowExport, FlowImport, Service},
     pattern::{self, Pattern},
     stmt::{self, Stmt},
     stream,

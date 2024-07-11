@@ -12,10 +12,6 @@ prelude! { just
 /// Transform LIR flows context into a 'Context' structure
 /// that implements some useful functions.
 pub fn rust_ast_from_lir(flows_context: FlowsContext) -> Vec<Item> {
-    if conf::greusot() {
-        return vec![];
-    }
-
     let FlowsContext {
         elements,
         components,

@@ -28,12 +28,14 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
 
     project.items.into_iter().for_each(|item| match item {
         Item::ExecutionMachine(execution_machine) => {
-            let mut items = execution_machine_rust_ast_from_lir(execution_machine);
-            rust_items.append(&mut items);
+            if conf::test() || conf::demo() {
+                let item = execution_machine_rust_ast_from_lir(execution_machine);
+                rust_items.push(item);
+            }
         }
         Item::StateMachine(state_machine) => {
-            let mut items = state_machine_rust_ast_from_lir(state_machine, &mut crates);
-            rust_items.append(&mut items);
+            let items = state_machine_rust_ast_from_lir(state_machine, &mut crates);
+            rust_items.extend(items);
         }
         Item::Function(function) => {
             let item_function = function_rust_ast_from_lir(function, &mut crates);
