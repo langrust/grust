@@ -554,29 +554,20 @@ impl Parse for FlowExport {
 pub enum FlowStatement {
     Declaration(FlowDeclaration),
     Instantiation(FlowInstantiation),
-    Import(FlowImport),
-    Export(FlowExport),
 }
 impl FlowStatement {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        FlowDeclaration::peek(input)
-            || FlowImport::peek(input)
-            || FlowExport::peek(input)
-            || FlowInstantiation::peek(input)
+        FlowDeclaration::peek(input) || FlowInstantiation::peek(input)
     }
 }
 impl Parse for FlowStatement {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if FlowDeclaration::peek(input) {
             Ok(FlowStatement::Declaration(input.parse()?))
-        } else if FlowImport::peek(input) {
-            Ok(FlowStatement::Import(input.parse()?))
-        } else if FlowExport::peek(input) {
-            Ok(FlowStatement::Export(input.parse()?))
         } else if FlowInstantiation::peek(input) {
             Ok(FlowStatement::Instantiation(input.parse()?))
         } else {
-            Err(input.error("expected flow declaration, instantiation, import or export"))
+            Err(input.error("expected flow declaration or instantiation"))
         }
     }
 }

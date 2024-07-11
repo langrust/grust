@@ -9,45 +9,38 @@ pub struct Service {
     /// Service's identifier.
     pub id: usize,
     /// Service's statements.
-    pub statements: Vec<FlowStatement>,
+    pub statements: HashMap<usize, FlowStatement>,
     /// Flows dependency graph.
     pub graph: DiGraphMap<usize, ()>,
 }
 impl Service {
     pub fn get_flows_names(&self, symbol_table: &SymbolTable) -> Vec<String> {
         self.statements
-            .iter()
+            .values()
             .flat_map(|statement| match statement {
                 FlowStatement::Declaration(FlowDeclaration { pattern, .. })
                 | FlowStatement::Instantiation(FlowInstantiation { pattern, .. }) => pattern
                     .identifiers()
                     .into_iter()
-                    .map(|id| symbol_table.get_name(id).clone())
-                    .collect(),
-                FlowStatement::Import(FlowImport { id, .. })
-                | FlowStatement::Export(FlowExport { id, .. }) => {
-                    vec![symbol_table.get_name(*id).clone()]
-                }
+                    .map(|id| symbol_table.get_name(id).clone()),
             })
             .collect()
     }
     pub fn get_flows_ids<'a>(&'a self) -> impl IntoIterator<Item = usize> + 'a {
         self.statements
-            .iter()
+            .values()
             .flat_map(|statement| match statement {
                 FlowStatement::Declaration(FlowDeclaration { pattern, .. })
                 | FlowStatement::Instantiation(FlowInstantiation { pattern, .. }) => {
                     pattern.identifiers()
-                }
-                FlowStatement::Import(FlowImport { id, .. })
-                | FlowStatement::Export(FlowExport { id, .. }) => {
-                    vec![*id]
                 }
             })
     }
 }
 
 pub struct Interface {
+    pub imports: HashMap<usize, FlowImport>,
+    pub exports: HashMap<usize, FlowExport>,
     /// GRust interface's services.
     pub services: Vec<Service>,
 }
@@ -100,8 +93,6 @@ pub struct FlowExport {
 pub enum FlowStatement {
     Declaration(FlowDeclaration),
     Instantiation(FlowInstantiation),
-    Import(FlowImport),
-    Export(FlowExport),
 }
 impl FlowStatement {
     /// Retrieves the component index and its inputs if the statement contains an invocation.
@@ -132,7 +123,31 @@ impl FlowStatement {
                     },
                 ..
             }) => Some((*component_id, inputs)),
-            Import(_) | Export(_) | Declaration(_) | Instantiation(_) => None,
+            Declaration(_) | Instantiation(_) => None,
+        }
+    }
+
+    /// Tells if the statement is a component call.
+    pub fn is_comp_call(&self) -> bool {
+        use FlowStatement::*;
+        match self {
+            Declaration(FlowDeclaration {
+                flow_expression:
+                    flow::Expr {
+                        kind: flow::Kind::ComponentCall { .. },
+                        ..
+                    },
+                ..
+            })
+            | Instantiation(FlowInstantiation {
+                flow_expression:
+                    flow::Expr {
+                        kind: flow::Kind::ComponentCall { .. },
+                        ..
+                    },
+                ..
+            }) => true,
+            Declaration(_) | Instantiation(_) => false,
         }
     }
 
@@ -142,7 +157,6 @@ impl FlowStatement {
         match self {
             Declaration(FlowDeclaration { pattern, .. })
             | Instantiation(FlowInstantiation { pattern, .. }) => pattern.identifiers(),
-            Import(FlowImport { id, .. }) | Export(FlowExport { id, .. }) => vec![*id],
         }
     }
 
@@ -155,8 +169,6 @@ impl FlowStatement {
             | FlowStatement::Instantiation(FlowInstantiation {
                 flow_expression, ..
             }) => flow_expression.get_dependencies(),
-            FlowStatement::Import(_) => vec![],
-            FlowStatement::Export(FlowExport { id, .. }) => vec![*id],
         }
     }
 }

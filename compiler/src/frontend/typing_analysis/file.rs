@@ -31,7 +31,7 @@ impl TypeAnalysis for File {
             .map(|service| {
                 service
                     .statements
-                    .iter_mut()
+                    .values_mut()
                     .map(|statement| statement.typing(symbol_table, errors))
                     .collect::<TRes<()>>()
             })

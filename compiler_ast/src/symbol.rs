@@ -352,6 +352,14 @@ impl SymbolTable {
         }
     }
 
+    /// Get a fresh id.
+    pub fn get_fresh_id(&mut self) -> usize {
+        let id = self.fresh_id;
+        // update symbol table
+        self.fresh_id += 1;
+        id
+    }
+
     /// Insert signal in symbol table.
     pub fn insert_signal(
         &mut self,
@@ -857,6 +865,17 @@ impl SymbolTable {
                 }
                 *path = Some(new_path)
             }
+            _ => unreachable!(),
+        }
+    }
+
+    /// Get flow's path.
+    pub fn get_path(&self, id: usize) -> &syn::Path {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match &symbol.kind {
+            SymbolKind::Flow { path, .. } => path.as_ref().unwrap(),
             _ => unreachable!(),
         }
     }

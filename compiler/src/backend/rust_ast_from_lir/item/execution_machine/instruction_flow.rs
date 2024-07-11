@@ -14,7 +14,7 @@ prelude! { just
                 as pattern_rust_ast_from_lir,
         },
     },
-    lir::item::execution_machine::service_loop::FlowInstruction,
+    lir::item::execution_machine::service_handler::FlowInstruction,
 }
 
 /// Transform LIR instruction on flows into statement.

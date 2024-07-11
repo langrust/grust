@@ -3,8 +3,21 @@ mod sl {
 
     grust! {
         #![dump = "examples/sl_demo/src/macro_output.rs", test]
-        // # Types
 
+        // # Imports
+        import event    car::hmi::speed_limiter::activation : ActivationRequest;
+        import signal   car::hmi::speed_limiter::set_speed  : float;
+        import signal   car::adas::speed                    : float;
+        import signal   car::adas::vacuum_brake             : VacuumBrakeState;
+        import event    car::adas::kickdown                 : Kickdown;
+        import event    car::adas::failure                  : Failure;
+        import signal   car::adas::vdc                      : VdcState;
+
+        export signal   car::adas::speed_limiter::in_regulation : bool;
+        export signal   car::adas::speed_limiter::v_set         : float;
+        export signal   car::adas::speed_limiter::sl_state      : SpeedLimiterOn;
+
+        // # Types
         // Hysterisis for speed.
         struct Hysterisis {
             value: float,
@@ -221,19 +234,6 @@ mod sl {
         }
 
         service speed_limiter {
-            // # Imports
-            import event    car::hmi::speed_limiter::activation : ActivationRequest;
-            import signal   car::hmi::speed_limiter::set_speed  : float;
-            import signal   car::adas::speed                    : float;
-            import signal   car::adas::vacuum_brake             : VacuumBrakeState;
-            import event    car::adas::kickdown                 : Kickdown;
-            import event    car::adas::failure                  : Failure;
-            import signal   car::adas::vdc                      : VdcState;
-
-            export signal   car::adas::speed_limiter::in_regulation : bool;
-            export signal   car::adas::speed_limiter::v_set         : float;
-            export signal   car::adas::speed_limiter::sl_state      : SpeedLimiterOn;
-
             // # Speed Limiter Service
             let event changed_set_speed: float = on_change(throttle(set_speed, 1.0));
 
@@ -267,10 +267,7 @@ use interface::{
 };
 use lazy_static::lazy_static;
 use priority_stream::prio_stream;
-use sl::speed_limiter_service::{
-    SpeedLimiterService, SpeedLimiterServiceInput, SpeedLimiterServiceOutput,
-    SpeedLimiterServiceTimer,
-};
+use sl::runtime::{Runtime, RuntimeInput, RuntimeOutput, RuntimeTimer};
 use std::time::{Duration, Instant};
 use timer_stream::timer_stream;
 use tonic::{transport::Server, Request, Response, Status, Streaming};
@@ -285,49 +282,49 @@ lazy_static! {
     static ref INIT : Instant = Instant::now();
 }
 
-fn into_speed_limiter_service_input(input: Input) -> Option<SpeedLimiterServiceInput> {
+fn into_speed_limiter_service_input(input: Input) -> Option<RuntimeInput> {
     match input.message {
-        Some(input::Message::Activation(0)) => Some(SpeedLimiterServiceInput::activation(
+        Some(input::Message::Activation(0)) => Some(RuntimeInput::activation(
             sl::ActivationRequest::On,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::Activation(1)) => Some(SpeedLimiterServiceInput::activation(
+        Some(input::Message::Activation(1)) => Some(RuntimeInput::activation(
             sl::ActivationRequest::Off,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::SetSpeed(set_speed)) => Some(SpeedLimiterServiceInput::set_speed(
+        Some(input::Message::SetSpeed(set_speed)) => Some(RuntimeInput::set_speed(
             set_speed,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::Speed(speed)) => Some(SpeedLimiterServiceInput::speed(
+        Some(input::Message::Speed(speed)) => Some(RuntimeInput::speed(
             speed,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::VacuumBrake(0)) => Some(SpeedLimiterServiceInput::vacuum_brake(
+        Some(input::Message::VacuumBrake(0)) => Some(RuntimeInput::vacuum_brake(
             sl::VacuumBrakeState::BelowMinLevel,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::VacuumBrake(1)) => Some(SpeedLimiterServiceInput::vacuum_brake(
+        Some(input::Message::VacuumBrake(1)) => Some(RuntimeInput::vacuum_brake(
             sl::VacuumBrakeState::AboveMinLevel,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::Kickdown(0)) => Some(SpeedLimiterServiceInput::kickdown(
+        Some(input::Message::Kickdown(0)) => Some(RuntimeInput::kickdown(
             sl::Kickdown::Activated,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::Failure(0)) => Some(SpeedLimiterServiceInput::failure(
+        Some(input::Message::Failure(0)) => Some(RuntimeInput::failure(
             sl::Failure::Recovered,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::Failure(1)) => Some(SpeedLimiterServiceInput::failure(
+        Some(input::Message::Failure(1)) => Some(RuntimeInput::failure(
             sl::Failure::Entering,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::Vdc(0)) => Some(SpeedLimiterServiceInput::vdc(
+        Some(input::Message::Vdc(0)) => Some(RuntimeInput::vdc(
             sl::VdcState::On,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(input::Message::Vdc(1)) => Some(SpeedLimiterServiceInput::vdc(
+        Some(input::Message::Vdc(1)) => Some(RuntimeInput::vdc(
             sl::VdcState::Off,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
@@ -340,30 +337,28 @@ fn into_speed_limiter_service_input(input: Input) -> Option<SpeedLimiterServiceI
     }
 }
 
-fn from_speed_limiter_service_output(output: SpeedLimiterServiceOutput) -> Result<Output, Status> {
+fn from_speed_limiter_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     match output {
-        SpeedLimiterServiceOutput::in_regulation(in_regulation, instant) => Ok(Output {
+        RuntimeOutput::in_regulation(in_regulation, instant) => Ok(Output {
             message: Some(output::Message::InRegulation(in_regulation)),
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-        SpeedLimiterServiceOutput::v_set(v_set, instant) => Ok(Output {
+        RuntimeOutput::v_set(v_set, instant) => Ok(Output {
             message: Some(output::Message::VSet(v_set)),
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-        SpeedLimiterServiceOutput::sl_state(sl::SpeedLimiterOn::StandBy, instant) => Ok(Output {
+        RuntimeOutput::sl_state(sl::SpeedLimiterOn::StandBy, instant) => Ok(Output {
             message: Some(output::Message::SlState(2)),
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-        SpeedLimiterServiceOutput::sl_state(sl::SpeedLimiterOn::Actif, instant) => Ok(Output {
+        RuntimeOutput::sl_state(sl::SpeedLimiterOn::Actif, instant) => Ok(Output {
             message: Some(output::Message::SlState(3)),
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
         }),
-        SpeedLimiterServiceOutput::sl_state(sl::SpeedLimiterOn::OverrideVoluntary, instant) => {
-            Ok(Output {
-                message: Some(output::Message::SlState(4)),
-                timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
-            })
-        }
+        RuntimeOutput::sl_state(sl::SpeedLimiterOn::OverrideVoluntary, instant) => Ok(Output {
+            message: Some(output::Message::SlState(4)),
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+        }),
     }
 }
 
@@ -372,8 +367,8 @@ pub struct SlRuntime;
 #[tonic::async_trait]
 impl Sl for SlRuntime {
     type RunSLStream = futures::stream::Map<
-        futures::channel::mpsc::Receiver<SpeedLimiterServiceOutput>,
-        fn(SpeedLimiterServiceOutput) -> Result<Output, Status>,
+        futures::channel::mpsc::Receiver<RuntimeOutput>,
+        fn(RuntimeOutput) -> Result<Output, Status>,
     >;
 
     async fn run_sl(
@@ -386,22 +381,18 @@ impl Sl for SlRuntime {
         let request_stream = request.into_inner().filter_map(|input| async {
             input.map(into_speed_limiter_service_input).ok().flatten()
         });
-        let timers_stream = timer_stream::<_, _, 1>(timers_stream).map(
-            |(timer, deadline): (SpeedLimiterServiceTimer, Instant)| {
-                SpeedLimiterServiceInput::timer(timer, deadline)
-            },
-        );
+        let timers_stream = timer_stream::<_, _, 1>(timers_stream)
+            .map(|(timer, deadline): (RuntimeTimer, Instant)| RuntimeInput::timer(timer, deadline));
         let input_stream = prio_stream::<_, _, 7>(
             futures::stream::select(request_stream, timers_stream),
-            SpeedLimiterServiceInput::order,
+            RuntimeInput::order,
         );
 
-        let speed_limiter_service = SpeedLimiterService::new(output_sink, timers_sink);
+        let speed_limiter_service = Runtime::new(output_sink, timers_sink);
         tokio::spawn(speed_limiter_service.run_loop(INIT.clone(), input_stream));
 
         Ok(Response::new(output_stream.map(
-            from_speed_limiter_service_output
-                as fn(SpeedLimiterServiceOutput) -> Result<Output, Status>,
+            from_speed_limiter_service_output as fn(RuntimeOutput) -> Result<Output, Status>,
         )))
     }
 }

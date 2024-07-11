@@ -2,7 +2,7 @@ prelude! { just
     macro2::Span,
     syn::{parse_quote, Expr, Ident},
     backend::rust_ast_from_lir::expression::constant_to_syn,
-    lir::item::execution_machine::service_loop::Expression,
+    lir::item::execution_machine::service_handler::Expression,
 }
 
 pub fn rust_ast_from_lir(expression: Expression) -> Expr {

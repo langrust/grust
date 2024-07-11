@@ -275,61 +275,17 @@ impl SpeedLimiterState {
         (state, on_state, in_regulation, state_update)
     }
 }
-pub mod speed_limiter_service {
+pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    use SpeedLimiterServiceInput as I;
-    use SpeedLimiterServiceOutput as O;
-    use SpeedLimiterServiceTimer as T;
-    #[derive(Clone, Copy, PartialEq, Default)]
-    pub struct Context {
-        pub state_update: bool,
-        pub v_update: bool,
-        pub vacuum_brake: VacuumBrakeState,
-        pub vdc: VdcState,
-        pub speed: f64,
-        pub changed_set_speed_old: f64,
-        pub v_set_aux: f64,
-        pub v_set: f64,
-        pub flow_expression_fresh_ident: f64,
-        pub in_regulation_aux: bool,
-        pub on_state: SpeedLimiterOn,
-        pub state: SpeedLimiter,
-    }
-    impl Context {
-        fn init() -> Context {
-            Default::default()
-        }
-        fn get_process_set_speed_inputs(
-            &self,
-            changed_set_speed: Option<f64>,
-        ) -> ProcessSetSpeedInput {
-            ProcessSetSpeedInput {
-                set_speed: changed_set_speed,
-            }
-        }
-        fn get_speed_limiter_inputs(
-            &self,
-            activation: Option<ActivationRequest>,
-            kickdown: Option<Kickdown>,
-            failure: Option<Failure>,
-        ) -> SpeedLimiterInput {
-            SpeedLimiterInput {
-                vacuum_brake_state: self.vacuum_brake,
-                vdc_disabled: self.vdc,
-                speed: self.speed,
-                v_set: self.v_set,
-                activation_req: activation,
-                kickdown: kickdown,
-                failure: failure,
-            }
-        }
-    }
+    use RuntimeInput as I;
+    use RuntimeOutput as O;
+    use RuntimeTimer as T;
     #[derive(PartialEq)]
-    pub enum SpeedLimiterServiceTimer {
+    pub enum RuntimeTimer {
         period_fresh_ident,
     }
-    impl timer_stream::Timing for SpeedLimiterServiceTimer {
+    impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::period_fresh_ident => std::time::Duration::from_millis(10u64),
@@ -341,48 +297,48 @@ pub mod speed_limiter_service {
             }
         }
     }
-    pub enum SpeedLimiterServiceInput {
-        activation(ActivationRequest, std::time::Instant),
-        set_speed(f64, std::time::Instant),
-        speed(f64, std::time::Instant),
+    pub enum RuntimeInput {
         vacuum_brake(VacuumBrakeState, std::time::Instant),
-        kickdown(Kickdown, std::time::Instant),
+        activation(ActivationRequest, std::time::Instant),
         failure(Failure, std::time::Instant),
+        speed(f64, std::time::Instant),
+        kickdown(Kickdown, std::time::Instant),
+        set_speed(f64, std::time::Instant),
         vdc(VdcState, std::time::Instant),
         timer(T, std::time::Instant),
     }
-    impl priority_stream::Reset for SpeedLimiterServiceInput {
+    impl priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
-                SpeedLimiterServiceInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
+                RuntimeInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
                 _ => false,
             }
         }
     }
-    impl PartialEq for SpeedLimiterServiceInput {
+    impl PartialEq for RuntimeInput {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (I::activation(this, _), I::activation(other, _)) => this.eq(other),
-                (I::set_speed(this, _), I::set_speed(other, _)) => this.eq(other),
-                (I::speed(this, _), I::speed(other, _)) => this.eq(other),
                 (I::vacuum_brake(this, _), I::vacuum_brake(other, _)) => this.eq(other),
-                (I::kickdown(this, _), I::kickdown(other, _)) => this.eq(other),
+                (I::activation(this, _), I::activation(other, _)) => this.eq(other),
                 (I::failure(this, _), I::failure(other, _)) => this.eq(other),
+                (I::speed(this, _), I::speed(other, _)) => this.eq(other),
+                (I::kickdown(this, _), I::kickdown(other, _)) => this.eq(other),
+                (I::set_speed(this, _), I::set_speed(other, _)) => this.eq(other),
                 (I::vdc(this, _), I::vdc(other, _)) => this.eq(other),
                 (I::timer(this, _), I::timer(other, _)) => this.eq(other),
                 _ => false,
             }
         }
     }
-    impl SpeedLimiterServiceInput {
+    impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
-                I::activation(_, instant) => *instant,
-                I::set_speed(_, instant) => *instant,
-                I::speed(_, instant) => *instant,
                 I::vacuum_brake(_, instant) => *instant,
-                I::kickdown(_, instant) => *instant,
+                I::activation(_, instant) => *instant,
                 I::failure(_, instant) => *instant,
+                I::speed(_, instant) => *instant,
+                I::kickdown(_, instant) => *instant,
+                I::set_speed(_, instant) => *instant,
                 I::vdc(_, instant) => *instant,
                 I::timer(_, instant) => *instant,
             }
@@ -391,29 +347,156 @@ pub mod speed_limiter_service {
             v1.get_instant().cmp(&v2.get_instant())
         }
     }
-    pub enum SpeedLimiterServiceOutput {
+    pub enum RuntimeOutput {
         in_regulation(bool, std::time::Instant),
-        v_set(f64, std::time::Instant),
         sl_state(SpeedLimiterOn, std::time::Instant),
+        v_set(f64, std::time::Instant),
     }
-    pub struct SpeedLimiterService {
-        context: Context,
-        process_set_speed: ProcessSetSpeedState,
-        speed_limiter: SpeedLimiterState,
+    pub struct Runtime {
+        speed_limiter: speed_limiter_service::SpeedLimiterService,
         output: futures::channel::mpsc::Sender<O>,
         timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
-    impl SpeedLimiterService {
+    pub mod speed_limiter_service {
+        use super::*;
+        use futures::{sink::SinkExt, stream::StreamExt};
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct Context {
+            pub state_update: bool,
+            pub v_update: bool,
+            pub vacuum_brake: VacuumBrakeState,
+            pub vdc: VdcState,
+            pub speed: f64,
+            pub changed_set_speed_old: f64,
+            pub v_set_aux: f64,
+            pub v_set: f64,
+            pub flow_expression_fresh_ident: f64,
+            pub in_regulation_aux: bool,
+            pub on_state: SpeedLimiterOn,
+            pub state: SpeedLimiter,
+        }
+        impl Context {
+            fn init() -> Context {
+                Default::default()
+            }
+            fn get_process_set_speed_inputs(
+                &self,
+                changed_set_speed: Option<f64>,
+            ) -> ProcessSetSpeedInput {
+                ProcessSetSpeedInput {
+                    set_speed: changed_set_speed,
+                }
+            }
+            fn get_speed_limiter_inputs(
+                &self,
+                activation: Option<ActivationRequest>,
+                kickdown: Option<Kickdown>,
+                failure: Option<Failure>,
+            ) -> SpeedLimiterInput {
+                SpeedLimiterInput {
+                    vacuum_brake_state: self.vacuum_brake,
+                    vdc_disabled: self.vdc,
+                    speed: self.speed,
+                    v_set: self.v_set,
+                    activation_req: activation,
+                    kickdown: kickdown,
+                    failure: failure,
+                }
+            }
+        }
+        pub struct SpeedLimiterService {
+            context: Context,
+            process_set_speed: ProcessSetSpeedState,
+            speed_limiter: SpeedLimiterState,
+            output: futures::channel::mpsc::Sender<O>,
+            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+        }
+        impl SpeedLimiterService {
+            pub fn init(
+                output: futures::channel::mpsc::Sender<O>,
+                timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+            ) -> SpeedLimiterService {
+                let context = Context::init();
+                let process_set_speed = ProcessSetSpeedState::init();
+                let speed_limiter = SpeedLimiterState::init();
+                SpeedLimiterService {
+                    context,
+                    process_set_speed,
+                    speed_limiter,
+                    output,
+                    timer,
+                }
+            }
+            pub async fn handle_speed(&mut self, instant: std::time::Instant, speed: f64) {
+                self.context.speed = speed;
+            }
+            pub async fn handle_kickdown(
+                &mut self,
+                instant: std::time::Instant,
+                kickdown: Kickdown,
+            ) {
+            }
+            pub async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
+                if (self.context.flow_expression_fresh_ident - set_speed).abs() >= 1.0 {
+                    self.context.flow_expression_fresh_ident = set_speed;
+                }
+                let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident;
+                if self.context.changed_set_speed_old != flow_expression_fresh_ident {
+                    self.context.changed_set_speed_old = flow_expression_fresh_ident;
+                    let changed_set_speed = flow_expression_fresh_ident;
+                    let (v_set_aux, v_update) = self.process_set_speed.step(
+                        self.context
+                            .get_process_set_speed_inputs(Some(changed_set_speed)),
+                    );
+                    self.context.v_set_aux = v_set_aux;
+                    self.context.v_update = v_update;
+                    let v_set_aux = self.context.v_set_aux;
+                    let v_set = v_set_aux;
+                    self.context.v_set = v_set;
+                    {
+                        let res = self.output.send(O::v_set(v_set, instant)).await;
+                        if res.is_err() {
+                            return;
+                        }
+                    }
+                } else {
+                }
+            }
+            pub async fn handle_vdc(&mut self, instant: std::time::Instant, vdc: VdcState) {
+                self.context.vdc = vdc;
+            }
+            pub async fn handle_vacuum_brake(
+                &mut self,
+                instant: std::time::Instant,
+                vacuum_brake: VacuumBrakeState,
+            ) {
+                self.context.vacuum_brake = vacuum_brake;
+            }
+            pub async fn handle_activation(
+                &mut self,
+                instant: std::time::Instant,
+                activation: ActivationRequest,
+            ) {
+            }
+            pub async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
+                {
+                    let res = self.timer.send((T::period_fresh_ident, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+            }
+            pub async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {}
+        }
+    }
+    impl Runtime {
         pub fn new(
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
-        ) -> SpeedLimiterService {
-            let context = Context::init();
-            let process_set_speed = ProcessSetSpeedState::init();
-            let speed_limiter = SpeedLimiterState::init();
-            SpeedLimiterService {
-                context,
-                process_set_speed,
+        ) -> Runtime {
+            let speed_limiter =
+                speed_limiter_service::SpeedLimiterService::init(output.clone(), timer.clone());
+            Runtime {
                 speed_limiter,
                 output,
                 timer,
@@ -425,9 +508,9 @@ pub mod speed_limiter_service {
             input: impl futures::Stream<Item = I>,
         ) {
             tokio::pin!(input);
-            let mut service = self;
+            let mut runtime = self;
             {
-                let res = service
+                let res = runtime
                     .timer
                     .send((T::period_fresh_ident, init_instant))
                     .await;
@@ -441,193 +524,37 @@ pub mod speed_limiter_service {
                     {
                         match input
                         {
-                            I :: kickdown(kickdown, instant) =>
-                            service.handle_kickdown(instant, kickdown).await, I ::
-                            set_speed(set_speed, instant) =>
-                            service.handle_set_speed(instant, set_speed).await, I ::
-                            failure(failure, instant) =>
-                            service.handle_failure(instant, failure).await, I ::
-                            speed(speed, instant) =>
-                            service.handle_speed(instant, speed).await, I ::
-                            timer(T :: period_fresh_ident, instant) =>
-                            service.handle_period_fresh_ident(instant).await, I ::
-                            vdc(vdc, instant) => service.handle_vdc(instant, vdc).await,
-                            I :: vacuum_brake(vacuum_brake, instant) =>
-                            service.handle_vacuum_brake(instant, vacuum_brake).await, I
-                            :: activation(activation, instant) =>
-                            service.handle_activation(instant, activation).await
+                            I :: speed(speed, instant) =>
+                            {
+                                runtime.speed_limiter.handle_speed(instant, speed).await;
+                            }, I :: kickdown(kickdown, instant) =>
+                            {
+                                runtime.speed_limiter.handle_kickdown(instant,
+                                kickdown).await;
+                            }, I :: set_speed(set_speed, instant) =>
+                            {
+                                runtime.speed_limiter.handle_set_speed(instant,
+                                set_speed).await;
+                            }, I :: vdc(vdc, instant) =>
+                            { runtime.speed_limiter.handle_vdc(instant, vdc).await; }, I
+                            :: vacuum_brake(vacuum_brake, instant) =>
+                            {
+                                runtime.speed_limiter.handle_vacuum_brake(instant,
+                                vacuum_brake).await;
+                            }, I :: activation(activation, instant) =>
+                            {
+                                runtime.speed_limiter.handle_activation(instant,
+                                activation).await;
+                            }, I :: timer(T :: period_fresh_ident, instant) =>
+                            {
+                                runtime.speed_limiter.handle_period_fresh_ident(instant).await;
+                            }, I :: failure(failure, instant) =>
+                            {
+                                runtime.speed_limiter.handle_failure(instant,
+                                failure).await;
+                            }
                         }
                     } else { break; }
-                }
-            }
-        }
-        async fn handle_kickdown(&mut self, instant: std::time::Instant, kickdown: Kickdown) {
-            let (state, on_state, in_regulation_aux, state_update) =
-                self.speed_limiter
-                    .step(
-                        self.context
-                            .get_speed_limiter_inputs(None, Some(kickdown), None),
-                    );
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            let in_regulation_aux = self.context.in_regulation_aux;
-            let in_regulation = in_regulation_aux;
-            {
-                let res = self
-                    .output
-                    .send(O::in_regulation(in_regulation, instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            let on_state = self.context.on_state;
-            let sl_state = on_state;
-            {
-                let res = self.output.send(O::sl_state(sl_state, instant)).await;
-                if res.is_err() {
-                    return;
-                }
-            }
-        }
-        async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
-            if (self.context.flow_expression_fresh_ident - set_speed).abs() >= 1.0 {
-                self.context.flow_expression_fresh_ident = set_speed;
-            }
-            let flow_expression_fresh_ident = self.context.flow_expression_fresh_ident;
-            if self.context.changed_set_speed_old != flow_expression_fresh_ident {
-                self.context.changed_set_speed_old = flow_expression_fresh_ident;
-                let changed_set_speed = flow_expression_fresh_ident;
-                let (v_set_aux, v_update) = self.process_set_speed.step(
-                    self.context
-                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                );
-                self.context.v_set_aux = v_set_aux;
-                self.context.v_update = v_update;
-                let v_set_aux = self.context.v_set_aux;
-                let v_set = v_set_aux;
-                self.context.v_set = v_set;
-                {
-                    let res = self.output.send(O::v_set(v_set, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
-            } else {
-            }
-        }
-        async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {
-            let (state, on_state, in_regulation_aux, state_update) =
-                self.speed_limiter
-                    .step(
-                        self.context
-                            .get_speed_limiter_inputs(None, None, Some(failure)),
-                    );
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            let in_regulation_aux = self.context.in_regulation_aux;
-            let in_regulation = in_regulation_aux;
-            {
-                let res = self
-                    .output
-                    .send(O::in_regulation(in_regulation, instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            let on_state = self.context.on_state;
-            let sl_state = on_state;
-            {
-                let res = self.output.send(O::sl_state(sl_state, instant)).await;
-                if res.is_err() {
-                    return;
-                }
-            }
-        }
-        async fn handle_speed(&mut self, instant: std::time::Instant, speed: f64) {
-            self.context.speed = speed;
-        }
-        async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
-            let (state, on_state, in_regulation_aux, state_update) = self
-                .speed_limiter
-                .step(self.context.get_speed_limiter_inputs(None, None, None));
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            let in_regulation_aux = self.context.in_regulation_aux;
-            let in_regulation = in_regulation_aux;
-            {
-                let res = self
-                    .output
-                    .send(O::in_regulation(in_regulation, instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            let on_state = self.context.on_state;
-            let sl_state = on_state;
-            {
-                let res = self.output.send(O::sl_state(sl_state, instant)).await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            {
-                let res = self.timer.send((T::period_fresh_ident, instant)).await;
-                if res.is_err() {
-                    return;
-                }
-            }
-        }
-        async fn handle_vdc(&mut self, instant: std::time::Instant, vdc: VdcState) {
-            self.context.vdc = vdc;
-        }
-        async fn handle_vacuum_brake(
-            &mut self,
-            instant: std::time::Instant,
-            vacuum_brake: VacuumBrakeState,
-        ) {
-            self.context.vacuum_brake = vacuum_brake;
-        }
-        async fn handle_activation(
-            &mut self,
-            instant: std::time::Instant,
-            activation: ActivationRequest,
-        ) {
-            let (state, on_state, in_regulation_aux, state_update) =
-                self.speed_limiter
-                    .step(
-                        self.context
-                            .get_speed_limiter_inputs(Some(activation), None, None),
-                    );
-            self.context.state = state;
-            self.context.on_state = on_state;
-            self.context.in_regulation_aux = in_regulation_aux;
-            self.context.state_update = state_update;
-            let in_regulation_aux = self.context.in_regulation_aux;
-            let in_regulation = in_regulation_aux;
-            {
-                let res = self
-                    .output
-                    .send(O::in_regulation(in_regulation, instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            let on_state = self.context.on_state;
-            let sl_state = on_state;
-            {
-                let res = self.output.send(O::sl_state(sl_state, instant)).await;
-                if res.is_err() {
-                    return;
                 }
             }
         }

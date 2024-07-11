@@ -32,6 +32,8 @@ pub enum Item {
     Typedef(Typedef),
     /// GRust service.
     Service(Service),
+    Import(FlowImport),
+    Export(FlowExport),
 }
 impl Parse for Item {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -41,8 +43,16 @@ impl Parse for Item {
             Ok(Item::Function(input.parse()?))
         } else if Typedef::peek(input) {
             Ok(Item::Typedef(input.parse()?))
-        } else {
+        } else if Service::peek(input) {
             Ok(Item::Service(input.parse()?))
+        } else if FlowImport::peek(input) {
+            Ok(Item::Import(input.parse()?))
+        } else if FlowExport::peek(input) {
+            Ok(Item::Export(input.parse()?))
+        } else {
+            Err(input.error(
+                "expected flow import or export, type, component, function or service definition",
+            ))
         }
     }
 }

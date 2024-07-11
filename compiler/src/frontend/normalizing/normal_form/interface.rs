@@ -21,12 +21,16 @@ impl Service {
         symbol_table.local();
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
         let statements = std::mem::take(&mut self.statements);
-        self.statements = statements
-            .into_iter()
-            .flat_map(|flow_statement| {
-                flow_statement.normal_form(&mut identifier_creator, symbol_table)
-            })
-            .collect();
+        debug_assert!(self.statements.is_empty());
+        statements.into_values().for_each(|flow_statement| {
+            let statements = flow_statement.normal_form(&mut identifier_creator, symbol_table);
+            for statement in statements {
+                let _unique = self
+                    .statements
+                    .insert(symbol_table.get_fresh_id(), statement);
+                debug_assert!(_unique.is_none())
+            }
+        });
         symbol_table.global()
     }
 }
@@ -69,7 +73,6 @@ impl FlowStatement {
                 ref mut flow_expression,
                 ..
             }) => flow_expression.normal_form(identifier_creator, symbol_table),
-            _ => vec![],
         };
         new_statements.push(self);
         new_statements

@@ -1,8 +1,6 @@
 prelude! {
     frontend::typing_analysis::TypeAnalysis,
-    hir::interface::{
-        FlowDeclaration, FlowExport, FlowImport, FlowInstantiation, FlowStatement,
-    },
+    hir::interface::{ FlowDeclaration, FlowInstantiation, FlowStatement },
 }
 
 impl TypeAnalysis for FlowStatement {
@@ -31,8 +29,6 @@ impl TypeAnalysis for FlowStatement {
                 let expression_type = flow_expression.get_type().unwrap();
                 expression_type.eq_check(expected_type, Location::default(), errors)
             }
-            FlowStatement::Import(FlowImport { .. }) => Ok(()),
-            FlowStatement::Export(FlowExport { .. }) => Ok(()),
         }
     }
 }
