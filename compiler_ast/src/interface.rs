@@ -616,11 +616,6 @@ mod parse_service {
     fn should_parse_service() {
         let _: Service = syn::parse_quote! {
             service aeb {
-                import signal car::speed_km_h                   : float;
-                import event  car::detect::left::pedestrian_l   : float;
-                import event  car::detect::right::pedestrian_r  : float;
-                export signal car::urban::braking::brakes       : Braking;
-
                 let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
                 brakes = braking_state(pedestrian, speed_km_h);
             }

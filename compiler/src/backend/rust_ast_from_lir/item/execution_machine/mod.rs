@@ -226,13 +226,13 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
 
             #(#runtime_items)*
 
-            #(#handlers)*
-
             impl Runtime {
                 #new_runtime
 
                 #run_loop
             }
+
+            #(#handlers)*
         }
     })
 }

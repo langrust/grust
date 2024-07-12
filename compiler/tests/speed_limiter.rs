@@ -5,7 +5,7 @@ compiler::prelude! {
 #[test]
 fn should_compile_speed_limiter() {
     let ast: Ast = syn::parse_quote! {
-        #![dump = "tests/macro_outputs/speed_limiter.rs"]
+        #![dump = "tests/macro_outputs/speed_limiter.rs", test]
 
         // # Imports
         import signal  car::hmi::speed_limiter::activation : ActivationRequest;
