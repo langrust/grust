@@ -1021,7 +1021,7 @@ impl<'a> PropagationBuilder<'a> {
     ) -> PropagationBuilder<'a> {
         // create events isles
         let mut isle_builder = IsleBuilder::new(symbol_table, service);
-        isle_builder.trace_events(service.get_flows_ids());
+        isle_builder.trace_events(service.get_flows_ids(imports.values()));
         let isles = isle_builder.into_isles();
 
         // sort statement in dependency order
@@ -1208,6 +1208,8 @@ impl<'a> PropagationBuilder<'a> {
             // get flow export related to stmt_id
             if let Some(export) = self.exports.get(&stmt_id) {
                 self.send(export.id)
+            } else {
+                unreachable!()
             }
 
             self.extend_with_next(stmt_id);
