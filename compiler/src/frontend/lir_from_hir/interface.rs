@@ -151,7 +151,13 @@ impl Service {
     ) -> ServiceHandler {
         symbol_table.local();
         let mut flows_context = self.get_flows_context(symbol_table);
-        let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
+        let mut identifier_creator = IdentifierCreator::from(
+            self.get_flows_names(symbol_table).chain(
+                imports
+                    .values()
+                    .map(|import| symbol_table.get_name(import.id).clone()),
+            ),
+        );
 
         // collects components, input flows, output flows, timing events that are present in the service
         let mut components = vec![];
