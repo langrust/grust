@@ -1,4 +1,3 @@
-
 //! JSON reading inputs and writing outputs API.
 //!
 //! This API delivers IO functions for JSON inputs/outputs files.
