@@ -164,10 +164,8 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
                 .push(parse_quote! { #service_name: #service_path::#service_state_struct });
             field_values.push(parse_quote! { #service_name });
         });
-        runtime_fields.push(parse_quote! { output: futures::channel::mpsc::Sender<O> });
         runtime_fields
             .push(parse_quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> });
-        field_values.push(parse_quote! { output });
         field_values.push(parse_quote! { timer });
 
         runtime_items.push(Item::Struct(parse_quote! {
@@ -181,15 +179,22 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
 
     // funtion that creates a new runtime
     let new_runtime = {
+        let nb_services = services_handlers.len();
+        let is_last = |idx| idx < nb_services - 1;
         // initializes services
-        let services_init = services_handlers.iter().map(|service_handler| {
+        let services_init = services_handlers.iter().enumerate().map(|(idx, service_handler)| {
             let service_name = &service_handler.service;
             let service_path = format_ident!("{}_service", service_name);
             let service_state_struct =
                 format_ident!("{}", to_camel_case(&format!("{}Service", service_name)));
             let service_name = format_ident!("{}", service_name);
+            let output_channel: syn::Expr = if is_last(idx) {
+                parse_quote! { output.clone() }
+            } else {
+                parse_quote! { output }
+            };
             let state: Stmt = parse_quote! {
-                let #service_name = #service_path::#service_state_struct::init(output.clone(), timer.clone());
+                let #service_name = #service_path::#service_state_struct::init(#output_channel, timer.clone());
             };
             state
         });

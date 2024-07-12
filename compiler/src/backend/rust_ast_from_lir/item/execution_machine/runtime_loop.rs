@@ -27,8 +27,8 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
                 }
             }
         });
-    // loop on the [tokio::select!] macro
-    let loop_select: Stmt = {
+    // loop on the input stream
+    let async_loop: Stmt = {
         let mut input_arms: Vec<Arm> = vec![];
         input_handlers.iter().for_each(
             |InputHandler{
@@ -67,15 +67,9 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
         );
         // parse the loop
         parse_quote! {
-            loop{
-                tokio::select! {
-                    input = input.next() => if let Some(input) = input {
-                        match input {
-                            #(#input_arms),*
-                        }
-                    } else {
-                        break;
-                    }
+            while let Some(input) = input.next().await {
+                match input {
+                    #(#input_arms),*
                 }
             }
         }
@@ -84,10 +78,10 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
     // `run_loop` function
     ImplItem::Fn(parse_quote! {
         pub async fn run_loop(self, init_instant: std::time::Instant, input: impl futures::Stream<Item = I>) {
-            tokio::pin!(input);
+            futures::pin_mut!(input);
             let mut runtime = self;
             #(#init_timers)*
-            #loop_select
+            #async_loop
         }
     })
 }

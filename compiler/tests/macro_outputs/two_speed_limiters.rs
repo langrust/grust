@@ -412,7 +412,6 @@ pub mod runtime {
     pub struct Runtime {
         speed_limiter: speed_limiter_service::SpeedLimiterService,
         another_speed_limiter: another_speed_limiter_service::AnotherSpeedLimiterService,
-        output: futures::channel::mpsc::Sender<O>,
         timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
@@ -424,13 +423,12 @@ pub mod runtime {
                 speed_limiter_service::SpeedLimiterService::init(output.clone(), timer.clone());
             let another_speed_limiter =
                 another_speed_limiter_service::AnotherSpeedLimiterService::init(
-                    output.clone(),
+                    output,
                     timer.clone(),
                 );
             Runtime {
                 speed_limiter,
                 another_speed_limiter,
-                output,
                 timer,
             }
         }
@@ -439,7 +437,7 @@ pub mod runtime {
             init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
         ) {
-            tokio::pin!(input);
+            futures::pin_mut!(input);
             let mut runtime = self;
             {
                 let res = runtime
@@ -468,8 +466,90 @@ pub mod runtime {
                     return;
                 }
             }
-            loop {
-                tokio::select! { input = input . next () => if let Some (input) = input { match input { I :: activation (activation , instant) => { runtime . speed_limiter . handle_activation (instant , activation) . await ; } , I :: kickdown (kickdown , instant) => { runtime . speed_limiter . handle_kickdown (instant , kickdown) . await ; } , I :: vdc (vdc , instant) => { runtime . speed_limiter . handle_vdc (instant , vdc) . await ; } , I :: set_speed (set_speed , instant) => { runtime . speed_limiter . handle_set_speed (instant , set_speed) . await ; } , I :: speed (speed , instant) => { runtime . speed_limiter . handle_speed (instant , speed) . await ; } , I :: timer (T :: period_fresh_ident , instant) => { runtime . speed_limiter . handle_period_fresh_ident (instant) . await ; } , I :: vacuum_brake (vacuum_brake , instant) => { runtime . speed_limiter . handle_vacuum_brake (instant , vacuum_brake) . await ; } , I :: activation (activation , instant) => { runtime . another_speed_limiter . handle_activation (instant , activation) . await ; } , I :: vdc (vdc , instant) => { runtime . another_speed_limiter . handle_vdc (instant , vdc) . await ; } , I :: timer (T :: period_fresh_ident_1 , instant) => { runtime . another_speed_limiter . handle_period_fresh_ident_1 (instant) . await ; } , I :: speed (speed , instant) => { runtime . another_speed_limiter . handle_speed (instant , speed) . await ; } , I :: kickdown (kickdown , instant) => { runtime . another_speed_limiter . handle_kickdown (instant , kickdown) . await ; } , I :: timer (T :: period_fresh_ident , instant) => { runtime . another_speed_limiter . handle_period_fresh_ident (instant) . await ; } , I :: set_speed (set_speed , instant) => { runtime . another_speed_limiter . handle_set_speed (instant , set_speed) . await ; } , I :: vacuum_brake (vacuum_brake , instant) => { runtime . another_speed_limiter . handle_vacuum_brake (instant , vacuum_brake) . await ; } } } else { break ; } }
+            while let Some(input) = input.next().await {
+                match input {
+                    I::activation(activation, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_activation(instant, activation)
+                            .await;
+                    }
+                    I::kickdown(kickdown, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_kickdown(instant, kickdown)
+                            .await;
+                    }
+                    I::vdc(vdc, instant) => {
+                        runtime.speed_limiter.handle_vdc(instant, vdc).await;
+                    }
+                    I::set_speed(set_speed, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_set_speed(instant, set_speed)
+                            .await;
+                    }
+                    I::speed(speed, instant) => {
+                        runtime.speed_limiter.handle_speed(instant, speed).await;
+                    }
+                    I::timer(T::period_fresh_ident, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_period_fresh_ident(instant)
+                            .await;
+                    }
+                    I::vacuum_brake(vacuum_brake, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_vacuum_brake(instant, vacuum_brake)
+                            .await;
+                    }
+                    I::activation(activation, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_activation(instant, activation)
+                            .await;
+                    }
+                    I::vdc(vdc, instant) => {
+                        runtime.another_speed_limiter.handle_vdc(instant, vdc).await;
+                    }
+                    I::timer(T::period_fresh_ident_1, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_period_fresh_ident_1(instant)
+                            .await;
+                    }
+                    I::speed(speed, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_speed(instant, speed)
+                            .await;
+                    }
+                    I::kickdown(kickdown, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_kickdown(instant, kickdown)
+                            .await;
+                    }
+                    I::timer(T::period_fresh_ident, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_period_fresh_ident(instant)
+                            .await;
+                    }
+                    I::set_speed(set_speed, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_set_speed(instant, set_speed)
+                            .await;
+                    }
+                    I::vacuum_brake(vacuum_brake, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_vacuum_brake(instant, vacuum_brake)
+                            .await;
+                    }
+                }
             }
         }
     }
