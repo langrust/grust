@@ -45,20 +45,23 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
         timing_events
             .iter()
             .for_each(|TimingEvent { identifier, kind }| {
-                let ident = format_ident!("{}", identifier);
-                timer_variants.push(parse_quote! { #ident });
+                let enum_ident = Ident::new(
+                    to_camel_case(identifier.as_str()).as_str(),
+                    Span::call_site(),
+                );
+                timer_variants.push(parse_quote! { #enum_ident });
                 match kind {
                     TimingEventKind::Period(duration) => {
-                        timer_duration_arms.push(parse_quote! { T::#ident => {
+                        timer_duration_arms.push(parse_quote! { T::#enum_ident => {
                             std::time::Duration::from_millis(#duration)
                         } });
-                        timer_reset_arms.push(parse_quote! { T::#ident => false });
+                        timer_reset_arms.push(parse_quote! { T::#enum_ident => false });
                     }
                     TimingEventKind::Timeout(duration) => {
-                        timer_duration_arms.push(parse_quote! { T::#ident => {
+                        timer_duration_arms.push(parse_quote! { T::#enum_ident => {
                             std::time::Duration::from_millis(#duration)
                         } });
-                        timer_reset_arms.push(parse_quote! { T::#ident => true });
+                        timer_reset_arms.push(parse_quote! { T::#enum_ident => true });
                     }
                 }
             });
@@ -66,29 +69,35 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
             |InterfaceFlow {
                  identifier, r#type, ..
              }| {
-                let name = Ident::new(identifier, Span::call_site());
-                let ty = type_rust_ast_from_lir(r#type.clone());
-                input_variants.push(parse_quote! { #name(#ty, std::time::Instant) });
-                input_eq_arms.push(
-                    parse_quote! { (I::#name(this, _), I::#name(other, _)) => this.eq(other) },
+                let enum_ident = Ident::new(
+                    to_camel_case(identifier.as_str()).as_str(),
+                    Span::call_site(),
                 );
-                input_get_instant_arms.push(parse_quote! { I::#name(_, instant) => *instant });
+                let ty = type_rust_ast_from_lir(r#type.clone());
+                input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
+                input_eq_arms.push(
+                    parse_quote! { (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other) },
+                );
+                input_get_instant_arms.push(parse_quote! { I::#enum_ident(_, instant) => *instant });
             },
         );
         output_flows.into_iter().for_each(
             |InterfaceFlow {
                  identifier, r#type, ..
              }| {
-                let name = Ident::new(&identifier, Span::call_site());
+                let enum_ident = Ident::new(
+                    to_camel_case(identifier.as_str()).as_str(),
+                    Span::call_site(),
+                );
                 let ty = type_rust_ast_from_lir(r#type);
-                output_variants.push(parse_quote! { #name(#ty, std::time::Instant) });
+                output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
             },
         );
         if !timer_variants.is_empty() {
-            input_variants.push(parse_quote! { timer(T, std::time::Instant) });
+            input_variants.push(parse_quote! { Timer(T, std::time::Instant) });
             input_eq_arms
-                .push(parse_quote! { (I::timer(this, _), I::timer(other, _)) => this.eq(other) });
-            input_get_instant_arms.push(parse_quote! { I::timer(_, instant) => *instant });
+                .push(parse_quote! { (I::Timer(this, _), I::Timer(other, _)) => this.eq(other) });
+            input_get_instant_arms.push(parse_quote! { I::Timer(_, instant) => *instant });
         }
         input_eq_arms.push(parse_quote! { _ => false });
         runtime_items.push(Item::Enum(parse_quote! {
@@ -121,7 +130,7 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
                 impl priority_stream::Reset for RuntimeInput {
                     fn do_reset(&self) -> bool {
                         match self {
-                                RuntimeInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
+                                I::Timer(timer, _) => timer_stream::Timing::do_reset(timer),
                                 _ => false,
                         }
                     }

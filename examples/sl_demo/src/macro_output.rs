@@ -283,34 +283,34 @@ pub mod runtime {
     use RuntimeTimer as T;
     #[derive(PartialEq)]
     pub enum RuntimeTimer {
-        period_fresh_ident,
+        PeriodFreshIdent,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
-                T::period_fresh_ident => std::time::Duration::from_millis(10u64),
+                T::PeriodFreshIdent => std::time::Duration::from_millis(10u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
-                T::period_fresh_ident => false,
+                T::PeriodFreshIdent => false,
             }
         }
     }
     pub enum RuntimeInput {
-        vacuum_brake(VacuumBrakeState, std::time::Instant),
-        activation(ActivationRequest, std::time::Instant),
-        failure(Failure, std::time::Instant),
-        speed(f64, std::time::Instant),
-        kickdown(Kickdown, std::time::Instant),
-        set_speed(f64, std::time::Instant),
-        vdc(VdcState, std::time::Instant),
-        timer(T, std::time::Instant),
+        VacuumBrake(VacuumBrakeState, std::time::Instant),
+        Activation(ActivationRequest, std::time::Instant),
+        Failure(Failure, std::time::Instant),
+        Speed(f64, std::time::Instant),
+        Kickdown(Kickdown, std::time::Instant),
+        SetSpeed(f64, std::time::Instant),
+        Vdc(VdcState, std::time::Instant),
+        Timer(T, std::time::Instant),
     }
     impl priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
-                RuntimeInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
+                I::Timer(timer, _) => timer_stream::Timing::do_reset(timer),
                 _ => false,
             }
         }
@@ -318,14 +318,14 @@ pub mod runtime {
     impl PartialEq for RuntimeInput {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (I::vacuum_brake(this, _), I::vacuum_brake(other, _)) => this.eq(other),
-                (I::activation(this, _), I::activation(other, _)) => this.eq(other),
-                (I::failure(this, _), I::failure(other, _)) => this.eq(other),
-                (I::speed(this, _), I::speed(other, _)) => this.eq(other),
-                (I::kickdown(this, _), I::kickdown(other, _)) => this.eq(other),
-                (I::set_speed(this, _), I::set_speed(other, _)) => this.eq(other),
-                (I::vdc(this, _), I::vdc(other, _)) => this.eq(other),
-                (I::timer(this, _), I::timer(other, _)) => this.eq(other),
+                (I::VacuumBrake(this, _), I::VacuumBrake(other, _)) => this.eq(other),
+                (I::Activation(this, _), I::Activation(other, _)) => this.eq(other),
+                (I::Failure(this, _), I::Failure(other, _)) => this.eq(other),
+                (I::Speed(this, _), I::Speed(other, _)) => this.eq(other),
+                (I::Kickdown(this, _), I::Kickdown(other, _)) => this.eq(other),
+                (I::SetSpeed(this, _), I::SetSpeed(other, _)) => this.eq(other),
+                (I::Vdc(this, _), I::Vdc(other, _)) => this.eq(other),
+                (I::Timer(this, _), I::Timer(other, _)) => this.eq(other),
                 _ => false,
             }
         }
@@ -333,14 +333,14 @@ pub mod runtime {
     impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
-                I::vacuum_brake(_, instant) => *instant,
-                I::activation(_, instant) => *instant,
-                I::failure(_, instant) => *instant,
-                I::speed(_, instant) => *instant,
-                I::kickdown(_, instant) => *instant,
-                I::set_speed(_, instant) => *instant,
-                I::vdc(_, instant) => *instant,
-                I::timer(_, instant) => *instant,
+                I::VacuumBrake(_, instant) => *instant,
+                I::Activation(_, instant) => *instant,
+                I::Failure(_, instant) => *instant,
+                I::Speed(_, instant) => *instant,
+                I::Kickdown(_, instant) => *instant,
+                I::SetSpeed(_, instant) => *instant,
+                I::Vdc(_, instant) => *instant,
+                I::Timer(_, instant) => *instant,
             }
         }
         pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
@@ -348,9 +348,9 @@ pub mod runtime {
         }
     }
     pub enum RuntimeOutput {
-        in_regulation(bool, std::time::Instant),
-        sl_state(SpeedLimiterOn, std::time::Instant),
-        v_set(f64, std::time::Instant),
+        InRegulation(bool, std::time::Instant),
+        SlState(SpeedLimiterOn, std::time::Instant),
+        VSet(f64, std::time::Instant),
     }
     pub struct Runtime {
         speed_limiter: speed_limiter_service::SpeedLimiterService,
@@ -378,7 +378,7 @@ pub mod runtime {
             {
                 let res = runtime
                     .timer
-                    .send((T::period_fresh_ident, init_instant))
+                    .send((T::PeriodFreshIdent, init_instant))
                     .await;
                 if res.is_err() {
                     return;
@@ -386,43 +386,43 @@ pub mod runtime {
             }
             while let Some(input) = input.next().await {
                 match input {
-                    I::speed(speed, instant) => {
+                    I::Speed(speed, instant) => {
                         runtime.speed_limiter.handle_speed(instant, speed).await;
                     }
-                    I::kickdown(kickdown, instant) => {
+                    I::Kickdown(kickdown, instant) => {
                         runtime
                             .speed_limiter
                             .handle_kickdown(instant, kickdown)
                             .await;
                     }
-                    I::set_speed(set_speed, instant) => {
+                    I::SetSpeed(set_speed, instant) => {
                         runtime
                             .speed_limiter
                             .handle_set_speed(instant, set_speed)
                             .await;
                     }
-                    I::vdc(vdc, instant) => {
+                    I::Vdc(vdc, instant) => {
                         runtime.speed_limiter.handle_vdc(instant, vdc).await;
                     }
-                    I::vacuum_brake(vacuum_brake, instant) => {
+                    I::VacuumBrake(vacuum_brake, instant) => {
                         runtime
                             .speed_limiter
                             .handle_vacuum_brake(instant, vacuum_brake)
                             .await;
                     }
-                    I::activation(activation, instant) => {
+                    I::Activation(activation, instant) => {
                         runtime
                             .speed_limiter
                             .handle_activation(instant, activation)
                             .await;
                     }
-                    I::timer(T::period_fresh_ident, instant) => {
+                    I::Timer(T::PeriodFreshIdent, instant) => {
                         runtime
                             .speed_limiter
                             .handle_period_fresh_ident(instant)
                             .await;
                     }
-                    I::failure(failure, instant) => {
+                    I::Failure(failure, instant) => {
                         runtime.speed_limiter.handle_failure(instant, failure).await;
                     }
                 }
@@ -526,7 +526,7 @@ pub mod runtime {
                     let v_set = v_set_aux;
                     self.context.v_set = v_set;
                     {
-                        let res = self.output.send(O::v_set(v_set, instant)).await;
+                        let res = self.output.send(O::VSet(v_set, instant)).await;
                         if res.is_err() {
                             return;
                         }
@@ -552,7 +552,7 @@ pub mod runtime {
             }
             pub async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
                 {
-                    let res = self.timer.send((T::period_fresh_ident, instant)).await;
+                    let res = self.timer.send((T::PeriodFreshIdent, instant)).await;
                     if res.is_err() {
                         return;
                     }

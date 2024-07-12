@@ -87,7 +87,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
          }| {
             match arriving_flow {
                 ArrivingFlow::Channel(flow_name, flow_type, _) => {
-                    let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
+                    let ident = Ident::new(flow_name.as_str(), Span::call_site());
                     let function_name: Ident = format_ident!("handle_{flow_name}");
                     let ty = type_rust_ast_from_lir(flow_type);
                     let instructions = instructions

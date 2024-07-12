@@ -31,10 +31,10 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             parse_quote! { self.context.#ident = #expression; }
         }
         FlowInstruction::Send(ident, flow_expression) => {
-            let ident: Ident = Ident::new(&ident, Span::call_site());
+            let enum_ident = Ident::new(to_camel_case(ident.as_str()).as_str(), Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
             parse_quote!({
-                let res = self.output.send(O::#ident(#expression, instant)).await;
+                let res = self.output.send(O::#enum_ident(#expression, instant)).await;
                 if res.is_err() {return}
             })
         }
@@ -72,9 +72,12 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             }
         }
         FlowInstruction::ResetTimer(timer_name, ..) => {
-            let timer_ident = Ident::new(&timer_name, Span::call_site());
+            let enum_ident = Ident::new(
+                to_camel_case(timer_name.as_str()).as_str(),
+                Span::call_site(),
+            );
             parse_quote!({
-                let res = self.timer.send((T::#timer_ident, instant)).await;
+                let res = self.timer.send((T::#enum_ident, instant)).await;
                 if res.is_err() {return}
             })
         }
