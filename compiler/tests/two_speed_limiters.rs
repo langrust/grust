@@ -7,6 +7,17 @@ fn should_compile_two_speed_limiters() {
     let ast: Ast = syn::parse_quote! {
         #![dump = "tests/macro_outputs/two_speed_limiters.rs"]
 
+        // # Imports
+        import signal  car::hmi::speed_limiter::activation : ActivationRequest;
+        import signal  car::hmi::speed_limiter::set_speed : float;
+        import signal  car::adas::speed : float;
+        import signal  car::adas::vacuum_brake : VacuumBrakeState;
+        import signal  car::adas::kickdown: KickdownState;
+        import signal  car::adas::vdc: VdcState;
+
+        export signal car::adas::speed_limiter::in_regulation : bool;
+        export signal car::adas::speed_limiter::v_set         : float;
+
         // # Types
 
         // Hysterisis for speed.
@@ -243,17 +254,6 @@ fn should_compile_two_speed_limiters() {
         }
 
         service speed_limiter {
-            // # Imports
-            import signal  car::hmi::speed_limiter::activation : ActivationRequest;
-            import signal  car::hmi::speed_limiter::set_speed : float;
-            import signal  car::adas::speed : float;
-            import signal  car::adas::vacuum_brake : VacuumBrakeState;
-            import signal  car::adas::kickdown: KickdownState;
-            import signal  car::adas::vdc: VdcState;
-
-            export signal car::adas::speed_limiter::in_regulation : bool;
-            export signal car::adas::speed_limiter::v_set         : float;
-
             let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(set_speed);
             let (
                 signal state: SpeedLimiter,
@@ -273,17 +273,6 @@ fn should_compile_two_speed_limiters() {
         }
 
         service another_speed_limiter {
-            // # Imports
-            import signal  car::hmi::speed_limiter::activation : ActivationRequest;
-            import signal  car::hmi::speed_limiter::set_speed : float;
-            import signal  car::adas::speed : float;
-            import signal  car::adas::vacuum_brake : VacuumBrakeState;
-            import signal  car::adas::kickdown: KickdownState;
-            import signal  car::adas::vdc: VdcState;
-
-            export signal car::adas::speed_limiter::in_regulation : bool;
-            export signal car::adas::speed_limiter::v_set         : float;
-
             let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(set_speed);
             let (
                 signal state: SpeedLimiter,
