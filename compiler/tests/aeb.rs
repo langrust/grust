@@ -8,6 +8,11 @@ fn should_compile_aeb() {
     let ast: Ast = syn::parse_quote! {
         #![dump = "tests/macro_outputs/aeb.rs"]
 
+        import signal car::speed_km_h                   : float;
+        import event  car::detect::left::pedestrian_l   : float;
+        import event  car::detect::right::pedestrian_r  : float;
+        export signal car::urban::braking::brakes       : Braking;
+
         // Braking type
         enum Braking {
             UrgentBrake,
@@ -51,11 +56,6 @@ fn should_compile_aeb() {
         }
 
         service aeb {
-            import signal car::speed_km_h                   : float;
-            import event  car::detect::left::pedestrian_l   : float;
-            import event  car::detect::right::pedestrian_r  : float;
-            export signal car::urban::braking::brakes       : Braking;
-
             let event pedestrian: timeout(float) = timeout(pedestrian_l, 500);
             brakes = braking_state(pedestrian, speed_km_h);
         }
